@@ -26,6 +26,7 @@
         │   ├── opening_loc: (20...23) = "%Q{"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (23...27))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (23...27) = "aaa "
         │   │   │   ├── closing_loc: ∅
@@ -47,6 +48,7 @@
         │   │   │   │           └── name: "bbb"
         │   │   │   └── closing_loc: (32...33) = "}"
         │   │   └── @ StringNode (location: (33...37))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (33...37) = " ccc"
         │   │       ├── closing_loc: ∅

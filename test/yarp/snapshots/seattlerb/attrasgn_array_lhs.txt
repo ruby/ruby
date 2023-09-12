@@ -51,16 +51,19 @@
             │       └── @ ArrayNode (location: (27...42))
             │           ├── elements: (length: 3)
             │           │   ├── @ StringNode (location: (28...31))
+            │           │   │   ├── flags: ∅
             │           │   │   ├── opening_loc: (28...29) = "\""
             │           │   │   ├── content_loc: (29...30) = "a"
             │           │   │   ├── closing_loc: (30...31) = "\""
             │           │   │   └── unescaped: "a"
             │           │   ├── @ StringNode (location: (33...36))
+            │           │   │   ├── flags: ∅
             │           │   │   ├── opening_loc: (33...34) = "\""
             │           │   │   ├── content_loc: (34...35) = "b"
             │           │   │   ├── closing_loc: (35...36) = "\""
             │           │   │   └── unescaped: "b"
             │           │   └── @ StringNode (location: (38...41))
+            │           │       ├── flags: ∅
             │           │       ├── opening_loc: (38...39) = "\""
             │           │       ├── content_loc: (39...40) = "c"
             │           │       ├── closing_loc: (40...41) = "\""

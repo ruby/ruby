@@ -1097,6 +1097,7 @@
         │   │   │       ├── name_loc: (837...841) = "baz:"
         │   │   │       └── value:
         │   │   │           @ StringNode (location: (842...849))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── opening_loc: (842...843) = "\""
         │   │   │           ├── content_loc: (843...848) = "value"
         │   │   │           ├── closing_loc: (848...849) = "\""
@@ -1123,6 +1124,7 @@
         │   │           ├── opening_loc: (864...874) = "<<-HEREDOC"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (875...879))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (875...879) = "    "
         │   │           │   │   ├── closing_loc: ∅
@@ -1132,6 +1134,7 @@
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (881...882) = "}"
         │   │           │   └── @ StringNode (location: (882...883))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (882...883) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -1153,6 +1156,7 @@
             │   @ StatementsNode (location: (906...909))
             │   └── body: (length: 1)
             │       └── @ StringNode (location: (906...909))
+            │           ├── flags: ∅
             │           ├── opening_loc: (906...908) = "%("
             │           ├── content_loc: (908...908) = ""
             │           ├── closing_loc: (908...909) = ")"

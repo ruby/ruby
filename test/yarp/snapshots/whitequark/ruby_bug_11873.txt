@@ -46,6 +46,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (10...13))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (10...11) = "\""
         │   │           ├── content_loc: (11...12) = "x"
         │   │           ├── closing_loc: (12...13) = "\""
@@ -219,6 +220,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (78...81))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (78...79) = "\""
         │   │           ├── content_loc: (79...80) = "x"
         │   │           ├── closing_loc: (80...81) = "\""
@@ -398,6 +400,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (147...150))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (147...148) = "\""
         │   │           ├── content_loc: (148...149) = "x"
         │   │           ├── closing_loc: (149...150) = "\""
@@ -589,6 +592,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (215...218))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (215...216) = "\""
         │   │           ├── content_loc: (216...217) = "x"
         │   │           ├── closing_loc: (217...218) = "\""

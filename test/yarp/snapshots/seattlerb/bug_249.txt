@@ -71,6 +71,7 @@
             │                   │   └── unescaped: "at"
             │                   ├── value:
             │                   │   @ StringNode (location: (57...67))
+            │                   │   ├── flags: ∅
             │                   │   ├── opening_loc: (57...58) = "'"
             │                   │   ├── content_loc: (58...66) = "endpoint"
             │                   │   ├── closing_loc: (66...67) = "'"

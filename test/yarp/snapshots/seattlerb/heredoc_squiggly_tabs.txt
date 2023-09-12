@@ -9,6 +9,7 @@
             ├── name_loc: (0...1) = "a"
             ├── value:
             │   @ StringNode (location: (4...12))
+            │   ├── flags: ∅
             │   ├── opening_loc: (4...12) = "<<~\"EOF\""
             │   ├── content_loc: (13...43) = "        blah blah\n\t blah blah\n"
             │   ├── closing_loc: (43...49) = "  EOF\n"

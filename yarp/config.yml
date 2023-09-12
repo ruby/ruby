@@ -369,6 +369,10 @@ flags:
         comment: "u - forces the UTF-8 encoding"
       - name: ONCE
         comment: "o - only interpolates values into the regular expression once"
+  - name: StringFlags
+    values:
+      - name: FROZEN
+        comment: "frozen by virtue of a frozen_string_literal comment"
 nodes:
   - name: AliasGlobalVariableNode
     fields:
@@ -2249,6 +2253,9 @@ nodes:
           ^^^^^^^^^^^
   - name: StringNode
     fields:
+      - name: flags
+        type: flags
+        kind: StringFlags
       - name: opening_loc
         type: location?
       - name: content_loc

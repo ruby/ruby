@@ -186,6 +186,7 @@
         │   │   │   @ ArgumentsNode (location: (108...114))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ StringNode (location: (108...114))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── opening_loc: (108...114) = "<<-FOO"
         │   │   │           ├── content_loc: (119...119) = ""
         │   │   │           ├── closing_loc: (119...123) = "FOO\n"

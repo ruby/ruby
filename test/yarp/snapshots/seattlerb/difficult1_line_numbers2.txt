@@ -19,6 +19,7 @@
         │   │       │   │   @ ArgumentsNode (location: (17...20))
         │   │       │   │   └── arguments: (length: 1)
         │   │       │   │       └── @ StringNode (location: (17...20))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (17...18) = "\""
         │   │       │   │           ├── content_loc: (18...19) = "a"
         │   │       │   │           ├── closing_loc: (19...20) = "\""

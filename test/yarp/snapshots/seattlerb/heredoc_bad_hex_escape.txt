@@ -9,6 +9,7 @@
             ├── name_loc: (0...1) = "s"
             ├── value:
             │   @ StringNode (location: (4...9))
+            │   ├── flags: ∅
             │   ├── opening_loc: (4...9) = "<<eos"
             │   ├── content_loc: (10...17) = "a\\xE9b\n"
             │   ├── closing_loc: (17...21) = "eos\n"

@@ -25,6 +25,7 @@
             │       │   │   │   │   └── unescaped: "b"
             │       │   │   │   ├── value:
             │       │   │   │   │   @ StringNode (location: (16...19))
+            │       │   │   │   │   ├── flags: ∅
             │       │   │   │   │   ├── opening_loc: (16...17) = "'"
             │       │   │   │   │   ├── content_loc: (17...18) = "c"
             │       │   │   │   │   ├── closing_loc: (18...19) = "'"
@@ -39,6 +40,7 @@
             │       │   │       │   └── unescaped: "d"
             │       │   │       ├── value:
             │       │   │       │   @ StringNode (location: (24...27))
+            │       │   │       │   ├── flags: ∅
             │       │   │       │   ├── opening_loc: (24...25) = "\""
             │       │   │       │   ├── content_loc: (25...26) = "e"
             │       │   │       │   ├── closing_loc: (26...27) = "\""

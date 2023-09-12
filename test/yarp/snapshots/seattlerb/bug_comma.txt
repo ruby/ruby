@@ -15,6 +15,7 @@
             │   │   @ ArgumentsNode (location: (8...15))
             │   │   └── arguments: (length: 2)
             │   │       ├── @ StringNode (location: (8...10))
+            │   │       │   ├── flags: ∅
             │   │       │   ├── opening_loc: (8...9) = "?"
             │   │       │   ├── content_loc: (9...10) = "d"
             │   │       │   ├── closing_loc: ∅

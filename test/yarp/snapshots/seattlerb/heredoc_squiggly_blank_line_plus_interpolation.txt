@@ -22,6 +22,7 @@
             │   │           │   ├── opening_loc: (8...14) = "<<~EOF"
             │   │           │   ├── parts: (length: 3)
             │   │           │   │   ├── @ StringNode (location: (21...26))
+            │   │           │   │   │   ├── flags: ∅
             │   │           │   │   │   ├── opening_loc: ∅
             │   │           │   │   │   ├── content_loc: (21...26) = "\n    "
             │   │           │   │   │   ├── closing_loc: ∅
@@ -43,6 +44,7 @@
             │   │           │   │   │   │           └── name: "bar"
             │   │           │   │   │   └── closing_loc: (31...32) = "}"
             │   │           │   │   └── @ StringNode (location: (32...36))
+            │   │           │   │       ├── flags: ∅
             │   │           │   │       ├── opening_loc: ∅
             │   │           │   │       ├── content_loc: (32...36) = "baz\n"
             │   │           │   │       ├── closing_loc: ∅

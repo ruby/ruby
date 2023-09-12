@@ -12,6 +12,7 @@
         │   │   @ ArgumentsNode (location: (5...33))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (5...33))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (5...6) = "\""
         │   │           ├── content_loc: (6...32) = "hello\\\n my\\\n dear\\\n friend"
         │   │           ├── closing_loc: (32...33) = "\""

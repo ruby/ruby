@@ -20,6 +20,7 @@
             │       ├── keyword_loc: (10...14) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ StringNode (location: (15...20))
+            │       │       ├── flags: ∅
             │       │       ├── opening_loc: (15...16) = "'"
             │       │       ├── content_loc: (16...19) = "bar"
             │       │       ├── closing_loc: (19...20) = "'"

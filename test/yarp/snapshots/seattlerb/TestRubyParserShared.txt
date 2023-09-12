@@ -28,11 +28,13 @@
         ├── @ ArrayNode (location: (37...54))
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (41...46))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (41...46) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ StringNode (location: (47...52))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (47...52) = "line3"
         │   │       ├── closing_loc: ∅
@@ -70,11 +72,13 @@
         ├── @ ArrayNode (location: (102...119))
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (106...111))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (106...111) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ StringNode (location: (112...117))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (112...117) = "line3"
         │   │       ├── closing_loc: ∅

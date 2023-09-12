@@ -9,6 +9,7 @@
             │   ├── opening_loc: (0...1) = "\""
             │   ├── parts: (length: 2)
             │   │   ├── @ StringNode (location: (1...4))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── content_loc: (1...4) = "foo"
             │   │   │   ├── closing_loc: ∅
@@ -21,6 +22,7 @@
             │   └── closing_loc: (7...8) = "\""
             └── right:
                 @ StringNode (location: (9...14))
+                ├── flags: ∅
                 ├── opening_loc: (9...10) = "\""
                 ├── content_loc: (10...13) = "bar"
                 ├── closing_loc: (13...14) = "\""

@@ -6,6 +6,7 @@
         ├── @ ArrayNode (location: (0...17))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (1...15))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (1...2) = "\""
         │   │       ├── content_loc: (2...14) = "  some text\n"
         │   │       ├── closing_loc: (14...15) = "\""
@@ -15,6 +16,7 @@
         └── @ ArrayNode (location: (19...47))
             ├── elements: (length: 1)
             │   └── @ StringNode (location: (20...27))
+            │       ├── flags: ∅
             │       ├── opening_loc: (20...27) = "<<-FILE"
             │       ├── content_loc: (29...41) = "  some text\n"
             │       ├── closing_loc: (41...46) = "FILE\n"

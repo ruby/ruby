@@ -37,6 +37,7 @@
         │   │           │   @ ArgumentsNode (location: (25...27))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ StringNode (location: (25...27))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (25...26) = "\""
         │   │           │           ├── content_loc: (26...26) = ""
         │   │           │           ├── closing_loc: (26...27) = "\""

@@ -37,6 +37,7 @@
         │   ├── opening_loc: (28...29) = "/"
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (29...33))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (29...33) = "aaa "
         │   │   │   ├── closing_loc: ∅
@@ -52,6 +53,7 @@
         │   ├── opening_loc: (41...42) = "/"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (42...46))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (42...46) = "aaa "
         │   │   │   ├── closing_loc: ∅
@@ -73,6 +75,7 @@
         │   │   │   │           └── name: "bbb"
         │   │   │   └── closing_loc: (51...52) = "}"
         │   │   └── @ StringNode (location: (52...56))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (52...56) = " ccc"
         │   │       ├── closing_loc: ∅
@@ -159,6 +162,7 @@
         │   │   @ ArgumentsNode (location: (263...267))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (263...267))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (263...264) = "\""
         │   │           ├── content_loc: (264...266) = "hi"
         │   │           ├── closing_loc: (266...267) = "\""
@@ -177,6 +181,7 @@
             ├── opening_loc: (280...281) = "/"
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (281...285))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (281...285) = "aaa "
             │   │   ├── closing_loc: ∅

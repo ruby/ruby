@@ -51,6 +51,7 @@
         │   │   ├── opening_loc: (67...69) = ":\""
         │   │   ├── parts: (length: 2)
         │   │   │   ├── @ StringNode (location: (69...72))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── content_loc: (69...72) = "abc"
         │   │   │   │   ├── closing_loc: ∅

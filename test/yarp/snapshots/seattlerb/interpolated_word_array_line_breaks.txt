@@ -6,11 +6,13 @@
         ├── @ ArrayNode (location: (0...9))
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (4...5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (4...5) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ StringNode (location: (6...7))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (6...7) = "b"
         │   │       ├── closing_loc: ∅

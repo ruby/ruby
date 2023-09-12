@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (0...25))
         │   ├── receiver:
         │   │   @ StringNode (location: (0...9))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (0...9) = "<<-TARGET"
         │   │   ├── content_loc: (27...27) = ""
         │   │   ├── closing_loc: (27...34) = "TARGET\n"
@@ -23,6 +24,7 @@
         │   │       │   ├── unescaped: "^ {"
         │   │       │   └── flags: ∅
         │   │       └── @ StringNode (location: (23...25))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (23...24) = "'"
         │   │           ├── content_loc: (24...24) = ""
         │   │           ├── closing_loc: (24...25) = "'"
@@ -34,6 +36,7 @@
         └── @ CallNode (location: (37...62))
             ├── receiver:
             │   @ StringNode (location: (37...46))
+            │   ├── flags: ∅
             │   ├── opening_loc: (37...46) = "<<-TARGET"
             │   ├── content_loc: (65...65) = ""
             │   ├── closing_loc: (65...73) = "TARGET\r\n"
@@ -51,6 +54,7 @@
             │       │   ├── unescaped: "^ {"
             │       │   └── flags: ∅
             │       └── @ StringNode (location: (60...62))
+            │           ├── flags: ∅
             │           ├── opening_loc: (60...61) = "'"
             │           ├── content_loc: (61...61) = ""
             │           ├── closing_loc: (61...62) = "'"

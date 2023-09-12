@@ -4,11 +4,13 @@
     @ StatementsNode (location: (1...465))
     └── body: (length: 38)
         ├── @ StringNode (location: (1...6))
+        │   ├── flags: ∅
         │   ├── opening_loc: (1...2) = "\""
         │   ├── content_loc: (2...5) = "\#@1"
         │   ├── closing_loc: (5...6) = "\""
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (10...16))
+        │   ├── flags: ∅
         │   ├── opening_loc: (10...11) = "\""
         │   ├── content_loc: (11...15) = "\#@@1"
         │   ├── closing_loc: (15...16) = "\""
@@ -32,11 +34,13 @@
         │   ├── opening_loc: (31...34) = "%I["
         │   └── closing_loc: (38...39) = "]"
         ├── @ StringNode (location: (43...50))
+        │   ├── flags: ∅
         │   ├── opening_loc: (43...46) = "%Q{"
         │   ├── content_loc: (46...49) = "\#@1"
         │   ├── closing_loc: (49...50) = "}"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (54...62))
+        │   ├── flags: ∅
         │   ├── opening_loc: (54...57) = "%Q{"
         │   ├── content_loc: (57...61) = "\#@@1"
         │   ├── closing_loc: (61...62) = "}"
@@ -44,6 +48,7 @@
         ├── @ ArrayNode (location: (66...73))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (69...72))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (69...72) = "\#@1"
         │   │       ├── closing_loc: ∅
@@ -53,6 +58,7 @@
         ├── @ ArrayNode (location: (77...85))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (80...84))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (80...84) = "\#@@1"
         │   │       ├── closing_loc: ∅
@@ -78,11 +84,13 @@
         │   ├── opening_loc: (102...105) = "%i["
         │   └── closing_loc: (111...112) = "]"
         ├── @ StringNode (location: (116...123))
+        │   ├── flags: ∅
         │   ├── opening_loc: (116...119) = "%q{"
         │   ├── content_loc: (119...122) = "\#@1"
         │   ├── closing_loc: (122...123) = "}"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (127...135))
+        │   ├── flags: ∅
         │   ├── opening_loc: (127...130) = "%q{"
         │   ├── content_loc: (130...134) = "\#@@1"
         │   ├── closing_loc: (134...135) = "}"
@@ -112,6 +120,7 @@
         ├── @ ArrayNode (location: (185...194))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (189...192))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (189...192) = "\#@1"
         │   │       ├── closing_loc: ∅
@@ -121,6 +130,7 @@
         ├── @ ArrayNode (location: (198...208))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (202...206))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (202...206) = "\#@@1"
         │   │       ├── closing_loc: ∅
@@ -138,21 +148,25 @@
         │   ├── closing_loc: (230...231) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ StringNode (location: (235...241))
+        │   ├── flags: ∅
         │   ├── opening_loc: (235...237) = "%{"
         │   ├── content_loc: (237...240) = "\#@1"
         │   ├── closing_loc: (240...241) = "}"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (245...252))
+        │   ├── flags: ∅
         │   ├── opening_loc: (245...247) = "%{"
         │   ├── content_loc: (247...251) = "\#@@1"
         │   ├── closing_loc: (251...252) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ StringNode (location: (256...261))
+        │   ├── flags: ∅
         │   ├── opening_loc: (256...257) = "'"
         │   ├── content_loc: (257...260) = "\#@1"
         │   ├── closing_loc: (260...261) = "'"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (265...271))
+        │   ├── flags: ∅
         │   ├── opening_loc: (265...266) = "'"
         │   ├── content_loc: (266...270) = "\#@@1"
         │   ├── closing_loc: (270...271) = "'"
@@ -200,21 +214,25 @@
         │   ├── closing_loc: (350...351) = "`"
         │   └── unescaped: "\#@@1"
         ├── @ StringNode (location: (354...363))
+        │   ├── flags: ∅
         │   ├── opening_loc: (354...363) = "<<-\"HERE\""
         │   ├── content_loc: (364...368) = "\#@1\n"
         │   ├── closing_loc: (368...373) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         ├── @ StringNode (location: (374...383))
+        │   ├── flags: ∅
         │   ├── opening_loc: (374...383) = "<<-\"HERE\""
         │   ├── content_loc: (384...389) = "\#@@1\n"
         │   ├── closing_loc: (389...394) = "HERE\n"
         │   └── unescaped: "\#@@1\n"
         ├── @ StringNode (location: (395...404))
+        │   ├── flags: ∅
         │   ├── opening_loc: (395...404) = "<<-'HERE'"
         │   ├── content_loc: (405...409) = "\#@1\n"
         │   ├── closing_loc: (409...414) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         ├── @ StringNode (location: (415...424))
+        │   ├── flags: ∅
         │   ├── opening_loc: (415...424) = "<<-'HERE'"
         │   ├── content_loc: (425...430) = "\#@@1\n"
         │   ├── closing_loc: (430...435) = "HERE\n"

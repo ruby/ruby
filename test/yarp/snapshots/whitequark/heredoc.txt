@@ -4,11 +4,13 @@
     @ StatementsNode (location: (0...52))
     └── body: (length: 3)
         ├── @ StringNode (location: (0...8))
+        │   ├── flags: ∅
         │   ├── opening_loc: (0...8) = "<<'HERE'"
         │   ├── content_loc: (9...17) = "foo\nbar\n"
         │   ├── closing_loc: (17...22) = "HERE\n"
         │   └── unescaped: "foo\nbar\n"
         ├── @ StringNode (location: (23...29))
+        │   ├── flags: ∅
         │   ├── opening_loc: (23...29) = "<<HERE"
         │   ├── content_loc: (30...38) = "foo\nbar\n"
         │   ├── closing_loc: (38...43) = "HERE\n"

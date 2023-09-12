@@ -7,6 +7,7 @@
             ├── opening_loc: (0...2) = "%{"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (2...5))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (2...5) = " { "
             │   │   ├── closing_loc: ∅
@@ -30,6 +31,7 @@
             │   │   │           └── closing_loc: (13...14) = "\""
             │   │   └── closing_loc: (15...16) = "}"
             │   └── @ StringNode (location: (16...19))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── content_loc: (16...19) = " } "
             │       ├── closing_loc: ∅

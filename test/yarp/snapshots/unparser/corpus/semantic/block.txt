@@ -114,6 +114,7 @@
         │   │   @ ArgumentsNode (location: (86...92))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (86...92))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (86...92) = "<<-DOC"
         │   │           ├── content_loc: (101...105) = "  b\n"
         │   │           ├── closing_loc: (105...109) = "DOC\n"
@@ -157,6 +158,7 @@
             │   @ ArgumentsNode (location: (122...128))
             │   └── arguments: (length: 1)
             │       └── @ StringNode (location: (122...128))
+            │           ├── flags: ∅
             │           ├── opening_loc: (122...128) = "<<-DOC"
             │           ├── content_loc: (133...137) = "  b\n"
             │           ├── closing_loc: (137...141) = "DOC\n"

@@ -109,6 +109,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (91...94) = "end"
         ├── @ StringNode (location: (96...102))
+        │   ├── flags: ∅
         │   ├── opening_loc: (96...98) = "%|"
         │   ├── content_loc: (98...101) = "abc"
         │   ├── closing_loc: (101...102) = "|"

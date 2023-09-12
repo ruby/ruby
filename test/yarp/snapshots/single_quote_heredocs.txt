@@ -4,6 +4,7 @@
     @ StatementsNode (location: (0...8))
     └── body: (length: 1)
         └── @ StringNode (location: (0...8))
+            ├── flags: ∅
             ├── opening_loc: (0...8) = "<<-'EOS'"
             ├── content_loc: (9...44) = "    cd L:\\Work\\MG3710IQPro\\Develop\n"
             ├── closing_loc: (44...48) = "EOS\n"

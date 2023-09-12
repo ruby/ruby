@@ -4,6 +4,7 @@
     @ StatementsNode (location: (0...10))
     └── body: (length: 1)
         └── @ StringNode (location: (0...10))
+            ├── flags: ∅
             ├── opening_loc: (0...10) = "<<-HEREDOC"
             ├── content_loc: (11...15) = "\#${\n"
             ├── closing_loc: (15...23) = "HEREDOC\n"

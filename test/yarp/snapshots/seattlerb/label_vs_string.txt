@@ -22,6 +22,7 @@
             │   @ ArgumentsNode (location: (8...12))
             │   └── arguments: (length: 1)
             │       └── @ StringNode (location: (8...12))
+            │           ├── flags: ∅
             │           ├── opening_loc: (8...9) = "'"
             │           ├── content_loc: (9...11) = ":\n"
             │           ├── closing_loc: (11...12) = "'"

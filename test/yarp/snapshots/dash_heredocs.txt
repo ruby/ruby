@@ -4,6 +4,7 @@
     @ StatementsNode (location: (0...278))
     └── body: (length: 13)
         ├── @ StringNode (location: (0...6))
+        │   ├── flags: ∅
         │   ├── opening_loc: (0...6) = "<<-EOF"
         │   ├── content_loc: (7...11) = "  a\n"
         │   ├── closing_loc: (11...15) = "EOF\n"
@@ -11,6 +12,7 @@
         ├── @ CallNode (location: (16...36))
         │   ├── receiver:
         │   │   @ StringNode (location: (16...24))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (16...24) = "<<-FIRST"
         │   │   ├── content_loc: (37...41) = "  a\n"
         │   │   ├── closing_loc: (41...47) = "FIRST\n"
@@ -22,6 +24,7 @@
         │   │   @ ArgumentsNode (location: (27...36))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (27...36))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (27...36) = "<<-SECOND"
         │   │           ├── content_loc: (47...51) = "  b\n"
         │   │           ├── closing_loc: (51...58) = "SECOND\n"
@@ -34,6 +37,7 @@
         │   ├── opening_loc: (59...67) = "<<-`EOF`"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (68...72))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (68...72) = "  a\n"
         │   │   │   ├── closing_loc: ∅
@@ -55,17 +59,20 @@
         │   │   │   │           └── name: "b"
         │   │   │   └── closing_loc: (75...76) = "}"
         │   │   └── @ StringNode (location: (76...77))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (76...77) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (77...81) = "EOF\n"
         ├── @ StringNode (location: (82...88))
+        │   ├── flags: ∅
         │   ├── opening_loc: (82...88) = "<<-EOF"
         │   ├── content_loc: (98...102) = "  a\n"
         │   ├── closing_loc: (102...106) = "EOF\n"
         │   └── unescaped: "  a\n"
         ├── @ StringNode (location: (107...113))
+        │   ├── flags: ∅
         │   ├── opening_loc: (107...113) = "<<-EOF"
         │   ├── content_loc: (114...122) = "  a\n  b\n"
         │   ├── closing_loc: (122...128) = "  EOF\n"
@@ -74,6 +81,7 @@
         │   ├── opening_loc: (129...137) = "<<-\"EOF\""
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (138...142))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (138...142) = "  a\n"
         │   │   │   ├── closing_loc: ∅
@@ -95,6 +103,7 @@
         │   │   │   │           └── name: "b"
         │   │   │   └── closing_loc: (145...146) = "}"
         │   │   └── @ StringNode (location: (146...147))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (146...147) = "\n"
         │   │       ├── closing_loc: ∅
@@ -104,6 +113,7 @@
         │   ├── opening_loc: (152...158) = "<<-EOF"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (159...163))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (159...163) = "  a\n"
         │   │   │   ├── closing_loc: ∅
@@ -125,27 +135,32 @@
         │   │   │   │           └── name: "b"
         │   │   │   └── closing_loc: (166...167) = "}"
         │   │   └── @ StringNode (location: (167...168))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (167...168) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (168...172) = "EOF\n"
         ├── @ StringNode (location: (173...179))
+        │   ├── flags: ∅
         │   ├── opening_loc: (173...175) = "%#"
         │   ├── content_loc: (175...178) = "abc"
         │   ├── closing_loc: (178...179) = "#"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (181...187))
+        │   ├── flags: ∅
         │   ├── opening_loc: (181...187) = "<<-EOF"
         │   ├── content_loc: (188...196) = "  a\n  b\n"
         │   ├── closing_loc: (196...200) = "EOF\n"
         │   └── unescaped: "  a\n  b\n"
         ├── @ StringNode (location: (201...206))
+        │   ├── flags: ∅
         │   ├── opening_loc: (201...206) = "<<-''"
         │   ├── content_loc: (207...207) = ""
         │   ├── closing_loc: (207...208) = "\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (209...217))
+        │   ├── flags: ∅
         │   ├── opening_loc: (209...217) = "<<-'EOF'"
         │   ├── content_loc: (218...227) = "  a \#{1}\n"
         │   ├── closing_loc: (227...231) = "EOF\n"
@@ -153,6 +168,7 @@
         ├── @ CallNode (location: (232...243))
         │   ├── receiver:
         │   │   @ StringNode (location: (232...236))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (232...236) = "<<-A"
         │   │   ├── content_loc: (244...248) = "  a\n"
         │   │   ├── closing_loc: (248...250) = "A\n"
@@ -167,6 +183,7 @@
         │   │           ├── opening_loc: (239...243) = "<<-B"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (250...256))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (250...256) = "  b\n  "
         │   │           │   │   ├── closing_loc: ∅
@@ -180,6 +197,7 @@
         │   │           │   │   │           └── flags: decimal
         │   │           │   │   └── closing_loc: (262...263) = "}"
         │   │           │   └── @ StringNode (location: (263...264))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (263...264) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -192,6 +210,7 @@
         └── @ CallNode (location: (267...278))
             ├── receiver:
             │   @ StringNode (location: (267...271))
+            │   ├── flags: ∅
             │   ├── opening_loc: (267...271) = "<<-A"
             │   ├── content_loc: (279...283) = "  a\n"
             │   ├── closing_loc: (283...285) = "A\n"
@@ -206,6 +225,7 @@
             │           ├── opening_loc: (274...278) = "<<-B"
             │           ├── parts: (length: 3)
             │           │   ├── @ StringNode (location: (285...291))
+            │           │   │   ├── flags: ∅
             │           │   │   ├── opening_loc: ∅
             │           │   │   ├── content_loc: (285...291) = "  b\n  "
             │           │   │   ├── closing_loc: ∅
@@ -219,6 +239,7 @@
             │           │   │   │           └── flags: decimal
             │           │   │   └── closing_loc: (297...298) = "}"
             │           │   └── @ StringNode (location: (298...299))
+            │           │       ├── flags: ∅
             │           │       ├── opening_loc: ∅
             │           │       ├── content_loc: (298...299) = "\n"
             │           │       ├── closing_loc: ∅

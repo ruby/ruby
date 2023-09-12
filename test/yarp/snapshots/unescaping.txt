@@ -6,6 +6,7 @@
         ├── @ ArrayNode (location: (0...10))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (1...9))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (1...2) = "\""
         │   │       ├── content_loc: (2...8) = "\\c\#{1}"
         │   │       ├── closing_loc: (8...9) = "\""
@@ -19,11 +20,13 @@
         │   ├── unescaped: "\u0003{1}"
         │   └── flags: ∅
         ├── @ StringNode (location: (22...30))
+        │   ├── flags: ∅
         │   ├── opening_loc: (22...23) = "\""
         │   ├── content_loc: (23...29) = "\\c\#{1}"
         │   ├── closing_loc: (29...30) = "\""
         │   └── unescaped: "\u0003{1}"
         └── @ StringNode (location: (32...39))
+            ├── flags: ∅
             ├── opening_loc: (32...39) = "<<~HERE"
             ├── content_loc: (40...50) = "   \\c\#{1}\n"
             ├── closing_loc: (50...55) = "HERE\n"

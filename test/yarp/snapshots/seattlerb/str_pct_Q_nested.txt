@@ -7,6 +7,7 @@
             ├── opening_loc: (0...3) = "%Q["
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (3...11))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (3...11) = "before ["
             │   │   ├── closing_loc: ∅
@@ -28,6 +29,7 @@
             │   │   │           └── name: "nest"
             │   │   └── closing_loc: (17...18) = "}"
             │   └── @ StringNode (location: (18...25))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── content_loc: (18...25) = "] after"
             │       ├── closing_loc: ∅

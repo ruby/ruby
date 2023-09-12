@@ -4,6 +4,7 @@
     @ StatementsNode (location: (0...2))
     └── body: (length: 1)
         └── @ StringNode (location: (0...2))
+            ├── flags: ∅
             ├── opening_loc: (0...1) = "?"
             ├── content_loc: (1...2) = "a"
             ├── closing_loc: ∅

@@ -47,6 +47,7 @@
         │   │   │   │           ├── opening_loc: (22...23) = "\""
         │   │   │   │           ├── parts: (length: 2)
         │   │   │   │           │   ├── @ StringNode (location: (23...24))
+        │   │   │   │           │   │   ├── flags: ∅
         │   │   │   │           │   │   ├── opening_loc: ∅
         │   │   │   │           │   │   ├── content_loc: (23...24) = "b"
         │   │   │   │           │   │   ├── closing_loc: ∅

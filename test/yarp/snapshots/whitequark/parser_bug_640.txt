@@ -4,6 +4,7 @@
     @ StatementsNode (location: (0...6))
     └── body: (length: 1)
         └── @ StringNode (location: (0...6))
+            ├── flags: ∅
             ├── opening_loc: (0...6) = "<<~FOO"
             ├── content_loc: (7...20) = "  baz\\\n  qux\n"
             ├── closing_loc: (20...24) = "FOO\n"

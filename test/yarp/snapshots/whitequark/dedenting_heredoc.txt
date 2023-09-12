@@ -15,6 +15,7 @@
         │   │           ├── opening_loc: (2...8) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (9...17))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (9...17) = "    x\n  "
         │   │           │   │   ├── closing_loc: ∅
@@ -25,12 +26,14 @@
         │   │           │   │   │   @ StatementsNode (location: (19...24))
         │   │           │   │   │   └── body: (length: 1)
         │   │           │   │   │       └── @ StringNode (location: (19...24))
+        │   │           │   │   │           ├── flags: ∅
         │   │           │   │   │           ├── opening_loc: (19...20) = "\""
         │   │           │   │   │           ├── content_loc: (20...23) = "  y"
         │   │           │   │   │           ├── closing_loc: (23...24) = "\""
         │   │           │   │   │           └── unescaped: "  y"
         │   │           │   │   └── closing_loc: (24...25) = "}"
         │   │           │   └── @ StringNode (location: (25...26))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (25...26) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -52,6 +55,7 @@
         │   │           ├── opening_loc: (31...37) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (38...46))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (38...46) = "    x\n  "
         │   │           │   │   ├── closing_loc: ∅
@@ -73,6 +77,7 @@
         │   │           │   │   │           └── name: "foo"
         │   │           │   │   └── closing_loc: (51...52) = "}"
         │   │           │   └── @ StringNode (location: (52...53))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (52...53) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -91,6 +96,7 @@
         │   │   @ ArgumentsNode (location: (58...62))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (58...62))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (58...62) = "<<~E"
         │   │           ├── content_loc: (63...76) = "\tx\n        y\n"
         │   │           ├── closing_loc: (76...78) = "E\n"
@@ -108,6 +114,7 @@
         │   │   @ ArgumentsNode (location: (81...85))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (81...85))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (81...85) = "<<~E"
         │   │           ├── content_loc: (86...95) = "\tx\n    y\n"
         │   │           ├── closing_loc: (95...97) = "E\n"
@@ -125,6 +132,7 @@
         │   │   @ ArgumentsNode (location: (100...104))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (100...104))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (100...104) = "<<~E"
         │   │           ├── content_loc: (105...122) = "    \tx\n        y\n"
         │   │           ├── closing_loc: (122...124) = "E\n"
@@ -142,6 +150,7 @@
         │   │   @ ArgumentsNode (location: (127...131))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (127...131))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (127...131) = "<<~E"
         │   │           ├── content_loc: (132...146) = "        \tx\n\ty\n"
         │   │           ├── closing_loc: (146...148) = "E\n"
@@ -159,6 +168,7 @@
         │   │   @ ArgumentsNode (location: (151...155))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (151...155))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (151...155) = "<<~E"
         │   │           ├── content_loc: (156...168) = "    x\n  \\\ty\n"
         │   │           ├── closing_loc: (168...170) = "E\n"
@@ -176,6 +186,7 @@
         │   │   @ ArgumentsNode (location: (173...177))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (173...177))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (173...177) = "<<~E"
         │   │           ├── content_loc: (178...191) = "    x\n  \\  y\n"
         │   │           ├── closing_loc: (191...193) = "E\n"
@@ -193,6 +204,7 @@
         │   │   @ ArgumentsNode (location: (196...200))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (196...200))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (196...200) = "<<~E"
         │   │           ├── content_loc: (201...201) = ""
         │   │           ├── closing_loc: (201...205) = "  E\n"
@@ -210,6 +222,7 @@
         │   │   @ ArgumentsNode (location: (208...212))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (208...212))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (208...212) = "<<~E"
         │   │           ├── content_loc: (213...220) = "  x\n\ny\n"
         │   │           ├── closing_loc: (220...222) = "E\n"
@@ -227,6 +240,7 @@
         │   │   @ ArgumentsNode (location: (225...229))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (225...229))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (225...229) = "<<~E"
         │   │           ├── content_loc: (230...243) = "  x\n    \n  y\n"
         │   │           ├── closing_loc: (243...245) = "E\n"
@@ -244,6 +258,7 @@
         │   │   @ ArgumentsNode (location: (248...252))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (248...252))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (248...252) = "<<~E"
         │   │           ├── content_loc: (253...263) = "  x\n    y\n"
         │   │           ├── closing_loc: (263...265) = "E\n"
@@ -261,6 +276,7 @@
         │   │   @ ArgumentsNode (location: (268...272))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (268...272))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (268...272) = "<<~E"
         │   │           ├── content_loc: (273...277) = "  x\n"
         │   │           ├── closing_loc: (277...279) = "E\n"
@@ -278,6 +294,7 @@
         │   │   @ ArgumentsNode (location: (282...286))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (282...286))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (282...286) = "<<~E"
         │   │           ├── content_loc: (287...292) = "  ð\n"
         │   │           ├── closing_loc: (292...294) = "E\n"
@@ -295,6 +312,7 @@
         │   │   @ ArgumentsNode (location: (297...301))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (297...301))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (297...301) = "<<~E"
         │   │           ├── content_loc: (302...302) = ""
         │   │           ├── closing_loc: (302...304) = "E\n"
@@ -315,6 +333,7 @@
             │           ├── opening_loc: (307...313) = "<<~`E`"
             │           ├── parts: (length: 3)
             │           │   ├── @ StringNode (location: (314...322))
+            │           │   │   ├── flags: ∅
             │           │   │   ├── opening_loc: ∅
             │           │   │   ├── content_loc: (314...322) = "    x\n  "
             │           │   │   ├── closing_loc: ∅
@@ -336,6 +355,7 @@
             │           │   │   │           └── name: "foo"
             │           │   │   └── closing_loc: (327...328) = "}"
             │           │   └── @ StringNode (location: (328...329))
+            │           │       ├── flags: ∅
             │           │       ├── opening_loc: ∅
             │           │       ├── content_loc: (328...329) = "\n"
             │           │       ├── closing_loc: ∅

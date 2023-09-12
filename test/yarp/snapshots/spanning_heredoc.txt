@@ -14,6 +14,7 @@
         │   │       └── @ CallNode (location: (167...192))
         │   │           ├── receiver:
         │   │           │   @ StringNode (location: (167...171))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── opening_loc: (167...171) = "<<-A"
         │   │           │   ├── content_loc: (181...183) = "a\n"
         │   │           │   ├── closing_loc: (183...185) = "A\n"
@@ -28,11 +29,13 @@
         │   │           │       │   ├── opening_loc: (177...178) = "/"
         │   │           │       │   ├── parts: (length: 2)
         │   │           │       │   │   ├── @ StringNode (location: (178...181))
+        │   │           │       │   │   │   ├── flags: ∅
         │   │           │       │   │   │   ├── opening_loc: ∅
         │   │           │       │   │   │   ├── content_loc: (178...181) = "b\\\n"
         │   │           │       │   │   │   ├── closing_loc: ∅
         │   │           │       │   │   │   └── unescaped: "b"
         │   │           │       │   │   └── @ StringNode (location: (185...186))
+        │   │           │       │   │       ├── flags: ∅
         │   │           │       │   │       ├── opening_loc: ∅
         │   │           │       │   │       ├── content_loc: (185...186) = "b"
         │   │           │       │   │       ├── closing_loc: ∅
@@ -40,6 +43,7 @@
         │   │           │       │   ├── closing_loc: (186...187) = "/"
         │   │           │       │   └── flags: ∅
         │   │           │       └── @ StringNode (location: (189...191))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (189...190) = "\""
         │   │           │           ├── content_loc: (190...190) = ""
         │   │           │           ├── closing_loc: (190...191) = "\""
@@ -61,6 +65,7 @@
         │   │   @ ArgumentsNode (location: (279...295))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (279...283))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (279...283) = "<<-A"
         │   │       │   ├── content_loc: (289...291) = "c\n"
         │   │       │   ├── closing_loc: (291...293) = "A\n"
@@ -69,11 +74,13 @@
         │   │           ├── opening_loc: (285...286) = "\""
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (286...289))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (286...289) = "d\\\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "d"
         │   │           │   └── @ StringNode (location: (293...294))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (293...294) = "d"
         │   │           │       ├── closing_loc: ∅
@@ -92,6 +99,7 @@
         │   │   @ ArgumentsNode (location: (325...343))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (325...329))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (325...329) = "<<-A"
         │   │       │   ├── content_loc: (337...339) = "e\n"
         │   │       │   ├── closing_loc: (339...341) = "A\n"
@@ -100,11 +108,13 @@
         │   │           ├── opening_loc: (331...334) = "%q["
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (334...337))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (334...337) = "f\\\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "f\\\n"
         │   │           │   └── @ StringNode (location: (341...342))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (341...342) = "f"
         │   │           │       ├── closing_loc: ∅
@@ -123,6 +133,7 @@
         │   │   @ ArgumentsNode (location: (430...448))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (430...434))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (430...434) = "<<-A"
         │   │       │   ├── content_loc: (442...444) = "g\n"
         │   │       │   ├── closing_loc: (444...446) = "A\n"
@@ -131,11 +142,13 @@
         │   │           ├── opening_loc: (436...439) = "%Q["
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (439...442))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (439...442) = "h\\\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "h"
         │   │           │   └── @ StringNode (location: (446...447))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (446...447) = "h"
         │   │           │       ├── closing_loc: ∅
@@ -154,6 +167,7 @@
         │   │   @ ArgumentsNode (location: (523...541))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (523...527))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (523...527) = "<<-A"
         │   │       │   ├── content_loc: (535...537) = "i\n"
         │   │       │   ├── closing_loc: (537...539) = "A\n"
@@ -161,11 +175,13 @@
         │   │       └── @ ArrayNode (location: (529...541))
         │   │           ├── elements: (length: 2)
         │   │           │   ├── @ StringNode (location: (532...535))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (532...535) = "j\\\n"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "j\\\n"
         │   │           │   └── @ StringNode (location: (539...540))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (539...540) = "j"
         │   │           │       ├── closing_loc: ∅
@@ -185,6 +201,7 @@
         │   │   @ ArgumentsNode (location: (691...709))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (691...695))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (691...695) = "<<-A"
         │   │       │   ├── content_loc: (703...705) = "k\n"
         │   │       │   ├── closing_loc: (705...707) = "A\n"
@@ -195,11 +212,13 @@
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── parts: (length: 2)
         │   │           │       │   ├── @ StringNode (location: (700...703))
+        │   │           │       │   │   ├── flags: ∅
         │   │           │       │   │   ├── opening_loc: ∅
         │   │           │       │   │   ├── content_loc: (700...703) = "l\\\n"
         │   │           │       │   │   ├── closing_loc: ∅
         │   │           │       │   │   └── unescaped: "l"
         │   │           │       │   └── @ StringNode (location: (707...708))
+        │   │           │       │       ├── flags: ∅
         │   │           │       │       ├── opening_loc: ∅
         │   │           │       │       ├── content_loc: (707...708) = "l"
         │   │           │       │       ├── closing_loc: ∅
@@ -220,6 +239,7 @@
         │   │   @ ArgumentsNode (location: (784...802))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (784...788))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (784...788) = "<<-A"
         │   │       │   ├── content_loc: (796...798) = "m\n"
         │   │       │   ├── closing_loc: (798...800) = "A\n"
@@ -251,6 +271,7 @@
             │   @ ArgumentsNode (location: (946...964))
             │   └── arguments: (length: 2)
             │       ├── @ StringNode (location: (946...950))
+            │       │   ├── flags: ∅
             │       │   ├── opening_loc: (946...950) = "<<-A"
             │       │   ├── content_loc: (958...960) = "o\n"
             │       │   ├── closing_loc: (960...962) = "A\n"
@@ -266,6 +287,7 @@
             │           │       │   │   ├── closing_loc: ∅
             │           │       │   │   └── unescaped: "p"
             │           │       │   └── @ StringNode (location: (962...963))
+            │           │       │       ├── flags: ∅
             │           │       │       ├── opening_loc: ∅
             │           │       │       ├── content_loc: (962...963) = "p"
             │           │       │       ├── closing_loc: ∅

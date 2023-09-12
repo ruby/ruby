@@ -22,6 +22,7 @@
         │   │   @ ArgumentsNode (location: (8...14))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (8...14))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (8...10) = "%{"
         │   │           ├── content_loc: (10...13) = "baz"
         │   │           ├── closing_loc: (13...14) = "}"
@@ -1594,6 +1595,7 @@
         │   │           │       │           │   │   @ StatementsNode (location: (881...886))
         │   │           │       │           │   │   └── body: (length: 1)
         │   │           │       │           │   │       └── @ StringNode (location: (881...886))
+        │   │           │       │           │   │           ├── flags: ∅
         │   │           │       │           │   │           ├── opening_loc: (881...882) = "\""
         │   │           │       │           │   │           ├── content_loc: (882...885) = "baz"
         │   │           │       │           │   │           ├── closing_loc: (885...886) = "\""
@@ -2132,6 +2134,7 @@
         │   │       │           │           │   @ StatementsNode (location: (1220...1223))
         │   │       │           │           │   └── body: (length: 1)
         │   │       │           │           │       └── @ StringNode (location: (1220...1223))
+        │   │       │           │           │           ├── flags: ∅
         │   │       │           │           │           ├── opening_loc: (1220...1221) = "\""
         │   │       │           │           │           ├── content_loc: (1221...1222) = " "
         │   │       │           │           │           ├── closing_loc: (1222...1223) = "\""

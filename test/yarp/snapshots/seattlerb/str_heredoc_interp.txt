@@ -23,6 +23,7 @@
             │   │   │           └── name: "x"
             │   │   └── closing_loc: (8...9) = "}"
             │   └── @ StringNode (location: (9...16))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── content_loc: (9...16) = "\nblah2\n"
             │       ├── closing_loc: ∅

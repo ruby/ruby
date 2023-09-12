@@ -20,6 +20,7 @@
         │   │           │   @ ArgumentsNode (location: (15...22))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ StringNode (location: (15...22))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (15...16) = "\""
         │   │           │           ├── content_loc: (16...21) = "Hello"
         │   │           │           ├── closing_loc: (21...22) = "\""
@@ -52,6 +53,7 @@
         │   │           │   @ ArgumentsNode (location: (41...48))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ StringNode (location: (41...48))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (41...42) = "\""
         │   │           │           ├── content_loc: (42...47) = "Hello"
         │   │           │           ├── closing_loc: (47...48) = "\""
@@ -134,6 +136,7 @@
         │   │           │   @ ArgumentsNode (location: (90...97))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ StringNode (location: (90...97))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (90...91) = "\""
         │   │           │           ├── content_loc: (91...96) = "Hello"
         │   │           │           ├── closing_loc: (96...97) = "\""
@@ -176,6 +179,7 @@
         │   │           │   @ ArgumentsNode (location: (120...127))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ StringNode (location: (120...127))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (120...121) = "\""
         │   │           │           ├── content_loc: (121...126) = "Hello"
         │   │           │           ├── closing_loc: (126...127) = "\""
@@ -270,6 +274,7 @@
         │   │           │       └── @ RescueModifierNode (location: (177...214))
         │   │           │           ├── expression:
         │   │           │           │   @ StringNode (location: (177...191))
+        │   │           │           │   ├── flags: ∅
         │   │           │           │   ├── opening_loc: (177...178) = "\""
         │   │           │           │   ├── content_loc: (178...190) = "to be caught"
         │   │           │           │   ├── closing_loc: (190...191) = "\""
@@ -280,6 +285,7 @@
         │   │           │               ├── opening_loc: (199...200) = "\""
         │   │           │               ├── parts: (length: 2)
         │   │           │               │   ├── @ StringNode (location: (200...209))
+        │   │           │               │   │   ├── flags: ∅
         │   │           │               │   │   ├── opening_loc: ∅
         │   │           │               │   │   ├── content_loc: (200...209) = "instance "
         │   │           │               │   │   ├── closing_loc: ∅
@@ -335,6 +341,7 @@
             │           │       └── @ RescueModifierNode (location: (244...278))
             │           │           ├── expression:
             │           │           │   @ StringNode (location: (244...258))
+            │           │           │   ├── flags: ∅
             │           │           │   ├── opening_loc: (244...245) = "\""
             │           │           │   ├── content_loc: (245...257) = "to be caught"
             │           │           │   ├── closing_loc: (257...258) = "\""
@@ -345,6 +352,7 @@
             │           │               ├── opening_loc: (266...267) = "\""
             │           │               ├── parts: (length: 2)
             │           │               │   ├── @ StringNode (location: (267...273))
+            │           │               │   │   ├── flags: ∅
             │           │               │   │   ├── opening_loc: ∅
             │           │               │   │   ├── content_loc: (267...273) = "class "
             │           │               │   │   ├── closing_loc: ∅

@@ -4,6 +4,7 @@
     @ StatementsNode (location: (0...13))
     └── body: (length: 2)
         ├── @ StringNode (location: (0...11))
+        │   ├── flags: ∅
         │   ├── opening_loc: (0...1) = "\""
         │   ├── content_loc: (1...10) = "\\n\\n\\n\\n#"
         │   ├── closing_loc: (10...11) = "\""

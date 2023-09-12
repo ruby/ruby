@@ -43,6 +43,7 @@
             │       │   │   │   │   └── unescaped: "d"
             │       │   │   │   ├── value:
             │       │   │   │   │   @ StringNode (location: (33...36))
+            │       │   │   │   │   ├── flags: ∅
             │       │   │   │   │   ├── opening_loc: (33...34) = "\""
             │       │   │   │   │   ├── content_loc: (34...35) = "e"
             │       │   │   │   │   ├── closing_loc: (35...36) = "\""

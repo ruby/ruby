@@ -42,6 +42,7 @@
             │       │           │           │   @ CallNode (location: (10...14))
             │       │           │           │   ├── receiver:
             │       │           │           │   │   @ StringNode (location: (10...12))
+            │       │           │           │   │   ├── flags: ∅
             │       │           │           │   │   ├── opening_loc: (10...11) = "\""
             │       │           │           │   │   ├── content_loc: (11...11) = ""
             │       │           │           │   │   ├── closing_loc: (11...12) = "\""
@@ -73,6 +74,7 @@
             │       │           │           │   @ ArgumentsNode (location: (15...17))
             │       │           │           │   └── arguments: (length: 1)
             │       │           │           │       └── @ StringNode (location: (15...17))
+            │       │           │           │           ├── flags: ∅
             │       │           │           │           ├── opening_loc: (15...16) = "\""
             │       │           │           │           ├── content_loc: (16...16) = ""
             │       │           │           │           ├── closing_loc: (16...17) = "\""
@@ -88,6 +90,7 @@
             │       │           │   │   @ StatementsNode (location: (19...21))
             │       │           │   │   └── body: (length: 1)
             │       │           │   │       └── @ StringNode (location: (19...21))
+            │       │           │   │           ├── flags: ∅
             │       │           │   │           ├── opening_loc: (19...20) = "\""
             │       │           │   │           ├── content_loc: (20...20) = ""
             │       │           │   │           ├── closing_loc: (20...21) = "\""

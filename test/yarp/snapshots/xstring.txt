@@ -12,6 +12,7 @@
         │   ├── opening_loc: (9...10) = "`"
         │   ├── parts: (length: 3)
         │   │   ├── @ StringNode (location: (10...14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (10...14) = "foo "
         │   │   │   ├── closing_loc: ∅
@@ -33,6 +34,7 @@
         │   │   │   │           └── name: "bar"
         │   │   │   └── closing_loc: (19...20) = "}"
         │   │   └── @ StringNode (location: (20...24))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (20...24) = " baz"
         │   │       ├── closing_loc: ∅

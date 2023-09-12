@@ -601,7 +601,7 @@ module YARP
     end
 
     def test_do_not_allow_multiple_codepoints_in_a_single_character_literal
-      expected = StringNode(Location(), Location(), nil, "\u0001\u0002")
+      expected = StringNode(0, Location(), Location(), nil, "\u0001\u0002")
 
       assert_errors expected, '?\u{0001 0002}', [
         ["Invalid Unicode escape sequence; multiple codepoints are not allowed in a character literal", 9..12]
@@ -615,7 +615,7 @@ module YARP
     end
 
     def test_do_not_allow_more_than_6_hexadecimal_digits_in_u_Unicode_character_notation
-      expected = StringNode(Location(), Location(), Location(), "\u0001")
+      expected = StringNode(0, Location(), Location(), Location(), "\u0001")
 
       assert_errors expected, '"\u{0000001}"', [
         ["Invalid Unicode escape sequence; maximum length is 6 digits", 4..11],
@@ -623,7 +623,7 @@ module YARP
     end
 
     def test_do_not_allow_characters_other_than_0_9_a_f_and_A_F_in_u_Unicode_character_notation
-      expected = StringNode(Location(), Location(), Location(), "\u0000z}")
+      expected = StringNode(0, Location(), Location(), Location(), "\u0000z}")
 
       assert_errors expected, '"\u{000z}"', [
         ["Invalid Unicode escape sequence", 7..7],

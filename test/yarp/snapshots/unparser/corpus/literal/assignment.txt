@@ -727,6 +727,7 @@
         │   ├── name_loc: (507...508) = "x"
         │   ├── value:
         │   │   @ StringNode (location: (511...514))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (511...513) = "%("
         │   │   ├── content_loc: (513...513) = ""
         │   │   ├── closing_loc: (513...514) = ")"
@@ -744,6 +745,7 @@
         │   │   @ ArgumentsNode (location: (519...522))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (519...522))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (519...521) = "%("
         │   │           ├── content_loc: (521...521) = ""
         │   │           ├── closing_loc: (521...522) = ")"
@@ -764,6 +766,7 @@
         │   │   @ ArgumentsNode (location: (525...535))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ StringNode (location: (525...528))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (525...527) = "%("
         │   │       │   ├── content_loc: (527...527) = ""
         │   │       │   ├── closing_loc: (527...528) = ")"
@@ -794,6 +797,7 @@
         │   │   @ ArgumentsNode (location: (538...541))
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (538...541))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (538...540) = "%("
         │   │           ├── content_loc: (540...540) = ""
         │   │           ├── closing_loc: (540...541) = ")"
@@ -820,6 +824,7 @@
         │   ├── operator_loc: (554...557) = "||="
         │   └── value:
         │       @ StringNode (location: (558...561))
+        │       ├── flags: ∅
         │       ├── opening_loc: (558...560) = "%("
         │       ├── content_loc: (560...560) = ""
         │       ├── closing_loc: (560...561) = ")"
@@ -833,6 +838,7 @@
         │   │   ├── opening_loc: (566...576) = "<<-HEREDOC"
         │   │   ├── parts: (length: 3)
         │   │   │   ├── @ StringNode (location: (577...579))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── content_loc: (577...579) = "  "
         │   │   │   │   ├── closing_loc: ∅
@@ -842,6 +848,7 @@
         │   │   │   │   ├── statements: ∅
         │   │   │   │   └── closing_loc: (581...582) = "}"
         │   │   │   └── @ StringNode (location: (582...583))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── content_loc: (582...583) = "\n"
         │   │   │       ├── closing_loc: ∅
@@ -863,6 +870,7 @@
         │   │           ├── opening_loc: (595...605) = "<<-HEREDOC"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (606...608))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (606...608) = "  "
         │   │           │   │   ├── closing_loc: ∅
@@ -872,6 +880,7 @@
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (610...611) = "}"
         │   │           │   └── @ StringNode (location: (611...612))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (611...612) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -896,6 +905,7 @@
         │   │           ├── opening_loc: (626...636) = "<<-HEREDOC"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (637...639))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (637...639) = "  "
         │   │           │   │   ├── closing_loc: ∅
@@ -905,6 +915,7 @@
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (641...642) = "}"
         │   │           │   └── @ StringNode (location: (642...643))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (642...643) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -929,6 +940,7 @@
         │   │           ├── opening_loc: (653...663) = "<<-HEREDOC"
         │   │           ├── parts: (length: 3)
         │   │           │   ├── @ StringNode (location: (673...675))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (673...675) = "  "
         │   │           │   │   ├── closing_loc: ∅
@@ -938,6 +950,7 @@
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (677...678) = "}"
         │   │           │   └── @ StringNode (location: (678...679))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── content_loc: (678...679) = "\n"
         │   │           │       ├── closing_loc: ∅
@@ -968,6 +981,7 @@
                 ├── opening_loc: (694...704) = "<<-HEREDOC"
                 ├── parts: (length: 3)
                 │   ├── @ StringNode (location: (705...707))
+                │   │   ├── flags: ∅
                 │   │   ├── opening_loc: ∅
                 │   │   ├── content_loc: (705...707) = "  "
                 │   │   ├── closing_loc: ∅
@@ -977,6 +991,7 @@
                 │   │   ├── statements: ∅
                 │   │   └── closing_loc: (709...710) = "}"
                 │   └── @ StringNode (location: (710...711))
+                │       ├── flags: ∅
                 │       ├── opening_loc: ∅
                 │       ├── content_loc: (710...711) = "\n"
                 │       ├── closing_loc: ∅

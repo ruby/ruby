@@ -11,6 +11,7 @@
         │   │   @ CallNode (location: (15...31))
         │   │   ├── receiver:
         │   │   │   @ StringNode (location: (15...25))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (15...25) = "<<-HEREDOC"
         │   │   │   ├── content_loc: (32...57) = "        very long string\n"
         │   │   │   ├── closing_loc: (57...71) = "      HEREDOC\n"

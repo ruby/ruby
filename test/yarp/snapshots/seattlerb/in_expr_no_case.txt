@@ -6,6 +6,7 @@
         └── @ MatchPredicateNode (location: (0...16))
             ├── value:
             │   @ StringNode (location: (0...6))
+            │   ├── flags: ∅
             │   ├── opening_loc: (0...1) = "'"
             │   ├── content_loc: (1...5) = "woot"
             │   ├── closing_loc: (5...6) = "'"

@@ -1280,6 +1280,7 @@
         │   │               └── @ AssocNode (location: (710...722))
         │   │                   ├── key:
         │   │                   │   @ StringNode (location: (710...715))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (710...711) = "\""
         │   │                   │   ├── content_loc: (711...714) = "baz"
         │   │                   │   ├── closing_loc: (714...715) = "\""

@@ -80,6 +80,7 @@
         │   │       ├── opening_loc: (90...92) = ":\""
         │   │       ├── parts: (length: 2)
         │   │       │   ├── @ StringNode (location: (92...95))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── opening_loc: ∅
         │   │       │   │   ├── content_loc: (92...95) = "abc"
         │   │       │   │   ├── closing_loc: ∅

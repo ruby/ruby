@@ -264,6 +264,7 @@
         │   │   @ ArrayNode (location: (170...177))
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ StringNode (location: (173...176))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── content_loc: (173...176) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -287,6 +288,7 @@
         │   │   @ ArrayNode (location: (185...192))
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ StringNode (location: (188...191))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── content_loc: (188...191) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -308,6 +310,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ StringNode (location: (200...207))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (200...203) = "%q["
         │   │   ├── content_loc: (203...206) = "foo"
         │   │   ├── closing_loc: (206...207) = "]"
@@ -327,6 +330,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ StringNode (location: (215...222))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (215...218) = "%Q["
         │   │   ├── content_loc: (218...221) = "foo"
         │   │   ├── closing_loc: (221...222) = "]"
@@ -346,6 +350,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ StringNode (location: (230...235))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (230...231) = "\""
         │   │   ├── content_loc: (231...234) = "foo"
         │   │   ├── closing_loc: (234...235) = "\""
@@ -849,6 +854,7 @@
         │   │   │   @ ArrayNode (location: (618...625))
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ StringNode (location: (621...624))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (621...624) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -859,6 +865,7 @@
         │   │   │   @ ArrayNode (location: (629...636))
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ StringNode (location: (632...635))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (632...635) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -886,6 +893,7 @@
         │   │   │   @ ArrayNode (location: (644...651))
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ StringNode (location: (647...650))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (647...650) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -896,6 +904,7 @@
         │   │   │   @ ArrayNode (location: (655...662))
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ StringNode (location: (658...661))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (658...661) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -921,12 +930,14 @@
         │   │   @ RangeNode (location: (670...688))
         │   │   ├── left:
         │   │   │   @ StringNode (location: (670...677))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (670...673) = "%q["
         │   │   │   ├── content_loc: (673...676) = "foo"
         │   │   │   ├── closing_loc: (676...677) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ StringNode (location: (681...688))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (681...684) = "%q["
         │   │   │   ├── content_loc: (684...687) = "foo"
         │   │   │   ├── closing_loc: (687...688) = "]"
@@ -950,12 +961,14 @@
         │   │   @ RangeNode (location: (696...714))
         │   │   ├── left:
         │   │   │   @ StringNode (location: (696...703))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (696...699) = "%Q["
         │   │   │   ├── content_loc: (699...702) = "foo"
         │   │   │   ├── closing_loc: (702...703) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ StringNode (location: (707...714))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (707...710) = "%Q["
         │   │   │   ├── content_loc: (710...713) = "foo"
         │   │   │   ├── closing_loc: (713...714) = "]"
@@ -979,12 +992,14 @@
         │   │   @ RangeNode (location: (722...736))
         │   │   ├── left:
         │   │   │   @ StringNode (location: (722...727))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (722...723) = "\""
         │   │   │   ├── content_loc: (723...726) = "foo"
         │   │   │   ├── closing_loc: (726...727) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ StringNode (location: (731...736))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (731...732) = "\""
         │   │   │   ├── content_loc: (732...735) = "foo"
         │   │   │   ├── closing_loc: (735...736) = "\""
@@ -1320,6 +1335,7 @@
         │   │   │   @ CallNode (location: (1030...1043))
         │   │   │   ├── receiver:
         │   │   │   │   @ StringNode (location: (1030...1035))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (1030...1031) = "\""
         │   │   │   │   ├── content_loc: (1031...1034) = "bar"
         │   │   │   │   ├── closing_loc: (1034...1035) = "\""
@@ -1331,6 +1347,7 @@
         │   │   │   │   @ ArgumentsNode (location: (1038...1043))
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ StringNode (location: (1038...1043))
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           ├── opening_loc: (1038...1039) = "\""
         │   │   │   │           ├── content_loc: (1039...1042) = "baz"
         │   │   │   │           ├── closing_loc: (1042...1043) = "\""
@@ -2536,6 +2553,7 @@
         │   │   @ ArrayNode (location: (1818...1825))
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ StringNode (location: (1821...1824))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── content_loc: (1821...1824) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -2559,6 +2577,7 @@
         │   │   @ ArrayNode (location: (1833...1840))
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ StringNode (location: (1836...1839))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── content_loc: (1836...1839) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -2580,6 +2599,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ StringNode (location: (1848...1855))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1848...1851) = "%q["
         │   │   ├── content_loc: (1851...1854) = "foo"
         │   │   ├── closing_loc: (1854...1855) = "]"
@@ -2599,6 +2619,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ StringNode (location: (1863...1870))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1863...1866) = "%Q["
         │   │   ├── content_loc: (1866...1869) = "foo"
         │   │   ├── closing_loc: (1869...1870) = "]"
@@ -2618,6 +2639,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ StringNode (location: (1878...1883))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1878...1879) = "\""
         │   │   ├── content_loc: (1879...1882) = "foo"
         │   │   ├── closing_loc: (1882...1883) = "\""
@@ -3109,6 +3131,7 @@
         │   │       │   @ ArrayNode (location: (2374...2381))
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ StringNode (location: (2377...2380))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── content_loc: (2377...2380) = "foo"
         │   │       │   │       ├── closing_loc: ∅
@@ -3139,6 +3162,7 @@
         │   │       │   @ ArrayNode (location: (2404...2411))
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ StringNode (location: (2407...2410))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── content_loc: (2407...2410) = "foo"
         │   │       │   │       ├── closing_loc: ∅
@@ -3167,6 +3191,7 @@
         │   │   └── @ InNode (location: (2431...2446))
         │   │       ├── pattern:
         │   │       │   @ StringNode (location: (2434...2441))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (2434...2437) = "%q["
         │   │       │   ├── content_loc: (2437...2440) = "foo"
         │   │       │   ├── closing_loc: (2440...2441) = "]"
@@ -3193,6 +3218,7 @@
         │   │   └── @ InNode (location: (2461...2476))
         │   │       ├── pattern:
         │   │       │   @ StringNode (location: (2464...2471))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (2464...2467) = "%Q["
         │   │       │   ├── content_loc: (2467...2470) = "foo"
         │   │       │   ├── closing_loc: (2470...2471) = "]"
@@ -3219,6 +3245,7 @@
         │   │   └── @ InNode (location: (2491...2504))
         │   │       ├── pattern:
         │   │       │   @ StringNode (location: (2494...2499))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (2494...2495) = "\""
         │   │       │   ├── content_loc: (2495...2498) = "foo"
         │   │       │   ├── closing_loc: (2498...2499) = "\""
@@ -3923,6 +3950,7 @@
         │   │       │   │       └── @ ArrayNode (location: (3210...3217))
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ StringNode (location: (3213...3216))
+        │   │       │   │           │       ├── flags: ∅
         │   │       │   │           │       ├── opening_loc: ∅
         │   │       │   │           │       ├── content_loc: (3213...3216) = "foo"
         │   │       │   │           │       ├── closing_loc: ∅
@@ -3964,6 +3992,7 @@
         │   │       │   │       └── @ ArrayNode (location: (3247...3254))
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ StringNode (location: (3250...3253))
+        │   │       │   │           │       ├── flags: ∅
         │   │       │   │           │       ├── opening_loc: ∅
         │   │       │   │           │       ├── content_loc: (3250...3253) = "foo"
         │   │       │   │           │       ├── closing_loc: ∅
@@ -4003,6 +4032,7 @@
         │   │       │   │   @ StatementsNode (location: (3284...3291))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ StringNode (location: (3284...3291))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (3284...3287) = "%q["
         │   │       │   │           ├── content_loc: (3287...3290) = "foo"
         │   │       │   │           ├── closing_loc: (3290...3291) = "]"
@@ -4040,6 +4070,7 @@
         │   │       │   │   @ StatementsNode (location: (3321...3328))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ StringNode (location: (3321...3328))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (3321...3324) = "%Q["
         │   │       │   │           ├── content_loc: (3324...3327) = "foo"
         │   │       │   │           ├── closing_loc: (3327...3328) = "]"
@@ -4077,6 +4108,7 @@
         │   │       │   │   @ StatementsNode (location: (3358...3363))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ StringNode (location: (3358...3363))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (3358...3359) = "\""
         │   │       │   │           ├── content_loc: (3359...3362) = "foo"
         │   │       │   │           ├── closing_loc: (3362...3363) = "\""

@@ -6,6 +6,7 @@
         └── @ CallNode (location: (0...22))
             ├── receiver:
             │   @ StringNode (location: (0...5))
+            │   ├── flags: ∅
             │   ├── opening_loc: (0...5) = "<<END"
             │   ├── content_loc: (7...12) = "blah\n"
             │   ├── closing_loc: (12...16) = "END\n"

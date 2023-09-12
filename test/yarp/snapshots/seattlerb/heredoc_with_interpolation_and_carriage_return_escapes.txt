@@ -7,6 +7,7 @@
             ├── opening_loc: (0...5) = "<<EOS"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (6...11))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (6...11) = "foo\\r"
             │   │   ├── closing_loc: ∅
@@ -17,6 +18,7 @@
             │   │       @ InstanceVariableReadNode (location: (12...16))
             │   │       └── name: :@bar
             │   └── @ StringNode (location: (16...17))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── content_loc: (16...17) = "\n"
             │       ├── closing_loc: ∅

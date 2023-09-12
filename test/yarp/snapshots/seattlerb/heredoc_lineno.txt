@@ -9,6 +9,7 @@
         │   ├── name_loc: (0...1) = "c"
         │   ├── value:
         │   │   @ StringNode (location: (4...11))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (4...11) = "<<'CCC'"
         │   │   ├── content_loc: (12...30) = "line2\nline3\nline4\n"
         │   │   ├── closing_loc: (30...34) = "CCC\n"

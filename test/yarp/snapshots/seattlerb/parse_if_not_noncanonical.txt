@@ -40,6 +40,7 @@
             │   @ StatementsNode (location: (21...26))
             │   └── body: (length: 1)
             │       └── @ StringNode (location: (21...26))
+            │           ├── flags: ∅
             │           ├── opening_loc: (21...22) = "'"
             │           ├── content_loc: (22...25) = "foo"
             │           ├── closing_loc: (25...26) = "'"
@@ -51,6 +52,7 @@
             │   │   @ StatementsNode (location: (32...37))
             │   │   └── body: (length: 1)
             │   │       └── @ StringNode (location: (32...37))
+            │   │           ├── flags: ∅
             │   │           ├── opening_loc: (32...33) = "'"
             │   │           ├── content_loc: (33...36) = "bar"
             │   │           ├── closing_loc: (36...37) = "'"

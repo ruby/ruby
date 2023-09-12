@@ -32,6 +32,7 @@
         │   ├── opening_loc: (19...21) = ":\""
         │   ├── parts: (length: 2)
         │   │   ├── @ StringNode (location: (21...24))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (21...24) = "abc"
         │   │   │   ├── closing_loc: ∅
@@ -198,6 +199,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── parts: (length: 2)
         │   │   │   │   ├── @ StringNode (location: (165...166))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   ├── content_loc: (165...166) = "b"
         │   │   │   │   │   ├── closing_loc: ∅
@@ -223,6 +225,7 @@
         │   │   │   │   │   │           └── flags: decimal
         │   │   │   │   │   └── closing_loc: (174...175) = "}"
         │   │   │   │   └── @ StringNode (location: (175...176))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── content_loc: (175...176) = "c"
         │   │   │   │       ├── closing_loc: ∅
@@ -232,6 +235,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── parts: (length: 3)
         │   │       │   ├── @ StringNode (location: (177...178))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── opening_loc: ∅
         │   │       │   │   ├── content_loc: (177...178) = "d"
         │   │       │   │   ├── closing_loc: ∅
@@ -245,6 +249,7 @@
         │   │       │   │   │           └── flags: decimal
         │   │       │   │   └── closing_loc: (181...182) = "}"
         │   │       │   └── @ StringNode (location: (182...183))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── opening_loc: ∅
         │   │       │       ├── content_loc: (182...183) = "f"
         │   │       │       ├── closing_loc: ∅

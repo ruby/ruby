@@ -20,6 +20,7 @@
         │   │           │   @ ArgumentsNode (location: (6...8))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ StringNode (location: (6...8))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── opening_loc: (6...7) = "'"
         │   │           │           ├── content_loc: (7...7) = ""
         │   │           │           ├── closing_loc: (7...8) = "'"

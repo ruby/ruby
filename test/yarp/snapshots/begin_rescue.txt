@@ -408,6 +408,7 @@
         │   │   └── end_keyword_loc: (319...322) = "end"
         │   └── end_keyword_loc: (319...322) = "end"
         ├── @ StringNode (location: (324...330))
+        │   ├── flags: ∅
         │   ├── opening_loc: (324...326) = "%!"
         │   ├── content_loc: (326...329) = "abc"
         │   ├── closing_loc: (329...330) = "!"

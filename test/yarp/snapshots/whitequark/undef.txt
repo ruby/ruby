@@ -19,6 +19,7 @@
             │       ├── opening_loc: (17...19) = ":\""
             │       ├── parts: (length: 2)
             │       │   ├── @ StringNode (location: (19...22))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── content_loc: (19...22) = "foo"
             │       │   │   ├── closing_loc: ∅

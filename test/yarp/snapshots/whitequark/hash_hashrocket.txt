@@ -35,6 +35,7 @@
             │       │   └── unescaped: "foo"
             │       ├── value:
             │       │   @ StringNode (location: (30...35))
+            │       │   ├── flags: ∅
             │       │   ├── opening_loc: (30...31) = "\""
             │       │   ├── content_loc: (31...34) = "bar"
             │       │   ├── closing_loc: (34...35) = "\""

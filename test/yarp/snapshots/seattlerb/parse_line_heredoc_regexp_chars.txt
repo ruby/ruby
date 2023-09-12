@@ -9,6 +9,7 @@
         │   ├── name_loc: (6...12) = "string"
         │   ├── value:
         │   │   @ StringNode (location: (15...22))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (15...22) = "<<-\"^D\""
         │   │   ├── content_loc: (23...48) = "        very long string\n"
         │   │   ├── closing_loc: (48...57) = "      ^D\n"

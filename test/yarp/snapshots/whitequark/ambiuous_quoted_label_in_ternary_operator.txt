@@ -38,6 +38,7 @@
             │           │   @ ArgumentsNode (location: (8...10))
             │           │   └── arguments: (length: 1)
             │           │       └── @ StringNode (location: (8...10))
+            │           │           ├── flags: ∅
             │           │           ├── opening_loc: (8...9) = "'"
             │           │           ├── content_loc: (9...9) = ""
             │           │           ├── closing_loc: (9...10) = "'"

@@ -6,6 +6,7 @@
         └── @ ArrayNode (location: (0...30))
             ├── elements: (length: 5)
             │   ├── @ StringNode (location: (4...5))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (4...5) = "1"
             │   │   ├── closing_loc: ∅
@@ -19,6 +20,7 @@
             │   │   │       │   @ StatementsNode (location: (8...11))
             │   │   │       │   └── body: (length: 1)
             │   │   │       │       └── @ StringNode (location: (8...11))
+            │   │   │       │           ├── flags: ∅
             │   │   │       │           ├── opening_loc: (8...11) = "<<A"
             │   │   │       │           ├── content_loc: (15...17) = "2\n"
             │   │   │       │           ├── closing_loc: (17...19) = "A\n"
@@ -26,16 +28,19 @@
             │   │   │       └── closing_loc: (11...12) = "}"
             │   │   └── closing_loc: ∅
             │   ├── @ StringNode (location: (13...14))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (13...14) = "3"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "3"
             │   ├── @ StringNode (location: (25...26))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (25...26) = "4"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "4"
             │   └── @ StringNode (location: (27...28))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── content_loc: (27...28) = "5"
             │       ├── closing_loc: ∅

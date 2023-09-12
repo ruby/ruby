@@ -745,16 +745,19 @@
         ├── @ ArrayNode (location: (350...367))
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (353...356))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (353...356) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
         │   │   ├── @ StringNode (location: (357...360))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (357...360) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
         │   │   └── @ StringNode (location: (361...366))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (361...366) = "three"
         │   │       ├── closing_loc: ∅
@@ -788,16 +791,19 @@
         ├── @ ArrayNode (location: (408...425))
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (411...414))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (411...414) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
         │   │   ├── @ StringNode (location: (415...418))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (415...418) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
         │   │   └── @ StringNode (location: (419...424))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (419...424) = "three"
         │   │       ├── closing_loc: ∅
@@ -831,16 +837,19 @@
         ├── @ ArrayNode (location: (466...483))
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (469...472))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (469...472) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
         │   │   ├── @ StringNode (location: (473...476))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (473...476) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
         │   │   └── @ StringNode (location: (477...482))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (477...482) = "three"
         │   │       ├── closing_loc: ∅
@@ -855,6 +864,7 @@
         └── @ ArrayNode (location: (504...511))
             ├── elements: (length: 1)
             │   └── @ StringNode (location: (507...510))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── content_loc: (507...510) = "\\C:"
             │       ├── closing_loc: ∅

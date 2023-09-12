@@ -4197,10 +4197,16 @@ yp_string_concat_node_create(yp_parser_t *parser, yp_node_t *left, yp_node_t *ri
 static yp_string_node_t *
 yp_string_node_create(yp_parser_t *parser, const yp_token_t *opening, const yp_token_t *content, const yp_token_t *closing) {
     yp_string_node_t *node = YP_ALLOC_NODE(parser, yp_string_node_t);
+    yp_node_flags_t flags = 0;
+
+    if (parser->frozen_string_literal) {
+        flags = YP_NODE_FLAG_STATIC_LITERAL | YP_STRING_FLAGS_FROZEN;
+    }
 
     *node = (yp_string_node_t) {
         {
             .type = YP_STRING_NODE,
+            .flags = flags,
             .location = {
                 .start = (opening->type == YP_TOKEN_NOT_PROVIDED ? content->start : opening->start),
                 .end = (closing->type == YP_TOKEN_NOT_PROVIDED ? content->end : closing->end)
@@ -4361,10 +4367,16 @@ yp_string_node_to_symbol_node(yp_parser_t *parser, yp_string_node_t *node, const
 static yp_string_node_t *
 yp_symbol_node_to_string_node(yp_parser_t *parser, yp_symbol_node_t *node) {
     yp_string_node_t *new_node = YP_ALLOC_NODE(parser, yp_string_node_t);
+    yp_node_flags_t flags = 0;
+
+    if (parser->frozen_string_literal) {
+        flags = YP_NODE_FLAG_STATIC_LITERAL | YP_STRING_FLAGS_FROZEN;
+    }
 
     *new_node = (yp_string_node_t) {
         {
             .type = YP_STRING_NODE,
+            .flags = flags,
             .location = node->base.location
         },
         .opening_loc = node->opening_loc,
@@ -5111,7 +5123,8 @@ parser_lex_frozen_string_literal_comment(yp_parser_t *parser) {
 
     while ((cursor = yp_memchr(cursor, 'f', (size_t) (cursor_limit - cursor), parser->encoding_changed, &parser->encoding)) != NULL) {
         if (memcmp(cursor, "frozen_string_literal", key_length) == 0) {
-            cursor += yp_strspn_inline_whitespace(cursor + key_length, end - (cursor + key_length));
+            cursor += key_length;
+            cursor += yp_strspn_inline_whitespace(cursor, end - cursor);
 
             if (*cursor == ':' || *cursor == '=') {
                 cursor++;
@@ -6174,7 +6187,7 @@ parser_lex(yp_parser_t *parser) {
                 /* fallthrough */
                 case '\r':
                 case '\n': {
-                    parser->semantic_token_seen = semantic_token_seen;
+                    parser->semantic_token_seen = semantic_token_seen & 0x1;
                     size_t eol_length = match_eol_at(parser, parser->current.end - 1);
 
                     if (eol_length) {

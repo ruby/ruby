@@ -71,6 +71,7 @@
             │           │       │   │   └── name: :B
             │           │       │   └── delimiter_loc: (37...39) = "::"
             │           │       └── @ StringNode (location: (42...44))
+            │           │           ├── flags: ∅
             │           │           ├── opening_loc: (42...43) = "'"
             │           │           ├── content_loc: (43...43) = ""
             │           │           ├── closing_loc: (43...44) = "'"

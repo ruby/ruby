@@ -77,11 +77,13 @@
         │   │       │   @ ArrayNode (location: (58...65))
         │   │       │   ├── elements: (length: 2)
         │   │       │   │   ├── @ StringNode (location: (61...62))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── content_loc: (61...62) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   └── @ StringNode (location: (63...64))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── content_loc: (63...64) = "b"
         │   │       │   │       ├── closing_loc: ∅
@@ -137,11 +139,13 @@
         │   │       │   @ ArrayNode (location: (106...113))
         │   │       │   ├── elements: (length: 2)
         │   │       │   │   ├── @ StringNode (location: (109...110))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── content_loc: (109...110) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   └── @ StringNode (location: (111...112))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── content_loc: (111...112) = "b"
         │   │       │   │       ├── closing_loc: ∅

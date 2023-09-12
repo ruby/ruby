@@ -269,6 +269,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (216...219) = "end"
         ├── @ StringNode (location: (221...227))
+        │   ├── flags: ∅
         │   ├── opening_loc: (221...223) = "%,"
         │   ├── content_loc: (223...226) = "abc"
         │   ├── closing_loc: (226...227) = ","
@@ -504,6 +505,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (386...389) = "end"
         ├── @ StringNode (location: (391...397))
+        │   ├── flags: ∅
         │   ├── opening_loc: (391...393) = "%."
         │   ├── content_loc: (393...396) = "abc"
         │   ├── closing_loc: (396...397) = "."
@@ -1183,6 +1185,7 @@
         │   │           ├── opening_loc: (917...918) = "\""
         │   │           ├── parts: (length: 2)
         │   │           │   ├── @ StringNode (location: (918...921))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (918...921) = "foo"
         │   │           │   │   ├── closing_loc: ∅

@@ -222,6 +222,7 @@
         │   │   │               │           │   @ ArgumentsNode (location: (203...208))
         │   │   │               │           │   └── arguments: (length: 1)
         │   │   │               │           │       └── @ StringNode (location: (203...208))
+        │   │   │               │           │           ├── flags: ∅
         │   │   │               │           │           ├── opening_loc: (203...204) = "\""
         │   │   │               │           │           ├── content_loc: (204...207) = "baz"
         │   │   │               │           │           ├── closing_loc: (207...208) = "\""

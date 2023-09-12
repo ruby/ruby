@@ -114,11 +114,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (110...113) = "end"
         ├── @ StringNode (location: (115...121))
+        │   ├── flags: ∅
         │   ├── opening_loc: (115...117) = "%{"
         │   ├── content_loc: (117...120) = "abc"
         │   ├── closing_loc: (120...121) = "}"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (123...129))
+        │   ├── flags: ∅
         │   ├── opening_loc: (123...125) = "%\""
         │   ├── content_loc: (125...128) = "abc"
         │   ├── closing_loc: (128...129) = "\""
