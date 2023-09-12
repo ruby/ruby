@@ -157,7 +157,7 @@ yp_static_node_literal_p(yp_node_t *node)
       case YP_SOURCE_FILE_NODE:
       case YP_SOURCE_LINE_NODE:
       case YP_SYMBOL_NODE:
-      case YP_NODE_TRUE_NODE:
+      case YP_TRUE_NODE:
         return true;
       default:
         return false;
@@ -170,7 +170,7 @@ yp_static_literal_value(yp_node_t *node)
     switch (YP_NODE_TYPE(node)) {
       case YP_NIL_NODE:
         return Qnil;
-      case YP_NODE_TRUE_NODE:
+      case YP_TRUE_NODE:
         return Qtrue;
       case YP_FALSE_NODE:
         return Qfalse;
@@ -254,7 +254,7 @@ again:
       case YP_REGULAR_EXPRESSION_NODE:
       case YP_STRING_NODE:
       case YP_SYMBOL_NODE:
-      case YP_NODE_TRUE_NODE:
+      case YP_TRUE_NODE:
         ADD_INSNL(ret, &dummy_line_node, jump, then_label);
         return;
         // TODO: Several more nodes in this case statement
@@ -1985,7 +1985,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
-      case YP_NODE_TRUE_NODE:
+      case YP_TRUE_NODE:
         if (!popped) {
             ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
         }
