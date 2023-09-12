@@ -21,67 +21,67 @@
 0030 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0032 pop
 0033 putself                                                          (  10)
-0034 putobject                              "x\ny\n"
+0034 putstring                              "x\ny\n"
 0036 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0038 pop
 0039 putself                                                          (  15)
-0040 putobject                              "\tx\ny\n"
+0040 putstring                              "\tx\ny\n"
 0042 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0044 pop
 0045 putself                                                          (  20)
-0046 putobject                              "x\ny\n"
+0046 putstring                              "x\ny\n"
 0048 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0050 pop
 0051 putself                                                          (  25)
-0052 putobject                              "\tx\ny\n"
+0052 putstring                              "\tx\ny\n"
 0054 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0056 pop
 0057 putself                                                          (  30)
-0058 putobject                              "  x\n\ty\n"
+0058 putstring                              "  x\n\ty\n"
 0060 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0062 pop
 0063 putself                                                          (  35)
-0064 putobject                              "  x\n  y\n"
+0064 putstring                              "  x\n  y\n"
 0066 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
 0068 pop
 0069 putself                                                          (  40)
-0070 putnil
-0071 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0073 pop
-0074 putself                                                          (  43)
-0075 putobject                              "  x\n\ny\n"
-0077 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0079 pop
-0080 putself                                                          (  49)
-0081 putobject                              "x\n  \ny\n"
-0083 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0085 pop
-0086 putself                                                          (  55)
-0087 putobject                              "x\n  y\n"
-0089 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0091 pop
-0092 putself                                                          (  60)
-0093 putobject                              "x\n"
-0095 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0097 pop
-0098 putself                                                          (  64)
-0099 putobject                              "\xC3\xB0\n"
-0101 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0103 pop
-0104 putself                                                          (  68)
-0105 putnil
-0106 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0108 pop
-0109 putself                                                          (  71)
-0110 putself
-0111 putobject                              "  x\n"
-0113 putself                                                          (  74)
-0114 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0116 dup                                                              (  71)
-0117 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0119 anytostring
-0120 putobject                              "\n"
-0122 concatstrings                          3
-0124 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0126 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
-0128 leave
+0070 putstring                              ""
+0072 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0074 pop
+0075 putself                                                          (  43)
+0076 putstring                              "  x\n\ny\n"
+0078 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0080 pop
+0081 putself                                                          (  49)
+0082 putstring                              "x\n  \ny\n"
+0084 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0086 pop
+0087 putself                                                          (  55)
+0088 putstring                              "x\n  y\n"
+0090 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0092 pop
+0093 putself                                                          (  60)
+0094 putstring                              "x\n"
+0096 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0098 pop
+0099 putself                                                          (  64)
+0100 putstring                              "\xC3\xB0\n"
+0102 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0104 pop
+0105 putself                                                          (  68)
+0106 putstring                              ""
+0108 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0110 pop
+0111 putself                                                          (  71)
+0112 putself
+0113 putobject                              "  x\n"
+0115 putself                                                          (  74)
+0116 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0118 dup                                                              (  71)
+0119 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0121 anytostring
+0122 putobject                              "\n"
+0124 concatstrings                          3
+0126 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0128 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0130 leave

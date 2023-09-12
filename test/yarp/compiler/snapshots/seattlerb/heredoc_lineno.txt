@@ -1,7 +1,7 @@
 == disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,6)>
 local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
 [ 2] c@0        [ 1] d@1
-0000 putobject                              "line2\nline3\nline4\n"
+0000 putstring                              "line2\nline3\nline4\n"
 0002 setlocal_WC_0                          c@0
 0004 putobject                              42                        (   6)
 0006 dup

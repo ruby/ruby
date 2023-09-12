@@ -1,6 +1,6 @@
 == disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(3,8)>
 0000 putself
-0001 putobject                              "  a\n"
+0001 putstring                              "  a\n"
 0003 putobject                              "b\n"
 0005 putobject                              "  c"
 0007 concatstrings                          2

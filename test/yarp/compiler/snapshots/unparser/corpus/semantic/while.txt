@@ -65,15 +65,15 @@ local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 0092 putnil
 0093 pop
 0094 putself                                                          (  15)
-0095 putnil
-0096 send                                   <calldata!mid:b, argc:1>, block in <compiled>
-0099 branchunless                           94
-0101 putnil                                                           (  14)
-0102 pop
-0103 putspecialobject                       3                         (  19)
-0105 putnil
-0106 defineclass                            :A, <module:A>, 2
-0110 leave
+0095 putstring                              ""
+0097 send                                   <calldata!mid:b, argc:1>, block in <compiled>
+0100 branchunless                           94
+0102 putnil                                                           (  14)
+0103 pop
+0104 putspecialobject                       3                         (  19)
+0106 putnil
+0107 defineclass                            :A, <module:A>, 2
+0111 leave
 
 == disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,11)-(1,0)>
 0000 putnil                                 [Bc]

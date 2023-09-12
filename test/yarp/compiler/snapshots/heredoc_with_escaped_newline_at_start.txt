@@ -1,11 +1,11 @@
 == disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,25)>
-0000 putnil
-0001 putobject                              /^ {/
-0003 putstring                              ""
-0005 opt_send_without_block                 <calldata!mid:gsub, argc:2, ARGS_SIMPLE>
-0007 pop
-0008 putnil                                                           (   4)
-0009 putobject                              /^ {/
-0011 putstring                              ""
-0013 opt_send_without_block                 <calldata!mid:gsub, argc:2, ARGS_SIMPLE>
-0015 leave
+0000 putstring                              ""
+0002 putobject                              /^ {/
+0004 putstring                              ""
+0006 opt_send_without_block                 <calldata!mid:gsub, argc:2, ARGS_SIMPLE>
+0008 pop
+0009 putstring                              ""                        (   4)
+0011 putobject                              /^ {/
+0013 putstring                              ""
+0015 opt_send_without_block                 <calldata!mid:gsub, argc:2, ARGS_SIMPLE>
+0017 leave

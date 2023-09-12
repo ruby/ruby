@@ -1,4 +1,3 @@
 == disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(7,4)>
-0000 putobject                              "    1     2\n    3\n"
-0002 putobject                              "1 2\n3\n"                (   7)
-0004 leave
+0000 putstring                              "1 2\n3\n"                (   7)
+0002 leave
