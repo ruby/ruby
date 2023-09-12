@@ -14,14 +14,10 @@
         │   └── closing_loc: (16...17) = "]"
         └── @ ArrayNode (location: (19...47))
             ├── elements: (length: 1)
-            │   └── @ InterpolatedStringNode (location: (20...27))
+            │   └── @ StringNode (location: (20...27))
             │       ├── opening_loc: (20...27) = "<<-FILE"
-            │       ├── parts: (length: 1)
-            │       │   └── @ StringNode (location: (29...41))
-            │       │       ├── opening_loc: ∅
-            │       │       ├── content_loc: (29...41) = "  some text\n"
-            │       │       ├── closing_loc: ∅
-            │       │       └── unescaped: "  some text\n"
-            │       └── closing_loc: (41...46) = "FILE\n"
+            │       ├── content_loc: (29...41) = "  some text\n"
+            │       ├── closing_loc: (41...46) = "FILE\n"
+            │       └── unescaped: "  some text\n"
             ├── opening_loc: (19...20) = "["
             └── closing_loc: (46...47) = "]"

@@ -37,15 +37,11 @@
         │   │       └── unescaped: "ab"
         │   ├── opening_loc: (28...31) = "%I{"
         │   └── closing_loc: (36...37) = "}"
-        ├── @ InterpolatedStringNode (location: (41...45))
+        ├── @ StringNode (location: (41...45))
         │   ├── opening_loc: (41...45) = "<<-E"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (47...70))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (47...70) = "    1 \\\r\n    2\r\n    3\r\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "    1     2\r\n    3\r\n"
-        │   └── closing_loc: (70...73) = "E\r\n"
+        │   ├── content_loc: (47...70) = "    1 \\\r\n    2\r\n    3\r\n"
+        │   ├── closing_loc: (70...73) = "E\r\n"
+        │   └── unescaped: "    1     2\r\n    3\r\n"
         ├── @ LocalVariableWriteNode (location: (75...84))
         │   ├── name: :x
         │   ├── depth: 0
@@ -72,15 +68,11 @@
             │   │   └── arguments: (length: 1)
             │   │       └── @ CallNode (location: (96...107))
             │   │           ├── receiver:
-            │   │           │   @ InterpolatedStringNode (location: (96...102))
+            │   │           │   @ StringNode (location: (96...102))
             │   │           │   ├── opening_loc: (96...102) = "<<~EOF"
-            │   │           │   ├── parts: (length: 1)
-            │   │           │   │   └── @ StringNode (location: (110...121))
-            │   │           │   │       ├── opening_loc: ∅
-            │   │           │   │       ├── content_loc: (110...121) = "\r\n    baz\r\n"
-            │   │           │   │       ├── closing_loc: ∅
-            │   │           │   │       └── unescaped: "\nbaz\r\n"
-            │   │           │   └── closing_loc: (121...128) = "  EOF\r\n"
+            │   │           │   ├── content_loc: (110...121) = "\r\n    baz\r\n"
+            │   │           │   ├── closing_loc: (121...128) = "  EOF\r\n"
+            │   │           │   └── unescaped: "\nbaz\r\n"
             │   │           ├── call_operator_loc: (102...103) = "."
             │   │           ├── message_loc: (103...107) = "chop"
             │   │           ├── opening_loc: ∅

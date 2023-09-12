@@ -8,13 +8,9 @@
             ├── depth: 0
             ├── name_loc: (0...3) = "str"
             ├── value:
-            │   @ InterpolatedStringNode (location: (6...12))
+            │   @ StringNode (location: (6...12))
             │   ├── opening_loc: (6...12) = "<<-XXX"
-            │   ├── parts: (length: 1)
-            │   │   └── @ StringNode (location: (14...30))
-            │   │       ├── opening_loc: ∅
-            │   │       ├── content_loc: (14...30) = "before\\\r\nafter\r\n"
-            │   │       ├── closing_loc: ∅
-            │   │       └── unescaped: "beforeafter\r\n"
-            │   └── closing_loc: (30...35) = "XXX\r\n"
+            │   ├── content_loc: (14...30) = "before\\\r\nafter\r\n"
+            │   ├── closing_loc: (30...35) = "XXX\r\n"
+            │   └── unescaped: "beforeafter\r\n"
             └── operator_loc: (4...5) = "="

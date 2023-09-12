@@ -96,33 +96,21 @@
         │   ├── value_loc: (134...138) = "a\\\nb"
         │   ├── closing_loc: (138...139) = "'"
         │   └── unescaped: "ab"
-        ├── @ InterpolatedStringNode (location: (141...150))
+        ├── @ StringNode (location: (141...150))
         │   ├── opening_loc: (141...150) = "<<-\"HERE\""
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (151...156))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (151...156) = "a\\\nb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab\n"
-        │   └── closing_loc: (156...161) = "HERE\n"
-        ├── @ InterpolatedStringNode (location: (162...171))
+        │   ├── content_loc: (151...156) = "a\\\nb\n"
+        │   ├── closing_loc: (156...161) = "HERE\n"
+        │   └── unescaped: "ab\n"
+        ├── @ StringNode (location: (162...171))
         │   ├── opening_loc: (162...171) = "<<-'HERE'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (172...177))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (172...177) = "a\\\nb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\\\nb\n"
-        │   └── closing_loc: (177...182) = "HERE\n"
-        ├── @ InterpolatedXStringNode (location: (183...192))
+        │   ├── content_loc: (172...177) = "a\\\nb\n"
+        │   ├── closing_loc: (177...182) = "HERE\n"
+        │   └── unescaped: "a\\\nb\n"
+        ├── @ XStringNode (location: (183...192))
         │   ├── opening_loc: (183...192) = "<<-`HERE`"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (193...198))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (193...198) = "a\\\nb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab\n"
-        │   └── closing_loc: (198...203) = "HERE\n"
+        │   ├── content_loc: (193...198) = "a\\\nb\n"
+        │   ├── closing_loc: (198...203) = "HERE\n"
+        │   └── unescaped: "ab\n"
         └── @ XStringNode (location: (204...210))
             ├── opening_loc: (204...205) = "`"
             ├── content_loc: (205...209) = "a\\\nb"

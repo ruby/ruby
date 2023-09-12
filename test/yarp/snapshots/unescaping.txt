@@ -23,12 +23,8 @@
         │   ├── content_loc: (23...29) = "\\c\#{1}"
         │   ├── closing_loc: (29...30) = "\""
         │   └── unescaped: "\u0003{1}"
-        └── @ InterpolatedStringNode (location: (32...39))
+        └── @ StringNode (location: (32...39))
             ├── opening_loc: (32...39) = "<<~HERE"
-            ├── parts: (length: 1)
-            │   └── @ StringNode (location: (40...50))
-            │       ├── opening_loc: ∅
-            │       ├── content_loc: (40...50) = "   \\c\#{1}\n"
-            │       ├── closing_loc: ∅
-            │       └── unescaped: "\u0003{1}\n"
-            └── closing_loc: (50...55) = "HERE\n"
+            ├── content_loc: (40...50) = "   \\c\#{1}\n"
+            ├── closing_loc: (50...55) = "HERE\n"
+            └── unescaped: "\u0003{1}\n"

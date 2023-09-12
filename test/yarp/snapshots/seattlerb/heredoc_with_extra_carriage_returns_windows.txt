@@ -3,12 +3,8 @@
 └── statements:
     @ StatementsNode (location: (0...5))
     └── body: (length: 1)
-        └── @ InterpolatedStringNode (location: (0...5))
+        └── @ StringNode (location: (0...5))
             ├── opening_loc: (0...5) = "<<EOS"
-            ├── parts: (length: 1)
-            │   └── @ StringNode (location: (7...22))
-            │       ├── opening_loc: ∅
-            │       ├── content_loc: (7...22) = "foo\rbar\r\r\nbaz\r\n"
-            │       ├── closing_loc: ∅
-            │       └── unescaped: "foo\rbar\r\r\nbaz\r\n"
-            └── closing_loc: (22...27) = "EOS\r\n"
+            ├── content_loc: (7...22) = "foo\rbar\r\r\nbaz\r\n"
+            ├── closing_loc: (22...27) = "EOS\r\n"
+            └── unescaped: "foo\rbar\r\r\nbaz\r\n"

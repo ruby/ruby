@@ -13,15 +13,11 @@
             │   │   │   │   ├── statements:
             │   │   │   │   │   @ StatementsNode (location: (8...11))
             │   │   │   │   │   └── body: (length: 1)
-            │   │   │   │   │       └── @ InterpolatedStringNode (location: (8...11))
+            │   │   │   │   │       └── @ StringNode (location: (8...11))
             │   │   │   │   │           ├── opening_loc: (8...11) = "<<B"
-            │   │   │   │   │           ├── parts: (length: 1)
-            │   │   │   │   │           │   └── @ StringNode (location: (13...15))
-            │   │   │   │   │           │       ├── opening_loc: ∅
-            │   │   │   │   │           │       ├── content_loc: (13...15) = "b\n"
-            │   │   │   │   │           │       ├── closing_loc: ∅
-            │   │   │   │   │           │       └── unescaped: "b\n"
-            │   │   │   │   │           └── closing_loc: (15...17) = "B\n"
+            │   │   │   │   │           ├── content_loc: (13...15) = "b\n"
+            │   │   │   │   │           ├── closing_loc: (15...17) = "B\n"
+            │   │   │   │   │           └── unescaped: "b\n"
             │   │   │   │   └── closing_loc: (11...12) = "}"
             │   │   │   ├── @ StringNode (location: (12...13))
             │   │   │   │   ├── opening_loc: ∅

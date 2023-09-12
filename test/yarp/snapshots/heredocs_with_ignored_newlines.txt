@@ -3,16 +3,13 @@
 └── statements:
     @ StatementsNode (location: (0...23))
     └── body: (length: 2)
-        ├── @ InterpolatedStringNode (location: (0...7))
+        ├── @ StringNode (location: (0...7))
         │   ├── opening_loc: (0...7) = "<<-HERE"
-        │   ├── parts: (length: 0)
-        │   └── closing_loc: (9...14) = "HERE\n"
-        └── @ InterpolatedStringNode (location: (15...23))
+        │   ├── content_loc: (7...9) = "\\\n"
+        │   ├── closing_loc: (9...14) = "HERE\n"
+        │   └── unescaped: ""
+        └── @ StringNode (location: (15...23))
             ├── opening_loc: (15...23) = "<<~THERE"
-            ├── parts: (length: 1)
-            │   └── @ StringNode (location: (25...100))
-            │       ├── opening_loc: ∅
-            │       ├── content_loc: (25...100) = "  way over\n  <<HERE\n    not here\n  HERE\n\n  <<~BUT\\\n    but\n  BUT\n    there\n"
-            │       ├── closing_loc: ∅
-            │       └── unescaped: "way over\n<<HERE\n  not here\nHERE\n\n<<~BUT  but\nBUT\n  there\n"
-            └── closing_loc: (100...106) = "THERE\n"
+            ├── content_loc: (25...100) = "  way over\n  <<HERE\n    not here\n  HERE\n\n  <<~BUT\\\n    but\n  BUT\n    there\n"
+            ├── closing_loc: (100...106) = "THERE\n"
+            └── unescaped: "way over\n<<HERE\n  not here\nHERE\n\n<<~BUT  but\nBUT\n  there\n"

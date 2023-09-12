@@ -11,10 +11,11 @@
             ├── arguments:
             │   @ ArgumentsNode (location: (2...10))
             │   └── arguments: (length: 1)
-            │       └── @ InterpolatedStringNode (location: (2...10))
+            │       └── @ StringNode (location: (2...10))
             │           ├── opening_loc: (2...10) = "<<-TABLE"
-            │           ├── parts: (length: 0)
-            │           └── closing_loc: (14...20) = "TABLE\n"
+            │           ├── content_loc: (10...14) = " do\n"
+            │           ├── closing_loc: (14...20) = "TABLE\n"
+            │           └── unescaped: ""
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (11...23))

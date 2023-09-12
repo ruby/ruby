@@ -199,57 +199,33 @@
         │   ├── content_loc: (346...350) = "\#@@1"
         │   ├── closing_loc: (350...351) = "`"
         │   └── unescaped: "\#@@1"
-        ├── @ InterpolatedStringNode (location: (354...363))
+        ├── @ StringNode (location: (354...363))
         │   ├── opening_loc: (354...363) = "<<-\"HERE\""
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (364...368))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (364...368) = "\#@1\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\#@1\n"
-        │   └── closing_loc: (368...373) = "HERE\n"
-        ├── @ InterpolatedStringNode (location: (374...383))
+        │   ├── content_loc: (364...368) = "\#@1\n"
+        │   ├── closing_loc: (368...373) = "HERE\n"
+        │   └── unescaped: "\#@1\n"
+        ├── @ StringNode (location: (374...383))
         │   ├── opening_loc: (374...383) = "<<-\"HERE\""
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (384...389))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (384...389) = "\#@@1\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\#@@1\n"
-        │   └── closing_loc: (389...394) = "HERE\n"
-        ├── @ InterpolatedStringNode (location: (395...404))
+        │   ├── content_loc: (384...389) = "\#@@1\n"
+        │   ├── closing_loc: (389...394) = "HERE\n"
+        │   └── unescaped: "\#@@1\n"
+        ├── @ StringNode (location: (395...404))
         │   ├── opening_loc: (395...404) = "<<-'HERE'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (405...409))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (405...409) = "\#@1\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\#@1\n"
-        │   └── closing_loc: (409...414) = "HERE\n"
-        ├── @ InterpolatedStringNode (location: (415...424))
+        │   ├── content_loc: (405...409) = "\#@1\n"
+        │   ├── closing_loc: (409...414) = "HERE\n"
+        │   └── unescaped: "\#@1\n"
+        ├── @ StringNode (location: (415...424))
         │   ├── opening_loc: (415...424) = "<<-'HERE'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (425...430))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (425...430) = "\#@@1\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\#@@1\n"
-        │   └── closing_loc: (430...435) = "HERE\n"
-        ├── @ InterpolatedXStringNode (location: (436...445))
+        │   ├── content_loc: (425...430) = "\#@@1\n"
+        │   ├── closing_loc: (430...435) = "HERE\n"
+        │   └── unescaped: "\#@@1\n"
+        ├── @ XStringNode (location: (436...445))
         │   ├── opening_loc: (436...445) = "<<-`HERE`"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (446...450))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (446...450) = "\#@1\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\#@1\n"
-        │   └── closing_loc: (450...455) = "HERE\n"
-        └── @ InterpolatedXStringNode (location: (456...465))
+        │   ├── content_loc: (446...450) = "\#@1\n"
+        │   ├── closing_loc: (450...455) = "HERE\n"
+        │   └── unescaped: "\#@1\n"
+        └── @ XStringNode (location: (456...465))
             ├── opening_loc: (456...465) = "<<-`HERE`"
-            ├── parts: (length: 1)
-            │   └── @ StringNode (location: (466...471))
-            │       ├── opening_loc: ∅
-            │       ├── content_loc: (466...471) = "\#@@1\n"
-            │       ├── closing_loc: ∅
-            │       └── unescaped: "\#@@1\n"
-            └── closing_loc: (471...476) = "HERE\n"
+            ├── content_loc: (466...471) = "\#@@1\n"
+            ├── closing_loc: (471...476) = "HERE\n"
+            └── unescaped: "\#@@1\n"

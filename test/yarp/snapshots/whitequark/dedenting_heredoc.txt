@@ -90,15 +90,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (58...62))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (58...62))
+        │   │       └── @ StringNode (location: (58...62))
         │   │           ├── opening_loc: (58...62) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (63...76))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (63...76) = "\tx\n        y\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "x\ny\n"
-        │   │           └── closing_loc: (76...78) = "E\n"
+        │   │           ├── content_loc: (63...76) = "\tx\n        y\n"
+        │   │           ├── closing_loc: (76...78) = "E\n"
+        │   │           └── unescaped: "x\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -111,15 +107,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (81...85))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (81...85))
+        │   │       └── @ StringNode (location: (81...85))
         │   │           ├── opening_loc: (81...85) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (86...95))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (86...95) = "\tx\n    y\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "\tx\ny\n"
-        │   │           └── closing_loc: (95...97) = "E\n"
+        │   │           ├── content_loc: (86...95) = "\tx\n    y\n"
+        │   │           ├── closing_loc: (95...97) = "E\n"
+        │   │           └── unescaped: "\tx\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -132,15 +124,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (100...104))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (100...104))
+        │   │       └── @ StringNode (location: (100...104))
         │   │           ├── opening_loc: (100...104) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (105...122))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (105...122) = "    \tx\n        y\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "x\ny\n"
-        │   │           └── closing_loc: (122...124) = "E\n"
+        │   │           ├── content_loc: (105...122) = "    \tx\n        y\n"
+        │   │           ├── closing_loc: (122...124) = "E\n"
+        │   │           └── unescaped: "x\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -153,15 +141,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (127...131))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (127...131))
+        │   │       └── @ StringNode (location: (127...131))
         │   │           ├── opening_loc: (127...131) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (132...146))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (132...146) = "        \tx\n\ty\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "\tx\ny\n"
-        │   │           └── closing_loc: (146...148) = "E\n"
+        │   │           ├── content_loc: (132...146) = "        \tx\n\ty\n"
+        │   │           ├── closing_loc: (146...148) = "E\n"
+        │   │           └── unescaped: "\tx\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -174,15 +158,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (151...155))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (151...155))
+        │   │       └── @ StringNode (location: (151...155))
         │   │           ├── opening_loc: (151...155) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (156...168))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (156...168) = "    x\n  \\\ty\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "  x\n\ty\n"
-        │   │           └── closing_loc: (168...170) = "E\n"
+        │   │           ├── content_loc: (156...168) = "    x\n  \\\ty\n"
+        │   │           ├── closing_loc: (168...170) = "E\n"
+        │   │           └── unescaped: "  x\n\ty\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -195,15 +175,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (173...177))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (173...177))
+        │   │       └── @ StringNode (location: (173...177))
         │   │           ├── opening_loc: (173...177) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (178...191))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (178...191) = "    x\n  \\  y\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "  x\n  y\n"
-        │   │           └── closing_loc: (191...193) = "E\n"
+        │   │           ├── content_loc: (178...191) = "    x\n  \\  y\n"
+        │   │           ├── closing_loc: (191...193) = "E\n"
+        │   │           └── unescaped: "  x\n  y\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -216,10 +192,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (196...200))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (196...200))
+        │   │       └── @ StringNode (location: (196...200))
         │   │           ├── opening_loc: (196...200) = "<<~E"
-        │   │           ├── parts: (length: 0)
-        │   │           └── closing_loc: (201...205) = "  E\n"
+        │   │           ├── content_loc: (200...201) = "\n"
+        │   │           ├── closing_loc: (201...205) = "  E\n"
+        │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -232,15 +209,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (208...212))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (208...212))
+        │   │       └── @ StringNode (location: (208...212))
         │   │           ├── opening_loc: (208...212) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (213...220))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (213...220) = "  x\n\ny\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "  x\n\ny\n"
-        │   │           └── closing_loc: (220...222) = "E\n"
+        │   │           ├── content_loc: (213...220) = "  x\n\ny\n"
+        │   │           ├── closing_loc: (220...222) = "E\n"
+        │   │           └── unescaped: "  x\n\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -253,15 +226,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (225...229))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (225...229))
+        │   │       └── @ StringNode (location: (225...229))
         │   │           ├── opening_loc: (225...229) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (230...243))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (230...243) = "  x\n    \n  y\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "x\n  \ny\n"
-        │   │           └── closing_loc: (243...245) = "E\n"
+        │   │           ├── content_loc: (230...243) = "  x\n    \n  y\n"
+        │   │           ├── closing_loc: (243...245) = "E\n"
+        │   │           └── unescaped: "x\n  \ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -274,15 +243,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (248...252))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (248...252))
+        │   │       └── @ StringNode (location: (248...252))
         │   │           ├── opening_loc: (248...252) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (253...263))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (253...263) = "  x\n    y\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "x\n  y\n"
-        │   │           └── closing_loc: (263...265) = "E\n"
+        │   │           ├── content_loc: (253...263) = "  x\n    y\n"
+        │   │           ├── closing_loc: (263...265) = "E\n"
+        │   │           └── unescaped: "x\n  y\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -295,15 +260,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (268...272))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (268...272))
+        │   │       └── @ StringNode (location: (268...272))
         │   │           ├── opening_loc: (268...272) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (273...277))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (273...277) = "  x\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "x\n"
-        │   │           └── closing_loc: (277...279) = "E\n"
+        │   │           ├── content_loc: (273...277) = "  x\n"
+        │   │           ├── closing_loc: (277...279) = "E\n"
+        │   │           └── unescaped: "x\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -316,15 +277,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (282...286))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (282...286))
+        │   │       └── @ StringNode (location: (282...286))
         │   │           ├── opening_loc: (282...286) = "<<~E"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (287...292))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (287...292) = "  ð\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "ð\n"
-        │   │           └── closing_loc: (292...294) = "E\n"
+        │   │           ├── content_loc: (287...292) = "  ð\n"
+        │   │           ├── closing_loc: (292...294) = "E\n"
+        │   │           └── unescaped: "ð\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -337,10 +294,11 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (297...301))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (297...301))
+        │   │       └── @ StringNode (location: (297...301))
         │   │           ├── opening_loc: (297...301) = "<<~E"
-        │   │           ├── parts: (length: 0)
-        │   │           └── closing_loc: (302...304) = "E\n"
+        │   │           ├── content_loc: (301...302) = "\n"
+        │   │           ├── closing_loc: (302...304) = "E\n"
+        │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 

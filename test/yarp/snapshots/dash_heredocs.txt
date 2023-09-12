@@ -3,41 +3,29 @@
 └── statements:
     @ StatementsNode (location: (0...278))
     └── body: (length: 13)
-        ├── @ InterpolatedStringNode (location: (0...6))
+        ├── @ StringNode (location: (0...6))
         │   ├── opening_loc: (0...6) = "<<-EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (7...11))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (7...11) = "  a\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a\n"
-        │   └── closing_loc: (11...15) = "EOF\n"
+        │   ├── content_loc: (7...11) = "  a\n"
+        │   ├── closing_loc: (11...15) = "EOF\n"
+        │   └── unescaped: "  a\n"
         ├── @ CallNode (location: (16...36))
         │   ├── receiver:
-        │   │   @ InterpolatedStringNode (location: (16...24))
+        │   │   @ StringNode (location: (16...24))
         │   │   ├── opening_loc: (16...24) = "<<-FIRST"
-        │   │   ├── parts: (length: 1)
-        │   │   │   └── @ StringNode (location: (37...41))
-        │   │   │       ├── opening_loc: ∅
-        │   │   │       ├── content_loc: (37...41) = "  a\n"
-        │   │   │       ├── closing_loc: ∅
-        │   │   │       └── unescaped: "  a\n"
-        │   │   └── closing_loc: (41...47) = "FIRST\n"
+        │   │   ├── content_loc: (37...41) = "  a\n"
+        │   │   ├── closing_loc: (41...47) = "FIRST\n"
+        │   │   └── unescaped: "  a\n"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (25...26) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (27...36))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (27...36))
+        │   │       └── @ StringNode (location: (27...36))
         │   │           ├── opening_loc: (27...36) = "<<-SECOND"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (47...51))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (47...51) = "  b\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "  b\n"
-        │   │           └── closing_loc: (51...58) = "SECOND\n"
+        │   │           ├── content_loc: (47...51) = "  b\n"
+        │   │           ├── closing_loc: (51...58) = "SECOND\n"
+        │   │           └── unescaped: "  b\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -72,24 +60,16 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (77...81) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (82...88))
+        ├── @ StringNode (location: (82...88))
         │   ├── opening_loc: (82...88) = "<<-EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (98...102))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (98...102) = "  a\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a\n"
-        │   └── closing_loc: (102...106) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (107...113))
+        │   ├── content_loc: (98...102) = "  a\n"
+        │   ├── closing_loc: (102...106) = "EOF\n"
+        │   └── unescaped: "  a\n"
+        ├── @ StringNode (location: (107...113))
         │   ├── opening_loc: (107...113) = "<<-EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (114...122))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (114...122) = "  a\n  b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a\n  b\n"
-        │   └── closing_loc: (122...128) = "  EOF\n"
+        │   ├── content_loc: (114...122) = "  a\n  b\n"
+        │   ├── closing_loc: (122...128) = "  EOF\n"
+        │   └── unescaped: "  a\n  b\n"
         ├── @ InterpolatedStringNode (location: (129...137))
         │   ├── opening_loc: (129...137) = "<<-\"EOF\""
         │   ├── parts: (length: 3)
@@ -155,39 +135,28 @@
         │   ├── content_loc: (175...178) = "abc"
         │   ├── closing_loc: (178...179) = "#"
         │   └── unescaped: "abc"
-        ├── @ InterpolatedStringNode (location: (181...187))
+        ├── @ StringNode (location: (181...187))
         │   ├── opening_loc: (181...187) = "<<-EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (188...196))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (188...196) = "  a\n  b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a\n  b\n"
-        │   └── closing_loc: (196...200) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (201...206))
+        │   ├── content_loc: (188...196) = "  a\n  b\n"
+        │   ├── closing_loc: (196...200) = "EOF\n"
+        │   └── unescaped: "  a\n  b\n"
+        ├── @ StringNode (location: (201...206))
         │   ├── opening_loc: (201...206) = "<<-''"
-        │   ├── parts: (length: 0)
-        │   └── closing_loc: (207...208) = "\n"
-        ├── @ InterpolatedStringNode (location: (209...217))
+        │   ├── content_loc: (206...207) = "\n"
+        │   ├── closing_loc: (207...208) = "\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (209...217))
         │   ├── opening_loc: (209...217) = "<<-'EOF'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (218...227))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (218...227) = "  a \#{1}\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a \#{1}\n"
-        │   └── closing_loc: (227...231) = "EOF\n"
+        │   ├── content_loc: (218...227) = "  a \#{1}\n"
+        │   ├── closing_loc: (227...231) = "EOF\n"
+        │   └── unescaped: "  a \#{1}\n"
         ├── @ CallNode (location: (232...243))
         │   ├── receiver:
-        │   │   @ InterpolatedStringNode (location: (232...236))
+        │   │   @ StringNode (location: (232...236))
         │   │   ├── opening_loc: (232...236) = "<<-A"
-        │   │   ├── parts: (length: 1)
-        │   │   │   └── @ StringNode (location: (244...248))
-        │   │   │       ├── opening_loc: ∅
-        │   │   │       ├── content_loc: (244...248) = "  a\n"
-        │   │   │       ├── closing_loc: ∅
-        │   │   │       └── unescaped: "  a\n"
-        │   │   └── closing_loc: (248...250) = "A\n"
+        │   │   ├── content_loc: (244...248) = "  a\n"
+        │   │   ├── closing_loc: (248...250) = "A\n"
+        │   │   └── unescaped: "  a\n"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (237...238) = "+"
         │   ├── opening_loc: ∅
@@ -222,15 +191,11 @@
         │   └── name: "+"
         └── @ CallNode (location: (267...278))
             ├── receiver:
-            │   @ InterpolatedStringNode (location: (267...271))
+            │   @ StringNode (location: (267...271))
             │   ├── opening_loc: (267...271) = "<<-A"
-            │   ├── parts: (length: 1)
-            │   │   └── @ StringNode (location: (279...283))
-            │   │       ├── opening_loc: ∅
-            │   │       ├── content_loc: (279...283) = "  a\n"
-            │   │       ├── closing_loc: ∅
-            │   │       └── unescaped: "  a\n"
-            │   └── closing_loc: (283...285) = "A\n"
+            │   ├── content_loc: (279...283) = "  a\n"
+            │   ├── closing_loc: (283...285) = "A\n"
+            │   └── unescaped: "  a\n"
             ├── call_operator_loc: ∅
             ├── message_loc: (272...273) = "+"
             ├── opening_loc: ∅

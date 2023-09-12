@@ -3,40 +3,36 @@
 └── statements:
     @ StatementsNode (location: (0...608))
     └── body: (length: 33)
-        ├── @ InterpolatedStringNode (location: (0...5))
+        ├── @ StringNode (location: (0...5))
         │   ├── opening_loc: (0...5) = "<<DOC"
-        │   ├── parts: (length: 0)
-        │   └── closing_loc: (6...10) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (11...18))
+        │   ├── content_loc: (5...6) = "\n"
+        │   ├── closing_loc: (6...10) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (11...18))
         │   ├── opening_loc: (11...18) = "<<'DOC'"
-        │   ├── parts: (length: 0)
-        │   └── closing_loc: (19...23) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (24...30))
+        │   ├── content_loc: (18...19) = "\n"
+        │   ├── closing_loc: (19...23) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (24...30))
         │   ├── opening_loc: (24...30) = "<<~DOC"
-        │   ├── parts: (length: 0)
-        │   └── closing_loc: (31...35) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (36...44))
+        │   ├── content_loc: (30...31) = "\n"
+        │   ├── closing_loc: (31...35) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (36...44))
         │   ├── opening_loc: (36...44) = "<<~'DOC'"
-        │   ├── parts: (length: 0)
-        │   └── closing_loc: (45...49) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (50...55))
+        │   ├── content_loc: (44...45) = "\n"
+        │   ├── closing_loc: (45...49) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (50...55))
         │   ├── opening_loc: (50...55) = "<<DOC"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (56...60))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (56...60) = "  a\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a\n"
-        │   └── closing_loc: (60...64) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (65...72))
+        │   ├── content_loc: (56...60) = "  a\n"
+        │   ├── closing_loc: (60...64) = "DOC\n"
+        │   └── unescaped: "  a\n"
+        ├── @ StringNode (location: (65...72))
         │   ├── opening_loc: (65...72) = "<<'DOC'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (73...77))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (73...77) = "  a\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "  a\n"
-        │   └── closing_loc: (77...81) = "DOC\n"
+        │   ├── content_loc: (73...77) = "  a\n"
+        │   ├── closing_loc: (77...81) = "DOC\n"
+        │   └── unescaped: "  a\n"
         ├── @ InterpolatedStringNode (location: (82...87))
         │   ├── opening_loc: (82...87) = "<<DOC"
         │   ├── parts: (length: 3)
@@ -91,42 +87,26 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\nb\n"
         │   └── closing_loc: (146...150) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (151...157))
+        ├── @ StringNode (location: (151...157))
         │   ├── opening_loc: (151...157) = "<<~DOC"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (158...168))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (158...168) = "  a\n    b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n  b\n"
-        │   └── closing_loc: (168...172) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (173...180))
+        │   ├── content_loc: (158...168) = "  a\n    b\n"
+        │   ├── closing_loc: (168...172) = "DOC\n"
+        │   └── unescaped: "a\n  b\n"
+        ├── @ StringNode (location: (173...180))
         │   ├── opening_loc: (173...180) = "<<'DOC'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (181...186))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (181...186) = "a\n\nb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n\nb\n"
-        │   └── closing_loc: (186...190) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (191...198))
+        │   ├── content_loc: (181...186) = "a\n\nb\n"
+        │   ├── closing_loc: (186...190) = "DOC\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (191...198))
         │   ├── opening_loc: (191...198) = "<<'DOC'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (199...206))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (199...206) = " a\n\n b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: " a\n\n b\n"
-        │   └── closing_loc: (206...210) = "DOC\n"
-        ├── @ InterpolatedStringNode (location: (211...218))
+        │   ├── content_loc: (199...206) = " a\n\n b\n"
+        │   ├── closing_loc: (206...210) = "DOC\n"
+        │   └── unescaped: " a\n\n b\n"
+        ├── @ StringNode (location: (211...218))
         │   ├── opening_loc: (211...218) = "<<'DOC'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (219...225))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (219...225) = " a\\nb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: " a\\nb\n"
-        │   └── closing_loc: (225...229) = "DOC\n"
+        │   ├── content_loc: (219...225) = " a\\nb\n"
+        │   ├── closing_loc: (225...229) = "DOC\n"
+        │   └── unescaped: " a\\nb\n"
         ├── @ InterpolatedStringNode (location: (230...235))
         │   ├── opening_loc: (230...235) = "<<DOC"
         │   ├── parts: (length: 4)
@@ -276,15 +256,11 @@
         │   ├── statements:
         │   │   @ StatementsNode (location: (435...443))
         │   │   └── body: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (435...443))
+        │   │       └── @ StringNode (location: (435...443))
         │   │           ├── opening_loc: (435...443) = "<<-'DOC'"
-        │   │           ├── parts: (length: 1)
-        │   │           │   └── @ StringNode (location: (444...455))
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (444...455) = "   a\n\n   b\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "   a\n\n   b\n"
-        │   │           └── closing_loc: (455...461) = "  DOC\n"
+        │   │           ├── content_loc: (444...455) = "   a\n\n   b\n"
+        │   │           ├── closing_loc: (455...461) = "  DOC\n"
+        │   │           └── unescaped: "   a\n\n   b\n"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (461...464) = "end"
         ├── @ InterpolatedStringNode (location: (466...472))

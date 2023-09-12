@@ -186,7 +186,11 @@ module YARP
         # We only want to compare parent/child location overlap in the case that
         # we are not looking at a heredoc. That's because heredoc locations are
         # special in that they only use the declaration of the heredoc.
-        compare = !(current.is_a?(InterpolatedStringNode) || current.is_a?(InterpolatedXStringNode)) || !current.opening&.start_with?("<<")
+        compare = !(current.is_a?(StringNode) ||
+                    current.is_a?(XStringNode) ||
+                    current.is_a?(InterpolatedStringNode) ||
+                    current.is_a?(InterpolatedXStringNode)) ||
+        !current.opening&.start_with?("<<")
 
         current.child_nodes.each do |child|
           # child_nodes can return nil values, so we need to skip those.

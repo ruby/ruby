@@ -185,10 +185,11 @@
         │   │   ├── arguments:
         │   │   │   @ ArgumentsNode (location: (108...114))
         │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ InterpolatedStringNode (location: (108...114))
+        │   │   │       └── @ StringNode (location: (108...114))
         │   │   │           ├── opening_loc: (108...114) = "<<-FOO"
-        │   │   │           ├── parts: (length: 0)
-        │   │   │           └── closing_loc: (119...123) = "FOO\n"
+        │   │   │           ├── content_loc: (114...119) = ") do\n"
+        │   │   │           ├── closing_loc: (119...123) = "FOO\n"
+        │   │   │           └── unescaped: ""
         │   │   ├── closing_loc: (114...115) = ")"
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (116...130))

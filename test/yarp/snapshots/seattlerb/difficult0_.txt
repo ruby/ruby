@@ -15,15 +15,11 @@
             │           ├── receiver:
             │           │   @ CallNode (location: (2...26))
             │           │   ├── receiver:
-            │           │   │   @ InterpolatedStringNode (location: (2...8))
+            │           │   │   @ StringNode (location: (2...8))
             │           │   │   ├── opening_loc: (2...8) = "<<-END"
-            │           │   │   ├── parts: (length: 1)
-            │           │   │   │   └── @ StringNode (location: (12...16))
-            │           │   │   │       ├── opening_loc: ∅
-            │           │   │   │       ├── content_loc: (12...16) = "  a\n"
-            │           │   │   │       ├── closing_loc: ∅
-            │           │   │   │       └── unescaped: "  a\n"
-            │           │   │   └── closing_loc: (16...22) = "  END\n"
+            │           │   │   ├── content_loc: (12...16) = "  a\n"
+            │           │   │   ├── closing_loc: (16...22) = "  END\n"
+            │           │   │   └── unescaped: "  a\n"
             │           │   ├── call_operator_loc: ∅
             │           │   ├── message_loc: (8...9) = "+"
             │           │   ├── opening_loc: ∅

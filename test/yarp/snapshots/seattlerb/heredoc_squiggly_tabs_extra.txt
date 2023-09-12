@@ -8,13 +8,9 @@
             ├── depth: 0
             ├── name_loc: (0...1) = "a"
             ├── value:
-            │   @ InterpolatedStringNode (location: (4...12))
+            │   @ StringNode (location: (4...12))
             │   ├── opening_loc: (4...12) = "<<~\"EOF\""
-            │   ├── parts: (length: 1)
-            │   │   └── @ StringNode (location: (13...37))
-            │   │       ├── opening_loc: ∅
-            │   │       ├── content_loc: (13...37) = "  blah blah\n \tblah blah\n"
-            │   │       ├── closing_loc: ∅
-            │   │       └── unescaped: "blah blah\n\tblah blah\n"
-            │   └── closing_loc: (37...43) = "  EOF\n"
+            │   ├── content_loc: (13...37) = "  blah blah\n \tblah blah\n"
+            │   ├── closing_loc: (37...43) = "  EOF\n"
+            │   └── unescaped: "blah blah\n\tblah blah\n"
             └── operator_loc: (2...3) = "="

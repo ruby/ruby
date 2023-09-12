@@ -3,24 +3,16 @@
 └── statements:
     @ StatementsNode (location: (0...372))
     └── body: (length: 18)
-        ├── @ InterpolatedStringNode (location: (0...6))
+        ├── @ StringNode (location: (0...6))
         │   ├── opening_loc: (0...6) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (7...11))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (7...11) = "  a\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n"
-        │   └── closing_loc: (11...15) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (16...22))
+        │   ├── content_loc: (7...11) = "  a\n"
+        │   ├── closing_loc: (11...15) = "EOF\n"
+        │   └── unescaped: "a\n"
+        ├── @ StringNode (location: (16...22))
         │   ├── opening_loc: (16...22) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (23...34))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (23...34) = "\ta\n  b\n\t\tc\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\ta\nb\n\t\tc\n"
-        │   └── closing_loc: (34...38) = "EOF\n"
+        │   ├── content_loc: (23...34) = "\ta\n  b\n\t\tc\n"
+        │   ├── closing_loc: (34...38) = "EOF\n"
+        │   └── unescaped: "\ta\nb\n\t\tc\n"
         ├── @ InterpolatedStringNode (location: (39...45))
         │   ├── opening_loc: (39...45) = "<<~EOF"
         │   ├── parts: (length: 2)
@@ -104,96 +96,56 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
         │   └── closing_loc: (121...125) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (126...132))
+        ├── @ StringNode (location: (126...132))
         │   ├── opening_loc: (126...132) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (133...141))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (133...141) = "  a\n  b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\nb\n"
-        │   └── closing_loc: (141...145) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (146...152))
+        │   ├── content_loc: (133...141) = "  a\n  b\n"
+        │   ├── closing_loc: (141...145) = "EOF\n"
+        │   └── unescaped: "a\nb\n"
+        ├── @ StringNode (location: (146...152))
         │   ├── opening_loc: (146...152) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (153...162))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (153...162) = "  a\n   b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n b\n"
-        │   └── closing_loc: (162...166) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (167...173))
+        │   ├── content_loc: (153...162) = "  a\n   b\n"
+        │   ├── closing_loc: (162...166) = "EOF\n"
+        │   └── unescaped: "a\n b\n"
+        ├── @ StringNode (location: (167...173))
         │   ├── opening_loc: (167...173) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (174...183))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (174...183) = "\t\t\ta\n\t\tb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "\ta\nb\n"
-        │   └── closing_loc: (183...187) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (188...196))
+        │   ├── content_loc: (174...183) = "\t\t\ta\n\t\tb\n"
+        │   ├── closing_loc: (183...187) = "EOF\n"
+        │   └── unescaped: "\ta\nb\n"
+        ├── @ StringNode (location: (188...196))
         │   ├── opening_loc: (188...196) = "<<~'EOF'"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (197...206))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (197...206) = "  a \#{1}\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a \#{1}\n"
-        │   └── closing_loc: (206...210) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (211...217))
+        │   ├── content_loc: (197...206) = "  a \#{1}\n"
+        │   ├── closing_loc: (206...210) = "EOF\n"
+        │   └── unescaped: "a \#{1}\n"
+        ├── @ StringNode (location: (211...217))
         │   ├── opening_loc: (211...217) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (218...225))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (218...225) = "\ta\n\t b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n b\n"
-        │   └── closing_loc: (225...229) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (230...236))
+        │   ├── content_loc: (218...225) = "\ta\n\t b\n"
+        │   ├── closing_loc: (225...229) = "EOF\n"
+        │   └── unescaped: "a\n b\n"
+        ├── @ StringNode (location: (230...236))
         │   ├── opening_loc: (230...236) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (237...244))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (237...244) = "\t a\n\tb\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: " a\nb\n"
-        │   └── closing_loc: (244...248) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (249...255))
+        │   ├── content_loc: (237...244) = "\t a\n\tb\n"
+        │   ├── closing_loc: (244...248) = "EOF\n"
+        │   └── unescaped: " a\nb\n"
+        ├── @ StringNode (location: (249...255))
         │   ├── opening_loc: (249...255) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (256...271))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (256...271) = "  \ta\n        b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\nb\n"
-        │   └── closing_loc: (271...275) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (276...282))
+        │   ├── content_loc: (256...271) = "  \ta\n        b\n"
+        │   ├── closing_loc: (271...275) = "EOF\n"
+        │   └── unescaped: "a\nb\n"
+        ├── @ StringNode (location: (276...282))
         │   ├── opening_loc: (276...282) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (283...292))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (283...292) = "  a\n\n  b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n\nb\n"
-        │   └── closing_loc: (292...296) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (297...303))
+        │   ├── content_loc: (283...292) = "  a\n\n  b\n"
+        │   ├── closing_loc: (292...296) = "EOF\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (297...303))
         │   ├── opening_loc: (297...303) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (304...313))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (304...313) = "  a\n\n  b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n\nb\n"
-        │   └── closing_loc: (313...317) = "EOF\n"
-        ├── @ InterpolatedStringNode (location: (318...324))
+        │   ├── content_loc: (304...313) = "  a\n\n  b\n"
+        │   ├── closing_loc: (313...317) = "EOF\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (318...324))
         │   ├── opening_loc: (318...324) = "<<~EOF"
-        │   ├── parts: (length: 1)
-        │   │   └── @ StringNode (location: (325...336))
-        │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (325...336) = "  a\n\n\n\n  b\n"
-        │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\n\n\n\nb\n"
-        │   └── closing_loc: (336...340) = "EOF\n"
+        │   ├── content_loc: (325...336) = "  a\n\n\n\n  b\n"
+        │   ├── closing_loc: (336...340) = "EOF\n"
+        │   └── unescaped: "a\n\n\n\nb\n"
         ├── @ InterpolatedStringNode (location: (341...347))
         │   ├── opening_loc: (341...347) = "<<~EOF"
         │   ├── parts: (length: 3)

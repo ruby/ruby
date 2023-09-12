@@ -5,10 +5,11 @@
     └── body: (length: 2)
         ├── @ CallNode (location: (0...25))
         │   ├── receiver:
-        │   │   @ InterpolatedStringNode (location: (0...9))
+        │   │   @ StringNode (location: (0...9))
         │   │   ├── opening_loc: (0...9) = "<<-TARGET"
-        │   │   ├── parts: (length: 0)
-        │   │   └── closing_loc: (27...34) = "TARGET\n"
+        │   │   ├── content_loc: (9...27) = ".gsub /^\\s{/, ''\\\n"
+        │   │   ├── closing_loc: (27...34) = "TARGET\n"
+        │   │   └── unescaped: ""
         │   ├── call_operator_loc: (9...10) = "."
         │   ├── message_loc: (10...14) = "gsub"
         │   ├── opening_loc: ∅
@@ -32,10 +33,11 @@
         │   └── name: "gsub"
         └── @ CallNode (location: (37...62))
             ├── receiver:
-            │   @ InterpolatedStringNode (location: (37...46))
+            │   @ StringNode (location: (37...46))
             │   ├── opening_loc: (37...46) = "<<-TARGET"
-            │   ├── parts: (length: 0)
-            │   └── closing_loc: (65...73) = "TARGET\r\n"
+            │   ├── content_loc: (46...65) = ".gsub /^\\s{/, ''\\\r\n"
+            │   ├── closing_loc: (65...73) = "TARGET\r\n"
+            │   └── unescaped: ""
             ├── call_operator_loc: (46...47) = "."
             ├── message_loc: (47...51) = "gsub"
             ├── opening_loc: ∅

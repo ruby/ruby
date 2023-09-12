@@ -3,7 +3,8 @@
 └── statements:
     @ StatementsNode (location: (0...4))
     └── body: (length: 1)
-        └── @ InterpolatedStringNode (location: (0...4))
+        └── @ StringNode (location: (0...4))
             ├── opening_loc: (0...4) = "<<~A"
-            ├── parts: (length: 0)
-            └── closing_loc: (5...7) = "A\n"
+            ├── content_loc: (4...5) = "\n"
+            ├── closing_loc: (5...7) = "A\n"
+            └── unescaped: ""
