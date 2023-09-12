@@ -23,10 +23,10 @@
             │   │           ├── value_loc: (14...15) = "c"
             │   │           ├── closing_loc: ∅
             │   │           └── unescaped: "c"
+            │   ├── rest: ∅
             │   ├── posts: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (17...18))
             │   │       └── name: :d
-            │   ├── rest: ∅
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

@@ -494,7 +494,7 @@ module YARP
           RequiredParameterNode(:@a),
           RequiredParameterNode(:$A),
           RequiredParameterNode(:@@a),
-        ], [], [], nil, [], nil, nil),
+        ], [], nil, [], [], nil, nil),
         nil,
         [:A, :@a, :$A, :@@a],
         Location(),
@@ -560,8 +560,8 @@ module YARP
         ParametersNode(
           [RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:c)],
           [],
-          [],
           nil,
+          [],
           [],
           nil,
           nil
@@ -588,7 +588,7 @@ module YARP
         Location(),
         Location(),
         BlockParametersNode(
-          ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], nil, nil),
+          ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], nil, [], [], nil, nil),
           [],
           Location(),
           Location()
@@ -644,8 +644,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [RequiredParameterNode(:a)],
           nil,
+          [RequiredParameterNode(:a)],
           [],
           nil,
           BlockParameterNode(:block, Location(), Location())
@@ -669,7 +669,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([], [], [RequiredParameterNode(:a)], nil, [], nil, BlockParameterNode(nil, nil, Location())),
+        ParametersNode([], [], nil, [RequiredParameterNode(:a)], [], nil, BlockParameterNode(nil, nil, Location())),
         nil,
         [:&, :a],
         Location(),
@@ -693,8 +693,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [RequiredParameterNode(:a)],
           nil,
+          [RequiredParameterNode(:a)],
           [],
           ForwardingParameterNode(),
           nil
@@ -721,8 +721,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [RequiredParameterNode(:a)],
           nil,
+          [RequiredParameterNode(:a)],
           [KeywordParameterNode(:b, Location(), nil)],
           nil,
           nil
@@ -749,8 +749,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [],
           nil,
+          [],
           [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(:rest, Location(), Location()),
           nil
@@ -775,7 +775,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([], [], [], nil, [], ForwardingParameterNode(), nil),
+        ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil),
         nil,
         [:"..."],
         Location(),
@@ -799,8 +799,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [RequiredParameterNode(:a)],
           nil,
+          [RequiredParameterNode(:a)],
           [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(:args, Location(), Location()),
           nil
@@ -829,8 +829,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [RequiredParameterNode(:a)],
           nil,
+          [RequiredParameterNode(:a)],
           [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(:args, Location(), Location()),
           nil
@@ -859,8 +859,8 @@ module YARP
         ParametersNode(
           [],
           [],
-          [RequiredParameterNode(:a)],
           nil,
+          [RequiredParameterNode(:a)],
           [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(:args, Location(), Location()),
           nil
@@ -892,8 +892,8 @@ module YARP
             OptionalParameterNode(:b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL)),
             OptionalParameterNode(:d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))
           ],
-          [RequiredParameterNode(:c), RequiredParameterNode(:e)],
           nil,
+          [RequiredParameterNode(:c), RequiredParameterNode(:e)],
           [],
           nil,
           nil
@@ -954,7 +954,7 @@ module YARP
         Location(),
         Location(),
         Location(),
-        BlockParametersNode(ParametersNode([], [], [], nil, [], ForwardingParameterNode(), nil), [], Location(), Location()),
+        BlockParametersNode(ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil), [], Location(), Location()),
         nil
       )
 
@@ -973,7 +973,7 @@ module YARP
         nil,
         BlockNode(
           [:"..."],
-          BlockParametersNode(ParametersNode([], [], [], nil, [], ForwardingParameterNode(), nil), [], Location(), Location()),
+          BlockParametersNode(ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil), [], Location(), Location()),
           nil,
           Location(),
           Location()
@@ -1046,7 +1046,7 @@ module YARP
           :foo,
           Location(),
           nil,
-          ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:a)], [], [], nil, [], nil, nil),
+          ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:a)], [], nil, [], [], nil, nil),
           nil,
           [:a, :b],
           Location(),
@@ -1066,7 +1066,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], RestParameterNode(:a, Location(), Location()), [], nil, nil),
+        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], RestParameterNode(:a, Location(), Location()), [], [], nil, nil),
         nil,
         [:a, :b],
         Location(),
@@ -1085,7 +1085,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], KeywordRestParameterNode(:a, Location(), Location()), nil),
+        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], nil, [], [], KeywordRestParameterNode(:a, Location(), Location()), nil),
         nil,
         [:a, :b],
         Location(),
@@ -1104,7 +1104,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], nil, BlockParameterNode(:a, Location(), Location())),
+        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], nil, [], [], nil, BlockParameterNode(:a, Location(), Location())),
         nil,
         [:a, :b],
         Location(),
@@ -1123,7 +1123,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], [RequiredParameterNode(:b)], RestParameterNode(:c, Location(), Location()), [], nil, nil),
+        ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], RestParameterNode(:c, Location(), Location()), [RequiredParameterNode(:b)], [], nil, nil),
         nil,
         [:a, :b, :c],
         Location(),

@@ -21,12 +21,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (3...4))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (4...5))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (4...5) = ","
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -56,8 +56,8 @@
             │   │   │   │   └── @ RequiredParameterNode (location: (12...13))
             │   │   │   │       └── name: :a
             │   │   │   ├── optionals: (length: 0)
-            │   │   │   ├── posts: (length: 0)
             │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
             │   │   │   ├── keywords: (length: 0)
             │   │   │   ├── keyword_rest: ∅
             │   │   │   └── block: ∅

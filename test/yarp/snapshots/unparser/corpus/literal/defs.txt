@@ -130,8 +130,8 @@
         │   │   │   │   │   │   │   └── @ RequiredParameterNode (location: (107...110))
         │   │   │   │   │   │   │       └── name: :bar
         │   │   │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   │   │   ├── rest: ∅
+        │   │   │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   │   │   └── block: ∅

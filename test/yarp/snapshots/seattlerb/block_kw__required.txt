@@ -19,8 +19,8 @@
             │   │   │   @ ParametersNode (location: (9...11))
             │   │   │   ├── requireds: (length: 0)
             │   │   │   ├── optionals: (length: 0)
-            │   │   │   ├── posts: (length: 0)
             │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
             │   │   │   ├── keywords: (length: 1)
             │   │   │   │   └── @ KeywordParameterNode (location: (9...11))
             │   │   │   │       ├── name: :k

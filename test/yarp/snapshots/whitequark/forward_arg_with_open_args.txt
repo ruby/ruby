@@ -15,8 +15,8 @@
         │   │           │   @ ParametersNode (location: (9...12))
         │   │           │   ├── requireds: (length: 0)
         │   │           │   ├── optionals: (length: 0)
-        │   │           │   ├── posts: (length: 0)
         │   │           │   ├── rest: ∅
+        │   │           │   ├── posts: (length: 0)
         │   │           │   ├── keywords: (length: 0)
         │   │           │   ├── keyword_rest:
         │   │           │   │   @ ForwardingParameterNode (location: (9...12))
@@ -58,8 +58,8 @@
         │   │           │   @ ParametersNode (location: (39...42))
         │   │           │   ├── requireds: (length: 0)
         │   │           │   ├── optionals: (length: 0)
-        │   │           │   ├── posts: (length: 0)
         │   │           │   ├── rest: ∅
+        │   │           │   ├── posts: (length: 0)
         │   │           │   ├── keywords: (length: 0)
         │   │           │   ├── keyword_rest:
         │   │           │   │   @ ForwardingParameterNode (location: (39...42))
@@ -97,8 +97,8 @@
         │   │   @ ParametersNode (location: (68...71))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (68...71))
@@ -119,8 +119,8 @@
         │   │   @ ParametersNode (location: (85...88))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (85...88))
@@ -158,8 +158,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (113...114))
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (116...119))
@@ -197,8 +197,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (144...145))
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (147...150))
@@ -243,8 +243,8 @@
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (182...183))
         │   │   │           └── flags: decimal
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (185...188))
@@ -272,8 +272,8 @@
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (206...207))
         │   │   │           └── flags: decimal
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (209...212))
@@ -316,8 +316,8 @@
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (241...242))
         │   │   │           └── flags: decimal
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (244...247))
@@ -355,8 +355,8 @@
             │   │   └── @ RequiredParameterNode (location: (272...273))
             │   │       └── name: :a
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 0)
             │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ ForwardingParameterNode (location: (275...278))

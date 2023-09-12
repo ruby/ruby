@@ -19,8 +19,8 @@
         │   │   │       ├── opening_loc: (8...9) = "("
         │   │   │       └── closing_loc: (17...18) = ")"
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -55,6 +55,7 @@
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (56...57))
         │   │   │           └── flags: decimal
+        │   │   ├── rest: ∅
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ RequiredDestructuredParameterNode (location: (59...69))
         │   │   │       ├── parameters: (length: 2)
@@ -64,7 +65,6 @@
         │   │   │       │       └── name: :bag
         │   │   │       ├── opening_loc: (59...60) = "("
         │   │   │       └── closing_loc: (68...69) = ")"
-        │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -176,8 +176,8 @@
         │   │   @ ParametersNode (location: (151...154))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (151...154))
@@ -251,8 +251,8 @@
         │   │   @ ParametersNode (location: (212...214))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ KeywordParameterNode (location: (212...214))
         │   │   │       ├── name: :b
@@ -281,8 +281,8 @@
         │   │   @ ParametersNode (location: (235...237))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ KeywordParameterNode (location: (235...237))
         │   │   │       ├── name: :b
@@ -306,8 +306,8 @@
         │   │   @ ParametersNode (location: (250...253))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ KeywordRestParameterNode (location: (250...253))
@@ -331,8 +331,8 @@
         │   │   @ ParametersNode (location: (266...268))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ KeywordRestParameterNode (location: (266...268))
@@ -383,8 +383,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (305...306))
         │   │   │       └── name: :d
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -418,8 +418,8 @@
         │   │   @ ParametersNode (location: (333...341))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ KeywordParameterNode (location: (333...335))
         │   │   │   │   ├── name: :b
@@ -449,8 +449,8 @@
         │   │   @ ParametersNode (location: (353...361))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ KeywordParameterNode (location: (353...355))
         │   │   │   │   ├── name: :b
@@ -480,8 +480,8 @@
         │   │   @ ParametersNode (location: (374...384))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ KeywordParameterNode (location: (374...380))
         │   │   │   │   ├── name: :b
@@ -530,8 +530,8 @@
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (416...417))
         │   │   │           └── flags: decimal
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -573,8 +573,8 @@
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (449...450))
         │   │   │           └── flags: decimal
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -596,8 +596,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (462...463))
         │   │   │       └── name: :b
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -652,12 +652,12 @@
         │   │   @ ParametersNode (location: (509...511))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (509...511))
         │   │   │   ├── name: :b
         │   │   │   ├── name_loc: (510...511) = "b"
         │   │   │   └── operator_loc: (509...510) = "*"
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -677,12 +677,12 @@
         │   │   @ ParametersNode (location: (523...524))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (523...524))
         │   │   │   ├── name: nil
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (523...524) = "*"
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -841,8 +841,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (660...663))
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -883,12 +883,12 @@
         │   │   @ ParametersNode (location: (693...694))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (693...694))
         │   │   │   ├── name: nil
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (693...694) = "*"
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -925,8 +925,8 @@
         │   │   @ ParametersNode (location: (714...717))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (714...717))
@@ -962,8 +962,8 @@
         │   │   @ ParametersNode (location: (739...742))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (739...742))
@@ -1036,8 +1036,8 @@
         │   │   @ ParametersNode (location: (789...791))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
@@ -1061,8 +1061,8 @@
         │   │   @ ParametersNode (location: (803...804))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
@@ -1170,8 +1170,8 @@
         │   │   @ ParametersNode (location: (911...914))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ ForwardingParameterNode (location: (911...914))
@@ -1294,8 +1294,8 @@
         │   │   @ ParametersNode (location: (990...1001))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ KeywordParameterNode (location: (990...1001))
         │   │   │       ├── name: :a
@@ -1334,8 +1334,8 @@
         │   │   @ ParametersNode (location: (1016...1026))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ KeywordParameterNode (location: (1016...1026))
         │   │   │       ├── name: :a
@@ -1372,8 +1372,8 @@
         │   │   @ ParametersNode (location: (1041...1050))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ KeywordParameterNode (location: (1041...1050))
         │   │   │       ├── name: :a
@@ -1430,8 +1430,8 @@
         │   │   │           │           └── flags: exclude_end
         │   │   │           ├── opening_loc: (1069...1070) = "("
         │   │   │           └── closing_loc: (1076...1077) = ")"
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -1469,8 +1469,8 @@
         │   │   │           │           └── flags: exclude_end
         │   │   │           ├── opening_loc: (1096...1097) = "("
         │   │   │           └── closing_loc: (1102...1103) = ")"
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -1508,8 +1508,8 @@
         │   │   │           │           └── flags: exclude_end
         │   │   │           ├── opening_loc: (1122...1123) = "("
         │   │   │           └── closing_loc: (1127...1128) = ")"
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -1531,8 +1531,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (1146...1147))
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -1600,8 +1600,8 @@
             │   │   └── @ RequiredParameterNode (location: (1188...1189))
             │   │       └── name: :c
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 0)
             │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

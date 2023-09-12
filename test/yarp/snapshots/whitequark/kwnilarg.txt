@@ -14,8 +14,8 @@
         │   │   │   @ ParametersNode (location: (3...8))
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ NoKeywordsParameterNode (location: (3...8))
@@ -34,8 +34,8 @@
         │   │   @ ParametersNode (location: (20...25))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ NoKeywordsParameterNode (location: (20...25))
@@ -66,8 +66,8 @@
             │   │   │   @ ParametersNode (location: (38...43))
             │   │   │   ├── requireds: (length: 0)
             │   │   │   ├── optionals: (length: 0)
-            │   │   │   ├── posts: (length: 0)
             │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
             │   │   │   ├── keywords: (length: 0)
             │   │   │   ├── keyword_rest:
             │   │   │   │   @ NoKeywordsParameterNode (location: (38...43))

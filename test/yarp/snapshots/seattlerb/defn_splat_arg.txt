@@ -11,14 +11,14 @@
             │   @ ParametersNode (location: (6...10))
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 1)
-            │   │   └── @ RequiredParameterNode (location: (9...10))
-            │   │       └── name: :a
             │   ├── rest:
             │   │   @ RestParameterNode (location: (6...7))
             │   │   ├── name: nil
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (6...7) = "*"
+            │   ├── posts: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (9...10))
+            │   │       └── name: :a
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

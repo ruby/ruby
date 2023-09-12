@@ -46,8 +46,8 @@
         │   │           │   │   │                       ├── block: ∅
         │   │           │   │   │                       ├── flags: variable_call
         │   │           │   │   │                       └── name: "_1"
-        │   │           │   │   ├── posts: (length: 0)
         │   │           │   │   ├── rest: ∅
+        │   │           │   │   ├── posts: (length: 0)
         │   │           │   │   ├── keywords: (length: 0)
         │   │           │   │   ├── keyword_rest: ∅
         │   │           │   │   └── block: ∅
@@ -83,8 +83,8 @@
             │           │   │   @ ParametersNode (location: (27...36))
             │           │   │   ├── requireds: (length: 0)
             │           │   │   ├── optionals: (length: 0)
-            │           │   │   ├── posts: (length: 0)
             │           │   │   ├── rest: ∅
+            │           │   │   ├── posts: (length: 0)
             │           │   │   ├── keywords: (length: 1)
             │           │   │   │   └── @ KeywordParameterNode (location: (27...36))
             │           │   │   │       ├── name: :a

@@ -906,8 +906,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (416...417))
         │   │   │   │   │       └── name: :b
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -1816,8 +1816,8 @@
         │   │           │           │   │   │   │   └── @ RequiredParameterNode (location: (1037...1038))
         │   │           │           │   │   │   │       └── name: :a
         │   │           │           │   │   │   ├── optionals: (length: 0)
-        │   │           │           │   │   │   ├── posts: (length: 0)
         │   │           │           │   │   │   ├── rest: ∅
+        │   │           │           │   │   │   ├── posts: (length: 0)
         │   │           │           │   │   │   ├── keywords: (length: 0)
         │   │           │           │   │   │   ├── keyword_rest: ∅
         │   │           │           │   │   │   └── block: ∅
@@ -1888,8 +1888,8 @@
         │   │       │   │           │   │   │   │   └── @ RequiredParameterNode (location: (1093...1094))
         │   │       │   │           │   │   │   │       └── name: :a
         │   │       │   │           │   │   │   ├── optionals: (length: 0)
-        │   │       │   │           │   │   │   ├── posts: (length: 0)
         │   │       │   │           │   │   │   ├── rest: ∅
+        │   │       │   │           │   │   │   ├── posts: (length: 0)
         │   │       │   │           │   │   │   ├── keywords: (length: 0)
         │   │       │   │           │   │   │   ├── keyword_rest: ∅
         │   │       │   │           │   │   │   └── block: ∅
@@ -2007,8 +2007,8 @@
         │   │           │   │   │   │   └── @ RequiredParameterNode (location: (1176...1177))
         │   │           │   │   │   │       └── name: :a
         │   │           │   │   │   ├── optionals: (length: 0)
-        │   │           │   │   │   ├── posts: (length: 0)
         │   │           │   │   │   ├── rest: ∅
+        │   │           │   │   │   ├── posts: (length: 0)
         │   │           │   │   │   ├── keywords: (length: 0)
         │   │           │   │   │   ├── keyword_rest: ∅
         │   │           │   │   │   └── block: ∅

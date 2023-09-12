@@ -121,8 +121,8 @@
         │   │   @ ParametersNode (location: (110...113))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ KeywordRestParameterNode (location: (110...113))
@@ -161,8 +161,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (138...139))
         │   │   │       └── name: :b
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅

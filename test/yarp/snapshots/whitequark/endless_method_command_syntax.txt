@@ -77,8 +77,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (58...59))
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -211,8 +211,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (141...142))
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -251,8 +251,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (166...167))
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -316,8 +316,8 @@
             │   │   └── @ RequiredParameterNode (location: (233...234))
             │   │       └── name: :x
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 0)
             │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

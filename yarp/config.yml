@@ -1908,11 +1908,11 @@ nodes:
         type: node[]
       - name: optionals
         type: node[]
-      - name: posts
-        type: node[]
       - name: rest
         type: node?
         kind: RestParameterNode
+      - name: posts
+        type: node[]
       - name: keywords
         type: node[]
       - name: keyword_rest

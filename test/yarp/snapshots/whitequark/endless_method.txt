@@ -30,8 +30,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (24...25))
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -109,8 +109,8 @@
             │   │   └── @ RequiredParameterNode (location: (68...69))
             │   │       └── name: :x
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 0)
             │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

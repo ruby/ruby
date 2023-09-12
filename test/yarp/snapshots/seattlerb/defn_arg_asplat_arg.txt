@@ -13,14 +13,14 @@
             │   │   └── @ RequiredParameterNode (location: (9...15))
             │   │       └── name: :interp
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 1)
-            │   │   └── @ RequiredParameterNode (location: (20...24))
-            │   │       └── name: :args
             │   ├── rest:
             │   │   @ RestParameterNode (location: (17...18))
             │   │   ├── name: nil
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (17...18) = "*"
+            │   ├── posts: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (20...24))
+            │   │       └── name: :args
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

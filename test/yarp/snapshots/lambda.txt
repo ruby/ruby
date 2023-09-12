@@ -16,8 +16,8 @@
         │   │   │   │   └── @ RequiredParameterNode (location: (6...9))
         │   │   │   │       └── name: :foo
         │   │   │   ├── optionals: (length: 0)
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
@@ -36,8 +36,8 @@
         │   │   │   @ ParametersNode (location: (19...29))
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 1)
         │   │   │   │   └── @ KeywordParameterNode (location: (19...29))
         │   │   │   │       ├── name: :x
@@ -85,8 +85,8 @@
         │   │   │   @ ParametersNode (location: (39...47))
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 1)
         │   │   │   │   └── @ KeywordParameterNode (location: (39...47))
         │   │   │   │       ├── name: :a
@@ -148,8 +148,8 @@
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: "bar"
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
@@ -168,8 +168,8 @@
             │   │   @ ParametersNode (location: (77...85))
             │   │   ├── requireds: (length: 0)
             │   │   ├── optionals: (length: 0)
-            │   │   ├── posts: (length: 0)
             │   │   ├── rest: ∅
+            │   │   ├── posts: (length: 0)
             │   │   ├── keywords: (length: 1)
             │   │   │   └── @ KeywordParameterNode (location: (77...85))
             │   │   │       ├── name: :foo

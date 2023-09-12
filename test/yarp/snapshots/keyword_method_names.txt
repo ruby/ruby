@@ -83,8 +83,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (76...77))
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ NoKeywordsParameterNode (location: (79...84))

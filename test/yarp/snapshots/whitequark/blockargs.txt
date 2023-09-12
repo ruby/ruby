@@ -56,8 +56,8 @@
         │   │   │   │   @ ParametersNode (location: (21...23))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -89,8 +89,8 @@
         │   │   │   │   @ ParametersNode (location: (32...41))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest:
         │   │   │   │   │   @ KeywordRestParameterNode (location: (32...37))
@@ -126,12 +126,12 @@
         │   │   │   │   @ ParametersNode (location: (50...55))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (50...51))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (50...51) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -163,14 +163,14 @@
         │   │   │   │   @ ParametersNode (location: (64...73))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 1)
-        │   │   │   │   │   └── @ RequiredParameterNode (location: (68...69))
-        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (64...66))
         │   │   │   │   │   ├── name: :r
         │   │   │   │   │   ├── name_loc: (65...66) = "r"
         │   │   │   │   │   └── operator_loc: (64...65) = "*"
+        │   │   │   │   ├── posts: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (68...69))
+        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -202,12 +202,12 @@
         │   │   │   │   @ ParametersNode (location: (82...88))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (82...84))
         │   │   │   │   │   ├── name: :s
         │   │   │   │   │   ├── name_loc: (83...84) = "s"
         │   │   │   │   │   └── operator_loc: (82...83) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -239,12 +239,12 @@
         │   │   │   │   @ ParametersNode (location: (97...99))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (97...99))
         │   │   │   │   │   ├── name: :s
         │   │   │   │   │   ├── name_loc: (98...99) = "s"
         │   │   │   │   │   └── operator_loc: (97...98) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -272,12 +272,12 @@
         │   │   │   │   @ ParametersNode (location: (108...109))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (108...109))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (108...109) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -353,8 +353,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (142...143))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -388,12 +388,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (156...157))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (159...160))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (159...160) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -427,14 +427,14 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (173...174))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 1)
-        │   │   │   │   │   └── @ RequiredParameterNode (location: (180...181))
-        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (176...178))
         │   │   │   │   │   ├── name: :r
         │   │   │   │   │   ├── name_loc: (177...178) = "r"
         │   │   │   │   │   └── operator_loc: (176...177) = "*"
+        │   │   │   │   ├── posts: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (180...181))
+        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -468,12 +468,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (194...195))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (197...199))
         │   │   │   │   │   ├── name: :s
         │   │   │   │   │   ├── name_loc: (198...199) = "s"
         │   │   │   │   │   └── operator_loc: (197...198) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -507,12 +507,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (212...213))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (215...217))
         │   │   │   │   │   ├── name: :s
         │   │   │   │   │   ├── name_loc: (216...217) = "s"
         │   │   │   │   │   └── operator_loc: (215...216) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -542,12 +542,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (226...227))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (229...230))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (229...230) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -579,12 +579,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (242...243))
         │   │   │   │   │       └── name: :b
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (243...244))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (243...244) = ","
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -616,8 +616,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (256...257))
         │   │   │   │   │       └── name: :c
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -654,8 +654,8 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (271...272))
         │   │   │   │   │           └── flags: decimal
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -696,14 +696,14 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (290...291))
         │   │   │   │   │           └── flags: decimal
-        │   │   │   │   ├── posts: (length: 1)
-        │   │   │   │   │   └── @ RequiredParameterNode (location: (297...298))
-        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (293...295))
         │   │   │   │   │   ├── name: :r
         │   │   │   │   │   ├── name_loc: (294...295) = "r"
         │   │   │   │   │   └── operator_loc: (293...294) = "*"
+        │   │   │   │   ├── posts: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (297...298))
+        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -751,12 +751,12 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (322...323))
         │   │   │   │   │           └── flags: decimal
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (325...327))
         │   │   │   │   │   ├── name: :r
         │   │   │   │   │   ├── name_loc: (326...327) = "r"
         │   │   │   │   │   └── operator_loc: (325...326) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -797,10 +797,10 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (345...346))
         │   │   │   │   │           └── flags: decimal
+        │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 1)
         │   │   │   │   │   └── @ RequiredParameterNode (location: (348...349))
         │   │   │   │   │       └── name: :p
-        │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -834,12 +834,12 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (362...363))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (363...364))
         │   │   │   │   │   ├── name: nil
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (363...364) = ","
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -869,8 +869,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (373...374))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -900,8 +900,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (383...384))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -931,8 +931,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (393...394))
         │   │   │   │   │       └── name: :a
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -960,8 +960,8 @@
         │   │   │   │   @ ParametersNode (location: (403...413))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 1)
         │   │   │   │   │   └── @ KeywordParameterNode (location: (403...409))
         │   │   │   │   │       ├── name: :foo
@@ -999,8 +999,8 @@
         │   │   │   │   @ ParametersNode (location: (422...447))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 2)
         │   │   │   │   │   ├── @ KeywordParameterNode (location: (422...428))
         │   │   │   │   │   │   ├── name: :foo
@@ -1048,8 +1048,8 @@
         │   │   │   │   @ ParametersNode (location: (456...460))
         │   │   │   │   ├── requireds: (length: 0)
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 1)
         │   │   │   │   │   └── @ KeywordParameterNode (location: (456...460))
         │   │   │   │   │       ├── name: :foo
@@ -1088,8 +1088,8 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (471...472))
         │   │   │   │   │           └── flags: decimal
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -1128,12 +1128,12 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (487...488))
         │   │   │   │   │           └── flags: decimal
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (490...492))
         │   │   │   │   │   ├── name: :r
         │   │   │   │   │   ├── name_loc: (491...492) = "r"
         │   │   │   │   │   └── operator_loc: (490...491) = "*"
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -1172,14 +1172,14 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (507...508))
         │   │   │   │   │           └── flags: decimal
-        │   │   │   │   ├── posts: (length: 1)
-        │   │   │   │   │   └── @ RequiredParameterNode (location: (514...515))
-        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (510...512))
         │   │   │   │   │   ├── name: :r
         │   │   │   │   │   ├── name_loc: (511...512) = "r"
         │   │   │   │   │   └── operator_loc: (510...511) = "*"
+        │   │   │   │   ├── posts: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (514...515))
+        │   │   │   │   │       └── name: :p
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:
@@ -1218,10 +1218,10 @@
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (530...531))
         │   │   │   │   │           └── flags: decimal
+        │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 1)
         │   │   │   │   │   └── @ RequiredParameterNode (location: (533...534))
         │   │   │   │   │       └── name: :p
-        │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block:

@@ -14,8 +14,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (14...17))
         │   │   │       └── name: :cmd
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -72,8 +72,8 @@
         │   │   │   └── @ RequiredParameterNode (location: (66...69))
         │   │   │       └── name: :cmd
         │   │   ├── optionals: (length: 0)
-        │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
@@ -118,8 +118,8 @@
             │   │   └── @ RequiredParameterNode (location: (116...119))
             │   │       └── name: :cmd
             │   ├── optionals: (length: 0)
-            │   ├── posts: (length: 0)
             │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅

@@ -39,8 +39,8 @@
         │   │   │   │   │   └── @ RequiredParameterNode (location: (24...25))
         │   │   │   │   │       └── name: :b
         │   │   │   │   ├── optionals: (length: 0)
-        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 0)
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
@@ -82,8 +82,8 @@
         │   │   │   │   └── @ RequiredParameterNode (location: (45...46))
         │   │   │   │       └── name: :a
         │   │   │   ├── optionals: (length: 0)
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
@@ -106,8 +106,8 @@
         │   │   │   │   └── @ RequiredParameterNode (location: (58...59))
         │   │   │   │       └── name: :b
         │   │   │   ├── optionals: (length: 0)
-        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
@@ -130,8 +130,8 @@
             │   │   │   └── @ RequiredParameterNode (location: (71...72))
             │   │   │       └── name: :b
             │   │   ├── optionals: (length: 0)
-            │   │   ├── posts: (length: 0)
             │   │   ├── rest: ∅
+            │   │   ├── posts: (length: 0)
             │   │   ├── keywords: (length: 0)
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
