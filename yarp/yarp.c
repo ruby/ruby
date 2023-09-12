@@ -4951,8 +4951,7 @@ parser_lex_encoding_comment_start(yp_parser_t *parser, const uint8_t *cursor, pt
 static void
 parser_lex_encoding_comment(yp_parser_t *parser) {
     const uint8_t *start = parser->current.start + 1;
-    const uint8_t *end = next_newline(start, parser->end - start);
-    if (end == NULL) end = parser->end;
+    const uint8_t *end = parser->current.end;
 
     // These are the patterns we're going to match to find the encoding comment.
     // This is definitely not complete or even really correct.
@@ -5050,6 +5049,38 @@ parser_lex_encoding_comment(yp_parser_t *parser) {
     // case we'll keep using the default encoding but add an error to the
     // parser to indicate an unsuccessful parse.
     yp_diagnostic_list_append(&parser->error_list, encoding_start, encoding_end, YP_ERR_INVALID_ENCODING_MAGIC_COMMENT);
+}
+
+// Check if this is a magic comment that includes the frozen_string_literal
+// pragma. If it does, set that field on the parser.
+static void
+parser_lex_frozen_string_literal_comment(yp_parser_t *parser) {
+    const uint8_t *cursor = parser->current.start + 1;
+    const uint8_t *end = parser->current.end;
+
+    size_t key_length = strlen("frozen_string_literal");
+    if (key_length > (size_t) (end - cursor)) return;
+
+    const uint8_t *cursor_limit = cursor + (end - cursor) - key_length + 1;
+
+    while ((cursor = yp_memchr(cursor, 'f', (size_t) (cursor_limit - cursor), parser->encoding_changed, &parser->encoding)) != NULL) {
+        if (memcmp(cursor, "frozen_string_literal", key_length) == 0) {
+            cursor += yp_strspn_inline_whitespace(cursor + key_length, end - (cursor + key_length));
+
+            if (*cursor == ':' || *cursor == '=') {
+                cursor++;
+                cursor += yp_strspn_inline_whitespace(cursor, end - cursor);
+
+                if (cursor + 4 <= end && yp_strncasecmp(cursor, (const uint8_t *) "true", 4) == 0) {
+                    parser->frozen_string_literal = true;
+                }
+
+                return;
+            }
+        }
+
+        cursor++;
+    }
 }
 
 /******************************************************************************/
@@ -5982,6 +6013,11 @@ parser_lex(yp_parser_t *parser) {
     // already seen a comment.
     bool lexed_comment = false;
 
+    // Here we cache the current value of the semantic token seen flag. This is
+    // used to reset it in case we find a token that shouldn't flip this flag.
+    unsigned int semantic_token_seen = parser->semantic_token_seen;
+    parser->semantic_token_seen = true;
+
     switch (parser->lex_modes.current->mode) {
         case YP_LEX_DEFAULT:
         case YP_LEX_EMBEXPR:
@@ -6083,12 +6119,18 @@ parser_lex(yp_parser_t *parser) {
                         parser_lex_encoding_comment(parser);
                     }
 
+                    if (!semantic_token_seen) {
+                        parser_lex_frozen_string_literal_comment(parser);
+                    }
+
                     lexed_comment = true;
                 }
                 /* fallthrough */
                 case '\r':
                 case '\n': {
+                    parser->semantic_token_seen = semantic_token_seen;
                     size_t eol_length = match_eol_at(parser, parser->current.end - 1);
+
                     if (eol_length) {
                         // The only way you can have carriage returns in this
                         // particular loop is if you have a carriage return
@@ -13950,7 +13992,6 @@ yp_parser_init(yp_parser_t *parser, const uint8_t *source, size_t size, const ch
 
     *parser = (yp_parser_t) {
         .lex_state = YP_LEX_STATE_BEG,
-        .command_start = true,
         .enclosure_nesting = 0,
         .lambda_enclosure_nesting = -1,
         .brace_nesting = 0,
@@ -13972,19 +14013,22 @@ yp_parser_init(yp_parser_t *parser, const uint8_t *source, size_t size, const ch
         .error_list = YP_LIST_EMPTY,
         .current_scope = NULL,
         .current_context = NULL,
-        .recovering = false,
         .encoding = yp_encoding_utf_8,
-        .encoding_changed = false,
         .encoding_changed_callback = NULL,
         .encoding_decode_callback = NULL,
         .encoding_comment_start = source,
         .lex_callback = NULL,
-        .pattern_matching_newlines = false,
-        .in_keyword_arg = false,
         .filepath_string = filepath_string,
         .constant_pool = YP_CONSTANT_POOL_EMPTY,
         .newline_list = YP_NEWLINE_LIST_EMPTY,
-        .integer_base = 0
+        .integer_base = 0,
+        .command_start = true,
+        .recovering = false,
+        .encoding_changed = false,
+        .pattern_matching_newlines = false,
+        .in_keyword_arg = false,
+        .semantic_token_seen = false,
+        .frozen_string_literal = false
     };
 
     yp_accepts_block_stack_push(parser, true);

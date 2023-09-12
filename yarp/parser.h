@@ -394,6 +394,14 @@ struct yp_parser {
 
     // This flag indicates that we are currently parsing a keyword argument.
     unsigned int in_keyword_arg : 1;
+
+    // Whether or not the parser has seen a token that has semantic meaning
+    // (i.e., a token that is not a comment or whitespace).
+    unsigned int semantic_token_seen : 1;
+
+    // Whether or not we have found a frozen_string_literal magic comment with
+    // a true value.
+    unsigned int frozen_string_literal : 1;
 };
 
 #endif // YARP_PARSER_H
