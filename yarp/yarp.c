@@ -14472,6 +14472,7 @@ yp_serialize(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
     yp_buffer_append_u8(buffer, YP_VERSION_MAJOR);
     yp_buffer_append_u8(buffer, YP_VERSION_MINOR);
     yp_buffer_append_u8(buffer, YP_VERSION_PATCH);
+    yp_buffer_append_u8(buffer, YP_SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0);
 
     yp_serialize_content(parser, node, buffer);
     yp_buffer_append_str(buffer, "\0", 1);

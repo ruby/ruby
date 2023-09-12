@@ -95,14 +95,18 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
                 yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
             }
             <%- when YARP::LocationField -%>
+            <%- if field.should_be_serialized? -%>
             yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- end -%>
             <%- when YARP::OptionalLocationField -%>
+            <%- if field.should_be_serialized? -%>
             if (((yp_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
                 yp_buffer_append_u8(buffer, 0);
             } else {
                 yp_buffer_append_u8(buffer, 1);
                 yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
+            <%- end -%>
             <%- when YARP::UInt32Field -%>
             yp_buffer_append_u32(buffer, ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when YARP::FlagsField -%>

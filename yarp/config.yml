@@ -1770,6 +1770,7 @@ nodes:
         type: location
       - name: content_loc
         type: location
+        semantic_field: true # https://github.com/ruby/yarp/issues/1452
       - name: closing_loc
         type: location
       - name: unescaped
@@ -2090,6 +2091,7 @@ nodes:
         type: location
       - name: content_loc
         type: location
+        semantic_field: true # https://github.com/ruby/yarp/issues/1452
       - name: closing_loc
         type: location
       - name: unescaped
@@ -2283,8 +2285,10 @@ nodes:
         kind: StringFlags
       - name: opening_loc
         type: location?
+        semantic_field: true # https://github.com/ruby/yarp/issues/1452
       - name: content_loc
         type: location
+        semantic_field: true # https://github.com/ruby/yarp/issues/1452
       - name: closing_loc
         type: location?
       - name: unescaped

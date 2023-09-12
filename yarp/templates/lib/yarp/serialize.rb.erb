@@ -89,6 +89,10 @@ module YARP
       def load_nodes
         raise "Invalid serialization" if io.read(4) != "YARP"
         raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
+        only_semantic_fields = io.read(1).unpack1("C")
+        unless only_semantic_fields == 0
+          raise "Invalid serialization (location fields must be included but are not)"
+        end
 
         @encoding = load_encoding
         @input = input.force_encoding(@encoding).freeze

@@ -166,6 +166,14 @@ module YARP
         end
       end
     end
+
+    def self.dump_internal(source, source_size, filepath)
+      YPBuffer.with do |buffer|
+        metadata = [filepath.bytesize, filepath.b, 0].pack("LA*L") if filepath
+        yp_parse_serialize(source, source_size, buffer.pointer, metadata)
+        buffer.read
+      end
+    end
   end
 
   # Mark the LibRubyParser module as private as it should only be called through
@@ -175,24 +183,15 @@ module YARP
   # The version constant is set by reading the result of calling yp_version.
   VERSION = LibRubyParser.yp_version.read_string
 
-  def self.dump_internal(source, source_size, filepath)
-    LibRubyParser::YPBuffer.with do |buffer|
-      metadata = [filepath.bytesize, filepath.b, 0].pack("LA*L") if filepath
-      LibRubyParser.yp_parse_serialize(source, source_size, buffer.pointer, metadata)
-      buffer.read
-    end
-  end
-  private_class_method :dump_internal
-
   # Mirror the YARP.dump API by using the serialization API.
   def self.dump(code, filepath = nil)
-    dump_internal(code, code.bytesize, filepath)
+    LibRubyParser.dump_internal(code, code.bytesize, filepath)
   end
 
   # Mirror the YARP.dump_file API by using the serialization API.
   def self.dump_file(filepath)
     LibRubyParser::YPString.with(filepath) do |string|
-      dump_internal(string.source, string.length, filepath)
+      LibRubyParser.dump_internal(string.source, string.length, filepath)
     end
   end
 
