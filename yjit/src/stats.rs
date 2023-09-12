@@ -3,7 +3,7 @@
 
 #![allow(dead_code)] // Counters are only used with the stats features
 
-use std::time::SystemTime;
+use std::time::Instant;
 
 use crate::codegen::CodegenGlobals;
 use crate::core::Context;
@@ -846,10 +846,9 @@ fn global_allocation_size() -> usize {
 /// Measure the time taken by func() and add that to yjit_compile_time.
 pub fn with_compile_time<F, R>(func: F) -> R where F: FnOnce() -> R {
     if get_option!(gen_stats) {
-        let start = SystemTime::now();
+        let start = Instant::now();
         let ret = func();
-        let nanos = SystemTime::now().duration_since(start)
-            .expect("time went backwards").as_nanos();
+        let nanos = Instant::now().duration_since(start).as_nanos();
         incr_counter_by!(compile_time_ns, nanos);
         ret
     } else {
