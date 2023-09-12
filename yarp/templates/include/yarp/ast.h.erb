@@ -59,6 +59,7 @@ typedef uint16_t yp_node_flags_t;
 // We store the flags enum in every node in the tree. Some flags are common to
 // all nodes (the ones listed below). Others are specific to certain node types.
 static const yp_node_flags_t YP_NODE_FLAG_NEWLINE = 0x1;
+static const yp_node_flags_t YP_NODE_FLAG_STATIC_LITERAL = 0x2;
 
 // For easy access, we define some macros to check node type
 #define YP_NODE_TYPE(node) ((enum yp_node_type)node->type)

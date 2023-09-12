@@ -5,7 +5,7 @@ require "fileutils"
 require "yaml"
 
 module YARP
-  COMMON_FLAGS = 1
+  COMMON_FLAGS = 2
 
   # This represents a field on a node. It contains all of the necessary
   # information to template out the code for that field.
