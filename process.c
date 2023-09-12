@@ -566,8 +566,7 @@ proc_get_ppid(VALUE _)
  *
  * Document-class: Process::Status
  *
- *  A Process::Status may contain (and usually does contain)
- *  information about a system process.
+ *  A Process::Status contains information about a system process.
  *
  *  Thread-local variable <tt>$?</tt> is initially +nil+.
  *  Some methods assign to it a Process::Status object
