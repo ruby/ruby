@@ -3,6 +3,8 @@
 
 #![allow(dead_code)] // Counters are only used with the stats features
 
+use std::time::Instant;
+
 use crate::codegen::CodegenGlobals;
 use crate::core::Context;
 use crate::core::for_each_iseq_payload;
@@ -411,6 +413,7 @@ make_counters! {
     compiled_blockid_count,
     compiled_block_count,
     compiled_branch_count,
+    compile_time_ns,
     compilation_failure,
     block_next_count,
     defer_count,
@@ -838,4 +841,17 @@ pub extern "C" fn rb_yjit_count_side_exit_op(exit_pc: *const VALUE) -> *const VA
 fn global_allocation_size() -> usize {
     let stats = GLOBAL_ALLOCATOR.stats();
     stats.bytes_allocated.saturating_sub(stats.bytes_deallocated)
+}
+
+/// Measure the time taken by func() and add that to yjit_compile_time.
+pub fn with_compile_time<F, R>(func: F) -> R where F: FnOnce() -> R {
+    if get_option!(gen_stats) {
+        let start = Instant::now();
+        let ret = func();
+        let nanos = Instant::now().duration_since(start).as_nanos();
+        incr_counter_by!(compile_time_ns, nanos);
+        ret
+    } else {
+        func()
+    }
 }
