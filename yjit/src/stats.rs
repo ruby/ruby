@@ -167,13 +167,14 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 6] = [
+pub const DEFAULT_COUNTERS: [Counter; 7] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::compiled_iseq_count,
     Counter::compiled_blockid_count,
     Counter::compiled_block_count,
     Counter::compiled_branch_count,
+    Counter::compile_time_ns,
 ];
 
 /// Macro to increase a counter by name and count
@@ -845,13 +846,9 @@ fn global_allocation_size() -> usize {
 
 /// Measure the time taken by func() and add that to yjit_compile_time.
 pub fn with_compile_time<F, R>(func: F) -> R where F: FnOnce() -> R {
-    if get_option!(gen_stats) {
-        let start = Instant::now();
-        let ret = func();
-        let nanos = Instant::now().duration_since(start).as_nanos();
-        incr_counter_by!(compile_time_ns, nanos);
-        ret
-    } else {
-        func()
-    }
+    let start = Instant::now();
+    let ret = func();
+    let nanos = Instant::now().duration_since(start).as_nanos();
+    incr_counter_by!(compile_time_ns, nanos);
+    ret
 }
