@@ -778,9 +778,9 @@ eom
       %w[
         CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
         CLOCK_MONOTONIC
-      ].find do |clk|
-        if Process.const_defined?(clk)
-          [clk.to_sym, Process.const_get(clk)].find do |clk|
+      ].find do |c|
+        if Process.const_defined?(c)
+          [c.to_sym, Process.const_get(c)].find do |clk|
             Process.clock_gettime(clk)
           rescue
             # Constants may be defined but not implemented, e.g., mingw.
