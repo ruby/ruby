@@ -2248,7 +2248,7 @@ c_callable! {
     /// See [gen_call_entry_stub_hit].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            match entry_stub_hit_body(entry_ptr, ec) {
+            match with_compile_time(|| { entry_stub_hit_body(entry_ptr, ec) }) {
                 Some(addr) => addr,
                 // Failed to service the stub by generating a new block so now we
                 // need to exit to the interpreter at the stubbed location.
@@ -2441,7 +2441,7 @@ c_callable! {
         ec: EcPtr,
     ) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            branch_stub_hit_body(branch_ptr, target_idx, ec)
+            with_compile_time(|| { branch_stub_hit_body(branch_ptr, target_idx, ec) })
         })
     }
 }
