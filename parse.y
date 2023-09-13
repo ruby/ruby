@@ -917,6 +917,15 @@ set_embraced_location(NODE *node, const rb_code_location_t *beg, const rb_code_l
     nd_set_line(node, beg->end_pos.lineno);
 }
 
+static NODE *
+last_expr_node(NODE *expr)
+{
+    if (nd_type_p(expr, NODE_BLOCK)) {
+        expr = expr->nd_end->nd_head;
+    }
+    return expr;
+}
+
 #define yyparse ruby_yyparse
 
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
@@ -6050,16 +6059,18 @@ singleton	: var_ref
                 | '(' {SET_LEX_STATE(EXPR_BEG);} expr rparen
                     {
                     /*%%%*/
-                        switch (nd_type($3)) {
+                        NODE *expr = last_expr_node($3);
+                        switch (nd_type(expr)) {
                           case NODE_STR:
                           case NODE_DSTR:
                           case NODE_XSTR:
                           case NODE_DXSTR:
                           case NODE_DREGX:
                           case NODE_LIT:
+                          case NODE_DSYM:
                           case NODE_LIST:
                           case NODE_ZLIST:
-                            yyerror1(&@3, "can't define singleton method for literals");
+                            yyerror1(&expr->nd_loc, "can't define singleton method for literals");
                             break;
                           default:
                             value_expr($3);

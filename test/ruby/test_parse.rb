@@ -453,11 +453,16 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_define_singleton_error
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /singleton method for literals/) do
-      begin;
-        def ("foo").foo; end
-      end;
-    end
+    msg = /singleton method for literals/
+    assert_parse_error(%q[def ("foo").foo; end], msg)
+    assert_parse_error(%q[def (1).foo; end], msg)
+    assert_parse_error(%q[def ((1;1)).foo; end], msg)
+    assert_parse_error(%q[def ((;1)).foo; end], msg)
+    assert_parse_error(%q[def ((1+1;1)).foo; end], msg)
+    assert_parse_error(%q[def ((%s();1)).foo; end], msg)
+    assert_parse_error(%q[def ((%w();1)).foo; end], msg)
+    assert_parse_error(%q[def ("#{42}").foo; end], msg)
+    assert_parse_error(%q[def (:"#{42}").foo; end], msg)
   end
 
   def test_op_asgn1_with_block
@@ -1453,4 +1458,14 @@ x = __ENCODING__
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
   end
 =end
+
+  def assert_parse(code)
+    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.parse(code))
+  end
+
+  def assert_parse_error(code, message)
+    assert_raise_with_message(SyntaxError, message) do
+      RubyVM::AbstractSyntaxTree.parse(code)
+    end
+  end
 end
