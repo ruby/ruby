@@ -8169,6 +8169,7 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
             // If we have no arguments to the call node and we need this to be a
             // target then this is either a method call or a local variable write.
             if (
+                ((call->message_loc.start != NULL) && (call->message_loc.end[-1] != '!') && (call->message_loc.end[-1] != '?')) &&
                 (call->opening_loc.start == NULL) &&
                 (call->arguments == NULL) &&
                 (call->block == NULL)
