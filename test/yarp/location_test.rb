@@ -410,6 +410,20 @@ module YARP
       assert_location(ImaginaryNode, "1ri")
     end
 
+    def test_ImplicitNode
+      assert_location(ImplicitNode, "{ foo: }", 2...6) do |node|
+        node.elements.first.value
+      end
+
+      assert_location(ImplicitNode, "{ Foo: }", 2..6) do |node|
+        node.elements.first.value
+      end
+
+      assert_location(ImplicitNode, "foo = 1; { foo: }", 11..15) do |node|
+        node.elements.first.value
+      end
+    end
+
     def test_InNode
       assert_location(InNode, "case foo; in bar; end", 10...16) do |node|
         node.conditions.first

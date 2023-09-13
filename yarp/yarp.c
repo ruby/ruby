@@ -2737,6 +2737,22 @@ yp_else_node_end_keyword_loc_set(yp_else_node_t *node, const yp_token_t *keyword
     node->end_keyword_loc = YP_LOCATION_TOKEN_VALUE(keyword);
 }
 
+// Allocate and initialize a new ImplicitNode node.
+static yp_implicit_node_t *
+yp_implicit_node_create(yp_parser_t *parser, yp_node_t *value) {
+    yp_implicit_node_t *node = YP_ALLOC_NODE(parser, yp_implicit_node_t);
+
+    *node = (yp_implicit_node_t) {
+        {
+            .type = YP_IMPLICIT_NODE,
+            .location = value->location
+        },
+        .value = value
+    };
+
+    return node;
+}
+
 // Allocate and initialize a new IntegerNode node.
 static yp_integer_node_t *
 yp_integer_node_create(yp_parser_t *parser, yp_node_flags_t base, const yp_token_t *token) {
@@ -8715,14 +8731,32 @@ parse_assocs(yp_parser_t *parser, yp_node_t *node) {
                 break;
             }
             case YP_TOKEN_LABEL: {
+                yp_token_t label = parser->current;
                 parser_lex(parser);
 
-                yp_node_t *key = (yp_node_t *) yp_symbol_node_label_create(parser, &parser->previous);
+                yp_node_t *key = (yp_node_t *) yp_symbol_node_label_create(parser, &label);
                 yp_token_t operator = not_provided(parser);
                 yp_node_t *value = NULL;
 
                 if (token_begins_expression_p(parser->current.type)) {
                     value = parse_expression(parser, YP_BINDING_POWER_DEFINED, YP_ERR_HASH_EXPRESSION_AFTER_LABEL);
+                } else {
+                    if (parser->encoding.isupper_char(label.start, (label.end - 1) - label.start)) {
+                        yp_token_t constant = { .type = YP_TOKEN_CONSTANT, .start = label.start, .end = label.end - 1 };
+                        value = (yp_node_t *) yp_constant_read_node_create(parser, &constant);
+                    } else {
+                        int depth = yp_parser_local_depth(parser, &((yp_token_t) { .type = YP_TOKEN_IDENTIFIER, .start = label.start, .end = label.end - 1 }));
+                        yp_token_t identifier = { .type = YP_TOKEN_IDENTIFIER, .start = label.start, .end = label.end - 1 };
+
+                        if (depth == -1) {
+                            value = (yp_node_t *) yp_call_node_variable_call_create(parser, &identifier);
+                        } else {
+                            value = (yp_node_t *) yp_local_variable_read_node_create(parser, &identifier, (uint32_t) depth);
+                        }
+                    }
+
+                    value->location.end++;
+                    value = (yp_node_t *) yp_implicit_node_create(parser, value);
                 }
 
                 element = (yp_node_t *) yp_assoc_node_create(parser, key, &operator, value);

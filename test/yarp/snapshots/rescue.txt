@@ -340,7 +340,19 @@
             │   │           │                   │   ├── value_loc: (303...304) = "b"
             │   │           │                   │   ├── closing_loc: (304...305) = ":"
             │   │           │                   │   └── unescaped: "b"
-            │   │           │                   ├── value: ∅
+            │   │           │                   ├── value:
+            │   │           │                   │   @ ImplicitNode (location: (303...305))
+            │   │           │                   │   └── value:
+            │   │           │                   │       @ CallNode (location: (303...305))
+            │   │           │                   │       ├── receiver: ∅
+            │   │           │                   │       ├── call_operator_loc: ∅
+            │   │           │                   │       ├── message_loc: (303...304) = "b"
+            │   │           │                   │       ├── opening_loc: ∅
+            │   │           │                   │       ├── arguments: ∅
+            │   │           │                   │       ├── closing_loc: ∅
+            │   │           │                   │       ├── block: ∅
+            │   │           │                   │       ├── flags: ∅
+            │   │           │                   │       └── name: "b"
             │   │           │                   └── operator_loc: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅

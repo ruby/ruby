@@ -1413,6 +1413,19 @@ nodes:
 
           1.0i
           ^^^^
+  - name: ImplicitNode
+    fields:
+      - name: value
+        type: node
+    comment: |
+      Represents a node that is implicitly being added to the tree but doesn't
+      correspond directly to a node in the source.
+
+          { foo: }
+            ^^^^
+
+          { Foo: }
+            ^^^^
   - name: InNode
     fields:
       - name: pattern

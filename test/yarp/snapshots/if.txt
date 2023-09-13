@@ -240,7 +240,19 @@
         │   │           │                   │   ├── value_loc: (248...249) = "b"
         │   │           │                   │   ├── closing_loc: (249...250) = ":"
         │   │           │                   │   └── unescaped: "b"
-        │   │           │                   ├── value: ∅
+        │   │           │                   ├── value:
+        │   │           │                   │   @ ImplicitNode (location: (248...250))
+        │   │           │                   │   └── value:
+        │   │           │                   │       @ CallNode (location: (248...250))
+        │   │           │                   │       ├── receiver: ∅
+        │   │           │                   │       ├── call_operator_loc: ∅
+        │   │           │                   │       ├── message_loc: (248...249) = "b"
+        │   │           │                   │       ├── opening_loc: ∅
+        │   │           │                   │       ├── arguments: ∅
+        │   │           │                   │       ├── closing_loc: ∅
+        │   │           │                   │       ├── block: ∅
+        │   │           │                   │       ├── flags: ∅
+        │   │           │                   │       └── name: "b"
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
