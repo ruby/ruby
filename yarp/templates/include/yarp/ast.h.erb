@@ -47,12 +47,6 @@ enum yp_node_type {
     YP_SCOPE_NODE
 };
 
-// Deprecated aliases
-#define YP_NODE_SCOPE_NODE YP_SCOPE_NODE
-<%- nodes.each do |node| -%>
-#define <%= node.type.sub(/^YP_/, 'YP_NODE_') %> <%= node.type %>
-<%- end -%>
-
 typedef uint16_t yp_node_type_t;
 typedef uint16_t yp_node_flags_t;
 

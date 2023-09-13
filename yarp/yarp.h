@@ -28,10 +28,6 @@
 #include <strings.h>
 #endif
 
-// These aliases are for migration purposes.
-#define YP_ALIAS_NODE YP_ALIAS_METHOD_NODE
-#define yp_alias_node_t yp_alias_method_node_t
-
 void yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer);
 
 void yp_print_node(yp_parser_t *parser, yp_node_t *node);
