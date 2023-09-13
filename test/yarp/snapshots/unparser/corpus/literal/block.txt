@@ -1337,39 +1337,25 @@
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (724...737))
-            │   ├── locals: []
+            │   ├── locals: [:_1, :_2]
             │   ├── parameters: ∅
             │   ├── body:
             │   │   @ StatementsNode (location: (728...735))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (728...735))
             │   │           ├── receiver:
-            │   │           │   @ CallNode (location: (728...730))
-            │   │           │   ├── receiver: ∅
-            │   │           │   ├── call_operator_loc: ∅
-            │   │           │   ├── message_loc: (728...730) = "_1"
-            │   │           │   ├── opening_loc: ∅
-            │   │           │   ├── arguments: ∅
-            │   │           │   ├── closing_loc: ∅
-            │   │           │   ├── block: ∅
-            │   │           │   ├── flags: variable_call
-            │   │           │   └── name: "_1"
+            │   │           │   @ LocalVariableReadNode (location: (728...730))
+            │   │           │   ├── name: :_1
+            │   │           │   └── depth: 0
             │   │           ├── call_operator_loc: ∅
             │   │           ├── message_loc: (731...732) = "+"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments:
             │   │           │   @ ArgumentsNode (location: (733...735))
             │   │           │   └── arguments: (length: 1)
-            │   │           │       └── @ CallNode (location: (733...735))
-            │   │           │           ├── receiver: ∅
-            │   │           │           ├── call_operator_loc: ∅
-            │   │           │           ├── message_loc: (733...735) = "_2"
-            │   │           │           ├── opening_loc: ∅
-            │   │           │           ├── arguments: ∅
-            │   │           │           ├── closing_loc: ∅
-            │   │           │           ├── block: ∅
-            │   │           │           ├── flags: variable_call
-            │   │           │           └── name: "_2"
+            │   │           │       └── @ LocalVariableReadNode (location: (733...735))
+            │   │           │           ├── name: :_2
+            │   │           │           └── depth: 0
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅

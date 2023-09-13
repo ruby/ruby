@@ -28,7 +28,7 @@
         │   │           │   │   │       ├── operator_loc: (7...8) = "="
         │   │           │   │   │       └── value:
         │   │           │   │   │           @ LambdaNode (location: (9...15))
-        │   │           │   │   │           ├── locals: []
+        │   │           │   │   │           ├── locals: [:_1]
         │   │           │   │   │           ├── operator_loc: (9...11) = "->"
         │   │           │   │   │           ├── opening_loc: (11...12) = "{"
         │   │           │   │   │           ├── closing_loc: (14...15) = "}"
@@ -36,16 +36,9 @@
         │   │           │   │   │           └── body:
         │   │           │   │   │               @ StatementsNode (location: (12...14))
         │   │           │   │   │               └── body: (length: 1)
-        │   │           │   │   │                   └── @ CallNode (location: (12...14))
-        │   │           │   │   │                       ├── receiver: ∅
-        │   │           │   │   │                       ├── call_operator_loc: ∅
-        │   │           │   │   │                       ├── message_loc: (12...14) = "_1"
-        │   │           │   │   │                       ├── opening_loc: ∅
-        │   │           │   │   │                       ├── arguments: ∅
-        │   │           │   │   │                       ├── closing_loc: ∅
-        │   │           │   │   │                       ├── block: ∅
-        │   │           │   │   │                       ├── flags: variable_call
-        │   │           │   │   │                       └── name: "_1"
+        │   │           │   │   │                   └── @ LocalVariableReadNode (location: (12...14))
+        │   │           │   │   │                       ├── name: :_1
+        │   │           │   │   │                       └── depth: 0
         │   │           │   │   ├── rest: ∅
         │   │           │   │   ├── posts: (length: 0)
         │   │           │   │   ├── keywords: (length: 0)
@@ -91,7 +84,7 @@
             │           │   │   │       ├── name_loc: (27...29) = "a:"
             │           │   │   │       └── value:
             │           │   │   │           @ LambdaNode (location: (30...36))
-            │           │   │   │           ├── locals: []
+            │           │   │   │           ├── locals: [:_1]
             │           │   │   │           ├── operator_loc: (30...32) = "->"
             │           │   │   │           ├── opening_loc: (32...33) = "{"
             │           │   │   │           ├── closing_loc: (35...36) = "}"
@@ -99,16 +92,9 @@
             │           │   │   │           └── body:
             │           │   │   │               @ StatementsNode (location: (33...35))
             │           │   │   │               └── body: (length: 1)
-            │           │   │   │                   └── @ CallNode (location: (33...35))
-            │           │   │   │                       ├── receiver: ∅
-            │           │   │   │                       ├── call_operator_loc: ∅
-            │           │   │   │                       ├── message_loc: (33...35) = "_1"
-            │           │   │   │                       ├── opening_loc: ∅
-            │           │   │   │                       ├── arguments: ∅
-            │           │   │   │                       ├── closing_loc: ∅
-            │           │   │   │                       ├── block: ∅
-            │           │   │   │                       ├── flags: variable_call
-            │           │   │   │                       └── name: "_1"
+            │           │   │   │                   └── @ LocalVariableReadNode (location: (33...35))
+            │           │   │   │                       ├── name: :_1
+            │           │   │   │                       └── depth: 0
             │           │   │   ├── keyword_rest: ∅
             │           │   │   └── block: ∅
             │           │   ├── locals: (length: 0)

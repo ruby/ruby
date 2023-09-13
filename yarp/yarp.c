@@ -10110,6 +10110,30 @@ parse_variable_call(yp_parser_t *parser) {
             return (yp_node_t *) yp_local_variable_read_node_create(parser, &parser->previous, (uint32_t) depth);
         }
 
+        if (!parser->current_scope->closed && token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
+            // Now that we know we have a numbered parameter, we need to check
+            // if it's allowed in this context. If it is, then we will create a
+            // local variable read. If it's not, then we'll create a normal call
+            // node but add an error.
+            if (parser->current_scope->explicit_params) {
+                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_NUMBERED_PARAMETER_NOT_ALLOWED);
+            } else {
+                uint8_t number = parser->previous.start[1];
+                uint8_t current = '1';
+                uint8_t *value;
+
+                while (current < number) {
+                    value = malloc(2);
+                    value[0] = '_';
+                    value[1] = current++;
+                    yp_parser_local_add_owned(parser, value, 2);
+                }
+
+                yp_parser_local_add_token(parser, &parser->previous);
+                return (yp_node_t *) yp_local_variable_read_node_create(parser, &parser->previous, 0);
+            }
+        }
+
         flags |= YP_CALL_NODE_FLAGS_VARIABLE_CALL;
     }
 
