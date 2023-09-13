@@ -1143,6 +1143,12 @@ module YARP
       ]
     end
 
+    def test_invalid_global_variable_write
+      assert_errors expression("$',"), "$',", [
+        ["Immutable variable as a write target", 0..2]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors)

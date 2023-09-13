@@ -8136,12 +8136,9 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
             target->type = YP_CONSTANT_TARGET_NODE;
             return target;
         case YP_BACK_REFERENCE_READ_NODE:
-            assert(sizeof(yp_global_variable_target_node_t) == sizeof(yp_back_reference_read_node_t));
-            /* fallthrough */
         case YP_NUMBERED_REFERENCE_READ_NODE:
-            assert(sizeof(yp_global_variable_target_node_t) == sizeof(yp_numbered_reference_read_node_t));
             yp_diagnostic_list_append(&parser->error_list, target->location.start, target->location.end, YP_ERR_WRITE_TARGET_READONLY);
-            /* fallthrough */
+            return target;
         case YP_GLOBAL_VARIABLE_READ_NODE:
             assert(sizeof(yp_global_variable_target_node_t) == sizeof(yp_global_variable_read_node_t));
             target->type = YP_GLOBAL_VARIABLE_TARGET_NODE;
