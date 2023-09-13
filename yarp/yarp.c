@@ -8435,7 +8435,6 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
         case YP_LOCAL_VARIABLE_READ_NODE: {
             if (token_is_numbered_parameter(target->location.start, target->location.end)) {
                 yp_diagnostic_list_append(&parser->error_list, target->location.start, target->location.end, YP_ERR_PARAMETER_NUMBERED_RESERVED);
-                return target;
             }
 
             yp_local_variable_read_node_t *local_read = (yp_local_variable_read_node_t *) target;
@@ -10119,14 +10118,7 @@ parse_alias_argument(yp_parser_t *parser, bool first) {
 // numbered parameters.
 static bool
 outer_scope_using_numbered_params_p(yp_parser_t *parser) {
-    yp_scope_t *scope = parser->current_scope;
-
-    // We can bail early here if we've already performed this lookup since it
-    // will be set on the current scope.
-    if (scope->numbered_params) return false;
-
-    // Otherwise we need to walk up the list of scopes.
-    for (scope = scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
+    for (yp_scope_t *scope = parser->current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
         if (scope->numbered_params) return true;
     }
 
@@ -10145,6 +10137,10 @@ parse_variable_call(yp_parser_t *parser) {
         }
 
         if (!parser->current_scope->closed && token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
+            // Indicate that this scope is using numbered params so that child
+            // scopes cannot.
+            parser->current_scope->numbered_params = true;
+
             // Now that we know we have a numbered parameter, we need to check
             // if it's allowed in this context. If it is, then we will create a
             // local variable read. If it's not, then we'll create a normal call
@@ -10154,10 +10150,6 @@ parse_variable_call(yp_parser_t *parser) {
             } else if (outer_scope_using_numbered_params_p(parser)) {
                 yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_NUMBERED_PARAMETER_OUTER_SCOPE);
             } else {
-                // Indicate that this scope is using numbered params so that
-                // child scopes cannot.
-                parser->current_scope->numbered_params = true;
-
                 // When you use a numbered parameter, it implies the existence
                 // of all of the locals that exist before it. For example,
                 // referencing _2 means that _1 must exist. Therefore here we
