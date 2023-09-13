@@ -13607,23 +13607,8 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     rb_encoding *enc = arg->enc;
     long len = name_end - name;
     const char *s = (const char *)name;
-    ID var;
-    NODE *node, *succ;
 
-    if (!len) return ST_CONTINUE;
-    if (rb_enc_symname_type(s, len, enc, (1U<<ID_LOCAL)) != ID_LOCAL)
-        return ST_CONTINUE;
-
-    var = intern_cstr(s, len, enc);
-    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
-        if (!lvar_defined(p, var)) return ST_CONTINUE;
-    }
-    node = node_assign(p, assignable(p, var, 0, arg->loc), NEW_LIT(ID2SYM(var), arg->loc), NO_LEX_CTXT, arg->loc);
-    succ = arg->succ_block;
-    if (!succ) succ = NEW_BEGIN(0, arg->loc);
-    succ = block_append(p, succ, node);
-    arg->succ_block = succ;
-    return ST_CONTINUE;
+    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, arg->loc);
 }
 
 static NODE *
