@@ -836,8 +836,8 @@ class TestRubyOptions < Test::Unit::TestCase
     }
   end
 
-  def assert_bugreport_path(path, cmd = nil)
-    Dir.mktmpdir("ruby_bugreport") do |dir|
+  def assert_crash_report(path, cmd = nil)
+    Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
       if cmd
         FileUtils.mkpath(File.join(dir, File.dirname(cmd)))
@@ -847,7 +847,7 @@ class TestRubyOptions < Test::Unit::TestCase
       else
         cmd = ['-e', SEGVTest::KILL_SELF]
       end
-      status = assert_segv([{"RUBY_BUGREPORT_PATH"=>path}, *cmd], list: [], chdir: dir)
+      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir)
       reports = Dir.glob("*.log", File::FNM_DOTMATCH, base: dir)
       assert_equal(1, reports.size)
       assert_pattern_list(list, File.read(File.join(dir, reports.first)))
@@ -855,39 +855,39 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
-  def test_bugreport_path
-    assert_bugreport_path("%e.%f.%p.log") do |status, report|
+  def test_crash_report
+    assert_crash_report("%e.%f.%p.log") do |status, report|
       assert_equal("#{File.basename(EnvUtil.rubybin)}.-e.#{status.pid}.log", report)
     end
   end
 
-  def test_bugreport_path_script
-    assert_bugreport_path("%e.%f.%p.log", "bug.rb") do |status, report|
+  def test_crash_report_script
+    assert_crash_report("%e.%f.%p.log", "bug.rb") do |status, report|
       assert_equal("#{File.basename(EnvUtil.rubybin)}.bug.rb.#{status.pid}.log", report)
     end
   end
 
-  def test_bugreport_path_executable_path
+  def test_crash_report_executable_path
     omit if EnvUtil.rubybin.size > 245
-    assert_bugreport_path("%E.%p.log") do |status, report|
+    assert_crash_report("%E.%p.log") do |status, report|
       assert_equal("#{EnvUtil.rubybin.tr('/', '!')}.#{status.pid}.log", report)
     end
   end
 
-  def test_bugreport_path_script_path
-    assert_bugreport_path("%F.%p.log", "test/bug.rb") do |status, report|
+  def test_crash_report_script_path
+    assert_crash_report("%F.%p.log", "test/bug.rb") do |status, report|
       assert_equal("test!bug.rb.#{status.pid}.log", report)
     end
   end
 
-  def test_bugreport_path_pipe
+  def test_crash_report_pipe
     if File.executable?(echo = "/bin/echo")
     elsif /mswin|ming/ =~ RUBY_PLATFORM
       echo = "echo"
     else
       omit "/bin/echo not found"
     end
-    assert_in_out_err([{"RUBY_BUGREPORT_PATH"=>"| #{echo} %e:%f:%p"}], SEGVTest::KILL_SELF,
+    assert_in_out_err([{"RUBY_CRASH_REPORT"=>"| #{echo} %e:%f:%p"}], SEGVTest::KILL_SELF,
                       encoding: "ASCII-8BIT",
                       **SEGVTest::ExecOptions) do |stdout, stderr, status|
       assert_empty(stderr)

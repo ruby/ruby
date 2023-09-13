@@ -737,7 +737,7 @@ struct report_expansion {
 };
 
 /*
- * Open a bug report file to write.  The `RUBY_BUGREPORT_PATH`
+ * Open a bug report file to write.  The `RUBY_CRASH_REPORT`
  * environment variable can be set to define a template that is used
  * to name bug report files.  The template can contain % specifiers
  * which are substituted by the following values when a bug report
@@ -817,7 +817,7 @@ open_report_path(const char *template, char *buf, size_t size, rb_pid_t *pid)
     struct report_expansion values = {{0}};
 
     if (!template) return NULL;
-    if (0) fprintf(stderr, "RUBY_BUGREPORT_PATH=%s\n", buf);
+    if (0) fprintf(stderr, "RUBY_CRASH_REPORT=%s\n", buf);
     if (*template == '|') {
         char *argv[16], *bufend = buf + size, *p;
         int argc;
@@ -839,7 +839,7 @@ open_report_path(const char *template, char *buf, size_t size, rb_pid_t *pid)
     return NULL;
 }
 
-static const char *bugreport_path;
+static const char *crash_report;
 
 /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
 #define REPORT_BUG_BUFSIZ 256
@@ -847,8 +847,8 @@ static FILE *
 bug_report_file(const char *file, int line, rb_pid_t *pid)
 {
     char buf[REPORT_BUG_BUFSIZ];
-    const char *report = bugreport_path;
-    if (!report) report = getenv("RUBY_BUGREPORT_PATH");
+    const char *report = crash_report;
+    if (!report) report = getenv("RUBY_CRASH_REPORT");
     FILE *out = open_report_path(report, buf, sizeof(buf), pid);
     int len = err_position_0(buf, sizeof(buf), file, line);
 
@@ -1002,9 +1002,9 @@ bug_report_end(FILE *out, rb_pid_t pid)
 } while (0) \
 
 void
-ruby_set_bug_report(const char *template)
+ruby_set_crash_report(const char *template)
 {
-    bugreport_path = template;
+    crash_report = template;
 #if RUBY_DEBUG
     rb_pid_t pid = -1;
     char buf[REPORT_BUG_BUFSIZ];

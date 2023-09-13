@@ -28,7 +28,7 @@ typedef struct ruby_cmdline_options {
     struct rb_rjit_options rjit;
 #endif
 
-    const char *bugreport_path;
+    const char *crash_report;
 
     signed int sflag: 2;
     unsigned int xflag: 1;
