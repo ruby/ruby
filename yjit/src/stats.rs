@@ -3,6 +3,8 @@
 
 #![allow(dead_code)] // Counters are only used with the stats features
 
+use std::alloc::{GlobalAlloc, Layout, System};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use crate::codegen::CodegenGlobals;
@@ -12,13 +14,42 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
-// stats_alloc is a middleware to instrument global allocations in Rust.
-#[cfg(feature="stats")]
+/// A middleware to count Rust-allocated bytes as yjit_alloc_size.
 #[global_allocator]
-static GLOBAL_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> = &stats_alloc::INSTRUMENTED_SYSTEM;
+static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
+
+pub struct StatsAlloc {
+    alloc_size: AtomicUsize,
+}
+
+unsafe impl GlobalAlloc for StatsAlloc {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
+        System.alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        self.alloc_size.fetch_sub(layout.size(), Ordering::SeqCst);
+        System.dealloc(ptr, layout)
+    }
+
+    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
+        System.alloc_zeroed(layout)
+    }
+
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        if new_size > layout.size() {
+            self.alloc_size.fetch_add(new_size - layout.size(), Ordering::SeqCst);
+        } else if new_size < layout.size() {
+            self.alloc_size.fetch_sub(layout.size() - new_size, Ordering::SeqCst);
+        }
+        System.realloc(ptr, layout, new_size)
+    }
+}
 
 // YJIT exit counts for each instruction type
-const VM_INSTRUCTION_SIZE_USIZE:usize = VM_INSTRUCTION_SIZE as usize;
+const VM_INSTRUCTION_SIZE_USIZE: usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
 
 /// Global state needed for collecting backtraces of exits
@@ -591,8 +622,7 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         hash_aset_usize!(hash, "code_region_size", cb.mapped_region_size());
 
         // Rust global allocations in bytes
-        #[cfg(feature="stats")]
-        hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
+        hash_aset_usize!(hash, "yjit_alloc_size", GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst));
 
         // `context` is true at RubyVM::YJIT._print_stats for --yjit-stats. It's false by default
         // for RubyVM::YJIT.runtime_stats because counting all Contexts could be expensive.
@@ -834,13 +864,6 @@ pub extern "C" fn rb_yjit_count_side_exit_op(exit_pc: *const VALUE) -> *const VA
 
     // This function must return exit_pc!
     return exit_pc;
-}
-
-// Get the size of global allocations in Rust.
-#[cfg(feature="stats")]
-fn global_allocation_size() -> usize {
-    let stats = GLOBAL_ALLOCATOR.stats();
-    stats.bytes_allocated.saturating_sub(stats.bytes_deallocated)
 }
 
 /// Measure the time taken by func() and add that to yjit_compile_time.
