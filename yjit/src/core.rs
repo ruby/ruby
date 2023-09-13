@@ -1484,7 +1484,7 @@ fn gen_block_series_body(
 
         // gen_direct_jump() can request a block to be placed immediately after by
         // leaving a single target that has a `None` address.
-        let mut last_target = match &mut last_branch.targets {
+        let last_target = match &mut last_branch.targets {
             [Some(last_target), None] if last_target.address.is_none() => last_target,
             _ => break
         };
