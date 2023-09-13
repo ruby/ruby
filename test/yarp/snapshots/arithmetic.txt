@@ -1,8 +1,8 @@
-@ ProgramNode (location: (0...58))
+@ ProgramNode (location: (0...75))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...58))
-    └── body: (length: 5)
+    @ StatementsNode (location: (0...75))
+    └── body: (length: 7)
         ├── @ CallNode (location: (0...8))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -151,57 +151,95 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "foo"
-        └── @ CallNode (location: (41...58))
+        ├── @ CallNode (location: (41...58))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (41...51))
+        │   │   ├── receiver:
+        │   │   │   @ CallNode (location: (41...44))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (41...44) = "foo"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "foo"
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (45...47) = "<<"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (48...51))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ CallNode (location: (48...51))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (48...51) = "bar"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "bar"
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "<<"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (52...54) = "<<"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (55...58))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (55...58))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (55...58) = "baz"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "baz"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "<<"
+        ├── @ CallNode (location: (60...65))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (61...65))
+        │   │   ├── receiver:
+        │   │   │   @ IntegerNode (location: (61...62))
+        │   │   │   └── flags: decimal
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (62...64) = "**"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (64...65))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (64...65))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "**"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (60...61) = "-"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "-@"
+        └── @ CallNode (location: (67...75))
             ├── receiver:
-            │   @ CallNode (location: (41...51))
-            │   ├── receiver:
-            │   │   @ CallNode (location: (41...44))
-            │   │   ├── receiver: ∅
-            │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (41...44) = "foo"
-            │   │   ├── opening_loc: ∅
-            │   │   ├── arguments: ∅
-            │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: "foo"
-            │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (45...47) = "<<"
-            │   ├── opening_loc: ∅
-            │   ├── arguments:
-            │   │   @ ArgumentsNode (location: (48...51))
-            │   │   └── arguments: (length: 1)
-            │   │       └── @ CallNode (location: (48...51))
-            │   │           ├── receiver: ∅
-            │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (48...51) = "bar"
-            │   │           ├── opening_loc: ∅
-            │   │           ├── arguments: ∅
-            │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           ├── flags: variable_call
-            │   │           └── name: "bar"
-            │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: "<<"
-            ├── call_operator_loc: ∅
-            ├── message_loc: (52...54) = "<<"
+            │   @ IntegerNode (location: (67...69))
+            │   └── flags: decimal
+            ├── call_operator_loc: (69...70) = "."
+            ├── message_loc: (70...75) = "zero?"
             ├── opening_loc: ∅
-            ├── arguments:
-            │   @ ArgumentsNode (location: (55...58))
-            │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (55...58))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (55...58) = "baz"
-            │           ├── opening_loc: ∅
-            │           ├── arguments: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: "baz"
+            ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "<<"
+            └── name: "zero?"

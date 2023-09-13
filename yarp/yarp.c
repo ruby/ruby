@@ -7940,7 +7940,7 @@ yp_binding_powers_t yp_binding_powers[YP_TOKEN_MAXIMUM] = {
 
     // -@
     [YP_TOKEN_UMINUS] = RIGHT_ASSOCIATIVE_UNARY(YP_BINDING_POWER_UMINUS),
-    [YP_TOKEN_UMINUS_NUM] = RIGHT_ASSOCIATIVE_UNARY(YP_BINDING_POWER_UMINUS),
+    [YP_TOKEN_UMINUS_NUM] = { YP_BINDING_POWER_UMINUS, YP_BINDING_POWER_MAX, false },
 
     // **
     [YP_TOKEN_STAR_STAR] = RIGHT_ASSOCIATIVE(YP_BINDING_POWER_EXPONENT),
@@ -12953,16 +12953,23 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_token_t operator = parser->previous;
             yp_node_t *node = parse_expression(parser, yp_binding_powers[parser->previous.type].right, YP_ERR_UNARY_RECEIVER_MINUS);
 
-            switch (YP_NODE_TYPE(node)) {
-                case YP_INTEGER_NODE:
-                case YP_FLOAT_NODE:
-                case YP_RATIONAL_NODE:
-                case YP_IMAGINARY_NODE:
-                    parse_negative_numeric(node);
-                    break;
-                default:
-                    node = (yp_node_t *) yp_call_node_unary_create(parser, &operator, node, "-@");
-                    break;
+            if (accept(parser, YP_TOKEN_STAR_STAR)) {
+                yp_token_t exponent_operator = parser->previous;
+                yp_node_t *exponent = parse_expression(parser, yp_binding_powers[exponent_operator.type].right, YP_ERR_EXPECT_ARGUMENT);
+                node = (yp_node_t *) yp_call_node_binary_create(parser, node, &exponent_operator, exponent);
+                node = (yp_node_t *) yp_call_node_unary_create(parser, &operator, node, "-@");
+            } else {
+                switch (YP_NODE_TYPE(node)) {
+                    case YP_INTEGER_NODE:
+                    case YP_FLOAT_NODE:
+                    case YP_RATIONAL_NODE:
+                    case YP_IMAGINARY_NODE:
+                        parse_negative_numeric(node);
+                        break;
+                    default:
+                        node = (yp_node_t *) yp_call_node_unary_create(parser, &operator, node, "-@");
+                        break;
+                }
             }
 
             return node;
