@@ -89,7 +89,7 @@ module Prism
           src = source
 
           case relative
-          when /break|next|redo|if|unless|rescue|control|keywords|retry/
+          when /break|next|redo|if|unless|rescue|control|keywords|retry|yield|\/args_assocs/
             # Uncaught syntax errors: Invalid break, Invalid next
             src = "->do\nrescue\n#{src}\nend"
             ripper_should_match = false

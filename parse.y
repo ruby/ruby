@@ -2697,7 +2697,7 @@ command		: fcall command_args       %prec tLOWEST
                     /*% %*/
                     /*% ripper: super!($2) %*/
                     }
-                | keyword_yield command_args
+                | k_yield command_args
                     {
                     /*%%%*/
                         $$ = new_yield(p, $2, &@$);
@@ -3797,21 +3797,21 @@ primary		: literal
                     /*% %*/
                     /*% ripper: return0! %*/
                     }
-                | keyword_yield '(' call_args rparen
+                | k_yield '(' call_args rparen
                     {
                     /*%%%*/
                         $$ = new_yield(p, $3, &@$);
                     /*% %*/
                     /*% ripper: yield!(paren!($3)) %*/
                     }
-                | keyword_yield '(' rparen
+                | k_yield '(' rparen
                     {
                     /*%%%*/
                         $$ = NEW_YIELD(0, &@$);
                     /*% %*/
                     /*% ripper: yield!(paren!(args_new!)) %*/
                     }
-                | keyword_yield
+                | k_yield
                     {
                     /*%%%*/
                         $$ = NEW_YIELD(0, &@$);
@@ -4291,6 +4291,13 @@ k_return	: keyword_return
                     {
                         if (p->ctxt.in_class && !p->ctxt.in_def && !dyna_in_block(p))
                             yyerror1(&@1, "Invalid return in class/module body");
+                    }
+                ;
+
+k_yield 	: keyword_yield
+                    {
+                        if (!p->ctxt.in_defined && !p->ctxt.in_def && !dyna_in_block(p))
+                            yyerror1(&@1, "Invalid yield");
                     }
                 ;
 

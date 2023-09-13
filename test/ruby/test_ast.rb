@@ -285,6 +285,34 @@ class TestAst < Test::Unit::TestCase
     assert_parse("begin rescue; END {defined? retry}; end")
   end
 
+  def test_invalid_yield
+    msg = /Invalid yield/
+    assert_invalid_parse(msg, "yield")
+    assert_invalid_parse(msg, "class C; yield; end")
+    assert_invalid_parse(msg, "BEGIN {yield}")
+    assert_invalid_parse(msg, "END {yield}")
+
+    assert_invalid_parse(msg, "yield true")
+    assert_invalid_parse(msg, "class C; yield true; end")
+    assert_invalid_parse(msg, "BEGIN {yield true}")
+    assert_invalid_parse(msg, "END {yield true}")
+
+    assert_parse("!defined?(yield)")
+    assert_parse("class C; defined?(yield); end")
+    assert_parse("BEGIN {defined?(yield)}")
+    assert_parse("END {defined?(yield)}")
+
+    assert_parse("!defined?(yield true)")
+    assert_parse("class C; defined?(yield true); end")
+    assert_parse("BEGIN {defined?(yield true)}")
+    assert_parse("END {defined?(yield true)}")
+
+    assert_parse("!defined? yield")
+    assert_parse("class C; defined? yield; end")
+    assert_parse("BEGIN {defined? yield}")
+    assert_parse("END {defined? yield}")
+  end
+
   def test_node_id_for_location
     exception = begin
                   raise
