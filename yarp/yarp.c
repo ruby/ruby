@@ -10906,6 +10906,161 @@ parse_negative_numeric(yp_node_t *node) {
     }
 }
 
+// Parse a set of strings that could be concatenated together.
+static inline yp_node_t *
+parse_strings(yp_parser_t *parser) {
+    assert(parser->current.type == YP_TOKEN_STRING_BEGIN);
+    yp_node_t *result = NULL;
+
+    while (match_type_p(parser, YP_TOKEN_STRING_BEGIN)) {
+        assert(parser->lex_modes.current->mode == YP_LEX_STRING);
+        bool lex_interpolation = parser->lex_modes.current->as.string.interpolation;
+
+        yp_node_t *node = NULL;
+        yp_token_t opening = parser->current;
+        parser_lex(parser);
+
+        if (accept(parser, YP_TOKEN_STRING_END)) {
+            // If we get here, then we have an end immediately after a
+            // start. In that case we'll create an empty content token
+            // and return an uninterpolated string.
+            yp_token_t content = (yp_token_t) {
+                .type = YP_TOKEN_STRING_CONTENT,
+                .start = parser->previous.start,
+                .end = parser->previous.start
+            };
+
+            node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_NONE);
+        } else if (accept(parser, YP_TOKEN_LABEL_END)) {
+            // If we get here, then we have an end of a label
+            // immediately after a start. In that case we'll create an
+            // empty symbol node.
+            yp_token_t opening = not_provided(parser);
+            yp_token_t content = (yp_token_t) {
+                .type = YP_TOKEN_STRING_CONTENT,
+                .start = parser->previous.start,
+                .end = parser->previous.start
+            };
+
+            node = (yp_node_t *) yp_symbol_node_create(parser, &opening, &content, &parser->previous);
+        } else if (!lex_interpolation) {
+            // If we don't accept interpolation then we expect the
+            // string to start with a single string content node.
+            expect(parser, YP_TOKEN_STRING_CONTENT, YP_ERR_EXPECT_STRING_CONTENT);
+            yp_token_t content = parser->previous;
+
+            // It is unfortunately possible to have multiple string
+            // content nodes in a row in the case that there's heredoc
+            // content in the middle of the string, like this cursed
+            // example:
+            //
+            // <<-END+'b
+            //  a
+            // END
+            //  c'+'d'
+            //
+            // In that case we need to switch to an interpolated string
+            // to be able to contain all of the parts.
+            if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
+                yp_node_list_t parts = YP_EMPTY_NODE_LIST;
+
+                yp_token_t delimiters = not_provided(parser);
+                yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &content, &delimiters, YP_UNESCAPE_MINIMAL);
+                yp_node_list_append(&parts, part);
+
+                while (accept(parser, YP_TOKEN_STRING_CONTENT)) {
+                    part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &parser->previous, &delimiters, YP_UNESCAPE_MINIMAL);
+                    yp_node_list_append(&parts, part);
+                }
+
+                expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
+                node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+            } else if (accept(parser, YP_TOKEN_LABEL_END)) {
+                node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
+            } else {
+                expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
+                node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_MINIMAL);
+            }
+        } else if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
+            // In this case we've hit string content so we know the string at
+            // least has something in it. We'll need to check if the following
+            // token is the end (in which case we can return a plain string) or if
+            // it's not then it has interpolation.
+            yp_token_t content = parser->current;
+            parser_lex(parser);
+
+            if (accept(parser, YP_TOKEN_STRING_END)) {
+                node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
+            } else if (accept(parser, YP_TOKEN_LABEL_END)) {
+                node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
+            } else {
+                // If we get here, then we have interpolation so we'll need to create
+                // a string or symbol node with interpolation.
+                yp_node_list_t parts = YP_EMPTY_NODE_LIST;
+                yp_token_t string_opening = not_provided(parser);
+                yp_token_t string_closing = not_provided(parser);
+                yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &string_opening, &parser->previous, &string_closing, YP_UNESCAPE_ALL);
+                yp_node_list_append(&parts, part);
+
+                while (!match_any_type_p(parser, 3, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
+                    yp_node_t *part = parse_string_part(parser);
+                    if (part != NULL) yp_node_list_append(&parts, part);
+                }
+
+                if (accept(parser, YP_TOKEN_LABEL_END)) {
+                    node = (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+                } else {
+                    expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_INTERPOLATED_TERM);
+                    node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+                }
+            }
+        } else {
+            // If we get here, then the first part of the string is not plain string
+            // content, in which case we need to parse the string as an interpolated
+            // string.
+            yp_node_list_t parts = YP_EMPTY_NODE_LIST;
+
+            while (!match_any_type_p(parser, 3, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
+                yp_node_t *part = parse_string_part(parser);
+                if (part != NULL) yp_node_list_append(&parts, part);
+            }
+
+            if (accept(parser, YP_TOKEN_LABEL_END)) {
+                node = (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+            } else {
+                expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_INTERPOLATED_TERM);
+                node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+            }
+        }
+
+        if (result == NULL) {
+            // If the node we just parsed is a symbol node, then we
+            // can't concatenate it with anything else, so we can now
+            // return that node.
+            if (YP_NODE_TYPE_P(node, YP_SYMBOL_NODE) || YP_NODE_TYPE_P(node, YP_INTERPOLATED_SYMBOL_NODE)) {
+                return node;
+            }
+
+            // If we don't already have a node, then it's fine and we
+            // can just set the result to be the node we just parsed.
+            result = node;
+        } else {
+            // Otherwise we need to check the type of the node we just
+            // parsed. If it cannot be concatenated with the previous
+            // node, then we'll need to add a syntax error.
+            if (!YP_NODE_TYPE_P(node, YP_STRING_NODE) && !YP_NODE_TYPE_P(node, YP_INTERPOLATED_STRING_NODE)) {
+                yp_diagnostic_list_append(&parser->error_list, node->location.start, node->location.end, YP_ERR_STRING_CONCATENATION);
+            }
+
+            // Either way we will create a concat node to hold the
+            // strings together.
+            result = (yp_node_t *) yp_string_concat_node_create(parser, result, node);
+        }
+    }
+
+    return result;
+}
+
 // Parse an expression that begins with the previous node that we just lexed.
 static inline yp_node_t *
 parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
@@ -12888,157 +13043,8 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             return (yp_node_t *) node;
         }
-        case YP_TOKEN_STRING_BEGIN: {
-            yp_node_t *result = NULL;
-
-            while (match_type_p(parser, YP_TOKEN_STRING_BEGIN)) {
-                assert(parser->lex_modes.current->mode == YP_LEX_STRING);
-                bool lex_interpolation = parser->lex_modes.current->as.string.interpolation;
-
-                yp_node_t *node = NULL;
-                yp_token_t opening = parser->current;
-                parser_lex(parser);
-
-                if (accept(parser, YP_TOKEN_STRING_END)) {
-                    // If we get here, then we have an end immediately after a
-                    // start. In that case we'll create an empty content token
-                    // and return an uninterpolated string.
-                    yp_token_t content = (yp_token_t) {
-                        .type = YP_TOKEN_STRING_CONTENT,
-                        .start = parser->previous.start,
-                        .end = parser->previous.start
-                    };
-
-                    node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_NONE);
-                } else if (accept(parser, YP_TOKEN_LABEL_END)) {
-                    // If we get here, then we have an end of a label
-                    // immediately after a start. In that case we'll create an
-                    // empty symbol node.
-                    yp_token_t opening = not_provided(parser);
-                    yp_token_t content = (yp_token_t) {
-                        .type = YP_TOKEN_STRING_CONTENT,
-                        .start = parser->previous.start,
-                        .end = parser->previous.start
-                    };
-
-                    node = (yp_node_t *) yp_symbol_node_create(parser, &opening, &content, &parser->previous);
-                } else if (!lex_interpolation) {
-                    // If we don't accept interpolation then we expect the
-                    // string to start with a single string content node.
-                    expect(parser, YP_TOKEN_STRING_CONTENT, YP_ERR_EXPECT_STRING_CONTENT);
-                    yp_token_t content = parser->previous;
-
-                    // It is unfortunately possible to have multiple string
-                    // content nodes in a row in the case that there's heredoc
-                    // content in the middle of the string, like this cursed
-                    // example:
-                    //
-                    // <<-END+'b
-                    //  a
-                    // END
-                    //  c'+'d'
-                    //
-                    // In that case we need to switch to an interpolated string
-                    // to be able to contain all of the parts.
-                    if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
-                        yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-
-                        yp_token_t delimiters = not_provided(parser);
-                        yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &content, &delimiters, YP_UNESCAPE_MINIMAL);
-                        yp_node_list_append(&parts, part);
-
-                        while (accept(parser, YP_TOKEN_STRING_CONTENT)) {
-                            part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &parser->previous, &delimiters, YP_UNESCAPE_MINIMAL);
-                            yp_node_list_append(&parts, part);
-                        }
-
-                        expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
-                        node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-                    } else if (accept(parser, YP_TOKEN_LABEL_END)) {
-                        node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
-                    } else {
-                        expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
-                        node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_MINIMAL);
-                    }
-                } else if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
-                    // In this case we've hit string content so we know the string at
-                    // least has something in it. We'll need to check if the following
-                    // token is the end (in which case we can return a plain string) or if
-                    // it's not then it has interpolation.
-                    yp_token_t content = parser->current;
-                    parser_lex(parser);
-
-                    if (accept(parser, YP_TOKEN_STRING_END)) {
-                        node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
-                    } else if (accept(parser, YP_TOKEN_LABEL_END)) {
-                        node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
-                    } else {
-                        // If we get here, then we have interpolation so we'll need to create
-                        // a string or symbol node with interpolation.
-                        yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-                        yp_token_t string_opening = not_provided(parser);
-                        yp_token_t string_closing = not_provided(parser);
-                        yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &string_opening, &parser->previous, &string_closing, YP_UNESCAPE_ALL);
-                        yp_node_list_append(&parts, part);
-
-                        while (!match_any_3_type_p(parser, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
-                            yp_node_t *part = parse_string_part(parser);
-                            if (part != NULL) yp_node_list_append(&parts, part);
-                        }
-
-                        if (accept(parser, YP_TOKEN_LABEL_END)) {
-                            node = (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
-                        } else {
-                            expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_INTERPOLATED_TERM);
-                            node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-                        }
-                    }
-                } else {
-                    // If we get here, then the first part of the string is not plain string
-                    // content, in which case we need to parse the string as an interpolated
-                    // string.
-                    yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-
-                    while (!match_any_3_type_p(parser, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
-                        yp_node_t *part = parse_string_part(parser);
-                        if (part != NULL) yp_node_list_append(&parts, part);
-                    }
-
-                    if (accept(parser, YP_TOKEN_LABEL_END)) {
-                        node = (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
-                    } else {
-                        expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_INTERPOLATED_TERM);
-                        node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-                    }
-                }
-
-                if (result == NULL) {
-                    // If the node we just parsed is a symbol node, then we
-                    // can't concatenate it with anything else, so we can now
-                    // return that node.
-                    if (YP_NODE_TYPE_P(node, YP_SYMBOL_NODE) || YP_NODE_TYPE_P(node, YP_INTERPOLATED_SYMBOL_NODE)) {
-                        return node;
-                    }
-
-                    // If we don't already have a node, then it's fine and we
-                    // can just set the result to be the node we just parsed.
-                    result = node;
-                } else {
-                    // Otherwise we need to check the type of the node we just
-                    // parsed. If it cannot be concatenated with the previous
-                    // node, then we'll need to add a syntax error.
-                    if (!YP_NODE_TYPE_P(node, YP_STRING_NODE) && !YP_NODE_TYPE_P(node, YP_INTERPOLATED_STRING_NODE)) {
-                        yp_diagnostic_list_append(&parser->error_list, node->location.start, node->location.end, YP_ERR_STRING_CONCATENATION);
-                    }
-
-                    // Either way we will create a concat node to hold the
-                    // strings together.
-                    result = (yp_node_t *) yp_string_concat_node_create(parser, result, node);
-                }
-            }
-
-            return result;
-        }
+        case YP_TOKEN_STRING_BEGIN:
+            return parse_strings(parser);
         case YP_TOKEN_SYMBOL_BEGIN: {
             yp_lex_mode_t lex_mode = *parser->lex_modes.current;
             parser_lex(parser);
