@@ -378,30 +378,30 @@ struct yp_parser {
     yp_node_flags_t integer_base;
 
     // Whether or not we're at the beginning of a command
-    unsigned int command_start : 1;
+    bool command_start;
 
     // Whether or not we're currently recovering from a syntax error
-    unsigned int recovering : 1;
+    bool recovering;
 
     // Whether or not the encoding has been changed by a magic comment. We use
     // this to provide a fast path for the lexer instead of going through the
     // function pointer.
-    unsigned int encoding_changed : 1;
+    bool encoding_changed;
 
     // This flag indicates that we are currently parsing a pattern matching
     // expression and impacts that calculation of newlines.
-    unsigned int pattern_matching_newlines : 1;
+    bool pattern_matching_newlines;
 
     // This flag indicates that we are currently parsing a keyword argument.
-    unsigned int in_keyword_arg : 1;
+    bool in_keyword_arg;
 
     // Whether or not the parser has seen a token that has semantic meaning
     // (i.e., a token that is not a comment or whitespace).
-    unsigned int semantic_token_seen : 1;
+    bool semantic_token_seen;
 
     // Whether or not we have found a frozen_string_literal magic comment with
     // a true value.
-    unsigned int frozen_string_literal : 1;
+    bool frozen_string_literal;
 };
 
 #endif // YARP_PARSER_H
