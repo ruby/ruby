@@ -12472,6 +12472,10 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 
         return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 
+      case NODE_BLOCK:
+        node->nd_end->nd_head = cond0(p, node->nd_end->nd_head, type, loc);
+        break;
+
       case NODE_AND:
       case NODE_OR:
         node->nd_1st = cond0(p, node->nd_1st, COND_IN_COND, loc);

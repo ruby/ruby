@@ -465,6 +465,21 @@ class TestParse < Test::Unit::TestCase
     assert_parse_error(%q[def (:"#{42}").foo; end], msg)
   end
 
+  def test_flip_flop
+    [
+      '((cond1..cond2))',
+      '(; cond1..cond2)',
+      '(1; cond1..cond2)',
+      '(%s(); cond1..cond2)',
+      '(%w(); cond1..cond2)',
+      '(1; (2; (3; 4; cond1..cond2)))',
+      '(1+1; cond1..cond2)',
+    ].each do |code|
+      code = code.sub("cond1", "n==4").sub("cond2", "n==5")
+      assert_equal([4,5], eval("(1..9).select {|n| true if #{code}}"))
+    end
+  end
+
   def test_op_asgn1_with_block
     t = Object.new
     a = []
