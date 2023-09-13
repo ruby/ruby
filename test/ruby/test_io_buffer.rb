@@ -259,6 +259,10 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
       buffer.get_string(129)
     end
+
+    assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
+      buffer.get_string(-1)
+    end
   end
 
   # We check that values are correctly round tripped.
