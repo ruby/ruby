@@ -1194,6 +1194,18 @@ module YARP
       ]
     end
 
+    def test_writing_numbered_parameter
+      assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
+        ["Token reserved for a numbered parameter", 5..7]
+      ]
+    end
+
+    def test_targeting_numbered_parameter
+      assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
+        ["Token reserved for a numbered parameter", 5..7]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors)

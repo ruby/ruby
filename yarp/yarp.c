@@ -8301,8 +8301,13 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
             target->type = YP_GLOBAL_VARIABLE_TARGET_NODE;
             return target;
         case YP_LOCAL_VARIABLE_READ_NODE:
-            assert(sizeof(yp_local_variable_target_node_t) == sizeof(yp_local_variable_read_node_t));
-            target->type = YP_LOCAL_VARIABLE_TARGET_NODE;
+            if (token_is_numbered_parameter(target->location.start, target->location.end)) {
+                yp_diagnostic_list_append(&parser->error_list, target->location.start, target->location.end, YP_ERR_PARAMETER_NUMBERED_RESERVED);
+            } else {
+                assert(sizeof(yp_local_variable_target_node_t) == sizeof(yp_local_variable_read_node_t));
+                target->type = YP_LOCAL_VARIABLE_TARGET_NODE;
+            }
+
             return target;
         case YP_INSTANCE_VARIABLE_READ_NODE:
             assert(sizeof(yp_instance_variable_target_node_t) == sizeof(yp_instance_variable_read_node_t));
@@ -8422,6 +8427,11 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
             return (yp_node_t *) node;
         }
         case YP_LOCAL_VARIABLE_READ_NODE: {
+            if (token_is_numbered_parameter(target->location.start, target->location.end)) {
+                yp_diagnostic_list_append(&parser->error_list, target->location.start, target->location.end, YP_ERR_PARAMETER_NUMBERED_RESERVED);
+                return target;
+            }
+
             yp_local_variable_read_node_t *local_read = (yp_local_variable_read_node_t *) target;
 
             yp_constant_id_t constant_id = local_read->name;
