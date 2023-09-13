@@ -518,9 +518,7 @@ matz: up
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk
 
-ifneq ($(DOT_WAIT),)
-ripper_srcs: $(addprefix $(DOT_WAIT) ,$(RIPPER_SRCS))
-else
+ifeq ($(DOT_WAIT),)
 ripper_src =
 $(foreach r,$(RIPPER_SRCS),$(eval $(value r): | $(value ripper_src))\
 	$(eval ripper_src := $(value r)))
