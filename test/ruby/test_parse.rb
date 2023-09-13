@@ -970,6 +970,20 @@ x = __ENCODING__
     assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
   end
 
+  def test_named_capture_in_block
+    [
+      '(/(?<a>.*)/)',
+      '(;/(?<a>.*)/)',
+      '(%s();/(?<a>.*)/)',
+      '(%w();/(?<a>.*)/)',
+      '(1; (2; 3; (4; /(?<a>.*)/)))',
+      '(1+1; /(?<a>.*)/)',
+    ].each do |code|
+      token = Random.bytes(4).unpack1("H*")
+      assert_equal(token, eval("#{code} =~ #{token.dump}; a"))
+    end
+  end
+
   def test_rescue_in_command_assignment
     bug = '[ruby-core:75621] [Bug #12402]'
     all_assertions(bug) do |a|

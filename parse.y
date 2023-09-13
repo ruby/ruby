@@ -10965,6 +10965,16 @@ new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *a
 }
 
 #define nd_once_body(node) (nd_type_p((node), NODE_ONCE) ? (node)->nd_body : node)
+
+static NODE*
+last_expr_once_body(NODE *node)
+{
+    if (!node) return 0;
+    node = last_expr_node(node);
+    if (!node) return 0;
+    return nd_once_body(node);
+}
+
 static NODE*
 match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
@@ -10973,7 +10983,8 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
 
     value_expr(node1);
     value_expr(node2);
-    if (node1 && (n = nd_once_body(node1)) != 0) {
+
+    if ((n = last_expr_once_body(node1)) != 0) {
         switch (nd_type(n)) {
           case NODE_DREGX:
             {
@@ -10993,7 +11004,7 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
         }
     }
 
-    if (node2 && (n = nd_once_body(node2)) != 0) {
+    if ((n = last_expr_once_body(node2)) != 0) {
         NODE *match3;
 
         switch (nd_type(n)) {
