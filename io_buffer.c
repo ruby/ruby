@@ -1156,11 +1156,9 @@ VALUE rb_io_buffer_free_locked(VALUE self)
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t length)
 {
-    if (offset > buffer->size) {
-        rb_raise(rb_eArgError, "Specified offset exceeds buffer size!");
-    }
+    // We assume here that offset + length won't overflow:
     if (offset + length > buffer->size) {
-        rb_raise(rb_eArgError, "Specified offset+length exceeds buffer size!");
+        rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
     }
 }
 
@@ -2099,7 +2097,7 @@ io_buffer_memcpy(struct rb_io_buffer *buffer, size_t offset, const void *source_
     io_buffer_validate_range(buffer, offset, length);
 
     if (source_offset + length > source_size) {
-        rb_raise(rb_eArgError, "The computed source range exceeds the size of the source!");
+        rb_raise(rb_eArgError, "The computed source range exceeds the size of the source buffer!");
     }
 
     memcpy((unsigned char*)base+offset, (unsigned char*)source_base+source_offset, length);
@@ -2232,7 +2230,7 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *
  *    buffer = IO::Buffer.new(2)
  *    buffer.copy(IO::Buffer.for('test'), 0)
- *    # in `copy': Specified offset+length exceeds source size! (ArgumentError)
+ *    # in `copy': Specified offset+length is bigger than the buffer size! (ArgumentError)
  */
 static VALUE
 io_buffer_copy(int argc, VALUE *argv, VALUE self)
@@ -2289,6 +2287,10 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
         length = NUM2SIZET(argv[1]);
     }
     else {
+        if (offset > size) {
+            rb_raise(rb_eArgError, "The given offset is bigger than the buffer size!");
+        }
+
         length = size - offset;
     }
 
@@ -2349,7 +2351,7 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
     rb_io_buffer_get_bytes_for_writing(self, &base, &size);
 
     if (offset + length > size) {
-        rb_raise(rb_eArgError, "The given offset + length out of bounds!");
+        rb_raise(rb_eArgError, "The given offset+length is bigger than the buffer size!");
     }
 
     memset((char*)base + offset, value, length);
@@ -2512,6 +2514,10 @@ io_buffer_extract_arguments(VALUE self, int argc, VALUE argv[], size_t *length, 
         *length = NUM2SIZET(argv[0]);
     }
     else {
+        if (*offset > buffer->size) {
+            rb_raise(rb_eArgError, "The given offset is bigger than the buffer size!");
+        }
+
         *length = buffer->size - *offset;
     }
 
