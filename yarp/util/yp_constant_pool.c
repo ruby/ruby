@@ -137,6 +137,7 @@ yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t l
                 // constant and replace it with the shared constant.
                 free((void *) constant->start);
                 constant->start = start;
+                constant->owned = false;
             }
 
             return constant->id;
@@ -150,7 +151,7 @@ yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t l
 
     *constant = (yp_constant_t) {
         .id = (unsigned int) (pool->size & 0x7FFFFFFF),
-        .owned = owned & 0x1,
+        .owned = owned,
         .start = start,
         .length = length,
         .hash = hash
