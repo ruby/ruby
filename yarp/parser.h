@@ -277,12 +277,17 @@ typedef struct yp_scope {
     // The IDs of the locals in the given scope.
     yp_constant_id_list_t locals;
 
+    // A pointer to the previous scope in the linked list.
+    struct yp_scope *previous;
+
     // A boolean indicating whether or not this scope can see into its parent.
     // If closed is true, then the scope cannot see into its parent.
     bool closed;
 
-    // A pointer to the previous scope in the linked list.
-    struct yp_scope *previous;
+    // A boolean indicating whether or not this scope has explicit parameters.
+    // This is necessary to determine whether or not numbered parameters are
+    // allowed.
+    bool explicit_params;
 } yp_scope_t;
 
 // This struct represents the overall parser. It contains a reference to the

@@ -4720,7 +4720,7 @@ yp_parser_scope_push(yp_parser_t *parser, bool closed) {
     yp_scope_t *scope = (yp_scope_t *) malloc(sizeof(yp_scope_t));
     if (scope == NULL) return false;
 
-    *scope = (yp_scope_t) { .closed = closed, .previous = parser->current_scope };
+    *scope = (yp_scope_t) { .previous = parser->current_scope, .closed = closed, .explicit_params = false };
     yp_constant_id_list_init(&scope->locals);
 
     parser->current_scope = scope;
@@ -9532,6 +9532,7 @@ parse_block(yp_parser_t *parser) {
     yp_block_parameters_node_t *parameters = NULL;
 
     if (accept1(parser, YP_TOKEN_PIPE)) {
+        parser->current_scope->explicit_params = true;
         yp_token_t block_parameters_opening = parser->previous;
 
         if (match1(parser, YP_TOKEN_PIPE)) {
@@ -13082,6 +13083,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             switch (parser->current.type) {
                 case YP_TOKEN_PARENTHESIS_LEFT: {
+                    parser->current_scope->explicit_params = true;
                     yp_token_t opening = parser->current;
                     parser_lex(parser);
 
@@ -13098,6 +13100,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     break;
                 }
                 case YP_CASE_PARAMETER: {
+                    parser->current_scope->explicit_params = true;
                     yp_accepts_block_stack_push(parser, false);
                     yp_token_t opening = not_provided(parser);
                     params = parse_block_parameters(parser, false, &opening, true);
