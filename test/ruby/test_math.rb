@@ -168,6 +168,7 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_nan(Math.log(1.0, Float::NAN)) }
     assert_nothing_raised { assert_infinity(-Math.log(0)) }
     assert_nothing_raised { assert_infinity(-Math.log(0, 2)) }
+    check(307.95368556425274, Math.log(2**1023, 10))
   end
 
   def test_log2
