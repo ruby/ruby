@@ -87,7 +87,7 @@
         │   │           │                   └── operator_loc: (55...57) = "=>"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "y"
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (60...71))
@@ -119,7 +119,7 @@
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "y"
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (73...85))
@@ -151,7 +151,7 @@
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: (84...85) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "y"
         │   └── rparen_loc: ∅
         └── @ YieldNode (location: (87...100))
@@ -188,6 +188,6 @@
             │           │                   └── operator_loc: (96...98) = "=>"
             │           ├── closing_loc: (99...100) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "y"
             └── rparen_loc: ∅

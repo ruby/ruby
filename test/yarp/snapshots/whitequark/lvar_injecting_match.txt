@@ -10,7 +10,7 @@
         │   │   ├── content_loc: (1...14) = "(?<match>bar)"
         │   │   ├── closing_loc: (14...15) = "/"
         │   │   ├── unescaped: "(?<match>bar)"
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (16...18) = "=~"
         │   ├── opening_loc: ∅
@@ -24,7 +24,7 @@
         │   │           └── unescaped: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "=~"
         └── @ LocalVariableReadNode (location: (26...31))
             ├── name: :match

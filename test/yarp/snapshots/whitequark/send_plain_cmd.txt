@@ -33,7 +33,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (13...25))
         │   ├── receiver:
@@ -65,7 +65,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Fun"
         └── @ CallNode (location: (27...39))
             ├── receiver:
@@ -97,5 +97,5 @@
             │           └── name: "bar"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

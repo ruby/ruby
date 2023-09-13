@@ -39,5 +39,5 @@
             │   │           └── depth: 0
             │   ├── opening_loc: (2...3) = "{"
             │   └── closing_loc: (22...23) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

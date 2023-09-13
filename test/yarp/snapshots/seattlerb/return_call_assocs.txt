@@ -82,7 +82,7 @@
         │               │                   └── operator_loc: (58...60) = "=>"
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: 
+        │               ├── flags: ∅
         │               └── name: "y"
         ├── @ ReturnNode (location: (63...75))
         │   ├── keyword_loc: (63...69) = "return"
@@ -112,7 +112,7 @@
         │               │                   └── operator_loc: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: 
+        │               ├── flags: ∅
         │               └── name: "y"
         ├── @ ReturnNode (location: (77...90))
         │   ├── keyword_loc: (77...83) = "return"
@@ -142,7 +142,7 @@
         │               │                   └── operator_loc: ∅
         │               ├── closing_loc: (89...90) = ")"
         │               ├── block: ∅
-        │               ├── flags: 
+        │               ├── flags: ∅
         │               └── name: "y"
         └── @ ReturnNode (location: (92...106))
             ├── keyword_loc: (92...98) = "return"
@@ -177,5 +177,5 @@
                         │                   └── operator_loc: (102...104) = "=>"
                         ├── closing_loc: (105...106) = ")"
                         ├── block: ∅
-                        ├── flags: 
+                        ├── flags: ∅
                         └── name: "y"

@@ -27,7 +27,7 @@
             │           ├── closing_loc: ∅
             │           └── unescaped: "b"
             ├── closing_loc: (4...5) = "]"
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "[]"
             ├── write_name: "[]="
             ├── operator_loc: (6...9) = "||="
@@ -46,5 +46,5 @@
                 │           └── flags: decimal
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: 
+                ├── flags: ∅
                 └── name: "c"

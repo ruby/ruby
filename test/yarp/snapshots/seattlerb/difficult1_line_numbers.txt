@@ -22,7 +22,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "p"
             │       ├── @ CallNode (location: (16...21))
             │       │   ├── receiver:
@@ -46,7 +46,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "b"
             │       ├── @ CallNode (location: (24...32))
             │       │   ├── receiver:
@@ -72,7 +72,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "d"
             │       ├── @ CallNode (location: (35...40))
             │       │   ├── receiver:
@@ -96,7 +96,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "f"
             │       ├── @ CallNode (location: (43...51))
             │       │   ├── receiver:
@@ -122,7 +122,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "h"
             │       ├── @ CallNode (location: (54...58))
             │       │   ├── receiver: ∅
@@ -136,7 +136,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (57...58) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "p"
             │       ├── @ CallNode (location: (61...67))
             │       │   ├── receiver:
@@ -160,7 +160,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (66...67) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "b"
             │       ├── @ CallNode (location: (70...79))
             │       │   ├── receiver:
@@ -186,7 +186,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (78...79) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "d"
             │       ├── @ CallNode (location: (82...88))
             │       │   ├── receiver:
@@ -210,7 +210,7 @@
             │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (87...88) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "f"
             │       └── @ CallNode (location: (91...100))
             │           ├── receiver:
@@ -236,7 +236,7 @@
             │           │           └── flags: decimal
             │           ├── closing_loc: (99...100) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "h"
             ├── consequent: ∅
             └── end_keyword_loc: (101...104) = "end"

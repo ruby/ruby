@@ -35,7 +35,7 @@
         │   │           │           │       └── @ ForwardingArgumentsNode (location: (19...22))
         │   │           │           ├── closing_loc: (22...23) = ")"
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "bar"
         │   │           ├── locals: [:"..."]
         │   │           ├── def_keyword_loc: (1...4) = "def"
@@ -78,7 +78,7 @@
         │   │           │           │       └── @ ForwardingArgumentsNode (location: (48...51))
         │   │           │           ├── closing_loc: (51...52) = ")"
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "bar"
         │   │           ├── locals: [:"..."]
         │   │           ├── def_keyword_loc: (31...34) = "def"
@@ -139,7 +139,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (94...97))
         │   │           ├── closing_loc: (97...98) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (77...80) = "def"
@@ -178,7 +178,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (126...129))
         │   │           ├── closing_loc: (129...130) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:a, :"..."]
         │   ├── def_keyword_loc: (105...108) = "def"
@@ -217,7 +217,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (156...159))
         │   │           ├── closing_loc: (159...160) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:a, :"..."]
         │   ├── def_keyword_loc: (136...139) = "def"
@@ -292,7 +292,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (219...222))
         │   │           ├── closing_loc: (222...223) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:b, :"..."]
         │   ├── def_keyword_loc: (194...197) = "def"
@@ -336,7 +336,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (253...256))
         │   │           ├── closing_loc: (256...257) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:b, :"..."]
         │   ├── def_keyword_loc: (229...232) = "def"
@@ -375,7 +375,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (284...287))
             │           ├── closing_loc: (287...288) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:a, :"..."]
             ├── def_keyword_loc: (264...267) = "def"

@@ -34,5 +34,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (5...7) = "do"
             │   └── closing_loc: (13...16) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "blah"

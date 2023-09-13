@@ -61,7 +61,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (49...64))
         │   ├── receiver:
@@ -81,7 +81,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "h"
         ├── @ CallNode (location: (66...80))
         │   ├── receiver:
@@ -101,7 +101,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "j"
         ├── @ CallNode (location: (82...98))
         │   ├── receiver:
@@ -121,7 +121,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "l"
         └── @ CallNode (location: (100...118))
             ├── receiver:

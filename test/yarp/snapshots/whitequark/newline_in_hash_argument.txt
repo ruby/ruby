@@ -102,7 +102,7 @@
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "set"
         └── @ CallNode (location: (60...74))
             ├── receiver:
@@ -137,5 +137,5 @@
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "set"

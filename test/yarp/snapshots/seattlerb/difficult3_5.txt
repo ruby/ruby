@@ -39,9 +39,9 @@
             │                       │   ├── body: ∅
             │                       │   ├── opening_loc: (11...13) = "do"
             │                       │   └── closing_loc: (14...17) = "end"
-            │                       ├── flags: 
+            │                       ├── flags: ∅
             │                       └── name: "g"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

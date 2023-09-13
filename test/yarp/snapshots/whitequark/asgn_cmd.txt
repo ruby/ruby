@@ -26,7 +26,7 @@
         │   │   │   │           └── depth: 0
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "m"
         │   │   └── operator_loc: (10...11) = "="
         │   └── operator_loc: (4...5) = "="
@@ -48,6 +48,6 @@
             │   │           └── depth: 0
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "m"
             └── operator_loc: (23...24) = "="

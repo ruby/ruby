@@ -41,7 +41,7 @@
             │   │   ├── body: ∅
             │   │   ├── opening_loc: (6...8) = "do"
             │   │   └── closing_loc: (9...12) = "end"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "b"
             ├── call_operator_loc: (12...13) = "."
             ├── message_loc: (13...14) = "d"
@@ -49,5 +49,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "d"

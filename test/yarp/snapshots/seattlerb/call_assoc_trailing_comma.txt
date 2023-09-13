@@ -23,5 +23,5 @@
             │                   └── operator_loc: (3...5) = "=>"
             ├── closing_loc: (7...8) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

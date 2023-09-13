@@ -27,13 +27,13 @@
         │   ├── content_loc: (61...62) = "/"
         │   ├── closing_loc: (62...63) = ")"
         │   ├── unescaped: "/"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (64...70))
         │   ├── opening_loc: (64...67) = "%r("
         │   ├── content_loc: (67...69) = "\\)"
         │   ├── closing_loc: (69...70) = ")"
         │   ├── unescaped: ")"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (71...85))
         │   ├── opening_loc: (71...74) = "%r("
         │   ├── parts: (length: 2)
@@ -51,7 +51,7 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "baz"
         │   ├── closing_loc: (84...85) = ")"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ FloatNode (location: (86...102))
         ├── @ FloatNode (location: (103...120))
         └── @ CallNode (location: (121...131))
@@ -82,9 +82,9 @@
             │           │           └── name: "bar"
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "foo"
             ├── closing_loc: (130...131) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "w"

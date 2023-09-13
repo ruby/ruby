@@ -14,7 +14,7 @@
         │   │   │   @ IntegerNode (location: (6...7))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (4...6) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (10...13) = "end"
@@ -27,7 +27,7 @@
         │   │   │   @ IntegerNode (location: (19...20))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (17...19) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (23...26) = "end"
@@ -40,7 +40,7 @@
             │   │   └── flags: decimal
             │   ├── right: ∅
             │   ├── operator_loc: (31...33) = ".."
-            │   └── flags: 
+            │   └── flags: ∅
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (36...39) = "end"

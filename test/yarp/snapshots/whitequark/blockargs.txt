@@ -17,7 +17,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1...2) = "{"
         │   │   └── closing_loc: (4...5) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (7...15))
         │   ├── receiver: ∅
@@ -38,7 +38,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (8...9) = "{"
         │   │   └── closing_loc: (14...15) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (17...26))
         │   ├── receiver: ∅
@@ -71,7 +71,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (18...19) = "{"
         │   │   └── closing_loc: (25...26) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (28...44))
         │   ├── receiver: ∅
@@ -108,7 +108,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (29...30) = "{"
         │   │   └── closing_loc: (43...44) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (46...58))
         │   ├── receiver: ∅
@@ -145,7 +145,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (47...48) = "{"
         │   │   └── closing_loc: (57...58) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (60...76))
         │   ├── receiver: ∅
@@ -184,7 +184,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (61...62) = "{"
         │   │   └── closing_loc: (75...76) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (78...91))
         │   ├── receiver: ∅
@@ -221,7 +221,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (79...80) = "{"
         │   │   └── closing_loc: (90...91) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (93...102))
         │   ├── receiver: ∅
@@ -254,7 +254,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (94...95) = "{"
         │   │   └── closing_loc: (101...102) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (104...112))
         │   ├── receiver: ∅
@@ -287,7 +287,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (105...106) = "{"
         │   │   └── closing_loc: (111...112) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (114...125))
         │   ├── receiver: ∅
@@ -310,7 +310,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (115...116) = "{"
         │   │   └── closing_loc: (124...125) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (127...136))
         │   ├── receiver: ∅
@@ -333,7 +333,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (128...129) = "{"
         │   │   └── closing_loc: (135...136) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (138...150))
         │   ├── receiver: ∅
@@ -368,7 +368,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (139...140) = "{"
         │   │   └── closing_loc: (149...150) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (152...167))
         │   ├── receiver: ∅
@@ -407,7 +407,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (153...154) = "{"
         │   │   └── closing_loc: (166...167) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (169...188))
         │   ├── receiver: ∅
@@ -448,7 +448,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (170...171) = "{"
         │   │   └── closing_loc: (187...188) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (190...206))
         │   ├── receiver: ∅
@@ -487,7 +487,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (191...192) = "{"
         │   │   └── closing_loc: (205...206) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (208...220))
         │   ├── receiver: ∅
@@ -522,7 +522,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (209...210) = "{"
         │   │   └── closing_loc: (219...220) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (222...233))
         │   ├── receiver: ∅
@@ -557,7 +557,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (223...224) = "{"
         │   │   └── closing_loc: (232...233) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (235...247))
         │   ├── receiver: ∅
@@ -594,7 +594,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (236...237) = "{"
         │   │   └── closing_loc: (246...247) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (249...260))
         │   ├── receiver: ∅
@@ -627,7 +627,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (250...251) = "{"
         │   │   └── closing_loc: (259...260) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (262...279))
         │   ├── receiver: ∅
@@ -669,7 +669,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (263...264) = "{"
         │   │   └── closing_loc: (278...279) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (281...305))
         │   ├── receiver: ∅
@@ -717,7 +717,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (282...283) = "{"
         │   │   └── closing_loc: (304...305) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (307...334))
         │   ├── receiver: ∅
@@ -770,7 +770,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (308...309) = "{"
         │   │   └── closing_loc: (333...334) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (336...356))
         │   ├── receiver: ∅
@@ -814,7 +814,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (337...338) = "{"
         │   │   └── closing_loc: (355...356) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (358...367))
         │   ├── receiver: ∅
@@ -849,7 +849,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (359...360) = "{"
         │   │   └── closing_loc: (366...367) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (369...377))
         │   ├── receiver: ∅
@@ -880,7 +880,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (370...371) = "{"
         │   │   └── closing_loc: (376...377) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (379...387))
         │   ├── receiver: ∅
@@ -911,7 +911,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (380...381) = "{"
         │   │   └── closing_loc: (386...387) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (389...397))
         │   ├── receiver: ∅
@@ -942,7 +942,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (390...391) = "{"
         │   │   └── closing_loc: (396...397) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (399...416))
         │   ├── receiver: ∅
@@ -981,7 +981,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (400...401) = "{"
         │   │   └── closing_loc: (415...416) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (418...450))
         │   ├── receiver: ∅
@@ -1030,7 +1030,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (419...420) = "{"
         │   │   └── closing_loc: (449...450) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (452...463))
         │   ├── receiver: ∅
@@ -1063,7 +1063,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (453...454) = "{"
         │   │   └── closing_loc: (462...463) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (465...479))
         │   ├── receiver: ∅
@@ -1103,7 +1103,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (466...467) = "{"
         │   │   └── closing_loc: (478...479) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (481...499))
         │   ├── receiver: ∅
@@ -1147,7 +1147,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (482...483) = "{"
         │   │   └── closing_loc: (498...499) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (501...522))
         │   ├── receiver: ∅
@@ -1193,7 +1193,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (502...503) = "{"
         │   │   └── closing_loc: (521...522) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (524...541))
         │   ├── receiver: ∅
@@ -1235,7 +1235,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (525...526) = "{"
         │   │   └── closing_loc: (540...541) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         └── @ CallNode (location: (543...550))
             ├── receiver: ∅
@@ -1256,5 +1256,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (544...545) = "{"
             │   └── closing_loc: (549...550) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

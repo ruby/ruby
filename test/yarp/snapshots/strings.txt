@@ -146,7 +146,7 @@
         │   │           └── unescaped: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "+"
         ├── @ StringNode (location: (186...193))
         │   ├── opening_loc: (186...189) = "%q{"

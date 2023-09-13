@@ -42,7 +42,7 @@
         │               │           └── name: "_9"
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: 
+        │               ├── flags: ∅
         │               └── name: "+"
         ├── @ LambdaNode (location: (19...32))
         │   ├── locals: []
@@ -83,7 +83,7 @@
         │               │           └── name: "_9"
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: 
+        │               ├── flags: ∅
         │               └── name: "+"
         ├── @ CallNode (location: (34...50))
         │   ├── receiver: ∅
@@ -129,11 +129,11 @@
         │   │   │           │           └── name: "_9"
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "+"
         │   │   ├── opening_loc: (36...38) = "do"
         │   │   └── closing_loc: (47...50) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "m"
         └── @ CallNode (location: (52...65))
             ├── receiver: ∅
@@ -179,9 +179,9 @@
             │   │           │           └── name: "_9"
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "+"
             │   ├── opening_loc: (54...55) = "{"
             │   └── closing_loc: (64...65) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "m"

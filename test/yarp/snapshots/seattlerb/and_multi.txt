@@ -18,7 +18,7 @@
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: 
+            │   │   ├── flags: ∅
             │   │   └── name: "!"
             │   └── operator_loc: (5...8) = "and"
             ├── right:

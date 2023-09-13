@@ -16,7 +16,7 @@
             │       │   ├── arguments: ∅
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "foo!"
             │       └── @ CallNode (location: (12...16))
             │           ├── receiver: ∅
@@ -26,7 +26,7 @@
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "bar!"
             ├── rescue_clause: ∅
             ├── else_clause: ∅

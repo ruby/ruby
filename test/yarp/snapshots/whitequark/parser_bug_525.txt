@@ -54,9 +54,9 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (21...23) = "do"
             │   │           │   └── closing_loc: (24...27) = "end"
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "m3"
             │   ├── opening_loc: (12...14) = "do"
             │   └── closing_loc: (29...32) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "m1"

@@ -37,5 +37,5 @@
                 │           └── flags: decimal
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: 
+                ├── flags: ∅
                 └── name: "c"

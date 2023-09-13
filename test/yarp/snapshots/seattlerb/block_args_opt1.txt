@@ -51,5 +51,5 @@
             │   │           └── closing_loc: (21...22) = "]"
             │   ├── opening_loc: (2...3) = "{"
             │   └── closing_loc: (23...24) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

@@ -30,7 +30,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "meth"
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ UntilNode (location: (23...42))
             ├── keyword_loc: (23...28) = "until"
             ├── closing_loc: (39...42) = "end"
@@ -58,4 +58,4 @@
             │           ├── block: ∅
             │           ├── flags: variable_call
             │           └── name: "meth"
-            └── flags: 
+            └── flags: ∅

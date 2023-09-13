@@ -193,7 +193,7 @@
         │   │       │   │   @ IntegerNode (location: (157...159))
         │   │       │   │   └── flags: decimal
         │   │       │   ├── operator_loc: (155...157) = ".."
-        │   │       │   └── flags: 
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (151...153) = "in"
         │   │       └── then_loc: ∅
@@ -306,7 +306,7 @@
         │   │       │   ├── content_loc: (268...274) = "regexp"
         │   │       │   ├── closing_loc: (274...275) = "/"
         │   │       │   ├── unescaped: "regexp"
-        │   │       │   └── flags: 
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (264...266) = "in"
         │   │       └── then_loc: ∅

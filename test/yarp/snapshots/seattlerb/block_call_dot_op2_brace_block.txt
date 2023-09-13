@@ -31,7 +31,7 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: (6...7) = ")"
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "c"
             │   ├── closing_loc: ∅
             │   ├── block:
@@ -53,7 +53,7 @@
             │   │   │           └── name: "d"
             │   │   ├── opening_loc: (8...10) = "do"
             │   │   └── closing_loc: (13...16) = "end"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "b"
             ├── call_operator_loc: (16...17) = "."
             ├── message_loc: (17...18) = "e"
@@ -94,5 +94,5 @@
             │   │           └── name: "g"
             │   ├── opening_loc: (19...21) = "do"
             │   └── closing_loc: (28...31) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "e"

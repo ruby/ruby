@@ -51,7 +51,7 @@
         │   │   │           └── name: "baz"
         │   │   ├── opening_loc: (9...10) = "{"
         │   │   └── closing_loc: (15...16) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ CallNode (location: (18...37))
         │   ├── receiver:
@@ -101,7 +101,7 @@
         │   │   │           └── name: "baz"
         │   │   ├── opening_loc: (27...29) = "do"
         │   │   └── closing_loc: (34...37) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ CallNode (location: (39...74))
         │   ├── receiver:
@@ -160,7 +160,7 @@
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (51...52) = "{"
         │   │   └── closing_loc: (73...74) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "reduce"
         ├── @ CallNode (location: (76...86))
         │   ├── receiver: ∅
@@ -176,7 +176,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (80...82) = "do"
         │   │   └── closing_loc: (83...86) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (88...109))
         │   ├── receiver: ∅
@@ -214,13 +214,13 @@
         │   │           │           │   ├── body: ∅
         │   │           │           │   ├── opening_loc: (102...104) = "do"
         │   │           │           │   └── closing_loc: (105...108) = "end"
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "baz"
         │   │           ├── opening_loc: (97...98) = "("
         │   │           └── closing_loc: (108...109) = ")"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (111...125))
         │   ├── receiver: ∅
@@ -248,7 +248,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (119...121) = "do"
         │   │   └── closing_loc: (122...125) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (127...145))
         │   ├── receiver: ∅
@@ -278,7 +278,7 @@
         │   │           │           └── name: "baz"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── closing_loc: ∅
         │   ├── block:
@@ -288,7 +288,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (139...141) = "do"
         │   │   └── closing_loc: (142...145) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (147...168))
         │   ├── receiver: ∅
@@ -333,7 +333,7 @@
         │   │   │   │   │           │           └── flags: decimal
         │   │   │   │   │           ├── closing_loc: (162...163) = "]"
         │   │   │   │   │           ├── block: ∅
-        │   │   │   │   │           ├── flags: 
+        │   │   │   │   │           ├── flags: ∅
         │   │   │   │   │           └── name: "[]"
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 0)
@@ -346,7 +346,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (151...153) = "do"
         │   │   └── closing_loc: (165...168) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (170...187))
         │   ├── receiver: ∅
@@ -376,7 +376,7 @@
         │   │   │   └── end_keyword_loc: (184...187) = "end"
         │   │   ├── opening_loc: (174...176) = "do"
         │   │   └── closing_loc: (184...187) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (189...233))
         │   ├── receiver: ∅
@@ -420,15 +420,15 @@
         │   │   │           │   │           │   ├── body: ∅
         │   │   │           │   │           │   ├── opening_loc: (213...215) = "do"
         │   │   │           │   │           │   └── closing_loc: (220...223) = "end"
-        │   │   │           │   │           ├── flags: 
+        │   │   │           │   │           ├── flags: ∅
         │   │   │           │   │           └── name: "baz"
         │   │   │           │   ├── opening_loc: (202...204) = "do"
         │   │   │           │   └── closing_loc: (226...229) = "end"
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "bar"
         │   │   ├── opening_loc: (193...195) = "do"
         │   │   └── closing_loc: (230...233) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (235...251))
         │   ├── receiver:
@@ -478,7 +478,7 @@
         │   │   │           └── name: "baz"
         │   │   ├── opening_loc: (244...245) = "{"
         │   │   └── closing_loc: (250...251) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ CallNode (location: (253...277))
         │   ├── receiver: ∅
@@ -525,7 +525,7 @@
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (257...258) = "{"
         │   │   └── closing_loc: (276...277) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (279...290))
         │   ├── receiver: ∅
@@ -556,7 +556,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (283...284) = "{"
         │   │   └── closing_loc: (289...290) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ LocalVariableWriteNode (location: (292...300))
         │   ├── name: :fork
@@ -595,7 +595,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (306...308) = "do"
         │   │   └── closing_loc: (313...316) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fork"
         ├── @ CallNode (location: (318...330))
         │   ├── receiver: ∅
@@ -626,7 +626,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (323...324) = "{"
         │   │   └── closing_loc: (329...330) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fork"
         ├── @ CallNode (location: (332...340))
         │   ├── receiver: ∅
@@ -642,7 +642,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (334...336) = "do"
         │   │   └── closing_loc: (337...340) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "C"
         ├── @ CallNode (location: (342...346))
         │   ├── receiver: ∅
@@ -658,7 +658,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (344...345) = "{"
         │   │   └── closing_loc: (345...346) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "C"
         ├── @ CallNode (location: (348...383))
         │   ├── receiver: ∅
@@ -707,11 +707,11 @@
         │   │           │   ├── body: ∅
         │   │           │   ├── opening_loc: (359...360) = "{"
         │   │           │   └── closing_loc: (382...383) = "}"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "lambda"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         └── @ CallNode (location: (385...402))
             ├── receiver: ∅
@@ -746,5 +746,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (389...391) = "do"
             │   └── closing_loc: (399...402) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "foo"

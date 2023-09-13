@@ -703,7 +703,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: (512...513) = ")"
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "bar"
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅

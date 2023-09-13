@@ -47,7 +47,7 @@
             │       │   │   ├── flags: variable_call
             │       │   │   └── name: "to"
             │       │   ├── operator_loc: (18...20) = ".."
-            │       │   └── flags: 
+            │       │   └── flags: ∅
             │       └── @ ArrayNode (location: (27...42))
             │           ├── elements: (length: 3)
             │           │   ├── @ StringNode (location: (28...31))
@@ -69,5 +69,5 @@
             │           └── closing_loc: (41...42) = "]"
             ├── closing_loc: (23...24) = "]"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "[]="

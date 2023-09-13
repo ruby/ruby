@@ -26,7 +26,7 @@
         │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "raise"
         │   │   ├── name: :b
         │   │   ├── operator: :+
@@ -58,7 +58,7 @@
         │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "raise"
         │   │   └── operator_loc: (27...28) = "="
         │   ├── name: :a
@@ -88,7 +88,7 @@
         │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "raise"
         │   │   ├── name: :b
         │   │   ├── operator: :+
@@ -119,7 +119,7 @@
             │   │   │           └── unescaped: "x"
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: 
+            │   │   ├── flags: ∅
             │   │   └── name: "raise"
             │   └── operator_loc: (64...65) = "="
             └── operator_loc: (60...61) = "="

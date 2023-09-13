@@ -33,6 +33,6 @@
             │           │   ├── body: ∅
             │           │   ├── opening_loc: (13...15) = "do"
             │           │   └── closing_loc: (16...19) = "end"
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "fun"
             └── keyword_loc: (0...4) = "next"

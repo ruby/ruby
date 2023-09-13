@@ -32,7 +32,7 @@
             │       │           │   ├── arguments: ∅
             │       │           │   ├── closing_loc: ∅
             │       │           │   ├── block: ∅
-            │       │           │   ├── flags: 
+            │       │           │   ├── flags: ∅
             │       │           │   └── name: "b?"
             │       │           ├── statements:
             │       │           │   @ StatementsNode (location: (10...17))
@@ -64,7 +64,7 @@
             │       │           │           │   │           └── name: "a"
             │       │           │           │   ├── closing_loc: ∅
             │       │           │           │   ├── block: ∅
-            │       │           │           │   ├── flags: 
+            │       │           │           │   ├── flags: ∅
             │       │           │           │   └── name: "+"
             │       │           │           ├── call_operator_loc: ∅
             │       │           │           ├── message_loc: (14...15) = "+"
@@ -79,7 +79,7 @@
             │       │           │           │           └── unescaped: ""
             │       │           │           ├── closing_loc: ∅
             │       │           │           ├── block: ∅
-            │       │           │           ├── flags: 
+            │       │           │           ├── flags: ∅
             │       │           │           └── name: "+"
             │       │           ├── consequent:
             │       │           │   @ ElseNode (location: (17...21))

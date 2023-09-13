@@ -17,4 +17,4 @@
             │   └── name: "a"
             ├── right: ∅
             ├── operator_loc: (1...3) = ".."
-            └── flags: 
+            └── flags: ∅

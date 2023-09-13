@@ -44,7 +44,7 @@
             │   │   │   └── end_keyword_loc: (34...37) = "end"
             │   │   ├── opening_loc: (5...7) = "do"
             │   │   └── closing_loc: (34...37) = "end"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "proc"
             ├── call_operator_loc: (37...38) = "."
             ├── message_loc: (38...42) = "call"
@@ -52,5 +52,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "call"

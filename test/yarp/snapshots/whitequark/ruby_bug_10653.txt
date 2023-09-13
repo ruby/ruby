@@ -24,7 +24,7 @@
         │   │           │   ├── body: ∅
         │   │           │   ├── opening_loc: (14...16) = "do"
         │   │           │   └── closing_loc: (17...20) = "end"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "raise"
         │   ├── consequent:
         │   │   @ ElseNode (location: (21...33))
@@ -46,7 +46,7 @@
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (27...29) = "do"
         │   │   │           │   └── closing_loc: (30...33) = "end"
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "tap"
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
@@ -71,7 +71,7 @@
         │   │           │   ├── body: ∅
         │   │           │   ├── opening_loc: (49...50) = "{"
         │   │           │   └── closing_loc: (50...51) = "}"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "raise"
         │   ├── consequent:
         │   │   @ ElseNode (location: (52...60))
@@ -93,7 +93,7 @@
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (58...59) = "{"
         │   │   │           │   └── closing_loc: (59...60) = "}"
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "tap"
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
@@ -148,11 +148,11 @@
             │           │   │           │           └── depth: 0
             │           │   │           ├── closing_loc: ∅
             │           │   │           ├── block: ∅
-            │           │   │           ├── flags: 
+            │           │   │           ├── flags: ∅
             │           │   │           └── name: "p"
             │           │   ├── opening_loc: (75...77) = "do"
             │           │   └── closing_loc: (86...89) = "end"
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "tap"
             ├── consequent:
             │   @ ElseNode (location: (90...93))

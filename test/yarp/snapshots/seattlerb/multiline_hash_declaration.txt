@@ -28,7 +28,7 @@
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: (13...14) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ CallNode (location: (16...29))
         │   ├── receiver: ∅
@@ -55,7 +55,7 @@
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: (28...29) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         └── @ CallNode (location: (31...43))
             ├── receiver: ∅
@@ -82,5 +82,5 @@
             │                   └── operator_loc: ∅
             ├── closing_loc: (42...43) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

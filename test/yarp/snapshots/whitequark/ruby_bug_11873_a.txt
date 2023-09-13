@@ -39,11 +39,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (7...8) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (10...11))
         │   │           └── flags: decimal
@@ -55,7 +55,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (12...14) = "do"
         │   │   └── closing_loc: (15...18) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (20...40))
         │   ├── receiver: ∅
@@ -93,11 +93,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (27...28) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ FloatNode (location: (30...33))
         │   ├── closing_loc: ∅
@@ -108,7 +108,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (34...36) = "do"
         │   │   └── closing_loc: (37...40) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (42...63))
         │   ├── receiver: ∅
@@ -146,11 +146,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (49...50) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ ImaginaryNode (location: (52...56))
         │   │           └── numeric:
@@ -163,7 +163,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (57...59) = "do"
         │   │   └── closing_loc: (60...63) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (65...86))
         │   ├── receiver: ∅
@@ -201,11 +201,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (72...73) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RationalNode (location: (75...79))
         │   │           └── numeric:
@@ -218,7 +218,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (80...82) = "do"
         │   │   └── closing_loc: (83...86) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (88...107))
         │   ├── receiver: ∅
@@ -256,11 +256,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (95...96) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ SymbolNode (location: (98...100))
         │   │           ├── opening_loc: (98...99) = ":"
@@ -275,7 +275,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (101...103) = "do"
         │   │   └── closing_loc: (104...107) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (109...128))
         │   ├── receiver: ∅
@@ -313,11 +313,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (116...117) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (117...118) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (120...121))
         │   │           └── flags: decimal
@@ -329,7 +329,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (122...124) = "do"
         │   │   └── closing_loc: (125...128) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (130...151))
         │   ├── receiver: ∅
@@ -367,11 +367,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (137...138) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (138...139) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ FloatNode (location: (141...144))
         │   ├── closing_loc: ∅
@@ -382,7 +382,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (145...147) = "do"
         │   │   └── closing_loc: (148...151) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (153...175))
         │   ├── receiver: ∅
@@ -420,11 +420,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (160...161) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (161...162) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ ImaginaryNode (location: (164...168))
         │   │           └── numeric:
@@ -437,7 +437,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (169...171) = "do"
         │   │   └── closing_loc: (172...175) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (177...199))
         │   ├── receiver: ∅
@@ -475,11 +475,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (184...185) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (185...186) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RationalNode (location: (188...192))
         │   │           └── numeric:
@@ -492,7 +492,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (193...195) = "do"
         │   │   └── closing_loc: (196...199) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (201...221))
         │   ├── receiver: ∅
@@ -530,11 +530,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (208...209) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (209...210) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ SymbolNode (location: (212...214))
         │   │           ├── opening_loc: (212...213) = ":"
@@ -549,7 +549,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (215...217) = "do"
         │   │   └── closing_loc: (218...221) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (223...241))
         │   ├── receiver: ∅
@@ -593,11 +593,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (226...227) = "{"
         │   │       │   │   └── closing_loc: (230...231) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (233...234))
         │   │           └── flags: decimal
@@ -609,7 +609,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (235...237) = "do"
         │   │   └── closing_loc: (238...241) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (243...263))
         │   ├── receiver: ∅
@@ -653,11 +653,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (246...247) = "{"
         │   │       │   │   └── closing_loc: (250...251) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ FloatNode (location: (253...256))
         │   ├── closing_loc: ∅
@@ -668,7 +668,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (257...259) = "do"
         │   │   └── closing_loc: (260...263) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (265...286))
         │   ├── receiver: ∅
@@ -712,11 +712,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (268...269) = "{"
         │   │       │   │   └── closing_loc: (272...273) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ ImaginaryNode (location: (275...279))
         │   │           └── numeric:
@@ -729,7 +729,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (280...282) = "do"
         │   │   └── closing_loc: (283...286) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (288...309))
         │   ├── receiver: ∅
@@ -773,11 +773,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (291...292) = "{"
         │   │       │   │   └── closing_loc: (295...296) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RationalNode (location: (298...302))
         │   │           └── numeric:
@@ -790,7 +790,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (303...305) = "do"
         │   │   └── closing_loc: (306...309) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (311...330))
         │   ├── receiver: ∅
@@ -834,11 +834,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (314...315) = "{"
         │   │       │   │   └── closing_loc: (318...319) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ SymbolNode (location: (321...323))
         │   │           ├── opening_loc: (321...322) = ":"
@@ -853,7 +853,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (324...326) = "do"
         │   │   └── closing_loc: (327...330) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (332...351))
         │   ├── receiver: ∅
@@ -897,11 +897,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: (339...340) = ")"
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (335...336) = "{"
         │   │       │   │   └── closing_loc: (340...341) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (343...344))
         │   │           └── flags: decimal
@@ -913,7 +913,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (345...347) = "do"
         │   │   └── closing_loc: (348...351) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (353...374))
         │   ├── receiver: ∅
@@ -957,11 +957,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: (360...361) = ")"
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (356...357) = "{"
         │   │       │   │   └── closing_loc: (361...362) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ FloatNode (location: (364...367))
         │   ├── closing_loc: ∅
@@ -972,7 +972,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (368...370) = "do"
         │   │   └── closing_loc: (371...374) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (376...398))
         │   ├── receiver: ∅
@@ -1016,11 +1016,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: (383...384) = ")"
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (379...380) = "{"
         │   │       │   │   └── closing_loc: (384...385) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ ImaginaryNode (location: (387...391))
         │   │           └── numeric:
@@ -1033,7 +1033,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (392...394) = "do"
         │   │   └── closing_loc: (395...398) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (400...422))
         │   ├── receiver: ∅
@@ -1077,11 +1077,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: (407...408) = ")"
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (403...404) = "{"
         │   │       │   │   └── closing_loc: (408...409) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RationalNode (location: (411...415))
         │   │           └── numeric:
@@ -1094,7 +1094,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (416...418) = "do"
         │   │   └── closing_loc: (419...422) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         └── @ CallNode (location: (424...444))
             ├── receiver: ∅
@@ -1138,11 +1138,11 @@
             │       │   │   │           │           └── name: "d"
             │       │   │   │           ├── closing_loc: (431...432) = ")"
             │       │   │   │           ├── block: ∅
-            │       │   │   │           ├── flags: 
+            │       │   │   │           ├── flags: ∅
             │       │   │   │           └── name: "c"
             │       │   │   ├── opening_loc: (427...428) = "{"
             │       │   │   └── closing_loc: (432...433) = "}"
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "b"
             │       └── @ SymbolNode (location: (435...437))
             │           ├── opening_loc: (435...436) = ":"
@@ -1157,5 +1157,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (438...440) = "do"
             │   └── closing_loc: (441...444) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

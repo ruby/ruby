@@ -44,7 +44,7 @@
             │           │           │   ├── body: ∅
             │           │           │   ├── opening_loc: (18...20) = "do"
             │           │           │   └── closing_loc: (22...25) = "end"
-            │           │           ├── flags: 
+            │           │           ├── flags: ∅
             │           │           └── name: "y"
             │           ├── locals: []
             │           ├── def_keyword_loc: (2...5) = "def"
@@ -55,5 +55,5 @@
             │           └── end_keyword_loc: (27...30) = "end"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "p"

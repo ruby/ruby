@@ -17,7 +17,7 @@
         │   ├── content_loc: (13...19) = "\\c\#{1}"
         │   ├── closing_loc: (19...20) = "/"
         │   ├── unescaped: "\u0003{1}"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ StringNode (location: (22...30))
         │   ├── opening_loc: (22...23) = "\""
         │   ├── content_loc: (23...29) = "\\c\#{1}"

@@ -43,7 +43,7 @@
         │   │           │                   └── operator_loc: (38...40) = "**"
         │   │           ├── closing_loc: (40...41) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:argument, :**]
         │   ├── def_keyword_loc: (0...3) = "def"
@@ -90,7 +90,7 @@
             │           │           └── expression: ∅
             │           ├── closing_loc: (85...86) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:argument, :*]
             ├── def_keyword_loc: (47...50) = "def"

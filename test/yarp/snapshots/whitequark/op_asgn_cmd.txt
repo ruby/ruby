@@ -20,7 +20,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "A"
         │   ├── write_name: "A="
         │   ├── operator: :+
@@ -46,7 +46,7 @@
         │       │           └── name: "foo"
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "m"
         ├── @ CallOperatorWriteNode (location: (16...30))
         │   ├── receiver:
@@ -65,7 +65,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "a"
         │   ├── write_name: "a="
         │   ├── operator: :+
@@ -91,7 +91,7 @@
         │       │           └── name: "foo"
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "m"
         ├── @ ConstantPathOperatorWriteNode (location: (32...47))
         │   ├── target:
@@ -133,7 +133,7 @@
         │   │   │           └── name: "foo"
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "m"
         │   └── operator: :+
         └── @ CallOperatorWriteNode (location: (49...64))
@@ -153,7 +153,7 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "a"
             ├── write_name: "a="
             ├── operator: :+
@@ -179,5 +179,5 @@
                 │           └── name: "foo"
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: 
+                ├── flags: ∅
                 └── name: "m"

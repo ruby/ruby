@@ -34,7 +34,7 @@
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         └── @ DefNode (location: (15...49))
             ├── name: :foo
@@ -77,7 +77,7 @@
             │           │           └── unescaped: ""
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "raise"
             ├── locals: [:raise]
             ├── def_keyword_loc: (15...18) = "def"

@@ -55,5 +55,5 @@
             │   │   └── end_keyword_loc: (27...30) = "end"
             │   ├── opening_loc: (5...7) = "do"
             │   └── closing_loc: (27...30) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "meth"

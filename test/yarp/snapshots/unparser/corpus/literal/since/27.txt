@@ -42,7 +42,7 @@
         │               │           └── name: "_2"
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: 
+        │               ├── flags: ∅
         │               └── name: "+"
         └── @ ParenthesesNode (location: (17...22))
             ├── body:
@@ -54,6 +54,6 @@
             │           │   @ IntegerNode (location: (20...21))
             │           │   └── flags: decimal
             │           ├── operator_loc: (18...20) = ".."
-            │           └── flags: 
+            │           └── flags: ∅
             ├── opening_loc: (17...18) = "("
             └── closing_loc: (21...22) = ")"

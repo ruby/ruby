@@ -18,7 +18,7 @@
         │   │           └── unescaped: "hello my dear friend"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "puts"
         └── @ CallNode (location: (35...40))
             ├── receiver:
@@ -50,5 +50,5 @@
             │           └── name: "b"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "+"

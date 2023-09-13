@@ -114,7 +114,7 @@
         │   │   │   │           │           └── flags: decimal
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: 
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           └── name: "*"
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅

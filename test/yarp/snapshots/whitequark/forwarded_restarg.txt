@@ -36,7 +36,7 @@
             │           │           └── expression: ∅
             │           ├── closing_loc: (17...18) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:*]
             ├── def_keyword_loc: (0...3) = "def"

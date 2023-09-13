@@ -14,7 +14,7 @@
             │       │       ├── content_loc: (14...22) = "blahblah"
             │       │       ├── closing_loc: (22...23) = "%"
             │       │       ├── unescaped: "blahblah"
-            │       │       └── flags: 
+            │       │       └── flags: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (0...4) = "case"

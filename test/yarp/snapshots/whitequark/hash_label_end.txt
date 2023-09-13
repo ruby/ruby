@@ -44,7 +44,7 @@
         │   │           └── end_keyword_loc: ∅
         │   ├── closing_loc: (11...12) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "f"
         ├── @ HashNode (location: (14...26))
         │   ├── opening_loc: (14...15) = "{"

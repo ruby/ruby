@@ -34,5 +34,5 @@
             │   │           └── flags: decimal
             │   ├── opening_loc: (11...13) = "do"
             │   └── closing_loc: (16...19) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

@@ -31,7 +31,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (14...17))
             │           ├── closing_loc: (17...18) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "b"
             ├── locals: [:"..."]
             ├── def_keyword_loc: (0...3) = "def"

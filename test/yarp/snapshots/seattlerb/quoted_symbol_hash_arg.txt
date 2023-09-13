@@ -28,5 +28,5 @@
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "puts"

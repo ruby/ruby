@@ -13,5 +13,5 @@
             ├── arguments: ∅
             ├── closing_loc: (3...4) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "call"

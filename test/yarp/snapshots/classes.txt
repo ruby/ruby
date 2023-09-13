@@ -125,7 +125,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   ├── body: ∅
         │   └── end_keyword_loc: (117...120) = "end"
@@ -227,7 +227,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "bar"
         │   ├── body: ∅
         │   └── end_keyword_loc: (237...240) = "end"
@@ -254,7 +254,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "bar"
         │   ├── body: ∅
         │   └── end_keyword_loc: (259...262) = "end"
@@ -297,7 +297,7 @@
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "+"
         │   └── end_keyword_loc: (322...325) = "end"
         ├── @ SingletonClassNode (location: (327...350))
@@ -323,7 +323,7 @@
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "+"
         │   └── end_keyword_loc: (347...350) = "end"
         └── @ ClassNode (location: (352...370))
@@ -348,7 +348,7 @@
             │   │           └── flags: decimal
             │   ├── closing_loc: (365...366) = "]"
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "[]"
             ├── body: ∅
             ├── end_keyword_loc: (367...370) = "end"

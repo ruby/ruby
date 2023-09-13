@@ -20,7 +20,7 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "b"
             ├── write_name: "b="
             ├── operator_loc: (4...7) = "||="
@@ -37,5 +37,5 @@
                 │           └── flags: decimal
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: 
+                ├── flags: ∅
                 └── name: "c"

@@ -62,9 +62,9 @@
             │   │           │           └── depth: 0
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "+"
             │   ├── opening_loc: (4...6) = "do"
             │   └── closing_loc: (22...25) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

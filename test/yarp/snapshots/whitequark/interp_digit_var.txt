@@ -92,13 +92,13 @@
         │   ├── content_loc: (142...145) = "\#@1"
         │   ├── closing_loc: (145...146) = "}"
         │   ├── unescaped: "\#@1"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (150...158))
         │   ├── opening_loc: (150...153) = "%r{"
         │   ├── content_loc: (153...157) = "\#@@1"
         │   ├── closing_loc: (157...158) = "}"
         │   ├── unescaped: "\#@@1"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (162...169))
         │   ├── opening_loc: (162...165) = "%s{"
         │   ├── value_loc: (165...168) = "\#@1"
@@ -162,13 +162,13 @@
         │   ├── content_loc: (276...279) = "\#@1"
         │   ├── closing_loc: (279...280) = "/"
         │   ├── unescaped: "\#@1"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (284...290))
         │   ├── opening_loc: (284...285) = "/"
         │   ├── content_loc: (285...289) = "\#@@1"
         │   ├── closing_loc: (289...290) = "/"
         │   ├── unescaped: "\#@@1"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (294...300))
         │   ├── opening_loc: (294...296) = ":\""
         │   ├── value_loc: (296...299) = "\#@1"

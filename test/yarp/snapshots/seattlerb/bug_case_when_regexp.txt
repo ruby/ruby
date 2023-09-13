@@ -19,7 +19,7 @@
             │       │       ├── content_loc: (15...16) = "x"
             │       │       ├── closing_loc: (16...17) = "/"
             │       │       ├── unescaped: "x"
-            │       │       └── flags: 
+            │       │       └── flags: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (0...4) = "case"

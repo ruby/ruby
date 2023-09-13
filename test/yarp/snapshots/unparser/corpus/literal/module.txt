@@ -75,11 +75,11 @@
             │       │   │           ├── arguments: ∅
             │       │   │           ├── closing_loc: ∅
             │       │   │           ├── block: ∅
-            │       │   │           ├── flags: 
+            │       │   │           ├── flags: ∅
             │       │   │           └── name: "new"
             │       │   ├── closing_loc: (75...76) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "include"
             │       └── @ DefNode (location: (80...102))
             │           ├── name: :foo

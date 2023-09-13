@@ -26,5 +26,5 @@
             │           └── operator_loc: (4...5) = "&"
             ├── closing_loc: (8...9) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

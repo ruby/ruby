@@ -35,7 +35,7 @@
         │   │   │           │   │   ├── body: ∅
         │   │   │           │   │   ├── opening_loc: (29...31) = "do"
         │   │   │           │   │   └── closing_loc: (32...35) = "end"
-        │   │   │           │   ├── flags: 
+        │   │   │           │   ├── flags: ∅
         │   │   │           │   └── name: "tap"
         │   │   │           └── operator_loc: (23...24) = "="
         │   │   └── end_keyword_loc: (37...40) = "end"
@@ -45,7 +45,7 @@
         │   │       └── @ BreakNode (location: (42...47))
         │   │           ├── arguments: ∅
         │   │           └── keyword_loc: (42...47) = "break"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ WhileNode (location: (54...102))
         │   ├── keyword_loc: (54...59) = "while"
         │   ├── closing_loc: (99...102) = "end"
@@ -73,7 +73,7 @@
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (79...81) = "do"
         │   │   │           │   └── closing_loc: (82...85) = "end"
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "tap"
         │   │   └── end_keyword_loc: (87...90) = "end"
         │   ├── statements:
@@ -82,7 +82,7 @@
         │   │       └── @ BreakNode (location: (92...97))
         │   │           ├── arguments: ∅
         │   │           └── keyword_loc: (92...97) = "break"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ WhileNode (location: (104...151))
         │   ├── keyword_loc: (104...109) = "while"
         │   ├── closing_loc: (148...151) = "end"
@@ -117,7 +117,7 @@
         │   │   │           │   │   ├── body: ∅
         │   │   │           │   │   ├── opening_loc: (128...130) = "do"
         │   │   │           │   │   └── closing_loc: (131...134) = "end"
-        │   │   │           │   ├── flags: 
+        │   │   │           │   ├── flags: ∅
         │   │   │           │   └── name: "tap"
         │   │   │           └── operator_loc: (122...123) = "="
         │   │   ├── end_keyword_loc: (136...139) = "end"
@@ -128,7 +128,7 @@
         │   │       └── @ BreakNode (location: (141...146))
         │   │           ├── arguments: ∅
         │   │           └── keyword_loc: (141...146) = "break"
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ WhileNode (location: (153...197))
             ├── keyword_loc: (153...158) = "while"
             ├── closing_loc: (194...197) = "end"
@@ -158,7 +158,7 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (174...176) = "do"
             │   │           │   └── closing_loc: (177...180) = "end"
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "tap"
             │   ├── end_keyword_loc: (182...185) = "end"
             │   └── name: :Foo
@@ -168,4 +168,4 @@
             │       └── @ BreakNode (location: (187...192))
             │           ├── arguments: ∅
             │           └── keyword_loc: (187...192) = "break"
-            └── flags: 
+            └── flags: ∅

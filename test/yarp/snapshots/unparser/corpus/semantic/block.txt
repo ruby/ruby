@@ -17,7 +17,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (4...6) = "do"
         │   │   └── closing_loc: (7...10) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (12...29))
         │   ├── receiver: ∅
@@ -47,7 +47,7 @@
         │   │   │   └── end_keyword_loc: (26...29) = "end"
         │   │   ├── opening_loc: (16...18) = "do"
         │   │   └── closing_loc: (26...29) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (31...64))
         │   ├── receiver: ∅
@@ -72,7 +72,7 @@
         │   │   │       └── @ NilNode (location: (57...60))
         │   │   ├── opening_loc: (35...37) = "do"
         │   │   └── closing_loc: (61...64) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (66...80))
         │   ├── receiver: ∅
@@ -103,7 +103,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (70...72) = "do"
         │   │   └── closing_loc: (77...80) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (82...116))
         │   ├── receiver: ∅
@@ -146,7 +146,7 @@
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (94...96) = "do"
         │   │   └── closing_loc: (113...116) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         └── @ CallNode (location: (118...148))
             ├── receiver: ∅
@@ -181,5 +181,5 @@
             │   │           └── name: "a"
             │   ├── opening_loc: (130...132) = "do"
             │   └── closing_loc: (145...148) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "foo"

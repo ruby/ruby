@@ -26,7 +26,7 @@
         │   │           │   @ IntegerNode (location: (11...12))
         │   │           │   └── flags: decimal
         │   │           ├── operator_loc: (9...11) = ".."
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── opening_loc: (8...9) = "("
         │   └── closing_loc: (12...13) = ")"
         ├── @ RangeNode (location: (15...20))
@@ -65,7 +65,7 @@
         │   │           └── flags: exclude_end
         │   ├── closing_loc: (30...31) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ HashNode (location: (33...48))
         │   ├── opening_loc: (33...34) = "{"
@@ -116,7 +116,7 @@
         │   │   @ IntegerNode (location: (61...62))
         │   │   └── flags: decimal
         │   ├── operator_loc: (59...61) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ HashNode (location: (64...78))
         │   ├── opening_loc: (64...65) = "{"
         │   ├── elements: (length: 1)
@@ -142,7 +142,7 @@
         │   │       │   │   ├── flags: variable_call
         │   │       │   │   └── name: "bar"
         │   │       │   ├── operator_loc: (71...73) = ".."
-        │   │       │   └── flags: 
+        │   │       │   └── flags: ∅
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (77...78) = "}"
         └── @ ParenthesesNode (location: (80...85))
@@ -155,6 +155,6 @@
             │           │   └── flags: decimal
             │           ├── right: ∅
             │           ├── operator_loc: (82...84) = ".."
-            │           └── flags: 
+            │           └── flags: ∅
             ├── opening_loc: (80...81) = "("
             └── closing_loc: (84...85) = ")"

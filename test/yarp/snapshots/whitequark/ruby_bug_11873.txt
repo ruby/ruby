@@ -39,11 +39,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (7...8) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (10...13))
         │   │           ├── opening_loc: (10...11) = "\""
@@ -58,7 +58,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (14...16) = "do"
         │   │   └── closing_loc: (17...20) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (22...42))
         │   ├── receiver: ∅
@@ -96,18 +96,18 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (29...30) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (32...35))
         │   │           ├── opening_loc: (32...33) = "/"
         │   │           ├── content_loc: (33...34) = "x"
         │   │           ├── closing_loc: (34...35) = "/"
         │   │           ├── unescaped: "x"
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (36...42))
@@ -116,7 +116,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (36...38) = "do"
         │   │   └── closing_loc: (39...42) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (44...65))
         │   ├── receiver: ∅
@@ -154,11 +154,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (51...52) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (54...58))
         │   │           ├── opening_loc: (54...55) = "/"
@@ -174,7 +174,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (59...61) = "do"
         │   │   └── closing_loc: (62...65) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (67...88))
         │   ├── receiver: ∅
@@ -212,11 +212,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (74...75) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (75...76) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (78...81))
         │   │           ├── opening_loc: (78...79) = "\""
@@ -231,7 +231,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (82...84) = "do"
         │   │   └── closing_loc: (85...88) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (90...111))
         │   ├── receiver: ∅
@@ -269,18 +269,18 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (97...98) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (98...99) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (101...104))
         │   │           ├── opening_loc: (101...102) = "/"
         │   │           ├── content_loc: (102...103) = "x"
         │   │           ├── closing_loc: (103...104) = "/"
         │   │           ├── unescaped: "x"
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (105...111))
@@ -289,7 +289,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (105...107) = "do"
         │   │   └── closing_loc: (108...111) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (113...135))
         │   ├── receiver: ∅
@@ -327,11 +327,11 @@
         │   │       │   │           │           └── name: "d"
         │   │       │   │           ├── closing_loc: (120...121) = ")"
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "c"
         │   │       │   ├── closing_loc: (121...122) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (124...128))
         │   │           ├── opening_loc: (124...125) = "/"
@@ -347,7 +347,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (129...131) = "do"
         │   │   └── closing_loc: (132...135) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (137...157))
         │   ├── receiver: ∅
@@ -391,11 +391,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (140...141) = "{"
         │   │       │   │   └── closing_loc: (144...145) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (147...150))
         │   │           ├── opening_loc: (147...148) = "\""
@@ -410,7 +410,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (151...153) = "do"
         │   │   └── closing_loc: (154...157) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (159...179))
         │   ├── receiver: ∅
@@ -454,18 +454,18 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (162...163) = "{"
         │   │       │   │   └── closing_loc: (166...167) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (169...172))
         │   │           ├── opening_loc: (169...170) = "/"
         │   │           ├── content_loc: (170...171) = "x"
         │   │           ├── closing_loc: (171...172) = "/"
         │   │           ├── unescaped: "x"
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (173...179))
@@ -474,7 +474,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (173...175) = "do"
         │   │   └── closing_loc: (176...179) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (181...202))
         │   ├── receiver: ∅
@@ -518,11 +518,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (184...185) = "{"
         │   │       │   │   └── closing_loc: (188...189) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (191...195))
         │   │           ├── opening_loc: (191...192) = "/"
@@ -538,7 +538,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (196...198) = "do"
         │   │   └── closing_loc: (199...202) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (204...225))
         │   ├── receiver: ∅
@@ -582,11 +582,11 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: (211...212) = ")"
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (207...208) = "{"
         │   │       │   │   └── closing_loc: (212...213) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ StringNode (location: (215...218))
         │   │           ├── opening_loc: (215...216) = "\""
@@ -601,7 +601,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (219...221) = "do"
         │   │   └── closing_loc: (222...225) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (227...248))
         │   ├── receiver: ∅
@@ -645,18 +645,18 @@
         │   │       │   │   │           │           └── name: "d"
         │   │       │   │   │           ├── closing_loc: (234...235) = ")"
         │   │       │   │   │           ├── block: ∅
-        │   │       │   │   │           ├── flags: 
+        │   │       │   │   │           ├── flags: ∅
         │   │       │   │   │           └── name: "c"
         │   │       │   │   ├── opening_loc: (230...231) = "{"
         │   │       │   │   └── closing_loc: (235...236) = "}"
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "b"
         │   │       └── @ RegularExpressionNode (location: (238...241))
         │   │           ├── opening_loc: (238...239) = "/"
         │   │           ├── content_loc: (239...240) = "x"
         │   │           ├── closing_loc: (240...241) = "/"
         │   │           ├── unescaped: "x"
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (242...248))
@@ -665,7 +665,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (242...244) = "do"
         │   │   └── closing_loc: (245...248) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         └── @ CallNode (location: (250...272))
             ├── receiver: ∅
@@ -709,11 +709,11 @@
             │       │   │   │           │           └── name: "d"
             │       │   │   │           ├── closing_loc: (257...258) = ")"
             │       │   │   │           ├── block: ∅
-            │       │   │   │           ├── flags: 
+            │       │   │   │           ├── flags: ∅
             │       │   │   │           └── name: "c"
             │       │   │   ├── opening_loc: (253...254) = "{"
             │       │   │   └── closing_loc: (258...259) = "}"
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "b"
             │       └── @ RegularExpressionNode (location: (261...265))
             │           ├── opening_loc: (261...262) = "/"
@@ -729,5 +729,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (266...268) = "do"
             │   └── closing_loc: (269...272) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

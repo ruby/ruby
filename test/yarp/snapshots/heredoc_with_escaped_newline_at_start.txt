@@ -21,7 +21,7 @@
         │   │       │   ├── content_loc: (16...20) = "^\\s{"
         │   │       │   ├── closing_loc: (20...21) = "/"
         │   │       │   ├── unescaped: "^ {"
-        │   │       │   └── flags: 
+        │   │       │   └── flags: ∅
         │   │       └── @ StringNode (location: (23...25))
         │   │           ├── opening_loc: (23...24) = "'"
         │   │           ├── content_loc: (24...24) = ""
@@ -29,7 +29,7 @@
         │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "gsub"
         └── @ CallNode (location: (37...62))
             ├── receiver:
@@ -49,7 +49,7 @@
             │       │   ├── content_loc: (53...57) = "^\\s{"
             │       │   ├── closing_loc: (57...58) = "/"
             │       │   ├── unescaped: "^ {"
-            │       │   └── flags: 
+            │       │   └── flags: ∅
             │       └── @ StringNode (location: (60...62))
             │           ├── opening_loc: (60...61) = "'"
             │           ├── content_loc: (61...61) = ""
@@ -57,5 +57,5 @@
             │           └── unescaped: ""
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "gsub"

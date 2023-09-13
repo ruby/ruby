@@ -34,7 +34,7 @@
             │       │   │           └── depth: 0
             │       │   ├── closing_loc: (14...15) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "p"
             │       ├── @ LocalVariableOperatorWriteNode (location: (18...24))
             │       │   ├── name_loc: (18...19) = "y"

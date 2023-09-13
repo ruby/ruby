@@ -162,7 +162,7 @@
         │   │   ├── content_loc: (100...103) = "foo"
         │   │   ├── closing_loc: (103...104) = "/"
         │   │   ├── unescaped: "foo"
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (96...98) = "=>"
         ├── @ MatchRequiredNode (location: (105...117))
         │   ├── value:
@@ -504,7 +504,7 @@
         │   │   │   @ IntegerNode (location: (367...368))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (364...366) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (359...361) = "=>"
         ├── @ MatchRequiredNode (location: (369...386))
         │   ├── value:
@@ -525,7 +525,7 @@
         │   │   ├── right:
         │   │   │   @ FloatNode (location: (383...386))
         │   │   ├── operator_loc: (380...382) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (373...375) = "=>"
         ├── @ MatchRequiredNode (location: (387...402))
         │   ├── value:
@@ -552,7 +552,7 @@
         │   │   │       @ IntegerNode (location: (400...401))
         │   │   │       └── flags: decimal
         │   │   ├── operator_loc: (397...399) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (391...393) = "=>"
         ├── @ MatchRequiredNode (location: (403...418))
         │   ├── value:
@@ -579,7 +579,7 @@
         │   │   │       @ IntegerNode (location: (416...417))
         │   │   │       └── flags: decimal
         │   │   ├── operator_loc: (413...415) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (407...409) = "=>"
         ├── @ MatchRequiredNode (location: (419...438))
         │   ├── value:
@@ -608,7 +608,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (431...433) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (423...425) = "=>"
         ├── @ MatchRequiredNode (location: (439...464))
         │   ├── value:
@@ -637,7 +637,7 @@
         │   │   │   ├── closing_loc: (463...464) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (454...456) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (443...445) = "=>"
         ├── @ MatchRequiredNode (location: (465...488))
         │   ├── value:
@@ -666,7 +666,7 @@
         │   │   │   ├── closing_loc: (487...488) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (479...481) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (469...471) = "=>"
         ├── @ MatchRequiredNode (location: (489...510))
         │   ├── value:
@@ -688,16 +688,16 @@
         │   │   │   ├── content_loc: (497...500) = "foo"
         │   │   │   ├── closing_loc: (500...501) = "/"
         │   │   │   ├── unescaped: "foo"
-        │   │   │   └── flags: 
+        │   │   │   └── flags: ∅
         │   │   ├── right:
         │   │   │   @ RegularExpressionNode (location: (505...510))
         │   │   │   ├── opening_loc: (505...506) = "/"
         │   │   │   ├── content_loc: (506...509) = "foo"
         │   │   │   ├── closing_loc: (509...510) = "/"
         │   │   │   ├── unescaped: "foo"
-        │   │   │   └── flags: 
+        │   │   │   └── flags: ∅
         │   │   ├── operator_loc: (502...504) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (493...495) = "=>"
         ├── @ MatchRequiredNode (location: (511...532))
         │   ├── value:
@@ -726,7 +726,7 @@
         │   │   │   ├── closing_loc: (531...532) = "`"
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (524...526) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (515...517) = "=>"
         ├── @ MatchRequiredNode (location: (533...558))
         │   ├── value:
@@ -755,7 +755,7 @@
         │   │   │   ├── closing_loc: (557...558) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (548...550) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (537...539) = "=>"
         ├── @ MatchRequiredNode (location: (559...584))
         │   ├── value:
@@ -792,7 +792,7 @@
         │   │   │   ├── opening_loc: (577...580) = "%i["
         │   │   │   └── closing_loc: (583...584) = "]"
         │   │   ├── operator_loc: (574...576) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (563...565) = "=>"
         ├── @ MatchRequiredNode (location: (585...610))
         │   ├── value:
@@ -829,7 +829,7 @@
         │   │   │   ├── opening_loc: (603...606) = "%I["
         │   │   │   └── closing_loc: (609...610) = "]"
         │   │   ├── operator_loc: (600...602) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (589...591) = "=>"
         ├── @ MatchRequiredNode (location: (611...636))
         │   ├── value:
@@ -866,7 +866,7 @@
         │   │   │   ├── opening_loc: (629...632) = "%w["
         │   │   │   └── closing_loc: (635...636) = "]"
         │   │   ├── operator_loc: (626...628) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (615...617) = "=>"
         ├── @ MatchRequiredNode (location: (637...662))
         │   ├── value:
@@ -903,7 +903,7 @@
         │   │   │   ├── opening_loc: (655...658) = "%W["
         │   │   │   └── closing_loc: (661...662) = "]"
         │   │   ├── operator_loc: (652...654) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (641...643) = "=>"
         ├── @ MatchRequiredNode (location: (663...688))
         │   ├── value:
@@ -932,7 +932,7 @@
         │   │   │   ├── closing_loc: (687...688) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (678...680) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (667...669) = "=>"
         ├── @ MatchRequiredNode (location: (689...714))
         │   ├── value:
@@ -961,7 +961,7 @@
         │   │   │   ├── closing_loc: (713...714) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (704...706) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (693...695) = "=>"
         ├── @ MatchRequiredNode (location: (715...736))
         │   ├── value:
@@ -990,7 +990,7 @@
         │   │   │   ├── closing_loc: (735...736) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   ├── operator_loc: (728...730) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (719...721) = "=>"
         ├── @ MatchRequiredNode (location: (737...754))
         │   ├── value:
@@ -1011,7 +1011,7 @@
         │   │   ├── right:
         │   │   │   @ NilNode (location: (751...754))
         │   │   ├── operator_loc: (748...750) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (741...743) = "=>"
         ├── @ MatchRequiredNode (location: (755...774))
         │   ├── value:
@@ -1032,7 +1032,7 @@
         │   │   ├── right:
         │   │   │   @ SelfNode (location: (770...774))
         │   │   ├── operator_loc: (767...769) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (759...761) = "=>"
         ├── @ MatchRequiredNode (location: (775...794))
         │   ├── value:
@@ -1053,7 +1053,7 @@
         │   │   ├── right:
         │   │   │   @ TrueNode (location: (790...794))
         │   │   ├── operator_loc: (787...789) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (779...781) = "=>"
         ├── @ MatchRequiredNode (location: (795...816))
         │   ├── value:
@@ -1074,7 +1074,7 @@
         │   │   ├── right:
         │   │   │   @ FalseNode (location: (811...816))
         │   │   ├── operator_loc: (808...810) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (799...801) = "=>"
         ├── @ MatchRequiredNode (location: (817...844))
         │   ├── value:
@@ -1097,7 +1097,7 @@
         │   │   │   @ SourceFileNode (location: (836...844))
         │   │   │   └── filepath: "patterns.txt"
         │   │   ├── operator_loc: (833...835) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (821...823) = "=>"
         ├── @ MatchRequiredNode (location: (845...872))
         │   ├── value:
@@ -1118,7 +1118,7 @@
         │   │   ├── right:
         │   │   │   @ SourceLineNode (location: (864...872))
         │   │   ├── operator_loc: (861...863) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (849...851) = "=>"
         ├── @ MatchRequiredNode (location: (873...908))
         │   ├── value:
@@ -1139,7 +1139,7 @@
         │   │   ├── right:
         │   │   │   @ SourceEncodingNode (location: (896...908))
         │   │   ├── operator_loc: (893...895) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (877...879) = "=>"
         ├── @ MatchRequiredNode (location: (909...940))
         │   ├── value:
@@ -1182,7 +1182,7 @@
         │   │   │               ├── name: :bar
         │   │   │               └── depth: 1
         │   │   ├── operator_loc: (927...929) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (913...915) = "=>"
         ├── @ MatchRequiredNode (location: (942...953))
         │   ├── value:
@@ -1337,7 +1337,7 @@
         │   │   │   │           └── unescaped: "baz"
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "+"
         │   │   ├── operator_loc: (1028...1029) = "^"
         │   │   ├── lparen_loc: (1029...1030) = "("
@@ -2434,7 +2434,7 @@
         │   │   ├── content_loc: (1748...1751) = "foo"
         │   │   ├── closing_loc: (1751...1752) = "/"
         │   │   ├── unescaped: "foo"
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   └── operator_loc: (1744...1746) = "in"
         ├── @ MatchPredicateNode (location: (1753...1765))
         │   ├── value:
@@ -2972,7 +2972,7 @@
         │   │       │   ├── content_loc: (2229...2232) = "foo"
         │   │       │   ├── closing_loc: (2232...2233) = "/"
         │   │       │   ├── unescaped: "foo"
-        │   │       │   └── flags: 
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (2225...2227) = "in"
         │   │       └── then_loc: (2234...2238) = "then"
@@ -3731,7 +3731,7 @@
         │   │       │   │           ├── content_loc: (3030...3033) = "foo"
         │   │       │   │           ├── closing_loc: (3033...3034) = "/"
         │   │       │   │           ├── unescaped: "foo"
-        │   │       │   │           └── flags: 
+        │   │       │   │           └── flags: ∅
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅

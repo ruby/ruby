@@ -9,7 +9,7 @@
         │   │   @ IntegerNode (location: (2...4))
         │   │   └── flags: decimal
         │   ├── operator_loc: (0...2) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RangeNode (location: (7...10))
         │   ├── left: ∅
         │   ├── right:
@@ -24,7 +24,7 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "a"
         │   ├── operator_loc: (7...9) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ CallNode (location: (13...14))
             ├── receiver: ∅
             ├── call_operator_loc: ∅

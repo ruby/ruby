@@ -54,10 +54,10 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "chop"
             │   ├── closing_loc: (19...20) = ")"
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "foo"
             └── operator_loc: (2...3) = "="

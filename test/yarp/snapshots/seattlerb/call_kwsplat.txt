@@ -20,5 +20,5 @@
             │                   └── operator_loc: (2...4) = "**"
             ├── closing_loc: (5...6) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

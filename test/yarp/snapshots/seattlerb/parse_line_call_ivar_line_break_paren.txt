@@ -15,5 +15,5 @@
             │           └── name: :@b
             ├── closing_loc: (5...6) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

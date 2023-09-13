@@ -41,7 +41,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (31...42))
         │   ├── receiver:
@@ -81,5 +81,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "foo"

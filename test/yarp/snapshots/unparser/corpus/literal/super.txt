@@ -141,7 +141,7 @@
         │   │           │   │           └── name: "foo"
         │   │           │   ├── opening_loc: (74...75) = "{"
         │   │           │   └── closing_loc: (82...83) = "}"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "a"
         │   ├── rparen_loc: (83...84) = ")"
         │   └── block: ∅

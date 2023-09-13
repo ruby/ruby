@@ -20,7 +20,7 @@
             ├── opening_loc: (1...2) = "["
             ├── arguments: ∅
             ├── closing_loc: (2...3) = "]"
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "[]"
             ├── write_name: "[]="
             ├── operator: :+

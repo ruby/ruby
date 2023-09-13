@@ -21,7 +21,7 @@
         │   │   │   @ IntegerNode (location: (12...14))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (10...12) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (15...16))
         │   │   └── body: (length: 1)
@@ -50,7 +50,7 @@
         │   │   │   @ IntegerNode (location: (34...36))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (32...34) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (38...39))
         │   │   └── body: (length: 1)
@@ -82,7 +82,7 @@
         │   │   │   @ IntegerNode (location: (60...62))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (58...60) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (63...64))
         │   │   └── body: (length: 1)
@@ -117,7 +117,7 @@
         │   │   │   @ IntegerNode (location: (86...88))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (84...86) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (89...90))
         │   │   └── body: (length: 1)
@@ -146,7 +146,7 @@
         │   │   │   @ IntegerNode (location: (108...110))
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (106...108) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (114...115))
         │   │   └── body: (length: 1)
@@ -175,7 +175,7 @@
             │   │   @ IntegerNode (location: (133...135))
             │   │   └── flags: decimal
             │   ├── operator_loc: (131...133) = ".."
-            │   └── flags: 
+            │   └── flags: ∅
             ├── statements:
             │   @ StatementsNode (location: (137...138))
             │   └── body: (length: 1)

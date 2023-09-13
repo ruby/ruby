@@ -70,7 +70,7 @@
         │   │           └── closing_loc: ∅
         │   ├── closing_loc: (18...19) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ ArrayNode (location: (31...44))
         │   ├── elements: (length: 1)
@@ -215,7 +215,7 @@
         │   │   │           └── name: "bar"
         │   │   ├── closing_loc: (121...122) = "]"
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "[]"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (122...127) = "[baz]"
@@ -245,7 +245,7 @@
         │   │           └── name: "qux"
         │   ├── closing_loc: (126...127) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (135...148))
         │   ├── receiver:
@@ -279,7 +279,7 @@
         │   │   │           └── name: "bar"
         │   │   ├── closing_loc: (142...143) = "]"
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "[]"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (143...148) = "[baz]"
@@ -299,7 +299,7 @@
         │   │           └── name: "baz"
         │   ├── closing_loc: (147...148) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ ArrayNode (location: (150...153))
         │   ├── elements: (length: 0)
@@ -345,7 +345,7 @@
         │   │           └── name: "baz"
         │   ├── closing_loc: (167...168) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ CallNode (location: (170...189))
         │   ├── receiver:
@@ -397,7 +397,7 @@
         │   │           └── name: "qux"
         │   ├── closing_loc: (182...183) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ MultiWriteNode (location: (191...212))
         │   ├── targets: (length: 2)
@@ -423,7 +423,7 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (196...197) = "]"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "[]="
         │   │   └── @ CallNode (location: (199...205))
         │   │       ├── receiver:
@@ -447,7 +447,7 @@
         │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (204...205) = "]"
         │   │       ├── block: ∅
-        │   │       ├── flags: 
+        │   │       ├── flags: ∅
         │   │       └── name: "[]="
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
@@ -519,11 +519,11 @@
         │   │           │           └── name: "qux"
         │   │           ├── closing_loc: (225...226) = "]"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "[]="
         │   ├── closing_loc: (232...233) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ CallNode (location: (235...243))
         │   ├── receiver:
@@ -555,7 +555,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: (242...243) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ CallNode (location: (245...259))
         │   ├── receiver:
@@ -597,7 +597,7 @@
         │   │           └── name: "baz"
         │   ├── closing_loc: (252...253) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ ArrayNode (location: (261...267))
         │   ├── elements: (length: 1)

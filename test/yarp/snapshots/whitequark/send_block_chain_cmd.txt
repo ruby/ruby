@@ -23,7 +23,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (7...9) = "do"
         │   │   │   └── closing_loc: (10...13) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "meth"
         │   ├── call_operator_loc: (13...14) = "."
         │   ├── message_loc: (14...17) = "fun"
@@ -43,7 +43,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (23...51))
         │   ├── receiver:
@@ -65,7 +65,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (30...32) = "do"
         │   │   │   └── closing_loc: (33...36) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "meth"
         │   ├── call_operator_loc: (36...37) = "."
         │   ├── message_loc: (37...40) = "fun"
@@ -91,7 +91,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (45...47) = "do"
         │   │   └── closing_loc: (48...51) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (53...73))
         │   ├── receiver:
@@ -113,7 +113,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (60...62) = "do"
         │   │   │   └── closing_loc: (63...66) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "meth"
         │   ├── call_operator_loc: (66...67) = "."
         │   ├── message_loc: (67...70) = "fun"
@@ -127,7 +127,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (71...72) = "{"
         │   │   └── closing_loc: (72...73) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (75...97))
         │   ├── receiver:
@@ -149,7 +149,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (82...84) = "do"
         │   │   │   └── closing_loc: (85...88) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "meth"
         │   ├── call_operator_loc: (88...89) = "."
         │   ├── message_loc: (89...92) = "fun"
@@ -169,7 +169,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: (96...97) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (99...124))
         │   ├── receiver:
@@ -191,7 +191,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (106...108) = "do"
         │   │   │   └── closing_loc: (109...112) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "meth"
         │   ├── call_operator_loc: (112...113) = "."
         │   ├── message_loc: (113...116) = "fun"
@@ -217,7 +217,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (122...123) = "{"
         │   │   └── closing_loc: (123...124) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (126...148))
         │   ├── receiver:
@@ -239,7 +239,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (133...135) = "do"
         │   │   │   └── closing_loc: (136...139) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "meth"
         │   ├── call_operator_loc: (139...141) = "::"
         │   ├── message_loc: (141...144) = "fun"
@@ -259,7 +259,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         └── @ CallNode (location: (150...173))
             ├── receiver:
@@ -281,7 +281,7 @@
             │   │   ├── body: ∅
             │   │   ├── opening_loc: (157...159) = "do"
             │   │   └── closing_loc: (160...163) = "end"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "meth"
             ├── call_operator_loc: (163...165) = "::"
             ├── message_loc: (165...168) = "fun"
@@ -301,5 +301,5 @@
             │           └── name: "bar"
             ├── closing_loc: (172...173) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

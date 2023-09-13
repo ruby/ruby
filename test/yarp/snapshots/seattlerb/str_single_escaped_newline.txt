@@ -18,7 +18,7 @@
         │   │           └── unescaped: "\\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         └── @ CallNode (location: (7...8))
             ├── receiver: ∅

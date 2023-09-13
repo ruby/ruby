@@ -36,7 +36,7 @@
         │   │           │           └── operator_loc: (17...18) = "&"
         │   │           ├── closing_loc: (18...19) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:&]
         │   ├── def_keyword_loc: (0...3) = "def"
@@ -80,7 +80,7 @@
             │           │           └── operator_loc: (45...46) = "&"
             │           ├── closing_loc: (46...47) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:a, :&]
             ├── def_keyword_loc: (25...28) = "def"

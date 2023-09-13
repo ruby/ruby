@@ -37,7 +37,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (12...13) = "{"
         │   │   └── closing_loc: (13...14) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (16...31))
         │   ├── receiver:
@@ -73,7 +73,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (29...30) = "{"
         │   │   └── closing_loc: (30...31) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         └── @ CallNode (location: (33...43))
             ├── receiver: ∅
@@ -99,5 +99,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (41...42) = "{"
             │   └── closing_loc: (42...43) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

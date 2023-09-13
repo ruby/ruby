@@ -67,10 +67,10 @@
         │   │           │   │           │           │   ├── name: :bar
         │   │           │   │           │           │   └── depth: 0
         │   │           │   │           │           └── operator_loc: (47...48) = "="
-        │   │           │   │           └── flags: 
+        │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (15...16) = "{"
         │   │           │   └── closing_loc: (63...64) = "}"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "foo"
         │   ├── end_keyword_loc: (65...68) = "end"
         │   └── name: :A
@@ -109,7 +109,7 @@
         │   │           │   │           └── name: "baz"
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
-        │   │           │   ├── flags: 
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: "!="
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (80...89))
@@ -130,7 +130,7 @@
         │   │           │           │   ├── flags: variable_call
         │   │           │           │   └── name: "bar"
         │   │           │           └── operator_loc: (84...85) = "="
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── locals: [:foo]
         │   ├── def_keyword_loc: (70...73) = "def"
         │   ├── operator_loc: ∅
@@ -173,7 +173,7 @@
         │   │           │           │   ├── flags: variable_call
         │   │           │           │   └── name: "bar"
         │   │           │           └── operator_loc: (127...128) = "="
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── end_keyword_loc: (143...146) = "end"
         │   └── name: :A
         ├── @ ModuleNode (location: (148...182))
@@ -211,7 +211,7 @@
         │   │           │           │   ├── flags: variable_call
         │   │           │           │   └── name: "bar"
         │   │           │           └── operator_loc: (163...164) = "="
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── end_keyword_loc: (179...182) = "end"
         │   └── name: :A
         ├── @ ModuleNode (location: (184...228))
@@ -256,7 +256,7 @@
         │   │           │           │   ├── flags: variable_call
         │   │           │           │   └── name: "bar"
         │   │           │           └── operator_loc: (213...214) = "="
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── end_keyword_loc: (225...228) = "end"
         │   └── name: :A
         ├── @ ModuleNode (location: (230...299))
@@ -330,10 +330,10 @@
         │   │           │   │           │           │   ├── flags: variable_call
         │   │           │   │           │           │   └── name: "bar"
         │   │           │   │           │           └── operator_loc: (278...279) = "="
-        │   │           │   │           └── flags: 
+        │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (246...247) = "{"
         │   │           │   └── closing_loc: (294...295) = "}"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "each"
         │   ├── end_keyword_loc: (296...299) = "end"
         │   └── name: :A
@@ -401,10 +401,10 @@
         │   │           │   │           │           │   ├── flags: variable_call
         │   │           │   │           │           │   └── name: "bar"
         │   │           │   │           │           └── operator_loc: (349...350) = "="
-        │   │           │   │           └── flags: 
+        │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (317...318) = "{"
         │   │           │   └── closing_loc: (365...366) = "}"
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "each"
         │   ├── end_keyword_loc: (367...370) = "end"
         │   └── name: :A
@@ -594,7 +594,7 @@
         │   ├── predicate:
         │   │   @ FalseNode (location: (499...504))
         │   ├── statements: ∅
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ WhileNode (location: (509...528))
         │   ├── keyword_loc: (509...514) = "while"
         │   ├── closing_loc: (525...528) = "end"
@@ -605,7 +605,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (523...524))
         │   │           └── flags: decimal
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ WhileNode (location: (529...556))
         │   ├── keyword_loc: (529...534) = "while"
         │   ├── closing_loc: (553...556) = "end"
@@ -628,7 +628,7 @@
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (540...541) = "{"
         │   │   │           │   └── closing_loc: (542...543) = "}"
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "foo"
         │   │   ├── opening_loc: (535...536) = "("
         │   │   └── closing_loc: (543...544) = ")"
@@ -640,14 +640,14 @@
         │   │           ├── value_loc: (548...552) = "body"
         │   │           ├── closing_loc: ∅
         │   │           └── unescaped: "body"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (557...572))
         │   ├── keyword_loc: (557...562) = "until"
         │   ├── closing_loc: (569...572) = "end"
         │   ├── predicate:
         │   │   @ FalseNode (location: (563...568))
         │   ├── statements: ∅
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (573...592))
         │   ├── keyword_loc: (573...578) = "until"
         │   ├── closing_loc: (589...592) = "end"
@@ -658,7 +658,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (587...588))
         │   │           └── flags: decimal
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ UntilNode (location: (593...620))
             ├── keyword_loc: (593...598) = "until"
             ├── closing_loc: (617...620) = "end"
@@ -681,7 +681,7 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (604...605) = "{"
             │   │           │   └── closing_loc: (606...607) = "}"
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "foo"
             │   ├── opening_loc: (599...600) = "("
             │   └── closing_loc: (607...608) = ")"
@@ -693,4 +693,4 @@
             │           ├── value_loc: (612...616) = "body"
             │           ├── closing_loc: ∅
             │           └── unescaped: "body"
-            └── flags: 
+            └── flags: ∅

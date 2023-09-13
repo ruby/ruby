@@ -38,7 +38,7 @@
         │   │   │           │           └── depth: 0
         │   │   │           ├── closing_loc: (31...32) = ")"
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "system"
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (33...45))
@@ -95,7 +95,7 @@
         │   │           │   │           └── depth: 0
         │   │           │   ├── closing_loc: (83...84) = ")"
         │   │           │   ├── block: ∅
-        │   │           │   ├── flags: 
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: "system"
         │   │           ├── keyword_loc: (85...91) = "rescue"
         │   │           └── rescue_expression:
@@ -141,7 +141,7 @@
             │           │   │           └── depth: 0
             │           │   ├── closing_loc: (133...134) = ")"
             │           │   ├── block: ∅
-            │           │   ├── flags: 
+            │           │   ├── flags: ∅
             │           │   └── name: "system"
             │           ├── keyword_loc: (135...141) = "rescue"
             │           └── rescue_expression:

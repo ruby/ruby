@@ -22,7 +22,7 @@
             │   │       ├── closing_loc: ∅
             │   │       └── unescaped: "(?<match>bar)"
             │   ├── closing_loc: (18...19) = "/"
-            │   └── flags: 
+            │   └── flags: ∅
             ├── call_operator_loc: ∅
             ├── message_loc: (20...22) = "=~"
             ├── opening_loc: ∅
@@ -36,5 +36,5 @@
             │           └── unescaped: "bar"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "=~"

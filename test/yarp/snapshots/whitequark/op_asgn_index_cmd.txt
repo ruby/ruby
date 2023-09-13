@@ -26,7 +26,7 @@
             │       └── @ IntegerNode (location: (7...8))
             │           └── flags: decimal
             ├── closing_loc: (8...9) = "]"
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "[]"
             ├── write_name: "[]="
             ├── operator: :+
@@ -52,5 +52,5 @@
                 │           └── name: "foo"
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: 
+                ├── flags: ∅
                 └── name: "m"

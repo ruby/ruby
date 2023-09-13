@@ -137,7 +137,7 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: (112...113) = "]"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "[]"
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (115...116))
@@ -166,7 +166,7 @@
             │   │   │           └── flags: decimal
             │   │   ├── closing_loc: (132...133) = "]"
             │   │   ├── block: ∅
-            │   │   ├── flags: 
+            │   │   ├── flags: ∅
             │   │   └── name: "[]"
             │   ├── child:
             │   │   @ ConstantReadNode (location: (135...136))

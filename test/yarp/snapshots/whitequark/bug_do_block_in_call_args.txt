@@ -34,7 +34,7 @@
             │           │           │   ├── body: ∅
             │           │           │   ├── opening_loc: (23...25) = "do"
             │           │           │   └── closing_loc: (26...29) = "end"
-            │           │           ├── flags: 
+            │           │           ├── flags: ∅
             │           │           └── name: "each"
             │           ├── locals: []
             │           ├── def_keyword_loc: (4...7) = "def"
@@ -45,5 +45,5 @@
             │           └── end_keyword_loc: (30...33) = "end"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "bar"

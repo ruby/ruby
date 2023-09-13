@@ -20,7 +20,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "a"
         │   ├── write_name: "a="
         │   ├── operator_loc: (6...9) = "&&="
@@ -50,7 +50,7 @@
             │       └── @ IntegerNode (location: (20...21))
             │           └── flags: decimal
             ├── closing_loc: (21...22) = "]"
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "[]"
             ├── write_name: "[]="
             ├── operator_loc: (23...26) = "&&="

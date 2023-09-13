@@ -21,7 +21,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "strip"
         │   └── operator_loc: (13...14) = "="
         └── @ CallNode (location: (77...88))
@@ -37,5 +37,5 @@
             │           └── depth: 0
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "puts"

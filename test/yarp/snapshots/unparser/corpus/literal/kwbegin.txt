@@ -331,7 +331,7 @@
         │   │           │   │           └── name: :Exception
         │   │           │   ├── closing_loc: (298...299) = ")"
         │   │           │   ├── block: ∅
-        │   │           │   ├── flags: 
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: "raise"
         │   │           ├── keyword_loc: (300...306) = "rescue"
         │   │           └── rescue_expression:

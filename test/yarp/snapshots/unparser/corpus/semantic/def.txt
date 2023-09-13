@@ -45,7 +45,7 @@
         │   │           │           │           └── name: "b"
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "-"
         │   │           ├── opening_loc: (10...11) = "("
         │   │           └── closing_loc: (16...17) = ")"

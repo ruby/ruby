@@ -33,4 +33,4 @@
             │       ├── closing_loc: ∅
             │       └── unescaped: "baz"
             ├── closing_loc: (13...14) = "/"
-            └── flags: 
+            └── flags: ∅

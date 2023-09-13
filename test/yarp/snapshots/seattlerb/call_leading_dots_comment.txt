@@ -23,7 +23,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "b"
             ├── call_operator_loc: (9...10) = "."
             ├── message_loc: (10...11) = "d"
@@ -31,5 +31,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "d"

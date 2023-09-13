@@ -44,5 +44,5 @@
             │   │           └── depth: 0
             │   ├── opening_loc: (3...4) = "{"
             │   └── closing_loc: (19...20) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "bl"

@@ -60,7 +60,7 @@
         │   │           │           │   ├── body: ∅
         │   │           │           │   ├── opening_loc: (56...58) = "do"
         │   │           │           │   └── closing_loc: (61...64) = "end"
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "bar"
         │   │           ├── locals: []
         │   │           ├── def_keyword_loc: (42...45) = "def"
@@ -71,7 +71,7 @@
         │   │           └── end_keyword_loc: (65...68) = "end"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "private"
         ├── @ DefNode (location: (70...89))
         │   ├── name: :m

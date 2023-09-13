@@ -62,7 +62,7 @@
         │   ├── content_loc: (87...90) = "\n\n\n"
         │   ├── closing_loc: (90...91) = "]"
         │   ├── unescaped: "\n\n\n"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (93...100))
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (93...96) = "%w["
@@ -143,7 +143,7 @@
         │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "+"
         │   │           ├── locals: [:a, :b]
         │   │           ├── def_keyword_loc: (168...171) = "def"
@@ -234,7 +234,7 @@
         │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "+"
         │   │           ├── locals: [:a, :b]
         │   │           ├── def_keyword_loc: (417...420) = "def"
@@ -324,5 +324,5 @@
             │           └── unescaped: "line3"
             ├── closing_loc: (688...689) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "x"

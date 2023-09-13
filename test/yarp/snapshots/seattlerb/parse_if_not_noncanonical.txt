@@ -26,7 +26,7 @@
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: 
+            │   │   ├── flags: ∅
             │   │   └── name: "nil?"
             │   ├── call_operator_loc: ∅
             │   ├── message_loc: (3...6) = "not"
@@ -34,7 +34,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "!"
             ├── statements:
             │   @ StatementsNode (location: (21...26))

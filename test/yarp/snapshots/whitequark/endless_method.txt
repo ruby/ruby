@@ -53,7 +53,7 @@
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "+"
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (16...19) = "def"
@@ -132,7 +132,7 @@
             │           │           └── flags: decimal
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "+"
             ├── locals: [:x]
             ├── def_keyword_loc: (56...59) = "def"

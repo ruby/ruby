@@ -35,11 +35,11 @@
             │           │           │           └── name: "bar"
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
-            │           │           ├── flags: 
+            │           │           ├── flags: ∅
             │           │           └── name: "f"
             │           ├── opening_loc: (4...5) = "("
             │           └── closing_loc: (10...11) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

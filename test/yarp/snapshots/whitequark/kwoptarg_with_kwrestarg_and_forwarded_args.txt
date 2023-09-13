@@ -43,7 +43,7 @@
             │           │                   └── operator_loc: (21...23) = "**"
             │           ├── closing_loc: (23...24) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "b"
             ├── locals: [:a, :**]
             ├── def_keyword_loc: (0...3) = "def"

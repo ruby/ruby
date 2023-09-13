@@ -126,7 +126,8 @@ module YARP
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when YARP::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
-      inspector << "<%= pointer %><%= field.name %>: #{[<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact.join(", ")}\n"
+      flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact
+      inspector << "<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n"
       <%- when YARP::LocationField, YARP::OptionalLocationField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.location(<%= field.name %>)}\n"
       <%- else -%>

@@ -33,5 +33,5 @@
             │           └── name: "b"
             ├── closing_loc: (2...3) = "]"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "[]="

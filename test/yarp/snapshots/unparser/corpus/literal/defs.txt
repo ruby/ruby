@@ -141,7 +141,7 @@
         │   │   │   │   ├── body: ∅
         │   │   │   │   ├── opening_loc: (104...105) = "{"
         │   │   │   │   └── closing_loc: (112...113) = "}"
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "foo"
         │   │   ├── opening_loc: (99...100) = "("
         │   │   └── closing_loc: (113...114) = ")"
@@ -184,7 +184,7 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (140...141) = ")"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "foo"
         │   │   ├── opening_loc: (134...135) = "("
         │   │   └── closing_loc: (141...142) = ")"
@@ -231,7 +231,7 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "baz"
         │   │   ├── opening_loc: (162...163) = "("
         │   │   └── closing_loc: (175...176) = ")"

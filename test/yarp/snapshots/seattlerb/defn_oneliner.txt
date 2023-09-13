@@ -34,7 +34,7 @@
             │           │           └── depth: 0
             │           ├── closing_loc: (26...27) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "system"
             ├── locals: [:cmd]
             ├── def_keyword_loc: (0...3) = "def"

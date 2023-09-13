@@ -36,7 +36,7 @@
         │   │               └── name: "bar"
         │   ├── closing_loc: (13...14) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         └── @ CallNode (location: (16...36))
             ├── receiver: ∅
@@ -84,5 +84,5 @@
             │           └── operator_loc: (31...32) = "&"
             ├── closing_loc: (35...36) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

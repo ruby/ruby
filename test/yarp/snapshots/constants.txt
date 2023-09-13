@@ -76,7 +76,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Foo"
         ├── @ CallNode (location: (50...58))
         │   ├── receiver: ∅
@@ -101,7 +101,7 @@
         │   │               └── name: "bar"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Foo"
         ├── @ CallNode (location: (60...69))
         │   ├── receiver: ∅
@@ -128,7 +128,7 @@
         │   │                   └── operator_loc: (64...66) = "**"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Foo"
         ├── @ CallNode (location: (71...79))
         │   ├── receiver: ∅
@@ -153,7 +153,7 @@
         │   │           └── operator_loc: (75...76) = "&"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Foo"
         ├── @ CallNode (location: (81...94))
         │   ├── receiver:
@@ -180,7 +180,7 @@
         │   │               └── name: "baz"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Bar"
         ├── @ CallNode (location: (96...110))
         │   ├── receiver:
@@ -209,7 +209,7 @@
         │   │                   └── operator_loc: (105...107) = "**"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Bar"
         ├── @ CallNode (location: (112...125))
         │   ├── receiver:
@@ -236,7 +236,7 @@
         │   │           └── operator_loc: (121...122) = "&"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "Bar"
         ├── @ CallNode (location: (127...135))
         │   ├── receiver:
@@ -252,7 +252,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ ConstantPathWriteNode (location: (137...144))
         │   ├── target:
@@ -312,7 +312,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "false"
         ├── @ CallNode (location: (181...191))
         │   ├── receiver:
@@ -330,7 +330,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "true"
         ├── @ CallNode (location: (193...197))
         │   ├── receiver:
@@ -342,7 +342,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "&"
         ├── @ CallNode (location: (199...203))
         │   ├── receiver:
@@ -354,7 +354,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "`"
         ├── @ CallNode (location: (205...209))
         │   ├── receiver:
@@ -366,7 +366,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (211...216))
         │   ├── receiver:
@@ -378,7 +378,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!="
         ├── @ CallNode (location: (218...222))
         │   ├── receiver:
@@ -390,7 +390,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "^"
         ├── @ CallNode (location: (224...229))
         │   ├── receiver:
@@ -402,7 +402,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "=="
         ├── @ CallNode (location: (231...237))
         │   ├── receiver:
@@ -414,7 +414,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "==="
         ├── @ CallNode (location: (239...244))
         │   ├── receiver:
@@ -426,7 +426,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "=~"
         ├── @ CallNode (location: (246...250))
         │   ├── receiver:
@@ -438,7 +438,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: ">"
         ├── @ CallNode (location: (252...257))
         │   ├── receiver:
@@ -450,7 +450,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: ">="
         ├── @ CallNode (location: (259...264))
         │   ├── receiver:
@@ -462,7 +462,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: ">>"
         ├── @ CallNode (location: (266...271))
         │   ├── receiver:
@@ -474,7 +474,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "<<"
         ├── @ ConstantPathNode (location: (273...281))
         │   ├── parent:
@@ -494,7 +494,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "alias"
         ├── @ CallNode (location: (293...299))
         │   ├── receiver:
@@ -506,7 +506,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "and"
         ├── @ CallNode (location: (301...309))
         │   ├── receiver:
@@ -518,7 +518,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "begin"
         ├── @ ConstantPathNode (location: (311...319))
         │   ├── parent:
@@ -538,7 +538,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "break"
         ├── @ CallNode (location: (331...339))
         │   ├── receiver:
@@ -550,7 +550,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "class"
         ├── @ CallNode (location: (341...347))
         │   ├── receiver:
@@ -562,7 +562,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "def"
         ├── @ CallNode (location: (349...359))
         │   ├── receiver:
@@ -574,7 +574,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "defined"
         ├── @ CallNode (location: (361...366))
         │   ├── receiver:
@@ -586,7 +586,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "do"
         ├── @ CallNode (location: (368...375))
         │   ├── receiver:
@@ -598,7 +598,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "else"
         ├── @ CallNode (location: (377...385))
         │   ├── receiver:
@@ -610,7 +610,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "elsif"
         ├── @ CallNode (location: (387...393))
         │   ├── receiver:
@@ -622,7 +622,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "end"
         ├── @ ConstantPathNode (location: (395...401))
         │   ├── parent:
@@ -642,7 +642,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "ensure"
         ├── @ CallNode (location: (414...422))
         │   ├── receiver:
@@ -654,7 +654,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "false"
         ├── @ CallNode (location: (424...430))
         │   ├── receiver:
@@ -666,7 +666,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "for"
         ├── @ CallNode (location: (432...437))
         │   ├── receiver:
@@ -678,7 +678,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "if"
         ├── @ CallNode (location: (439...444))
         │   ├── receiver:
@@ -690,7 +690,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "in"
         ├── @ CallNode (location: (446...453))
         │   ├── receiver:
@@ -702,7 +702,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "next"
         ├── @ CallNode (location: (455...461))
         │   ├── receiver:
@@ -714,7 +714,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "nil"
         ├── @ CallNode (location: (463...469))
         │   ├── receiver:
@@ -726,7 +726,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "not"
         ├── @ CallNode (location: (471...476))
         │   ├── receiver:
@@ -738,7 +738,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "or"
         ├── @ CallNode (location: (478...485))
         │   ├── receiver:
@@ -750,7 +750,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "redo"
         ├── @ CallNode (location: (487...496))
         │   ├── receiver:
@@ -762,7 +762,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "rescue"
         ├── @ CallNode (location: (498...506))
         │   ├── receiver:
@@ -774,7 +774,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "retry"
         ├── @ CallNode (location: (508...517))
         │   ├── receiver:
@@ -786,7 +786,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "return"
         ├── @ CallNode (location: (519...526))
         │   ├── receiver:
@@ -798,7 +798,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "self"
         ├── @ CallNode (location: (528...536))
         │   ├── receiver:
@@ -810,7 +810,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "super"
         ├── @ CallNode (location: (538...545))
         │   ├── receiver:
@@ -822,7 +822,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "then"
         ├── @ CallNode (location: (547...554))
         │   ├── receiver:
@@ -834,7 +834,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "true"
         ├── @ CallNode (location: (556...564))
         │   ├── receiver:
@@ -846,7 +846,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "undef"
         ├── @ CallNode (location: (566...575))
         │   ├── receiver:
@@ -858,7 +858,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "unless"
         ├── @ CallNode (location: (577...585))
         │   ├── receiver:
@@ -870,7 +870,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "until"
         ├── @ CallNode (location: (587...594))
         │   ├── receiver:
@@ -882,7 +882,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "when"
         ├── @ CallNode (location: (596...604))
         │   ├── receiver:
@@ -894,7 +894,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "while"
         ├── @ CallNode (location: (606...614))
         │   ├── receiver:
@@ -906,7 +906,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "yield"
         ├── @ CallNode (location: (616...631))
         │   ├── receiver:
@@ -918,7 +918,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "__ENCODING__"
         ├── @ CallNode (location: (633...644))
         │   ├── receiver:
@@ -930,7 +930,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "__FILE__"
         ├── @ CallNode (location: (646...657))
         │   ├── receiver:
@@ -942,7 +942,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "__LINE__"
         ├── @ CallNode (location: (659...663))
         │   ├── receiver:
@@ -954,7 +954,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "<"
         ├── @ CallNode (location: (665...671))
         │   ├── receiver:
@@ -966,7 +966,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "<=>"
         ├── @ CallNode (location: (673...678))
         │   ├── receiver:
@@ -978,7 +978,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "<<"
         ├── @ CallNode (location: (680...684))
         │   ├── receiver:
@@ -990,7 +990,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "-"
         ├── @ CallNode (location: (686...690))
         │   ├── receiver:
@@ -1002,7 +1002,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "%"
         ├── @ CallNode (location: (692...697))
         │   ├── receiver:
@@ -1026,7 +1026,7 @@
         │   │           └── name: "i"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "%"
         ├── @ CallNode (location: (699...704))
         │   ├── receiver:
@@ -1050,7 +1050,7 @@
         │   │           └── name: "w"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "%"
         ├── @ CallNode (location: (706...711))
         │   ├── receiver:
@@ -1074,7 +1074,7 @@
         │   │           └── name: "x"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "%"
         ├── @ CallNode (location: (713...718))
         │   ├── receiver:
@@ -1090,7 +1090,7 @@
         │   │           └── name: :I
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "%"
         ├── @ CallNode (location: (720...725))
         │   ├── receiver:
@@ -1106,7 +1106,7 @@
         │   │           └── name: :W
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "%"
         ├── @ CallNode (location: (727...731))
         │   ├── receiver:
@@ -1118,7 +1118,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "|"
         ├── @ CallNode (location: (733...737))
         │   ├── receiver:
@@ -1130,7 +1130,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "+"
         ├── @ CallNode (location: (739...743))
         │   ├── receiver:
@@ -1142,7 +1142,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "/"
         ├── @ CallNode (location: (745...749))
         │   ├── receiver:
@@ -1154,7 +1154,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "*"
         ├── @ CallNode (location: (751...756))
         │   ├── receiver:
@@ -1166,7 +1166,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "**"
         ├── @ CallNode (location: (758...762))
         │   ├── receiver:
@@ -1178,7 +1178,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "~"
         ├── @ ConstantPathNode (location: (764...772))
         │   ├── parent:
@@ -1192,7 +1192,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "_"
         │   ├── child:
         │   │   @ ConstantReadNode (location: (771...772))
@@ -1210,7 +1210,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "_"
             ├── right:
             │   @ CallNode (location: (782...792))
@@ -1223,7 +1223,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "__END__"
             ├── operator_loc: (778...780) = ".."
-            └── flags: 
+            └── flags: ∅

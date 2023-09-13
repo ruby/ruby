@@ -26,7 +26,7 @@
         │   │               └── unescaped: "there"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "puts"
         ├── @ ArrayNode (location: (28...37))
         │   ├── elements: (length: 1)
@@ -79,10 +79,10 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "chop"
             │   ├── closing_loc: (107...108) = ")"
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "foo"
             └── operator_loc: (90...91) = "="

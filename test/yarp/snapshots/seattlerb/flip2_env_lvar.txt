@@ -30,7 +30,7 @@
             │   │   ├── flags: variable_call
             │   │   └── name: "b"
             │   ├── operator_loc: (4...6) = ".."
-            │   └── flags: 
+            │   └── flags: ∅
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (13...16) = "end"

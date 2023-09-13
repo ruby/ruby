@@ -25,5 +25,5 @@
             │           └── flags: decimal
             ├── closing_loc: (6...7) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

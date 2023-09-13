@@ -13,7 +13,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (12...13))
         │   │           └── flags: decimal
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (20...32))
         │   ├── keyword_loc: (22...27) = "until"
         │   ├── closing_loc: ∅
@@ -24,7 +24,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (20...21))
         │   │           └── flags: decimal
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (34...50))
         │   ├── keyword_loc: (40...45) = "until"
         │   ├── closing_loc: ∅
@@ -36,7 +36,7 @@
         │   │       └── @ BreakNode (location: (34...39))
         │   │           ├── arguments: ∅
         │   │           └── keyword_loc: (34...39) = "break"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (52...67))
         │   ├── keyword_loc: (57...62) = "until"
         │   ├── closing_loc: ∅
@@ -48,7 +48,7 @@
         │   │       └── @ NextNode (location: (52...56))
         │   │           ├── arguments: ∅
         │   │           └── keyword_loc: (52...56) = "next"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (69...86))
         │   ├── keyword_loc: (76...81) = "until"
         │   ├── closing_loc: ∅
@@ -60,7 +60,7 @@
         │   │       └── @ ReturnNode (location: (69...75))
         │   │           ├── keyword_loc: (69...75) = "return"
         │   │           └── arguments: ∅
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ UntilNode (location: (88...109))
             ├── keyword_loc: (99...104) = "until"
             ├── closing_loc: ∅
@@ -73,7 +73,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "bar?"
             ├── statements:
             │   @ StatementsNode (location: (88...98))
@@ -98,6 +98,6 @@
             │           │           └── unescaped: "b"
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "foo"
-            └── flags: 
+            └── flags: ∅

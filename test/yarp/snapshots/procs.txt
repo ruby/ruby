@@ -339,7 +339,7 @@
         │                           │           └── depth: 0
         │                           ├── closing_loc: ∅
         │                           ├── block: ∅
-        │                           ├── flags: 
+        │                           ├── flags: ∅
         │                           └── name: "*"
         └── @ LambdaNode (location: (247...266))
             ├── locals: [:a, :b, :c]

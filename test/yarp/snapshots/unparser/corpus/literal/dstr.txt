@@ -248,7 +248,7 @@
         │   │           └── closing_loc: (251...259) = "HEREDOC\n"
         │   ├── closing_loc: (240...241) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         └── @ CallNode (location: (259...299))
             ├── receiver: ∅
@@ -311,5 +311,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (275...276) = "{"
             │   └── closing_loc: (298...299) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "foo"

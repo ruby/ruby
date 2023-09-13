@@ -25,7 +25,7 @@
             │   │           └── name: "b"
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "a"
             ├── call_operator_loc: ∅
             ├── message_loc: (0...1) = "!"
@@ -33,5 +33,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "!"

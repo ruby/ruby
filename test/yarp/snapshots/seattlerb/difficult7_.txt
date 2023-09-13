@@ -52,7 +52,7 @@
             │   │   │   │   │           │           ├── arguments: ∅
             │   │   │   │   │           │           ├── closing_loc: (34...35) = ")"
             │   │   │   │   │           │           ├── block: ∅
-            │   │   │   │   │           │           ├── flags: 
+            │   │   │   │   │           │           ├── flags: ∅
             │   │   │   │   │           │           └── name: "c"
             │   │   │   │   │           ├── consequent:
             │   │   │   │   │           │   @ ElseNode (location: (36...39))
@@ -74,7 +74,7 @@
             │   │   │   │   │           └── end_keyword_loc: ∅
             │   │   │   │   ├── opening_loc: (26...27) = "{"
             │   │   │   │   └── closing_loc: (40...41) = "}"
-            │   │   │   ├── flags: 
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: "lambda"
             │   │   └── operator_loc: ∅
             │   └── @ AssocNode (location: (51...57))

@@ -186,11 +186,11 @@
         │   │       │   │           ├── arguments: ∅
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: 
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           └── name: "new"
         │   │       │   ├── closing_loc: (167...168) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "include"
         │   │       └── @ DefNode (location: (172...194))
         │   │           ├── name: :foo

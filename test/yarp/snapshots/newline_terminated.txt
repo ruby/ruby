@@ -88,4 +88,4 @@
             ├── content_loc: (208...211) = "foo"
             ├── closing_loc: (211...212) = "\n"
             ├── unescaped: "foo"
-            └── flags: 
+            └── flags: ∅

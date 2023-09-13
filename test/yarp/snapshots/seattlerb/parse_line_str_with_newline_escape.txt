@@ -19,5 +19,5 @@
             │       └── @ TrueNode (location: (8...12))
             ├── closing_loc: (12...13) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

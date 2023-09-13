@@ -42,7 +42,7 @@
             │           │   │           └── closing_loc: (25...26) = "'"
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
-            │           │   ├── flags: 
+            │           │   ├── flags: ∅
             │           │   └── name: "+"
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (26...27) = "+"
@@ -57,9 +57,9 @@
             │           │           └── unescaped: "d"
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "+"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "p"

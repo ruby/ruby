@@ -44,5 +44,5 @@
             │           └── end_keyword_loc: (26...29) = "end"
             ├── closing_loc: (3...4) = "]"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "[]="

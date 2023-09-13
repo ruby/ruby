@@ -12,7 +12,7 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "b"
             ├── write_name: "b="
             ├── operator: :*
@@ -38,5 +38,5 @@
                 │           └── name: "d"
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: 
+                ├── flags: ∅
                 └── name: "c"

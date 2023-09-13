@@ -16,7 +16,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "**"
         ├── @ CallNode (location: (12...20))
         │   ├── receiver:
@@ -34,7 +34,7 @@
         │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "**"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (12...13) = "-"
@@ -42,7 +42,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "-@"
         └── @ CallNode (location: (22...32))
             ├── receiver:
@@ -59,7 +59,7 @@
             │   │           └── flags: decimal
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "**"
             ├── call_operator_loc: ∅
             ├── message_loc: (22...23) = "-"
@@ -67,5 +67,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "-@"

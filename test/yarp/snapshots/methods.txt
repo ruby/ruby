@@ -908,7 +908,7 @@
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (700...701) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "b"
         │   ├── locals: [:*]
         │   ├── def_keyword_loc: (687...690) = "def"
@@ -945,7 +945,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (722...725))
         │   │           ├── closing_loc: (725...726) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "b"
         │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (708...711) = "def"
@@ -986,7 +986,7 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (753...756))
         │   │           ├── closing_loc: (756...757) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "b"
         │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (733...736) = "def"
@@ -1203,7 +1203,7 @@
         │   │           │       │           │       └── @ ForwardingArgumentsNode (location: (925...928))
         │   │           │       │           ├── closing_loc: (928...929) = ")"
         │   │           │       │           ├── block: ∅
-        │   │           │       │           ├── flags: 
+        │   │           │       │           ├── flags: ∅
         │   │           │       │           └── name: "b"
         │   │           │       └── closing_loc: (929...930) = "}"
         │   │           └── closing_loc: (930...931) = "\""
@@ -1277,7 +1277,7 @@
         │   │           │                   └── operator_loc: (971...973) = "**"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "merge"
         │   ├── locals: []
         │   ├── def_keyword_loc: (938...941) = "def"
@@ -1571,11 +1571,11 @@
         │   │           │           │   ├── body: ∅
         │   │           │           │   ├── opening_loc: (1161...1162) = "{"
         │   │           │           │   └── closing_loc: (1162...1163) = "}"
-        │   │           │           ├── flags: 
+        │   │           │           ├── flags: ∅
         │   │           │           └── name: "a"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: ">>"
         │   ├── locals: [:a]
         │   ├── def_keyword_loc: (1135...1138) = "def"

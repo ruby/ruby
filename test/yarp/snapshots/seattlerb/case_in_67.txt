@@ -19,7 +19,7 @@
             │       │   │   └── flags: decimal
             │       │   ├── right: ∅
             │       │   ├── operator_loc: (12...14) = ".."
-            │       │   └── flags: 
+            │       │   └── flags: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (20...23))
             │       │   └── body: (length: 1)

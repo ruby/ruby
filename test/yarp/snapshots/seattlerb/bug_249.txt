@@ -48,7 +48,7 @@
             │       │   │   │           │   │           └── end_keyword_loc: (35...38) = "end"
             │       │   │   │           │   ├── opening_loc: (17...19) = "do"
             │       │   │   │           │   └── closing_loc: (40...43) = "end"
-            │       │   │   │           ├── flags: 
+            │       │   │   │           ├── flags: ∅
             │       │   │   │           └── name: "new"
             │       │   │   ├── opening_loc: (6...7) = "("
             │       │   │   └── closing_loc: (43...44) = ")"
@@ -58,7 +58,7 @@
             │       │   ├── arguments: ∅
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "new"
             │       └── @ KeywordHashNode (location: (50...67))
             │           └── elements: (length: 1)
@@ -78,5 +78,5 @@
             │                   └── operator_loc: (54...56) = "=>"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "mount"

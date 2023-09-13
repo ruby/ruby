@@ -124,7 +124,7 @@
         │   │   │           └── closing_loc: (120...128) = "HEREDOC\n"
         │   │   ├── closing_loc: (110...111) = ")"
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "a"
         │   ├── call_operator_loc: (111...112) = "."
         │   ├── message_loc: (112...113) = "a"
@@ -132,7 +132,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (128...136))
         │   ├── receiver:
@@ -151,7 +151,7 @@
         │   │   │           └── unescaped: ""
         │   │   ├── closing_loc: (133...134) = ")"
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "a"
         │   ├── call_operator_loc: (134...135) = "."
         │   ├── message_loc: (135...136) = "a"
@@ -159,7 +159,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "a"
         ├── @ HashNode (location: (137...167))
         │   ├── opening_loc: (137...138) = "{"
@@ -277,7 +277,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "+@"
         ├── @ IntegerNode (location: (227...228))
         │   └── flags: decimal
@@ -508,13 +508,13 @@
         │   ├── content_loc: (481...484) = "foo"
         │   ├── closing_loc: (484...485) = "/"
         │   ├── unescaped: "foo"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (486...514))
         │   ├── opening_loc: (486...487) = "/"
         │   ├── content_loc: (487...513) = "[^-+',.\\/:@[:alnum:]\\[\\]]+"
         │   ├── closing_loc: (513...514) = "/"
         │   ├── unescaped: "[^-+',./:@[:alnum:][]]+"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (515...527))
         │   ├── opening_loc: (515...516) = "/"
         │   ├── parts: (length: 2)
@@ -532,7 +532,7 @@
         │   │       │           └── name: :@bar
         │   │       └── closing_loc: (525...526) = "}"
         │   ├── closing_loc: (526...527) = "/"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (528...543))
         │   ├── opening_loc: (528...529) = "/"
         │   ├── parts: (length: 2)
@@ -566,19 +566,19 @@
         │   │       │           └── unescaped: "\u0000"
         │   │       └── closing_loc: (555...556) = "}"
         │   ├── closing_loc: (556...557) = "/"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (558...562))
         │   ├── opening_loc: (558...559) = "/"
         │   ├── content_loc: (559...561) = "\\n"
         │   ├── closing_loc: (561...562) = "/"
         │   ├── unescaped: "\n"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (563...567))
         │   ├── opening_loc: (563...564) = "/"
         │   ├── content_loc: (564...566) = "\\n"
         │   ├── closing_loc: (566...567) = "/"
         │   ├── unescaped: "\n"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (568...573))
         │   ├── opening_loc: (568...569) = "/"
         │   ├── content_loc: (569...571) = "\\n"
@@ -654,7 +654,7 @@
         │   │   │           │       └── @ FloatNode (location: (617...620))
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "/"
         │   │   ├── opening_loc: (610...611) = "("
         │   │   └── closing_loc: (620...621) = ")"
@@ -662,7 +662,7 @@
         │   │   @ IntegerNode (location: (623...624))
         │   │   └── flags: decimal
         │   ├── operator_loc: (621...623) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RangeNode (location: (625...639))
         │   ├── left:
         │   │   @ IntegerNode (location: (625...626))
@@ -684,12 +684,12 @@
         │   │   │           │       └── @ FloatNode (location: (635...638))
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "/"
         │   │   ├── opening_loc: (628...629) = "("
         │   │   └── closing_loc: (638...639) = ")"
         │   ├── operator_loc: (626...628) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RangeNode (location: (640...656))
         │   ├── left:
         │   │   @ ParenthesesNode (location: (640...651))
@@ -708,7 +708,7 @@
         │   │   │           │       └── @ FloatNode (location: (647...650))
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "/"
         │   │   ├── opening_loc: (640...641) = "("
         │   │   └── closing_loc: (650...651) = ")"
@@ -716,7 +716,7 @@
         │   │   @ IntegerNode (location: (653...656))
         │   │   └── flags: decimal
         │   ├── operator_loc: (651...653) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ FloatNode (location: (657...661))
         ├── @ FloatNode (location: (662...665))
         ├── @ ArrayNode (location: (666...672))
@@ -1025,7 +1025,7 @@
         │   │   │           └── closing_loc: (889...890) = "\""
         │   │   ├── opening_loc: (874...875) = "{"
         │   │   └── closing_loc: (891...892) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ SymbolNode (location: (893...901))
         │   ├── opening_loc: (893...895) = ":\""

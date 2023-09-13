@@ -23,5 +23,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (5...6) = "{"
             │   └── closing_loc: (6...7) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "m"

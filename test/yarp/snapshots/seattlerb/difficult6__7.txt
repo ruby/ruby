@@ -49,5 +49,5 @@
             │   │           └── name: "c"
             │   ├── opening_loc: (8...9) = "{"
             │   └── closing_loc: (10...11) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "b"

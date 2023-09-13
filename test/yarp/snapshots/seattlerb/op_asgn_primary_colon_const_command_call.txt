@@ -35,6 +35,6 @@
             │   │           └── name: "d"
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "c"
             └── operator: :*

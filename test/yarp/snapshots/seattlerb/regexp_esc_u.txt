@@ -8,4 +8,4 @@
             ├── content_loc: (1...16) = "[\\u0021-\\u0027]"
             ├── closing_loc: (16...17) = "/"
             ├── unescaped: "[!-']"
-            └── flags: 
+            └── flags: ∅

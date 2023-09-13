@@ -25,7 +25,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: (9...10) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (12...27))
         │   ├── receiver:
@@ -61,7 +61,7 @@
         │   │   │   │           └── name: "b"
         │   │   │   ├── closing_loc: (19...20) = ")"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "==="
         │   │   ├── call_operator_loc: (20...21) = "."
         │   │   ├── message_loc: (21...22) = "c"
@@ -69,7 +69,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "c"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (23...25) = "=="
@@ -89,7 +89,7 @@
         │   │           └── name: "d"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "=="
         └── @ CallNode (location: (29...44))
             ├── receiver:
@@ -129,7 +129,7 @@
             │           │   ├── arguments: ∅
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
-            │           │   ├── flags: 
+            │           │   ├── flags: ∅
             │           │   └── name: "c"
             │           ├── call_operator_loc: (37...38) = "."
             │           ├── message_loc: (38...41) = "==="
@@ -149,9 +149,9 @@
             │           │           └── name: "c"
             │           ├── closing_loc: (43...44) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "==="
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "=="

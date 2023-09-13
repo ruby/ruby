@@ -17,7 +17,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (4...6) = "do"
         │   │   └── closing_loc: (7...10) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (12...19))
         │   ├── receiver: ∅
@@ -33,7 +33,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (16...17) = "{"
         │   │   └── closing_loc: (18...19) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (21...30))
         │   ├── receiver: ∅
@@ -49,7 +49,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (27...28) = "{"
         │   │   └── closing_loc: (29...30) = "}"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         └── @ CallNode (location: (32...42))
             ├── receiver: ∅
@@ -69,5 +69,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (39...40) = "{"
             │   └── closing_loc: (41...42) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

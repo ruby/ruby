@@ -40,7 +40,7 @@
             │           │           │   ├── body: ∅
             │           │           │   ├── opening_loc: (12...14) = "do"
             │           │           │   └── closing_loc: (15...18) = "end"
-            │           │           ├── flags: 
+            │           │           ├── flags: ∅
             │           │           └── name: "c"
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
@@ -48,5 +48,5 @@
             │           └── end_keyword_loc: (19...22) = "end"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

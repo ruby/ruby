@@ -21,7 +21,7 @@
             │   │           └── unescaped: "x"
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "f"
             ├── statements: ∅
             ├── consequent: ∅

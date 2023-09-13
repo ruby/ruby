@@ -57,5 +57,5 @@
             │   │           └── end_keyword_loc: (69...72) = "end"
             │   ├── opening_loc: (2...4) = "do"
             │   └── closing_loc: (73...76) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

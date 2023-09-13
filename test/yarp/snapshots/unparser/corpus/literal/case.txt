@@ -374,7 +374,7 @@
         │   │       │           │           └── name: "baz"
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
-        │   │       │           ├── flags: 
+        │   │       │           ├── flags: ∅
         │   │       │           └── name: "|"
         │   │       └── statements: ∅
         │   ├── consequent: ∅
@@ -421,7 +421,7 @@
             │       │           │           └── flags: decimal
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
-            │       │           ├── flags: 
+            │       │           ├── flags: ∅
             │       │           └── name: "baz="
             │       └── statements: ∅
             ├── consequent: ∅

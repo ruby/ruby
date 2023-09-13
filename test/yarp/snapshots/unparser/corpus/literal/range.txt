@@ -13,7 +13,7 @@
         │   │           │   └── flags: decimal
         │   │           ├── right: ∅
         │   │           ├── operator_loc: (2...4) = ".."
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── opening_loc: (0...1) = "("
         │   └── closing_loc: (4...5) = ")"
         ├── @ RangeNode (location: (6...10))
@@ -24,7 +24,7 @@
         │   │   @ IntegerNode (location: (9...10))
         │   │   └── flags: decimal
         │   ├── operator_loc: (7...9) = ".."
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ ParenthesesNode (location: (11...17))
         │   ├── body:
         │   │   @ StatementsNode (location: (12...16))

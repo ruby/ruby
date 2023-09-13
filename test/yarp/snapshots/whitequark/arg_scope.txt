@@ -29,5 +29,5 @@
             │   │           └── depth: 0
             │   ├── opening_loc: (6...7) = "{"
             │   └── closing_loc: (12...13) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "lambda"

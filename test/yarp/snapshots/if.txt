@@ -244,7 +244,7 @@
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "a"
         │   ├── consequent:
         │   │   @ ElseNode (location: (251...259))
@@ -333,7 +333,7 @@
             │           │   ├── body: ∅
             │           │   ├── opening_loc: (309...311) = "do"
             │           │   └── closing_loc: (318...321) = "end"
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "lambda"
             ├── consequent:
             │   @ IfNode (location: (322...382))
@@ -373,7 +373,7 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (339...341) = "do"
             │   │           │   └── closing_loc: (348...351) = "end"
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "lambda"
             │   ├── consequent:
             │   │   @ ElseNode (location: (352...382))
@@ -410,7 +410,7 @@
             │   │   │           │   ├── body: ∅
             │   │   │           │   ├── opening_loc: (366...368) = "do"
             │   │   │           │   └── closing_loc: (375...378) = "end"
-            │   │   │           ├── flags: 
+            │   │   │           ├── flags: ∅
             │   │   │           └── name: "lambda"
             │   │   └── end_keyword_loc: (379...382) = "end"
             │   └── end_keyword_loc: (379...382) = "end"

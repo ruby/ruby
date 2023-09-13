@@ -26,7 +26,7 @@
         │   │                   └── operator_loc: (9...11) = "=>"
         │   ├── closing_loc: (13...14) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (16...36))
         │   ├── receiver: ∅
@@ -64,7 +64,7 @@
         │   │           └── operator_loc: (31...32) = "&"
         │   ├── closing_loc: (35...36) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (38...59))
         │   ├── receiver:
@@ -100,7 +100,7 @@
         │   │                   └── operator_loc: (55...57) = "=>"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (61...76))
         │   ├── receiver:
@@ -126,7 +126,7 @@
         │   │                   └── operator_loc: (71...73) = "=>"
         │   ├── closing_loc: (75...76) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]"
         ├── @ SuperNode (location: (78...95))
         │   ├── keyword_loc: (78...83) = "super"

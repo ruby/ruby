@@ -13,7 +13,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (3...8))
         │   ├── receiver:
@@ -31,7 +31,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "!"
         │   │   ├── opening_loc: (4...5) = "("
         │   │   └── closing_loc: (7...8) = ")"
@@ -41,7 +41,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (9...25))
         │   ├── receiver:
@@ -87,7 +87,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: 
+        │   │   │           ├── flags: ∅
         │   │   │           └── name: "!"
         │   │   ├── opening_loc: (10...11) = "("
         │   │   └── closing_loc: (24...25) = ")"
@@ -97,7 +97,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (26...35))
         │   ├── receiver:
@@ -117,7 +117,7 @@
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: 
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           └── name: "!"
         │   │   │   ├── opening_loc: (27...28) = "("
         │   │   │   └── closing_loc: (30...31) = ")"
@@ -127,7 +127,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "baz"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (26...27) = "!"
@@ -135,7 +135,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (36...38))
         │   ├── receiver:
@@ -155,7 +155,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "~"
         ├── @ CallNode (location: (39...41))
         │   ├── receiver:
@@ -175,7 +175,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "-@"
         ├── @ CallNode (location: (42...44))
         │   ├── receiver:
@@ -195,7 +195,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "+@"
         └── @ CallNode (location: (45...54))
             ├── receiver:
@@ -223,7 +223,7 @@
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
-            │   │   │           ├── flags: 
+            │   │   │           ├── flags: ∅
             │   │   │           └── name: "-@"
             │   │   ├── opening_loc: (46...47) = "("
             │   │   └── closing_loc: (49...50) = ")"
@@ -233,7 +233,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "foo"
             ├── call_operator_loc: ∅
             ├── message_loc: (45...46) = "-"
@@ -241,5 +241,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "-@"

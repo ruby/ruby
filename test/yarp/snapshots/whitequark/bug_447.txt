@@ -23,7 +23,7 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (5...7) = "do"
         │   │   └── closing_loc: (8...11) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "m"
         └── @ CallNode (location: (13...27))
             ├── receiver: ∅
@@ -47,5 +47,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (21...23) = "do"
             │   └── closing_loc: (24...27) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "m"

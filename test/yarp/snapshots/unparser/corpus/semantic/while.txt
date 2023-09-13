@@ -21,7 +21,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (11...12) = "{"
         │   │   │   └── closing_loc: (12...13) = "}"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "b?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (0...1))
@@ -36,7 +36,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "a"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (15...34))
         │   ├── keyword_loc: (15...20) = "until"
         │   ├── closing_loc: (31...34) = "end"
@@ -55,7 +55,7 @@
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (24...25) = "{"
         │   │   │   └── closing_loc: (25...26) = "}"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "b?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (29...30))
@@ -70,7 +70,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "a"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ WhileNode (location: (36...55))
         │   ├── keyword_loc: (46...51) = "while"
         │   ├── closing_loc: ∅
@@ -97,7 +97,7 @@
         │   │           │   ├── flags: variable_call
         │   │           │   └── name: "bar"
         │   │           └── operator_loc: (40...41) = "="
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (57...75))
         │   ├── keyword_loc: (59...64) = "until"
         │   ├── closing_loc: ∅
@@ -129,7 +129,7 @@
         │   │   │   │   ├── body: ∅
         │   │   │   │   ├── opening_loc: (72...73) = "{"
         │   │   │   │   └── closing_loc: (74...75) = "}"
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "a"
         │   │   └── operator_loc: (67...69) = "&&"
         │   ├── statements:
@@ -145,7 +145,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "a"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ WhileNode (location: (77...96))
         │   ├── keyword_loc: (77...82) = "while"
         │   ├── closing_loc: (93...96) = "end"
@@ -172,7 +172,7 @@
         │   │       └── @ LocalVariableReadNode (location: (91...92))
         │   │           ├── name: :a
         │   │           └── depth: 0
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ UntilNode (location: (98...130))
         │   ├── keyword_loc: (100...105) = "until"
         │   ├── closing_loc: ∅
@@ -210,7 +210,7 @@
         │   │   │   │           └── name: "c"
         │   │   │   ├── opening_loc: (116...118) = "do"
         │   │   │   └── closing_loc: (127...130) = "end"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "b"
         │   ├── statements:
         │   │   @ StatementsNode (location: (98...99))
@@ -218,7 +218,7 @@
         │   │       └── @ LocalVariableReadNode (location: (98...99))
         │   │           ├── name: :a
         │   │           └── depth: 0
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ ModuleNode (location: (132...188))
             ├── locals: [:foo]
             ├── module_keyword_loc: (132...138) = "module"
@@ -270,6 +270,6 @@
             │           │           │   ├── flags: variable_call
             │           │           │   └── name: "bar"
             │           │           └── operator_loc: (173...174) = "="
-            │           └── flags: 
+            │           └── flags: ∅
             ├── end_keyword_loc: (185...188) = "end"
             └── name: :A

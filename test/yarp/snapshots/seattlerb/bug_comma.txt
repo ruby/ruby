@@ -31,7 +31,7 @@
             │   │           └── name: "dir"
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "test"
             ├── statements: ∅
             ├── consequent: ∅

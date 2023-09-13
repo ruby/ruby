@@ -48,6 +48,6 @@
             │           │   ├── body: ∅
             │           │   ├── opening_loc: (13...15) = "do"
             │           │   └── closing_loc: (22...25) = "end"
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "foo"
             └── keyword_loc: (0...4) = "next"

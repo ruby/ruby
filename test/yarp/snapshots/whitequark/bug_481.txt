@@ -26,7 +26,7 @@
         │   │           └── end_keyword_loc: (11...14) = "end"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "m"
         └── @ CallNode (location: (16...28))
             ├── receiver:
@@ -44,5 +44,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (22...24) = "do"
             │   └── closing_loc: (25...28) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "tap"

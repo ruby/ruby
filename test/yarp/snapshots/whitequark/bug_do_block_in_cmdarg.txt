@@ -29,11 +29,11 @@
             │           │           │   ├── body: ∅
             │           │           │   ├── opening_loc: (10...12) = "do"
             │           │           │   └── closing_loc: (13...16) = "end"
-            │           │           ├── flags: 
+            │           │           ├── flags: ∅
             │           │           └── name: "proc"
             │           ├── opening_loc: (4...5) = "("
             │           └── closing_loc: (16...17) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "tap"

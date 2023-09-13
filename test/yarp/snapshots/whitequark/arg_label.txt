@@ -26,7 +26,7 @@
         │   │           │           └── unescaped: "b"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "a"
         │   ├── locals: []
         │   ├── def_keyword_loc: (0...3) = "def"
@@ -58,7 +58,7 @@
         │   │           │           └── unescaped: "b"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "a"
         │   ├── locals: []
         │   ├── def_keyword_loc: (18...21) = "def"
@@ -101,9 +101,9 @@
             │   │           │           └── unescaped: "b"
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "a"
             │   ├── opening_loc: (39...40) = "{"
             │   └── closing_loc: (48...49) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

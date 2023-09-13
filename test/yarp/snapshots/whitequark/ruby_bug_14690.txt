@@ -49,9 +49,9 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (14...16) = "do"
             │   │           │   └── closing_loc: (18...21) = "end"
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "m"
             │   ├── opening_loc: (7...8) = "{"
             │   └── closing_loc: (22...23) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "let"

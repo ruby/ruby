@@ -38,7 +38,7 @@
         │   │           │       │   │       ├── closing_loc: ∅
         │   │           │       │   │       └── unescaped: "b"
         │   │           │       │   ├── closing_loc: (186...187) = "/"
-        │   │           │       │   └── flags: 
+        │   │           │       │   └── flags: ∅
         │   │           │       └── @ StringNode (location: (189...191))
         │   │           │           ├── opening_loc: (189...190) = "\""
         │   │           │           ├── content_loc: (190...190) = ""
@@ -46,11 +46,11 @@
         │   │           │           └── unescaped: ""
         │   │           ├── closing_loc: (191...192) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "gsub"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         ├── @ CallNode (location: (276...295))
         │   ├── receiver: ∅
@@ -81,7 +81,7 @@
         │   │           └── closing_loc: (294...295) = "\""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         ├── @ CallNode (location: (322...343))
         │   ├── receiver: ∅
@@ -112,7 +112,7 @@
         │   │           └── closing_loc: (342...343) = "]"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         ├── @ CallNode (location: (427...448))
         │   ├── receiver: ∅
@@ -143,7 +143,7 @@
         │   │           └── closing_loc: (447...448) = "]"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         ├── @ CallNode (location: (520...541))
         │   ├── receiver: ∅
@@ -174,7 +174,7 @@
         │   │           └── closing_loc: (540...541) = "]"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         ├── @ CallNode (location: (688...709))
         │   ├── receiver: ∅
@@ -209,7 +209,7 @@
         │   │           └── closing_loc: (708...709) = "]"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         ├── @ CallNode (location: (781...802))
         │   ├── receiver: ∅
@@ -240,7 +240,7 @@
         │   │           └── closing_loc: (801...802) = "]"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "pp"
         └── @ CallNode (location: (943...964))
             ├── receiver: ∅
@@ -275,5 +275,5 @@
             │           └── closing_loc: (963...964) = "]"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "pp"

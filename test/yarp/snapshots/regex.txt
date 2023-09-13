@@ -16,10 +16,10 @@
         │   │           ├── content_loc: (5...8) = "bar"
         │   │           ├── closing_loc: (8...9) = "/"
         │   │           ├── unescaped: "bar"
-        │   │           └── flags: 
+        │   │           └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ RegularExpressionNode (location: (11...19))
         │   ├── opening_loc: (11...14) = "%r{"
@@ -32,7 +32,7 @@
         │   ├── content_loc: (22...25) = "a\\b"
         │   ├── closing_loc: (25...26) = "/"
         │   ├── unescaped: "a\b"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (28...39))
         │   ├── opening_loc: (28...29) = "/"
         │   ├── parts: (length: 2)
@@ -47,7 +47,7 @@
         │   │           @ GlobalVariableReadNode (location: (34...38))
         │   │           └── name: :$bbb
         │   ├── closing_loc: (38...39) = "/"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (41...57))
         │   ├── opening_loc: (41...42) = "/"
         │   ├── parts: (length: 3)
@@ -78,7 +78,7 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " ccc"
         │   ├── closing_loc: (56...57) = "/"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (59...86))
         │   ├── elements: (length: 2)
         │   │   ├── @ CallNode (location: (60...80))
@@ -88,7 +88,7 @@
         │   │   │   │   ├── content_loc: (61...72) = "(?<foo>bar)"
         │   │   │   │   ├── closing_loc: (72...73) = "/"
         │   │   │   │   ├── unescaped: "(?<foo>bar)"
-        │   │   │   │   └── flags: 
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── message_loc: (74...76) = "=~"
         │   │   │   ├── opening_loc: ∅
@@ -107,7 +107,7 @@
         │   │   │   │           └── name: "baz"
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "=~"
         │   │   └── @ LocalVariableReadNode (location: (82...85))
         │   │       ├── name: :foo
@@ -143,7 +143,7 @@
         │   ├── content_loc: (193...248) = "\n(?:[\\w\#$%_']|\\(\\)|\\(,\\)|\\[\\]|[0-9])*\n  (?:[\\w\#$%_']+)\n"
         │   ├── closing_loc: (248...249) = ")"
         │   ├── unescaped: "\n(?:[w\#$%_']|()|(,)|[]|[0-9])*\n  (?:[w\#$%_']+)\n"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ CallNode (location: (251...267))
         │   ├── receiver:
         │   │   @ RegularExpressionNode (location: (251...259))
@@ -151,7 +151,7 @@
         │   │   ├── content_loc: (252...258) = "(?#\\))"
         │   │   ├── closing_loc: (258...259) = "/"
         │   │   ├── unescaped: "(?#))"
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (260...262) = "=~"
         │   ├── opening_loc: ∅
@@ -165,14 +165,14 @@
         │   │           └── unescaped: "hi"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "=~"
         ├── @ RegularExpressionNode (location: (269...278))
         │   ├── opening_loc: (269...272) = "%r#"
         │   ├── content_loc: (272...277) = "pound"
         │   ├── closing_loc: (277...278) = "#"
         │   ├── unescaped: "pound"
-        │   └── flags: 
+        │   └── flags: ∅
         └── @ InterpolatedRegularExpressionNode (location: (280...293))
             ├── opening_loc: (280...281) = "/"
             ├── parts: (length: 2)

@@ -201,7 +201,7 @@
         │   │   │           │   │           └── name: "y"
         │   │   │           │   ├── closing_loc: (175...176) = ")"
         │   │   │           │   ├── block: ∅
-        │   │   │           │   ├── flags: 
+        │   │   │           │   ├── flags: ∅
         │   │   │           │   └── name: "bar"
         │   │   │           ├── keyword_loc: (177...183) = "rescue"
         │   │   │           └── rescue_expression:
@@ -228,15 +228,15 @@
         │   │   │               │           │           └── unescaped: "baz"
         │   │   │               │           ├── closing_loc: ∅
         │   │   │               │           ├── block: ∅
-        │   │   │               │           ├── flags: 
+        │   │   │               │           ├── flags: ∅
         │   │   │               │           └── name: "fail"
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
-        │   │   │               ├── flags: 
+        │   │   │               ├── flags: ∅
         │   │   │               └── name: "ArgumentError"
         │   │   ├── opening_loc: (161...163) = "do"
         │   │   └── closing_loc: (209...212) = "end"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ IfNode (location: (214...245))
         │   ├── if_keyword_loc: (214...216) = "if"
@@ -302,7 +302,7 @@
         │   │           │               @ NilNode (location: (288...291))
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "other_method"
         │   ├── locals: []
         │   ├── def_keyword_loc: (247...250) = "def"
@@ -343,7 +343,7 @@
             │   │           │                   └── operator_loc: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: 
+            │   │           ├── flags: ∅
             │   │           └── name: "a"
             │   ├── rescue_clause:
             │   │   @ RescueNode (location: (306...312))

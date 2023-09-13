@@ -23,7 +23,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   ├── right:
         │   │   @ CallNode (location: (12...19))
@@ -44,7 +44,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   └── operator_loc: (8...11) = "and"
         ├── @ CallNode (location: (21...37))
@@ -79,7 +79,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: (36...37) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (39...46))
         │   ├── receiver:
@@ -99,7 +99,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ AndNode (location: (48...69))
         │   ├── left:
@@ -121,7 +121,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   ├── right:
         │   │   @ CallNode (location: (60...69))
@@ -142,7 +142,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   └── operator_loc: (56...59) = "and"
         ├── @ AndNode (location: (72...97))
@@ -165,7 +165,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   ├── right:
         │   │   @ CallNode (location: (88...97))
@@ -186,7 +186,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   └── operator_loc: (80...83) = "and"
         ├── @ AndNode (location: (100...125))
@@ -209,7 +209,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   ├── right:
         │   │   @ CallNode (location: (114...125))
@@ -230,7 +230,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   └── operator_loc: (108...111) = "and"
         ├── @ CallNode (location: (127...138))
@@ -251,7 +251,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: (137...138) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (140...156))
         │   ├── receiver:
@@ -271,7 +271,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: (155...156) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         ├── @ CallNode (location: (158...172))
         │   ├── receiver:
@@ -299,14 +299,14 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "bar"
         │   │   ├── operator_loc: (166...168) = ".."
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (158...161) = "not"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         └── @ CallNode (location: (174...190))
             ├── receiver:
@@ -338,7 +338,7 @@
             │   │           │   ├── flags: variable_call
             │   │           │   └── name: "bar"
             │   │           ├── operator_loc: (183...185) = ".."
-            │   │           └── flags: 
+            │   │           └── flags: ∅
             │   ├── opening_loc: (178...179) = "("
             │   └── closing_loc: (189...190) = ")"
             ├── call_operator_loc: ∅
@@ -347,5 +347,5 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "!"

@@ -44,7 +44,7 @@
             │           │           └── unescaped: ""
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "&"
             ├── consequent:
             │   @ ElseNode (location: (10...15))

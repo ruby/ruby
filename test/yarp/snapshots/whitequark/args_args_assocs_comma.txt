@@ -46,5 +46,5 @@
             │                   └── operator_loc: (14...16) = "=>"
             ├── closing_loc: (19...20) = "]"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "[]"

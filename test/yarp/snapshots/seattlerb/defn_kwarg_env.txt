@@ -41,7 +41,7 @@
             │           │                   └── operator_loc: (31...33) = "**"
             │           ├── closing_loc: (40...41) = ")"
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "test_splat"
             ├── locals: [:testing]
             ├── def_keyword_loc: (0...3) = "def"

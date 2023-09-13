@@ -91,7 +91,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "bar?"
             ├── statements:
             │   @ StatementsNode (location: (119...129))
@@ -116,7 +116,7 @@
             │           │           └── unescaped: "b"
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "foo"
             ├── consequent: ∅
             └── end_keyword_loc: ∅

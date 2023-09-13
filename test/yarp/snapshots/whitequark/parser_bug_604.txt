@@ -41,7 +41,7 @@
             │           │           └── name: "b"
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "+"
             ├── closing_loc: ∅
             ├── block:
@@ -51,5 +51,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (8...10) = "do"
             │   └── closing_loc: (11...14) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "m"

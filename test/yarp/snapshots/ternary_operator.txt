@@ -112,7 +112,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "empty?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (47...51))
@@ -138,7 +138,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "empty?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (64...69))
@@ -164,7 +164,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "empty?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (82...85))
@@ -190,7 +190,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "a?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (94...97))
@@ -260,7 +260,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "nil?"
             ├── statements:
             │   @ StatementsNode (location: (124...129))

@@ -30,5 +30,5 @@
             │                   └── operator_loc: ∅
             ├── closing_loc: (19...20) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "foo"

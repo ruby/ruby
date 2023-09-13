@@ -20,7 +20,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "A"
         │   ├── write_name: "A="
         │   ├── operator: :+
@@ -45,7 +45,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "a"
         │   ├── write_name: "a="
         │   ├── operator: :+
@@ -70,7 +70,7 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "a"
             ├── write_name: "a="
             ├── operator: :+

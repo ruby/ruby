@@ -30,6 +30,6 @@
             │   │           └── flags: decimal
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "c"
             └── operator_loc: (2...3) = "="

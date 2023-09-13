@@ -27,11 +27,11 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: (20...21) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "toString"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "td"
         └── @ CallNode (location: (23...37))
             ├── receiver:
@@ -57,5 +57,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (30...32) = "do"
             │   └── closing_loc: (34...37) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "num"

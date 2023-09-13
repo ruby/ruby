@@ -33,5 +33,5 @@
             │           └── flags: decimal
             ├── closing_loc: (8...9) = "]"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "[]="

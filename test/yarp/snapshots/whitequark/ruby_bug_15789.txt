@@ -62,7 +62,7 @@
         │   │                       └── depth: 0
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "m"
         └── @ CallNode (location: (22...41))
             ├── receiver: ∅
@@ -122,5 +122,5 @@
             │                       └── depth: 0
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "m"

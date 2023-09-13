@@ -225,19 +225,19 @@
             │           │           │           │   │           │   │           │   │           │   ├── body: ∅
             │           │           │           │   │           │   │           │   │           │   ├── opening_loc: (179...181) = "do"
             │           │           │           │   │           │   │           │   │           │   └── closing_loc: (186...189) = "end"
-            │           │           │           │   │           │   │           │   │           ├── flags: 
+            │           │           │           │   │           │   │           │   │           ├── flags: ∅
             │           │           │           │   │           │   │           │   │           └── name: "new"
             │           │           │           │   │           │   │           │   └── end_keyword_loc: (192...195) = "end"
             │           │           │           │   │           │   │           └── end_keyword_loc: (192...195) = "end"
             │           │           │           │   │           │   ├── opening_loc: (136...138) = "do"
             │           │           │           │   │           │   └── closing_loc: (196...199) = "end"
-            │           │           │           │   │           ├── flags: 
+            │           │           │           │   │           ├── flags: ∅
             │           │           │           │   │           └── name: "new"
             │           │           │           │   └── end_keyword_loc: (200...203) = "end"
             │           │           │           └── end_keyword_loc: (200...203) = "end"
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
-            │           │           ├── flags: 
+            │           │           ├── flags: ∅
             │           │           └── name: "l"
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅

@@ -49,7 +49,7 @@
         │   │   │               │           └── unescaped: "hi"
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
-        │   │   │               ├── flags: 
+        │   │   │               ├── flags: ∅
         │   │   │               └── name: "puts"
         │   │   └── @ WhenNode (location: (55...76))
         │   │       ├── keyword_loc: (55...59) = "when"
@@ -73,7 +73,7 @@
         │   │                   │           └── unescaped: "bye"
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
-        │   │                   ├── flags: 
+        │   │                   ├── flags: ∅
         │   │                   └── name: "puts"
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (23...27) = "case"
@@ -192,7 +192,7 @@
         │   │       │       │           └── name: "bar"
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
-        │   │       │       ├── flags: 
+        │   │       │       ├── flags: ∅
         │   │       │       └── name: "=="
         │   │       └── statements: ∅
         │   ├── consequent: ∅

@@ -25,7 +25,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: (6...7) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "call"
         └── @ CallNode (location: (9...17))
             ├── receiver:
@@ -49,5 +49,5 @@
             │           └── flags: decimal
             ├── closing_loc: (16...17) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "call"

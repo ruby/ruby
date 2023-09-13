@@ -14,7 +14,7 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "A="
         │   │   └── @ LocalVariableTargetNode (location: (8...11))
         │   │       ├── name: :foo
@@ -37,7 +37,7 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "a="
         │   │   └── @ CallNode (location: (27...37))
         │   │       ├── receiver:
@@ -54,7 +54,7 @@
         │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (36...37) = "]"
         │   │       ├── block: ∅
-        │   │       ├── flags: 
+        │   │       ├── flags: ∅
         │   │       └── name: "[]="
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
@@ -74,7 +74,7 @@
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: 
+            │   │   ├── flags: ∅
             │   │   └── name: "a="
             │   └── @ LocalVariableTargetNode (location: (54...57))
             │       ├── name: :foo

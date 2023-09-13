@@ -94,7 +94,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "bar"
         ├── @ CallNode (location: (66...83))
         │   ├── receiver:
@@ -142,7 +142,7 @@
         │   │           └── name: "v"
         │   ├── closing_loc: (78...79) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallOperatorWriteNode (location: (84...92))
         │   ├── receiver:
@@ -154,7 +154,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :+
@@ -172,7 +172,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :-
@@ -190,7 +190,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :**
@@ -208,7 +208,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :*
@@ -226,7 +226,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :/
@@ -244,7 +244,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator_loc: (134...137) = "&&="
@@ -269,7 +269,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator_loc: (144...147) = "||="
@@ -298,7 +298,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (153...154) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :+
@@ -328,7 +328,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (163...164) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :-
@@ -358,7 +358,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (173...174) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :**
@@ -388,7 +388,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (184...185) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :*
@@ -418,7 +418,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (194...195) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :/
@@ -448,7 +448,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (204...205) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator_loc: (206...209) = "&&="
@@ -485,7 +485,7 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
         │   ├── closing_loc: (215...216) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator_loc: (217...220) = "||="
@@ -509,7 +509,7 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "A"
             ├── write_name: "A="
             ├── operator: :+

@@ -47,12 +47,12 @@
             │           │           │   │           └── name: "e"
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
-            │           │           │   ├── flags: 
+            │           │           │   ├── flags: ∅
             │           │           │   └── name: "d"
             │           │           └── operator: :*
             │           ├── opening_loc: (2...3) = "("
             │           └── closing_loc: (14...15) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"

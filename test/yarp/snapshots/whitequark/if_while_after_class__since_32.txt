@@ -50,7 +50,7 @@
         │   │   │   │           │       └── @ ConstantReadNode (location: (64...70))
         │   │   │   │           │           └── name: :Object
         │   │   │   │           └── keyword_loc: (58...63) = "break"
-        │   │   │   └── flags: 
+        │   │   │   └── flags: ∅
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (76...82))
         │   │   │   └── name: :Kernel
@@ -105,7 +105,7 @@
             │   │   │           │       └── @ ConstantReadNode (location: (155...161))
             │   │   │           │           └── name: :Object
             │   │   │           └── keyword_loc: (149...154) = "break"
-            │   │   └── flags: 
+            │   │   └── flags: ∅
             │   ├── child:
             │   │   @ ConstantReadNode (location: (167...173))
             │   │   └── name: :Kernel

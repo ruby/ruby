@@ -32,7 +32,7 @@
         │   │   │               @ NilNode (location: (24...27))
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "raise"
         │   ├── name: :foo
         │   ├── operator: :+
@@ -63,7 +63,7 @@
         │   │   │   │           └── name: "bar"
         │   │   │   ├── closing_loc: (45...46) = ")"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "raise"
         │   │   ├── keyword_loc: (47...53) = "rescue"
         │   │   └── rescue_expression:
@@ -101,7 +101,7 @@
         │   │   │               @ NilNode (location: (82...85))
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "raise"
         │   └── operator_loc: (63...64) = "="
         ├── @ LocalVariableWriteNode (location: (87...114))
@@ -131,7 +131,7 @@
         │   │   │   │           └── name: "bar"
         │   │   │   ├── closing_loc: (102...103) = ")"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "raise"
         │   │   ├── keyword_loc: (104...110) = "rescue"
         │   │   └── rescue_expression:
@@ -147,7 +147,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "C"
         │   ├── write_name: "C="
         │   ├── operator: :+
@@ -178,7 +178,7 @@
         │       │               @ NilNode (location: (142...145))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "raise"
         ├── @ CallOperatorWriteNode (location: (147...177))
         │   ├── receiver:
@@ -190,7 +190,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "C"
         │   ├── write_name: "C="
         │   ├── operator: :+
@@ -218,7 +218,7 @@
         │       │   │           └── name: "bar"
         │       │   ├── closing_loc: (165...166) = ")"
         │       │   ├── block: ∅
-        │       │   ├── flags: 
+        │       │   ├── flags: ∅
         │       │   └── name: "raise"
         │       ├── keyword_loc: (167...173) = "rescue"
         │       └── rescue_expression:
@@ -233,7 +233,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "m"
         │   ├── write_name: "m="
         │   ├── operator: :+
@@ -264,7 +264,7 @@
         │       │               @ NilNode (location: (205...208))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "raise"
         ├── @ CallOperatorWriteNode (location: (210...240))
         │   ├── receiver:
@@ -276,7 +276,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "m"
         │   ├── write_name: "m="
         │   ├── operator: :+
@@ -304,7 +304,7 @@
         │       │   │           └── name: "bar"
         │       │   ├── closing_loc: (228...229) = ")"
         │       │   ├── block: ∅
-        │       │   ├── flags: 
+        │       │   ├── flags: ∅
         │       │   └── name: "raise"
         │       ├── keyword_loc: (230...236) = "rescue"
         │       └── rescue_expression:
@@ -347,7 +347,7 @@
         │       │               @ NilNode (location: (270...273))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "raise"
         ├── @ ConstantPathOrWriteNode (location: (275...307))
         │   ├── target:
@@ -384,7 +384,7 @@
         │       │   │           └── name: "bar"
         │       │   ├── closing_loc: (295...296) = ")"
         │       │   ├── block: ∅
-        │       │   ├── flags: 
+        │       │   ├── flags: ∅
         │       │   └── name: "raise"
         │       ├── keyword_loc: (297...303) = "rescue"
         │       └── rescue_expression:
@@ -399,7 +399,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "m"
         │   ├── write_name: "m="
         │   ├── operator: :+
@@ -430,7 +430,7 @@
         │       │               @ NilNode (location: (336...339))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "raise"
         ├── @ CallOperatorWriteNode (location: (341...372))
         │   ├── receiver:
@@ -442,7 +442,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "m"
         │   ├── write_name: "m="
         │   ├── operator: :+
@@ -470,7 +470,7 @@
         │       │   │           └── name: "bar"
         │       │   ├── closing_loc: (360...361) = ")"
         │       │   ├── block: ∅
-        │       │   ├── flags: 
+        │       │   ├── flags: ∅
         │       │   └── name: "raise"
         │       ├── keyword_loc: (362...368) = "rescue"
         │       └── rescue_expression:
@@ -489,7 +489,7 @@
         │   │       └── @ IntegerNode (location: (378...379))
         │   │           └── flags: decimal
         │   ├── closing_loc: (379...380) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :+
@@ -520,7 +520,7 @@
         │       │               @ NilNode (location: (401...404))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: 
+        │       ├── flags: ∅
         │       └── name: "raise"
         └── @ CallOperatorWriteNode (location: (406...437))
             ├── receiver:
@@ -536,7 +536,7 @@
             │       └── @ IntegerNode (location: (410...411))
             │           └── flags: decimal
             ├── closing_loc: (411...412) = "]"
-            ├── flags: 
+            ├── flags: ∅
             ├── read_name: "[]"
             ├── write_name: "[]="
             ├── operator: :+
@@ -564,7 +564,7 @@
                 │   │           └── name: "bar"
                 │   ├── closing_loc: (425...426) = ")"
                 │   ├── block: ∅
-                │   ├── flags: 
+                │   ├── flags: ∅
                 │   └── name: "raise"
                 ├── keyword_loc: (427...433) = "rescue"
                 └── rescue_expression:

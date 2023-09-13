@@ -39,7 +39,7 @@
         │   │           │           └── depth: 0
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "p"
         │   ├── for_keyword_loc: (0...3) = "for"
         │   ├── in_keyword_loc: (6...8) = "in"
@@ -81,7 +81,7 @@
             │           │           └── depth: 0
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "p"
             ├── for_keyword_loc: (26...29) = "for"
             ├── in_keyword_loc: (32...34) = "in"

@@ -43,7 +43,7 @@
         │   │           │           └── unescaped: ""
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "A"
         │   ├── locals: []
         │   ├── def_keyword_loc: (13...16) = "def"
@@ -76,7 +76,7 @@
             │           │   │           └── flags: decimal
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
-            │           │   ├── flags: 
+            │           │   ├── flags: ∅
             │           │   └── name: "+"
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (48...49) = "+"
@@ -88,7 +88,7 @@
             │           │           └── flags: decimal
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "+"
             ├── locals: []
             ├── def_keyword_loc: (29...32) = "def"

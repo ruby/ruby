@@ -23,5 +23,5 @@
             │   ├── body: ∅
             │   ├── opening_loc: (7...8) = "{"
             │   └── closing_loc: (8...9) = "}"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "fun"

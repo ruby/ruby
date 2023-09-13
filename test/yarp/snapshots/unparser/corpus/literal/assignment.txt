@@ -260,7 +260,7 @@
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "foo="
         │   │   └── @ CallNode (location: (212...217))
         │   │       ├── receiver:
@@ -273,7 +273,7 @@
         │   │       ├── arguments: ∅
         │   │       ├── closing_loc: ∅
         │   │       ├── block: ∅
-        │   │       ├── flags: 
+        │   │       ├── flags: ∅
         │   │       └── name: "bar="
         │   ├── lparen_loc: (204...205) = "("
         │   ├── rparen_loc: (217...218) = ")"
@@ -308,7 +308,7 @@
         │   │   │   │               └── depth: 0
         │   │   │   ├── closing_loc: (235...236) = "]"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "[]="
         │   │   └── @ CallNode (location: (238...242))
         │   │       ├── receiver:
@@ -325,7 +325,7 @@
         │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (241...242) = "]"
         │   │       ├── block: ∅
-        │   │       ├── flags: 
+        │   │       ├── flags: ∅
         │   │       └── name: "[]="
         │   ├── lparen_loc: (228...229) = "("
         │   ├── rparen_loc: (242...243) = ")"
@@ -356,7 +356,7 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (257...258) = "]"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: 
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: "[]="
         │   │   └── @ CallNode (location: (260...264))
         │   │       ├── receiver:
@@ -373,7 +373,7 @@
         │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (263...264) = "]"
         │   │       ├── block: ∅
-        │   │       ├── flags: 
+        │   │       ├── flags: ∅
         │   │       └── name: "[]="
         │   ├── lparen_loc: (253...254) = "("
         │   ├── rparen_loc: (264...265) = ")"
@@ -403,7 +403,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "foo="
         │   ├── lparen_loc: (275...276) = "("
         │   ├── rparen_loc: (282...283) = ")"
@@ -515,7 +515,7 @@
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: (384...385) = ")"
         │   │   ├── block: ∅
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "foo"
         │   └── operator_loc: (378...379) = "="
         ├── @ CallNode (location: (386...395))
@@ -529,7 +529,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: (394...395) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (396...409))
         │   ├── receiver:
@@ -548,7 +548,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: (408...409) = ")"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (410...421))
         │   ├── receiver:
@@ -564,7 +564,7 @@
         │   │       └── @ TrueNode (location: (417...421))
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (422...441))
         │   ├── receiver:
@@ -602,7 +602,7 @@
         │   │           └── name: "value"
         │   ├── closing_loc: (432...433) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (442...459))
         │   ├── receiver:
@@ -623,7 +623,7 @@
         │   │       │   │   @ IntegerNode (location: (449...450))
         │   │       │   │   └── flags: decimal
         │   │       │   ├── operator_loc: (447...449) = ".."
-        │   │       │   └── flags: 
+        │   │       │   └── flags: ∅
         │   │       └── @ CallNode (location: (454...459))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
@@ -636,7 +636,7 @@
         │   │           └── name: "value"
         │   ├── closing_loc: (450...451) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (460...469))
         │   ├── receiver:
@@ -653,7 +653,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: (464...465) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (470...487))
         │   ├── receiver:
@@ -684,7 +684,7 @@
         │   │           └── name: "value"
         │   ├── closing_loc: (478...479) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallNode (location: (488...506))
         │   ├── receiver:
@@ -719,7 +719,7 @@
         │   │           └── name: "value"
         │   ├── closing_loc: (497...498) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ LocalVariableWriteNode (location: (507...514))
         │   ├── name: :x
@@ -750,7 +750,7 @@
         │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "x="
         ├── @ CallNode (location: (523...535))
         │   ├── receiver:
@@ -780,7 +780,7 @@
         │   │           └── name: "bar"
         │   ├── closing_loc: (528...529) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallOrWriteNode (location: (536...550))
         │   ├── receiver:
@@ -799,7 +799,7 @@
         │   │           ├── closing_loc: (540...541) = ")"
         │   │           └── unescaped: ""
         │   ├── closing_loc: (541...542) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator_loc: (543...546) = "||="
@@ -879,7 +879,7 @@
         │   │           └── closing_loc: (612...620) = "HEREDOC\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "x="
         ├── @ CallNode (location: (620...636))
         │   ├── receiver:
@@ -912,7 +912,7 @@
         │   │           └── closing_loc: (643...651) = "HEREDOC\n"
         │   ├── closing_loc: (622...623) = "]"
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "[]="
         ├── @ CallOrWriteNode (location: (651...672))
         │   ├── receiver:
@@ -944,7 +944,7 @@
         │   │           │       └── unescaped: "\n"
         │   │           └── closing_loc: (679...687) = "HEREDOC\n"
         │   ├── closing_loc: (663...664) = "]"
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator_loc: (665...668) = "||="

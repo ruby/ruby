@@ -241,7 +241,7 @@
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
             │       │   │   ├── block: ∅
-            │       │   │   ├── flags: 
+            │       │   │   ├── flags: ∅
             │       │   │   └── name: "b?"
             │       │   ├── call_operator_loc: ∅
             │       │   ├── message_loc: (115...116) = "!"
@@ -249,7 +249,7 @@
             │       │   ├── arguments: ∅
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: 
+            │       │   ├── flags: ∅
             │       │   └── name: "!"
             │       └── operator_loc: ∅
             └── closing_loc: (119...120) = "}"

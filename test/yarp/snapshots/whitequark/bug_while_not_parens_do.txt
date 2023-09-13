@@ -22,7 +22,7 @@
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "!"
             ├── statements: ∅
-            └── flags: 
+            └── flags: ∅

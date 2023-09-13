@@ -45,7 +45,7 @@
             │           │           └── depth: 0
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "p"
             ├── for_keyword_loc: (0...3) = "for"
             ├── in_keyword_loc: (9...11) = "in"

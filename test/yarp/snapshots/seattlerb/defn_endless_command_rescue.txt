@@ -29,7 +29,7 @@
             │           │               └── flags: decimal
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "other_method"
             ├── locals: []
             ├── def_keyword_loc: (0...3) = "def"

@@ -26,7 +26,7 @@
         │   │           │           └── unescaped: "Hello"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "puts"
         │   ├── locals: []
         │   ├── def_keyword_loc: (0...3) = "def"
@@ -58,7 +58,7 @@
         │   │           │           └── unescaped: "Hello"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "puts"
         │   ├── locals: []
         │   ├── def_keyword_loc: (24...27) = "def"
@@ -98,7 +98,7 @@
         │   │           │           └── depth: 0
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "puts"
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (50...53) = "def"
@@ -140,7 +140,7 @@
         │   │           │           └── unescaped: "Hello"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "puts"
         │   ├── locals: []
         │   ├── def_keyword_loc: (71...74) = "def"
@@ -182,7 +182,7 @@
         │   │           │           └── unescaped: "Hello"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "puts"
         │   ├── locals: []
         │   ├── def_keyword_loc: (99...102) = "def"
@@ -232,7 +232,7 @@
         │   │           │           └── depth: 0
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "puts"
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (129...132) = "def"
@@ -296,7 +296,7 @@
         │   │           │               └── closing_loc: (213...214) = "\""
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "raise"
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (154...157) = "def"
@@ -361,7 +361,7 @@
             │           │               └── closing_loc: (277...278) = "\""
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: 
+            │           ├── flags: ∅
             │           └── name: "raise"
             ├── locals: [:x]
             ├── def_keyword_loc: (216...219) = "def"

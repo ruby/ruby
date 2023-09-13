@@ -42,7 +42,7 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "!"
         └── @ IfNode (location: (14...31))
             ├── if_keyword_loc: (14...16) = "if"

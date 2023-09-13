@@ -26,7 +26,7 @@
             │   │   ├── body: ∅
             │   │   ├── opening_loc: (5...7) = "do"
             │   │   └── closing_loc: (8...11) = "end"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "a"
             ├── call_operator_loc: (11...13) = "::"
             ├── message_loc: (13...14) = "c"
@@ -41,5 +41,5 @@
             │           └── unescaped: "d"
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "c"

@@ -25,7 +25,7 @@
         │   │       │   │           └── unescaped: "a"
         │   │       │   ├── closing_loc: (20...21) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "p"
         │   │       ├── @ LocalVariableWriteNode (location: (24...29))
         │   │       │   ├── name: :b
@@ -48,7 +48,7 @@
         │   │       │   │           └── depth: 0
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: 
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: "p"
         │   │       └── @ LocalVariableWriteNode (location: (38...42))
         │   │           ├── name: :c

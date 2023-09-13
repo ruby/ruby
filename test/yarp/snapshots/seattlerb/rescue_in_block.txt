@@ -43,5 +43,5 @@
             │   │   └── end_keyword_loc: (23...26) = "end"
             │   ├── opening_loc: (5...7) = "do"
             │   └── closing_loc: (23...26) = "end"
-            ├── flags: 
+            ├── flags: ∅
             └── name: "blah"

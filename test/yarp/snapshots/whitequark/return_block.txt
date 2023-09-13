@@ -34,5 +34,5 @@
                         │   ├── body: ∅
                         │   ├── opening_loc: (15...17) = "do"
                         │   └── closing_loc: (18...21) = "end"
-                        ├── flags: 
+                        ├── flags: ∅
                         └── name: "fun"

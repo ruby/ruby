@@ -31,7 +31,7 @@
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "g"
         │   ├── locals: []
         │   ├── def_keyword_loc: (6...9) = "def"
@@ -68,7 +68,7 @@
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: 
+        │   │           ├── flags: ∅
         │   │           └── name: "g"
         │   ├── locals: []
         │   ├── def_keyword_loc: (48...51) = "def"
@@ -97,5 +97,5 @@
             │           └── flags: decimal
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "g"

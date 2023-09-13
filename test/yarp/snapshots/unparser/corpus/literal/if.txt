@@ -11,7 +11,7 @@
         │   │   ├── content_loc: (4...7) = "foo"
         │   │   ├── closing_loc: (7...8) = "/"
         │   │   ├── unescaped: "foo"
-        │   │   └── flags: 
+        │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (11...14))
         │   │   └── body: (length: 1)
@@ -245,7 +245,7 @@
             │   │   │           └── depth: 0
             │   │   ├── opening_loc: (205...206) = "{"
             │   │   └── closing_loc: (221...222) = "}"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "foo"
             ├── statements:
             │   @ StatementsNode (location: (225...242))

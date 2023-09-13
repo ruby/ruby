@@ -11,4 +11,4 @@
             │   @ IntegerNode (location: (3...4))
             │   └── flags: decimal
             ├── operator_loc: (1...3) = ".."
-            └── flags: 
+            └── flags: ∅

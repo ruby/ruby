@@ -25,7 +25,7 @@
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "assert"
         ├── @ CallNode (location: (17...28))
         │   ├── receiver: ∅
@@ -47,7 +47,7 @@
         │   │           └── name: "dogs"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "assert"
         └── @ CallNode (location: (30...56))
             ├── receiver: ∅
@@ -90,10 +90,10 @@
             │                   │               │   ├── body: ∅
             │                   │               │   ├── opening_loc: (46...48) = "do"
             │                   │               │   └── closing_loc: (49...52) = "end"
-            │                   │               ├── flags: 
+            │                   │               ├── flags: ∅
             │                   │               └── name: "meth"
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "f"

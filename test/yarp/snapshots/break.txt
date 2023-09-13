@@ -141,7 +141,7 @@
         │   │   │   │           └── keyword_loc: (127...132) = "break"
         │   │   │   ├── opening_loc: (125...126) = "{"
         │   │   │   └── closing_loc: (136...137) = "}"
-        │   │   ├── flags: 
+        │   │   ├── flags: ∅
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (138...140) = "=="
@@ -153,7 +153,7 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: 
+        │   ├── flags: ∅
         │   └── name: "=="
         └── @ CallNode (location: (145...168))
             ├── receiver:
@@ -191,7 +191,7 @@
             │   │   │           └── keyword_loc: (155...160) = "break"
             │   │   ├── opening_loc: (149...150) = "{"
             │   │   └── closing_loc: (161...162) = "}"
-            │   ├── flags: 
+            │   ├── flags: ∅
             │   └── name: "foo"
             ├── call_operator_loc: ∅
             ├── message_loc: (163...165) = "=="
@@ -203,5 +203,5 @@
             │           └── flags: decimal
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "=="

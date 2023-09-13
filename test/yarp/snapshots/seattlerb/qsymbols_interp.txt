@@ -37,7 +37,7 @@
             │   │   │       │           │           └── flags: decimal
             │   │   │       │           ├── closing_loc: ∅
             │   │   │       │           ├── block: ∅
-            │   │   │       │           ├── flags: 
+            │   │   │       │           ├── flags: ∅
             │   │   │       │           └── name: "+"
             │   │   │       └── closing_loc: (11...12) = "}"
             │   │   └── closing_loc: ∅

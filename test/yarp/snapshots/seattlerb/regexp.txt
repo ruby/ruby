@@ -8,7 +8,7 @@
         │   ├── content_loc: (1...4) = "wtf"
         │   ├── closing_loc: (4...5) = "/"
         │   ├── unescaped: "wtf"
-        │   └── flags: 
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (7...13))
         │   ├── opening_loc: (7...8) = "/"
         │   ├── content_loc: (8...11) = "wtf"

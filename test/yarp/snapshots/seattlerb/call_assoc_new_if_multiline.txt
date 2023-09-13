@@ -47,5 +47,5 @@
             │                   └── operator_loc: ∅
             ├── closing_loc: (23...24) = ")"
             ├── block: ∅
-            ├── flags: 
+            ├── flags: ∅
             └── name: "a"
