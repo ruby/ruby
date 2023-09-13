@@ -288,6 +288,11 @@ typedef struct yp_scope {
     // This is necessary to determine whether or not numbered parameters are
     // allowed.
     bool explicit_params;
+
+    // A boolean indicating whether or not this scope has numbered parameters.
+    // This is necessary to determine if child blocks are allowed to use
+    // numbered parameters.
+    bool numbered_params;
 } yp_scope_t;
 
 // This struct represents the overall parser. It contains a reference to the

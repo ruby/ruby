@@ -4720,10 +4720,16 @@ yp_parser_scope_push(yp_parser_t *parser, bool closed) {
     yp_scope_t *scope = (yp_scope_t *) malloc(sizeof(yp_scope_t));
     if (scope == NULL) return false;
 
-    *scope = (yp_scope_t) { .previous = parser->current_scope, .closed = closed, .explicit_params = false };
-    yp_constant_id_list_init(&scope->locals);
+    *scope = (yp_scope_t) {
+        .previous = parser->current_scope,
+        .closed = closed,
+        .explicit_params = false,
+        .numbered_params = false
+    };
 
+    yp_constant_id_list_init(&scope->locals);
     parser->current_scope = scope;
+
     return true;
 }
 
@@ -10109,6 +10115,24 @@ parse_alias_argument(yp_parser_t *parser, bool first) {
     }
 }
 
+// Return true if any of the visible scopes to the current context are using
+// numbered parameters.
+static bool
+outer_scope_using_numbered_params_p(yp_parser_t *parser) {
+    yp_scope_t *scope = parser->current_scope;
+
+    // We can bail early here if we've already performed this lookup since it
+    // will be set on the current scope.
+    if (scope->numbered_params) return false;
+
+    // Otherwise we need to walk up the list of scopes.
+    for (scope = scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
+        if (scope->numbered_params) return true;
+    }
+
+    return false;
+}
+
 // Parse an identifier into either a local variable read or a call.
 static yp_node_t *
 parse_variable_call(yp_parser_t *parser) {
@@ -10127,7 +10151,18 @@ parse_variable_call(yp_parser_t *parser) {
             // node but add an error.
             if (parser->current_scope->explicit_params) {
                 yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_NUMBERED_PARAMETER_NOT_ALLOWED);
+            } else if (outer_scope_using_numbered_params_p(parser)) {
+                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_NUMBERED_PARAMETER_OUTER_SCOPE);
             } else {
+                // Indicate that this scope is using numbered params so that
+                // child scopes cannot.
+                parser->current_scope->numbered_params = true;
+
+                // When you use a numbered parameter, it implies the existence
+                // of all of the locals that exist before it. For example,
+                // referencing _2 means that _1 must exist. Therefore here we
+                // loop through all of the possibilities and add them into the
+                // constant pool.
                 uint8_t number = parser->previous.start[1];
                 uint8_t current = '1';
                 uint8_t *value;
@@ -10139,6 +10174,9 @@ parse_variable_call(yp_parser_t *parser) {
                     yp_parser_local_add_owned(parser, value, 2);
                 }
 
+                // Now we can add the actual token that is being used. For
+                // this one we can add a shared version since it is directly
+                // referenced in the source.
                 yp_parser_local_add_token(parser, &parser->previous);
                 return (yp_node_t *) yp_local_variable_read_node_create(parser, &parser->previous, 0);
             }

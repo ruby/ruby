@@ -193,6 +193,7 @@ static const char* const diagnostic_messages[YP_DIAGNOSTIC_ID_LEN] = {
     [YP_ERR_PARAMETER_NO_DEFAULT]               = "Expected a default value for the parameter",
     [YP_ERR_PARAMETER_NO_DEFAULT_KW]            = "Expected a default value for the keyword parameter",
     [YP_ERR_PARAMETER_NUMBERED_RESERVED]        = "Token reserved for a numbered parameter",
+    [YP_ERR_NUMBERED_PARAMETER_OUTER_SCOPE]     = "Numbered parameter is already used in outer scope",
     [YP_ERR_PARAMETER_ORDER]                    = "Unexpected parameter order",
     [YP_ERR_PARAMETER_SPLAT_MULTI]              = "Unexpected multiple `*` splat parameters",
     [YP_ERR_PARAMETER_STAR]                     = "Unexpected parameter `*`",
