@@ -777,7 +777,7 @@ class TestISeq < Test::Unit::TestCase
       if true or {a: 0} in {a:}
         p 1
       else
-        p 0
+        p a
       end
     end;
   end
