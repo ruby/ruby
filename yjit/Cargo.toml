@@ -16,13 +16,12 @@ crate-type = ["staticlib"]
 # No required dependencies to simplify build process. TODO: Link to yet to be
 # written rationale. Optional For development and testing purposes
 capstone = { version = "0.10.0", optional = true }
-stats_alloc = { version = "0.1.10", optional = true }
 
 [features]
 # NOTE: Development builds select a set of these via configure.ac
 # For debugging, `make V=1` shows exact cargo invocation.
 disasm = ["capstone"]
-stats = ["stats_alloc"]
+stats = []
 
 [profile.dev]
 opt-level = 0
