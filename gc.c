@@ -7460,6 +7460,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     rb_gc_mark(objspace->next_object_id);
     mark_tbl_no_pin(objspace, objspace->obj_to_id_tbl); /* Only mark ids */
 
+    rb_gc_mark(ruby_gc_stress_mode);
     if (stress_to_class) rb_gc_mark(stress_to_class);
 
     MARK_CHECKPOINT("finish");
@@ -11460,6 +11461,10 @@ gc_stress_get(rb_execution_context_t *ec, VALUE self)
 static void
 gc_stress_set(rb_objspace_t *objspace, VALUE flag)
 {
+    if (flag != Qtrue && flag != Qfalse) {
+        flag = rb_to_int(flag);
+    }
+
     objspace->flags.gc_stressful = RTEST(flag);
     objspace->gc_stress_mode = flag;
 }
