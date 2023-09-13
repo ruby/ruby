@@ -413,7 +413,11 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 
     yp_string_t input;
     input_load_string(&input, string);
-    return parse_lex_input(&input, check_string(filepath), true);
+
+    VALUE value = parse_lex_input(&input, check_string(filepath), true);
+    yp_string_free(&input);
+
+    return value;
 }
 
 // Parse and lex the given file and return a ParseResult instance.
@@ -530,6 +534,8 @@ profile_file(VALUE self, VALUE filepath) {
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
 
+    yp_string_free(&input);
+
     return Qnil;
 }
 
@@ -547,6 +553,7 @@ parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
     yp_parse_serialize(yp_string_source(&input), yp_string_length(&input), &buffer, check_string(metadata));
     VALUE result = rb_str_new(yp_buffer_value(&buffer), yp_buffer_length(&buffer));
 
+    yp_string_free(&input);
     yp_buffer_free(&buffer);
     return result;
 }
