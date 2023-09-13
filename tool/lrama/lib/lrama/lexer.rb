@@ -213,19 +213,33 @@ module Lrama
           string, line = lex_string(ss, "'", line, lines)
           str << string
           next
+
+        # $ references
+        # It need to wrap an identifier with brackets to use ".-" for identifiers
         when ss.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, "$", tag, str.length, str.length + ss[0].length - 1]
         when ss.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, Integer(ss[2]), tag, str.length, str.length + ss[0].length - 1]
-        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_.][-a-zA-Z0-9_.]*)/) # $foo, $expr, $<long>program
+        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, ss[2], tag, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
+          tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
+          references << [:dollar, ss[2], tag, str.length, str.length + ss[0].length - 1]
+
+        # @ references
+        # It need to wrap an identifier with brackets to use ".-" for identifiers
         when ss.scan(/@\$/) # @$
           references << [:at, "$", nil, str.length, str.length + ss[0].length - 1]
         when ss.scan(/@(\d+)/) # @1
           references << [:at, Integer(ss[1]), nil, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
+          references << [:at, ss[1], nil, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
+          references << [:at, ss[1], nil, str.length, str.length + ss[0].length - 1]
+
         when ss.scan(/{/)
           brace_count += 1
         when ss.scan(/}/)

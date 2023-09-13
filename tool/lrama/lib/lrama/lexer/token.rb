@@ -28,7 +28,13 @@ module Lrama
               if lhs.referred_by?(ref_name)
                 '$'
               else
-                rhs.find_index {|token| token.referred_by?(ref_name) } + 1
+                index = rhs.find_index {|token| token.referred_by?(ref_name) }
+
+                if index
+                  index + 1
+                else
+                  raise "'#{ref_name}' is invalid name."
+                end
               end
             [ref[0], value, ref[2], ref[3], ref[4]]
           else
