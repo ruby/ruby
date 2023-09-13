@@ -25,7 +25,7 @@
 .Op Fl - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
 .Op Fl -dump Ns = Ns Ar target
 .Op Fl -verbose
-.Op Fl -bugreport-path Ns = Ns Ar template
+.Op Fl -crash-report Ns = Ns Ar template
 .Op Fl -
 .Op Ar program_file
 .Op Ar argument ...
@@ -471,10 +471,10 @@ If this switch is given, and no script arguments (script file or
 .Fl e
 options) are present, Ruby quits immediately.
 .Pp
-.It Fl -bugreport-path Ns = Ns Ar template
+.It Fl -crash-report Ns = Ns Ar template
 Sets the template of path name to save bug report.
 See
-.Ev RUBY_BUGREPORT_PATH
+.Ev RUBY_CRASH_REPORT
 environment variable for details.
 .El
 .Pp
@@ -654,8 +654,8 @@ default: 262144 or 524288
 .El
 .Sh BUG REPORT ENVIRONMENT
 .Pp
-.Bl -tag -compact -width "RUBY_BUGREPORT_PATH"
-.It Ev RUBY_BUGREPORT_PATH
+.Bl -tag -compact -width "RUBY_CRASH_REPORT"
+.It Ev RUBY_CRASH_REPORT
 The template of path name to save bug report.
 default: none
 .El
