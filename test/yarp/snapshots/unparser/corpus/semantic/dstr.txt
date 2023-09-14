@@ -5,22 +5,22 @@
     └── body: (length: 33)
         ├── @ StringNode (location: (0...5))
         │   ├── opening_loc: (0...5) = "<<DOC"
-        │   ├── content_loc: (5...6) = "\n"
+        │   ├── content_loc: (6...6) = ""
         │   ├── closing_loc: (6...10) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (11...18))
         │   ├── opening_loc: (11...18) = "<<'DOC'"
-        │   ├── content_loc: (18...19) = "\n"
+        │   ├── content_loc: (19...19) = ""
         │   ├── closing_loc: (19...23) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (24...30))
         │   ├── opening_loc: (24...30) = "<<~DOC"
-        │   ├── content_loc: (30...31) = "\n"
+        │   ├── content_loc: (31...31) = ""
         │   ├── closing_loc: (31...35) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (36...44))
         │   ├── opening_loc: (36...44) = "<<~'DOC'"
-        │   ├── content_loc: (44...45) = "\n"
+        │   ├── content_loc: (45...45) = ""
         │   ├── closing_loc: (45...49) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (50...55))

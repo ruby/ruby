@@ -142,7 +142,7 @@
         │   └── unescaped: "  a\n  b\n"
         ├── @ StringNode (location: (201...206))
         │   ├── opening_loc: (201...206) = "<<-''"
-        │   ├── content_loc: (206...207) = "\n"
+        │   ├── content_loc: (207...207) = ""
         │   ├── closing_loc: (207...208) = "\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (209...217))

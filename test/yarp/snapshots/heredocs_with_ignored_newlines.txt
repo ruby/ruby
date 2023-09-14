@@ -5,7 +5,7 @@
     └── body: (length: 2)
         ├── @ StringNode (location: (0...7))
         │   ├── opening_loc: (0...7) = "<<-HERE"
-        │   ├── content_loc: (7...9) = "\\\n"
+        │   ├── content_loc: (9...9) = ""
         │   ├── closing_loc: (9...14) = "HERE\n"
         │   └── unescaped: ""
         └── @ StringNode (location: (15...23))

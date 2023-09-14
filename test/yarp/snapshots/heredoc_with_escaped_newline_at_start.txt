@@ -7,7 +7,7 @@
         │   ├── receiver:
         │   │   @ StringNode (location: (0...9))
         │   │   ├── opening_loc: (0...9) = "<<-TARGET"
-        │   │   ├── content_loc: (9...27) = ".gsub /^\\s{/, ''\\\n"
+        │   │   ├── content_loc: (27...27) = ""
         │   │   ├── closing_loc: (27...34) = "TARGET\n"
         │   │   └── unescaped: ""
         │   ├── call_operator_loc: (9...10) = "."
@@ -35,7 +35,7 @@
             ├── receiver:
             │   @ StringNode (location: (37...46))
             │   ├── opening_loc: (37...46) = "<<-TARGET"
-            │   ├── content_loc: (46...65) = ".gsub /^\\s{/, ''\\\r\n"
+            │   ├── content_loc: (65...65) = ""
             │   ├── closing_loc: (65...73) = "TARGET\r\n"
             │   └── unescaped: ""
             ├── call_operator_loc: (46...47) = "."

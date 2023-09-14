@@ -194,7 +194,7 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (196...200))
         │   │           ├── opening_loc: (196...200) = "<<~E"
-        │   │           ├── content_loc: (200...201) = "\n"
+        │   │           ├── content_loc: (201...201) = ""
         │   │           ├── closing_loc: (201...205) = "  E\n"
         │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
@@ -296,7 +296,7 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ StringNode (location: (297...301))
         │   │           ├── opening_loc: (297...301) = "<<~E"
-        │   │           ├── content_loc: (301...302) = "\n"
+        │   │           ├── content_loc: (302...302) = ""
         │   │           ├── closing_loc: (302...304) = "E\n"
         │   │           └── unescaped: ""
         │   ├── closing_loc: ∅

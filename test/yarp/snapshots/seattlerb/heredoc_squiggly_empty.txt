@@ -5,6 +5,6 @@
     └── body: (length: 1)
         └── @ StringNode (location: (0...4))
             ├── opening_loc: (0...4) = "<<~A"
-            ├── content_loc: (4...5) = "\n"
+            ├── content_loc: (5...5) = ""
             ├── closing_loc: (5...7) = "A\n"
             └── unescaped: ""
