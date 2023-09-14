@@ -38,26 +38,16 @@ Note: We're only listing outstanding class updates.
     * MatchData#named_captures now accepts optional `symbolize_names`
       keyword. [[Feature #19591]]
 
-* Process::Status
+* Module
 
-    * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
-
-* String
-
-    * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
-    * String#bytesplice now accepts new arguments index/length or range of the
-      source string to be copied.  [[Feature #19314]]
+    * Module#set_temporary_name added for setting a temporary name for a
+      module. [[Feature #19521]]
 
 * ObjectSpace::WeakKeyMap
 
     * New core class to build collections with weak references.
       The class use equality semantic to lookup keys like a regular hash,
       but it doesn't hold strong references on the keys. [[Feature #18498]]
-
-* Module
-
-    * Module#set_temporary_name added for setting a temporary name for a
-      module. [[Feature #19521]]
 
 * Process.warmup
 
@@ -66,11 +56,21 @@ Note: We're only listing outstanding class updates.
       for long running applications. The actual optimizations performed are entirely
       implementation specific and may change in the future without notice. [[Feature #18885]]
 
+* Process::Status
+
+    * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
+
 * Refinement
 
     * Add Refinement#target as an alternative of Refinement#refined_class.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
+
+* String
+
+    * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
+    * String#bytesplice now accepts new arguments index/length or range of the
+      source string to be copied.  [[Feature #19314]]
 
 ## Stdlib updates
 
