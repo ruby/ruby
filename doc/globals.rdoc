@@ -1,5 +1,13 @@
 == Pre-Defined Global Variables
 
+Some of the pre-defined global variables have synonyms
+that are available via module Engish.
+For each of those, the \English synonym is given.
+
+To use the module:
+
+  require 'English'
+
 === Exceptions
 
 ==== <tt>$!</tt> (\Exception)
