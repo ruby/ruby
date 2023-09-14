@@ -62,7 +62,8 @@ module Bundler
       if names.any?
         names.each do |name|
           if index.installed?(name)
-            Bundler.rm_rf(index.plugin_path(name))
+            path = index.plugin_path(name).to_s
+            Bundler.rm_rf(path) if index.installed_in_plugin_root?(name)
             index.unregister_plugin(name)
             Bundler.ui.info "Uninstalled plugin #{name}"
           else
