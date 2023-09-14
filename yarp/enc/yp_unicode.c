@@ -10,7 +10,7 @@ typedef uint32_t yp_unicode_codepoint_t;
 // this table is different from other encodings where we used a lookup table
 // because the indices of those tables are the byte representations, not the
 // codepoints themselves.
-uint8_t yp_encoding_unicode_table[256] = {
+const uint8_t yp_encoding_unicode_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -31,7 +31,7 @@ uint8_t yp_encoding_unicode_table[256] = {
 };
 
 #define UNICODE_ALPHA_CODEPOINTS_LENGTH 1450
-static yp_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
+static const yp_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
     0x2E0, 0x2E4,
@@ -760,7 +760,7 @@ static yp_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_
 };
 
 #define UNICODE_ALNUM_CODEPOINTS_LENGTH 1528
-static yp_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
+static const yp_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
     0x2E0, 0x2E4,
@@ -1528,7 +1528,7 @@ static yp_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_
 };
 
 #define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1296
-static yp_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
+static const yp_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
     0x100, 0x100,
     0x102, 0x102,
     0x104, 0x104,
@@ -2180,7 +2180,7 @@ static yp_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOI
 };
 
 static bool
-yp_unicode_codepoint_match(yp_unicode_codepoint_t codepoint, yp_unicode_codepoint_t *codepoints, size_t size) {
+yp_unicode_codepoint_match(yp_unicode_codepoint_t codepoint, const yp_unicode_codepoint_t *codepoints, size_t size) {
     size_t start = 0;
     size_t end = size;
 
