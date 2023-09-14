@@ -289,6 +289,111 @@ static const rb_data_type_t rb_io_buffer_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
+// Extract an offset argument, which must be a positive integer.
+static inline size_t
+io_buffer_extract_offset(VALUE argument)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Offset can't be negative!");
+    }
+
+    return NUM2SIZET(argument);
+}
+
+// Extract a length argument, which must be a positive integer.
+// Length is generally considered a mutable property of an object and
+// semantically should be considered a subset of "size" as a concept.
+static inline size_t
+io_buffer_extract_length(VALUE argument)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Length can't be negative!");
+    }
+
+    return NUM2SIZET(argument);
+}
+
+// Extract a size argument, which must be a positive integer.
+// Size is generally considered an immutable property of an object.
+static inline size_t
+io_buffer_extract_size(VALUE argument)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Size can't be negative!");
+    }
+
+    return NUM2SIZET(argument);
+}
+
+// Compute the default length for a buffer, given an offset into that buffer.
+// The default length is the size of the buffer minus the offset. The offset
+// must be less than the size of the buffer otherwise the length will be
+// invalid; in that case, an ArgumentError exception will be raised.
+static inline size_t
+io_buffer_default_length(const struct rb_io_buffer *buffer, size_t offset)
+{
+    if (offset > buffer->size) {
+        rb_raise(rb_eArgError, "The given offset is bigger than the buffer size!");
+    }
+
+    // Note that the "length" is computed by the size the offset.
+    return buffer->size - offset;
+}
+
+// Extract the optional length and offset arguments, returning the buffer.
+// The length and offset are optional, but if they are provided, they must be
+// positive integers. If the length is not provided, the default length is
+// computed from the buffer size and offset. If the offset is not provided, it
+// defaults to zero.
+static inline struct rb_io_buffer *
+io_buffer_extract_length_offset(VALUE self, int argc, VALUE argv[], size_t *length, size_t *offset)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    if (argc >= 2) {
+        *offset = io_buffer_extract_offset(argv[1]);
+    }
+    else {
+        *offset = 0;
+    }
+
+    if (argc >= 1 && !NIL_P(argv[0])) {
+        *length = io_buffer_extract_length(argv[0]);
+    }
+    else {
+        *length = io_buffer_default_length(buffer, *offset);
+    }
+
+    return buffer;
+}
+
+// Extract the optional offset and length arguments, returning the buffer.
+// Similar to `io_buffer_extract_length_offset` but with the order of
+// arguments reversed.
+static inline struct rb_io_buffer *
+io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offset, size_t *length)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    if (argc >= 1) {
+        *offset = io_buffer_extract_offset(argv[0]);
+    }
+    else {
+        *offset = 0;
+    }
+
+    if (argc >= 2) {
+        *length = io_buffer_extract_length(argv[1]);
+    }
+    else {
+        *length = io_buffer_default_length(buffer, *offset);
+    }
+
+    return buffer;
+}
+
 VALUE
 rb_io_buffer_type_allocate(VALUE self)
 {
@@ -492,7 +597,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
 
     size_t size;
     if (argc >= 2 && !RB_NIL_P(argv[1])) {
-        size = RB_NUM2SIZE(argv[1]);
+        size = io_buffer_extract_size(argv[1]);
     }
     else {
         rb_off_t file_size = rb_file_size(io);
@@ -511,6 +616,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         }
     }
 
+    // This is the file offset, not the buffer offset:
     rb_off_t offset = 0;
     if (argc >= 3) {
         offset = NUM2OFFT(argv[2]);
@@ -572,9 +678,8 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
     size_t size;
-
     if (argc > 0) {
-        size = RB_NUM2SIZE(argv[0]);
+        size = io_buffer_extract_size(argv[0]);
     }
     else {
         size = RUBY_IO_BUFFER_DEFAULT_SIZE;
@@ -1116,11 +1221,9 @@ rb_io_buffer_free(VALUE self)
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t length)
 {
-    if (offset > buffer->size) {
-        rb_raise(rb_eArgError, "Specified offset exceeds buffer size!");
-    }
+    // We assume here that offset + length won't overflow:
     if (offset + length > buffer->size) {
-        rb_raise(rb_eArgError, "Specified offset+length exceeds buffer size!");
+        rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
     }
 }
 
@@ -1146,7 +1249,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
 }
 
 /*
- *  call-seq: slice([offset = 0, [length]]) -> io_buffer
+ *  call-seq: slice([offset, [length]]) -> io_buffer
  *
  *  Produce another IO::Buffer which is a slice (or view into) the current one
  *  starting at +offset+ bytes and going for +length+ bytes.
@@ -1206,29 +1309,8 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 2);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
-    size_t offset = 0, length = 0;
-
-    if (argc > 0) {
-        if (rb_int_negative_p(argv[0])) {
-            rb_raise(rb_eArgError, "Offset can't be negative!");
-        }
-
-        offset = NUM2SIZET(argv[0]);
-    }
-
-    if (argc > 1) {
-        if (rb_int_negative_p(argv[1])) {
-            rb_raise(rb_eArgError, "Length can't be negative!");
-        }
-
-        length = NUM2SIZET(argv[1]);
-    }
-    else {
-        length = buffer->size - offset;
-    }
+    size_t offset, length;
+    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     return rb_io_buffer_slice(buffer, self, offset, length);
 }
@@ -1456,7 +1538,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
 static VALUE
 io_buffer_resize(VALUE self, VALUE size)
 {
-    rb_io_buffer_resize(self, NUM2SIZET(size));
+    rb_io_buffer_resize(self, io_buffer_extract_size(size));
 
     return self;
 }
@@ -1719,7 +1801,7 @@ io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
 {
     const void *base;
     size_t size;
-    size_t offset = NUM2SIZET(_offset);
+    size_t offset = io_buffer_extract_offset(_offset);
 
     rb_io_buffer_get_bytes_for_reading(self, &base, &size);
 
@@ -1741,7 +1823,7 @@ io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
 static VALUE
 io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
 {
-    size_t offset = NUM2SIZET(_offset);
+    size_t offset = io_buffer_extract_offset(_offset);
 
     const void *base;
     size_t size;
@@ -1760,6 +1842,40 @@ io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
     }
 
     return array;
+}
+
+// Extract a count argument, which must be a positive integer.
+// Count is generally considered relative to the number of things.
+static inline size_t
+io_buffer_extract_count(VALUE argument)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Count can't be negative!");
+    }
+
+    return NUM2SIZET(argument);
+}
+
+static inline void
+io_buffer_extract_offset_count(ID buffer_type, size_t size, int argc, VALUE *argv, size_t *offset, size_t *count)
+{
+    if (argc >= 1) {
+        *offset = io_buffer_extract_offset(argv[0]);
+    }
+    else {
+        *offset = 0;
+    }
+
+    if (argc >= 2) {
+        *count = io_buffer_extract_count(argv[1]);
+    }
+    else {
+        if (*offset > size) {
+            rb_raise(rb_eArgError, "The given offset is bigger than the buffer size!");
+        }
+
+        *count = (size - *offset) / io_buffer_buffer_type_size(buffer_type);
+    }
 }
 
 /*
@@ -1798,21 +1914,8 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
     }
 
-    size_t offset;
-    if (argc >= 2) {
-        offset = NUM2SIZET(argv[1]);
-    }
-    else {
-        offset = 0;
-    }
-
-    size_t count;
-    if (argc >= 3) {
-        count = NUM2SIZET(argv[2]);
-    }
-    else {
-        count = (size - offset) / io_buffer_buffer_type_size(buffer_type);
-    }
+    size_t offset, count;
+    io_buffer_extract_offset_count(buffer_type, size, argc-1, argv+1, &offset, &count);
 
     for (size_t i = 0; i < count; i++) {
         size_t current_offset = offset;
@@ -1851,21 +1954,8 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
     }
 
-    size_t offset;
-    if (argc >= 2) {
-        offset = NUM2SIZET(argv[1]);
-    }
-    else {
-        offset = 0;
-    }
-
-    size_t count;
-    if (argc >= 3) {
-        count = NUM2SIZET(argv[2]);
-    }
-    else {
-        count = (size - offset) / io_buffer_buffer_type_size(buffer_type);
-    }
+    size_t offset, count;
+    io_buffer_extract_offset_count(buffer_type, size, argc-1, argv+1, &offset, &count);
 
     VALUE array = rb_ary_new_capa(count);
 
@@ -1904,21 +1994,8 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 
     rb_io_buffer_get_bytes_for_reading(self, &base, &size);
 
-    size_t offset;
-    if (argc >= 2) {
-        offset = NUM2SIZET(argv[1]);
-    }
-    else {
-        offset = 0;
-    }
-
-    size_t count;
-    if (argc >= 3) {
-        count = NUM2SIZET(argv[2]);
-    }
-    else {
-        count = (size - offset);
-    }
+    size_t offset, count;
+    io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc-1, argv+1, &offset, &count);
 
     for (size_t i = 0; i < count; i++) {
         unsigned char *value = (unsigned char *)base + i + offset;
@@ -1994,7 +2071,7 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
     void *base;
     size_t size;
-    size_t offset = NUM2SIZET(_offset);
+    size_t offset = io_buffer_extract_offset(_offset);
 
     rb_io_buffer_get_bytes_for_writing(self, &base, &size);
 
@@ -2034,7 +2111,7 @@ io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values
         rb_raise(rb_eArgError, "Argument buffer_types and values should have the same length!");
     }
 
-    size_t offset = NUM2SIZET(_offset);
+    size_t offset = io_buffer_extract_offset(_offset);
 
     void *base;
     size_t size;
@@ -2059,7 +2136,7 @@ io_buffer_memcpy(struct rb_io_buffer *buffer, size_t offset, const void *source_
     io_buffer_validate_range(buffer, offset, length);
 
     if (source_offset + length > source_size) {
-        rb_raise(rb_eArgError, "The computed source range exceeds the size of the source!");
+        rb_raise(rb_eArgError, "The computed source range exceeds the size of the source buffer!");
     }
 
     memcpy((unsigned char*)base+offset, (unsigned char*)source_base+source_offset, length);
@@ -2069,21 +2146,18 @@ io_buffer_memcpy(struct rb_io_buffer *buffer, size_t offset, const void *source_
 static VALUE
 io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t source_size, int argc, VALUE *argv)
 {
-    size_t offset;
+    size_t offset = 0;
     size_t length;
     size_t source_offset;
 
     // The offset we copy into the buffer:
     if (argc >= 1) {
-        offset = NUM2SIZET(argv[0]);
-    }
-    else {
-        offset = 0;
+        offset = io_buffer_extract_offset(argv[0]);
     }
 
     // The offset we start from within the string:
     if (argc >= 3) {
-        source_offset = NUM2SIZET(argv[2]);
+        source_offset = io_buffer_extract_offset(argv[2]);
 
         if (source_offset > source_size) {
             rb_raise(rb_eArgError, "The given source offset is bigger than the source itself!");
@@ -2095,7 +2169,7 @@ io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t
 
     // The length we are going to copy:
     if (argc >= 2 && !RB_NIL_P(argv[1])) {
-        length = NUM2SIZET(argv[1]);
+        length = io_buffer_extract_length(argv[1]);
     }
     else {
         // Default to the source offset -> source size:
@@ -2192,7 +2266,7 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *
  *    buffer = IO::Buffer.new(2)
  *    buffer.copy(IO::Buffer.for('test'), 0)
- *    # in `copy': Specified offset+length exceeds source size! (ArgumentError)
+ *    # in `copy': Specified offset+length is bigger than the buffer size! (ArgumentError)
  */
 static VALUE
 io_buffer_copy(int argc, VALUE *argv, VALUE self)
@@ -2230,30 +2304,19 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 3);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    size_t offset, length;
+    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     const void *base;
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    size_t offset = 0;
-    size_t length = size;
-    rb_encoding *encoding = rb_ascii8bit_encoding();
-
-    if (argc >= 1) {
-        offset = NUM2SIZET(argv[0]);
-    }
-
-    if (argc >= 2 && !RB_NIL_P(argv[1])) {
-        length = NUM2SIZET(argv[1]);
-    }
-    else {
-        length = size - offset;
-    }
-
+    rb_encoding *encoding;
     if (argc >= 3) {
         encoding = rb_find_encoding(argv[2]);
+    }
+    else {
+        encoding = rb_ascii8bit_encoding();
     }
 
     io_buffer_validate_range(buffer, offset, length);
@@ -2303,14 +2366,14 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 void
 rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
     void *base;
     size_t size;
+    io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
-    rb_io_buffer_get_bytes_for_writing(self, &base, &size);
-
-    if (offset + length > size) {
-        rb_raise(rb_eArgError, "The given offset + length out of bounds!");
-    }
+    io_buffer_validate_range(buffer, offset, length);
 
     memset((char*)base + offset, value, length);
 }
@@ -2351,26 +2414,13 @@ io_buffer_clear(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 3);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
     uint8_t value = 0;
     if (argc >= 1) {
         value = NUM2UINT(argv[0]);
     }
 
-    size_t offset = 0;
-    if (argc >= 2) {
-        offset = NUM2SIZET(argv[1]);
-    }
-
-    size_t length;
-    if (argc >= 3) {
-        length = NUM2SIZET(argv[2]);
-    }
-    else {
-        length = buffer->size - offset;
-    }
+    size_t offset, length;
+    io_buffer_extract_offset_length(self, argc-1, argv+1, &offset, &length);
 
     rb_io_buffer_clear(self, value, offset, length);
 
@@ -2447,35 +2497,6 @@ io_buffer_blocking_region(struct rb_io_buffer *buffer, rb_blocking_function_t *f
 
         return rb_ensure(io_buffer_blocking_region_begin, (VALUE)&argument, io_buffer_blocking_region_ensure, (VALUE)&argument);
     }
-}
-
-static inline struct rb_io_buffer *
-io_buffer_extract_arguments(VALUE self, int argc, VALUE argv[], size_t *length, size_t *offset)
-{
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
-    *offset = 0;
-    if (argc >= 2) {
-        if (rb_int_negative_p(argv[1])) {
-            rb_raise(rb_eArgError, "Offset can't be negative!");
-        }
-
-        *offset = NUM2SIZET(argv[1]);
-    }
-
-    if (argc >= 1 && !NIL_P(argv[0])) {
-        if (rb_int_negative_p(argv[0])) {
-            rb_raise(rb_eArgError, "Length can't be negative!");
-        }
-
-        *length = NUM2SIZET(argv[0]);
-    }
-    else {
-        *length = buffer->size - *offset;
-    }
-
-    return buffer;
 }
 
 struct io_buffer_read_internal_argument {
@@ -2585,7 +2606,7 @@ io_buffer_read(int argc, VALUE *argv, VALUE self)
     VALUE io = argv[0];
 
     size_t length, offset;
-    io_buffer_extract_arguments(self, argc-1, argv+1, &length, &offset);
+    io_buffer_extract_length_offset(self, argc-1, argv+1, &length, &offset);
 
     return rb_io_buffer_read(self, io, length, offset);
 }
@@ -2696,7 +2717,7 @@ io_buffer_pread(int argc, VALUE *argv, VALUE self)
     rb_off_t from = NUM2OFFT(argv[1]);
 
     size_t length, offset;
-    io_buffer_extract_arguments(self, argc-2, argv+2, &length, &offset);
+    io_buffer_extract_length_offset(self, argc-2, argv+2, &length, &offset);
 
     return rb_io_buffer_pread(self, io, from, length, offset);
 }
@@ -2801,7 +2822,7 @@ io_buffer_write(int argc, VALUE *argv, VALUE self)
     VALUE io = argv[0];
 
     size_t length, offset;
-    io_buffer_extract_arguments(self, argc-1, argv+1, &length, &offset);
+    io_buffer_extract_length_offset(self, argc-1, argv+1, &length, &offset);
 
     return rb_io_buffer_write(self, io, length, offset);
 }
@@ -2902,7 +2923,7 @@ io_buffer_pwrite(int argc, VALUE *argv, VALUE self)
     rb_off_t from = NUM2OFFT(argv[1]);
 
     size_t length, offset;
-    io_buffer_extract_arguments(self, argc-2, argv+2, &length, &offset);
+    io_buffer_extract_length_offset(self, argc-2, argv+2, &length, &offset);
 
     return rb_io_buffer_pwrite(self, io, from, length, offset);
 }
