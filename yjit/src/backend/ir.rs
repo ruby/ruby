@@ -1051,7 +1051,7 @@ impl Assembler
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
-    pub(super) fn push_insn(&mut self, insn: Insn) {
+    pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
@@ -1187,7 +1187,7 @@ impl Assembler
 
         // Spill live stack temps
         if self.ctx.get_reg_temps() != RegTemps::default() {
-            self.comment(&format!("spill_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), RegTemps::default().as_u8()));
+            asm_comment!(self, "spill_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), RegTemps::default().as_u8());
             for stack_idx in 0..u8::min(MAX_REG_TEMPS, self.ctx.get_stack_size()) {
                 if self.ctx.get_reg_temps().get(stack_idx) {
                     let idx = self.ctx.get_stack_size() - 1 - stack_idx;
@@ -1227,7 +1227,7 @@ impl Assembler
     /// Update which stack temps are in a register
     pub fn set_reg_temps(&mut self, reg_temps: RegTemps) {
         if self.ctx.get_reg_temps() != reg_temps {
-            self.comment(&format!("reg_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), reg_temps.as_u8()));
+            asm_comment!(self, "reg_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), reg_temps.as_u8());
             self.ctx.set_reg_temps(reg_temps);
             self.verify_reg_temps();
         }
@@ -1723,12 +1723,6 @@ impl Assembler {
         self.push_insn(Insn::Cmp { left, right });
     }
 
-    pub fn comment(&mut self, text: &str) {
-        if cfg!(feature = "disasm") {
-            self.push_insn(Insn::Comment(text.to_string()));
-        }
-    }
-
     #[must_use]
     pub fn cpop(&mut self) -> Opnd {
         let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
@@ -2004,12 +1998,13 @@ impl Assembler {
     }
 }
 
-/// Macro to use format! for asm.comment, which skips a format! call
+/// Macro to use format! for Insn::Comment, which skips a format! call
 /// when disasm is not supported.
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
-        #[cfg(feature = "disasm")]
-        $asm.comment(&format!($($fmt)*));
+        if cfg!(feature = "disasm") {
+            $asm.push_insn(Insn::Comment(format!($($fmt)*)));
+        }
     };
 }
 pub(crate) use asm_comment;
