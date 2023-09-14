@@ -43,6 +43,13 @@ module Bundler
         end
       end
 
+      class AmbiguousGitReference < GitError
+        def initialize(options)
+          msg = "Specification of branch or ref with tag is ambiguous. You specified #{options.inspect}"
+          super msg
+        end
+      end
+
       # The GitProxy is responsible to interact with git repositories.
       # All actions required by the Git source is encapsulated in this
       # object.
@@ -53,10 +60,15 @@ module Bundler
         def initialize(path, uri, options = {}, revision = nil, git = nil)
           @path     = path
           @uri      = uri
-          @branch   = options["branch"]
           @tag      = options["tag"]
+          @branch   = options["branch"]
           @ref      = options["ref"]
-          @explicit_ref = branch || tag || ref
+          if @tag
+            raise AmbiguousGitReference.new(options) if @branch || @ref
+            @explicit_ref = @tag
+          else
+            @explicit_ref = @ref || @branch
+          end
           @revision = revision
           @git      = git
           @commit_ref = nil
