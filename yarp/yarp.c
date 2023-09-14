@@ -13216,6 +13216,20 @@ parse_assignment_value(yp_parser_t *parser, yp_binding_power_t previous_binding_
     return value;
 }
 
+// Ensures a call node that is about to become a call operator node does not
+// have a block attached. If it does, then we'll need to add an error message
+// and destroy the block. Ideally we would keep the node around so that
+// consumers would still have access to it, but we don't have a great structure
+// for that at the moment.
+static void
+parse_call_operator_write_block(yp_parser_t *parser, yp_call_node_t *call_node, const yp_token_t *operator) {
+    if (call_node->block != NULL) {
+        yp_diagnostic_list_append(&parser->error_list, operator->start, operator->end, YP_ERR_OPERATOR_WRITE_BLOCK);
+        yp_node_destroy(parser, (yp_node_t *) call_node->block);
+        call_node->block = NULL;
+    }
+}
+
 static inline yp_node_t *
 parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t previous_binding_power, yp_binding_power_t binding_power) {
     yp_token_t token = parser->current;
@@ -13321,13 +13335,11 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     return result;
                 }
                 case YP_CALL_NODE: {
-                    yp_call_node_t *call_node = (yp_call_node_t *) node;
-
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (yp_call_node_variable_call_p(call_node)) {
-                        yp_location_t message_loc = call_node->message_loc;
+                    if (yp_call_node_variable_call_p((yp_call_node_t *) node)) {
+                        yp_location_t message_loc = ((yp_call_node_t *) node)->message_loc;
                         yp_constant_id_t constant_id = yp_parser_local_add_location(parser, message_loc.start, message_loc.end);
 
                         if (token_is_numbered_parameter(message_loc.start, message_loc.end)) {
@@ -13344,6 +13356,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
                     parser_lex(parser);
                     node = parse_target(parser, node);
+
+                    assert(YP_NODE_TYPE_P(node, YP_CALL_NODE));
+                    parse_call_operator_write_block(parser, (yp_call_node_t *) node, &token);
 
                     yp_node_t *value = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     return (yp_node_t *) yp_call_and_write_node_create(parser, (yp_call_node_t *) node, &token, value);
@@ -13422,13 +13437,11 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     return result;
                 }
                 case YP_CALL_NODE: {
-                    yp_call_node_t *call_node = (yp_call_node_t *) node;
-
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (yp_call_node_variable_call_p(call_node)) {
-                        yp_location_t message_loc = call_node->message_loc;
+                    if (yp_call_node_variable_call_p((yp_call_node_t *) node)) {
+                        yp_location_t message_loc = ((yp_call_node_t *) node)->message_loc;
                         yp_constant_id_t constant_id = yp_parser_local_add_location(parser, message_loc.start, message_loc.end);
 
                         if (token_is_numbered_parameter(message_loc.start, message_loc.end)) {
@@ -13445,6 +13458,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
                     parser_lex(parser);
                     node = parse_target(parser, node);
+
+                    assert(YP_NODE_TYPE_P(node, YP_CALL_NODE));
+                    parse_call_operator_write_block(parser, (yp_call_node_t *) node, &token);
 
                     yp_node_t *value = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     return (yp_node_t *) yp_call_or_write_node_create(parser, (yp_call_node_t *) node, &token, value);
@@ -13533,13 +13549,11 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     return result;
                 }
                 case YP_CALL_NODE: {
-                    yp_call_node_t *call_node = (yp_call_node_t *) node;
-
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (yp_call_node_variable_call_p(call_node)) {
-                        yp_location_t message_loc = call_node->message_loc;
+                    if (yp_call_node_variable_call_p((yp_call_node_t *) node)) {
+                        yp_location_t message_loc = ((yp_call_node_t *) node)->message_loc;
                         yp_constant_id_t constant_id = yp_parser_local_add_location(parser, message_loc.start, message_loc.end);
 
                         if (token_is_numbered_parameter(message_loc.start, message_loc.end)) {
@@ -13554,8 +13568,11 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         return result;
                     }
 
-                    node = parse_target(parser, node);
                     parser_lex(parser);
+                    node = parse_target(parser, node);
+
+                    assert(YP_NODE_TYPE_P(node, YP_CALL_NODE));
+                    parse_call_operator_write_block(parser, (yp_call_node_t *) node, &token);
 
                     yp_node_t *value = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     return (yp_node_t *) yp_call_operator_write_node_create(parser, (yp_call_node_t *) node, &token, value);

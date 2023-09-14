@@ -1163,6 +1163,30 @@ module YARP
       ]
     end
 
+    def test_call_with_block_and_write
+      source = "foo {} &&= 1"
+      assert_errors expression(source), source, [
+        ["Unexpected write target", 0..6],
+        ["Unexpected operator after a call with a block", 7..10]
+      ]
+    end
+
+    def test_call_with_block_or_write
+      source = "foo {} ||= 1"
+      assert_errors expression(source), source, [
+        ["Unexpected write target", 0..6],
+        ["Unexpected operator after a call with a block", 7..10]
+      ]
+    end
+
+    def test_call_with_block_operator_write
+      source = "foo {} += 1"
+      assert_errors expression(source), source, [
+        ["Unexpected write target", 0..6],
+        ["Unexpected operator after a call with a block", 7..9]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors)
