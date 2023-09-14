@@ -1,69 +1,220 @@
-# -*- mode: rdoc; coding: utf-8; fill-column: 74; -*-
+== Pre-Defined Global Variables
 
-== Pre-defined global variables
+=== Exceptions
 
-$!::   The Exception object set by Kernel#raise.
-$@::   The same as <code>$!.backtrace</code>.
-$~::   The information about the last match in the current scope (thread-local and frame-local).
-$&::   The string matched by the last successful match.
-$`::   The string to the left  of the last successful match.
-$'::   The string to the right of the last successful match.
-$+::   The highest group matched by the last successful match.
-$1::   The Nth group of the last successful match. May be > 1.
-$=::   This variable is no longer effective. Deprecated.
-$/::   The input record separator, newline by default. Aliased to $-0.
-$\::   The output record separator for Kernel#print and IO#write. Default is +nil+.
-$,::   The output field separator for Kernel#print and Array#join. Non-nil $, will be deprecated.
-$;::   The default separator for String#split. Non-nil $; will be deprecated. Aliased to $-F.
-$.::   The current input line number of the last file that was read.
-$<::   The same as ARGF.
-$>::   The default output stream for Kernel#print and Kernel#printf. $stdout by default.
-$_::   The last input line of string by gets or readline.
-$0::   Contains the name of the script being executed. May be assignable.
-$*::   The same as ARGV.
-$$::   The process number of the Ruby running this script. Same as Process.pid.
-$?::   The status of the last executed child process (thread-local).
-$LOAD_PATH::   Load path for searching Ruby scripts and extension libraries used
-               by Kernel#load and Kernel#require. Aliased to $: and $-I.
-               Has a singleton method <code>$LOAD_PATH.resolve_feature_path(feature)</code>
-               that returns [+:rb+ or +:so+, path], which resolves the feature to
-               the path the original Kernel#require method would load.
-$LOADED_FEATURES::   The array contains the module names loaded by require.
+==== <tt>$!</tt>
+
+The Exception object set by Kernel#raise.
+
+==== <tt>$@</tt>
+
+The same as <tt>$!.backtrace</tt>.
+
+=== Pattern Matching
+
+For details and examples,
+see {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
+
+==== <tt>$~</tt>
+
+The information about the last match in the current scope (thread-local and frame-local).
+
+==== <tt>$&</tt>
+
+The string matched by the last successful match.
+
+==== <tt>$`</tt>
+
+The string to the left  of the last successful match.
+
+==== <tt>$'</tt>
+
+The string to the right of the last successful match.
+
+==== <tt>$+</tt>
+
+The highest group matched by the last successful match.
+
+==== <tt>$1</tt>, <tt>$2</tt>, \Etc.
+
+For <tt>$_n_</tt> the _nth_ group of the most recent successful match.
+
+=== Separators
+
+==== <tt>$/</tt>
+
+An input record separator, initially newline.
+
+Aliased as <tt>$-0</tt>.
+
+==== <tt>$;</tt>
+
+An input field separator, initially +nil+.
+
+Aliased as <tt>$-F</tt>.
+
+==== <tt>$\</tt>
+
+An output record separator, initially +nil+.
+
+==== <tt>$,</tt>
+
+An output field separator, initially +nil+.
+
+=== Streams
+
+==== <tt>$<</tt>
+
+Points to ARGF.
+
+==== <tt>$></tt>
+
+An output stream, initially <tt>$stdout</tt>.
+
+==== <tt>$.</tt>
+
+The input position (line number) in the most recently read stream.
+
+==== <tt>$_</tt>
+
+The line (string) from the most recently read stream.
+
+=== Processes
+
+==== <tt>$0</tt>
+
+Initially, contains the name of the script being executed;
+may be reassigned.
+
+==== <tt>$*</tt>
+
+Points to ARGV.
+
+==== <tt>$$</tt>
+
+The process ID of the current process. Same as Process.pid.
+
+==== <tt>$?</tt>
+
+Initially +nil+, otherwise the Process::Status object
+creatd for the most-recently exited child process;
+thread-local.
+
+==== <tt>$LOAD_PATH</tt>
+
+Contains the array of paths to be searched
+by Kernel#load and Kernel#require.
+
+Singleton method <tt>$LOAD_PATH.resolve_feature_path(feature)</tt>
+returns:
+
+- <tt>+:rb+, _path_], where +path+ is the path to the Ruby file
+  to be loaded for the given +feature+.
+- <tt>+:so+, _path_], where +path+ is the path to the shared object file
+  to be loaded for the given +feature+.
+- +nil+ if there is no such +feature+ and +path+.
+
+Examples:
+
+  $LOAD_PATH.resolve_feature_path('timeout')
+  # => [:rb, "/snap/ruby/317/lib/ruby/3.2.0/timeout.rb"]
+  $LOAD_PATH.resolve_feature_path('date_core')
+  # => [:so, "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/date_core.so"]
+  $LOAD_PATH.resolve_feature_path('foo')
+  # => nil
+
+Aliased as <tt>$:</tt> and <tt>$-I</tt>.
+
+==== <tt>$LOADED_FEATURES</tt>
+
+The array contains the module names loaded by require.
                      Aliased to $".
-$DEBUG::     The debug flag, which is set by the <tt>-d</tt> switch.  Enabling debug
+
+==== <tt>$DEBUG</tt>
+
+  The debug flag, which is set by the <tt>-d</tt> switch.  Enabling debug
              output prints each exception raised to $stderr (but not its
              backtrace).  Setting this to a true value enables debug output as
              if <tt>-d</tt> were given on the command line.  Setting this to a false
              value disables debug output. Aliased to $-d.
-$FILENAME::  Current input filename from ARGF. Same as ARGF.filename.
-$stderr::    The current standard error output.
-$stdin::     The current standard input.
-$stdout::    The current standard output.
-$VERBOSE::   The verbose flag, which is set by the <tt>-w</tt> or <tt>-v</tt> switch.
+
+==== <tt>$FILENAME::  Current input filename from ARGF. Same as ARGF.filename.
+
+==== <tt>$stderr</tt>
+
+ The current standard error output.
+
+==== <tt>$stdin</tt>
+
+  The current standard input.
+
+==== <tt>$stdout</tt>
+
+ The current standard output.
+
+==== <tt>$VERBOSE</tt>
+
+The verbose flag, which is set by the <tt>-w</tt> or <tt>-v</tt> switch.
              Setting this to a true value enables warnings as if <tt>-w</tt> or <tt>-v</tt> were given
              on the command line.  Setting this to +nil+ disables warnings,
              including from Kernel#warn. Aliased to $-v and $-w.
-$-a::  True if option <tt>-a</tt> is set. Read-only variable.
-$-i::  In in-place-edit mode, this variable holds the extension, otherwise +nil+.
-$-l::  True if option <tt>-l</tt> is set. Read-only variable.
-$-p::  True if option <tt>-p</tt> is set. Read-only variable.
 
-== Pre-defined global constants
+==== <tt>$-a::  True if option <tt>-a</tt> is set. Read-only variable.
 
-STDIN::             The standard input. The default value for $stdin.
-STDOUT::            The standard output. The default value for $stdout.
-STDERR::            The standard error output. The default value for $stderr.
-ENV::               The hash contains current environment variables.
-ARGF::              The virtual concatenation of the files given on command line (or from $stdin if no files were given).
-ARGV::              An Array of command line arguments given for the script.
-DATA::              The file object of the script, pointing just after <code>__END__</code>.
+==== <tt>$-i::  In in-place-edit mode, this variable holds the extension, otherwise +nil+.
+
+==== <tt>$-l::  True if option <tt>-l</tt> is set. Read-only variable.
+
+==== <tt>$-p::  True if option <tt>-p</tt> is set. Read-only variable.
+
+=== Deprecated
+
+==== <tt>$=</tt>
+
+This variable is no longer effective. Deprecated.
+
+== Pre-Defined Global Constants
+
+STDIN</tt>
+
+          The standard input. The default value for $stdin.
+STDOUT</tt>
+
+         The standard output. The default value for $stdout.
+STDERR</tt>
+
+         The standard error output. The default value for $stderr.
+ENV</tt>
+
+            The hash contains current environment variables.
+ARGF</tt>
+
+           The virtual concatenation of the files given on command line (or from $stdin if no files were given).
+ARGV</tt>
+
+           An Array of command line arguments given for the script.
+DATA</tt>
+
+           The file object of the script, pointing just after <code>__END__</code>.
 TOPLEVEL_BINDING::  The Binding of the top level scope.
-RUBY_VERSION::      The Ruby language version.
+RUBY_VERSION</tt>
+
+   The Ruby language version.
 RUBY_RELEASE_DATE:: The release date string.
-RUBY_PLATFORM::     The platform identifier.
-RUBY_PATCHLEVEL::   The patchlevel for this Ruby.  If this is a development build of Ruby the patchlevel will be -1.
-RUBY_REVISION::     The GIT commit hash for this Ruby.
-RUBY_COPYRIGHT::    The copyright string for Ruby.
-RUBY_ENGINE::       The name of the Ruby implementation.
+RUBY_PLATFORM</tt>
+
+  The platform identifier.
+RUBY_PATCHLEVEL</tt>
+
+The patchlevel for this Ruby.  If this is a development build of Ruby the patchlevel will be -1.
+RUBY_REVISION</tt>
+
+  The GIT commit hash for this Ruby.
+RUBY_COPYRIGHT</tt>
+
+ The copyright string for Ruby.
+RUBY_ENGINE</tt>
+
+    The name of the Ruby implementation.
 RUBY_ENGINE_VERSION:: The version of the Ruby implementation.
 RUBY_DESCRIPTION::  The same as <tt>ruby --version</tt>, a String describing various aspects of the Ruby implementation.
