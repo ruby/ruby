@@ -983,6 +983,9 @@ impl SideExitContext {
     }
 }
 
+/// Initial capacity for asm.insns vector
+const ASSEMBLER_INSNS_CAPACITY: usize = 256;
+
 /// Object into which we assemble instructions to be
 /// optimized and lowered
 pub struct Assembler {
@@ -1016,8 +1019,8 @@ impl Assembler
 
     pub fn new_with_label_names(label_names: Vec<String>, side_exits: HashMap<SideExitContext, CodePtr>) -> Self {
         Self {
-            insns: Vec::default(),
-            live_ranges: Vec::default(),
+            insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
+            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names,
             ctx: Context::default(),
             side_exits,
