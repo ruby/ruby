@@ -8232,6 +8232,26 @@ parse_starred_expression(yp_parser_t *parser, yp_binding_power_t binding_power, 
     return parse_expression(parser, binding_power, diag_id);
 }
 
+// Convert the name of a method into the corresponding write method name. For
+// exmaple, foo would be turned into foo=.
+static void
+parse_write_name(yp_string_t *string) {
+    // The method name needs to change. If we previously had
+    // foo, we now need foo=. In this case we'll allocate a new
+    // owned string, copy the previous method name in, and
+    // append an =.
+    size_t length = yp_string_length(string);
+    uint8_t *name = calloc(length + 1, sizeof(uint8_t));
+    if (name == NULL) return;
+
+    memcpy(name, yp_string_source(string), length);
+    name[length] = '=';
+
+    // Now switch the name to the new string.
+    yp_string_free(string);
+    yp_string_owned_init(string, name, length + 1);
+}
+
 // Convert the given node into a valid target node.
 static yp_node_t *
 parse_target(yp_parser_t *parser, yp_node_t *target) {
@@ -8322,23 +8342,8 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
                 }
 
                 if (*call->message_loc.start == '_' || parser->encoding.alnum_char(call->message_loc.start, call->message_loc.end - call->message_loc.start)) {
-                    // The method name needs to change. If we previously had
-                    // foo, we now need foo=. In this case we'll allocate a new
-                    // owned string, copy the previous method name in, and
-                    // append an =.
-                    size_t length = yp_string_length(&call->name);
-
-                    uint8_t *name = calloc(length + 1, sizeof(uint8_t));
-                    if (name == NULL) return NULL;
-
-                    memcpy(name, yp_string_source(&call->name), length);
-                    name[length] = '=';
-
-                    // Now switch the name to the new string.
-                    yp_string_free(&call->name);
-                    yp_string_owned_init(&call->name, name, length + 1);
-
-                    return target;
+                    parse_write_name(&call->name);
+                    return (yp_node_t *) call;
                 }
             }
 
@@ -8476,25 +8481,12 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
                     // arguments node, parse the argument, and add it to the list.
                     yp_arguments_node_t *arguments = yp_arguments_node_create(parser);
                     call->arguments = arguments;
+
                     yp_arguments_node_arguments_append(arguments, value);
-                    target->location.end = arguments->base.location.end;
+                    call->base.location.end = arguments->base.location.end;
 
-                    // The method name needs to change. If we previously had foo, we now
-                    // need foo=. In this case we'll allocate a new owned string, copy
-                    // the previous method name in, and append an =.
-                    size_t length = yp_string_length(&call->name);
-
-                    uint8_t *name = calloc(length + 1, sizeof(uint8_t));
-                    if (name == NULL) return NULL;
-
-                    memcpy(name, yp_string_source(&call->name), length);
-                    name[length] = '=';
-
-                    // Now switch the name to the new string.
-                    yp_string_free(&call->name);
-                    yp_string_owned_init(&call->name, name, length + 1);
-
-                    return target;
+                    parse_write_name(&call->name);
+                    return (yp_node_t *) call;
                 }
             }
 
