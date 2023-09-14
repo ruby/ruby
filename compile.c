@@ -2421,7 +2421,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     generated_iseq = ALLOC_N(VALUE, code_index);
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
     positions = ALLOC_N(unsigned int, insn_num);
-    body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
+    if (ISEQ_IS_SIZE(body)) {
+        body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
+    }
+    else {
+        body->is_entries = NULL;
+    }
     body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
     ISEQ_COMPILE_DATA(iseq)->ci_index = 0;
 
@@ -2560,8 +2565,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         case TS_CALLDATA:
                         {
                             const struct rb_callinfo *source_ci = (const struct rb_callinfo *)operands[j];
-                            struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             assert(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
+                            struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             cd->ci = source_ci;
                             cd->cc = vm_cc_empty();
                             generated_iseq[code_index + 1 + j] = (VALUE)cd;
@@ -12297,7 +12302,13 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->icvarc_size          = icvarc_size;
     load_body->ise_size             = ise_size;
     load_body->ic_size              = ic_size;
-    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
+
+    if (ISEQ_IS_SIZE(load_body)) {
+        load_body->is_entries       = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
+    }
+    else {
+        load_body->is_entries       = NULL;
+    }
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
     load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
