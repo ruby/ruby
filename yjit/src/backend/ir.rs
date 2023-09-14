@@ -1568,7 +1568,7 @@ impl AssemblerDrainingIterator {
         Self {
             insns: asm.insns.into_iter().peekable(),
             index: 0,
-            indices: Vec::default()
+            indices: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
         }
     }
 
