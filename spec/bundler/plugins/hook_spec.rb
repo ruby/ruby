@@ -193,6 +193,57 @@ RSpec.describe "hook plugins" do
     end
   end
 
+  context "before-eval hook" do
+    before do
+      build_repo2 do
+        build_plugin "before-eval-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_BEFORE_EVAL do |gemfile, lockfile|
+              puts "hooked eval start of \#{File.basename(gemfile)} to \#{File.basename(lockfile)}"
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install before-eval-plugin --source https://gem.repo2"
+    end
+
+    it "runs before the Gemfile is evaluated" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rake"
+      G
+
+      expect(out).to include "hooked eval start of Gemfile to Gemfile.lock"
+    end
+  end
+
+  context "after-eval hook" do
+    before do
+      build_repo2 do
+        build_plugin "after-eval-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_AFTER_EVAL do |defn|
+              puts "hooked eval after with gems \#{defn.dependencies.map(&:name).join(", ")}"
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install after-eval-plugin --source https://gem.repo2"
+    end
+
+    it "runs after the Gemfile is evaluated" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "rake"
+      G
+
+      expect(out).to include "hooked eval after with gems myrack, rake"
+    end
+  end
+
   def install_gemfile_and_bundler_require
     install_gemfile <<-G
       source "https://gem.repo1"

@@ -80,6 +80,18 @@ module Bundler
       #   Includes an Array of Bundler::Dependency objects.
       #   GEM_AFTER_REQUIRE_ALL = "after-require-all"
       define :GEM_AFTER_REQUIRE_ALL,  "after-require-all"
+
+      # @!parse
+      #   A hook called before the Gemfile is evaluated
+      #   Includes the Gemfile path and the Lockfile path
+      #   GEM_BEFORE_EVAL = "before-eval"
+      define :GEM_BEFORE_EVAL, "before-eval"
+
+      # @!parse
+      #   A hook called after the Gemfile is evaluated
+      #   Includes a Bundler::Definition
+      #   GEM_AFTER_EVAL = "after-eval"
+      define :GEM_AFTER_EVAL, "after-eval"
     end
   end
 end

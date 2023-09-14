@@ -38,7 +38,10 @@ module Bundler
 
       raise GemfileNotFound, "#{gemfile} not found" unless gemfile.file?
 
-      Dsl.evaluate(gemfile, lockfile, unlock)
+      Plugin.hook(Plugin::Events::GEM_BEFORE_EVAL, gemfile, lockfile)
+      Dsl.evaluate(gemfile, lockfile, unlock).tap do |definition|
+        Plugin.hook(Plugin::Events::GEM_AFTER_EVAL, definition)
+      end
     end
 
     #
