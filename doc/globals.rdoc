@@ -53,7 +53,7 @@ An input field separator, initially +nil+.
 
 Aliased as <tt>$-F</tt>.
 
-==== <tt>$\</tt>
+==== <tt>$\\</tt>
 
 An output record separator, initially +nil+.
 
@@ -115,7 +115,7 @@ The process ID of the current process. Same as Process.pid.
 ==== <tt>$?</tt>
 
 Initially +nil+, otherwise the Process::Status object
-creatd for the most-recently exited child process;
+created for the most-recently exited child process;
 thread-local.
 
 ==== <tt>$LOAD_PATH</tt>
@@ -126,9 +126,9 @@ by Kernel#load and Kernel#require.
 Singleton method <tt>$LOAD_PATH.resolve_feature_path(feature)</tt>
 returns:
 
-- <tt>+:rb+, _path_], where +path+ is the path to the Ruby file
+- <tt>[:rb, _path_]</tt>, where +path+ is the path to the Ruby file
   to be loaded for the given +feature+.
-- <tt>+:so+, _path_], where +path+ is the path to the shared object file
+- <tt>[:so+ _path_]</tt>, where +path+ is the path to the shared object file
   to be loaded for the given +feature+.
 - +nil+ if there is no such +feature+ and +path+.
 
