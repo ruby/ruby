@@ -62,29 +62,17 @@ jobs:
       - run: md build
         working-directory:
 
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install openssl
-
       - name: link libraries 1
         run: |
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
-      - name: check libraries 1
-        run: |
-          dir "C:\Program Files"
-      - name: check libraries 2
-        run: |
-          dir c:\Windows\System32
-      - name: check libraries 3
-        run: |
-          dir C:\vcpkg\installed\x64-windows
       - name: link libraries 2
         run: |
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
             ren c:\Windows\System32\%%I.dll %%I.dll_
           )
+        if: ${{ matrix.vs != 2019 }}
 
       - name: Configure
         run: >-
