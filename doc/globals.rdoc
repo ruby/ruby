@@ -192,7 +192,7 @@ Aliased as <tt>$-v</tt> and <tt>$-w</tt>.
 
 ==== <tt>$-a</tt>
 
-Whether command-line option <tt>-a</tt> was given. Read-only variable.
+Whether command-line option <tt>-a</tt> was given; read-only.
 
 ==== <tt>$-i</tt>
 
@@ -201,11 +201,11 @@ or +nil+ if none.
 
 ==== <tt>$-l</tt>
 
-Whether command-line option <tt>-l</tt> was set. Read-only variable.
+Whether command-line option <tt>-l</tt> was set; read-only.
 
 ==== <tt>$-p</tt>
 
-Whether command-line option <tt>-p</tt> was given. Read-only variable.
+Whether command-line option <tt>-p</tt> was given; read-only.
 
 === Deprecated
 
@@ -215,46 +215,97 @@ This variable is no longer effective.
 
 == Pre-Defined Global Constants
 
-STDIN</tt>
+== Streams
 
-          The standard input. The default value for $stdin.
-STDOUT</tt>
+==== <tt>STDIN</tt>
 
-         The standard output. The default value for $stdout.
-STDERR</tt>
+The standard input stream; the default value for <tt>$stdin</tt>.
 
-         The standard error output. The default value for $stderr.
-ENV</tt>
+==== <tt>STDOUT</tt>
 
-            The hash contains current environment variables.
-ARGF</tt>
+The standard output stream; The default value for <tt>$stdout</tt>.
 
-           The virtual concatenation of the files given on command line (or from $stdin if no files were given).
-ARGV</tt>
+==== <tt>STDERR</tt>
 
-           An Array of command line arguments given for the script.
-DATA</tt>
+The standard error stream; the default value for <tt>$stderr</tt>.
 
-           The file object of the script, pointing just after <code>__END__</code>.
-TOPLEVEL_BINDING::  The Binding of the top level scope.
-RUBY_VERSION</tt>
+=== Enviroment
+
+==== <tt>ENV</tt>
+
+A hash of the contains current environment variables names and values.
+
+==== <tt>ARGF</tt>
+
+The virtual concatenation of the files given on the command line,
+or from <tt>$stdin</tt> if no files were given.
+
+==== <tt>ARGV</tt>
+
+An array of the given command-line.
+
+==== <tt>DATA</tt>
+
+Defined if and only if the program has this line:
+
+  __END__
+
+When defined, <tt>DATA</tt> is a File object
+containing the lines following the <tt>__END__</tt>,
+positioned at the first of those lines:
+
+  p DATA
+  DATA.each_line { |line| p line }
+  __END__
+  Foo
+  Bar
+  Baz
+
+Output:
+
+  #<File:t.rb>
+  "Foo\n"
+  "Bar\n"
+  "Baz\n"
+
+==== <tt>TOPLEVEL_BINDING</tt>
+
+The Binding of the top level scope.
+
+
+==== <tt>RUBY_VERSION</tt>
 
    The Ruby language version.
-RUBY_RELEASE_DATE:: The release date string.
-RUBY_PLATFORM</tt>
+
+==== <tt>RUBY_RELEASE_DATE</tt>
+
+The release date string.
+
+==== <tt>RUBY_PLATFORM</tt>
 
   The platform identifier.
-RUBY_PATCHLEVEL</tt>
 
-The patchlevel for this Ruby.  If this is a development build of Ruby the patchlevel will be -1.
-RUBY_REVISION</tt>
+==== <tt>RUBY_PATCHLEVEL</tt>
 
-  The GIT commit hash for this Ruby.
-RUBY_COPYRIGHT</tt>
+The patch level for this Ruby.
+For a development build the patch level will be -1.
 
- The copyright string for Ruby.
-RUBY_ENGINE</tt>
+==== <tt>RUBY_REVISION</tt>
 
-    The name of the Ruby implementation.
-RUBY_ENGINE_VERSION:: The version of the Ruby implementation.
-RUBY_DESCRIPTION::  The same as <tt>ruby --version</tt>, a String describing various aspects of the Ruby implementation.
+The git commit hash for this Ruby.
+
+==== <tt>RUBY_COPYRIGHT</tt>
+
+The copyright string for Ruby.
+
+==== <tt>RUBY_ENGINE</tt>
+
+The name of the Ruby implementation.
+
+==== <tt>RUBY_ENGINE_VERSION</tt>
+
+The version of the Ruby implementation.
+
+==== <tt>RUBY_DESCRIPTION</tt>
+
+The description of the Ruby implementation.
