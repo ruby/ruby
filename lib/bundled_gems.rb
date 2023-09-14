@@ -88,11 +88,13 @@ module Gem::BUNDLED_GEMS
 
   bundled_gems = self
 
-  define_method(:find_unresolved_default_spec) do |name|
-    if msg = bundled_gems.warning?(name)
-      warn msg, uplevel: 1
+  if defined?(Bundler)
+    define_method(:find_unresolved_default_spec) do |name|
+      if msg = bundled_gems.warning?(name)
+        warn msg, uplevel: 1
+      end
+      super(name)
     end
-    super(name)
   end
 
   freeze
