@@ -870,7 +870,7 @@ pst_equal(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat & mask -> integer
  *
- *  The use of this method is discouraged; use other attribute methods.
+ *  This method is deprecated; use other attribute methods.
  *
  *  Returns the logical AND of the value of #to_i with +mask+:
  *
@@ -891,7 +891,9 @@ pst_bitand(VALUE st1, VALUE st2)
     if (mask < 0) {
         rb_raise(rb_eArgError, "negative mask value: %d", mask);
     }
-#define WARN_SUGGEST(suggest) rb_warn("Use " suggest " instead of Process::Status#&")
+#define WARN_SUGGEST(suggest) \
+    rb_warn_deprecated_to_remove_at(3.4, "Process::Status#&", suggest)
+
     switch (mask) {
       case 0x80:
         WARN_SUGGEST("Process::Status#coredump?");
@@ -920,7 +922,7 @@ pst_bitand(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat >> places -> integer
  *
- *  The use of this method is discouraged; use other predicate methods.
+ *  This method is deprecated; use other predicate methods.
  *
  *  Returns the value of #to_i, shifted +places+ to the right:
  *
@@ -942,7 +944,9 @@ pst_rshift(VALUE st1, VALUE st2)
     if (places < 0) {
         rb_raise(rb_eArgError, "negative shift value: %d", places);
     }
-#define WARN_SUGGEST(suggest) rb_warn("Use " suggest " instead of Process::Status#>>")
+#define WARN_SUGGEST(suggest) \
+    rb_warn_deprecated_to_remove_at(3.4, "Process::Status#>>", suggest)
+
     switch (places) {
       case 7:
         WARN_SUGGEST("Process::Status#coredump?");

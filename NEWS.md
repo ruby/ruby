@@ -38,6 +38,10 @@ Note: We're only listing outstanding class updates.
     * MatchData#named_captures now accepts optional `symbolize_names`
       keyword. [[Feature #19591]]
 
+* Process::Status
+
+    * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
+
 * String
 
     * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
@@ -182,3 +186,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
+[Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
