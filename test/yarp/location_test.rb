@@ -556,6 +556,8 @@ module YARP
 
     def test_MultiWriteNode
       assert_location(MultiWriteNode, "foo, bar = baz")
+      assert_location(MultiWriteNode, "(foo, bar) = baz")
+      assert_location(MultiWriteNode, "((foo, bar)) = baz")
     end
 
     def test_NextNode

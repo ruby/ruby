@@ -11298,28 +11298,27 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 parser_lex(parser);
                 yp_accepts_block_stack_pop(parser);
 
-                // If we have a single statement and are ending on a right parenthesis,
-                // then we need to check if this is possibly a multiple target node.
+                // If we have a single statement and are ending on a right
+                // parenthesis, then we need to check if this is possibly a
+                // multiple target node.
                 if (binding_power == YP_BINDING_POWER_STATEMENT && YP_NODE_TYPE_P(statement, YP_MULTI_TARGET_NODE)) {
-                    yp_node_t *target;
-                    yp_multi_target_node_t *multi_target = (yp_multi_target_node_t *) statement;
+                    yp_multi_target_node_t *multi_target;
+                    if (((yp_multi_target_node_t *) statement)->lparen_loc.start == NULL) {
+                        multi_target = (yp_multi_target_node_t *) statement;
+                    } else {
+                        multi_target = yp_multi_target_node_create(parser);
+                        yp_multi_target_node_targets_append(multi_target, statement);
+                    }
 
                     yp_location_t lparen_loc = YP_LOCATION_TOKEN_VALUE(&opening);
                     yp_location_t rparen_loc = YP_LOCATION_TOKEN_VALUE(&parser->previous);
 
-                    if (multi_target->lparen_loc.start == NULL) {
-                        multi_target->base.location.start = lparen_loc.start;
-                        multi_target->base.location.end = rparen_loc.end;
-                        multi_target->lparen_loc = lparen_loc;
-                        multi_target->rparen_loc = rparen_loc;
-                        target = (yp_node_t *) multi_target;
-                    } else {
-                        yp_multi_target_node_t *parent_target = yp_multi_target_node_create(parser);
-                        yp_multi_target_node_targets_append(parent_target, (yp_node_t *) multi_target);
-                        target = (yp_node_t *) parent_target;
-                    }
+                    multi_target->lparen_loc = lparen_loc;
+                    multi_target->rparen_loc = rparen_loc;
+                    multi_target->base.location.start = lparen_loc.start;
+                    multi_target->base.location.end = rparen_loc.end;
 
-                    return parse_targets(parser, target, YP_BINDING_POWER_INDEX);
+                    return parse_targets(parser, (yp_node_t *) multi_target, YP_BINDING_POWER_INDEX);
                 }
 
                 // If we have a single statement and are ending on a right parenthesis
@@ -11331,9 +11330,9 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 return (yp_node_t *) yp_parentheses_node_create(parser, &opening, (yp_node_t *) statements, &parser->previous);
             }
 
-            // If we have more than one statement in the set of parentheses, then we
-            // are going to parse all of them as a list of statements. We'll do that
-            // here.
+            // If we have more than one statement in the set of parentheses,
+            // then we are going to parse all of them as a list of statements.
+            // We'll do that here.
             context_push(parser, YP_CONTEXT_PARENS);
             yp_statements_node_t *statements = yp_statements_node_create(parser);
             yp_statements_node_body_append(statements, statement);
@@ -11345,11 +11344,11 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 yp_node_t *node = parse_expression(parser, YP_BINDING_POWER_STATEMENT, YP_ERR_CANNOT_PARSE_EXPRESSION);
                 yp_statements_node_body_append(statements, node);
 
-                // If we're recovering from a syntax error, then we need to stop parsing the
-                // statements now.
+                // If we're recovering from a syntax error, then we need to stop
+                // parsing the statements now.
                 if (parser->recovering) {
-                    // If this is the level of context where the recovery has happened, then
-                    // we can mark the parser as done recovering.
+                    // If this is the level of context where the recovery has
+                    // happened, then we can mark the parser as done recovering.
                     if (match1(parser, YP_TOKEN_PARENTHESIS_RIGHT)) parser->recovering = false;
                     break;
                 }

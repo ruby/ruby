@@ -1,9 +1,9 @@
-@ ProgramNode (location: (1...30))
+@ ProgramNode (location: (0...30))
 ├── locals: [:b, :a, :c]
 └── statements:
-    @ StatementsNode (location: (1...30))
+    @ StatementsNode (location: (0...30))
     └── body: (length: 2)
-        ├── @ MultiWriteNode (location: (1...13))
+        ├── @ MultiWriteNode (location: (0...13))
         │   ├── targets: (length: 1)
         │   │   └── @ MultiTargetNode (location: (1...6))
         │   │       ├── targets: (length: 2)
@@ -15,8 +15,8 @@
         │   │       │       └── expression: ∅
         │   │       ├── lparen_loc: (1...2) = "("
         │   │       └── rparen_loc: (5...6) = ")"
-        │   ├── lparen_loc: ∅
-        │   ├── rparen_loc: ∅
+        │   ├── lparen_loc: (0...1) = "("
+        │   ├── rparen_loc: (6...7) = ")"
         │   ├── operator_loc: (8...9) = "="
         │   └── value:
         │       @ CallNode (location: (10...13))
