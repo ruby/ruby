@@ -7773,13 +7773,13 @@ yp_xstring_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *openi
 
 // Returns true if the current token is of the specified type.
 static inline bool
-match_type_p(yp_parser_t *parser, yp_token_type_t type) {
+match_type_p(const yp_parser_t *parser, yp_token_type_t type) {
     return parser->current.type == type;
 }
 
 // Returns true if the current token is of any of the specified types.
 static bool
-match_any_type_p(yp_parser_t *parser, size_t count, ...) {
+match_any_type_p(const yp_parser_t *parser, size_t count, ...) {
     va_list types;
     va_start(types, count);
 
