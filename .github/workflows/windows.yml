@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           - vs: 2019
-          #- vs: 2022
+          - vs: 2022
       fail-fast: false
 
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
@@ -59,97 +59,9 @@ jobs:
       OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
 
     steps:
-      - run: md build
-        working-directory:
-
-      - name: find tools
-        id: find-tools
-        run: |
-          ::- find needed tools
-          set NEEDS=
-          for %%I in (patch.exe) do if "%%~$PATH:I" == "" (
-            echo NEEDS=%NEEDS% %%I
-          ) else (
-            echo %%I: %%~$PATH:I
-          )
-          echo needs=%NEEDS% >> %GITHUB_OUTPUT%
-
-      - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
-        id: setup-msys2
-        with:
-          update: true
-          install: >-
-            ${{ steps.find-patch.outputs.needs }}
-        if: ${{ steps.find-patch.outputs.needs != '' }}
-
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
-        with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-download-
-
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-installed-
-
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
-
-      - name: Install libraries with scoop
-        run: |
-          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
-          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-        shell: pwsh
-
-      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
-        with:
-          sparse-checkout-cone-mode: false
-          sparse-checkout: /.github
-
-      - uses: ./.github/actions/setup/directories
-        with:
-          srcdir: src
-          builddir: build
-
-      - name: setup env
-        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
-        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
-        run: |
-          set VS=${{ matrix.vs }}
-          set VCVARS=${{ matrix.vcvars || '' }}
-          if not "%VCVARS%" == "" goto :vcset
-            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          :vcset
-          set | C:\msys64\usr\bin\sort > old.env
-          call %VCVARS%
-          nmake -f nul
-          set TMP=%USERPROFILE%\AppData\Local\Temp
-          set TEMP=%USERPROFILE%\AppData\Local\Temp
-          set MAKEFLAGS=l
-          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set | C:\msys64\usr\bin\sort > new.env
-          C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
-          del *.env
-
-      - name: compiler version
-        run: cl
-
-      - name: link libraries 1
-        run: |
-          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
-            if not %%~nI == readline mklink %%~nxI %%I
-          )
       - name: check libraries
         run: |
-          dir "C:\Program Files\OpenSSL"
+          dir "C:\Program Files"
       - name: link libraries 2
         run: |
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
