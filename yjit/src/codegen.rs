@@ -253,7 +253,7 @@ fn gen_counter_incr(asm: &mut Assembler, counter: Counter) {
     assert!(!DEFAULT_COUNTERS.contains(&counter), "gen_counter_incr incremented {:?}", counter);
 
     if get_option!(gen_stats) {
-        asm.comment(&format!("increment counter {}", counter.get_name()));
+        asm_comment!(asm, "increment counter {}", counter.get_name());
         let ptr = get_counter_ptr(&counter.get_name());
         let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
         let counter_opnd = Opnd::mem(64, ptr_reg, 0);
@@ -436,7 +436,7 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
     #[cfg(all(feature = "disasm", not(test)))]
     {
         let opcode = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
-        asm.comment(&format!("exit to interpreter on {}", insn_name(opcode as usize)));
+        asm_comment!(asm, "exit to interpreter on {}", insn_name(opcode as usize));
     }
 
     // Spill stack temps before returning to the interpreter
@@ -527,7 +527,7 @@ pub fn gen_counted_exit(side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Optio
     let mut asm = Assembler::new();
 
     // Load the pointer into a register
-    asm.comment(&format!("increment counter {}", counter.get_name()));
+    asm_comment!(asm, "increment counter {}", counter.get_name());
     let ptr_reg = asm.load(Opnd::const_ptr(get_counter_ptr(&counter.get_name()) as *const u8));
     let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
@@ -697,7 +697,7 @@ pub fn gen_entry_prologue(
 
     let mut asm = Assembler::new();
     if get_option_ref!(dump_disasm).is_some() {
-        asm.comment(&format!("YJIT entry point: {}", iseq_get_location(iseq, 0)));
+        asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
     } else {
         asm.comment("YJIT entry");
     }
@@ -863,8 +863,8 @@ pub fn gen_single_block(
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
-        asm.comment(&format!("Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth));
-        asm.comment(&format!("reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8()));
+        asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
+        asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
     }
 
     // For each instruction to compile
@@ -920,7 +920,7 @@ pub fn gen_single_block(
         let mut status = None;
         if let Some(gen_fn) = get_gen_fn(VALUE(opcode)) {
             // Add a comment for the name of the YARV instruction
-            asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
+            asm_comment!(asm, "Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size());
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
@@ -1600,7 +1600,7 @@ fn gen_expandarray(
 
     // Guard on the comptime/expected array length
     if comptime_len >= num {
-        asm.comment(&format!("guard array length >= {}", num));
+        asm_comment!(asm, "guard array length >= {}", num);
         asm.cmp(array_len_opnd, num.into());
         jit_chain_guard(
             JCC_JB,
@@ -1612,7 +1612,7 @@ fn gen_expandarray(
         );
 
     } else {
-        asm.comment(&format!("guard array length == {}", comptime_len));
+        asm_comment!(asm, "guard array length == {}", comptime_len);
         asm.cmp(array_len_opnd, comptime_len.into());
         jit_chain_guard(
             JCC_JNE,
@@ -1640,7 +1640,7 @@ fn gen_expandarray(
         let offset = i32::try_from(i * (SIZEOF_VALUE as u32)).unwrap();
 
         // Missing elements are Qnil
-        asm.comment(&format!("load array[{}]", i));
+        asm_comment!(asm, "load array[{}]", i);
         let elem_opnd = if i < comptime_len { Opnd::mem(64, ary_opnd.unwrap(), offset) } else { Qnil.into() };
         asm.mov(top, elem_opnd);
     }
@@ -6935,7 +6935,7 @@ fn gen_send_general(
         let method_name = unsafe { cstr_to_rust_string(rb_id2name(mid)) };
         match (class_name, method_name) {
             (Some(class_name), Some(method_name)) => {
-                asm.comment(&format!("call to {}#{}", class_name, method_name))
+                asm_comment!(asm, "call to {}#{}", class_name, method_name);
             }
             _ => {}
         }

@@ -1724,7 +1724,9 @@ impl Assembler {
     }
 
     pub fn comment(&mut self, text: &str) {
-        self.push_insn(Insn::Comment(text.to_string()));
+        if cfg!(feature = "disasm") {
+            self.push_insn(Insn::Comment(text.to_string()));
+        }
     }
 
     #[must_use]
@@ -2001,6 +2003,16 @@ impl Assembler {
         out
     }
 }
+
+/// Macro to use format! for asm.comment, which skips a format! call
+/// when disasm is not supported.
+macro_rules! asm_comment {
+    ($asm:expr, $($fmt:tt)*) => {
+        #[cfg(feature = "disasm")]
+        $asm.comment(&format!($($fmt)*));
+    };
+}
+pub(crate) use asm_comment;
 
 #[cfg(test)]
 mod tests {
