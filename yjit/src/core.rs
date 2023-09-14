@@ -2482,9 +2482,6 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         (target.get_blockid(), target.get_ctx())
     };
 
-    let cb = CodegenGlobals::get_inline_cb();
-    let ocb = CodegenGlobals::get_outlined_cb();
-
     let (cfp, original_interp_sp) = unsafe {
         let cfp = get_ec_cfp(ec);
         let original_interp_sp = get_cfp_sp(cfp);
@@ -2506,8 +2503,17 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         // So we do it here instead.
         rb_set_cfp_sp(cfp, reconned_sp);
 
+        // Bail if we're about to run out of native stack space.
+        // We've just reconstructed interpreter state.
+        if rb_ec_stack_check(ec as _) != 0 {
+            return CodegenGlobals::get_stub_exit_code().raw_ptr();
+        }
+
         (cfp, original_interp_sp)
     };
+
+    let cb = CodegenGlobals::get_inline_cb();
+    let ocb = CodegenGlobals::get_outlined_cb();
 
     // Try to find an existing compiled version of this block
     let mut block = find_block_version(target_blockid, &target_ctx);
