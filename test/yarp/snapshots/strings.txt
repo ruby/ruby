@@ -1,8 +1,8 @@
-@ ProgramNode (location: (0...498))
+@ ProgramNode (location: (0...506))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...498))
-    └── body: (length: 47)
+    @ StatementsNode (location: (0...506))
+    └── body: (length: 48)
         ├── @ StringNode (location: (0...6))
         │   ├── opening_loc: (0...2) = "%%"
         │   ├── content_loc: (2...5) = "abc"
@@ -424,8 +424,21 @@
         │   ├── content_loc: (488...489) = "a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "a"
-        └── @ StringNode (location: (491...498))
-            ├── opening_loc: (491...494) = "%Q{"
-            ├── content_loc: (494...497) = "abc"
-            ├── closing_loc: (497...498) = "}"
+        ├── @ StringConcatNode (location: (491...497))
+        │   ├── left:
+        │   │   @ StringNode (location: (491...493))
+        │   │   ├── opening_loc: (491...492) = "?"
+        │   │   ├── content_loc: (492...493) = "a"
+        │   │   ├── closing_loc: ∅
+        │   │   └── unescaped: "a"
+        │   └── right:
+        │       @ StringNode (location: (494...497))
+        │       ├── opening_loc: (494...495) = "\""
+        │       ├── content_loc: (495...496) = "a"
+        │       ├── closing_loc: (496...497) = "\""
+        │       └── unescaped: "a"
+        └── @ StringNode (location: (499...506))
+            ├── opening_loc: (499...502) = "%Q{"
+            ├── content_loc: (502...505) = "abc"
+            ├── closing_loc: (505...506) = "}"
             └── unescaped: "abc"

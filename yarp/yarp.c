@@ -10915,112 +10915,91 @@ parse_strings_empty_content(const uint8_t *location) {
 // Parse a set of strings that could be concatenated together.
 static inline yp_node_t *
 parse_strings(yp_parser_t *parser) {
-    assert(parser->current.type == YP_TOKEN_STRING_BEGIN || parser->current.type == YP_TOKEN_HEREDOC_START);
+    assert(parser->current.type == YP_TOKEN_STRING_BEGIN);
     yp_node_t *result = NULL;
 
-    while (true) {
+    while (match_type_p(parser, YP_TOKEN_STRING_BEGIN)) {
         yp_node_t *node = NULL;
 
-        if (parser->current.type == YP_TOKEN_STRING_BEGIN) {
-            // Here we have found a string literal. We'll parse it and add it to
-            // the list of strings.
-            assert(parser->lex_modes.current->mode == YP_LEX_STRING);
-            bool lex_interpolation = parser->lex_modes.current->as.string.interpolation;
+        // Here we have found a string literal. We'll parse it and add it to
+        // the list of strings.
+        assert(parser->lex_modes.current->mode == YP_LEX_STRING);
+        bool lex_interpolation = parser->lex_modes.current->as.string.interpolation;
 
-            yp_token_t opening = parser->current;
+        yp_token_t opening = parser->current;
+        parser_lex(parser);
+
+        if (accept(parser, YP_TOKEN_STRING_END)) {
+            // If we get here, then we have an end immediately after a
+            // start. In that case we'll create an empty content token and
+            // return an uninterpolated string.
+            yp_token_t content = parse_strings_empty_content(parser->previous.start);
+            node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_NONE);
+        } else if (accept(parser, YP_TOKEN_LABEL_END)) {
+            // If we get here, then we have an end of a label immediately
+            // after a start. In that case we'll create an empty symbol
+            // node.
+            yp_token_t opening = not_provided(parser);
+            yp_token_t content = parse_strings_empty_content(parser->previous.start);
+            node = (yp_node_t *) yp_symbol_node_create(parser, &opening, &content, &parser->previous);
+        } else if (!lex_interpolation) {
+            // If we don't accept interpolation then we expect the string to
+            // start with a single string content node.
+            expect(parser, YP_TOKEN_STRING_CONTENT, YP_ERR_EXPECT_STRING_CONTENT);
+            yp_token_t content = parser->previous;
+
+            // It is unfortunately possible to have multiple string content
+            // nodes in a row in the case that there's heredoc content in
+            // the middle of the string, like this cursed example:
+            //
+            // <<-END+'b
+            //  a
+            // END
+            //  c'+'d'
+            //
+            // In that case we need to switch to an interpolated string to
+            // be able to contain all of the parts.
+            if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
+                yp_node_list_t parts = YP_EMPTY_NODE_LIST;
+
+                yp_token_t delimiters = not_provided(parser);
+                yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &content, &delimiters, YP_UNESCAPE_MINIMAL);
+                yp_node_list_append(&parts, part);
+
+                while (accept(parser, YP_TOKEN_STRING_CONTENT)) {
+                    part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &parser->previous, &delimiters, YP_UNESCAPE_MINIMAL);
+                    yp_node_list_append(&parts, part);
+                }
+
+                expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
+                node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+            } else if (accept(parser, YP_TOKEN_LABEL_END)) {
+                node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
+            } else {
+                expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
+                node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_MINIMAL);
+            }
+        } else if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
+            // In this case we've hit string content so we know the string
+            // at least has something in it. We'll need to check if the
+            // following token is the end (in which case we can return a
+            // plain string) or if it's not then it has interpolation.
+            yp_token_t content = parser->current;
             parser_lex(parser);
 
             if (accept(parser, YP_TOKEN_STRING_END)) {
-                // If we get here, then we have an end immediately after a
-                // start. In that case we'll create an empty content token and
-                // return an uninterpolated string.
-                yp_token_t content = parse_strings_empty_content(parser->previous.start);
-                node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_NONE);
+                node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
             } else if (accept(parser, YP_TOKEN_LABEL_END)) {
-                // If we get here, then we have an end of a label immediately
-                // after a start. In that case we'll create an empty symbol
-                // node.
-                yp_token_t opening = not_provided(parser);
-                yp_token_t content = parse_strings_empty_content(parser->previous.start);
-                node = (yp_node_t *) yp_symbol_node_create(parser, &opening, &content, &parser->previous);
-            } else if (!lex_interpolation) {
-                // If we don't accept interpolation then we expect the string to
-                // start with a single string content node.
-                expect(parser, YP_TOKEN_STRING_CONTENT, YP_ERR_EXPECT_STRING_CONTENT);
-                yp_token_t content = parser->previous;
-
-                // It is unfortunately possible to have multiple string content
-                // nodes in a row in the case that there's heredoc content in
-                // the middle of the string, like this cursed example:
-                //
-                // <<-END+'b
-                //  a
-                // END
-                //  c'+'d'
-                //
-                // In that case we need to switch to an interpolated string to
-                // be able to contain all of the parts.
-                if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
-                    yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-
-                    yp_token_t delimiters = not_provided(parser);
-                    yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &content, &delimiters, YP_UNESCAPE_MINIMAL);
-                    yp_node_list_append(&parts, part);
-
-                    while (accept(parser, YP_TOKEN_STRING_CONTENT)) {
-                        part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &delimiters, &parser->previous, &delimiters, YP_UNESCAPE_MINIMAL);
-                        yp_node_list_append(&parts, part);
-                    }
-
-                    expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
-                    node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-                } else if (accept(parser, YP_TOKEN_LABEL_END)) {
-                    node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
-                } else {
-                    expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_LITERAL_TERM);
-                    node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_MINIMAL);
-                }
-            } else if (match_type_p(parser, YP_TOKEN_STRING_CONTENT)) {
-                // In this case we've hit string content so we know the string
-                // at least has something in it. We'll need to check if the
-                // following token is the end (in which case we can return a
-                // plain string) or if it's not then it has interpolation.
-                yp_token_t content = parser->current;
-                parser_lex(parser);
-
-                if (accept(parser, YP_TOKEN_STRING_END)) {
-                    node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
-                } else if (accept(parser, YP_TOKEN_LABEL_END)) {
-                    node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
-                } else {
-                    // If we get here, then we have interpolation so we'll need
-                    // to create a string or symbol node with interpolation.
-                    yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-                    yp_token_t string_opening = not_provided(parser);
-                    yp_token_t string_closing = not_provided(parser);
-
-                    yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &string_opening, &parser->previous, &string_closing, YP_UNESCAPE_ALL);
-                    yp_node_list_append(&parts, part);
-
-                    while (!match_any_type_p(parser, 3, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
-                        if ((part = parse_string_part(parser)) != NULL) {
-                            yp_node_list_append(&parts, part);
-                        }
-                    }
-
-                    if (accept(parser, YP_TOKEN_LABEL_END)) {
-                        node = (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
-                    } else {
-                        expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_INTERPOLATED_TERM);
-                        node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-                    }
-                }
+                node = (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_ALL);
             } else {
-                // If we get here, then the first part of the string is not
-                // plain string content, in which case we need to parse the
-                // string as an interpolated string.
+                // If we get here, then we have interpolation so we'll need
+                // to create a string or symbol node with interpolation.
                 yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-                yp_node_t *part = NULL;
+                yp_token_t string_opening = not_provided(parser);
+                yp_token_t string_closing = not_provided(parser);
+
+                yp_node_t *part = (yp_node_t *) yp_string_node_create_and_unescape(parser, &string_opening, &parser->previous, &string_closing, YP_UNESCAPE_ALL);
+                yp_node_list_append(&parts, part);
 
                 while (!match_any_type_p(parser, 3, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
                     if ((part = parse_string_part(parser)) != NULL) {
@@ -11035,106 +11014,25 @@ parse_strings(yp_parser_t *parser) {
                     node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
                 }
             }
-        } else if (parser->current.type == YP_TOKEN_HEREDOC_START) {
-            // Here we have found a heredoc. We'll parse it and add it to the
-            // list of strings.
-            assert(parser->lex_modes.current->mode == YP_LEX_HEREDOC);
+        } else {
+            // If we get here, then the first part of the string is not
+            // plain string content, in which case we need to parse the
+            // string as an interpolated string.
+            yp_node_list_t parts = YP_EMPTY_NODE_LIST;
+            yp_node_t *part = NULL;
 
-            yp_heredoc_quote_t quote = parser->lex_modes.current->as.heredoc.quote;
-            yp_heredoc_indent_t indent = parser->lex_modes.current->as.heredoc.indent;
-
-            parser_lex(parser);
-            yp_token_t opening = parser->previous;
-            yp_node_t *part;
-
-            if (match_any_type_p(parser, 2, YP_TOKEN_HEREDOC_END, YP_TOKEN_EOF)) {
-                // If we get here, then we have an empty heredoc. We'll create
-                // an empty content token and return an empty string node.
-                lex_state_set(parser, YP_LEX_STATE_END);
-                expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
-                yp_token_t content = parse_strings_empty_content(parser->previous.start);
-
-                if (quote == YP_HEREDOC_QUOTE_BACKTICK) {
-                    node = (yp_node_t *) yp_xstring_node_create_and_unescape(parser, &opening, &content, &parser->previous);
-                } else {
-                    node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_NONE);
-                }
-
-                node->location.end = opening.end;
-            } else if ((part = parse_string_part(parser)) == NULL) {
-                // If we get here, then we tried to find something in the
-                // heredoc but couldn't actually parse anything, so we'll just
-                // return a missing node.
-                node = (yp_node_t *) yp_missing_node_create(parser, parser->previous.start, parser->previous.end);
-            } else if (YP_NODE_TYPE_P(part, YP_STRING_NODE) && match_any_type_p(parser, 2, YP_TOKEN_HEREDOC_END, YP_TOKEN_EOF)) {
-                // If we get here, then the part that we parsed was plain string
-                // content and we're at the end of the heredoc, so we can return
-                // just a string node with the heredoc opening and closing as
-                // its opening and closing.
-                yp_string_node_t *cast = (yp_string_node_t *) part;
-
-                cast->opening_loc = YP_LOCATION_TOKEN_VALUE(&opening);
-                cast->closing_loc = YP_LOCATION_TOKEN_VALUE(&parser->current);
-                cast->base.location = cast->opening_loc;
-
-                if (quote == YP_HEREDOC_QUOTE_BACKTICK) {
-                    assert(sizeof(yp_string_node_t) == sizeof(yp_x_string_node_t));
-                    cast->base.type = YP_X_STRING_NODE;
-                }
-
-                lex_state_set(parser, YP_LEX_STATE_END);
-                expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
-
-                node = (yp_node_t *) cast;
-
-                if (indent == YP_HEREDOC_INDENT_TILDE) {
-                    int common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, -1);
-                    parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, common_whitespace, quote);
-                }
-            } else {
-                // If we get here, then we have multiple parts in the heredoc,
-                // so we'll need to create an interpolated string node to hold
-                // them all.
-                yp_node_list_t parts = YP_EMPTY_NODE_LIST;
-                yp_node_list_append(&parts, part);
-
-                while (!match_any_type_p(parser, 2, YP_TOKEN_HEREDOC_END, YP_TOKEN_EOF)) {
-                    if ((part = parse_string_part(parser)) != NULL) {
-                        yp_node_list_append(&parts, part);
-                    }
-                }
-
-                // Now that we have all of the parts, create the correct type of
-                // interpolated node.
-                if (quote == YP_HEREDOC_QUOTE_BACKTICK) {
-                    yp_interpolated_x_string_node_t *cast = yp_interpolated_xstring_node_create(parser, &opening, &opening);
-                    cast->parts = parts;
-
-                    lex_state_set(parser, YP_LEX_STATE_END);
-                    expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
-
-                    yp_interpolated_xstring_node_closing_set(cast, &parser->previous);
-                    cast->base.location = cast->opening_loc;
-                    node = (yp_node_t *) cast;
-                } else {
-                    yp_interpolated_string_node_t *cast = yp_interpolated_string_node_create(parser, &opening, &parts, &opening);
-
-                    lex_state_set(parser, YP_LEX_STATE_END);
-                    expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
-
-                    yp_interpolated_string_node_closing_set(cast, &parser->previous);
-                    cast->base.location = cast->opening_loc;
-                    node = (yp_node_t *) cast;
-                }
-
-                // If this is a heredoc that is indented with a ~, then we need
-                // to dedent each line by the common leading whitespace.
-                if (indent == YP_HEREDOC_INDENT_TILDE) {
-                    parse_heredoc_dedent(parser, node, quote);
+            while (!match_any_type_p(parser, 3, YP_TOKEN_STRING_END, YP_TOKEN_LABEL_END, YP_TOKEN_EOF)) {
+                if ((part = parse_string_part(parser)) != NULL) {
+                    yp_node_list_append(&parts, part);
                 }
             }
-        } else {
-            break;
+
+            if (accept(parser, YP_TOKEN_LABEL_END)) {
+                node = (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+            } else {
+                expect(parser, YP_TOKEN_STRING_END, YP_ERR_STRING_INTERPOLATED_TERM);
+                node = (yp_node_t *) yp_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
+            }
         }
 
         if (result == NULL) {
@@ -11372,8 +11270,16 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             content.start = content.start + 1;
 
             yp_token_t closing = not_provided(parser);
+            yp_node_t *node = (yp_node_t *) yp_char_literal_node_create_and_unescape(parser, &opening, &content, &closing, YP_UNESCAPE_ALL);
 
-            return (yp_node_t *) yp_char_literal_node_create_and_unescape(parser, &opening, &content, &closing, YP_UNESCAPE_ALL);
+            // Characters can be followed by strings in which case they are
+            // automatically concatenated.
+            if (match_type_p(parser, YP_TOKEN_STRING_BEGIN)) {
+                yp_node_t *concat = parse_strings(parser);
+                return (yp_node_t *) yp_string_concat_node_create(parser, node, concat);
+            }
+
+            return node;
         }
         case YP_TOKEN_CLASS_VARIABLE: {
             parser_lex(parser);
@@ -11534,8 +11440,113 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             return node;
         }
-        case YP_TOKEN_HEREDOC_START:
-            return parse_strings(parser);
+        case YP_TOKEN_HEREDOC_START: {
+            // Here we have found a heredoc. We'll parse it and add it to the
+            // list of strings.
+            assert(parser->lex_modes.current->mode == YP_LEX_HEREDOC);
+            yp_heredoc_quote_t quote = parser->lex_modes.current->as.heredoc.quote;
+            yp_heredoc_indent_t indent = parser->lex_modes.current->as.heredoc.indent;
+
+            parser_lex(parser);
+            yp_token_t opening = parser->previous;
+
+            yp_node_t *node;
+            yp_node_t *part;
+
+            if (match_any_type_p(parser, 2, YP_TOKEN_HEREDOC_END, YP_TOKEN_EOF)) {
+                // If we get here, then we have an empty heredoc. We'll create
+                // an empty content token and return an empty string node.
+                lex_state_set(parser, YP_LEX_STATE_END);
+                expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
+                yp_token_t content = parse_strings_empty_content(parser->previous.start);
+
+                if (quote == YP_HEREDOC_QUOTE_BACKTICK) {
+                    node = (yp_node_t *) yp_xstring_node_create_and_unescape(parser, &opening, &content, &parser->previous);
+                } else {
+                    node = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, YP_UNESCAPE_NONE);
+                }
+
+                node->location.end = opening.end;
+            } else if ((part = parse_string_part(parser)) == NULL) {
+                // If we get here, then we tried to find something in the
+                // heredoc but couldn't actually parse anything, so we'll just
+                // return a missing node.
+                node = (yp_node_t *) yp_missing_node_create(parser, parser->previous.start, parser->previous.end);
+            } else if (YP_NODE_TYPE_P(part, YP_STRING_NODE) && match_any_type_p(parser, 2, YP_TOKEN_HEREDOC_END, YP_TOKEN_EOF)) {
+                // If we get here, then the part that we parsed was plain string
+                // content and we're at the end of the heredoc, so we can return
+                // just a string node with the heredoc opening and closing as
+                // its opening and closing.
+                yp_string_node_t *cast = (yp_string_node_t *) part;
+
+                cast->opening_loc = YP_LOCATION_TOKEN_VALUE(&opening);
+                cast->closing_loc = YP_LOCATION_TOKEN_VALUE(&parser->current);
+                cast->base.location = cast->opening_loc;
+
+                if (quote == YP_HEREDOC_QUOTE_BACKTICK) {
+                    assert(sizeof(yp_string_node_t) == sizeof(yp_x_string_node_t));
+                    cast->base.type = YP_X_STRING_NODE;
+                }
+
+                lex_state_set(parser, YP_LEX_STATE_END);
+                expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
+
+                node = (yp_node_t *) cast;
+
+                if (indent == YP_HEREDOC_INDENT_TILDE) {
+                    int common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, -1);
+                    parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, common_whitespace, quote);
+                }
+            } else {
+                // If we get here, then we have multiple parts in the heredoc,
+                // so we'll need to create an interpolated string node to hold
+                // them all.
+                yp_node_list_t parts = YP_EMPTY_NODE_LIST;
+                yp_node_list_append(&parts, part);
+
+                while (!match_any_type_p(parser, 2, YP_TOKEN_HEREDOC_END, YP_TOKEN_EOF)) {
+                    if ((part = parse_string_part(parser)) != NULL) {
+                        yp_node_list_append(&parts, part);
+                    }
+                }
+
+                // Now that we have all of the parts, create the correct type of
+                // interpolated node.
+                if (quote == YP_HEREDOC_QUOTE_BACKTICK) {
+                    yp_interpolated_x_string_node_t *cast = yp_interpolated_xstring_node_create(parser, &opening, &opening);
+                    cast->parts = parts;
+
+                    lex_state_set(parser, YP_LEX_STATE_END);
+                    expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
+
+                    yp_interpolated_xstring_node_closing_set(cast, &parser->previous);
+                    cast->base.location = cast->opening_loc;
+                    node = (yp_node_t *) cast;
+                } else {
+                    yp_interpolated_string_node_t *cast = yp_interpolated_string_node_create(parser, &opening, &parts, &opening);
+
+                    lex_state_set(parser, YP_LEX_STATE_END);
+                    expect(parser, YP_TOKEN_HEREDOC_END, YP_ERR_HEREDOC_TERM);
+
+                    yp_interpolated_string_node_closing_set(cast, &parser->previous);
+                    cast->base.location = cast->opening_loc;
+                    node = (yp_node_t *) cast;
+                }
+
+                // If this is a heredoc that is indented with a ~, then we need
+                // to dedent each line by the common leading whitespace.
+                if (indent == YP_HEREDOC_INDENT_TILDE) {
+                    parse_heredoc_dedent(parser, node, quote);
+                }
+            }
+
+            if (match_type_p(parser, YP_TOKEN_STRING_BEGIN)) {
+                yp_node_t *concat = parse_strings(parser);
+                return (yp_node_t *) yp_string_concat_node_create(parser, node, concat);
+            }
+
+            return node;
+        }
         case YP_TOKEN_INSTANCE_VARIABLE: {
             parser_lex(parser);
             yp_node_t *node = (yp_node_t *) yp_instance_variable_read_node_create(parser, &parser->previous);
