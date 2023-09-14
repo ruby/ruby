@@ -84,6 +84,9 @@ impl From<&Opnd> for X86Opnd {
     }
 }
 
+/// List of registers that can be used for stack temps.
+pub static TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
+
 impl Assembler
 {
     // A special scratch register for intermediate processing.
@@ -91,8 +94,6 @@ impl Assembler
     pub const SCRATCH_REG: Reg = R11_REG;
     const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
 
-    /// List of registers that can be used for stack temps.
-    pub const TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
 
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg>

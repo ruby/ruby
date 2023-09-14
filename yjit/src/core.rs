@@ -2694,7 +2694,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
 /// Return registers to be pushed and popped on branch_stub_hit.
 /// The return value may include an extra register for x86 alignment.
 fn caller_saved_temp_regs() -> Vec<Opnd> {
-    let mut regs = Assembler::get_temp_regs();
+    let mut regs = Assembler::get_temp_regs().to_vec();
     if regs.len() % 2 == 1 {
         regs.push(*regs.last().unwrap()); // x86 alignment
     }

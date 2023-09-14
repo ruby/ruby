@@ -184,6 +184,10 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
     }
 }
 
+/// List of registers that can be used for stack temps.
+/// These are caller-saved registers.
+pub static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
+
 impl Assembler
 {
     // Special scratch registers for intermediate processing.
@@ -191,10 +195,6 @@ impl Assembler
     pub const SCRATCH_REG: Reg = X16_REG;
     const SCRATCH0: A64Opnd = A64Opnd::Reg(Assembler::SCRATCH_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
-
-    /// List of registers that can be used for stack temps.
-    /// These are caller-saved registers.
-    pub const TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
@@ -1636,7 +1636,7 @@ mod tests {
     fn test_replace_mov_with_ldur() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::mem(64, CFP, 8));
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::mem(64, CFP, 8));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_disasm!(cb, "618240f8", {"
@@ -1648,8 +1648,8 @@ mod tests {
     fn test_not_split_mov() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(0xffff));
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(0x10000));
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::UImm(0xffff));
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::UImm(0x10000));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_disasm!(cb, "e1ff9fd2e10370b2", {"
@@ -1663,7 +1663,7 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
 
         let out = asm.csel_l(Qtrue.into(), Qfalse.into());
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), out);
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
         assert_disasm!(cb, "8b0280d20c0080d261b18c9a", {"
