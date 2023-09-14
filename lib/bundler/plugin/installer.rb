@@ -10,6 +10,7 @@ module Bundler
     class Installer
       autoload :Rubygems, File.expand_path("installer/rubygems", __dir__)
       autoload :Git,      File.expand_path("installer/git", __dir__)
+      autoload :Path, File.expand_path("installer/path", __dir__)
 
       def install(names, options)
         check_sources_consistency!(options)
@@ -18,6 +19,8 @@ module Bundler
 
         if options[:git]
           install_git(names, version, options)
+        elsif options[:path]
+          install_path(names, version, options[:path])
         else
           sources = options[:source] || Gem.sources
           install_rubygems(names, version, sources)
@@ -50,8 +53,8 @@ module Bundler
           options[:git] = options.delete(:local_git)
         end
 
-        if (options.keys & [:source, :git]).length > 1
-          raise InvalidOption, "Only one of --source, or --git may be specified"
+        if (options.keys & [:source, :git, :path]).length > 1
+          raise InvalidOption, "Only one of --source, --git, or --path may be specified"
         end
 
         if (options.key?(:branch) || options.key?(:ref)) && !options.key?(:git)
@@ -64,10 +67,19 @@ module Bundler
       end
 
       def install_git(names, version, options)
-        uri = options.delete(:git)
-        options["uri"] = uri
+        source_list = SourceList.new
+        source = source_list.add_git_source({ "uri" => options[:git],
+                                              "branch" => options[:branch],
+                                              "ref" => options[:ref] })
 
-        install_all_sources(names, version, options, options[:source])
+        install_all_sources(names, version, source_list, source)
+      end
+
+      def install_path(names, version, path)
+        source_list = SourceList.new
+        source = source_list.add_path_source({ "path" => path })
+
+        install_all_sources(names, version, source_list, source)
       end
 
       # Installs the plugin from rubygems source and returns the path where the
@@ -79,16 +91,15 @@ module Bundler
       #
       # @return [Hash] map of names to the specs of plugins installed
       def install_rubygems(names, version, sources)
-        install_all_sources(names, version, nil, sources)
-      end
-
-      def install_all_sources(names, version, git_source_options, rubygems_source)
         source_list = SourceList.new
 
-        source_list.add_git_source(git_source_options) if git_source_options
-        Array(rubygems_source).each {|remote| source_list.add_global_rubygems_remote(remote) } if rubygems_source
+        Array(sources).each {|remote| source_list.add_global_rubygems_remote(remote) }
 
-        deps = names.map {|name| Dependency.new name, version }
+        install_all_sources(names, version, source_list)
+      end
+
+      def install_all_sources(names, version, source_list, source = nil)
+        deps = names.map {|name| Dependency.new(name, version, { "source" => source }) }
 
         Bundler.configure_gem_home_and_path(Plugin.root)
 

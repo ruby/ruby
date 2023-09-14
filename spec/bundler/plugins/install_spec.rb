@@ -212,6 +212,16 @@ RSpec.describe "bundler plugin install" do
     end
   end
 
+  it "installs from a path source" do
+    build_lib "path_plugin" do |s|
+      s.write "plugins.rb"
+    end
+    bundle "plugin install path_plugin --path #{lib_path("path_plugin-1.0")}"
+
+    expect(out).to include("Installed plugin path_plugin")
+    plugin_should_be_installed("path_plugin")
+  end
+
   context "Gemfile eval" do
     before do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
