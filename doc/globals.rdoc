@@ -2,100 +2,160 @@
 
 === Exceptions
 
-==== <tt>$!</tt>
+==== <tt>$!</tt> (\Exception)
 
-The Exception object set by Kernel#raise.
+Contains the Exception object set by Kernel#raise:
 
-==== <tt>$@</tt>
+  begin
+    raise RuntimeError.new('Boo!')
+  rescue RuntimeError
+    p $!
+  end
 
-The same as <tt>$!.backtrace</tt>.
+Output:
+
+  #<RuntimeError: Boo!>
+
+English - <tt></tt>ERROR_INFO
+
+==== <tt>$@</tt> (Backtrace)
+
+Same as <tt>$!.backtrace</tt>;
+returns an array of backtrace positions:
+
+  begin
+    raise RuntimeError.new('Boo!')
+  rescue RuntimeError
+    pp $@.take(4)
+  end
+
+Output:
+
+  ["(irb):338:in `<top (required)>'",
+   "/snap/ruby/317/lib/ruby/3.2.0/irb/workspace.rb:119:in `eval'",
+   "/snap/ruby/317/lib/ruby/3.2.0/irb/workspace.rb:119:in `evaluate'",
+   "/snap/ruby/317/lib/ruby/3.2.0/irb/context.rb:502:in `evaluate'"]
+
+English - $ERROR_POSITION
 
 === Pattern Matching
+
+These global variables store information about the most recent
+successful match in the current scope.
 
 For details and examples,
 see {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
 
-==== <tt>$~</tt>
+==== <tt>$~</tt> (\MatchData)
 
-The information about the last match in the current scope (thread-local and frame-local).
+MatchData object created from the match;
+thread-local and frame-local.
 
-==== <tt>$&</tt>
+English - <tt>$LAST_MATCH_INFO</tt>.
 
-The string matched by the last successful match.
+==== <tt>$&</tt> (Matched Substring)
 
-==== <tt>$`</tt>
+The matchedstring.
 
-The string to the left  of the last successful match.
+English - <tt>$MATCH</tt>.
 
-==== <tt>$'</tt>
+==== <tt>$`</tt> (Pre-Match Substring)
 
-The string to the right of the last successful match.
+The string to the left of the match.
 
-==== <tt>$+</tt>
+English - <tt>$PREMATCH</tt>.
 
-The highest group matched by the last successful match.
+==== <tt>$'</tt> (Post-Match Substring)
 
-==== <tt>$1</tt>, <tt>$2</tt>, \Etc.
+The string to the right of the match.
 
-For <tt>$_n_</tt> the _nth_ group of the most recent successful match.
+English - <tt>$POSTMATCH</tt>.
+
+==== <tt>$+</tt> (Last Matched Group)
+
+The last group matched.
+
+English - <tt>$LAST_PAREN_MATCH</tt>.
+
+==== <tt>$1</tt>, <tt>$2</tt>, \Etc. (Matched Group)
+
+For <tt>$_n_</tt> the _nth_ group of the match.
+
+No \English.
 
 === Separators
 
-==== <tt>$/</tt>
+==== <tt>$/</tt> (Input Record Separator)
 
 An input record separator, initially newline.
 
+English - <tt>$INPUT_RECORD_SEPARATOR</tt>, <tt>$RS</tt>.
+
 Aliased as <tt>$-0</tt>.
 
-==== <tt>$;</tt>
+==== <tt>$;</tt> (Input Field Separator)
 
 An input field separator, initially +nil+.
 
+English - <tt>$FIELD_SEPARATOR</tt>, <tt>$FS</tt>.
+
 Aliased as <tt>$-F</tt>.
 
-==== <tt>$\\</tt>
+==== <tt>$\\</tt> (Output Record Separator)
 
 An output record separator, initially +nil+.
 
-==== <tt>$,</tt>
+English - <tt>$OUTPUT_RECORD_SEPARATOR</tt>, <tt>$ORS</tt>.
+
+==== <tt>$,</tt> (Output Field Separator)
 
 An output field separator, initially +nil+.
 
+English - <tt>$OUTPUT_FIELD_SEPARATOR</tt>, <tt>$OFS</tt>.
+
 === Streams
 
-==== <tt>$stdin</tt>
+==== <tt>$stdin</tt> (Standard Input)
 
 The current standard input stream; initially:
 
   $stdin # => #<IO:<STDIN>>
 
-==== <tt>$stdout</tt>
+==== <tt>$stdout</tt> (Standard Output)
 
 The current standard output stream; initially:
 
   $stdout # => #<IO:<STDOUT>>
 
-==== <tt>$stderr</tt>
+==== <tt>$stderr</tt> (Standard Error)
 
 The current standard error stream; initially:
 
   $stderr # => #<IO:<STDERR>>
 
-==== <tt>$<</tt>
+==== <tt>$</tt> (Default Standard Input)
 
-Points to ARGF.
+Points to ARGF; read-only.
 
-==== <tt>$></tt>
+English - <tt>$DEFAULT_INPUT</tt>.
+
+==== <tt>$></tt> (Default Standard Output)
 
 An output stream, initially <tt>$stdout</tt>.
 
-==== <tt>$.</tt>
+English - <tt>$DEFAULT_OUTPUT
+
+==== <tt>$.</tt> (Input Position)
 
 The input position (line number) in the most recently read stream.
 
-==== <tt>$_</tt>
+English - <tt>$INPUT_LINE_NUMBER</tt>, <tt>$NR</tt>
+
+==== <tt>$_</tt> (Last Read Line)
 
 The line (string) from the most recently read stream.
+
+English - <tt>$LAST_READ_LINE</tt>.
 
 === Processes
 
@@ -104,21 +164,27 @@ The line (string) from the most recently read stream.
 Initially, contains the name of the script being executed;
 may be reassigned.
 
-==== <tt>$*</tt>
+==== <tt>$*</tt> (\ARGV)
 
 Points to ARGV.
 
-==== <tt>$$</tt>
+English - <tt>$ARGV</tt>.
+
+==== <tt>$$</tt> (Process ID)
 
 The process ID of the current process. Same as Process.pid.
 
-==== <tt>$?</tt>
+English - <tt>$PROCESS_ID</tt>, <tt>$PID</tt>.
+
+==== <tt>$?</tt> (Child Status)
 
 Initially +nil+, otherwise the Process::Status object
 created for the most-recently exited child process;
 thread-local.
 
-==== <tt>$LOAD_PATH</tt>
+English - <tt>$CHILD_STATUS</tt>.
+
+==== <tt>$LOAD_PATH</tt> (Load Path)
 
 Contains the array of paths to be searched
 by Kernel#load and Kernel#require.
@@ -190,6 +256,8 @@ When +nil+, disables warnings, including those from Kernel#warn.
 
 Aliased as <tt>$-v</tt> and <tt>$-w</tt>.
 
+=== Other Variables
+
 ==== <tt>$-a</tt>
 
 Whether command-line option <tt>-a</tt> was given; read-only.
@@ -219,21 +287,35 @@ This variable is no longer effective.
 
 ==== <tt>STDIN</tt>
 
-The standard input stream; the default value for <tt>$stdin</tt>.
+The standard input stream (the default value for <tt>$stdin</tt>):
+
+  STDIN # => #<IO:<STDIN>>
 
 ==== <tt>STDOUT</tt>
 
-The standard output stream; The default value for <tt>$stdout</tt>.
+The standard output stream (the default value for <tt>$stdout</tt>):
+
+  STDOUT # => #<IO:<STDOUT>>
 
 ==== <tt>STDERR</tt>
 
-The standard error stream; the default value for <tt>$stderr</tt>.
+The standard error stream (the default value for <tt>$stderr</tt>):
+
+  STDERR # => #<IO:<STDERR>>
 
 === Enviroment
 
 ==== <tt>ENV</tt>
 
-A hash of the contains current environment variables names and values.
+A hash of the contains current environment variables names and values:
+
+  ENV.take(5)
+  # =>
+  [["COLORTERM", "truecolor"],
+   ["DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus"],
+   ["DESKTOP_SESSION", "ubuntu"],
+   ["DISPLAY", ":0"],
+   ["GDMSESSION", "ubuntu"]]
 
 ==== <tt>ARGF</tt>
 
@@ -242,7 +324,73 @@ or from <tt>$stdin</tt> if no files were given.
 
 ==== <tt>ARGV</tt>
 
-An array of the given command-line.
+An array of the given command-line arguments.
+
+==== <tt>TOPLEVEL_BINDING</tt>
+
+The Binding of the top level scope:
+
+  TOPLEVEL_BINDING # => #<Binding:0x00007f58da0da7c0>
+
+==== <tt>RUBY_VERSION</tt>
+
+The Ruby version:
+
+  RUBY_VERSION # => "3.2.2"
+
+==== <tt>RUBY_RELEASE_DATE</tt>
+
+The release date string:
+
+  RUBY_RELEASE_DATE # => "2023-03-30"
+
+==== <tt>RUBY_PLATFORM</tt>
+
+The platform identifier:
+
+  RUBY_PLATFORM # => "x86_64-linux"
+
+==== <tt>RUBY_PATCHLEVEL</tt>
+
+The integer patch level for this Ruby:
+
+  RUBY_PATCHLEVEL # => 53
+
+For a development build the patch level will be -1.
+
+==== <tt>RUBY_REVISION</tt>
+
+The git commit hash for this Ruby:
+
+  RUBY_REVISION # => "e51014f9c05aa65cbf203442d37fef7c12390015"
+
+==== <tt>RUBY_COPYRIGHT</tt>
+
+The copyright string:
+
+  RUBY_COPYRIGHT
+  # => "ruby - Copyright (C) 1993-2023 Yukihiro Matsumoto"
+
+==== <tt>RUBY_ENGINE</tt>
+
+The name of the Ruby implementation:
+
+  RUBY_ENGINE # => "ruby"
+
+==== <tt>RUBY_ENGINE_VERSION</tt>
+
+The version of the Ruby implementation:
+
+  RUBY_ENGINE_VERSION # => "3.2.2"
+
+==== <tt>RUBY_DESCRIPTION</tt>
+
+The description of the Ruby implementation:
+
+  RUBY_DESCRIPTION
+  # => "ruby 3.2.2 (2023-03-30 revision e51014f9c0) [x86_64-linux]"
+
+=== Embedded \Data
 
 ==== <tt>DATA</tt>
 
@@ -267,45 +415,3 @@ Output:
   "Foo\n"
   "Bar\n"
   "Baz\n"
-
-==== <tt>TOPLEVEL_BINDING</tt>
-
-The Binding of the top level scope.
-
-
-==== <tt>RUBY_VERSION</tt>
-
-   The Ruby language version.
-
-==== <tt>RUBY_RELEASE_DATE</tt>
-
-The release date string.
-
-==== <tt>RUBY_PLATFORM</tt>
-
-  The platform identifier.
-
-==== <tt>RUBY_PATCHLEVEL</tt>
-
-The patch level for this Ruby.
-For a development build the patch level will be -1.
-
-==== <tt>RUBY_REVISION</tt>
-
-The git commit hash for this Ruby.
-
-==== <tt>RUBY_COPYRIGHT</tt>
-
-The copyright string for Ruby.
-
-==== <tt>RUBY_ENGINE</tt>
-
-The name of the Ruby implementation.
-
-==== <tt>RUBY_ENGINE_VERSION</tt>
-
-The version of the Ruby implementation.
-
-==== <tt>RUBY_DESCRIPTION</tt>
-
-The description of the Ruby implementation.
