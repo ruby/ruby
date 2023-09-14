@@ -3371,6 +3371,23 @@ yp_match_required_node_create(yp_parser_t *parser, yp_node_t *value, yp_node_t *
     return node;
 }
 
+// Allocate and initialize a new MatchWriteNode node.
+static yp_match_write_node_t *
+yp_match_write_node_create(yp_parser_t *parser, yp_call_node_t *call) {
+    yp_match_write_node_t *node = YP_ALLOC_NODE(parser, yp_match_write_node_t);
+
+    *node = (yp_match_write_node_t) {
+        {
+            .type = YP_MATCH_WRITE_NODE,
+            .location = call->base.location
+        },
+        .call = call
+    };
+
+    yp_constant_id_list_init(&node->locals);
+    return node;
+}
+
 // Allocate a new ModuleNode node.
 static yp_module_node_t *
 yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *module_keyword, yp_node_t *constant_path, const yp_token_t *name, yp_node_t *body, const yp_token_t *end_keyword) {
@@ -13612,8 +13629,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
             return (yp_node_t *) yp_or_node_create(parser, node, &token, right);
         }
         case YP_TOKEN_EQUAL_TILDE: {
-            // Note that we _must_ parse the value before adding the local variables
-            // in order to properly mirror the behavior of Ruby. For example,
+            // Note that we _must_ parse the value before adding the local
+            // variables in order to properly mirror the behavior of Ruby. For
+            // example,
             //
             //     /(?<foo>bar)/ =~ foo
             //
@@ -13621,27 +13639,36 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
             parser_lex(parser);
             yp_node_t *argument = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
 
-            // If the receiver of this =~ is a regular expression node, then we need
-            // to introduce local variables for it based on its named capture groups.
+            // By default, we're going to create a call node and then return it.
+            yp_call_node_t *call = yp_call_node_binary_create(parser, node, &token, argument);
+            yp_node_t *result = (yp_node_t *) call;
+
+            // If the receiver of this =~ is a regular expression node, then we
+            // need to introduce local variables for it based on its named
+            // capture groups.
             if (YP_NODE_TYPE_P(node, YP_REGULAR_EXPRESSION_NODE)) {
                 yp_string_list_t named_captures;
                 yp_string_list_init(&named_captures);
 
                 const yp_location_t *content_loc = &((yp_regular_expression_node_t *) node)->content_loc;
+                if (yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures, parser->encoding_changed, &parser->encoding) && (named_captures.length > 0)) {
+                    yp_match_write_node_t *match = yp_match_write_node_create(parser, call);
 
-                if (yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures, parser->encoding_changed, &parser->encoding)) {
                     for (size_t index = 0; index < named_captures.length; index++) {
                         yp_string_t *name = &named_captures.strings[index];
                         assert(name->type == YP_STRING_SHARED);
 
-                        yp_parser_local_add_location(parser, name->source, name->source + name->length);
+                        yp_constant_id_t local = yp_parser_local_add_location(parser, name->source, name->source + name->length);
+                        yp_constant_id_list_append(&match->locals, local);
                     }
+
+                    result = (yp_node_t *) match;
                 }
 
                 yp_string_list_free(&named_captures);
             }
 
-            return (yp_node_t *) yp_call_node_binary_create(parser, node, &token, argument);
+            return result;
         }
         case YP_TOKEN_UAMPERSAND:
         case YP_TOKEN_USTAR:

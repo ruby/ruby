@@ -1798,6 +1798,19 @@ nodes:
 
           foo => bar
           ^^^^^^^^^^
+  - name: MatchWriteNode
+    fields:
+      - name: call
+        type: node
+        kind: CallNode
+      - name: locals
+        type: constant[]
+    comment: |
+      Represents writing local variables using a regular expression match with
+      named capture groups.
+
+          /(?<foo>bar)/ =~ baz
+          ^^^^^^^^^^^^^^^^^^^^
   - name: MissingNode
     comment: |
       Represents a node that is missing from the source and results in a syntax

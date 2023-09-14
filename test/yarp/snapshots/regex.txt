@@ -84,34 +84,37 @@
         │   └── flags: ∅
         ├── @ ArrayNode (location: (59...86))
         │   ├── elements: (length: 2)
-        │   │   ├── @ CallNode (location: (60...80))
-        │   │   │   ├── receiver:
-        │   │   │   │   @ RegularExpressionNode (location: (60...73))
-        │   │   │   │   ├── opening_loc: (60...61) = "/"
-        │   │   │   │   ├── content_loc: (61...72) = "(?<foo>bar)"
-        │   │   │   │   ├── closing_loc: (72...73) = "/"
-        │   │   │   │   ├── unescaped: "(?<foo>bar)"
-        │   │   │   │   └── flags: ∅
-        │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (74...76) = "=~"
-        │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── arguments:
-        │   │   │   │   @ ArgumentsNode (location: (77...80))
-        │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ CallNode (location: (77...80))
-        │   │   │   │           ├── receiver: ∅
-        │   │   │   │           ├── call_operator_loc: ∅
-        │   │   │   │           ├── message_loc: (77...80) = "baz"
-        │   │   │   │           ├── opening_loc: ∅
-        │   │   │   │           ├── arguments: ∅
-        │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "baz"
-        │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   ├── flags: ∅
-        │   │   │   └── name: "=~"
+        │   │   ├── @ MatchWriteNode (location: (60...80))
+        │   │   │   ├── call:
+        │   │   │   │   @ CallNode (location: (60...80))
+        │   │   │   │   ├── receiver:
+        │   │   │   │   │   @ RegularExpressionNode (location: (60...73))
+        │   │   │   │   │   ├── opening_loc: (60...61) = "/"
+        │   │   │   │   │   ├── content_loc: (61...72) = "(?<foo>bar)"
+        │   │   │   │   │   ├── closing_loc: (72...73) = "/"
+        │   │   │   │   │   ├── unescaped: "(?<foo>bar)"
+        │   │   │   │   │   └── flags: ∅
+        │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── message_loc: (74...76) = "=~"
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── arguments:
+        │   │   │   │   │   @ ArgumentsNode (location: (77...80))
+        │   │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │   │       └── @ CallNode (location: (77...80))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (77...80) = "baz"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   ├── block: ∅
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── name: "=~"
+        │   │   │   └── locals: [:foo]
         │   │   └── @ LocalVariableReadNode (location: (82...85))
         │   │       ├── name: :foo
         │   │       └── depth: 0
