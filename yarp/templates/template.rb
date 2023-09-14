@@ -9,6 +9,9 @@ module YARP
 
   SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("YARP_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
 
+  JAVA_BACKEND = ENV["YARP_JAVA_BACKEND"] || "truffleruby"
+  JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
+
   # This represents a field on a node. It contains all of the necessary
   # information to template out the code for that field.
   class Field
@@ -91,7 +94,7 @@ module YARP
     end
 
     def java_type
-      "byte[]"
+      JAVA_STRING_TYPE
     end
   end
 
@@ -103,7 +106,7 @@ module YARP
     end
 
     def java_type
-      "byte[]"
+      JAVA_STRING_TYPE
     end
   end
 
@@ -115,7 +118,7 @@ module YARP
     end
 
     def java_type
-      "byte[][]"
+      "#{JAVA_STRING_TYPE}[]"
     end
   end
 
