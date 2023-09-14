@@ -63,6 +63,24 @@ An output field separator, initially +nil+.
 
 === Streams
 
+==== <tt>$stdin</tt>
+
+The current standard input stream; initially:
+
+  $stdin # => #<IO:<STDIN>>
+
+==== <tt>$stdout</tt>
+
+The current standard output stream; initially:
+
+  $stdout # => #<IO:<STDOUT>>
+
+==== <tt>$stderr</tt>
+
+The current standard error stream; initially:
+
+  $stderr # => #<IO:<STDERR>>
+
 ==== <tt>$<</tt>
 
 Points to ARGF.
@@ -127,51 +145,73 @@ Aliased as <tt>$:</tt> and <tt>$-I</tt>.
 
 ==== <tt>$LOADED_FEATURES</tt>
 
-The array contains the module names loaded by require.
-                     Aliased to $".
+Contains an array of the paths to the loaded files:
+
+  $LOADED_FEATURES.take(10)
+  # =>
+  ["enumerator.so",
+   "thread.rb",
+   "fiber.so",
+   "rational.so",
+   "complex.so",
+   "ruby2_keywords.rb",
+   "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/enc/encdb.so",
+   "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/enc/trans/transdb.so",
+   "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/rbconfig.rb",
+   "/snap/ruby/317/lib/ruby/3.2.0/rubygems/compatibility.rb"]
+
+Aliased as <tt>$"</tt>.
+
+=== Debugging
+
+==== <tt>$FILENAME</tt>
+
+The value returned by method ARGF.filename.
 
 ==== <tt>$DEBUG</tt>
 
-  The debug flag, which is set by the <tt>-d</tt> switch.  Enabling debug
-             output prints each exception raised to $stderr (but not its
-             backtrace).  Setting this to a true value enables debug output as
-             if <tt>-d</tt> were given on the command line.  Setting this to a false
-             value disables debug output. Aliased to $-d.
+Initially +true+ if command-line option <tt>-d</tt> or <tt>--debug</tt> is given,
+otherwise initially +false+;
+may be set to either value in the running program.
 
-==== <tt>$FILENAME::  Current input filename from ARGF. Same as ARGF.filename.
+When +true+, prints each raised exception to <tt>$stderr</tt>.
 
-==== <tt>$stderr</tt>
-
- The current standard error output.
-
-==== <tt>$stdin</tt>
-
-  The current standard input.
-
-==== <tt>$stdout</tt>
-
- The current standard output.
+Aliased as <tt>$-d</tt>.
 
 ==== <tt>$VERBOSE</tt>
 
-The verbose flag, which is set by the <tt>-w</tt> or <tt>-v</tt> switch.
-             Setting this to a true value enables warnings as if <tt>-w</tt> or <tt>-v</tt> were given
-             on the command line.  Setting this to +nil+ disables warnings,
-             including from Kernel#warn. Aliased to $-v and $-w.
+Initially +true+ if command-line option <tt>-v</tt> or <tt>-w</tt> is given,
+otherwise initially +false+;
+may be set to either value, or to +nil+, in the running program.
 
-==== <tt>$-a::  True if option <tt>-a</tt> is set. Read-only variable.
+When +true+, enables Ruby warnings.
 
-==== <tt>$-i::  In in-place-edit mode, this variable holds the extension, otherwise +nil+.
+When +nil+, disables warnings, including those from Kernel#warn.
 
-==== <tt>$-l::  True if option <tt>-l</tt> is set. Read-only variable.
+Aliased as <tt>$-v</tt> and <tt>$-w</tt>.
 
-==== <tt>$-p::  True if option <tt>-p</tt> is set. Read-only variable.
+==== <tt>$-a</tt>
+
+Whether command-line option <tt>-a</tt> was given. Read-only variable.
+
+==== <tt>$-i</tt>
+
+Contains the extension given with command-line option <tt>-i</tt>,
+or +nil+ if none.
+
+==== <tt>$-l</tt>
+
+Whether command-line option <tt>-l</tt> was set. Read-only variable.
+
+==== <tt>$-p</tt>
+
+Whether command-line option <tt>-p</tt> was given. Read-only variable.
 
 === Deprecated
 
 ==== <tt>$=</tt>
 
-This variable is no longer effective. Deprecated.
+This variable is no longer effective.
 
 == Pre-Defined Global Constants
 
