@@ -62,6 +62,10 @@ jobs:
       - run: md build
         working-directory:
 
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg --triplet x64-windows install openssl
+
       - name: link libraries 1
         run: |
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
