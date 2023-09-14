@@ -114,6 +114,11 @@ fn rb_bug_panic_hook() {
 /// See [jit_compile_exception] for details.
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> *const u8 {
+    // Don't compile when there is insufficient native stack space
+    if unsafe { rb_ec_stack_check(ec as _) } != 0 {
+        return std::ptr::null();
+    }
+
     // Reject ISEQs with very large temp stacks,
     // this will allow us to use u8/i8 values to track stack_size and sp_offset
     let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };

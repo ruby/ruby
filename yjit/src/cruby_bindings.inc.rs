@@ -1173,6 +1173,7 @@ extern "C" {
     ) -> *const rb_callable_method_entry_t;
     pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
+    pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
