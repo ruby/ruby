@@ -2151,6 +2151,18 @@ range_count(int argc, VALUE *argv, VALUE range)
     }
 }
 
+static bool
+empty_region_p(VALUE beg, VALUE end, int excl)
+{
+    if (NIL_P(beg)) return false;
+    if (NIL_P(end)) return false;
+    int less = r_less(beg, end);
+    /* empty range */
+    if (less > 0) return true;
+    if (excl && less == 0) return true;
+    return false;
+}
+
 /*
  *  call-seq:
  *    overlap?(range) -> true or false
@@ -2161,6 +2173,49 @@ range_count(int argc, VALUE *argv, VALUE range)
  *    (0..2).overlap?(3..4) #=> false
  *    (0..).overlap?(..0)   #=> true
  *
+ *  With non-range argument, raises TypeError.
+ *
+ *    (1..3).overlap?(1)         # TypeError
+ *
+ *  Returns +false+ if an internal call to <tt><=></tt> returns +nil+;
+ *  that is, the operands are not comparable.
+ *
+ *    (1..3).overlap?('a'..'d')  # => false
+ *
+ *  Returns +false+ if +self+ or +range+ is empty. "Empty range" means
+ *  that its begin value is larger than, or equal for an exclusive
+ *  range, its end value.
+ *
+ *    (4..1).overlap?(2..3)      # => false
+ *    (4..1).overlap?(..3)       # => false
+ *    (4..1).overlap?(2..)       # => false
+ *    (2...2).overlap?(1..2)     # => false
+ *
+ *    (1..4).overlap?(3..2)      # => false
+ *    (..4).overlap?(3..2)       # => false
+ *    (1..).overlap?(3..2)       # => false
+ *    (1..2).overlap?(2...2)     # => false
+ *
+ *  Returns +false+ if the begin value one of +self+ and +range+ is
+ *  larger than, or equal if the other is an exclusive range, the end
+ *  value of the other:
+ *
+ *    (4..5).overlap?(2..3)      # => false
+ *    (4..5).overlap?(2...4)     # => false
+ *
+ *    (1..2).overlap?(3..4)      # => false
+ *    (1...3).overlap?(3..4)     # => false
+ *
+ *  Returns +false+ if the end value one of +self+ and +range+ is
+ *  larger than, or equal for an exclusive range, the end value of the
+ *  other:
+ *
+ *    (4..5).overlap?(2..3)      # => false
+ *    (4..5).overlap?(2...4)     # => false
+ *
+ *    (1..2).overlap?(3..4)      # => false
+ *    (1...3).overlap?(3..4)     # => false
+ *
  *  Related: Range#cover?.
  */
 
@@ -2168,15 +2223,27 @@ static VALUE
 range_overlap(VALUE range, VALUE other)
 {
     if (!rb_obj_is_kind_of(other, rb_cRange)) {
-        rb_raise(rb_eTypeError, "argument must be Range");
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Range)",
+                 rb_class_name(rb_obj_class(other)));
     }
 
-    VALUE beg_self, beg_other;
+    VALUE self_beg = RANGE_BEG(range);
+    VALUE self_end = RANGE_END(range);
+    int self_excl = EXCL(range);
+    VALUE other_beg = RANGE_BEG(other);
+    VALUE other_end = RANGE_END(other);
+    int other_excl = EXCL(other);
 
-    beg_self = RANGE_BEG(range);
-    beg_other = RANGE_BEG(other);
+    if (empty_region_p(self_beg, other_end, other_excl)) return Qfalse;
+    if (empty_region_p(other_beg, self_end, self_excl)) return Qfalse;
 
-    return RBOOL(rb_equal(beg_self, beg_other) || range_cover(range, beg_other) || range_cover(other, beg_self));
+    /* if both begin values are equal, no more comparisons needed */
+    if (rb_equal(self_beg, other_beg)) return Qtrue;
+
+    if (empty_region_p(self_beg, self_end, self_excl)) return Qfalse;
+    if (empty_region_p(other_beg, other_end, other_excl)) return Qfalse;
+
+    return Qtrue;
 }
 
 /* A \Range object represents a collection of values
