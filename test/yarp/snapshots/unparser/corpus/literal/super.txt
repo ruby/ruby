@@ -57,58 +57,56 @@
         │   │           └── name: "b"
         │   ├── rparen_loc: (33...34) = ")"
         │   └── block: ∅
-        ├── @ SuperNode (location: (35...48))
+        ├── @ SuperNode (location: (35...47))
         │   ├── keyword_loc: (35...40) = "super"
         │   ├── lparen_loc: (40...41) = "("
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (41...47))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ BlockArgumentNode (location: (41...47))
-        │   │           ├── expression:
-        │   │           │   @ CallNode (location: (42...47))
-        │   │           │   ├── receiver: ∅
-        │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (42...47) = "block"
-        │   │           │   ├── opening_loc: ∅
-        │   │           │   ├── arguments: ∅
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "block"
-        │   │           └── operator_loc: (41...42) = "&"
+        │   ├── arguments: ∅
         │   ├── rparen_loc: (47...48) = ")"
-        │   └── block: ∅
-        ├── @ SuperNode (location: (49...65))
+        │   └── block:
+        │       @ BlockArgumentNode (location: (41...47))
+        │       ├── expression:
+        │       │   @ CallNode (location: (42...47))
+        │       │   ├── receiver: ∅
+        │       │   ├── call_operator_loc: ∅
+        │       │   ├── message_loc: (42...47) = "block"
+        │       │   ├── opening_loc: ∅
+        │       │   ├── arguments: ∅
+        │       │   ├── closing_loc: ∅
+        │       │   ├── block: ∅
+        │       │   ├── flags: variable_call
+        │       │   └── name: "block"
+        │       └── operator_loc: (41...42) = "&"
+        ├── @ SuperNode (location: (49...64))
         │   ├── keyword_loc: (49...54) = "super"
         │   ├── lparen_loc: (54...55) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (55...64))
-        │   │   └── arguments: (length: 2)
-        │   │       ├── @ CallNode (location: (55...56))
-        │   │       │   ├── receiver: ∅
-        │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (55...56) = "a"
-        │   │       │   ├── opening_loc: ∅
-        │   │       │   ├── arguments: ∅
-        │   │       │   ├── closing_loc: ∅
-        │   │       │   ├── block: ∅
-        │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "a"
-        │   │       └── @ BlockArgumentNode (location: (58...64))
-        │   │           ├── expression:
-        │   │           │   @ CallNode (location: (59...64))
-        │   │           │   ├── receiver: ∅
-        │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (59...64) = "block"
-        │   │           │   ├── opening_loc: ∅
-        │   │           │   ├── arguments: ∅
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "block"
-        │   │           └── operator_loc: (58...59) = "&"
+        │   │   @ ArgumentsNode (location: (55...56))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (55...56))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (55...56) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
         │   ├── rparen_loc: (64...65) = ")"
-        │   └── block: ∅
+        │   └── block:
+        │       @ BlockArgumentNode (location: (58...64))
+        │       ├── expression:
+        │       │   @ CallNode (location: (59...64))
+        │       │   ├── receiver: ∅
+        │       │   ├── call_operator_loc: ∅
+        │       │   ├── message_loc: (59...64) = "block"
+        │       │   ├── opening_loc: ∅
+        │       │   ├── arguments: ∅
+        │       │   ├── closing_loc: ∅
+        │       │   ├── block: ∅
+        │       │   ├── flags: variable_call
+        │       │   └── name: "block"
+        │       └── operator_loc: (58...59) = "&"
         ├── @ SuperNode (location: (66...84))
         │   ├── keyword_loc: (66...71) = "super"
         │   ├── lparen_loc: (71...72) = "("

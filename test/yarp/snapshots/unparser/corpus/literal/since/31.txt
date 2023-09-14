@@ -21,21 +21,19 @@
         │   │       ├── name_loc: ∅
         │   │       └── operator_loc: (8...9) = "&"
         │   ├── body:
-        │   │   @ StatementsNode (location: (13...19))
+        │   │   @ StatementsNode (location: (13...18))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (13...19))
+        │   │       └── @ CallNode (location: (13...18))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── message_loc: (13...16) = "bar"
         │   │           ├── opening_loc: (16...17) = "("
-        │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (17...18))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ BlockArgumentNode (location: (17...18))
-        │   │           │           ├── expression: ∅
-        │   │           │           └── operator_loc: (17...18) = "&"
+        │   │           ├── arguments: ∅
         │   │           ├── closing_loc: (18...19) = ")"
-        │   │           ├── block: ∅
+        │   │           ├── block:
+        │   │           │   @ BlockArgumentNode (location: (17...18))
+        │   │           │   ├── expression: ∅
+        │   │           │   └── operator_loc: (17...18) = "&"
         │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:&]
@@ -65,21 +63,19 @@
             │       ├── name_loc: ∅
             │       └── operator_loc: (36...37) = "&"
             ├── body:
-            │   @ StatementsNode (location: (41...47))
+            │   @ StatementsNode (location: (41...46))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (41...47))
+            │       └── @ CallNode (location: (41...46))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (41...44) = "bar"
             │           ├── opening_loc: (44...45) = "("
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (45...46))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ BlockArgumentNode (location: (45...46))
-            │           │           ├── expression: ∅
-            │           │           └── operator_loc: (45...46) = "&"
+            │           ├── arguments: ∅
             │           ├── closing_loc: (46...47) = ")"
-            │           ├── block: ∅
+            │           ├── block:
+            │           │   @ BlockArgumentNode (location: (45...46))
+            │           │   ├── expression: ∅
+            │           │   └── operator_loc: (45...46) = "&"
             │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:a, :&]

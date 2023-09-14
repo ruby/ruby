@@ -267,29 +267,27 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "a?"
-        ├── @ CallNode (location: (108...117))
+        ├── @ CallNode (location: (108...116))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (108...109) = "a"
         │   ├── opening_loc: (109...110) = "("
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (110...116))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ BlockArgumentNode (location: (110...116))
-        │   │           ├── expression:
-        │   │           │   @ CallNode (location: (111...116))
-        │   │           │   ├── receiver: ∅
-        │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (111...116) = "block"
-        │   │           │   ├── opening_loc: ∅
-        │   │           │   ├── arguments: ∅
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "block"
-        │   │           └── operator_loc: (110...111) = "&"
+        │   ├── arguments: ∅
         │   ├── closing_loc: (116...117) = ")"
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (110...116))
+        │   │   ├── expression:
+        │   │   │   @ CallNode (location: (111...116))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (111...116) = "block"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "block"
+        │   │   └── operator_loc: (110...111) = "&"
         │   ├── flags: ∅
         │   └── name: "a"
         ├── @ CallNode (location: (119...130))
@@ -751,68 +749,68 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "foo"
-        ├── @ CallNode (location: (300...340))
+        ├── @ CallNode (location: (300...339))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (300...303) = "foo"
         │   ├── opening_loc: (303...304) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (304...339))
-        │   │   └── arguments: (length: 3)
+        │   │   @ ArgumentsNode (location: (304...332))
+        │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (304...306))
         │   │       │   ├── opening_loc: (304...305) = ":"
         │   │       │   ├── value_loc: (305...306) = "a"
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
-        │   │       ├── @ KeywordHashNode (location: (308...332))
-        │   │       │   └── elements: (length: 2)
-        │   │       │       ├── @ AssocNode (location: (308...322))
-        │   │       │       │   ├── key:
-        │   │       │       │   │   @ SymbolNode (location: (308...310))
-        │   │       │       │   │   ├── opening_loc: (308...309) = ":"
-        │   │       │       │   │   ├── value_loc: (309...310) = "h"
-        │   │       │       │   │   ├── closing_loc: ∅
-        │   │       │       │   │   └── unescaped: "h"
-        │   │       │       │   ├── value:
-        │   │       │       │   │   @ ArrayNode (location: (314...322))
-        │   │       │       │   │   ├── elements: (length: 2)
-        │   │       │       │   │   │   ├── @ SymbolNode (location: (315...317))
-        │   │       │       │   │   │   │   ├── opening_loc: (315...316) = ":"
-        │   │       │       │   │   │   │   ├── value_loc: (316...317) = "x"
-        │   │       │       │   │   │   │   ├── closing_loc: ∅
-        │   │       │       │   │   │   │   └── unescaped: "x"
-        │   │       │       │   │   │   └── @ SymbolNode (location: (319...321))
-        │   │       │       │   │   │       ├── opening_loc: (319...320) = ":"
-        │   │       │       │   │   │       ├── value_loc: (320...321) = "y"
-        │   │       │       │   │   │       ├── closing_loc: ∅
-        │   │       │       │   │   │       └── unescaped: "y"
-        │   │       │       │   │   ├── opening_loc: (314...315) = "["
-        │   │       │       │   │   └── closing_loc: (321...322) = "]"
-        │   │       │       │   └── operator_loc: (311...313) = "=>"
-        │   │       │       └── @ AssocNode (location: (324...332))
-        │   │       │           ├── key:
-        │   │       │           │   @ SymbolNode (location: (324...326))
-        │   │       │           │   ├── opening_loc: (324...325) = ":"
-        │   │       │           │   ├── value_loc: (325...326) = "a"
-        │   │       │           │   ├── closing_loc: ∅
-        │   │       │           │   └── unescaped: "a"
-        │   │       │           ├── value:
-        │   │       │           │   @ SymbolNode (location: (330...332))
-        │   │       │           │   ├── opening_loc: (330...331) = ":"
-        │   │       │           │   ├── value_loc: (331...332) = "b"
-        │   │       │           │   ├── closing_loc: ∅
-        │   │       │           │   └── unescaped: "b"
-        │   │       │           └── operator_loc: (327...329) = "=>"
-        │   │       └── @ BlockArgumentNode (location: (334...339))
-        │   │           ├── expression:
-        │   │           │   @ SymbolNode (location: (335...339))
-        │   │           │   ├── opening_loc: (335...336) = ":"
-        │   │           │   ├── value_loc: (336...339) = "bar"
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   └── unescaped: "bar"
-        │   │           └── operator_loc: (334...335) = "&"
+        │   │       └── @ KeywordHashNode (location: (308...332))
+        │   │           └── elements: (length: 2)
+        │   │               ├── @ AssocNode (location: (308...322))
+        │   │               │   ├── key:
+        │   │               │   │   @ SymbolNode (location: (308...310))
+        │   │               │   │   ├── opening_loc: (308...309) = ":"
+        │   │               │   │   ├── value_loc: (309...310) = "h"
+        │   │               │   │   ├── closing_loc: ∅
+        │   │               │   │   └── unescaped: "h"
+        │   │               │   ├── value:
+        │   │               │   │   @ ArrayNode (location: (314...322))
+        │   │               │   │   ├── elements: (length: 2)
+        │   │               │   │   │   ├── @ SymbolNode (location: (315...317))
+        │   │               │   │   │   │   ├── opening_loc: (315...316) = ":"
+        │   │               │   │   │   │   ├── value_loc: (316...317) = "x"
+        │   │               │   │   │   │   ├── closing_loc: ∅
+        │   │               │   │   │   │   └── unescaped: "x"
+        │   │               │   │   │   └── @ SymbolNode (location: (319...321))
+        │   │               │   │   │       ├── opening_loc: (319...320) = ":"
+        │   │               │   │   │       ├── value_loc: (320...321) = "y"
+        │   │               │   │   │       ├── closing_loc: ∅
+        │   │               │   │   │       └── unescaped: "y"
+        │   │               │   │   ├── opening_loc: (314...315) = "["
+        │   │               │   │   └── closing_loc: (321...322) = "]"
+        │   │               │   └── operator_loc: (311...313) = "=>"
+        │   │               └── @ AssocNode (location: (324...332))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (324...326))
+        │   │                   │   ├── opening_loc: (324...325) = ":"
+        │   │                   │   ├── value_loc: (325...326) = "a"
+        │   │                   │   ├── closing_loc: ∅
+        │   │                   │   └── unescaped: "a"
+        │   │                   ├── value:
+        │   │                   │   @ SymbolNode (location: (330...332))
+        │   │                   │   ├── opening_loc: (330...331) = ":"
+        │   │                   │   ├── value_loc: (331...332) = "b"
+        │   │                   │   ├── closing_loc: ∅
+        │   │                   │   └── unescaped: "b"
+        │   │                   └── operator_loc: (327...329) = "=>"
         │   ├── closing_loc: (339...340) = ")"
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (334...339))
+        │   │   ├── expression:
+        │   │   │   @ SymbolNode (location: (335...339))
+        │   │   │   ├── opening_loc: (335...336) = ":"
+        │   │   │   ├── value_loc: (336...339) = "bar"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "bar"
+        │   │   └── operator_loc: (334...335) = "&"
         │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (342...391))
@@ -1063,48 +1061,48 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "hi"
-        ├── @ CallNode (location: (535...571))
+        ├── @ CallNode (location: (535...570))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (535...538) = "foo"
         │   ├── opening_loc: (538...539) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (539...570))
-        │   │   └── arguments: (length: 2)
-        │   │       ├── @ HashNode (location: (539...561))
-        │   │       │   ├── opening_loc: (539...540) = "{"
-        │   │       │   ├── elements: (length: 2)
-        │   │       │   │   ├── @ AssocNode (location: (541...548))
-        │   │       │   │   │   ├── key:
-        │   │       │   │   │   │   @ SymbolNode (location: (541...543))
-        │   │       │   │   │   │   ├── opening_loc: ∅
-        │   │       │   │   │   │   ├── value_loc: (541...542) = "a"
-        │   │       │   │   │   │   ├── closing_loc: (542...543) = ":"
-        │   │       │   │   │   │   └── unescaped: "a"
-        │   │       │   │   │   ├── value:
-        │   │       │   │   │   │   @ TrueNode (location: (544...548))
-        │   │       │   │   │   └── operator_loc: ∅
-        │   │       │   │   └── @ AssocNode (location: (550...558))
-        │   │       │   │       ├── key:
-        │   │       │   │       │   @ SymbolNode (location: (550...552))
-        │   │       │   │       │   ├── opening_loc: ∅
-        │   │       │   │       │   ├── value_loc: (550...551) = "b"
-        │   │       │   │       │   ├── closing_loc: (551...552) = ":"
-        │   │       │   │       │   └── unescaped: "b"
-        │   │       │   │       ├── value:
-        │   │       │   │       │   @ FalseNode (location: (553...558))
-        │   │       │   │       └── operator_loc: ∅
-        │   │       │   └── closing_loc: (560...561) = "}"
-        │   │       └── @ BlockArgumentNode (location: (563...570))
-        │   │           ├── expression:
-        │   │           │   @ SymbolNode (location: (564...570))
-        │   │           │   ├── opening_loc: (564...565) = ":"
-        │   │           │   ├── value_loc: (565...570) = "block"
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   └── unescaped: "block"
-        │   │           └── operator_loc: (563...564) = "&"
+        │   │   @ ArgumentsNode (location: (539...561))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ HashNode (location: (539...561))
+        │   │           ├── opening_loc: (539...540) = "{"
+        │   │           ├── elements: (length: 2)
+        │   │           │   ├── @ AssocNode (location: (541...548))
+        │   │           │   │   ├── key:
+        │   │           │   │   │   @ SymbolNode (location: (541...543))
+        │   │           │   │   │   ├── opening_loc: ∅
+        │   │           │   │   │   ├── value_loc: (541...542) = "a"
+        │   │           │   │   │   ├── closing_loc: (542...543) = ":"
+        │   │           │   │   │   └── unescaped: "a"
+        │   │           │   │   ├── value:
+        │   │           │   │   │   @ TrueNode (location: (544...548))
+        │   │           │   │   └── operator_loc: ∅
+        │   │           │   └── @ AssocNode (location: (550...558))
+        │   │           │       ├── key:
+        │   │           │       │   @ SymbolNode (location: (550...552))
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── value_loc: (550...551) = "b"
+        │   │           │       │   ├── closing_loc: (551...552) = ":"
+        │   │           │       │   └── unescaped: "b"
+        │   │           │       ├── value:
+        │   │           │       │   @ FalseNode (location: (553...558))
+        │   │           │       └── operator_loc: ∅
+        │   │           └── closing_loc: (560...561) = "}"
         │   ├── closing_loc: (570...571) = ")"
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (563...570))
+        │   │   ├── expression:
+        │   │   │   @ SymbolNode (location: (564...570))
+        │   │   │   ├── opening_loc: (564...565) = ":"
+        │   │   │   ├── value_loc: (565...570) = "block"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "block"
+        │   │   └── operator_loc: (563...564) = "&"
         │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (573...593))
@@ -1195,19 +1193,17 @@
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (629...632) = "foo"
         │   ├── opening_loc: ∅
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (633...640))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ BlockArgumentNode (location: (633...640))
-        │   │           ├── expression:
-        │   │           │   @ SymbolNode (location: (634...640))
-        │   │           │   ├── opening_loc: (634...635) = ":"
-        │   │           │   ├── value_loc: (635...640) = "block"
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   └── unescaped: "block"
-        │   │           └── operator_loc: (633...634) = "&"
+        │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (633...640))
+        │   │   ├── expression:
+        │   │   │   @ SymbolNode (location: (634...640))
+        │   │   │   ├── opening_loc: (634...635) = ":"
+        │   │   │   ├── value_loc: (635...640) = "block"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "block"
+        │   │   └── operator_loc: (633...634) = "&"
         │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (642...672))
@@ -1216,40 +1212,40 @@
         │   ├── message_loc: (642...645) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (646...672))
-        │   │   └── arguments: (length: 2)
-        │   │       ├── @ KeywordHashNode (location: (646...663))
-        │   │       │   └── elements: (length: 2)
-        │   │       │       ├── @ AssocNode (location: (646...653))
-        │   │       │       │   ├── key:
-        │   │       │       │   │   @ SymbolNode (location: (646...648))
-        │   │       │       │   │   ├── opening_loc: ∅
-        │   │       │       │   │   ├── value_loc: (646...647) = "a"
-        │   │       │       │   │   ├── closing_loc: (647...648) = ":"
-        │   │       │       │   │   └── unescaped: "a"
-        │   │       │       │   ├── value:
-        │   │       │       │   │   @ TrueNode (location: (649...653))
-        │   │       │       │   └── operator_loc: ∅
-        │   │       │       └── @ AssocNode (location: (655...663))
-        │   │       │           ├── key:
-        │   │       │           │   @ SymbolNode (location: (655...657))
-        │   │       │           │   ├── opening_loc: ∅
-        │   │       │           │   ├── value_loc: (655...656) = "b"
-        │   │       │           │   ├── closing_loc: (656...657) = ":"
-        │   │       │           │   └── unescaped: "b"
-        │   │       │           ├── value:
-        │   │       │           │   @ FalseNode (location: (658...663))
-        │   │       │           └── operator_loc: ∅
-        │   │       └── @ BlockArgumentNode (location: (665...672))
-        │   │           ├── expression:
-        │   │           │   @ SymbolNode (location: (666...672))
-        │   │           │   ├── opening_loc: (666...667) = ":"
-        │   │           │   ├── value_loc: (667...672) = "block"
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   └── unescaped: "block"
-        │   │           └── operator_loc: (665...666) = "&"
+        │   │   @ ArgumentsNode (location: (646...663))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (646...663))
+        │   │           └── elements: (length: 2)
+        │   │               ├── @ AssocNode (location: (646...653))
+        │   │               │   ├── key:
+        │   │               │   │   @ SymbolNode (location: (646...648))
+        │   │               │   │   ├── opening_loc: ∅
+        │   │               │   │   ├── value_loc: (646...647) = "a"
+        │   │               │   │   ├── closing_loc: (647...648) = ":"
+        │   │               │   │   └── unescaped: "a"
+        │   │               │   ├── value:
+        │   │               │   │   @ TrueNode (location: (649...653))
+        │   │               │   └── operator_loc: ∅
+        │   │               └── @ AssocNode (location: (655...663))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (655...657))
+        │   │                   │   ├── opening_loc: ∅
+        │   │                   │   ├── value_loc: (655...656) = "b"
+        │   │                   │   ├── closing_loc: (656...657) = ":"
+        │   │                   │   └── unescaped: "b"
+        │   │                   ├── value:
+        │   │                   │   @ FalseNode (location: (658...663))
+        │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (665...672))
+        │   │   ├── expression:
+        │   │   │   @ SymbolNode (location: (666...672))
+        │   │   │   ├── opening_loc: (666...667) = ":"
+        │   │   │   ├── value_loc: (667...672) = "block"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "block"
+        │   │   └── operator_loc: (665...666) = "&"
         │   ├── flags: ∅
         │   └── name: "foo"
         ├── @ CallNode (location: (674...695))

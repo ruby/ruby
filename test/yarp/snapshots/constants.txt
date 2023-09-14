@@ -135,24 +135,22 @@
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (71...74) = "Foo"
         │   ├── opening_loc: ∅
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (75...79))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ BlockArgumentNode (location: (75...79))
-        │   │           ├── expression:
-        │   │           │   @ CallNode (location: (76...79))
-        │   │           │   ├── receiver: ∅
-        │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (76...79) = "bar"
-        │   │           │   ├── opening_loc: ∅
-        │   │           │   ├── arguments: ∅
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "bar"
-        │   │           └── operator_loc: (75...76) = "&"
+        │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (75...79))
+        │   │   ├── expression:
+        │   │   │   @ CallNode (location: (76...79))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (76...79) = "bar"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "bar"
+        │   │   └── operator_loc: (75...76) = "&"
         │   ├── flags: ∅
         │   └── name: "Foo"
         ├── @ CallNode (location: (81...94))
@@ -218,24 +216,22 @@
         │   ├── call_operator_loc: (115...117) = "::"
         │   ├── message_loc: (117...120) = "Bar"
         │   ├── opening_loc: ∅
-        │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (121...125))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ BlockArgumentNode (location: (121...125))
-        │   │           ├── expression:
-        │   │           │   @ CallNode (location: (122...125))
-        │   │           │   ├── receiver: ∅
-        │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (122...125) = "baz"
-        │   │           │   ├── opening_loc: ∅
-        │   │           │   ├── arguments: ∅
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "baz"
-        │   │           └── operator_loc: (121...122) = "&"
+        │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (121...125))
+        │   │   ├── expression:
+        │   │   │   @ CallNode (location: (122...125))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (122...125) = "baz"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "baz"
+        │   │   └── operator_loc: (121...122) = "&"
         │   ├── flags: ∅
         │   └── name: "Bar"
         ├── @ CallNode (location: (127...135))

@@ -21,21 +21,19 @@
             │       ├── name_loc: ∅
             │       └── operator_loc: (8...9) = "&"
             ├── body:
-            │   @ StatementsNode (location: (12...18))
+            │   @ StatementsNode (location: (12...17))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (12...18))
+            │       └── @ CallNode (location: (12...17))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (12...15) = "bar"
             │           ├── opening_loc: (15...16) = "("
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (16...17))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ BlockArgumentNode (location: (16...17))
-            │           │           ├── expression: ∅
-            │           │           └── operator_loc: (16...17) = "&"
+            │           ├── arguments: ∅
             │           ├── closing_loc: (17...18) = ")"
-            │           ├── block: ∅
+            │           ├── block:
+            │           │   @ BlockArgumentNode (location: (16...17))
+            │           │   ├── expression: ∅
+            │           │   └── operator_loc: (16...17) = "&"
             │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:&]

@@ -364,12 +364,9 @@ module YARP
         nil,
         Location(),
         Location(),
-        ArgumentsNode([
-          BlockArgumentNode(expression("block"), Location()),
-          expression("foo")
-        ]),
+        ArgumentsNode([expression("foo")]),
         Location(),
-        nil,
+        BlockArgumentNode(expression("block"), Location()),
         0,
         "a"
       )

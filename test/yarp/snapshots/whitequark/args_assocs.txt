@@ -28,42 +28,42 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "fun"
-        ├── @ CallNode (location: (16...36))
+        ├── @ CallNode (location: (16...35))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (16...19) = "fun"
         │   ├── opening_loc: (19...20) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (20...35))
-        │   │   └── arguments: (length: 2)
-        │   │       ├── @ KeywordHashNode (location: (20...29))
-        │   │       │   └── elements: (length: 1)
-        │   │       │       └── @ AssocNode (location: (20...29))
-        │   │       │           ├── key:
-        │   │       │           │   @ SymbolNode (location: (20...24))
-        │   │       │           │   ├── opening_loc: (20...21) = ":"
-        │   │       │           │   ├── value_loc: (21...24) = "foo"
-        │   │       │           │   ├── closing_loc: ∅
-        │   │       │           │   └── unescaped: "foo"
-        │   │       │           ├── value:
-        │   │       │           │   @ IntegerNode (location: (28...29))
-        │   │       │           │   └── flags: decimal
-        │   │       │           └── operator_loc: (25...27) = "=>"
-        │   │       └── @ BlockArgumentNode (location: (31...35))
-        │   │           ├── expression:
-        │   │           │   @ CallNode (location: (32...35))
-        │   │           │   ├── receiver: ∅
-        │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (32...35) = "baz"
-        │   │           │   ├── opening_loc: ∅
-        │   │           │   ├── arguments: ∅
-        │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "baz"
-        │   │           └── operator_loc: (31...32) = "&"
+        │   │   @ ArgumentsNode (location: (20...29))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (20...29))
+        │   │           └── elements: (length: 1)
+        │   │               └── @ AssocNode (location: (20...29))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (20...24))
+        │   │                   │   ├── opening_loc: (20...21) = ":"
+        │   │                   │   ├── value_loc: (21...24) = "foo"
+        │   │                   │   ├── closing_loc: ∅
+        │   │                   │   └── unescaped: "foo"
+        │   │                   ├── value:
+        │   │                   │   @ IntegerNode (location: (28...29))
+        │   │                   │   └── flags: decimal
+        │   │                   └── operator_loc: (25...27) = "=>"
         │   ├── closing_loc: (35...36) = ")"
-        │   ├── block: ∅
+        │   ├── block:
+        │   │   @ BlockArgumentNode (location: (31...35))
+        │   │   ├── expression:
+        │   │   │   @ CallNode (location: (32...35))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (32...35) = "baz"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "baz"
+        │   │   └── operator_loc: (31...32) = "&"
         │   ├── flags: ∅
         │   └── name: "fun"
         ├── @ CallNode (location: (38...59))

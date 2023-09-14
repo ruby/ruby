@@ -1,7 +1,7 @@
-@ ProgramNode (location: (0...36))
+@ ProgramNode (location: (0...35))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...36))
+    @ StatementsNode (location: (0...35))
     └── body: (length: 2)
         ├── @ CallNode (location: (0...14))
         │   ├── receiver: ∅
@@ -38,14 +38,14 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "fun"
-        └── @ CallNode (location: (16...36))
+        └── @ CallNode (location: (16...35))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── message_loc: (16...19) = "fun"
             ├── opening_loc: (19...20) = "("
             ├── arguments:
-            │   @ ArgumentsNode (location: (20...35))
-            │   └── arguments: (length: 3)
+            │   @ ArgumentsNode (location: (20...29))
+            │   └── arguments: (length: 2)
             │       ├── @ CallNode (location: (20...23))
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
@@ -56,33 +56,33 @@
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
             │       │   └── name: "foo"
-            │       ├── @ SplatNode (location: (25...29))
-            │       │   ├── operator_loc: (25...26) = "*"
-            │       │   └── expression:
-            │       │       @ CallNode (location: (26...29))
-            │       │       ├── receiver: ∅
-            │       │       ├── call_operator_loc: ∅
-            │       │       ├── message_loc: (26...29) = "bar"
-            │       │       ├── opening_loc: ∅
-            │       │       ├── arguments: ∅
-            │       │       ├── closing_loc: ∅
-            │       │       ├── block: ∅
-            │       │       ├── flags: variable_call
-            │       │       └── name: "bar"
-            │       └── @ BlockArgumentNode (location: (31...35))
-            │           ├── expression:
-            │           │   @ CallNode (location: (32...35))
-            │           │   ├── receiver: ∅
-            │           │   ├── call_operator_loc: ∅
-            │           │   ├── message_loc: (32...35) = "baz"
-            │           │   ├── opening_loc: ∅
-            │           │   ├── arguments: ∅
-            │           │   ├── closing_loc: ∅
-            │           │   ├── block: ∅
-            │           │   ├── flags: variable_call
-            │           │   └── name: "baz"
-            │           └── operator_loc: (31...32) = "&"
+            │       └── @ SplatNode (location: (25...29))
+            │           ├── operator_loc: (25...26) = "*"
+            │           └── expression:
+            │               @ CallNode (location: (26...29))
+            │               ├── receiver: ∅
+            │               ├── call_operator_loc: ∅
+            │               ├── message_loc: (26...29) = "bar"
+            │               ├── opening_loc: ∅
+            │               ├── arguments: ∅
+            │               ├── closing_loc: ∅
+            │               ├── block: ∅
+            │               ├── flags: variable_call
+            │               └── name: "bar"
             ├── closing_loc: (35...36) = ")"
-            ├── block: ∅
+            ├── block:
+            │   @ BlockArgumentNode (location: (31...35))
+            │   ├── expression:
+            │   │   @ CallNode (location: (32...35))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (32...35) = "baz"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: "baz"
+            │   └── operator_loc: (31...32) = "&"
             ├── flags: ∅
             └── name: "fun"

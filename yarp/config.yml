@@ -668,7 +668,6 @@ nodes:
         type: location?
       - name: block
         type: node?
-        kind: BlockNode
       - name: flags
         type: flags
         kind: CallNodeFlags
@@ -2315,7 +2314,6 @@ nodes:
         type: location?
       - name: block
         type: node?
-        kind: BlockNode
     comment: |
       Represents the use of the `super` keyword with parentheses or arguments.
 

@@ -68,7 +68,7 @@ module YARP
     end
 
     def test_BlockArgumentNode
-      assert_location(BlockArgumentNode, "foo(&bar)", 4...8) { |node| node.arguments.arguments.last }
+      assert_location(BlockArgumentNode, "foo(&bar)", 4...8, &:block)
     end
 
     def test_BlockLocalVariableNode
