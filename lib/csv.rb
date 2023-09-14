@@ -854,6 +854,15 @@ class CSV
     end
   end
 
+  # The error thrown when the parser encounters invalid encoding in CSV.
+  class InvalidEncodingError < MalformedCSVError
+    attr_reader :encoding
+    def initialize(encoding, line_number)
+      @encoding = encoding
+      super("Invalid byte sequence in #{encoding}", line_number)
+    end
+  end
+
   #
   # A FieldInfo Struct contains details about a field's position in the data
   # source it was read from.  CSV will pass this Struct to some blocks that make
