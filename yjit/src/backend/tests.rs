@@ -87,7 +87,7 @@ fn test_mov_mem2mem()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    asm.comment("check that comments work too");
+    asm_comment!(asm, "check that comments work too");
     asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
 
     asm.compile_with_num_regs(&mut cb, 1);
