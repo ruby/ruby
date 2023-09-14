@@ -1137,6 +1137,11 @@ module YARP
       assert_errors expected, "def foo(a = 1,b,*c);end", [["Unexpected parameter `*`", 16..17]]
     end
 
+    def test_invalid_message_name
+      result = YARP.parse("+.@foo,+=foo")
+      assert_equal "", result.value.statements.body.first.write_name
+    end
+
     def test_invalid_operator_write_fcall
       source = "foo! += 1"
       assert_errors expression(source), source, [

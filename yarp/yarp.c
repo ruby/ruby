@@ -1508,12 +1508,17 @@ yp_call_node_variable_call_p(yp_call_node_t *node) {
 // Initialize the read name by reading the write name and chopping off the '='.
 static void
 yp_call_write_read_name_init(yp_string_t *read_name, yp_string_t *write_name) {
-    size_t length = write_name->length - 1;
+    if (write_name->length >= 1) {
+        size_t length = write_name->length - 1;
 
-    void *memory = malloc(length);
-    memcpy(memory, write_name->source, length);
+        void *memory = malloc(length);
+        memcpy(memory, write_name->source, length);
 
-    yp_string_owned_init(read_name, (uint8_t *) memory, length);
+        yp_string_owned_init(read_name, (uint8_t *) memory, length);
+    } else {
+        // We can get here if the message was missing because of a syntax error.
+        yp_string_constant_init(read_name, "", 0);
+    }
 }
 
 // Allocate and initialize a new CallAndWriteNode node.
