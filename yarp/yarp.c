@@ -7979,26 +7979,14 @@ accept(yp_parser_t *parser, yp_token_type_t type) {
     return false;
 }
 
-// If the current token is of any of the specified types, lex forward by one
-// token and return true. Otherwise, return false. For example:
-//
-//     if (accept_any(parser, 2, YP_TOKEN_COLON, YP_TOKEN_SEMICOLON)) { ... }
-//
 static bool
-accept_any(yp_parser_t *parser, size_t count, ...) {
-    va_list types;
-    va_start(types, count);
+accept_any_2(yp_parser_t *parser, yp_token_type_t t1, yp_token_type_t t2) {
+    return accept(parser, t1) || accept(parser, t2);
+}
 
-    for (size_t index = 0; index < count; index++) {
-        if (match_type_p(parser, va_arg(types, yp_token_type_t))) {
-            parser_lex(parser);
-            va_end(types);
-            return true;
-        }
-    }
-
-    va_end(types);
-    return false;
+static bool
+accept_any_3(yp_parser_t *parser, yp_token_type_t t1, yp_token_type_t t2, yp_token_type_t t3) {
+    return accept(parser, t1) || accept(parser, t2) || accept(parser, t3);
 }
 
 // This function indicates that the parser expects a token in a specific
@@ -8541,7 +8529,7 @@ static yp_statements_node_t *
 parse_statements(yp_parser_t *parser, yp_context_t context) {
     // First, skip past any optional terminators that might be at the beginning of
     // the statements.
-    while (accept_any(parser, 2, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE));
+    while (accept_any_2(parser, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE));
 
     // If we have a terminator, then we can just return NULL.
     if (context_terminator(context, &parser->current)) return NULL;
@@ -8567,10 +8555,10 @@ parse_statements(yp_parser_t *parser, yp_context_t context) {
 
         // If we have a terminator, then we will parse all consequtive terminators
         // and then continue parsing the statements list.
-        if (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
+        if (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
             // If we have a terminator, then we will continue parsing the statements
             // list.
-            while (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+            while (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
             if (context_terminator(context, &parser->current)) break;
 
             // Now we can continue parsing the list of statements.
@@ -8595,7 +8583,7 @@ parse_statements(yp_parser_t *parser, yp_context_t context) {
         if (YP_NODE_TYPE_P(node, YP_MISSING_NODE)) {
             parser_lex(parser);
 
-            while (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+            while (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
             if (context_terminator(context, &parser->current)) break;
         } else {
             expect(parser, YP_TOKEN_NEWLINE, YP_ERR_EXPECT_EOL_AFTER_STATEMENT);
@@ -9317,7 +9305,7 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
             }
         }
 
-        if (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
+        if (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
             accept(parser, YP_TOKEN_KEYWORD_THEN);
         } else {
             expect(parser, YP_TOKEN_KEYWORD_THEN, YP_ERR_RESCUE_TERM);
@@ -9330,7 +9318,7 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
                 yp_rescue_node_statements_set(rescue, statements);
             }
             yp_accepts_block_stack_pop(parser);
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
         }
 
         if (current == NULL) {
@@ -9356,14 +9344,14 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
 
     if (accept(parser, YP_TOKEN_KEYWORD_ELSE)) {
         yp_token_t else_keyword = parser->previous;
-        accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+        accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
 
         yp_statements_node_t *else_statements = NULL;
         if (!match_any_2_type_p(parser, YP_TOKEN_KEYWORD_END, YP_TOKEN_KEYWORD_ENSURE)) {
             yp_accepts_block_stack_push(parser, true);
             else_statements = parse_statements(parser, YP_CONTEXT_RESCUE_ELSE);
             yp_accepts_block_stack_pop(parser);
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
         }
 
         yp_else_node_t *else_clause = yp_else_node_create(parser, &else_keyword, else_statements, &parser->current);
@@ -9372,14 +9360,14 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
 
     if (accept(parser, YP_TOKEN_KEYWORD_ENSURE)) {
         yp_token_t ensure_keyword = parser->previous;
-        accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+        accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
 
         yp_statements_node_t *ensure_statements = NULL;
         if (!match_type_p(parser, YP_TOKEN_KEYWORD_END)) {
             yp_accepts_block_stack_push(parser, true);
             ensure_statements = parse_statements(parser, YP_CONTEXT_ENSURE);
             yp_accepts_block_stack_pop(parser);
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
         }
 
         yp_ensure_node_t *ensure_clause = yp_ensure_node_create(parser, &ensure_keyword, ensure_statements, &parser->current);
@@ -9572,7 +9560,7 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
     yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_MODIFIER, error_id);
 
     // Predicates are closed by a term, a "then", or a term and then a "then".
-    accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+    accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
     accept(parser, YP_TOKEN_KEYWORD_THEN);
 
     context_pop(parser);
@@ -9582,7 +9570,7 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
         yp_accepts_block_stack_push(parser, true);
         statements = parse_statements(parser, context);
         yp_accepts_block_stack_pop(parser);
-        accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+        accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
     }
 
     yp_token_t end_keyword = not_provided(parser);
@@ -9610,14 +9598,14 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
             yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_MODIFIER, YP_ERR_CONDITIONAL_ELSIF_PREDICATE);
 
             // Predicates are closed by a term, a "then", or a term and then a "then".
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             accept(parser, YP_TOKEN_KEYWORD_THEN);
 
             yp_accepts_block_stack_push(parser, true);
             yp_statements_node_t *statements = parse_statements(parser, YP_CONTEXT_ELSIF);
             yp_accepts_block_stack_pop(parser);
 
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
 
             yp_node_t *elsif = (yp_node_t *) yp_if_node_create(parser, &elsif_keyword, predicate, statements, NULL, &end_keyword);
             ((yp_if_node_t *) current)->consequent = elsif;
@@ -9633,7 +9621,7 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
         yp_statements_node_t *else_statements = parse_statements(parser, YP_CONTEXT_ELSE);
         yp_accepts_block_stack_pop(parser);
 
-        accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+        accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
         expect(parser, YP_TOKEN_KEYWORD_END, YP_ERR_CONDITIONAL_TERM_ELSE);
 
         yp_else_node_t *else_node = yp_else_node_create(parser, &else_keyword, else_statements, &parser->previous);
@@ -10624,7 +10612,7 @@ parse_pattern_primitive(yp_parser_t *parser, yp_diagnostic_id_t diag_id) {
             yp_node_t *node = parse_expression(parser, YP_BINDING_POWER_MAX, diag_id);
 
             // Now that we have a primitive, we need to check if it's part of a range.
-            if (accept_any(parser, 2, YP_TOKEN_DOT_DOT, YP_TOKEN_DOT_DOT_DOT)) {
+            if (accept_any_2(parser, YP_TOKEN_DOT_DOT, YP_TOKEN_DOT_DOT_DOT)) {
                 yp_token_t operator = parser->previous;
 
                 // Now that we have the operator, we need to check if this is followed
@@ -11007,7 +10995,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         case YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
             yp_token_t opening = parser->current;
             parser_lex(parser);
-            while (accept_any(parser, 2, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE));
+            while (accept_any_2(parser, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE));
 
             // If this is the end of the file or we match a right parenthesis, then
             // we have an empty parentheses node, and we can immediately return.
@@ -11020,7 +11008,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             // statements within the parentheses.
             yp_accepts_block_stack_push(parser, true);
             yp_node_t *statement = parse_expression(parser, YP_BINDING_POWER_STATEMENT, YP_ERR_CANNOT_PARSE_EXPRESSION);
-            while (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+            while (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
 
             // If we hit a right parenthesis, then we're done parsing the parentheses
             // node, and we can check which kind of node we should return.
@@ -11073,7 +11061,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             while (!match_type_p(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
                 // Ignore semicolon without statements before them
-                if (accept_any(parser, 2, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE)) continue;
+                if (accept_any_2(parser, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE)) continue;
 
                 yp_node_t *node = parse_expression(parser, YP_BINDING_POWER_STATEMENT, YP_ERR_CANNOT_PARSE_EXPRESSION);
                 yp_statements_node_body_append(statements, node);
@@ -11087,7 +11075,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     break;
                 }
 
-                if (!accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) break;
+                if (!accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) break;
             }
 
             context_pop(parser);
@@ -11472,14 +11460,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *predicate = NULL;
 
             if (
-                accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON) ||
-                match_any_type_p(parser, 3, YP_TOKEN_KEYWORD_WHEN, YP_TOKEN_KEYWORD_IN, YP_TOKEN_KEYWORD_END) ||
+                accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON) ||
+                match_any_3_type_p(parser, YP_TOKEN_KEYWORD_WHEN, YP_TOKEN_KEYWORD_IN, YP_TOKEN_KEYWORD_END) ||
                 !token_begins_expression_p(parser->current.type)
             ) {
                 predicate = NULL;
             } else {
                 predicate = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_CASE_EXPRESSION_AFTER_CASE);
-                while (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+                while (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
             }
 
             if (accept(parser, YP_TOKEN_KEYWORD_END)) {
@@ -11516,7 +11504,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                         }
                     } while (accept(parser, YP_TOKEN_COMMA));
 
-                    if (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
+                    if (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
                         accept(parser, YP_TOKEN_KEYWORD_THEN);
                     } else {
                         expect(parser, YP_TOKEN_KEYWORD_THEN, YP_ERR_EXPECT_WHEN_DELIMITER);
@@ -11562,7 +11550,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     // It can be a newline or semicolon optionally followed by a `then`
                     // keyword.
                     yp_token_t then_keyword;
-                    if (accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
+                    if (accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
                         if (accept(parser, YP_TOKEN_KEYWORD_THEN)) {
                             then_keyword = parser->previous;
                         } else {
@@ -11589,7 +11577,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 }
             }
 
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             if (accept(parser, YP_TOKEN_KEYWORD_ELSE)) {
                 if (case_node->conditions.size < 1) {
                     yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_CASE_LONELY_ELSE);
@@ -11615,14 +11603,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             parser_lex(parser);
 
             yp_token_t begin_keyword = parser->previous;
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             yp_statements_node_t *begin_statements = NULL;
 
             if (!match_any_3_type_p(parser, YP_TOKEN_KEYWORD_RESCUE, YP_TOKEN_KEYWORD_ENSURE, YP_TOKEN_KEYWORD_END)) {
                 yp_accepts_block_stack_push(parser, true);
                 begin_statements = parse_statements(parser, YP_CONTEXT_BEGIN);
                 yp_accepts_block_stack_pop(parser);
-                accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+                accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             }
 
             yp_begin_node_t *begin_node = yp_begin_node_create(parser, &begin_keyword, begin_statements);
@@ -11725,7 +11713,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 yp_node_t *expression = parse_expression(parser, YP_BINDING_POWER_NOT, YP_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS);
 
                 yp_parser_scope_push(parser, true);
-                accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+                accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
 
                 yp_node_t *statements = NULL;
                 if (!match_any_3_type_p(parser, YP_TOKEN_KEYWORD_RESCUE, YP_TOKEN_KEYWORD_ENSURE, YP_TOKEN_KEYWORD_END)) {
@@ -11770,7 +11758,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             }
 
             yp_parser_scope_push(parser, true);
-            accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             yp_node_t *statements = NULL;
 
             if (!match_any_3_type_p(parser, YP_TOKEN_KEYWORD_RESCUE, YP_TOKEN_KEYWORD_ENSURE, YP_TOKEN_KEYWORD_END)) {
@@ -12006,7 +11994,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     parser->command_start = true;
                     expect_any(parser, YP_ERR_DEF_PARAMS_TERM, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
                 } else {
-                    accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+                    accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
                 }
 
                 yp_accepts_block_stack_push(parser, true);
@@ -12113,7 +12101,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 do_keyword = not_provided(parser);
             }
 
-            accept_any(parser, 2, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE);
+            accept_any_2(parser, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE);
             yp_statements_node_t *statements = NULL;
 
             if (!accept(parser, YP_TOKEN_KEYWORD_END)) {
@@ -12218,7 +12206,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             }
 
             yp_parser_scope_push(parser, true);
-            accept_any(parser, 2, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE);
+            accept_any_2(parser, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE);
             yp_node_t *statements = NULL;
 
             if (!match_any_3_type_p(parser, YP_TOKEN_KEYWORD_RESCUE, YP_TOKEN_KEYWORD_ENSURE, YP_TOKEN_KEYWORD_END)) {
@@ -12266,14 +12254,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_CONDITIONAL_UNTIL_PREDICATE);
             yp_do_loop_stack_pop(parser);
 
-            accept_any(parser, 3, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_3(parser, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             yp_statements_node_t *statements = NULL;
 
             if (!accept(parser, YP_TOKEN_KEYWORD_END)) {
                 yp_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, YP_CONTEXT_UNTIL);
                 yp_accepts_block_stack_pop(parser);
-                accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+                accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
                 expect(parser, YP_TOKEN_KEYWORD_END, YP_ERR_UNTIL_TERM);
             }
 
@@ -12287,14 +12275,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_CONDITIONAL_WHILE_PREDICATE);
             yp_do_loop_stack_pop(parser);
 
-            accept_any(parser, 3, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            accept_any_3(parser, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             yp_statements_node_t *statements = NULL;
 
             if (!accept(parser, YP_TOKEN_KEYWORD_END)) {
                 yp_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, YP_CONTEXT_WHILE);
                 yp_accepts_block_stack_pop(parser);
-                accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+                accept_any_2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
                 expect(parser, YP_TOKEN_KEYWORD_END, YP_ERR_WHILE_TERM);
             }
 
