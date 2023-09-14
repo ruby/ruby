@@ -149,7 +149,7 @@ jobs:
           )
       - name: check libraries
         run: |
-          dir c:\Windows\System32\
+          dir "C:\Program Files\OpenSSL"
       - name: link libraries 2
         run: |
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
