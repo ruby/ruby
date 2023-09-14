@@ -446,6 +446,7 @@ jit_compile_exception(rb_execution_context_t *ec)
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
+
     return body->jit_exception;
 }
 
