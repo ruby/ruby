@@ -208,6 +208,20 @@ module YARP
       assert_equal(Regexp::MULTILINE, options("m"))
     end
 
+    def test_flag_fixedencoding
+      assert_equal(Regexp::FIXEDENCODING, options("e"))
+      assert_equal(Regexp::FIXEDENCODING, options("u"))
+      assert_equal(Regexp::FIXEDENCODING, options("s"))
+    end
+
+    def test_flag_noencoding
+      assert_equal(Regexp::NOENCODING, options("n"))
+    end
+
+    def test_flag_once
+      assert_equal(0, options("o"))
+    end
+
     def test_flag_combined
       value = Regexp::IGNORECASE | Regexp::MULTILINE | Regexp::EXTENDED
       assert_equal(value, options("mix"))

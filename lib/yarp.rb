@@ -587,11 +587,14 @@ module YARP
 
   class InterpolatedRegularExpressionNode < Node
     # Returns a numeric value that represents the flags that were used to create
-    # the regular expression. This mirrors the Regexp#options method in Ruby.
-    # Note that this is effectively masking only the three common flags that are
-    # used in Ruby, and does not include the full set of flags like encoding.
+    # the regular expression.
     def options
-      flags & 0b111
+      o = flags & 0b111
+      o |= Regexp::FIXEDENCODING if flags & 8 != 0  # 'e'
+      o |= Regexp::FIXEDENCODING if flags & 32 != 0 # 's'
+      o |= Regexp::FIXEDENCODING if flags & 64 != 0 # 'u'
+      o |= Regexp::NOENCODING if flags & 16 != 0    # 'n'
+      o
     end
   end
 
@@ -604,11 +607,14 @@ module YARP
 
   class RegularExpressionNode < Node
     # Returns a numeric value that represents the flags that were used to create
-    # the regular expression. This mirrors the Regexp#options method in Ruby.
-    # Note that this is effectively masking only the three common flags that are
-    # used in Ruby, and does not include the full set of flags like encoding.
+    # the regular expression.
     def options
-      flags & 0b111
+      o = flags & 0b111
+      o |= Regexp::FIXEDENCODING if flags & 8 != 0  # 'e'
+      o |= Regexp::FIXEDENCODING if flags & 32 != 0 # 's'
+      o |= Regexp::FIXEDENCODING if flags & 64 != 0 # 'u'
+      o |= Regexp::NOENCODING if flags & 16 != 0    # 'n'
+      o
     end
   end
 end
