@@ -204,7 +204,7 @@ module YARP
       queue = [program]
       while (node = queue.shift)
         return node if node.is_a?(SourceFileNode)
-        queue.concat(node.child_nodes.compact)
+        queue.concat(node.compact_child_nodes)
       end
     end
 

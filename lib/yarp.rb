@@ -520,7 +520,7 @@ module YARP
           locals << [] if node.once?
         end
 
-        stack.concat(node.child_nodes.compact)
+        stack.concat(node.compact_child_nodes)
       end
 
       locals

@@ -73,7 +73,7 @@ module YARP
 
       while (node = queue.shift)
         yield node if @compiled.call(node)
-        queue.concat(node.child_nodes.compact)
+        queue.concat(node.compact_child_nodes)
       end
     end
 
