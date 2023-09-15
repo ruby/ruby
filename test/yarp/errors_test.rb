@@ -167,8 +167,15 @@ module YARP
 
     def test_unterminated_parenthesized_expression
       assert_errors expression('(1 + 2'), '(1 + 2', [
+        ["Expected a newline or semicolon after the statement", 6..6],
         ["Cannot parse the expression", 6..6],
         ["Expected a matching `)`", 6..6]
+      ]
+    end
+
+    def test_missing_terminator_in_parentheses
+      assert_error_messages "(0 0)", [
+        "Expected a newline or semicolon after the statement"
       ]
     end
 
@@ -187,6 +194,7 @@ module YARP
 
     def test_1_2_3
       assert_errors expression("(1, 2, 3)"), "(1, 2, 3)", [
+        ["Expected a newline or semicolon after the statement", 2..2],
         ["Cannot parse the expression", 2..2],
         ["Expected a matching `)`", 2..2],
         ["Expected a newline or semicolon after the statement", 2..2],
@@ -194,16 +202,17 @@ module YARP
         ["Expected a newline or semicolon after the statement", 5..5],
         ["Cannot parse the expression", 5..5],
         ["Expected a newline or semicolon after the statement", 8..8],
-        ["Cannot parse the expression", 8..8],
+        ["Cannot parse the expression", 8..8]
       ]
     end
 
     def test_return_1_2_3
       assert_error_messages "return(1, 2, 3)", [
+        "Expected a newline or semicolon after the statement",
         "Cannot parse the expression",
         "Expected a matching `)`",
         "Expected a newline or semicolon after the statement",
-        "Cannot parse the expression",
+        "Cannot parse the expression"
       ]
     end
 
@@ -215,10 +224,11 @@ module YARP
 
     def test_next_1_2_3
       assert_errors expression("next(1, 2, 3)"), "next(1, 2, 3)", [
+        ["Expected a newline or semicolon after the statement", 6..6],
         ["Cannot parse the expression", 6..6],
         ["Expected a matching `)`", 6..6],
         ["Expected a newline or semicolon after the statement", 12..12],
-        ["Cannot parse the expression", 12..12],
+        ["Cannot parse the expression", 12..12]
       ]
     end
 
@@ -230,10 +240,11 @@ module YARP
 
     def test_break_1_2_3
       assert_errors expression("break(1, 2, 3)"), "break(1, 2, 3)", [
+        ["Expected a newline or semicolon after the statement", 7..7],
         ["Cannot parse the expression", 7..7],
         ["Expected a matching `)`", 7..7],
         ["Expected a newline or semicolon after the statement", 13..13],
-        ["Cannot parse the expression", 13..13],
+        ["Cannot parse the expression", 13..13]
       ]
     end
 

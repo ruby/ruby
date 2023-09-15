@@ -11350,14 +11350,22 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 return (yp_node_t *) yp_parentheses_node_create(parser, &opening, NULL, &parser->previous);
             }
 
-            // Otherwise, we're going to parse the first statement in the list of
-            // statements within the parentheses.
+            // Otherwise, we're going to parse the first statement in the list
+            // of statements within the parentheses.
             yp_accepts_block_stack_push(parser, true);
             yp_node_t *statement = parse_expression(parser, YP_BINDING_POWER_STATEMENT, YP_ERR_CANNOT_PARSE_EXPRESSION);
-            while (accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
 
-            // If we hit a right parenthesis, then we're done parsing the parentheses
-            // node, and we can check which kind of node we should return.
+            // Determine if this statement is followed by a terminator. In the
+            // case of a single statement, this is fine. But in the case of
+            // multiple statements it's required.
+            bool terminator_found = accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            if (terminator_found) {
+                while (accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+            }
+
+            // If we hit a right parenthesis, then we're done parsing the
+            // parentheses node, and we can check which kind of node we should
+            // return.
             if (match1(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
                 if (opening.type == YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES) {
                     lex_state_set(parser, YP_LEX_STATE_ENDARG);
@@ -11404,10 +11412,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_statements_node_t *statements = yp_statements_node_create(parser);
             yp_statements_node_body_append(statements, statement);
 
-            while (!match1(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
-                // Ignore semicolon without statements before them
-                if (accept2(parser, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE)) continue;
+            // If we didn't find a terminator and we didn't find a right
+            // parenthesis, then this is a syntax error.
+            if (!terminator_found) {
+                yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.start, YP_ERR_EXPECT_EOL_AFTER_STATEMENT);
+            }
 
+            // Parse each statement within the parentheses.
+            while (true) {
                 yp_node_t *node = parse_expression(parser, YP_BINDING_POWER_STATEMENT, YP_ERR_CANNOT_PARSE_EXPRESSION);
                 yp_statements_node_body_append(statements, node);
 
@@ -11420,7 +11432,20 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     break;
                 }
 
-                if (!accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) break;
+                // If we couldn't parse an expression at all, then we need to
+                // bail out of the loop.
+                if (YP_NODE_TYPE_P(node, YP_MISSING_NODE)) break;
+
+                // If we successfully parsed a statement, then we are going to
+                // need terminator to delimit them.
+                if (accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
+                    while (accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+                    if (match1(parser, YP_TOKEN_PARENTHESIS_RIGHT)) break;
+                } else if (match1(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
+                    break;
+                } else {
+                    yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.start, YP_ERR_EXPECT_EOL_AFTER_STATEMENT);
+                }
             }
 
             context_pop(parser);
