@@ -48,6 +48,31 @@ module YARP
       }.compact.join(", ") %>]
     end
 
+    # def compact_child_nodes: () -> Array[Node]
+    def compact_child_nodes
+      <%- if node.fields.any? { |field| field.is_a?(YARP::OptionalNodeField) } -%>
+      compact = []
+      <%- node.fields.each do |field| -%>
+      <%- case field -%>
+      <%- when YARP::NodeField -%>
+      compact << <%= field.name %>
+      <%- when YARP::OptionalNodeField -%>
+      compact << <%= field.name %> if <%= field.name %>
+      <%- when YARP::NodeListField -%>
+      compact.concat(<%= field.name %>)
+      <%- end -%>
+      <%- end -%>
+      compact
+      <%- else -%>
+      [<%= node.fields.map { |field|
+        case field
+        when YARP::NodeField then field.name
+        when YARP::NodeListField then "*#{field.name}"
+        end
+      }.compact.join(", ") %>]
+      <%- end -%>
+    end
+
     # def comment_targets: () -> Array[Node | Location]
     def comment_targets
       [<%= node.fields.map { |field|
@@ -136,6 +161,13 @@ module YARP
       <%- end -%>
       inspector.to_str
     end
+
+    # Returns a symbol representation of the type of node.
+    #
+    # def human: () -> Symbol
+    def human
+      :<%= node.human %>
+    end
   end
 
   <%- end -%>
@@ -155,6 +187,55 @@ module YARP
     alias visit_<%= node.human %> visit_child_nodes
 <%= "\n" if node != nodes.last -%>
     <%- end -%>
+  end
+
+  # The dispatcher class fires events for nodes that are found while walking an AST to all registered listeners. It's
+  # useful for performing different types of analysis on the AST without having to repeat the same visits multiple times
+  class Dispatcher
+    # attr_reader listeners: Hash[Symbol, Array[Listener]]
+    attr_reader :listeners
+
+    def initialize
+      @listeners = {}
+    end
+
+    # Register a listener for one or more events
+    #
+    # def register: (Listener, *Symbol) -> void
+    def register(listener, *events)
+      events.each { |event| (listeners[event] ||= []) << listener }
+    end
+
+    # Walks `root` dispatching events to all registered listeners
+    #
+    # def dispatch: (Node) -> void
+    def dispatch(root)
+      queue = [root]
+
+      while (node = queue.shift)
+        case node.human
+        <%- nodes.each do |node| -%>
+        when :<%= node.human %>
+          listeners[:<%= node.human %>_enter]&.each { |listener| listener.<%= node.human %>_enter(node) }
+          queue = node.compact_child_nodes.concat(queue)
+          listeners[:<%= node.human %>_leave]&.each { |listener| listener.<%= node.human %>_leave(node) }
+        <%- end -%>
+        end
+      end
+    end
+
+    # Dispatches a single event for `node` to all registered listeners
+    #
+    # def dispatch_once: (Node) -> void
+    def dispatch_once(node)
+      case node.human
+      <%- nodes.each do |node| -%>
+      when :<%= node.human %>
+        listeners[:<%= node.human %>_enter]&.each { |listener| listener.<%= node.human %>_enter(node) }
+        listeners[:<%= node.human %>_leave]&.each { |listener| listener.<%= node.human %>_leave(node) }
+      <%- end -%>
+      end
+    end
   end
 
   module DSL
