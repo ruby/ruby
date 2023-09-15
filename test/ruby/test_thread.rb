@@ -3,6 +3,7 @@
 require 'test/unit'
 require "rbconfig/sizeof"
 require "timeout"
+require "fiddle"
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -1441,6 +1442,35 @@ q.pop
 
     # dead thread returns nil
     assert_nil th1.native_thread_id
+  end
+
+  def test_thread_native_thread_id_across_fork_on_linux
+    rtld_default = Fiddle.dlopen(nil)
+    omit "this test is only for Linux" unless rtld_default.sym_defined?('gettid')
+
+    gettid = Fiddle::Function.new(rtld_default['gettid'], [], Fiddle::TYPE_INT)
+
+    parent_thread_id = Thread.main.native_thread_id
+    real_parent_thread_id = gettid.call
+
+    assert_equal real_parent_thread_id, parent_thread_id
+
+    child_lines = nil
+    IO.popen('-') do |pipe|
+      if pipe
+        # parent
+        child_lines = pipe.read.lines
+      else
+        # child
+        puts Thread.main.native_thread_id
+        puts gettid.call
+      end
+    end
+    child_thread_id = child_lines[0].chomp.to_i
+    real_child_thread_id = child_lines[1].chomp.to_i
+
+    assert_equal real_child_thread_id, child_thread_id
+    refute_equal parent_thread_id, child_thread_id
   end
 
   def test_thread_interrupt_for_killed_thread
