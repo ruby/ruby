@@ -24,7 +24,7 @@ Output:
 
   #<RuntimeError: Boo!>
 
-English - <tt></tt>ERROR_INFO
+English - <tt>$ERROR_INFO</tt>
 
 ==== <tt>$@</tt> (Backtrace)
 
@@ -44,7 +44,7 @@ Output:
    "/snap/ruby/317/lib/ruby/3.2.0/irb/workspace.rb:119:in `evaluate'",
    "/snap/ruby/317/lib/ruby/3.2.0/irb/context.rb:502:in `evaluate'"]
 
-English - $ERROR_POSITION
+English - <tt>$ERROR_POSITION</tt>.
 
 === Pattern Matching
 
@@ -63,7 +63,7 @@ English - <tt>$LAST_MATCH_INFO</tt>.
 
 ==== <tt>$&</tt> (Matched Substring)
 
-The matchedstring.
+The matched string.
 
 English - <tt>$MATCH</tt>.
 
@@ -115,12 +115,6 @@ An output record separator, initially +nil+.
 
 English - <tt>$OUTPUT_RECORD_SEPARATOR</tt>, <tt>$ORS</tt>.
 
-==== <tt>$,</tt> (Output Field Separator)
-
-An output field separator, initially +nil+.
-
-English - <tt>$OUTPUT_FIELD_SEPARATOR</tt>, <tt>$OFS</tt>.
-
 === Streams
 
 ==== <tt>$stdin</tt> (Standard Input)
@@ -141,9 +135,9 @@ The current standard error stream; initially:
 
   $stderr # => #<IO:<STDERR>>
 
-==== <tt>$</tt> (Default Standard Input)
+==== <tt>$<</tt> (\ARGF or $stdin)
 
-Points to ARGF; read-only.
+Points to stream ARGF if not empty, else to stream $stdin; read-only.
 
 English - <tt>$DEFAULT_INPUT</tt>.
 
@@ -287,7 +281,7 @@ Whether command-line option <tt>-p</tt> was given; read-only.
 
 ==== <tt>$=</tt>
 
-This variable is no longer effective.
+==== <tt>$,</tt>
 
 == Pre-Defined Global Constants
 
