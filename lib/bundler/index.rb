@@ -179,7 +179,8 @@ module Bundler
     end
 
     def specs_by_name(name)
-      @specs[name].values
+      return EMPTY_SEARCH unless specs = @specs.fetch(name, nil)
+      specs.values
     end
 
     EMPTY_SEARCH = [].freeze
@@ -190,11 +191,13 @@ module Bundler
     end
 
     def find_by_spec(spec)
-      @specs[spec.name][spec.full_name]
+      return unless specs = @specs.fetch(spec.name, nil)
+      specs[spec.full_name]
     end
 
     def exist?(spec)
-      @specs[spec.name].key?(spec.full_name)
+      return unless specs = @specs.fetch(spec.name, nil)
+      specs.key?(spec.full_name)
     end
   end
 end
