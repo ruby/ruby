@@ -1237,6 +1237,24 @@ module YARP
       assert_errors expression(source), source, errors, compare_ripper: false
     end
 
+    def test_invalid_number_underscores
+      error_messages = ["Invalid underscore placement in number"]
+
+      assert_error_messages "1__1", error_messages
+      assert_error_messages "0b1__1", error_messages
+      assert_error_messages "0o1__1", error_messages
+      assert_error_messages "01__1", error_messages
+      assert_error_messages "0d1__1", error_messages
+      assert_error_messages "0x1__1", error_messages
+
+      assert_error_messages "1_1_", error_messages
+      assert_error_messages "0b1_1_", error_messages
+      assert_error_messages "0o1_1_", error_messages
+      assert_error_messages "01_1_", error_messages
+      assert_error_messages "0d1_1_", error_messages
+      assert_error_messages "0x1_1_", error_messages
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

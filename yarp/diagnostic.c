@@ -164,6 +164,7 @@ static const char* const diagnostic_messages[YP_DIAGNOSTIC_ID_LEN] = {
     [YP_ERR_INVALID_NUMBER_DECIMAL]             = "Invalid decimal number",
     [YP_ERR_INVALID_NUMBER_HEXADECIMAL]         = "Invalid hexadecimal number",
     [YP_ERR_INVALID_NUMBER_OCTAL]               = "Invalid octal number",
+    [YP_ERR_INVALID_NUMBER_UNDERSCORE]          = "Invalid underscore placement in number",
     [YP_ERR_INVALID_PERCENT]                    = "Invalid `%` token", // TODO WHAT?
     [YP_ERR_INVALID_TOKEN]                      = "Invalid token", // TODO WHAT?
     [YP_ERR_INVALID_VARIABLE_GLOBAL]            = "Invalid global variable",

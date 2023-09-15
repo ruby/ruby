@@ -123,6 +123,9 @@ yp_char_is_inline_whitespace(const uint8_t b) {
     return yp_char_is_char_kind(b, YP_CHAR_BIT_INLINE_WHITESPACE);
 }
 
+// Scan through the string and return the number of characters at the start of
+// the string that match the given kind. Disallows searching past the given
+// maximum number of characters.
 static inline size_t
 yp_strspn_number_kind(const uint8_t *string, ptrdiff_t length, uint8_t kind) {
     if (length <= 0) return 0;
@@ -134,20 +137,57 @@ yp_strspn_number_kind(const uint8_t *string, ptrdiff_t length, uint8_t kind) {
     return size;
 }
 
+// Scan through the string and return the number of characters at the start of
+// the string that match the given kind. Disallows searching past the given
+// maximum number of characters.
+//
+// Additionally, report the location of the last invalid underscore character
+// found in the string through the out invalid parameter.
+static inline size_t
+yp_strspn_number_kind_underscores(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid, uint8_t kind) {
+    if (length <= 0) return 0;
+
+    size_t size = 0;
+    size_t maximum = (size_t) length;
+
+    bool underscore = false;
+    while (size < maximum && (yp_number_table[string[size]] & kind)) {
+        if (string[size] == '_') {
+            if (underscore) *invalid = string + size;
+            underscore = true;
+        } else {
+            underscore = false;
+        }
+
+        size++;
+    }
+
+    if (string[size - 1] == '_') *invalid = string + size - 1;
+    return size;
+}
+
 // Returns the number of characters at the start of the string that are binary
 // digits or underscores. Disallows searching past the given maximum number of
 // characters.
+//
+// If multiple underscores are found in a row or if an underscore is
+// found at the end of the number, then the invalid pointer is set to the index
+// of the first invalid underscore.
 size_t
-yp_strspn_binary_number(const uint8_t *string, ptrdiff_t length) {
-    return yp_strspn_number_kind(string, length, YP_NUMBER_BIT_BINARY_NUMBER);
+yp_strspn_binary_number(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid) {
+    return yp_strspn_number_kind_underscores(string, length, invalid, YP_NUMBER_BIT_BINARY_NUMBER);
 }
 
 // Returns the number of characters at the start of the string that are octal
-// digits or underscores.  Disallows searching past the given maximum number of
+// digits or underscores. Disallows searching past the given maximum number of
 // characters.
+//
+// If multiple underscores are found in a row or if an underscore is
+// found at the end of the number, then the invalid pointer is set to the index
+// of the first invalid underscore.
 size_t
-yp_strspn_octal_number(const uint8_t *string, ptrdiff_t length) {
-    return yp_strspn_number_kind(string, length, YP_NUMBER_BIT_OCTAL_NUMBER);
+yp_strspn_octal_number(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid) {
+    return yp_strspn_number_kind_underscores(string, length, invalid, YP_NUMBER_BIT_OCTAL_NUMBER);
 }
 
 // Returns the number of characters at the start of the string that are decimal
@@ -160,9 +200,13 @@ yp_strspn_decimal_digit(const uint8_t *string, ptrdiff_t length) {
 // Returns the number of characters at the start of the string that are decimal
 // digits or underscores. Disallows searching past the given maximum number of
 // characters.
+//
+// If multiple underscores are found in a row or if an underscore is
+// found at the end of the number, then the invalid pointer is set to the index
+// of the first invalid underscore.
 size_t
-yp_strspn_decimal_number(const uint8_t *string, ptrdiff_t length) {
-    return yp_strspn_number_kind(string, length, YP_NUMBER_BIT_DECIMAL_NUMBER);
+yp_strspn_decimal_number(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid) {
+    return yp_strspn_number_kind_underscores(string, length, invalid, YP_NUMBER_BIT_DECIMAL_NUMBER);
 }
 
 // Returns the number of characters at the start of the string that are
@@ -176,9 +220,13 @@ yp_strspn_hexadecimal_digit(const uint8_t *string, ptrdiff_t length) {
 // Returns the number of characters at the start of the string that are
 // hexadecimal digits or underscores. Disallows searching past the given maximum
 // number of characters.
+//
+// If multiple underscores are found in a row or if an underscore is
+// found at the end of the number, then the invalid pointer is set to the index
+// of the first invalid underscore.
 size_t
-yp_strspn_hexadecimal_number(const uint8_t *string, ptrdiff_t length) {
-    return yp_strspn_number_kind(string, length, YP_NUMBER_BIT_HEXADECIMAL_NUMBER);
+yp_strspn_hexadecimal_number(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid) {
+    return yp_strspn_number_kind_underscores(string, length, invalid, YP_NUMBER_BIT_HEXADECIMAL_NUMBER);
 }
 
 static inline bool

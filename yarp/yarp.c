@@ -5330,6 +5330,45 @@ context_def_p(yp_parser_t *parser) {
 /* Specific token lexers                                                      */
 /******************************************************************************/
 
+static void
+yp_strspn_number_validate(yp_parser_t *parser, const uint8_t *invalid) {
+    if (invalid != NULL) {
+        yp_diagnostic_list_append(&parser->error_list, invalid, invalid + 1, YP_ERR_INVALID_NUMBER_UNDERSCORE);
+    }
+}
+
+static size_t
+yp_strspn_binary_number_validate(yp_parser_t *parser, const uint8_t *string) {
+    const uint8_t *invalid = NULL;
+    size_t length = yp_strspn_binary_number(string, parser->end - string, &invalid);
+    yp_strspn_number_validate(parser, invalid);
+    return length;
+}
+
+static size_t
+yp_strspn_octal_number_validate(yp_parser_t *parser, const uint8_t *string) {
+    const uint8_t *invalid = NULL;
+    size_t length = yp_strspn_octal_number(string, parser->end - string, &invalid);
+    yp_strspn_number_validate(parser, invalid);
+    return length;
+}
+
+static size_t
+yp_strspn_decimal_number_validate(yp_parser_t *parser, const uint8_t *string) {
+    const uint8_t *invalid = NULL;
+    size_t length = yp_strspn_decimal_number(string, parser->end - string, &invalid);
+    yp_strspn_number_validate(parser, invalid);
+    return length;
+}
+
+static size_t
+yp_strspn_hexadecimal_number_validate(yp_parser_t *parser, const uint8_t *string) {
+    const uint8_t *invalid = NULL;
+    size_t length = yp_strspn_hexadecimal_number(string, parser->end - string, &invalid);
+    yp_strspn_number_validate(parser, invalid);
+    return length;
+}
+
 static yp_token_type_t
 lex_optional_float_suffix(yp_parser_t *parser) {
     yp_token_type_t type = YP_TOKEN_INTEGER;
@@ -5339,7 +5378,7 @@ lex_optional_float_suffix(yp_parser_t *parser) {
     if (peek(parser) == '.') {
         if (yp_char_is_decimal_digit(peek_offset(parser, 1))) {
             parser->current.end += 2;
-            parser->current.end += yp_strspn_decimal_number(parser->current.end, parser->end - parser->current.end);
+            parser->current.end += yp_strspn_decimal_number_validate(parser, parser->current.end);
             type = YP_TOKEN_FLOAT;
         } else {
             // If we had a . and then something else, then it's not a float suffix on
@@ -5355,7 +5394,7 @@ lex_optional_float_suffix(yp_parser_t *parser) {
 
         if (yp_char_is_decimal_digit(*parser->current.end)) {
             parser->current.end++;
-            parser->current.end += yp_strspn_decimal_number(parser->current.end, parser->end - parser->current.end);
+            parser->current.end += yp_strspn_decimal_number_validate(parser, parser->current.end);
             type = YP_TOKEN_FLOAT;
         } else {
             yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_FLOAT_EXPONENT);
@@ -5377,7 +5416,7 @@ lex_numeric_prefix(yp_parser_t *parser) {
             case 'D':
                 parser->current.end++;
                 if (yp_char_is_decimal_digit(peek(parser))) {
-                    parser->current.end += yp_strspn_decimal_number(parser->current.end, parser->end - parser->current.end);
+                    parser->current.end += yp_strspn_decimal_number_validate(parser, parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_NUMBER_DECIMAL);
                 }
@@ -5389,7 +5428,7 @@ lex_numeric_prefix(yp_parser_t *parser) {
             case 'B':
                 parser->current.end++;
                 if (yp_char_is_binary_digit(peek(parser))) {
-                    parser->current.end += yp_strspn_binary_number(parser->current.end, parser->end - parser->current.end);
+                    parser->current.end += yp_strspn_binary_number_validate(parser, parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_NUMBER_BINARY);
                 }
@@ -5402,7 +5441,7 @@ lex_numeric_prefix(yp_parser_t *parser) {
             case 'O':
                 parser->current.end++;
                 if (yp_char_is_octal_digit(peek(parser))) {
-                    parser->current.end += yp_strspn_octal_number(parser->current.end, parser->end - parser->current.end);
+                    parser->current.end += yp_strspn_octal_number_validate(parser, parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_NUMBER_OCTAL);
                 }
@@ -5420,7 +5459,7 @@ lex_numeric_prefix(yp_parser_t *parser) {
             case '5':
             case '6':
             case '7':
-                parser->current.end += yp_strspn_octal_number(parser->current.end, parser->end - parser->current.end);
+                parser->current.end += yp_strspn_octal_number_validate(parser, parser->current.end);
                 parser->integer_base = YP_INTEGER_BASE_FLAGS_OCTAL;
                 break;
 
@@ -5429,7 +5468,7 @@ lex_numeric_prefix(yp_parser_t *parser) {
             case 'X':
                 parser->current.end++;
                 if (yp_char_is_hexadecimal_digit(peek(parser))) {
-                    parser->current.end += yp_strspn_hexadecimal_number(parser->current.end, parser->end - parser->current.end);
+                    parser->current.end += yp_strspn_hexadecimal_number_validate(parser, parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_NUMBER_HEXADECIMAL);
                 }
@@ -5453,16 +5492,10 @@ lex_numeric_prefix(yp_parser_t *parser) {
     } else {
         // If it didn't start with a 0, then we'll lex as far as we can into a
         // decimal number.
-        parser->current.end += yp_strspn_decimal_number(parser->current.end, parser->end - parser->current.end);
+        parser->current.end += yp_strspn_decimal_number_validate(parser, parser->current.end);
 
         // Afterward, we'll lex as far as we can into an optional float suffix.
         type = lex_optional_float_suffix(parser);
-    }
-
-    // If the last character that we consumed was an underscore, then this is
-    // actually an invalid integer value, and we should return an invalid token.
-    if (peek_offset(parser, -1) == '_') {
-        yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_NUMBER_LITERAL_UNDERSCORE);
     }
 
     return type;
