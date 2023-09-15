@@ -590,10 +590,8 @@ module YARP
     # the regular expression.
     def options
       o = flags & 0b111
-      o |= Regexp::FIXEDENCODING if flags & 8 != 0  # 'e'
-      o |= Regexp::FIXEDENCODING if flags & 32 != 0 # 's'
-      o |= Regexp::FIXEDENCODING if flags & 64 != 0 # 'u'
-      o |= Regexp::NOENCODING if flags & 16 != 0    # 'n'
+      o |= Regexp::FIXEDENCODING if flags.anybits?(RegularExpressionFlags::EUC_JP | RegularExpressionFlags::WINDOWS_31J | RegularExpressionFlags::UTF_8)
+      o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
       o
     end
   end
@@ -610,10 +608,8 @@ module YARP
     # the regular expression.
     def options
       o = flags & 0b111
-      o |= Regexp::FIXEDENCODING if flags & 8 != 0  # 'e'
-      o |= Regexp::FIXEDENCODING if flags & 32 != 0 # 's'
-      o |= Regexp::FIXEDENCODING if flags & 64 != 0 # 'u'
-      o |= Regexp::NOENCODING if flags & 16 != 0    # 'n'
+      o |= Regexp::FIXEDENCODING if flags.anybits?(RegularExpressionFlags::EUC_JP | RegularExpressionFlags::WINDOWS_31J | RegularExpressionFlags::UTF_8)
+      o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
       o
     end
   end
