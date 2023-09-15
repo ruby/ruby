@@ -48,7 +48,7 @@
 # endif
 #endif
 
-#ifdef HAVE_MALLOC_USABLE_SIZE
+#if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_TRIM)
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 /* Alternative malloc header is included in ruby/missing.h */
 # elif defined(HAVE_MALLOC_H)
