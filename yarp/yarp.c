@@ -7077,9 +7077,10 @@ parser_lex(yp_parser_t *parser) {
 
                 // % %= %i %I %q %Q %w %W
                 case '%': {
-                    // If there is no subsequent character then we have an invalid token. We're
-                    // going to say it's the percent operator because we don't want to move into the
-                    // string lex mode unnecessarily.
+                    // If there is no subsequent character then we have an
+                    // invalid token. We're going to say it's the percent
+                    // operator because we don't want to move into the string
+                    // lex mode unnecessarily.
                     if ((lex_state_beg_p(parser) || lex_state_arg_p(parser)) && (parser->current.end >= parser->end)) {
                         yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_PERCENT);
                         LEX(YP_TOKEN_PERCENT);
@@ -7108,6 +7109,14 @@ parser_lex(yp_parser_t *parser) {
                             if (parser->current.end < parser->end) {
                                 LEX(YP_TOKEN_STRING_BEGIN);
                             }
+                        }
+
+                        // Delimiters for %-literals cannot be alphanumeric. We
+                        // validate that here.
+                        uint8_t delimiter = peek_offset(parser, 1);
+                        if (delimiter >= 0x80 || parser->encoding.alnum_char(&delimiter, 1)) {
+                            yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_INVALID_PERCENT);
+                            goto lex_next_token;
                         }
 
                         switch (peek(parser)) {

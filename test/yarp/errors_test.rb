@@ -1255,6 +1255,20 @@ module YARP
       assert_error_messages "0x1_1_", error_messages
     end
 
+    def test_alnum_delimiters
+      error_messages = ["Invalid `%` token"]
+
+      assert_error_messages "%qXfooX", error_messages
+      assert_error_messages "%QXfooX", error_messages
+      assert_error_messages "%wXfooX", error_messages
+      assert_error_messages "%WxfooX", error_messages
+      assert_error_messages "%iXfooX", error_messages
+      assert_error_messages "%IXfooX", error_messages
+      assert_error_messages "%xXfooX", error_messages
+      assert_error_messages "%rXfooX", error_messages
+      assert_error_messages "%sXfooX", error_messages
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
