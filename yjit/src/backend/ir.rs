@@ -2,7 +2,6 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
-use core::num;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt;
