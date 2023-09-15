@@ -1,18 +1,16 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::From;
-use std::io::Write;
 use std::mem::take;
 use crate::codegen::{gen_outlined_exit, gen_counted_exit};
 use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
 use crate::virtualmem::{CodePtr};
-use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits, OutlinedCb};
-use crate::core::{Context, Type, TempMapping, RegTemps, MAX_REG_TEMPS, MAX_TEMP_TYPES};
+use crate::asm::{CodeBlock, OutlinedCb};
+use crate::core::{Context, RegTemps, MAX_REG_TEMPS};
 use crate::options::*;
 use crate::stats::*;
 
