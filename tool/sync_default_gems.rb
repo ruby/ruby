@@ -447,7 +447,15 @@ module SyncDefaultGems
 
     # Gem-specific patterns
     case gem
-    when nil
+    when "yarp"
+      %r[\A(?:
+        Makefile\.in
+        |configure\.ac
+        |fuzz/.*
+        |rust/.*
+        |tasks/.*
+        |ext/yarp/extconf\.rb
+      )\z]mx
     end&.tap do |pattern|
       patterns << pattern
     end
