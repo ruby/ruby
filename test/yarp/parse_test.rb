@@ -126,13 +126,6 @@ module YARP
         # Next, assert that the newlines are in the expected places.
         expected_newlines = [0]
         source.b.scan("\n") { expected_newlines << $~.offset(0)[0] + 1 }
-
-        # If there's a __END__, then we should trip out those newlines because we
-        # don't actually scan them during parsing (because we don't need to).
-        if found = result.comments.find { |comment| comment.type == :__END__ }
-          expected_newlines = expected_newlines[...found.location.start_line]
-        end
-
         assert_equal expected_newlines, Debug.newlines(source)
 
         if ripper_should_parse && ripper_should_match

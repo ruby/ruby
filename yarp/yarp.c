@@ -6207,16 +6207,17 @@ parser_lex(yp_parser_t *parser) {
 
                 case '#': { // comments
                     const uint8_t *ending = next_newline(parser->current.end, parser->end - parser->current.end);
-
-                    parser->current.end = ending == NULL ? parser->end : ending + 1;
-                    parser->current.type = YP_TOKEN_COMMENT;
-                    parser_lex_callback(parser);
+                    parser->current.end = ending == NULL ? parser->end : ending;
 
                     // If we found a comment while lexing, then we're going to
                     // add it to the list of comments in the file and keep
                     // lexing.
                     yp_comment_t *comment = parser_comment(parser, YP_COMMENT_INLINE);
                     yp_list_append(&parser->comment_list, (yp_list_node_t *) comment);
+
+                    if (ending) parser->current.end++;
+                    parser->current.type = YP_TOKEN_COMMENT;
+                    parser_lex_callback(parser);
 
                     if (parser->current.start == parser->encoding_comment_start) {
                         parser_lex_encoding_comment(parser);
@@ -7212,6 +7213,14 @@ parser_lex(yp_parser_t *parser) {
                         (parser->current.end == parser->end || match_eol(parser))
                         )
                     {
+                        // Since we know we're about to add an __END__ comment, we know we
+                        // need at add all of the newlines to get the correct column
+                        // information for it.
+                        const uint8_t *cursor = parser->current.end;
+                        while ((cursor = next_newline(cursor, parser->end - cursor)) != NULL) {
+                            yp_newline_list_append(&parser->newline_list, cursor++);
+                        }
+
                         parser->current.end = parser->end;
                         parser->current.type = YP_TOKEN___END__;
                         parser_lex_callback(parser);

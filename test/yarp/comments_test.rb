@@ -7,7 +7,7 @@ module YARP
     def test_comment_inline
       source = "# comment"
 
-      assert_comment source, :inline, 0..9
+      assert_comment source, :inline, [0, 9, 1, 1, 0, 9]
       assert_equal [0], Debug.newlines(source)
     end
 
@@ -18,7 +18,7 @@ module YARP
       end
       RUBY
 
-      assert_comment source, :inline, 10..22
+      assert_comment source, :inline, [10, 21, 2, 2, 2, 13]
     end
 
     def test_comment___END__
@@ -27,13 +27,13 @@ module YARP
         comment
       RUBY
 
-      assert_comment source, :__END__, 0..16
+      assert_comment source, :__END__, [0, 16, 1, 2, 0, 0]
     end
 
     def test_comment___END__crlf
       source = "__END__\r\ncomment\r\n"
 
-      assert_comment source, :__END__, 0..18
+      assert_comment source, :__END__, [0, 18, 1, 2, 0, 0]
     end
 
     def test_comment_embedded_document
@@ -43,7 +43,7 @@ module YARP
         =end
       RUBY
 
-      assert_comment source, :embdoc, 0..20
+      assert_comment source, :embdoc, [0, 20, 1, 3, 0, 0]
     end
 
     def test_comment_embedded_document_with_content_on_same_line
@@ -52,7 +52,7 @@ module YARP
         =end
       RUBY
 
-      assert_comment source, :embdoc, 0..24
+      assert_comment source, :embdoc, [0, 24, 1, 2, 0, 0]
     end
 
     def test_attaching_comments
@@ -74,19 +74,40 @@ module YARP
       method_node = class_node.body.body.first
       call_node = method_node.body.body.first
 
-      assert_equal("# Foo class\n# Foo end\n", class_node.location.comments.map { |c| c.location.slice }.join)
-      assert_equal("# bar method\n# bar end\n", method_node.location.comments.map { |c| c.location.slice }.join)
-      assert_equal("# baz invocation\n", call_node.location.comments.map { |c| c.location.slice }.join)
+      assert_equal("# Foo class\n# Foo end", class_node.location.comments.map { |c| c.location.slice }.join("\n"))
+      assert_equal("# bar method\n# bar end", method_node.location.comments.map { |c| c.location.slice }.join("\n"))
+      assert_equal("# baz invocation", call_node.location.comments.map { |c| c.location.slice }.join("\n"))
     end
 
     private
 
-    def assert_comment(source, type, location)
+    def assert_comment(source, type, locations)
+      start_offset, end_offset, start_line, end_line, start_column, end_column = locations
+      expected = {
+        start_offset: start_offset,
+        end_offset: end_offset,
+        start_line: start_line,
+        end_line: end_line,
+        start_column: start_column,
+        end_column: end_column
+      }
+
       result = YARP.parse(source)
       assert result.errors.empty?, result.errors.map(&:message).join("\n")
-      assert_equal result.comments.first.type, type
-      assert_equal result.comments.first.location.start_offset, location.begin
-      assert_equal result.comments.first.location.end_offset, location.end
+      assert_equal type, result.comments.first.type
+
+      first_comment_location = result.comments.first.location
+
+      actual = {
+        start_offset: first_comment_location.start_offset,
+        end_offset: first_comment_location.end_offset,
+        start_line: first_comment_location.start_line,
+        end_line: first_comment_location.end_line,
+        start_column: first_comment_location.start_column,
+        end_column: first_comment_location.end_column
+      }
+
+      assert_equal expected, actual
     end
   end
 end
