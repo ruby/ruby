@@ -69,6 +69,7 @@ module YARP
       unparser/corpus/literal/if.txt
       unparser/corpus/literal/module.txt
       unparser/corpus/semantic/and.txt
+      unparser/corpus/semantic/dstr.txt
       whitequark/alias_gvar.txt
       whitequark/array_assocs.txt
       whitequark/array_splat.txt
