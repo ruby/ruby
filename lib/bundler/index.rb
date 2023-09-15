@@ -19,14 +19,14 @@ module Bundler
     def initialize
       @sources = []
       @cache = {}
-      @specs = Hash.new {|h, k| h[k] = {} }
+      @specs = {}
       @duplicates = {}
     end
 
     def initialize_copy(o)
       @sources = o.sources.dup
       @cache = {}
-      @specs = Hash.new {|h, k| h[k] = {} }
+      @specs = {}
       @duplicates = {}
 
       o.specs.each do |name, hash|
@@ -46,14 +46,11 @@ module Bundler
       true
     end
 
-    def search_all(name)
-      all_matches = specs_by_name(name) # always returns a new Array
-      dupes = @duplicates[name]
-      all_matches.concat(dupes) if dupes
-      @sources.each do |source|
-        all_matches.concat(source.search_all(name))
-      end
-      all_matches
+    def search_all(name, &blk)
+      return enum_for(:search_all, name) unless blk
+      specs_by_name(name).each(&blk)
+      @duplicates[name]&.each(&blk)
+      @sources.each {|source| source.search_all(name, &blk) }
     end
 
     # Search this index's specs, and any source indexes that this index knows
@@ -63,10 +60,13 @@ module Bundler
       return results unless @sources.any?
 
       @sources.each do |source|
-        results.concat(source.search(query))
+        results = safe_concat(results, source.search(query))
       end
-      results.uniq(&:full_name)
+      results.uniq!(&:full_name) unless results.empty? # avoid modifying frozen EMPTY_SEARCH
+      results
     end
+
+    alias_method :[], :search
 
     def local_search(query)
       case query
@@ -78,11 +78,8 @@ module Bundler
       end
     end
 
-    alias_method :[], :search
-
     def add(spec)
-      @specs[spec.name][spec.full_name] = spec
-      spec
+      (@specs[spec.name] ||= {}).store(spec.full_name, spec)
     end
     alias_method :<<, :add
 
@@ -170,17 +167,25 @@ module Bundler
 
     private
 
+    def safe_concat(a, b)
+      return a if b.empty?
+      return b if a.empty?
+      a.concat(b)
+    end
+
     def add_duplicate(spec)
       (@duplicates[spec.name] ||= []) << spec
     end
 
     def specs_by_name_and_version(name, version)
-      specs_by_name(name).select {|spec| spec.version == version }
+      results = @specs[name]&.values
+      return EMPTY_SEARCH unless results
+      results.select! {|spec| spec.version == version }
+      results
     end
 
     def specs_by_name(name)
-      return EMPTY_SEARCH unless specs = @specs.fetch(name, nil)
-      specs.values
+      @specs[name]&.values || EMPTY_SEARCH
     end
 
     EMPTY_SEARCH = [].freeze
@@ -191,13 +196,11 @@ module Bundler
     end
 
     def find_by_spec(spec)
-      return unless specs = @specs.fetch(spec.name, nil)
-      specs[spec.full_name]
+      @specs[spec.name]&.fetch(spec.full_name, nil)
     end
 
     def exist?(spec)
-      return unless specs = @specs.fetch(spec.name, nil)
-      specs.key?(spec.full_name)
+      @specs[spec.name]&.key?(spec.full_name)
     end
   end
 end
