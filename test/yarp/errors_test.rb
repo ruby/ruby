@@ -283,7 +283,8 @@ module YARP
 
     def test_def_with_expression_receiver_and_no_identifier
       assert_errors expression("def (a); end"), "def (a); end", [
-        ["Expected a `.` or `::` after the receiver in a method definition", 7..7]
+        ["Expected a `.` or `::` after the receiver in a method definition", 7..7],
+        ["Expected a method name", 7..7]
       ]
     end
 
@@ -291,6 +292,7 @@ module YARP
       assert_errors expression("def (\na\nb\n).c; end"), "def (\na\nb\n).c; end", [
         ["Expected a matching `)`", 7..7],
         ["Expected a `.` or `::` after the receiver in a method definition", 7..7],
+        ["Expected a method name", 7..7],
         ["Cannot parse the expression", 10..10],
         ["Cannot parse the expression", 11..11]
       ]

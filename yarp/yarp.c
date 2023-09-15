@@ -9774,7 +9774,6 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
     case YP_TOKEN_KEYWORD_TRUE: case YP_TOKEN_KEYWORD_UNDEF: case YP_TOKEN_KEYWORD_UNLESS: case YP_TOKEN_KEYWORD_UNTIL: \
     case YP_TOKEN_KEYWORD_WHEN: case YP_TOKEN_KEYWORD_WHILE: case YP_TOKEN_KEYWORD_YIELD
 
-
 // This macro allows you to define a case statement for all of the operators.
 // It's meant to be used in a switch statement.
 #define YP_CASE_OPERATOR YP_TOKEN_AMPERSAND: case YP_TOKEN_BACKTICK: case YP_TOKEN_BANG_EQUAL: \
@@ -10132,7 +10131,7 @@ parse_method_definition_name(yp_parser_t *parser) {
             parser_lex(parser);
             return parser->previous;
         default:
-            return not_provided(parser);
+            return (yp_token_t) { .type = YP_TOKEN_MISSING, .start = parser->current.start, .end = parser->current.end };
     }
 }
 
@@ -12032,7 +12031,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             yp_node_t *receiver = NULL;
             yp_token_t operator = not_provided(parser);
-            yp_token_t name = not_provided(parser);
+            yp_token_t name = (yp_token_t) { .type = YP_TOKEN_MISSING, .start = def_keyword.end, .end = def_keyword.end };
 
             context_push(parser, YP_CONTEXT_DEF_PARAMS);
             parser_lex(parser);
@@ -12056,10 +12055,6 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
                         operator = parser->previous;
                         name = parse_method_definition_name(parser);
-
-                        if (name.type == YP_TOKEN_MISSING) {
-                            yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_DEF_NAME_AFTER_RECEIVER);
-                        }
                     } else {
                         yp_parser_scope_push(parser, true);
                         name = parser->previous;
@@ -12126,9 +12121,6 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                         }
 
                         name = parse_method_definition_name(parser);
-                        if (name.type == YP_TOKEN_MISSING) {
-                            yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_DEF_NAME_AFTER_RECEIVER);
-                        }
                     } else {
                         name = identifier;
                     }
@@ -12155,11 +12147,13 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 default:
                     yp_parser_scope_push(parser, true);
                     name = parse_method_definition_name(parser);
-
-                    if (name.type == YP_TOKEN_MISSING) {
-                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_DEF_NAME);
-                    }
                     break;
+            }
+
+            // If, after all that, we were unable to find a method name, add an
+            // error to the error list.
+            if (name.type == YP_TOKEN_MISSING) {
+                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_DEF_NAME);
             }
 
             yp_token_t lparen;
