@@ -1,13 +1,25 @@
-ProgramNode(0...22)(
-  [],
-  StatementsNode(0...22)(
-    [SingletonClassNode(0...22)(
-       [],
-       (0...5),
-       (6...8),
-       CallNode(9...12)(nil, nil, (9...12), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(14...17)([NilNode(14...17)()]),
-       (19...22)
-     )]
-  )
-)
+@ ProgramNode (location: (0...22))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...22))
+    └── body: (length: 1)
+        └── @ SingletonClassNode (location: (0...22))
+            ├── locals: []
+            ├── class_keyword_loc: (0...5) = "class"
+            ├── operator_loc: (6...8) = "<<"
+            ├── expression:
+            │   @ CallNode (location: (9...12))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (9...12) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── body:
+            │   @ StatementsNode (location: (14...17))
+            │   └── body: (length: 1)
+            │       └── @ NilNode (location: (14...17))
+            └── end_keyword_loc: (19...22) = "end"

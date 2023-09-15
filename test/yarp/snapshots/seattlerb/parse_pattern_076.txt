@@ -1,36 +1,54 @@
-ProgramNode(0...39)(
-  [],
-  StatementsNode(0...39)(
-    [CaseNode(0...39)(
-       HashNode(5...11)(
-         (5...6),
-         [AssocNode(6...10)(
-            SymbolNode(6...8)(nil, (6...7), (7...8), "a"),
-            IntegerNode(9...10)(),
-            nil
-          )],
-         (10...11)
-       ),
-       [InNode(12...35)(
-          HashPatternNode(15...28)(
-            nil,
-            [AssocNode(16...20)(
-               SymbolNode(16...18)(nil, (16...17), (17...18), "a"),
-               IntegerNode(19...20)(),
-               nil
-             ),
-             NoKeywordsParameterNode(22...27)((22...24), (24...27))],
-            nil,
-            (15...16),
-            (27...28)
-          ),
-          StatementsNode(31...35)([TrueNode(31...35)()]),
-          (12...14),
-          nil
-        )],
-       nil,
-       (0...4),
-       (36...39)
-     )]
-  )
-)
+@ ProgramNode (location: (0...39))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...39))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...39))
+            ├── predicate:
+            │   @ HashNode (location: (5...11))
+            │   ├── opening_loc: (5...6) = "{"
+            │   ├── elements: (length: 1)
+            │   │   └── @ AssocNode (location: (6...10))
+            │   │       ├── key:
+            │   │       │   @ SymbolNode (location: (6...8))
+            │   │       │   ├── opening_loc: ∅
+            │   │       │   ├── value_loc: (6...7) = "a"
+            │   │       │   ├── closing_loc: (7...8) = ":"
+            │   │       │   └── unescaped: "a"
+            │   │       ├── value:
+            │   │       │   @ IntegerNode (location: (9...10))
+            │   │       │   └── flags: decimal
+            │   │       └── operator_loc: ∅
+            │   └── closing_loc: (10...11) = "}"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (12...35))
+            │       ├── pattern:
+            │       │   @ HashPatternNode (location: (15...28))
+            │       │   ├── constant: ∅
+            │       │   ├── assocs: (length: 2)
+            │       │   │   ├── @ AssocNode (location: (16...20))
+            │       │   │   │   ├── key:
+            │       │   │   │   │   @ SymbolNode (location: (16...18))
+            │       │   │   │   │   ├── opening_loc: ∅
+            │       │   │   │   │   ├── value_loc: (16...17) = "a"
+            │       │   │   │   │   ├── closing_loc: (17...18) = ":"
+            │       │   │   │   │   └── unescaped: "a"
+            │       │   │   │   ├── value:
+            │       │   │   │   │   @ IntegerNode (location: (19...20))
+            │       │   │   │   │   └── flags: decimal
+            │       │   │   │   └── operator_loc: ∅
+            │       │   │   └── @ NoKeywordsParameterNode (location: (22...27))
+            │       │   │       ├── operator_loc: (22...24) = "**"
+            │       │   │       └── keyword_loc: (24...27) = "nil"
+            │       │   ├── kwrest: ∅
+            │       │   ├── opening_loc: (15...16) = "{"
+            │       │   └── closing_loc: (27...28) = "}"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (31...35))
+            │       │   └── body: (length: 1)
+            │       │       └── @ TrueNode (location: (31...35))
+            │       ├── in_loc: (12...14) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (36...39) = "end"

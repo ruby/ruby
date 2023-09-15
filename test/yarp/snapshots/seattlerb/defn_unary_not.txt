@@ -1,18 +1,21 @@
-ProgramNode(0...17)(
-  [],
-  StatementsNode(0...17)(
-    [DefNode(0...17)(
-       (4...6),
-       nil,
-       nil,
-       StatementsNode(8...12)([TrueNode(8...12)()]),
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       nil,
-       (14...17)
-     )]
-  )
-)
+@ ProgramNode (location: (0...17))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...17))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...17))
+            ├── name: :"!@"
+            ├── name_loc: (4...6) = "!@"
+            ├── receiver: ∅
+            ├── parameters: ∅
+            ├── body:
+            │   @ StatementsNode (location: (8...12))
+            │   └── body: (length: 1)
+            │       └── @ TrueNode (location: (8...12))
+            ├── locals: []
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (14...17) = "end"

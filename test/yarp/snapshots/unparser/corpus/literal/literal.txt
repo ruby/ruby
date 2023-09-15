@@ -1,716 +1,1108 @@
-ProgramNode(0...916)(
-  [],
-  StatementsNode(0...916)(
-    [HashNode(0...38)(
-       (0...1),
-       [AssocNode(2...21)(
-          StringNode(2...7)((2...3), (3...6), (6...7), "foo"),
-          InterpolatedStringNode(11...21)(
-            (11...21),
-            [StringNode(39...41)(nil, (39...41), nil, "  "),
-             EmbeddedStatementsNode(41...44)((41...43), nil, (43...44)),
-             StringNode(44...45)(nil, (44...45), nil, "\n")],
-            (45...53)
-          ),
-          (8...10)
-        ),
-        AssocNode(23...36)(
-          StringNode(23...28)((23...24), (24...27), (27...28), "bar"),
-          SymbolNode(32...36)((32...33), (33...36), nil, "baz"),
-          (29...31)
-        )],
-       (37...38)
-     ),
-     HashNode(53...84)(
-       (53...54),
-       [AssocNode(55...67)(
-          StringNode(55...60)((55...56), (56...59), (59...60), "foo"),
-          StringNode(64...67)((64...66), (66...66), (66...67), ""),
-          (61...63)
-        ),
-        AssocNode(69...82)(
-          StringNode(69...74)((69...70), (70...73), (73...74), "bar"),
-          SymbolNode(78...82)((78...79), (79...82), nil, "baz"),
-          (75...77)
-        )],
-       (83...84)
-     ),
-     ArrayNode(85...97)(
-       [StringNode(86...91)((86...87), (87...90), (90...91), "foo"),
-        StringNode(93...96)((93...95), (95...95), (95...96), "")],
-       (85...86),
-       (96...97)
-     ),
-     CallNode(98...113)(
-       CallNode(98...111)(
-         nil,
-         nil,
-         (98...99),
-         (99...100),
-         ArgumentsNode(100...110)(
-           [InterpolatedStringNode(100...110)(
-              (100...110),
-              [StringNode(114...116)(nil, (114...116), nil, "  "),
-               EmbeddedStatementsNode(116...119)(
-                 (116...118),
-                 nil,
-                 (118...119)
-               ),
-               StringNode(119...120)(nil, (119...120), nil, "\n")],
-              (120...128)
-            )]
-         ),
-         (110...111),
-         nil,
-         0,
-         "a"
-       ),
-       (111...112),
-       (112...113),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "a"
-     ),
-     CallNode(128...136)(
-       CallNode(128...134)(
-         nil,
-         nil,
-         (128...129),
-         (129...130),
-         ArgumentsNode(130...133)(
-           [StringNode(130...133)((130...132), (132...132), (132...133), "")]
-         ),
-         (133...134),
-         nil,
-         0,
-         "a"
-       ),
-       (134...135),
-       (135...136),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "a"
-     ),
-     HashNode(137...167)(
-       (137...138),
-       [AssocNode(139...158)(
-          StringNode(139...144)((139...140), (140...143), (143...144), "foo"),
-          InterpolatedStringNode(148...158)(
-            (148...158),
-            [StringNode(168...170)(nil, (168...170), nil, "  "),
-             EmbeddedStatementsNode(170...173)((170...172), nil, (172...173)),
-             StringNode(173...174)(nil, (173...174), nil, "\n")],
-            (174...182)
-          ),
-          (145...147)
-        ),
-        AssocSplatNode(160...165)(
-          CallNode(162...165)(
-            nil,
-            nil,
-            (162...165),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "baz"
-          ),
-          (160...162)
-        )],
-       (166...167)
-     ),
-     HashNode(182...205)(
-       (182...183),
-       [AssocNode(184...196)(
-          StringNode(184...189)((184...185), (185...188), (188...189), "foo"),
-          StringNode(193...196)((193...195), (195...195), (195...196), ""),
-          (190...192)
-        ),
-        AssocSplatNode(198...203)(
-          CallNode(200...203)(
-            nil,
-            nil,
-            (200...203),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "baz"
-          ),
-          (198...200)
-        )],
-       (204...205)
-     ),
-     InterpolatedStringNode(206...220)(
-       (206...207),
-       [EmbeddedVariableNode(207...210)(
-          (207...208),
-          InstanceVariableReadNode(208...210)(:@a)
-        ),
-        StringNode(210...211)(nil, (210...211), nil, " "),
-        EmbeddedVariableNode(211...215)(
-          (211...212),
-          ClassVariableReadNode(212...215)(:@@a)
-        ),
-        StringNode(215...216)(nil, (215...216), nil, " "),
-        EmbeddedVariableNode(216...219)(
-          (216...217),
-          GlobalVariableReadNode(217...219)(:$a)
-        )],
-       (219...220)
-     ),
-     IntegerNode(221...222)(),
-     CallNode(223...226)(
-       IntegerNode(224...226)(),
-       nil,
-       (223...224),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "+@"
-     ),
-     IntegerNode(227...228)(),
-     IntegerNode(229...230)(),
-     RationalNode(231...233)(IntegerNode(231...232)()),
-     RationalNode(234...238)(FloatNode(234...237)()),
-     RationalNode(239...243)(FloatNode(239...242)()),
-     ImaginaryNode(244...246)(IntegerNode(244...245)()),
-     ImaginaryNode(247...250)(IntegerNode(247...249)()),
-     ImaginaryNode(251...255)(FloatNode(251...254)()),
-     ImaginaryNode(256...261)(FloatNode(256...260)()),
-     ImaginaryNode(262...294)(IntegerNode(262...293)()),
-     ImaginaryNode(295...298)(
-       RationalNode(295...297)(IntegerNode(295...296)())
-     ),
-     StringConcatNode(299...310)(
-       StringNode(299...304)((299...300), (300...303), (303...304), "foo"),
-       StringNode(305...310)((305...306), (306...309), (309...310), "bar")
-     ),
-     InterpolatedStringNode(311...326)(
-       (311...312),
-       [StringNode(312...319)(nil, (312...319), nil, "foobar "),
-        EmbeddedStatementsNode(319...325)(
-          (319...321),
-          StatementsNode(321...324)(
-            [CallNode(321...324)(
-               nil,
-               nil,
-               (321...324),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "baz"
-             )]
-          ),
-          (324...325)
-        )],
-       (325...326)
-     ),
-     InterpolatedStringNode(327...339)(
-       (327...328),
-       [StringNode(328...331)(nil, (328...331), nil, "foo"),
-        EmbeddedStatementsNode(331...335)(
-          (331...333),
-          StatementsNode(333...334)([IntegerNode(333...334)()]),
-          (334...335)
-        ),
-        StringNode(335...338)(nil, (335...338), nil, "bar")],
-       (338...339)
-     ),
-     InterpolatedStringNode(340...349)(
-       (340...341),
-       [StringNode(341...345)(nil, (341...345), nil, "\\\\"),
-        EmbeddedStatementsNode(345...348)((345...347), nil, (347...348))],
-       (348...349)
-     ),
-     InterpolatedStringNode(350...359)(
-       (350...351),
-       [EmbeddedStatementsNode(351...354)((351...353), nil, (353...354)),
-        StringNode(354...358)(nil, (354...358), nil, "\#{}")],
-       (358...359)
-     ),
-     InterpolatedStringNode(360...369)(
-       (360...361),
-       [StringNode(361...365)(nil, (361...365), nil, "\#{}"),
-        EmbeddedStatementsNode(365...368)((365...367), nil, (367...368))],
-       (368...369)
-     ),
-     StringNode(370...385)(
-       (370...371),
-       (371...384),
-       (384...385),
-       "foo\\\#{@bar}"
-     ),
-     StringNode(386...390)((386...387), (387...389), (389...390), "\""),
-     StringNode(391...400)((391...392), (392...399), (399...400), "foo bar"),
-     StringNode(401...411)(
-       (401...402),
-       (402...410),
-       (410...411),
-       "foo\n" + "bar"
-     ),
-     XStringNode(412...417)((412...413), (413...416), (416...417), "foo"),
-     InterpolatedXStringNode(418...430)(
-       (418...419),
-       [StringNode(419...422)(nil, (419...422), nil, "foo"),
-        EmbeddedStatementsNode(422...429)(
-          (422...424),
-          StatementsNode(424...428)(
-            [InstanceVariableReadNode(424...428)(:@bar)]
-          ),
-          (428...429)
-        )],
-       (429...430)
-     ),
-     XStringNode(431...434)((431...432), (432...433), (433...434), ")"),
-     XStringNode(435...439)((435...436), (436...438), (438...439), "`"),
-     XStringNode(440...443)((440...441), (441...442), (442...443), "\""),
-     SymbolNode(444...448)((444...445), (445...448), nil, "foo"),
-     SymbolNode(449...455)((449...451), (451...454), (454...455), "A B"),
-     SymbolNode(456...460)((456...457), (457...460), nil, "foo"),
-     SymbolNode(461...467)((461...463), (463...466), (466...467), "A B"),
-     SymbolNode(468...475)((468...470), (470...474), (474...475), "A\"B"),
-     SymbolNode(476...479)((476...478), (0...0), (478...479), ""),
-     RegularExpressionNode(480...485)(
-       (480...481),
-       (481...484),
-       (484...485),
-       "foo",
-       0
-     ),
-     RegularExpressionNode(486...514)(
-       (486...487),
-       (487...513),
-       (513...514),
-       "[^-+',./:@[:alnum:][]]+",
-       0
-     ),
-     InterpolatedRegularExpressionNode(515...527)(
-       (515...516),
-       [StringNode(516...519)(nil, (516...519), nil, "foo"),
-        EmbeddedStatementsNode(519...526)(
-          (519...521),
-          StatementsNode(521...525)(
-            [InstanceVariableReadNode(521...525)(:@bar)]
-          ),
-          (525...526)
-        )],
-       (526...527),
-       0
-     ),
-     InterpolatedRegularExpressionNode(528...543)(
-       (528...529),
-       [StringNode(529...532)(nil, (529...532), nil, "foo"),
-        EmbeddedStatementsNode(532...539)(
-          (532...534),
-          StatementsNode(534...538)(
-            [InstanceVariableReadNode(534...538)(:@bar)]
-          ),
-          (538...539)
-        )],
-       (539...543),
-       7
-     ),
-     InterpolatedRegularExpressionNode(544...557)(
-       (544...545),
-       [EmbeddedStatementsNode(545...556)(
-          (545...547),
-          StatementsNode(547...555)(
-            [StringNode(547...555)(
-               (547...548),
-               (548...554),
-               (554...555),
-               "\u0000"
-             )]
-          ),
-          (555...556)
-        )],
-       (556...557),
-       0
-     ),
-     RegularExpressionNode(558...562)(
-       (558...559),
-       (559...561),
-       (561...562),
-       "\n",
-       0
-     ),
-     RegularExpressionNode(563...567)(
-       (563...564),
-       (564...566),
-       (566...567),
-       "\n",
-       0
-     ),
-     RegularExpressionNode(568...573)(
-       (568...569),
-       (569...571),
-       (571...573),
-       "\n",
-       4
-     ),
-     RegularExpressionNode(574...581)(
-       (574...575),
-       (575...579),
-       (579...581),
-       "//",
-       4
-     ),
-     InterpolatedSymbolNode(582...597)(
-       (582...584),
-       [StringNode(584...587)(nil, (584...587), nil, "foo"),
-        EmbeddedStatementsNode(587...593)(
-          (587...589),
-          StatementsNode(589...592)(
-            [CallNode(589...592)(
-               nil,
-               nil,
-               (589...592),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "bar"
-             )]
-          ),
-          (592...593)
-        ),
-        StringNode(593...596)(nil, (593...596), nil, "baz")],
-       (596...597)
-     ),
-     InterpolatedSymbolNode(598...609)(
-       (598...600),
-       [EmbeddedStatementsNode(600...608)(
-          (600...602),
-          StatementsNode(602...607)(
-            [StringNode(602...607)(
-               (602...603),
-               (603...606),
-               (606...607),
-               "foo"
-             )]
-          ),
-          (607...608)
-        )],
-       (608...609)
-     ),
-     RangeNode(610...624)(
-       ParenthesesNode(610...621)(
-         StatementsNode(611...620)(
-           [CallNode(611...620)(
-              FloatNode(611...614)(),
-              nil,
-              (615...616),
-              nil,
-              ArgumentsNode(617...620)([FloatNode(617...620)()]),
-              nil,
-              nil,
-              0,
-              "/"
-            )]
-         ),
-         (610...611),
-         (620...621)
-       ),
-       IntegerNode(623...624)(),
-       (621...623),
-       0
-     ),
-     RangeNode(625...639)(
-       IntegerNode(625...626)(),
-       ParenthesesNode(628...639)(
-         StatementsNode(629...638)(
-           [CallNode(629...638)(
-              FloatNode(629...632)(),
-              nil,
-              (633...634),
-              nil,
-              ArgumentsNode(635...638)([FloatNode(635...638)()]),
-              nil,
-              nil,
-              0,
-              "/"
-            )]
-         ),
-         (628...629),
-         (638...639)
-       ),
-       (626...628),
-       0
-     ),
-     RangeNode(640...656)(
-       ParenthesesNode(640...651)(
-         StatementsNode(641...650)(
-           [CallNode(641...650)(
-              FloatNode(641...644)(),
-              nil,
-              (645...646),
-              nil,
-              ArgumentsNode(647...650)([FloatNode(647...650)()]),
-              nil,
-              nil,
-              0,
-              "/"
-            )]
-         ),
-         (640...641),
-         (650...651)
-       ),
-       IntegerNode(653...656)(),
-       (651...653),
-       0
-     ),
-     FloatNode(657...661)(),
-     FloatNode(662...665)(),
-     ArrayNode(666...672)(
-       [IntegerNode(667...668)(), IntegerNode(670...671)()],
-       (666...667),
-       (671...672)
-     ),
-     ArrayNode(673...684)(
-       [IntegerNode(674...675)(),
-        ParenthesesNode(677...679)(nil, (677...678), (678...679)),
-        CallNode(681...683)(
-          nil,
-          nil,
-          (681...683),
-          nil,
-          nil,
-          nil,
-          nil,
-          2,
-          "n2"
-        )],
-       (673...674),
-       (683...684)
-     ),
-     ArrayNode(685...688)(
-       [IntegerNode(686...687)()],
-       (685...686),
-       (687...688)
-     ),
-     ArrayNode(689...691)([], (689...690), (690...691)),
-     ArrayNode(692...702)(
-       [IntegerNode(693...694)(),
-        SplatNode(696...701)(
-          (696...697),
-          InstanceVariableReadNode(697...701)(:@foo)
-        )],
-       (692...693),
-       (701...702)
-     ),
-     ArrayNode(703...713)(
-       [SplatNode(704...709)(
-          (704...705),
-          InstanceVariableReadNode(705...709)(:@foo)
-        ),
-        IntegerNode(711...712)()],
-       (703...704),
-       (712...713)
-     ),
-     ArrayNode(714...728)(
-       [SplatNode(715...720)(
-          (715...716),
-          InstanceVariableReadNode(716...720)(:@foo)
-        ),
-        SplatNode(722...727)(
-          (722...723),
-          InstanceVariableReadNode(723...727)(:@baz)
-        )],
-       (714...715),
-       (727...728)
-     ),
-     HashNode(729...731)((729...730), [], (730...731)),
-     HashNode(732...744)(
-       (732...733),
-       [AssocNode(734...742)(
-          ParenthesesNode(734...736)(nil, (734...735), (735...736)),
-          ParenthesesNode(740...742)(nil, (740...741), (741...742)),
-          (737...739)
-        )],
-       (743...744)
-     ),
-     HashNode(745...755)(
-       (745...746),
-       [AssocNode(747...753)(
-          IntegerNode(747...748)(),
-          IntegerNode(752...753)(),
-          (749...751)
-        )],
-       (754...755)
-     ),
-     HashNode(756...774)(
-       (756...757),
-       [AssocNode(758...764)(
-          IntegerNode(758...759)(),
-          IntegerNode(763...764)(),
-          (760...762)
-        ),
-        AssocNode(766...772)(
-          IntegerNode(766...767)(),
-          IntegerNode(771...772)(),
-          (768...770)
-        )],
-       (773...774)
-     ),
-     HashNode(775...802)(
-       (775...776),
-       [AssocNode(777...794)(
-          SymbolNode(777...779)(nil, (777...778), (778...779), "a"),
-          ParenthesesNode(780...794)(
-            StatementsNode(781...793)(
-              [RescueModifierNode(781...793)(
-                 IntegerNode(781...782)(),
-                 (783...789),
-                 CallNode(790...793)(
-                   nil,
-                   nil,
-                   (790...793),
-                   nil,
-                   nil,
-                   nil,
-                   nil,
-                   2,
-                   "foo"
-                 )
-               )]
-            ),
-            (780...781),
-            (793...794)
-          ),
-          nil
-        ),
-        AssocNode(796...800)(
-          SymbolNode(796...798)(nil, (796...797), (797...798), "b"),
-          IntegerNode(799...800)(),
-          nil
-        )],
-       (801...802)
-     ),
-     HashNode(803...817)(
-       (803...804),
-       [AssocNode(805...809)(
-          SymbolNode(805...807)(nil, (805...806), (806...807), "a"),
-          IntegerNode(808...809)(),
-          nil
-        ),
-        AssocNode(811...815)(
-          SymbolNode(811...813)(nil, (811...812), (812...813), "b"),
-          IntegerNode(814...815)(),
-          nil
-        )],
-       (816...817)
-     ),
-     HashNode(818...827)(
-       (818...819),
-       [AssocNode(820...825)(
-          SymbolNode(820...822)(nil, (820...821), (821...822), "a"),
-          SymbolNode(823...825)((823...824), (824...825), nil, "a"),
-          nil
-        )],
-       (826...827)
-     ),
-     HashNode(828...843)(
-       (828...829),
-       [AssocNode(830...841)(
-          SymbolNode(830...836)((830...832), (832...835), (835...836), "a b"),
-          IntegerNode(840...841)(),
-          (837...839)
-        )],
-       (842...843)
-     ),
-     HashNode(844...856)(
-       (844...845),
-       [AssocNode(846...854)(
-          SymbolNode(846...849)((846...847), (847...849), nil, "-@"),
-          IntegerNode(853...854)(),
-          (850...852)
-        )],
-       (855...856)
-     ),
-     InterpolatedStringNode(857...869)(
-       (857...858),
-       [EmbeddedStatementsNode(858...861)((858...860), nil, (860...861)),
-        StringNode(861...862)(nil, (861...862), nil, "\n"),
-        EmbeddedStatementsNode(862...865)((862...864), nil, (864...865)),
-        StringNode(865...868)(nil, (865...868), nil, "\n" + "a")],
-       (868...869)
-     ),
-     CallNode(870...892)(
-       nil,
-       nil,
-       (870...873),
-       nil,
-       nil,
-       nil,
-       BlockNode(874...892)(
-         [],
-         nil,
-         StatementsNode(878...890)(
-           [InterpolatedStringNode(878...890)(
-              (878...879),
-              [EmbeddedStatementsNode(879...882)(
-                 (879...881),
-                 nil,
-                 (881...882)
-               ),
-               StringNode(882...883)(nil, (882...883), nil, "\n"),
-               EmbeddedStatementsNode(883...886)(
-                 (883...885),
-                 nil,
-                 (885...886)
-               ),
-               StringNode(886...889)(nil, (886...889), nil, "\n" + "a")],
-              (889...890)
-            )]
-         ),
-         (874...875),
-         (891...892)
-       ),
-       0,
-       "foo"
-     ),
-     SymbolNode(893...901)(
-       (893...895),
-       (895...900),
-       (900...901),
-       "a\\\n" + "b"
-     ),
-     InterpolatedXStringNode(902...916)(
-       (902...903),
-       [StringNode(903...907)(nil, (903...907), nil, "  x\n"),
-        EmbeddedStatementsNode(907...913)(
-          (907...909),
-          StatementsNode(909...912)(
-            [CallNode(909...912)(
-               nil,
-               nil,
-               (909...912),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "foo"
-             )]
-          ),
-          (912...913)
-        ),
-        StringNode(913...915)(nil, (913...915), nil, "\n" + "#")],
-       (915...916)
-     )]
-  )
-)
+@ ProgramNode (location: (0...916))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...916))
+    └── body: (length: 78)
+        ├── @ HashNode (location: (0...38))
+        │   ├── opening_loc: (0...1) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (2...21))
+        │   │   │   ├── key:
+        │   │   │   │   @ StringNode (location: (2...7))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (2...3) = "\""
+        │   │   │   │   ├── content_loc: (3...6) = "foo"
+        │   │   │   │   ├── closing_loc: (6...7) = "\""
+        │   │   │   │   └── unescaped: "foo"
+        │   │   │   ├── value:
+        │   │   │   │   @ InterpolatedStringNode (location: (11...21))
+        │   │   │   │   ├── opening_loc: (11...21) = "<<-HEREDOC"
+        │   │   │   │   ├── parts: (length: 3)
+        │   │   │   │   │   ├── @ StringNode (location: (39...41))
+        │   │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   │   ├── content_loc: (39...41) = "  "
+        │   │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   │   └── unescaped: "  "
+        │   │   │   │   │   ├── @ EmbeddedStatementsNode (location: (41...44))
+        │   │   │   │   │   │   ├── opening_loc: (41...43) = "\#{"
+        │   │   │   │   │   │   ├── statements: ∅
+        │   │   │   │   │   │   └── closing_loc: (43...44) = "}"
+        │   │   │   │   │   └── @ StringNode (location: (44...45))
+        │   │   │   │   │       ├── flags: ∅
+        │   │   │   │   │       ├── opening_loc: ∅
+        │   │   │   │   │       ├── content_loc: (44...45) = "\n"
+        │   │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │   │       └── unescaped: "\n"
+        │   │   │   │   └── closing_loc: (45...53) = "HEREDOC\n"
+        │   │   │   └── operator_loc: (8...10) = "=>"
+        │   │   └── @ AssocNode (location: (23...36))
+        │   │       ├── key:
+        │   │       │   @ StringNode (location: (23...28))
+        │   │       │   ├── flags: ∅
+        │   │       │   ├── opening_loc: (23...24) = "\""
+        │   │       │   ├── content_loc: (24...27) = "bar"
+        │   │       │   ├── closing_loc: (27...28) = "\""
+        │   │       │   └── unescaped: "bar"
+        │   │       ├── value:
+        │   │       │   @ SymbolNode (location: (32...36))
+        │   │       │   ├── opening_loc: (32...33) = ":"
+        │   │       │   ├── value_loc: (33...36) = "baz"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "baz"
+        │   │       └── operator_loc: (29...31) = "=>"
+        │   └── closing_loc: (37...38) = "}"
+        ├── @ HashNode (location: (53...84))
+        │   ├── opening_loc: (53...54) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (55...67))
+        │   │   │   ├── key:
+        │   │   │   │   @ StringNode (location: (55...60))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (55...56) = "\""
+        │   │   │   │   ├── content_loc: (56...59) = "foo"
+        │   │   │   │   ├── closing_loc: (59...60) = "\""
+        │   │   │   │   └── unescaped: "foo"
+        │   │   │   ├── value:
+        │   │   │   │   @ StringNode (location: (64...67))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (64...66) = "%("
+        │   │   │   │   ├── content_loc: (66...66) = ""
+        │   │   │   │   ├── closing_loc: (66...67) = ")"
+        │   │   │   │   └── unescaped: ""
+        │   │   │   └── operator_loc: (61...63) = "=>"
+        │   │   └── @ AssocNode (location: (69...82))
+        │   │       ├── key:
+        │   │       │   @ StringNode (location: (69...74))
+        │   │       │   ├── flags: ∅
+        │   │       │   ├── opening_loc: (69...70) = "\""
+        │   │       │   ├── content_loc: (70...73) = "bar"
+        │   │       │   ├── closing_loc: (73...74) = "\""
+        │   │       │   └── unescaped: "bar"
+        │   │       ├── value:
+        │   │       │   @ SymbolNode (location: (78...82))
+        │   │       │   ├── opening_loc: (78...79) = ":"
+        │   │       │   ├── value_loc: (79...82) = "baz"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "baz"
+        │   │       └── operator_loc: (75...77) = "=>"
+        │   └── closing_loc: (83...84) = "}"
+        ├── @ ArrayNode (location: (85...97))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ StringNode (location: (86...91))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (86...87) = "\""
+        │   │   │   ├── content_loc: (87...90) = "foo"
+        │   │   │   ├── closing_loc: (90...91) = "\""
+        │   │   │   └── unescaped: "foo"
+        │   │   └── @ StringNode (location: (93...96))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (93...95) = "%("
+        │   │       ├── content_loc: (95...95) = ""
+        │   │       ├── closing_loc: (95...96) = ")"
+        │   │       └── unescaped: ""
+        │   ├── opening_loc: (85...86) = "["
+        │   └── closing_loc: (96...97) = "]"
+        ├── @ CallNode (location: (98...113))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (98...111))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (98...99) = "a"
+        │   │   ├── opening_loc: (99...100) = "("
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (100...110))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ InterpolatedStringNode (location: (100...110))
+        │   │   │           ├── opening_loc: (100...110) = "<<-HEREDOC"
+        │   │   │           ├── parts: (length: 3)
+        │   │   │           │   ├── @ StringNode (location: (114...116))
+        │   │   │           │   │   ├── flags: ∅
+        │   │   │           │   │   ├── opening_loc: ∅
+        │   │   │           │   │   ├── content_loc: (114...116) = "  "
+        │   │   │           │   │   ├── closing_loc: ∅
+        │   │   │           │   │   └── unescaped: "  "
+        │   │   │           │   ├── @ EmbeddedStatementsNode (location: (116...119))
+        │   │   │           │   │   ├── opening_loc: (116...118) = "\#{"
+        │   │   │           │   │   ├── statements: ∅
+        │   │   │           │   │   └── closing_loc: (118...119) = "}"
+        │   │   │           │   └── @ StringNode (location: (119...120))
+        │   │   │           │       ├── flags: ∅
+        │   │   │           │       ├── opening_loc: ∅
+        │   │   │           │       ├── content_loc: (119...120) = "\n"
+        │   │   │           │       ├── closing_loc: ∅
+        │   │   │           │       └── unescaped: "\n"
+        │   │   │           └── closing_loc: (120...128) = "HEREDOC\n"
+        │   │   ├── closing_loc: (110...111) = ")"
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "a"
+        │   ├── call_operator_loc: (111...112) = "."
+        │   ├── message_loc: (112...113) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "a"
+        ├── @ CallNode (location: (128...136))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (128...134))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (128...129) = "a"
+        │   │   ├── opening_loc: (129...130) = "("
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (130...133))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ StringNode (location: (130...133))
+        │   │   │           ├── flags: ∅
+        │   │   │           ├── opening_loc: (130...132) = "%("
+        │   │   │           ├── content_loc: (132...132) = ""
+        │   │   │           ├── closing_loc: (132...133) = ")"
+        │   │   │           └── unescaped: ""
+        │   │   ├── closing_loc: (133...134) = ")"
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "a"
+        │   ├── call_operator_loc: (134...135) = "."
+        │   ├── message_loc: (135...136) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "a"
+        ├── @ HashNode (location: (137...167))
+        │   ├── opening_loc: (137...138) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (139...158))
+        │   │   │   ├── key:
+        │   │   │   │   @ StringNode (location: (139...144))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (139...140) = "\""
+        │   │   │   │   ├── content_loc: (140...143) = "foo"
+        │   │   │   │   ├── closing_loc: (143...144) = "\""
+        │   │   │   │   └── unescaped: "foo"
+        │   │   │   ├── value:
+        │   │   │   │   @ InterpolatedStringNode (location: (148...158))
+        │   │   │   │   ├── opening_loc: (148...158) = "<<-HEREDOC"
+        │   │   │   │   ├── parts: (length: 3)
+        │   │   │   │   │   ├── @ StringNode (location: (168...170))
+        │   │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   │   ├── content_loc: (168...170) = "  "
+        │   │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   │   └── unescaped: "  "
+        │   │   │   │   │   ├── @ EmbeddedStatementsNode (location: (170...173))
+        │   │   │   │   │   │   ├── opening_loc: (170...172) = "\#{"
+        │   │   │   │   │   │   ├── statements: ∅
+        │   │   │   │   │   │   └── closing_loc: (172...173) = "}"
+        │   │   │   │   │   └── @ StringNode (location: (173...174))
+        │   │   │   │   │       ├── flags: ∅
+        │   │   │   │   │       ├── opening_loc: ∅
+        │   │   │   │   │       ├── content_loc: (173...174) = "\n"
+        │   │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │   │       └── unescaped: "\n"
+        │   │   │   │   └── closing_loc: (174...182) = "HEREDOC\n"
+        │   │   │   └── operator_loc: (145...147) = "=>"
+        │   │   └── @ AssocSplatNode (location: (160...165))
+        │   │       ├── value:
+        │   │       │   @ CallNode (location: (162...165))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── message_loc: (162...165) = "baz"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments: ∅
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   ├── flags: variable_call
+        │   │       │   └── name: "baz"
+        │   │       └── operator_loc: (160...162) = "**"
+        │   └── closing_loc: (166...167) = "}"
+        ├── @ HashNode (location: (182...205))
+        │   ├── opening_loc: (182...183) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (184...196))
+        │   │   │   ├── key:
+        │   │   │   │   @ StringNode (location: (184...189))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (184...185) = "\""
+        │   │   │   │   ├── content_loc: (185...188) = "foo"
+        │   │   │   │   ├── closing_loc: (188...189) = "\""
+        │   │   │   │   └── unescaped: "foo"
+        │   │   │   ├── value:
+        │   │   │   │   @ StringNode (location: (193...196))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (193...195) = "%("
+        │   │   │   │   ├── content_loc: (195...195) = ""
+        │   │   │   │   ├── closing_loc: (195...196) = ")"
+        │   │   │   │   └── unescaped: ""
+        │   │   │   └── operator_loc: (190...192) = "=>"
+        │   │   └── @ AssocSplatNode (location: (198...203))
+        │   │       ├── value:
+        │   │       │   @ CallNode (location: (200...203))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── message_loc: (200...203) = "baz"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments: ∅
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   ├── flags: variable_call
+        │   │       │   └── name: "baz"
+        │   │       └── operator_loc: (198...200) = "**"
+        │   └── closing_loc: (204...205) = "}"
+        ├── @ InterpolatedStringNode (location: (206...220))
+        │   ├── opening_loc: (206...207) = "\""
+        │   ├── parts: (length: 5)
+        │   │   ├── @ EmbeddedVariableNode (location: (207...210))
+        │   │   │   ├── operator_loc: (207...208) = "#"
+        │   │   │   └── variable:
+        │   │   │       @ InstanceVariableReadNode (location: (208...210))
+        │   │   │       └── name: :@a
+        │   │   ├── @ StringNode (location: (210...211))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (210...211) = " "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: " "
+        │   │   ├── @ EmbeddedVariableNode (location: (211...215))
+        │   │   │   ├── operator_loc: (211...212) = "#"
+        │   │   │   └── variable:
+        │   │   │       @ ClassVariableReadNode (location: (212...215))
+        │   │   │       └── name: :@@a
+        │   │   ├── @ StringNode (location: (215...216))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (215...216) = " "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: " "
+        │   │   └── @ EmbeddedVariableNode (location: (216...219))
+        │   │       ├── operator_loc: (216...217) = "#"
+        │   │       └── variable:
+        │   │           @ GlobalVariableReadNode (location: (217...219))
+        │   │           └── name: :$a
+        │   └── closing_loc: (219...220) = "\""
+        ├── @ IntegerNode (location: (221...222))
+        │   └── flags: decimal
+        ├── @ CallNode (location: (223...226))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (224...226))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (223...224) = "+"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "+@"
+        ├── @ IntegerNode (location: (227...228))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (229...230))
+        │   └── flags: decimal
+        ├── @ RationalNode (location: (231...233))
+        │   └── numeric:
+        │       @ IntegerNode (location: (231...232))
+        │       └── flags: decimal
+        ├── @ RationalNode (location: (234...238))
+        │   └── numeric:
+        │       @ FloatNode (location: (234...237))
+        ├── @ RationalNode (location: (239...243))
+        │   └── numeric:
+        │       @ FloatNode (location: (239...242))
+        ├── @ ImaginaryNode (location: (244...246))
+        │   └── numeric:
+        │       @ IntegerNode (location: (244...245))
+        │       └── flags: decimal
+        ├── @ ImaginaryNode (location: (247...250))
+        │   └── numeric:
+        │       @ IntegerNode (location: (247...249))
+        │       └── flags: decimal
+        ├── @ ImaginaryNode (location: (251...255))
+        │   └── numeric:
+        │       @ FloatNode (location: (251...254))
+        ├── @ ImaginaryNode (location: (256...261))
+        │   └── numeric:
+        │       @ FloatNode (location: (256...260))
+        ├── @ ImaginaryNode (location: (262...294))
+        │   └── numeric:
+        │       @ IntegerNode (location: (262...293))
+        │       └── flags: decimal
+        ├── @ ImaginaryNode (location: (295...298))
+        │   └── numeric:
+        │       @ RationalNode (location: (295...297))
+        │       └── numeric:
+        │           @ IntegerNode (location: (295...296))
+        │           └── flags: decimal
+        ├── @ StringConcatNode (location: (299...310))
+        │   ├── left:
+        │   │   @ StringNode (location: (299...304))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (299...300) = "\""
+        │   │   ├── content_loc: (300...303) = "foo"
+        │   │   ├── closing_loc: (303...304) = "\""
+        │   │   └── unescaped: "foo"
+        │   └── right:
+        │       @ StringNode (location: (305...310))
+        │       ├── flags: ∅
+        │       ├── opening_loc: (305...306) = "\""
+        │       ├── content_loc: (306...309) = "bar"
+        │       ├── closing_loc: (309...310) = "\""
+        │       └── unescaped: "bar"
+        ├── @ InterpolatedStringNode (location: (311...326))
+        │   ├── opening_loc: (311...312) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (312...319))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (312...319) = "foobar "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foobar "
+        │   │   └── @ EmbeddedStatementsNode (location: (319...325))
+        │   │       ├── opening_loc: (319...321) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (321...324))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ CallNode (location: (321...324))
+        │   │       │           ├── receiver: ∅
+        │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── message_loc: (321...324) = "baz"
+        │   │       │           ├── opening_loc: ∅
+        │   │       │           ├── arguments: ∅
+        │   │       │           ├── closing_loc: ∅
+        │   │       │           ├── block: ∅
+        │   │       │           ├── flags: variable_call
+        │   │       │           └── name: "baz"
+        │   │       └── closing_loc: (324...325) = "}"
+        │   └── closing_loc: (325...326) = "\""
+        ├── @ InterpolatedStringNode (location: (327...339))
+        │   ├── opening_loc: (327...328) = "\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (328...331))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (328...331) = "foo"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo"
+        │   │   ├── @ EmbeddedStatementsNode (location: (331...335))
+        │   │   │   ├── opening_loc: (331...333) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (333...334))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (333...334))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (334...335) = "}"
+        │   │   └── @ StringNode (location: (335...338))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (335...338) = "bar"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "bar"
+        │   └── closing_loc: (338...339) = "\""
+        ├── @ InterpolatedStringNode (location: (340...349))
+        │   ├── opening_loc: (340...341) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (341...345))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (341...345) = "\\\\\\\\"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\\\\"
+        │   │   └── @ EmbeddedStatementsNode (location: (345...348))
+        │   │       ├── opening_loc: (345...347) = "\#{"
+        │   │       ├── statements: ∅
+        │   │       └── closing_loc: (347...348) = "}"
+        │   └── closing_loc: (348...349) = "\""
+        ├── @ InterpolatedStringNode (location: (350...359))
+        │   ├── opening_loc: (350...351) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ EmbeddedStatementsNode (location: (351...354))
+        │   │   │   ├── opening_loc: (351...353) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (353...354) = "}"
+        │   │   └── @ StringNode (location: (354...358))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (354...358) = "\\\#{}"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#{}"
+        │   └── closing_loc: (358...359) = "\""
+        ├── @ InterpolatedStringNode (location: (360...369))
+        │   ├── opening_loc: (360...361) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (361...365))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (361...365) = "\\\#{}"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\#{}"
+        │   │   └── @ EmbeddedStatementsNode (location: (365...368))
+        │   │       ├── opening_loc: (365...367) = "\#{"
+        │   │       ├── statements: ∅
+        │   │       └── closing_loc: (367...368) = "}"
+        │   └── closing_loc: (368...369) = "\""
+        ├── @ StringNode (location: (370...385))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (370...371) = "\""
+        │   ├── content_loc: (371...384) = "foo\\\\\\\#{@bar}"
+        │   ├── closing_loc: (384...385) = "\""
+        │   └── unescaped: "foo\\\#{@bar}"
+        ├── @ StringNode (location: (386...390))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (386...387) = "\""
+        │   ├── content_loc: (387...389) = "\\\""
+        │   ├── closing_loc: (389...390) = "\""
+        │   └── unescaped: "\""
+        ├── @ StringNode (location: (391...400))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (391...392) = "\""
+        │   ├── content_loc: (392...399) = "foo bar"
+        │   ├── closing_loc: (399...400) = "\""
+        │   └── unescaped: "foo bar"
+        ├── @ StringNode (location: (401...411))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (401...402) = "\""
+        │   ├── content_loc: (402...410) = "foo\\nbar"
+        │   ├── closing_loc: (410...411) = "\""
+        │   └── unescaped: "foo\nbar"
+        ├── @ XStringNode (location: (412...417))
+        │   ├── opening_loc: (412...413) = "`"
+        │   ├── content_loc: (413...416) = "foo"
+        │   ├── closing_loc: (416...417) = "`"
+        │   └── unescaped: "foo"
+        ├── @ InterpolatedXStringNode (location: (418...430))
+        │   ├── opening_loc: (418...419) = "`"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (419...422))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (419...422) = "foo"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo"
+        │   │   └── @ EmbeddedStatementsNode (location: (422...429))
+        │   │       ├── opening_loc: (422...424) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (424...428))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ InstanceVariableReadNode (location: (424...428))
+        │   │       │           └── name: :@bar
+        │   │       └── closing_loc: (428...429) = "}"
+        │   └── closing_loc: (429...430) = "`"
+        ├── @ XStringNode (location: (431...434))
+        │   ├── opening_loc: (431...432) = "`"
+        │   ├── content_loc: (432...433) = ")"
+        │   ├── closing_loc: (433...434) = "`"
+        │   └── unescaped: ")"
+        ├── @ XStringNode (location: (435...439))
+        │   ├── opening_loc: (435...436) = "`"
+        │   ├── content_loc: (436...438) = "\\`"
+        │   ├── closing_loc: (438...439) = "`"
+        │   └── unescaped: "`"
+        ├── @ XStringNode (location: (440...443))
+        │   ├── opening_loc: (440...441) = "`"
+        │   ├── content_loc: (441...442) = "\""
+        │   ├── closing_loc: (442...443) = "`"
+        │   └── unescaped: "\""
+        ├── @ SymbolNode (location: (444...448))
+        │   ├── opening_loc: (444...445) = ":"
+        │   ├── value_loc: (445...448) = "foo"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "foo"
+        ├── @ SymbolNode (location: (449...455))
+        │   ├── opening_loc: (449...451) = ":\""
+        │   ├── value_loc: (451...454) = "A B"
+        │   ├── closing_loc: (454...455) = "\""
+        │   └── unescaped: "A B"
+        ├── @ SymbolNode (location: (456...460))
+        │   ├── opening_loc: (456...457) = ":"
+        │   ├── value_loc: (457...460) = "foo"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "foo"
+        ├── @ SymbolNode (location: (461...467))
+        │   ├── opening_loc: (461...463) = ":\""
+        │   ├── value_loc: (463...466) = "A B"
+        │   ├── closing_loc: (466...467) = "\""
+        │   └── unescaped: "A B"
+        ├── @ SymbolNode (location: (468...475))
+        │   ├── opening_loc: (468...470) = ":\""
+        │   ├── value_loc: (470...474) = "A\\\"B"
+        │   ├── closing_loc: (474...475) = "\""
+        │   └── unescaped: "A\"B"
+        ├── @ SymbolNode (location: (476...479))
+        │   ├── opening_loc: (476...478) = ":\""
+        │   ├── value_loc: (0...0) = ""
+        │   ├── closing_loc: (478...479) = "\""
+        │   └── unescaped: ""
+        ├── @ RegularExpressionNode (location: (480...485))
+        │   ├── opening_loc: (480...481) = "/"
+        │   ├── content_loc: (481...484) = "foo"
+        │   ├── closing_loc: (484...485) = "/"
+        │   ├── unescaped: "foo"
+        │   └── flags: ∅
+        ├── @ RegularExpressionNode (location: (486...514))
+        │   ├── opening_loc: (486...487) = "/"
+        │   ├── content_loc: (487...513) = "[^-+',.\\/:@[:alnum:]\\[\\]]+"
+        │   ├── closing_loc: (513...514) = "/"
+        │   ├── unescaped: "[^-+',./:@[:alnum:][]]+"
+        │   └── flags: ∅
+        ├── @ InterpolatedRegularExpressionNode (location: (515...527))
+        │   ├── opening_loc: (515...516) = "/"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (516...519))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (516...519) = "foo"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo"
+        │   │   └── @ EmbeddedStatementsNode (location: (519...526))
+        │   │       ├── opening_loc: (519...521) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (521...525))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ InstanceVariableReadNode (location: (521...525))
+        │   │       │           └── name: :@bar
+        │   │       └── closing_loc: (525...526) = "}"
+        │   ├── closing_loc: (526...527) = "/"
+        │   └── flags: ∅
+        ├── @ InterpolatedRegularExpressionNode (location: (528...543))
+        │   ├── opening_loc: (528...529) = "/"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (529...532))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (529...532) = "foo"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo"
+        │   │   └── @ EmbeddedStatementsNode (location: (532...539))
+        │   │       ├── opening_loc: (532...534) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (534...538))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ InstanceVariableReadNode (location: (534...538))
+        │   │       │           └── name: :@bar
+        │   │       └── closing_loc: (538...539) = "}"
+        │   ├── closing_loc: (539...543) = "/imx"
+        │   └── flags: ignore_case, extended, multi_line
+        ├── @ InterpolatedRegularExpressionNode (location: (544...557))
+        │   ├── opening_loc: (544...545) = "/"
+        │   ├── parts: (length: 1)
+        │   │   └── @ EmbeddedStatementsNode (location: (545...556))
+        │   │       ├── opening_loc: (545...547) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (547...555))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ StringNode (location: (547...555))
+        │   │       │           ├── flags: ∅
+        │   │       │           ├── opening_loc: (547...548) = "\""
+        │   │       │           ├── content_loc: (548...554) = "\\u0000"
+        │   │       │           ├── closing_loc: (554...555) = "\""
+        │   │       │           └── unescaped: "\u0000"
+        │   │       └── closing_loc: (555...556) = "}"
+        │   ├── closing_loc: (556...557) = "/"
+        │   └── flags: ∅
+        ├── @ RegularExpressionNode (location: (558...562))
+        │   ├── opening_loc: (558...559) = "/"
+        │   ├── content_loc: (559...561) = "\\n"
+        │   ├── closing_loc: (561...562) = "/"
+        │   ├── unescaped: "\n"
+        │   └── flags: ∅
+        ├── @ RegularExpressionNode (location: (563...567))
+        │   ├── opening_loc: (563...564) = "/"
+        │   ├── content_loc: (564...566) = "\\n"
+        │   ├── closing_loc: (566...567) = "/"
+        │   ├── unescaped: "\n"
+        │   └── flags: ∅
+        ├── @ RegularExpressionNode (location: (568...573))
+        │   ├── opening_loc: (568...569) = "/"
+        │   ├── content_loc: (569...571) = "\\n"
+        │   ├── closing_loc: (571...573) = "/x"
+        │   ├── unescaped: "\n"
+        │   └── flags: extended
+        ├── @ RegularExpressionNode (location: (574...581))
+        │   ├── opening_loc: (574...575) = "/"
+        │   ├── content_loc: (575...579) = "\\/\\/"
+        │   ├── closing_loc: (579...581) = "/x"
+        │   ├── unescaped: "//"
+        │   └── flags: extended
+        ├── @ InterpolatedSymbolNode (location: (582...597))
+        │   ├── opening_loc: (582...584) = ":\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (584...587))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (584...587) = "foo"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo"
+        │   │   ├── @ EmbeddedStatementsNode (location: (587...593))
+        │   │   │   ├── opening_loc: (587...589) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (589...592))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (589...592))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (589...592) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   └── closing_loc: (592...593) = "}"
+        │   │   └── @ StringNode (location: (593...596))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (593...596) = "baz"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "baz"
+        │   └── closing_loc: (596...597) = "\""
+        ├── @ InterpolatedSymbolNode (location: (598...609))
+        │   ├── opening_loc: (598...600) = ":\""
+        │   ├── parts: (length: 1)
+        │   │   └── @ EmbeddedStatementsNode (location: (600...608))
+        │   │       ├── opening_loc: (600...602) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (602...607))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ StringNode (location: (602...607))
+        │   │       │           ├── flags: ∅
+        │   │       │           ├── opening_loc: (602...603) = "\""
+        │   │       │           ├── content_loc: (603...606) = "foo"
+        │   │       │           ├── closing_loc: (606...607) = "\""
+        │   │       │           └── unescaped: "foo"
+        │   │       └── closing_loc: (607...608) = "}"
+        │   └── closing_loc: (608...609) = "\""
+        ├── @ RangeNode (location: (610...624))
+        │   ├── left:
+        │   │   @ ParenthesesNode (location: (610...621))
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (611...620))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (611...620))
+        │   │   │           ├── receiver:
+        │   │   │           │   @ FloatNode (location: (611...614))
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (615...616) = "/"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments:
+        │   │   │           │   @ ArgumentsNode (location: (617...620))
+        │   │   │           │   └── arguments: (length: 1)
+        │   │   │           │       └── @ FloatNode (location: (617...620))
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: ∅
+        │   │   │           └── name: "/"
+        │   │   ├── opening_loc: (610...611) = "("
+        │   │   └── closing_loc: (620...621) = ")"
+        │   ├── right:
+        │   │   @ IntegerNode (location: (623...624))
+        │   │   └── flags: decimal
+        │   ├── operator_loc: (621...623) = ".."
+        │   └── flags: ∅
+        ├── @ RangeNode (location: (625...639))
+        │   ├── left:
+        │   │   @ IntegerNode (location: (625...626))
+        │   │   └── flags: decimal
+        │   ├── right:
+        │   │   @ ParenthesesNode (location: (628...639))
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (629...638))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (629...638))
+        │   │   │           ├── receiver:
+        │   │   │           │   @ FloatNode (location: (629...632))
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (633...634) = "/"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments:
+        │   │   │           │   @ ArgumentsNode (location: (635...638))
+        │   │   │           │   └── arguments: (length: 1)
+        │   │   │           │       └── @ FloatNode (location: (635...638))
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: ∅
+        │   │   │           └── name: "/"
+        │   │   ├── opening_loc: (628...629) = "("
+        │   │   └── closing_loc: (638...639) = ")"
+        │   ├── operator_loc: (626...628) = ".."
+        │   └── flags: ∅
+        ├── @ RangeNode (location: (640...656))
+        │   ├── left:
+        │   │   @ ParenthesesNode (location: (640...651))
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (641...650))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (641...650))
+        │   │   │           ├── receiver:
+        │   │   │           │   @ FloatNode (location: (641...644))
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (645...646) = "/"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments:
+        │   │   │           │   @ ArgumentsNode (location: (647...650))
+        │   │   │           │   └── arguments: (length: 1)
+        │   │   │           │       └── @ FloatNode (location: (647...650))
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: ∅
+        │   │   │           └── name: "/"
+        │   │   ├── opening_loc: (640...641) = "("
+        │   │   └── closing_loc: (650...651) = ")"
+        │   ├── right:
+        │   │   @ IntegerNode (location: (653...656))
+        │   │   └── flags: decimal
+        │   ├── operator_loc: (651...653) = ".."
+        │   └── flags: ∅
+        ├── @ FloatNode (location: (657...661))
+        ├── @ FloatNode (location: (662...665))
+        ├── @ ArrayNode (location: (666...672))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ IntegerNode (location: (667...668))
+        │   │   │   └── flags: decimal
+        │   │   └── @ IntegerNode (location: (670...671))
+        │   │       └── flags: decimal
+        │   ├── opening_loc: (666...667) = "["
+        │   └── closing_loc: (671...672) = "]"
+        ├── @ ArrayNode (location: (673...684))
+        │   ├── elements: (length: 3)
+        │   │   ├── @ IntegerNode (location: (674...675))
+        │   │   │   └── flags: decimal
+        │   │   ├── @ ParenthesesNode (location: (677...679))
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (677...678) = "("
+        │   │   │   └── closing_loc: (678...679) = ")"
+        │   │   └── @ CallNode (location: (681...683))
+        │   │       ├── receiver: ∅
+        │   │       ├── call_operator_loc: ∅
+        │   │       ├── message_loc: (681...683) = "n2"
+        │   │       ├── opening_loc: ∅
+        │   │       ├── arguments: ∅
+        │   │       ├── closing_loc: ∅
+        │   │       ├── block: ∅
+        │   │       ├── flags: variable_call
+        │   │       └── name: "n2"
+        │   ├── opening_loc: (673...674) = "["
+        │   └── closing_loc: (683...684) = "]"
+        ├── @ ArrayNode (location: (685...688))
+        │   ├── elements: (length: 1)
+        │   │   └── @ IntegerNode (location: (686...687))
+        │   │       └── flags: decimal
+        │   ├── opening_loc: (685...686) = "["
+        │   └── closing_loc: (687...688) = "]"
+        ├── @ ArrayNode (location: (689...691))
+        │   ├── elements: (length: 0)
+        │   ├── opening_loc: (689...690) = "["
+        │   └── closing_loc: (690...691) = "]"
+        ├── @ ArrayNode (location: (692...702))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ IntegerNode (location: (693...694))
+        │   │   │   └── flags: decimal
+        │   │   └── @ SplatNode (location: (696...701))
+        │   │       ├── operator_loc: (696...697) = "*"
+        │   │       └── expression:
+        │   │           @ InstanceVariableReadNode (location: (697...701))
+        │   │           └── name: :@foo
+        │   ├── opening_loc: (692...693) = "["
+        │   └── closing_loc: (701...702) = "]"
+        ├── @ ArrayNode (location: (703...713))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ SplatNode (location: (704...709))
+        │   │   │   ├── operator_loc: (704...705) = "*"
+        │   │   │   └── expression:
+        │   │   │       @ InstanceVariableReadNode (location: (705...709))
+        │   │   │       └── name: :@foo
+        │   │   └── @ IntegerNode (location: (711...712))
+        │   │       └── flags: decimal
+        │   ├── opening_loc: (703...704) = "["
+        │   └── closing_loc: (712...713) = "]"
+        ├── @ ArrayNode (location: (714...728))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ SplatNode (location: (715...720))
+        │   │   │   ├── operator_loc: (715...716) = "*"
+        │   │   │   └── expression:
+        │   │   │       @ InstanceVariableReadNode (location: (716...720))
+        │   │   │       └── name: :@foo
+        │   │   └── @ SplatNode (location: (722...727))
+        │   │       ├── operator_loc: (722...723) = "*"
+        │   │       └── expression:
+        │   │           @ InstanceVariableReadNode (location: (723...727))
+        │   │           └── name: :@baz
+        │   ├── opening_loc: (714...715) = "["
+        │   └── closing_loc: (727...728) = "]"
+        ├── @ HashNode (location: (729...731))
+        │   ├── opening_loc: (729...730) = "{"
+        │   ├── elements: (length: 0)
+        │   └── closing_loc: (730...731) = "}"
+        ├── @ HashNode (location: (732...744))
+        │   ├── opening_loc: (732...733) = "{"
+        │   ├── elements: (length: 1)
+        │   │   └── @ AssocNode (location: (734...742))
+        │   │       ├── key:
+        │   │       │   @ ParenthesesNode (location: (734...736))
+        │   │       │   ├── body: ∅
+        │   │       │   ├── opening_loc: (734...735) = "("
+        │   │       │   └── closing_loc: (735...736) = ")"
+        │   │       ├── value:
+        │   │       │   @ ParenthesesNode (location: (740...742))
+        │   │       │   ├── body: ∅
+        │   │       │   ├── opening_loc: (740...741) = "("
+        │   │       │   └── closing_loc: (741...742) = ")"
+        │   │       └── operator_loc: (737...739) = "=>"
+        │   └── closing_loc: (743...744) = "}"
+        ├── @ HashNode (location: (745...755))
+        │   ├── opening_loc: (745...746) = "{"
+        │   ├── elements: (length: 1)
+        │   │   └── @ AssocNode (location: (747...753))
+        │   │       ├── key:
+        │   │       │   @ IntegerNode (location: (747...748))
+        │   │       │   └── flags: decimal
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (752...753))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: (749...751) = "=>"
+        │   └── closing_loc: (754...755) = "}"
+        ├── @ HashNode (location: (756...774))
+        │   ├── opening_loc: (756...757) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (758...764))
+        │   │   │   ├── key:
+        │   │   │   │   @ IntegerNode (location: (758...759))
+        │   │   │   │   └── flags: decimal
+        │   │   │   ├── value:
+        │   │   │   │   @ IntegerNode (location: (763...764))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── operator_loc: (760...762) = "=>"
+        │   │   └── @ AssocNode (location: (766...772))
+        │   │       ├── key:
+        │   │       │   @ IntegerNode (location: (766...767))
+        │   │       │   └── flags: decimal
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (771...772))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: (768...770) = "=>"
+        │   └── closing_loc: (773...774) = "}"
+        ├── @ HashNode (location: (775...802))
+        │   ├── opening_loc: (775...776) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (777...794))
+        │   │   │   ├── key:
+        │   │   │   │   @ SymbolNode (location: (777...779))
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── value_loc: (777...778) = "a"
+        │   │   │   │   ├── closing_loc: (778...779) = ":"
+        │   │   │   │   └── unescaped: "a"
+        │   │   │   ├── value:
+        │   │   │   │   @ ParenthesesNode (location: (780...794))
+        │   │   │   │   ├── body:
+        │   │   │   │   │   @ StatementsNode (location: (781...793))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ RescueModifierNode (location: (781...793))
+        │   │   │   │   │           ├── expression:
+        │   │   │   │   │           │   @ IntegerNode (location: (781...782))
+        │   │   │   │   │           │   └── flags: decimal
+        │   │   │   │   │           ├── keyword_loc: (783...789) = "rescue"
+        │   │   │   │   │           └── rescue_expression:
+        │   │   │   │   │               @ CallNode (location: (790...793))
+        │   │   │   │   │               ├── receiver: ∅
+        │   │   │   │   │               ├── call_operator_loc: ∅
+        │   │   │   │   │               ├── message_loc: (790...793) = "foo"
+        │   │   │   │   │               ├── opening_loc: ∅
+        │   │   │   │   │               ├── arguments: ∅
+        │   │   │   │   │               ├── closing_loc: ∅
+        │   │   │   │   │               ├── block: ∅
+        │   │   │   │   │               ├── flags: variable_call
+        │   │   │   │   │               └── name: "foo"
+        │   │   │   │   ├── opening_loc: (780...781) = "("
+        │   │   │   │   └── closing_loc: (793...794) = ")"
+        │   │   │   └── operator_loc: ∅
+        │   │   └── @ AssocNode (location: (796...800))
+        │   │       ├── key:
+        │   │       │   @ SymbolNode (location: (796...798))
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── value_loc: (796...797) = "b"
+        │   │       │   ├── closing_loc: (797...798) = ":"
+        │   │       │   └── unescaped: "b"
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (799...800))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: ∅
+        │   └── closing_loc: (801...802) = "}"
+        ├── @ HashNode (location: (803...817))
+        │   ├── opening_loc: (803...804) = "{"
+        │   ├── elements: (length: 2)
+        │   │   ├── @ AssocNode (location: (805...809))
+        │   │   │   ├── key:
+        │   │   │   │   @ SymbolNode (location: (805...807))
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── value_loc: (805...806) = "a"
+        │   │   │   │   ├── closing_loc: (806...807) = ":"
+        │   │   │   │   └── unescaped: "a"
+        │   │   │   ├── value:
+        │   │   │   │   @ IntegerNode (location: (808...809))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── operator_loc: ∅
+        │   │   └── @ AssocNode (location: (811...815))
+        │   │       ├── key:
+        │   │       │   @ SymbolNode (location: (811...813))
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── value_loc: (811...812) = "b"
+        │   │       │   ├── closing_loc: (812...813) = ":"
+        │   │       │   └── unescaped: "b"
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (814...815))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: ∅
+        │   └── closing_loc: (816...817) = "}"
+        ├── @ HashNode (location: (818...827))
+        │   ├── opening_loc: (818...819) = "{"
+        │   ├── elements: (length: 1)
+        │   │   └── @ AssocNode (location: (820...825))
+        │   │       ├── key:
+        │   │       │   @ SymbolNode (location: (820...822))
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── value_loc: (820...821) = "a"
+        │   │       │   ├── closing_loc: (821...822) = ":"
+        │   │       │   └── unescaped: "a"
+        │   │       ├── value:
+        │   │       │   @ SymbolNode (location: (823...825))
+        │   │       │   ├── opening_loc: (823...824) = ":"
+        │   │       │   ├── value_loc: (824...825) = "a"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "a"
+        │   │       └── operator_loc: ∅
+        │   └── closing_loc: (826...827) = "}"
+        ├── @ HashNode (location: (828...843))
+        │   ├── opening_loc: (828...829) = "{"
+        │   ├── elements: (length: 1)
+        │   │   └── @ AssocNode (location: (830...841))
+        │   │       ├── key:
+        │   │       │   @ SymbolNode (location: (830...836))
+        │   │       │   ├── opening_loc: (830...832) = ":\""
+        │   │       │   ├── value_loc: (832...835) = "a b"
+        │   │       │   ├── closing_loc: (835...836) = "\""
+        │   │       │   └── unescaped: "a b"
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (840...841))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: (837...839) = "=>"
+        │   └── closing_loc: (842...843) = "}"
+        ├── @ HashNode (location: (844...856))
+        │   ├── opening_loc: (844...845) = "{"
+        │   ├── elements: (length: 1)
+        │   │   └── @ AssocNode (location: (846...854))
+        │   │       ├── key:
+        │   │       │   @ SymbolNode (location: (846...849))
+        │   │       │   ├── opening_loc: (846...847) = ":"
+        │   │       │   ├── value_loc: (847...849) = "-@"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "-@"
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (853...854))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: (850...852) = "=>"
+        │   └── closing_loc: (855...856) = "}"
+        ├── @ InterpolatedStringNode (location: (857...869))
+        │   ├── opening_loc: (857...858) = "\""
+        │   ├── parts: (length: 4)
+        │   │   ├── @ EmbeddedStatementsNode (location: (858...861))
+        │   │   │   ├── opening_loc: (858...860) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (860...861) = "}"
+        │   │   ├── @ StringNode (location: (861...862))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (861...862) = "\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (862...865))
+        │   │   │   ├── opening_loc: (862...864) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (864...865) = "}"
+        │   │   └── @ StringNode (location: (865...868))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (865...868) = "\\na"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\na"
+        │   └── closing_loc: (868...869) = "\""
+        ├── @ CallNode (location: (870...892))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (870...873) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (874...892))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (878...890))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ InterpolatedStringNode (location: (878...890))
+        │   │   │           ├── opening_loc: (878...879) = "\""
+        │   │   │           ├── parts: (length: 4)
+        │   │   │           │   ├── @ EmbeddedStatementsNode (location: (879...882))
+        │   │   │           │   │   ├── opening_loc: (879...881) = "\#{"
+        │   │   │           │   │   ├── statements: ∅
+        │   │   │           │   │   └── closing_loc: (881...882) = "}"
+        │   │   │           │   ├── @ StringNode (location: (882...883))
+        │   │   │           │   │   ├── flags: ∅
+        │   │   │           │   │   ├── opening_loc: ∅
+        │   │   │           │   │   ├── content_loc: (882...883) = "\n"
+        │   │   │           │   │   ├── closing_loc: ∅
+        │   │   │           │   │   └── unescaped: "\n"
+        │   │   │           │   ├── @ EmbeddedStatementsNode (location: (883...886))
+        │   │   │           │   │   ├── opening_loc: (883...885) = "\#{"
+        │   │   │           │   │   ├── statements: ∅
+        │   │   │           │   │   └── closing_loc: (885...886) = "}"
+        │   │   │           │   └── @ StringNode (location: (886...889))
+        │   │   │           │       ├── flags: ∅
+        │   │   │           │       ├── opening_loc: ∅
+        │   │   │           │       ├── content_loc: (886...889) = "\\na"
+        │   │   │           │       ├── closing_loc: ∅
+        │   │   │           │       └── unescaped: "\na"
+        │   │   │           └── closing_loc: (889...890) = "\""
+        │   │   ├── opening_loc: (874...875) = "{"
+        │   │   └── closing_loc: (891...892) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ SymbolNode (location: (893...901))
+        │   ├── opening_loc: (893...895) = ":\""
+        │   ├── value_loc: (895...900) = "a\\\\\nb"
+        │   ├── closing_loc: (900...901) = "\""
+        │   └── unescaped: "a\\\nb"
+        └── @ InterpolatedXStringNode (location: (902...916))
+            ├── opening_loc: (902...903) = "`"
+            ├── parts: (length: 3)
+            │   ├── @ StringNode (location: (903...907))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (903...907) = "  x\n"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "  x\n"
+            │   ├── @ EmbeddedStatementsNode (location: (907...913))
+            │   │   ├── opening_loc: (907...909) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (909...912))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ CallNode (location: (909...912))
+            │   │   │           ├── receiver: ∅
+            │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── message_loc: (909...912) = "foo"
+            │   │   │           ├── opening_loc: ∅
+            │   │   │           ├── arguments: ∅
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           ├── block: ∅
+            │   │   │           ├── flags: variable_call
+            │   │   │           └── name: "foo"
+            │   │   └── closing_loc: (912...913) = "}"
+            │   └── @ StringNode (location: (913...915))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (913...915) = "\n#"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\n#"
+            └── closing_loc: (915...916) = "`"

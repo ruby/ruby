@@ -165,7 +165,10 @@ have commit right, others don't.
 * https://rubygems.org/gems/ipaddr
 
 #### lib/irb.rb, lib/irb/*
-* aycabta
+* Stan Lo (st0012)
+* Tomoya Ishida (tompng)
+* Mari Imaizumi (ima1zumi)
+* Hitoshi Hasumi (hasumikin)
 * https://github.com/ruby/irb
 * https://rubygems.org/gems/irb
 
@@ -249,7 +252,10 @@ have commit right, others don't.
 * https://rubygems.org/gems/rdoc
 
 #### lib/reline.rb, lib/reline/*
-* aycabta
+* Tomoya Ishida (tompng)
+* Mari Imaizumi (ima1zumi)
+* Stan Lo (st0012)
+* Hitoshi Hasumi (hasumikin)
 * https://github.com/ruby/reline
 * https://rubygems.org/gems/reline
 

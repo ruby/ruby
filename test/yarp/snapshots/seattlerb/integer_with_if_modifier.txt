@@ -1,12 +1,16 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [IfNode(0...12)(
-       (5...7),
-       TrueNode(8...12)(),
-       StatementsNode(0...5)([IntegerNode(0...5)()]),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ IfNode (location: (0...12))
+            ├── if_keyword_loc: (5...7) = "if"
+            ├── predicate:
+            │   @ TrueNode (location: (8...12))
+            ├── statements:
+            │   @ StatementsNode (location: (0...5))
+            │   └── body: (length: 1)
+            │       └── @ IntegerNode (location: (0...5))
+            │           └── flags: decimal
+            ├── consequent: ∅
+            └── end_keyword_loc: ∅

@@ -1,72 +1,103 @@
-ProgramNode(0...109)(
-  [],
-  StatementsNode(0...109)(
-    [UntilNode(0...18)(
-       (0...5),
-       (15...18),
-       TrueNode(6...10)(),
-       StatementsNode(12...13)([IntegerNode(12...13)()]),
-       0
-     ),
-     UntilNode(20...32)(
-       (22...27),
-       nil,
-       TrueNode(28...32)(),
-       StatementsNode(20...21)([IntegerNode(20...21)()]),
-       0
-     ),
-     UntilNode(34...50)(
-       (40...45),
-       nil,
-       TrueNode(46...50)(),
-       StatementsNode(34...39)([BreakNode(34...39)(nil, (34...39))]),
-       0
-     ),
-     UntilNode(52...67)(
-       (57...62),
-       nil,
-       TrueNode(63...67)(),
-       StatementsNode(52...56)([NextNode(52...56)(nil, (52...56))]),
-       0
-     ),
-     UntilNode(69...86)(
-       (76...81),
-       nil,
-       TrueNode(82...86)(),
-       StatementsNode(69...75)([ReturnNode(69...75)((69...75), nil)]),
-       0
-     ),
-     UntilNode(88...109)(
-       (99...104),
-       nil,
-       CallNode(105...109)(
-         nil,
-         nil,
-         (105...109),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "bar?"
-       ),
-       StatementsNode(88...98)(
-         [CallNode(88...98)(
-            nil,
-            nil,
-            (88...91),
-            nil,
-            ArgumentsNode(92...98)(
-              [SymbolNode(92...94)((92...93), (93...94), nil, "a"),
-               SymbolNode(96...98)((96...97), (97...98), nil, "b")]
-            ),
-            nil,
-            nil,
-            0,
-            "foo"
-          )]
-       ),
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...109))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...109))
+    └── body: (length: 6)
+        ├── @ UntilNode (location: (0...18))
+        │   ├── keyword_loc: (0...5) = "until"
+        │   ├── closing_loc: (15...18) = "end"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (6...10))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (12...13))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (12...13))
+        │   │           └── flags: decimal
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (20...32))
+        │   ├── keyword_loc: (22...27) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (28...32))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (20...21))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (20...21))
+        │   │           └── flags: decimal
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (34...50))
+        │   ├── keyword_loc: (40...45) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (46...50))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (34...39))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (34...39))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (34...39) = "break"
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (52...67))
+        │   ├── keyword_loc: (57...62) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (63...67))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (52...56))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NextNode (location: (52...56))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (52...56) = "next"
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (69...86))
+        │   ├── keyword_loc: (76...81) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (82...86))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (69...75))
+        │   │   └── body: (length: 1)
+        │   │       └── @ ReturnNode (location: (69...75))
+        │   │           ├── keyword_loc: (69...75) = "return"
+        │   │           └── arguments: ∅
+        │   └── flags: ∅
+        └── @ UntilNode (location: (88...109))
+            ├── keyword_loc: (99...104) = "until"
+            ├── closing_loc: ∅
+            ├── predicate:
+            │   @ CallNode (location: (105...109))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (105...109) = "bar?"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "bar?"
+            ├── statements:
+            │   @ StatementsNode (location: (88...98))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (88...98))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (88...91) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (92...98))
+            │           │   └── arguments: (length: 2)
+            │           │       ├── @ SymbolNode (location: (92...94))
+            │           │       │   ├── opening_loc: (92...93) = ":"
+            │           │       │   ├── value_loc: (93...94) = "a"
+            │           │       │   ├── closing_loc: ∅
+            │           │       │   └── unescaped: "a"
+            │           │       └── @ SymbolNode (location: (96...98))
+            │           │           ├── opening_loc: (96...97) = ":"
+            │           │           ├── value_loc: (97...98) = "b"
+            │           │           ├── closing_loc: ∅
+            │           │           └── unescaped: "b"
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "foo"
+            └── flags: ∅

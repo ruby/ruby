@@ -1,43 +1,61 @@
-ProgramNode(0...37)(
-  [],
-  StatementsNode(0...37)(
-    [CallNode(0...21)(
-       nil,
-       nil,
-       (0...2),
-       nil,
-       ArgumentsNode(3...21)(
-         [CallNode(3...21)(
-            ParenthesesNode(3...10)(
-              StatementsNode(4...9)([IntegerNode(4...9)()]),
-              (3...4),
-              (9...10)
-            ),
-            (10...11),
-            (11...19),
-            (19...20),
-            nil,
-            (20...21),
-            nil,
-            0,
-            "toString"
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "td"
-     ),
-     CallNode(23...37)(
-       CallNode(23...25)(nil, nil, (23...25), nil, nil, nil, nil, 2, "td"),
-       (25...26),
-       (26...29),
-       nil,
-       nil,
-       nil,
-       BlockNode(30...37)([], nil, nil, (30...32), (34...37)),
-       0,
-       "num"
-     )]
-  )
-)
+@ ProgramNode (location: (0...37))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...37))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...21))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...2) = "td"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (3...21))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (3...21))
+        │   │           ├── receiver:
+        │   │           │   @ ParenthesesNode (location: (3...10))
+        │   │           │   ├── body:
+        │   │           │   │   @ StatementsNode (location: (4...9))
+        │   │           │   │   └── body: (length: 1)
+        │   │           │   │       └── @ IntegerNode (location: (4...9))
+        │   │           │   │           └── flags: decimal
+        │   │           │   ├── opening_loc: (3...4) = "("
+        │   │           │   └── closing_loc: (9...10) = ")"
+        │   │           ├── call_operator_loc: (10...11) = "."
+        │   │           ├── message_loc: (11...19) = "toString"
+        │   │           ├── opening_loc: (19...20) = "("
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: (20...21) = ")"
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "toString"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "td"
+        └── @ CallNode (location: (23...37))
+            ├── receiver:
+            │   @ CallNode (location: (23...25))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (23...25) = "td"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "td"
+            ├── call_operator_loc: (25...26) = "."
+            ├── message_loc: (26...29) = "num"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (30...37))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body: ∅
+            │   ├── opening_loc: (30...32) = "do"
+            │   └── closing_loc: (34...37) = "end"
+            ├── flags: ∅
+            └── name: "num"

@@ -1,134 +1,209 @@
-ProgramNode(0...372)(
-  [],
-  StatementsNode(0...372)(
-    [InterpolatedStringNode(0...6)(
-       (0...6),
-       [StringNode(7...11)(nil, (7...11), nil, "a\n")],
-       (11...15)
-     ),
-     InterpolatedStringNode(16...22)(
-       (16...22),
-       [StringNode(23...34)(nil, (23...34), nil, "\ta\n" + "b\n" + "\t\tc\n")],
-       (34...38)
-     ),
-     InterpolatedStringNode(39...45)(
-       (39...45),
-       [EmbeddedStatementsNode(48...52)(
-          (48...50),
-          StatementsNode(50...51)([IntegerNode(50...51)()]),
-          (51...52)
-        ),
-        StringNode(52...55)(nil, (52...55), nil, " a\n")],
-       (55...59)
-     ),
-     InterpolatedStringNode(60...66)(
-       (60...66),
-       [StringNode(67...71)(nil, (67...71), nil, "a "),
-        EmbeddedStatementsNode(71...75)(
-          (71...73),
-          StatementsNode(73...74)([IntegerNode(73...74)()]),
-          (74...75)
-        ),
-        StringNode(75...76)(nil, (75...76), nil, "\n")],
-       (76...80)
-     ),
-     InterpolatedStringNode(81...87)(
-       (81...87),
-       [StringNode(88...93)(nil, (88...93), nil, " a\n"),
-        EmbeddedStatementsNode(93...97)(
-          (93...95),
-          StatementsNode(95...96)([IntegerNode(95...96)()]),
-          (96...97)
-        ),
-        StringNode(97...98)(nil, (97...98), nil, "\n")],
-       (98...102)
-     ),
-     InterpolatedStringNode(103...109)(
-       (103...109),
-       [StringNode(110...116)(nil, (110...116), nil, "a\n"),
-        EmbeddedStatementsNode(116...120)(
-          (116...118),
-          StatementsNode(118...119)([IntegerNode(118...119)()]),
-          (119...120)
-        ),
-        StringNode(120...121)(nil, (120...121), nil, "\n")],
-       (121...125)
-     ),
-     InterpolatedStringNode(126...132)(
-       (126...132),
-       [StringNode(133...141)(nil, (133...141), nil, "a\n" + "b\n")],
-       (141...145)
-     ),
-     InterpolatedStringNode(146...152)(
-       (146...152),
-       [StringNode(153...162)(nil, (153...162), nil, "a\n" + " b\n")],
-       (162...166)
-     ),
-     InterpolatedStringNode(167...173)(
-       (167...173),
-       [StringNode(174...183)(nil, (174...183), nil, "\ta\n" + "b\n")],
-       (183...187)
-     ),
-     InterpolatedStringNode(188...196)(
-       (188...196),
-       [StringNode(197...206)(nil, (197...206), nil, "a \#{1}\n")],
-       (206...210)
-     ),
-     InterpolatedStringNode(211...217)(
-       (211...217),
-       [StringNode(218...225)(nil, (218...225), nil, "a\n" + " b\n")],
-       (225...229)
-     ),
-     InterpolatedStringNode(230...236)(
-       (230...236),
-       [StringNode(237...244)(nil, (237...244), nil, " a\n" + "b\n")],
-       (244...248)
-     ),
-     InterpolatedStringNode(249...255)(
-       (249...255),
-       [StringNode(256...271)(nil, (256...271), nil, "a\n" + "b\n")],
-       (271...275)
-     ),
-     InterpolatedStringNode(276...282)(
-       (276...282),
-       [StringNode(283...292)(nil, (283...292), nil, "a\n" + "\n" + "b\n")],
-       (292...296)
-     ),
-     InterpolatedStringNode(297...303)(
-       (297...303),
-       [StringNode(304...313)(nil, (304...313), nil, "a\n" + "\n" + "b\n")],
-       (313...317)
-     ),
-     InterpolatedStringNode(318...324)(
-       (318...324),
-       [StringNode(325...336)(
-          nil,
-          (325...336),
-          nil,
-          "a\n" + "\n" + "\n" + "\n" + "b\n"
-        )],
-       (336...340)
-     ),
-     InterpolatedStringNode(341...347)(
-       (341...347),
-       [StringNode(348...351)(nil, (348...351), nil, "\n"),
-        EmbeddedStatementsNode(351...355)(
-          (351...353),
-          StatementsNode(353...354)([IntegerNode(353...354)()]),
-          (354...355)
-        ),
-        StringNode(355...357)(nil, (355...357), nil, "a\n")],
-       (357...365)
-     ),
-     InterpolatedStringNode(366...372)(
-       (366...372),
-       [EmbeddedStatementsNode(375...379)(
-          (375...377),
-          StatementsNode(377...378)([IntegerNode(377...378)()]),
-          (378...379)
-        ),
-        StringNode(379...383)(nil, (379...383), nil, "\n" + "\tb\n")],
-       (383...387)
-     )]
-  )
-)
+@ ProgramNode (location: (0...372))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...372))
+    └── body: (length: 18)
+        ├── @ StringNode (location: (0...6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...6) = "<<~EOF"
+        │   ├── content_loc: (7...11) = "  a\n"
+        │   ├── closing_loc: (11...15) = "EOF\n"
+        │   └── unescaped: "a\n"
+        ├── @ StringNode (location: (16...22))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (16...22) = "<<~EOF"
+        │   ├── content_loc: (23...34) = "\ta\n  b\n\t\tc\n"
+        │   ├── closing_loc: (34...38) = "EOF\n"
+        │   └── unescaped: "\ta\nb\n\t\tc\n"
+        ├── @ InterpolatedStringNode (location: (39...45))
+        │   ├── opening_loc: (39...45) = "<<~EOF"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ EmbeddedStatementsNode (location: (48...52))
+        │   │   │   ├── opening_loc: (48...50) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (50...51))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (50...51))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (51...52) = "}"
+        │   │   └── @ StringNode (location: (52...55))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (52...55) = " a\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: " a\n"
+        │   └── closing_loc: (55...59) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (60...66))
+        │   ├── opening_loc: (60...66) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (67...71))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (67...71) = "  a "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a "
+        │   │   ├── @ EmbeddedStatementsNode (location: (71...75))
+        │   │   │   ├── opening_loc: (71...73) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (73...74))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (73...74))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (74...75) = "}"
+        │   │   └── @ StringNode (location: (75...76))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (75...76) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (76...80) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (81...87))
+        │   ├── opening_loc: (81...87) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (88...93))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (88...93) = "  a\n "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: " a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (93...97))
+        │   │   │   ├── opening_loc: (93...95) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (95...96))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (95...96))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (96...97) = "}"
+        │   │   └── @ StringNode (location: (97...98))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (97...98) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (98...102) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (103...109))
+        │   ├── opening_loc: (103...109) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (110...116))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (110...116) = "  a\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (116...120))
+        │   │   │   ├── opening_loc: (116...118) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (118...119))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (118...119))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (119...120) = "}"
+        │   │   └── @ StringNode (location: (120...121))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (120...121) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (121...125) = "EOF\n"
+        ├── @ StringNode (location: (126...132))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (126...132) = "<<~EOF"
+        │   ├── content_loc: (133...141) = "  a\n  b\n"
+        │   ├── closing_loc: (141...145) = "EOF\n"
+        │   └── unescaped: "a\nb\n"
+        ├── @ StringNode (location: (146...152))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (146...152) = "<<~EOF"
+        │   ├── content_loc: (153...162) = "  a\n   b\n"
+        │   ├── closing_loc: (162...166) = "EOF\n"
+        │   └── unescaped: "a\n b\n"
+        ├── @ StringNode (location: (167...173))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (167...173) = "<<~EOF"
+        │   ├── content_loc: (174...183) = "\t\t\ta\n\t\tb\n"
+        │   ├── closing_loc: (183...187) = "EOF\n"
+        │   └── unescaped: "\ta\nb\n"
+        ├── @ StringNode (location: (188...196))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (188...196) = "<<~'EOF'"
+        │   ├── content_loc: (197...206) = "  a \#{1}\n"
+        │   ├── closing_loc: (206...210) = "EOF\n"
+        │   └── unescaped: "a \#{1}\n"
+        ├── @ StringNode (location: (211...217))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (211...217) = "<<~EOF"
+        │   ├── content_loc: (218...225) = "\ta\n\t b\n"
+        │   ├── closing_loc: (225...229) = "EOF\n"
+        │   └── unescaped: "a\n b\n"
+        ├── @ StringNode (location: (230...236))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (230...236) = "<<~EOF"
+        │   ├── content_loc: (237...244) = "\t a\n\tb\n"
+        │   ├── closing_loc: (244...248) = "EOF\n"
+        │   └── unescaped: " a\nb\n"
+        ├── @ StringNode (location: (249...255))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (249...255) = "<<~EOF"
+        │   ├── content_loc: (256...271) = "  \ta\n        b\n"
+        │   ├── closing_loc: (271...275) = "EOF\n"
+        │   └── unescaped: "a\nb\n"
+        ├── @ StringNode (location: (276...282))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (276...282) = "<<~EOF"
+        │   ├── content_loc: (283...292) = "  a\n\n  b\n"
+        │   ├── closing_loc: (292...296) = "EOF\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (297...303))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (297...303) = "<<~EOF"
+        │   ├── content_loc: (304...313) = "  a\n\n  b\n"
+        │   ├── closing_loc: (313...317) = "EOF\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (318...324))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (318...324) = "<<~EOF"
+        │   ├── content_loc: (325...336) = "  a\n\n\n\n  b\n"
+        │   ├── closing_loc: (336...340) = "EOF\n"
+        │   └── unescaped: "a\n\n\n\nb\n"
+        ├── @ InterpolatedStringNode (location: (341...347))
+        │   ├── opening_loc: (341...347) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (348...351))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (348...351) = "\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (351...355))
+        │   │   │   ├── opening_loc: (351...353) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (353...354))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (353...354))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (354...355) = "}"
+        │   │   └── @ StringNode (location: (355...357))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (355...357) = "a\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "a\n"
+        │   └── closing_loc: (357...365) = "    EOF\n"
+        └── @ InterpolatedStringNode (location: (366...372))
+            ├── opening_loc: (366...372) = "<<~EOT"
+            ├── parts: (length: 2)
+            │   ├── @ EmbeddedStatementsNode (location: (375...379))
+            │   │   ├── opening_loc: (375...377) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (377...378))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ IntegerNode (location: (377...378))
+            │   │   │           └── flags: decimal
+            │   │   └── closing_loc: (378...379) = "}"
+            │   └── @ StringNode (location: (379...383))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (379...383) = "\n\tb\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\n\tb\n"
+            └── closing_loc: (383...387) = "EOT\n"

@@ -1,14 +1,20 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [HashNode(0...13)(
-       (0...1),
-       [AssocNode(2...10)(
-          SymbolNode(2...5)((2...3), (3...5), nil, "s1"),
-          IntegerNode(9...10)(),
-          (6...8)
-        )],
-       (12...13)
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ HashNode (location: (0...13))
+            ├── opening_loc: (0...1) = "{"
+            ├── elements: (length: 1)
+            │   └── @ AssocNode (location: (2...10))
+            │       ├── key:
+            │       │   @ SymbolNode (location: (2...5))
+            │       │   ├── opening_loc: (2...3) = ":"
+            │       │   ├── value_loc: (3...5) = "s1"
+            │       │   ├── closing_loc: ∅
+            │       │   └── unescaped: "s1"
+            │       ├── value:
+            │       │   @ IntegerNode (location: (9...10))
+            │       │   └── flags: decimal
+            │       └── operator_loc: (6...8) = "=>"
+            └── closing_loc: (12...13) = "}"

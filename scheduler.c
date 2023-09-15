@@ -458,7 +458,7 @@ VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv)
 
 /*
  *  Document-method: Fiber::Scheduler#io_read
- *  call-seq: io_read(io, buffer, length) -> read length or -errno
+ *  call-seq: io_read(io, buffer, length, offset) -> read length or -errno
  *
  *  Invoked by IO#read or IO#Buffer.read to read +length+ bytes from +io+ into a
  *  specified +buffer+ (see IO::Buffer) at the given +offset+.
@@ -518,7 +518,7 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
 
 /*
  *  Document-method: Scheduler#io_write
- *  call-seq: io_write(io, buffer, length) -> written length or -errno
+ *  call-seq: io_write(io, buffer, length, offset) -> written length or -errno
  *
  *  Invoked by IO#write or IO::Buffer#write to write +length+ bytes to +io+ from
  *  from a specified +buffer+ (see IO::Buffer) at the given +offset+.

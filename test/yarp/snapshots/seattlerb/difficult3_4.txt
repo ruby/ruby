@@ -1,22 +1,37 @@
-ProgramNode(0...17)(
-  [:a],
-  StatementsNode(0...17)(
-    [LocalVariableWriteNode(0...17)(
-       :a,
-       0,
-       (0...1),
-       IfNode(2...17)(
-         nil,
-         CallNode(2...3)(nil, nil, (2...3), nil, nil, nil, nil, 2, "b"),
-         StatementsNode(6...10)([TrueNode(6...10)()]),
-         ElseNode(10...17)(
-           (10...11),
-           StatementsNode(12...17)([FalseNode(12...17)()]),
-           nil
-         ),
-         nil
-       ),
-       (1...2)
-     )]
-  )
-)
+@ ProgramNode (location: (0...17))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...17))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...17))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ IfNode (location: (2...17))
+            │   ├── if_keyword_loc: ∅
+            │   ├── predicate:
+            │   │   @ CallNode (location: (2...3))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (2...3) = "b"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: "b"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (6...10))
+            │   │   └── body: (length: 1)
+            │   │       └── @ TrueNode (location: (6...10))
+            │   ├── consequent:
+            │   │   @ ElseNode (location: (10...17))
+            │   │   ├── else_keyword_loc: (10...11) = ":"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (12...17))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ FalseNode (location: (12...17))
+            │   │   └── end_keyword_loc: ∅
+            │   └── end_keyword_loc: ∅
+            └── operator_loc: (1...2) = "="

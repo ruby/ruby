@@ -1,4 +1,11 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)([StringNode(0...9)((0...1), (1...9), nil, " ")])
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...9))
+            ├── flags: ∅
+            ├── opening_loc: (0...1) = "?"
+            ├── content_loc: (1...9) = "\\u{00a0}"
+            ├── closing_loc: ∅
+            └── unescaped: " "

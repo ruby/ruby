@@ -1,11 +1,18 @@
-ProgramNode(0...8)(
-  [],
-  StatementsNode(0...8)(
-    [ConstantPathOperatorWriteNode(0...8)(
-       ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
-       (4...6),
-       IntegerNode(7...8)(),
-       :&
-     )]
-  )
-)
+@ ProgramNode (location: (0...8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...8))
+    └── body: (length: 1)
+        └── @ ConstantPathOperatorWriteNode (location: (0...8))
+            ├── target:
+            │   @ ConstantPathNode (location: (0...3))
+            │   ├── parent: ∅
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (2...3))
+            │   │   └── name: :X
+            │   └── delimiter_loc: (0...2) = "::"
+            ├── operator_loc: (4...6) = "&="
+            ├── value:
+            │   @ IntegerNode (location: (7...8))
+            │   └── flags: decimal
+            └── operator: :&

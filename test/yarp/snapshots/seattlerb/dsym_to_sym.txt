@@ -1,15 +1,33 @@
-ProgramNode(0...32)(
-  [],
-  StatementsNode(0...32)(
-    [AliasNode(0...17)(
-       SymbolNode(6...11)((6...8), (8...10), (10...11), "<<"),
-       SymbolNode(12...17)((12...14), (14...16), (16...17), ">>"),
-       (0...5)
-     ),
-     AliasNode(19...32)(
-       SymbolNode(25...28)((25...26), (26...28), nil, "<<"),
-       SymbolNode(29...32)((29...30), (30...32), nil, ">>"),
-       (19...24)
-     )]
-  )
-)
+@ ProgramNode (location: (0...32))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...32))
+    └── body: (length: 2)
+        ├── @ AliasMethodNode (location: (0...17))
+        │   ├── new_name:
+        │   │   @ SymbolNode (location: (6...11))
+        │   │   ├── opening_loc: (6...8) = ":\""
+        │   │   ├── value_loc: (8...10) = "<<"
+        │   │   ├── closing_loc: (10...11) = "\""
+        │   │   └── unescaped: "<<"
+        │   ├── old_name:
+        │   │   @ SymbolNode (location: (12...17))
+        │   │   ├── opening_loc: (12...14) = ":\""
+        │   │   ├── value_loc: (14...16) = ">>"
+        │   │   ├── closing_loc: (16...17) = "\""
+        │   │   └── unescaped: ">>"
+        │   └── keyword_loc: (0...5) = "alias"
+        └── @ AliasMethodNode (location: (19...32))
+            ├── new_name:
+            │   @ SymbolNode (location: (25...28))
+            │   ├── opening_loc: (25...26) = ":"
+            │   ├── value_loc: (26...28) = "<<"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "<<"
+            ├── old_name:
+            │   @ SymbolNode (location: (29...32))
+            │   ├── opening_loc: (29...30) = ":"
+            │   ├── value_loc: (30...32) = ">>"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: ">>"
+            └── keyword_loc: (19...24) = "alias"

@@ -1,165 +1,187 @@
-ProgramNode(0...148)(
-  [],
-  StatementsNode(0...148)(
-    [CallNode(0...10)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       nil,
-       nil,
-       BlockNode(4...10)([], nil, nil, (4...6), (7...10)),
-       0,
-       "foo"
-     ),
-     CallNode(12...29)(
-       nil,
-       nil,
-       (12...15),
-       nil,
-       nil,
-       nil,
-       BlockNode(16...29)(
-         [],
-         nil,
-         BeginNode(19...29)(
-           nil,
-           nil,
-           RescueNode(19...25)((19...25), [], nil, nil, nil, nil),
-           nil,
-           nil,
-           (26...29)
-         ),
-         (16...18),
-         (26...29)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(31...64)(
-       nil,
-       nil,
-       (31...34),
-       nil,
-       nil,
-       nil,
-       BlockNode(35...64)(
-         [],
-         nil,
-         StatementsNode(40...60)(
-           [RescueModifierNode(40...54)(
-              NilNode(40...43)(),
-              (44...50),
-              NilNode(51...54)()
-            ),
-            NilNode(57...60)()]
-         ),
-         (35...37),
-         (61...64)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(66...80)(
-       nil,
-       nil,
-       (66...69),
-       nil,
-       nil,
-       nil,
-       BlockNode(70...80)(
-         [:a],
-         BlockParametersNode(73...76)(
-           ParametersNode(74...75)(
-             [RequiredParameterNode(74...75)(:a)],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (73...74),
-           (75...76)
-         ),
-         nil,
-         (70...72),
-         (77...80)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(82...116)(
-       nil,
-       nil,
-       (82...85),
-       (85...86),
-       ArgumentsNode(86...92)(
-         [InterpolatedStringNode(86...92)(
-            (86...92),
-            [StringNode(101...105)(nil, (101...105), nil, "  b\n")],
-            (105...109)
-          )]
-       ),
-       (92...93),
-       BlockNode(94...116)(
-         [:a],
-         BlockParametersNode(97...100)(
-           ParametersNode(98...99)(
-             [RequiredParameterNode(98...99)(:a)],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (97...98),
-           (99...100)
-         ),
-         StatementsNode(111...112)([LocalVariableReadNode(111...112)(:a, 0)]),
-         (94...96),
-         (113...116)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(118...148)(
-       nil,
-       nil,
-       (118...121),
-       (121...122),
-       ArgumentsNode(122...128)(
-         [InterpolatedStringNode(122...128)(
-            (122...128),
-            [StringNode(133...137)(nil, (133...137), nil, "  b\n")],
-            (137...141)
-          )]
-       ),
-       (128...129),
-       BlockNode(130...148)(
-         [],
-         nil,
-         StatementsNode(143...144)(
-           [CallNode(143...144)(
-              nil,
-              nil,
-              (143...144),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "a"
-            )]
-         ),
-         (130...132),
-         (145...148)
-       ),
-       0,
-       "foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...148))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...148))
+    └── body: (length: 6)
+        ├── @ CallNode (location: (0...10))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (4...10))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (4...6) = "do"
+        │   │   └── closing_loc: (7...10) = "end"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (12...29))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (12...15) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (16...29))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (19...29))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (19...25))
+        │   │   │   │   ├── keyword_loc: (19...25) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 0)
+        │   │   │   │   ├── operator_loc: ∅
+        │   │   │   │   ├── reference: ∅
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (26...29) = "end"
+        │   │   ├── opening_loc: (16...18) = "do"
+        │   │   └── closing_loc: (26...29) = "end"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (31...64))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (31...34) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (35...64))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (40...60))
+        │   │   │   └── body: (length: 2)
+        │   │   │       ├── @ RescueModifierNode (location: (40...54))
+        │   │   │       │   ├── expression:
+        │   │   │       │   │   @ NilNode (location: (40...43))
+        │   │   │       │   ├── keyword_loc: (44...50) = "rescue"
+        │   │   │       │   └── rescue_expression:
+        │   │   │       │       @ NilNode (location: (51...54))
+        │   │   │       └── @ NilNode (location: (57...60))
+        │   │   ├── opening_loc: (35...37) = "do"
+        │   │   └── closing_loc: (61...64) = "end"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (66...80))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (66...69) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (70...80))
+        │   │   ├── locals: [:a]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (73...76))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (74...75))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (74...75))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (73...74) = "|"
+        │   │   │   └── closing_loc: (75...76) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (70...72) = "do"
+        │   │   └── closing_loc: (77...80) = "end"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (82...116))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (82...85) = "foo"
+        │   ├── opening_loc: (85...86) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (86...92))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ StringNode (location: (86...92))
+        │   │           ├── flags: ∅
+        │   │           ├── opening_loc: (86...92) = "<<-DOC"
+        │   │           ├── content_loc: (101...105) = "  b\n"
+        │   │           ├── closing_loc: (105...109) = "DOC\n"
+        │   │           └── unescaped: "  b\n"
+        │   ├── closing_loc: (92...93) = ")"
+        │   ├── block:
+        │   │   @ BlockNode (location: (94...116))
+        │   │   ├── locals: [:a]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (97...100))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (98...99))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (98...99))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (97...98) = "|"
+        │   │   │   └── closing_loc: (99...100) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (111...112))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ LocalVariableReadNode (location: (111...112))
+        │   │   │           ├── name: :a
+        │   │   │           └── depth: 0
+        │   │   ├── opening_loc: (94...96) = "do"
+        │   │   └── closing_loc: (113...116) = "end"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        └── @ CallNode (location: (118...148))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (118...121) = "foo"
+            ├── opening_loc: (121...122) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (122...128))
+            │   └── arguments: (length: 1)
+            │       └── @ StringNode (location: (122...128))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (122...128) = "<<-DOC"
+            │           ├── content_loc: (133...137) = "  b\n"
+            │           ├── closing_loc: (137...141) = "DOC\n"
+            │           └── unescaped: "  b\n"
+            ├── closing_loc: (128...129) = ")"
+            ├── block:
+            │   @ BlockNode (location: (130...148))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (143...144))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (143...144))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (143...144) = "a"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "a"
+            │   ├── opening_loc: (130...132) = "do"
+            │   └── closing_loc: (145...148) = "end"
+            ├── flags: ∅
+            └── name: "foo"

@@ -1,24 +1,47 @@
-ProgramNode(0...30)(
-  [],
-  StatementsNode(0...30)(
-    [SuperNode(0...9)(
-       (0...5),
-       nil,
-       ArgumentsNode(6...9)(
-         [CallNode(6...9)(nil, nil, (6...9), nil, nil, nil, nil, 2, "foo")]
-       ),
-       nil,
-       nil
-     ),
-     SuperNode(11...18)((11...16), (16...17), nil, (17...18), nil),
-     SuperNode(20...30)(
-       (20...25),
-       (25...26),
-       ArgumentsNode(26...29)(
-         [CallNode(26...29)(nil, nil, (26...29), nil, nil, nil, nil, 2, "foo")]
-       ),
-       (29...30),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...30))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...30))
+    └── body: (length: 3)
+        ├── @ SuperNode (location: (0...9))
+        │   ├── keyword_loc: (0...5) = "super"
+        │   ├── lparen_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (6...9))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (6...9))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (6...9) = "foo"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "foo"
+        │   ├── rparen_loc: ∅
+        │   └── block: ∅
+        ├── @ SuperNode (location: (11...18))
+        │   ├── keyword_loc: (11...16) = "super"
+        │   ├── lparen_loc: (16...17) = "("
+        │   ├── arguments: ∅
+        │   ├── rparen_loc: (17...18) = ")"
+        │   └── block: ∅
+        └── @ SuperNode (location: (20...30))
+            ├── keyword_loc: (20...25) = "super"
+            ├── lparen_loc: (25...26) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (26...29))
+            │   └── arguments: (length: 1)
+            │       └── @ CallNode (location: (26...29))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (26...29) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "foo"
+            ├── rparen_loc: (29...30) = ")"
+            └── block: ∅

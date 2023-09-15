@@ -1,162 +1,249 @@
-ProgramNode(0...211)(
-  [],
-  StatementsNode(0...211)(
-    [BeginNode(0...20)(
-       (0...5),
-       StatementsNode(6...7)(
-         [CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 2, "a")]
-       ),
-       nil,
-       nil,
-       EnsureNode(8...20)(
-         (8...14),
-         StatementsNode(15...16)(
-           [CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 2, "b")]
-         ),
-         (17...20)
-       ),
-       (17...20)
-     ),
-     BeginNode(22...46)(
-       (22...27),
-       StatementsNode(29...30)(
-         [CallNode(29...30)(nil, nil, (29...30), nil, nil, nil, nil, 2, "a")]
-       ),
-       nil,
-       nil,
-       EnsureNode(32...46)(
-         (32...38),
-         StatementsNode(40...41)(
-           [CallNode(40...41)(nil, nil, (40...41), nil, nil, nil, nil, 2, "b")]
-         ),
-         (43...46)
-       ),
-       (43...46)
-     ),
-     BeginNode(48...70)(
-       (48...53),
-       StatementsNode(54...55)(
-         [CallNode(54...55)(nil, nil, (54...55), nil, nil, nil, nil, 2, "a")]
-       ),
-       nil,
-       nil,
-       EnsureNode(57...70)(
-         (57...63),
-         StatementsNode(64...65)(
-           [CallNode(64...65)(nil, nil, (64...65), nil, nil, nil, nil, 2, "b")]
-         ),
-         (67...70)
-       ),
-       (67...70)
-     ),
-     BeginNode(72...94)(
-       (72...77),
-       StatementsNode(78...79)(
-         [CallNode(78...79)(nil, nil, (78...79), nil, nil, nil, nil, 2, "a")]
-       ),
-       nil,
-       nil,
-       EnsureNode(81...94)(
-         (81...87),
-         StatementsNode(88...89)(
-           [CallNode(88...89)(nil, nil, (88...89), nil, nil, nil, nil, 2, "b")]
-         ),
-         (91...94)
-       ),
-       (91...94)
-     ),
-     BeginNode(96...211)(
-       (96...101),
-       StatementsNode(102...207)(
-         [BeginNode(102...207)(
-            (102...107),
-            StatementsNode(107...203)(
-              [CallNode(107...203)(
-                 SymbolNode(107...109)((107...108), (108...109), nil, "s"),
-                 (109...110),
-                 (110...111),
-                 nil,
-                 ArgumentsNode(112...203)(
-                   [BeginNode(112...203)(
-                      (112...117),
-                      nil,
-                      nil,
-                      nil,
-                      EnsureNode(118...203)(
-                        (118...124),
-                        StatementsNode(125...199)(
-                          [CallNode(125...199)(
-                             ConstantReadNode(125...131)(),
-                             (131...132),
-                             (132...135),
-                             nil,
-                             nil,
-                             nil,
-                             BlockNode(136...199)(
-                               [],
-                               nil,
-                               StatementsNode(141...195)(
-                                 [BeginNode(141...195)(
-                                    (141...146),
-                                    StatementsNode(151...156)(
-                                      [BreakNode(151...156)(nil, (151...156))]
-                                    ),
-                                    nil,
-                                    nil,
-                                    EnsureNode(161...195)(
-                                      (161...167),
-                                      StatementsNode(168...189)(
-                                        [CallNode(168...189)(
-                                           ConstantReadNode(168...174)(),
-                                           (174...175),
-                                           (175...178),
-                                           nil,
-                                           nil,
-                                           nil,
-                                           BlockNode(179...189)(
-                                             [],
-                                             nil,
-                                             nil,
-                                             (179...181),
-                                             (186...189)
-                                           ),
-                                           0,
-                                           "new"
-                                         )]
-                                      ),
-                                      (192...195)
-                                    ),
-                                    (192...195)
-                                  )]
-                               ),
-                               (136...138),
-                               (196...199)
-                             ),
-                             0,
-                             "new"
-                           )]
-                        ),
-                        (200...203)
-                      ),
-                      (200...203)
-                    )]
-                 ),
-                 nil,
-                 nil,
-                 0,
-                 "l"
-               )]
-            ),
-            nil,
-            nil,
-            nil,
-            (204...207)
-          )]
-       ),
-       nil,
-       nil,
-       nil,
-       (208...211)
-     )]
-  )
-)
+@ ProgramNode (location: (0...211))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...211))
+    └── body: (length: 5)
+        ├── @ BeginNode (location: (0...20))
+        │   ├── begin_keyword_loc: (0...5) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (6...7))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (6...7))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (6...7) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause:
+        │   │   @ EnsureNode (location: (8...20))
+        │   │   ├── ensure_keyword_loc: (8...14) = "ensure"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (15...16))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (15...16))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (15...16) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── end_keyword_loc: (17...20) = "end"
+        │   └── end_keyword_loc: (17...20) = "end"
+        ├── @ BeginNode (location: (22...46))
+        │   ├── begin_keyword_loc: (22...27) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (29...30))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (29...30))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (29...30) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause:
+        │   │   @ EnsureNode (location: (32...46))
+        │   │   ├── ensure_keyword_loc: (32...38) = "ensure"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (40...41))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (40...41))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (40...41) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── end_keyword_loc: (43...46) = "end"
+        │   └── end_keyword_loc: (43...46) = "end"
+        ├── @ BeginNode (location: (48...70))
+        │   ├── begin_keyword_loc: (48...53) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (54...55))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (54...55))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (54...55) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause:
+        │   │   @ EnsureNode (location: (57...70))
+        │   │   ├── ensure_keyword_loc: (57...63) = "ensure"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (64...65))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (64...65))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (64...65) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── end_keyword_loc: (67...70) = "end"
+        │   └── end_keyword_loc: (67...70) = "end"
+        ├── @ BeginNode (location: (72...94))
+        │   ├── begin_keyword_loc: (72...77) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (78...79))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (78...79))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (78...79) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause:
+        │   │   @ EnsureNode (location: (81...94))
+        │   │   ├── ensure_keyword_loc: (81...87) = "ensure"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (88...89))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (88...89))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (88...89) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── end_keyword_loc: (91...94) = "end"
+        │   └── end_keyword_loc: (91...94) = "end"
+        └── @ BeginNode (location: (96...211))
+            ├── begin_keyword_loc: (96...101) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (102...207))
+            │   └── body: (length: 1)
+            │       └── @ BeginNode (location: (102...207))
+            │           ├── begin_keyword_loc: (102...107) = "begin"
+            │           ├── statements:
+            │           │   @ StatementsNode (location: (107...203))
+            │           │   └── body: (length: 1)
+            │           │       └── @ CallNode (location: (107...203))
+            │           │           ├── receiver:
+            │           │           │   @ SymbolNode (location: (107...109))
+            │           │           │   ├── opening_loc: (107...108) = ":"
+            │           │           │   ├── value_loc: (108...109) = "s"
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   └── unescaped: "s"
+            │           │           ├── call_operator_loc: (109...110) = "."
+            │           │           ├── message_loc: (110...111) = "l"
+            │           │           ├── opening_loc: ∅
+            │           │           ├── arguments:
+            │           │           │   @ ArgumentsNode (location: (112...203))
+            │           │           │   └── arguments: (length: 1)
+            │           │           │       └── @ BeginNode (location: (112...203))
+            │           │           │           ├── begin_keyword_loc: (112...117) = "begin"
+            │           │           │           ├── statements: ∅
+            │           │           │           ├── rescue_clause: ∅
+            │           │           │           ├── else_clause: ∅
+            │           │           │           ├── ensure_clause:
+            │           │           │           │   @ EnsureNode (location: (118...203))
+            │           │           │           │   ├── ensure_keyword_loc: (118...124) = "ensure"
+            │           │           │           │   ├── statements:
+            │           │           │           │   │   @ StatementsNode (location: (125...199))
+            │           │           │           │   │   └── body: (length: 1)
+            │           │           │           │   │       └── @ CallNode (location: (125...199))
+            │           │           │           │   │           ├── receiver:
+            │           │           │           │   │           │   @ ConstantReadNode (location: (125...131))
+            │           │           │           │   │           │   └── name: :Module
+            │           │           │           │   │           ├── call_operator_loc: (131...132) = "."
+            │           │           │           │   │           ├── message_loc: (132...135) = "new"
+            │           │           │           │   │           ├── opening_loc: ∅
+            │           │           │           │   │           ├── arguments: ∅
+            │           │           │           │   │           ├── closing_loc: ∅
+            │           │           │           │   │           ├── block:
+            │           │           │           │   │           │   @ BlockNode (location: (136...199))
+            │           │           │           │   │           │   ├── locals: []
+            │           │           │           │   │           │   ├── parameters: ∅
+            │           │           │           │   │           │   ├── body:
+            │           │           │           │   │           │   │   @ StatementsNode (location: (141...195))
+            │           │           │           │   │           │   │   └── body: (length: 1)
+            │           │           │           │   │           │   │       └── @ BeginNode (location: (141...195))
+            │           │           │           │   │           │   │           ├── begin_keyword_loc: (141...146) = "begin"
+            │           │           │           │   │           │   │           ├── statements:
+            │           │           │           │   │           │   │           │   @ StatementsNode (location: (151...156))
+            │           │           │           │   │           │   │           │   └── body: (length: 1)
+            │           │           │           │   │           │   │           │       └── @ BreakNode (location: (151...156))
+            │           │           │           │   │           │   │           │           ├── arguments: ∅
+            │           │           │           │   │           │   │           │           └── keyword_loc: (151...156) = "break"
+            │           │           │           │   │           │   │           ├── rescue_clause: ∅
+            │           │           │           │   │           │   │           ├── else_clause: ∅
+            │           │           │           │   │           │   │           ├── ensure_clause:
+            │           │           │           │   │           │   │           │   @ EnsureNode (location: (161...195))
+            │           │           │           │   │           │   │           │   ├── ensure_keyword_loc: (161...167) = "ensure"
+            │           │           │           │   │           │   │           │   ├── statements:
+            │           │           │           │   │           │   │           │   │   @ StatementsNode (location: (168...189))
+            │           │           │           │   │           │   │           │   │   └── body: (length: 1)
+            │           │           │           │   │           │   │           │   │       └── @ CallNode (location: (168...189))
+            │           │           │           │   │           │   │           │   │           ├── receiver:
+            │           │           │           │   │           │   │           │   │           │   @ ConstantReadNode (location: (168...174))
+            │           │           │           │   │           │   │           │   │           │   └── name: :Module
+            │           │           │           │   │           │   │           │   │           ├── call_operator_loc: (174...175) = "."
+            │           │           │           │   │           │   │           │   │           ├── message_loc: (175...178) = "new"
+            │           │           │           │   │           │   │           │   │           ├── opening_loc: ∅
+            │           │           │           │   │           │   │           │   │           ├── arguments: ∅
+            │           │           │           │   │           │   │           │   │           ├── closing_loc: ∅
+            │           │           │           │   │           │   │           │   │           ├── block:
+            │           │           │           │   │           │   │           │   │           │   @ BlockNode (location: (179...189))
+            │           │           │           │   │           │   │           │   │           │   ├── locals: []
+            │           │           │           │   │           │   │           │   │           │   ├── parameters: ∅
+            │           │           │           │   │           │   │           │   │           │   ├── body: ∅
+            │           │           │           │   │           │   │           │   │           │   ├── opening_loc: (179...181) = "do"
+            │           │           │           │   │           │   │           │   │           │   └── closing_loc: (186...189) = "end"
+            │           │           │           │   │           │   │           │   │           ├── flags: ∅
+            │           │           │           │   │           │   │           │   │           └── name: "new"
+            │           │           │           │   │           │   │           │   └── end_keyword_loc: (192...195) = "end"
+            │           │           │           │   │           │   │           └── end_keyword_loc: (192...195) = "end"
+            │           │           │           │   │           │   ├── opening_loc: (136...138) = "do"
+            │           │           │           │   │           │   └── closing_loc: (196...199) = "end"
+            │           │           │           │   │           ├── flags: ∅
+            │           │           │           │   │           └── name: "new"
+            │           │           │           │   └── end_keyword_loc: (200...203) = "end"
+            │           │           │           └── end_keyword_loc: (200...203) = "end"
+            │           │           ├── closing_loc: ∅
+            │           │           ├── block: ∅
+            │           │           ├── flags: ∅
+            │           │           └── name: "l"
+            │           ├── rescue_clause: ∅
+            │           ├── else_clause: ∅
+            │           ├── ensure_clause: ∅
+            │           └── end_keyword_loc: (204...207) = "end"
+            ├── rescue_clause: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (208...211) = "end"

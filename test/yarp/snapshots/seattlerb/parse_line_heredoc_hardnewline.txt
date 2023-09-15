@@ -1,25 +1,22 @@
-ProgramNode(0...48)(
-  [],
-  StatementsNode(0...48)(
-    [InterpolatedStringNode(0...8)(
-       (0...8),
-       [StringNode(9...28)(
-          nil,
-          (9...28),
-          nil,
-          "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n"
-        )],
-       (28...34)
-     ),
-     ClassNode(35...48)(
-       [],
-       (35...40),
-       ConstantReadNode(41...44)(),
-       nil,
-       nil,
-       nil,
-       (45...48),
-       "Foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...48))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...48))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (0...8))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...8) = "<<-EOFOO"
+        │   ├── content_loc: (9...28) = "\\n\\n\\n\\n\\n\\n\\n\\n\\n\n"
+        │   ├── closing_loc: (28...34) = "EOFOO\n"
+        │   └── unescaped: "\n\n\n\n\n\n\n\n\n\n"
+        └── @ ClassNode (location: (35...48))
+            ├── locals: []
+            ├── class_keyword_loc: (35...40) = "class"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (41...44))
+            │   └── name: :Foo
+            ├── inheritance_operator_loc: ∅
+            ├── superclass: ∅
+            ├── body: ∅
+            ├── end_keyword_loc: (45...48) = "end"
+            └── name: :Foo

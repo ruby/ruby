@@ -1,21 +1,32 @@
-ProgramNode(0...29)(
-  [],
-  StatementsNode(0...29)(
-    [CaseNode(0...29)(
-       IntegerNode(5...6)(),
-       [InNode(8...15)(
-          IntegerNode(11...12)(),
-          StatementsNode(14...15)([IntegerNode(14...15)()]),
-          (8...10),
-          nil
-        )],
-       ElseNode(17...29)(
-         (17...21),
-         StatementsNode(23...24)([IntegerNode(23...24)()]),
-         (26...29)
-       ),
-       (0...4),
-       (26...29)
-     )]
-  )
-)
+@ ProgramNode (location: (0...29))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...29))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...29))
+            ├── predicate:
+            │   @ IntegerNode (location: (5...6))
+            │   └── flags: decimal
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...15))
+            │       ├── pattern:
+            │       │   @ IntegerNode (location: (11...12))
+            │       │   └── flags: decimal
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (14...15))
+            │       │   └── body: (length: 1)
+            │       │       └── @ IntegerNode (location: (14...15))
+            │       │           └── flags: decimal
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: ∅
+            ├── consequent:
+            │   @ ElseNode (location: (17...29))
+            │   ├── else_keyword_loc: (17...21) = "else"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (23...24))
+            │   │   └── body: (length: 1)
+            │   │       └── @ IntegerNode (location: (23...24))
+            │   │           └── flags: decimal
+            │   └── end_keyword_loc: (26...29) = "end"
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (26...29) = "end"

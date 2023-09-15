@@ -1,6 +1,11 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)(
-    [RegularExpressionNode(0...7)((0...1), (1...6), (6...7), "\u0003d", 0)]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ RegularExpressionNode (location: (0...7))
+            ├── opening_loc: (0...1) = "/"
+            ├── content_loc: (1...6) = "\\cC\\d"
+            ├── closing_loc: (6...7) = "/"
+            ├── unescaped: "\u0003d"
+            └── flags: ∅

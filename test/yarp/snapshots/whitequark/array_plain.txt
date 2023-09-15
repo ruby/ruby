@@ -1,10 +1,13 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)(
-    [ArrayNode(0...6)(
-       [IntegerNode(1...2)(), IntegerNode(4...5)()],
-       (0...1),
-       (5...6)
-     )]
-  )
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ ArrayNode (location: (0...6))
+            ├── elements: (length: 2)
+            │   ├── @ IntegerNode (location: (1...2))
+            │   │   └── flags: decimal
+            │   └── @ IntegerNode (location: (4...5))
+            │       └── flags: decimal
+            ├── opening_loc: (0...1) = "["
+            └── closing_loc: (5...6) = "]"

@@ -1,82 +1,95 @@
-ProgramNode(0...31)(
-  [],
-  StatementsNode(0...31)(
-    [CallNode(0...11)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...11)(
-         [KeywordHashNode(2...11)(
-            [AssocNode(2...11)(
-               InterpolatedSymbolNode(2...9)(
-                 (2...3),
-                 [EmbeddedStatementsNode(3...7)(
-                    (3...5),
-                    StatementsNode(5...6)(
-                      [CallNode(5...6)(
-                         nil,
-                         nil,
-                         (5...6),
-                         nil,
-                         nil,
-                         nil,
-                         nil,
-                         2,
-                         "k"
-                       )]
-                    ),
-                    (6...7)
-                  )],
-                 (7...9)
-               ),
-               IntegerNode(9...11)(),
-               nil
-             )]
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "x"
-     ),
-     CallNode(13...21)(
-       nil,
-       nil,
-       (13...14),
-       nil,
-       ArgumentsNode(15...21)(
-         [KeywordHashNode(15...21)(
-            [AssocNode(15...21)(
-               SymbolNode(15...19)((15...16), (16...17), (17...19), "k"),
-               IntegerNode(19...21)(),
-               nil
-             )]
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "x"
-     ),
-     CallNode(23...31)(
-       nil,
-       nil,
-       (23...24),
-       nil,
-       ArgumentsNode(25...31)(
-         [KeywordHashNode(25...31)(
-            [AssocNode(25...31)(
-               SymbolNode(25...29)((25...26), (26...27), (27...29), "k"),
-               IntegerNode(29...31)(),
-               nil
-             )]
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "x"
-     )]
-  )
-)
+@ ProgramNode (location: (0...31))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...31))
+    └── body: (length: 3)
+        ├── @ CallNode (location: (0...11))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...1) = "x"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (2...11))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (2...11))
+        │   │           └── elements: (length: 1)
+        │   │               └── @ AssocNode (location: (2...11))
+        │   │                   ├── key:
+        │   │                   │   @ InterpolatedSymbolNode (location: (2...9))
+        │   │                   │   ├── opening_loc: (2...3) = "\""
+        │   │                   │   ├── parts: (length: 1)
+        │   │                   │   │   └── @ EmbeddedStatementsNode (location: (3...7))
+        │   │                   │   │       ├── opening_loc: (3...5) = "\#{"
+        │   │                   │   │       ├── statements:
+        │   │                   │   │       │   @ StatementsNode (location: (5...6))
+        │   │                   │   │       │   └── body: (length: 1)
+        │   │                   │   │       │       └── @ CallNode (location: (5...6))
+        │   │                   │   │       │           ├── receiver: ∅
+        │   │                   │   │       │           ├── call_operator_loc: ∅
+        │   │                   │   │       │           ├── message_loc: (5...6) = "k"
+        │   │                   │   │       │           ├── opening_loc: ∅
+        │   │                   │   │       │           ├── arguments: ∅
+        │   │                   │   │       │           ├── closing_loc: ∅
+        │   │                   │   │       │           ├── block: ∅
+        │   │                   │   │       │           ├── flags: variable_call
+        │   │                   │   │       │           └── name: "k"
+        │   │                   │   │       └── closing_loc: (6...7) = "}"
+        │   │                   │   └── closing_loc: (7...9) = "\":"
+        │   │                   ├── value:
+        │   │                   │   @ IntegerNode (location: (9...11))
+        │   │                   │   └── flags: decimal
+        │   │                   └── operator_loc: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "x"
+        ├── @ CallNode (location: (13...21))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (13...14) = "x"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (15...21))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (15...21))
+        │   │           └── elements: (length: 1)
+        │   │               └── @ AssocNode (location: (15...21))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (15...19))
+        │   │                   │   ├── opening_loc: (15...16) = "\""
+        │   │                   │   ├── value_loc: (16...17) = "k"
+        │   │                   │   ├── closing_loc: (17...19) = "\":"
+        │   │                   │   └── unescaped: "k"
+        │   │                   ├── value:
+        │   │                   │   @ IntegerNode (location: (19...21))
+        │   │                   │   └── flags: decimal
+        │   │                   └── operator_loc: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "x"
+        └── @ CallNode (location: (23...31))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (23...24) = "x"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (25...31))
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (25...31))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (25...31))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (25...29))
+            │                   │   ├── opening_loc: (25...26) = "'"
+            │                   │   ├── value_loc: (26...27) = "k"
+            │                   │   ├── closing_loc: (27...29) = "':"
+            │                   │   └── unescaped: "k"
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (29...31))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "x"

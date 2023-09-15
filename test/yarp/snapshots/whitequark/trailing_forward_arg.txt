@@ -1,43 +1,51 @@
-ProgramNode(0...40)(
-  [],
-  StatementsNode(0...40)(
-    [DefNode(0...40)(
-       (4...7),
-       nil,
-       ParametersNode(8...17)(
-         [RequiredParameterNode(8...9)(:a),
-          RequiredParameterNode(11...12)(:b)],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(14...17)(),
-         nil
-       ),
-       StatementsNode(20...35)(
-         [CallNode(20...35)(
-            nil,
-            nil,
-            (20...23),
-            (23...24),
-            ArgumentsNode(24...34)(
-              [LocalVariableReadNode(24...25)(:a, 0),
-               IntegerNode(27...29)(),
-               ForwardingArgumentsNode(31...34)()]
-            ),
-            (34...35),
-            nil,
-            0,
-            "bar"
-          )]
-       ),
-       [:a, :b, :"..."],
-       (0...3),
-       nil,
-       (7...8),
-       (17...18),
-       nil,
-       (37...40)
-     )]
-  )
-)
+@ ProgramNode (location: (0...40))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...40))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...40))
+            ├── name: :foo
+            ├── name_loc: (4...7) = "foo"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (8...17))
+            │   ├── requireds: (length: 2)
+            │   │   ├── @ RequiredParameterNode (location: (8...9))
+            │   │   │   └── name: :a
+            │   │   └── @ RequiredParameterNode (location: (11...12))
+            │   │       └── name: :b
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest:
+            │   │   @ ForwardingParameterNode (location: (14...17))
+            │   └── block: ∅
+            ├── body:
+            │   @ StatementsNode (location: (20...35))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (20...35))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (20...23) = "bar"
+            │           ├── opening_loc: (23...24) = "("
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (24...34))
+            │           │   └── arguments: (length: 3)
+            │           │       ├── @ LocalVariableReadNode (location: (24...25))
+            │           │       │   ├── name: :a
+            │           │       │   └── depth: 0
+            │           │       ├── @ IntegerNode (location: (27...29))
+            │           │       │   └── flags: decimal
+            │           │       └── @ ForwardingArgumentsNode (location: (31...34))
+            │           ├── closing_loc: (34...35) = ")"
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "bar"
+            ├── locals: [:a, :b, :"..."]
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (7...8) = "("
+            ├── rparen_loc: (17...18) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (37...40) = "end"

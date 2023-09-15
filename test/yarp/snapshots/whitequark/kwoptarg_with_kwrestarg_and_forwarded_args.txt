@@ -1,42 +1,54 @@
-ProgramNode(0...28)(
-  [],
-  StatementsNode(0...28)(
-    [DefNode(0...28)(
-       (4...5),
-       nil,
-       ParametersNode(6...16)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(6...12)((6...8), NilNode(9...12)())],
-         KeywordRestParameterNode(14...16)((14...16), nil),
-         nil
-       ),
-       StatementsNode(19...24)(
-         [CallNode(19...24)(
-            nil,
-            nil,
-            (19...20),
-            (20...21),
-            ArgumentsNode(21...23)(
-              [KeywordHashNode(21...23)(
-                 [AssocSplatNode(21...23)(nil, (21...23))]
-               )]
-            ),
-            (23...24),
-            nil,
-            0,
-            "b"
-          )]
-       ),
-       [:a, :**],
-       (0...3),
-       nil,
-       (5...6),
-       (16...17),
-       nil,
-       (25...28)
-     )]
-  )
-)
+@ ProgramNode (location: (0...28))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...28))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...28))
+            ├── name: :f
+            ├── name_loc: (4...5) = "f"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (6...16))
+            │   ├── requireds: (length: 0)
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 1)
+            │   │   └── @ KeywordParameterNode (location: (6...12))
+            │   │       ├── name: :a
+            │   │       ├── name_loc: (6...8) = "a:"
+            │   │       └── value:
+            │   │           @ NilNode (location: (9...12))
+            │   ├── keyword_rest:
+            │   │   @ KeywordRestParameterNode (location: (14...16))
+            │   │   ├── name: nil
+            │   │   ├── name_loc: ∅
+            │   │   └── operator_loc: (14...16) = "**"
+            │   └── block: ∅
+            ├── body:
+            │   @ StatementsNode (location: (19...24))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (19...24))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (19...20) = "b"
+            │           ├── opening_loc: (20...21) = "("
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (21...23))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ KeywordHashNode (location: (21...23))
+            │           │           └── elements: (length: 1)
+            │           │               └── @ AssocSplatNode (location: (21...23))
+            │           │                   ├── value: ∅
+            │           │                   └── operator_loc: (21...23) = "**"
+            │           ├── closing_loc: (23...24) = ")"
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "b"
+            ├── locals: [:a, :**]
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (5...6) = "("
+            ├── rparen_loc: (16...17) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (25...28) = "end"

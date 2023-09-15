@@ -1,15 +1,18 @@
-ProgramNode(0...20)(
-  [],
-  StatementsNode(0...20)(
-    [ClassNode(0...20)(
-       [],
-       (0...5),
-       ConstantReadNode(6...9)(),
-       (10...11),
-       ConstantReadNode(12...15)(),
-       nil,
-       (17...20),
-       "Foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...20))
+    └── body: (length: 1)
+        └── @ ClassNode (location: (0...20))
+            ├── locals: []
+            ├── class_keyword_loc: (0...5) = "class"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (6...9))
+            │   └── name: :Foo
+            ├── inheritance_operator_loc: (10...11) = "<"
+            ├── superclass:
+            │   @ ConstantReadNode (location: (12...15))
+            │   └── name: :Bar
+            ├── body: ∅
+            ├── end_keyword_loc: (17...20) = "end"
+            └── name: :Foo

@@ -1,52 +1,59 @@
-ProgramNode(0...30)(
-  [],
-  StatementsNode(0...30)(
-    [CallNode(0...30)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...30)(
-         [DefNode(2...30)(
-            (11...12),
-            SelfNode(6...10)(),
-            nil,
-            StatementsNode(14...25)(
-              [CallNode(14...25)(
-                 CallNode(14...15)(
-                   nil,
-                   nil,
-                   (14...15),
-                   nil,
-                   nil,
-                   nil,
-                   nil,
-                   2,
-                   "x"
-                 ),
-                 (15...16),
-                 (16...17),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(18...25)([], nil, nil, (18...20), (22...25)),
-                 0,
-                 "y"
-               )]
-            ),
-            [],
-            (2...5),
-            (10...11),
-            nil,
-            nil,
-            nil,
-            (27...30)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     )]
-  )
-)
+@ ProgramNode (location: (0...30))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...30))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...30))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "p"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...30))
+            │   └── arguments: (length: 1)
+            │       └── @ DefNode (location: (2...30))
+            │           ├── name: :b
+            │           ├── name_loc: (11...12) = "b"
+            │           ├── receiver:
+            │           │   @ SelfNode (location: (6...10))
+            │           ├── parameters: ∅
+            │           ├── body:
+            │           │   @ StatementsNode (location: (14...25))
+            │           │   └── body: (length: 1)
+            │           │       └── @ CallNode (location: (14...25))
+            │           │           ├── receiver:
+            │           │           │   @ CallNode (location: (14...15))
+            │           │           │   ├── receiver: ∅
+            │           │           │   ├── call_operator_loc: ∅
+            │           │           │   ├── message_loc: (14...15) = "x"
+            │           │           │   ├── opening_loc: ∅
+            │           │           │   ├── arguments: ∅
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   ├── block: ∅
+            │           │           │   ├── flags: variable_call
+            │           │           │   └── name: "x"
+            │           │           ├── call_operator_loc: (15...16) = "."
+            │           │           ├── message_loc: (16...17) = "y"
+            │           │           ├── opening_loc: ∅
+            │           │           ├── arguments: ∅
+            │           │           ├── closing_loc: ∅
+            │           │           ├── block:
+            │           │           │   @ BlockNode (location: (18...25))
+            │           │           │   ├── locals: []
+            │           │           │   ├── parameters: ∅
+            │           │           │   ├── body: ∅
+            │           │           │   ├── opening_loc: (18...20) = "do"
+            │           │           │   └── closing_loc: (22...25) = "end"
+            │           │           ├── flags: ∅
+            │           │           └── name: "y"
+            │           ├── locals: []
+            │           ├── def_keyword_loc: (2...5) = "def"
+            │           ├── operator_loc: (10...11) = "."
+            │           ├── lparen_loc: ∅
+            │           ├── rparen_loc: ∅
+            │           ├── equal_loc: ∅
+            │           └── end_keyword_loc: (27...30) = "end"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "p"

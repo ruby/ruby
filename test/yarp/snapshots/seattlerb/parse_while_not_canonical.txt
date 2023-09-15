@@ -1,44 +1,49 @@
-ProgramNode(0...30)(
-  [],
-  StatementsNode(0...30)(
-    [WhileNode(0...30)(
-       (0...5),
-       (27...30),
-       CallNode(6...18)(
-         CallNode(10...18)(
-           CallNode(10...13)(
-             nil,
-             nil,
-             (10...13),
-             nil,
-             nil,
-             nil,
-             nil,
-             2,
-             "var"
-           ),
-           (13...14),
-           (14...18),
-           nil,
-           nil,
-           nil,
-           nil,
-           0,
-           "nil?"
-         ),
-         nil,
-         (6...9),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "!"
-       ),
-       StatementsNode(21...26)(
-         [StringNode(21...26)((21...22), (22...25), (25...26), "foo")]
-       ),
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...30))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...30))
+    └── body: (length: 1)
+        └── @ WhileNode (location: (0...30))
+            ├── keyword_loc: (0...5) = "while"
+            ├── closing_loc: (27...30) = "end"
+            ├── predicate:
+            │   @ CallNode (location: (6...18))
+            │   ├── receiver:
+            │   │   @ CallNode (location: (10...18))
+            │   │   ├── receiver:
+            │   │   │   @ CallNode (location: (10...13))
+            │   │   │   ├── receiver: ∅
+            │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── message_loc: (10...13) = "var"
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── arguments: ∅
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   ├── block: ∅
+            │   │   │   ├── flags: variable_call
+            │   │   │   └── name: "var"
+            │   │   ├── call_operator_loc: (13...14) = "."
+            │   │   ├── message_loc: (14...18) = "nil?"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: "nil?"
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (6...9) = "not"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "!"
+            ├── statements:
+            │   @ StatementsNode (location: (21...26))
+            │   └── body: (length: 1)
+            │       └── @ StringNode (location: (21...26))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (21...22) = "'"
+            │           ├── content_loc: (22...25) = "foo"
+            │           ├── closing_loc: (25...26) = "'"
+            │           └── unescaped: "foo"
+            └── flags: ∅

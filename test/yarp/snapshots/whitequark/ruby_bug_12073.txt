@@ -1,71 +1,89 @@
-ProgramNode(0...49)(
-  [:a],
-  StatementsNode(0...49)(
-    [LocalVariableWriteNode(0...5)(
-       :a,
-       0,
-       (0...1),
-       IntegerNode(4...5)(),
-       (2...3)
-     ),
-     CallNode(7...13)(
-       nil,
-       nil,
-       (7...8),
-       nil,
-       ArgumentsNode(9...13)(
-         [KeywordHashNode(9...13)(
-            [AssocNode(9...13)(
-               SymbolNode(9...11)(nil, (9...10), (10...11), "b"),
-               IntegerNode(12...13)(),
-               nil
-             )]
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "a"
-     ),
-     DefNode(15...49)(
-       (19...22),
-       nil,
-       ParametersNode(23...28)(
-         [RequiredParameterNode(23...28)(:raise)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(30...44)(
-         [CallNode(30...44)(
-            nil,
-            nil,
-            (30...35),
-            nil,
-            ArgumentsNode(36...44)(
-              [ConstantPathNode(36...40)(
-                 ConstantReadNode(36...37)(),
-                 ConstantReadNode(39...40)(),
-                 (37...39)
-               ),
-               StringNode(42...44)((42...43), (43...43), (43...44), "")]
-            ),
-            nil,
-            nil,
-            0,
-            "raise"
-          )]
-       ),
-       [:raise],
-       (15...18),
-       nil,
-       nil,
-       nil,
-       nil,
-       (46...49)
-     )]
-  )
-)
+@ ProgramNode (location: (0...49))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...49))
+    └── body: (length: 3)
+        ├── @ LocalVariableWriteNode (location: (0...5))
+        │   ├── name: :a
+        │   ├── depth: 0
+        │   ├── name_loc: (0...1) = "a"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (4...5))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (2...3) = "="
+        ├── @ CallNode (location: (7...13))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (7...8) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (9...13))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (9...13))
+        │   │           └── elements: (length: 1)
+        │   │               └── @ AssocNode (location: (9...13))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (9...11))
+        │   │                   │   ├── opening_loc: ∅
+        │   │                   │   ├── value_loc: (9...10) = "b"
+        │   │                   │   ├── closing_loc: (10...11) = ":"
+        │   │                   │   └── unescaped: "b"
+        │   │                   ├── value:
+        │   │                   │   @ IntegerNode (location: (12...13))
+        │   │                   │   └── flags: decimal
+        │   │                   └── operator_loc: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "a"
+        └── @ DefNode (location: (15...49))
+            ├── name: :foo
+            ├── name_loc: (19...22) = "foo"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (23...28))
+            │   ├── requireds: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (23...28))
+            │   │       └── name: :raise
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest: ∅
+            │   └── block: ∅
+            ├── body:
+            │   @ StatementsNode (location: (30...44))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (30...44))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (30...35) = "raise"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (36...44))
+            │           │   └── arguments: (length: 2)
+            │           │       ├── @ ConstantPathNode (location: (36...40))
+            │           │       │   ├── parent:
+            │           │       │   │   @ ConstantReadNode (location: (36...37))
+            │           │       │   │   └── name: :A
+            │           │       │   ├── child:
+            │           │       │   │   @ ConstantReadNode (location: (39...40))
+            │           │       │   │   └── name: :B
+            │           │       │   └── delimiter_loc: (37...39) = "::"
+            │           │       └── @ StringNode (location: (42...44))
+            │           │           ├── flags: ∅
+            │           │           ├── opening_loc: (42...43) = "'"
+            │           │           ├── content_loc: (43...43) = ""
+            │           │           ├── closing_loc: (43...44) = "'"
+            │           │           └── unescaped: ""
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "raise"
+            ├── locals: [:raise]
+            ├── def_keyword_loc: (15...18) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (46...49) = "end"

@@ -1,7 +1,17 @@
-ProgramNode(0...25)(
-  [],
-  StatementsNode(0...25)(
-    [RegularExpressionNode(0...15)((0...1), (1...14), (14...15), "샞몾", 0),
-     RegularExpressionNode(17...25)((17...18), (18...24), (24...25), "ß", 0)]
-  )
-)
+@ ProgramNode (location: (0...25))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...25))
+    └── body: (length: 2)
+        ├── @ RegularExpressionNode (location: (0...15))
+        │   ├── opening_loc: (0...1) = "/"
+        │   ├── content_loc: (1...14) = "\\u{c0de babe}"
+        │   ├── closing_loc: (14...15) = "/"
+        │   ├── unescaped: "샞몾"
+        │   └── flags: ∅
+        └── @ RegularExpressionNode (location: (17...25))
+            ├── opening_loc: (17...18) = "/"
+            ├── content_loc: (18...24) = "\\u{df}"
+            ├── closing_loc: (24...25) = "/"
+            ├── unescaped: "ß"
+            └── flags: ∅

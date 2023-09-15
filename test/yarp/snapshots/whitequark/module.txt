@@ -1,13 +1,14 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [ModuleNode(0...15)(
-       [],
-       (0...6),
-       ConstantReadNode(7...10)(),
-       nil,
-       (12...15),
-       "Foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ ModuleNode (location: (0...15))
+            ├── locals: []
+            ├── module_keyword_loc: (0...6) = "module"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (7...10))
+            │   └── name: :Foo
+            ├── body: ∅
+            ├── end_keyword_loc: (12...15) = "end"
+            └── name: :Foo

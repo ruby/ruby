@@ -499,6 +499,33 @@ describe "Module#define_method" do
       Class.new { define_method :bar, m }
     }.should raise_error(TypeError, /can't bind singleton method to a different class/)
   end
+
+  it "defines a new method with public visibility when a Method passed and the class/module of the context isn't equal to the receiver of #define_method" do
+    c = Class.new do
+      private def foo
+        "public"
+      end
+    end
+
+    object = c.new
+    object.singleton_class.define_method(:bar, object.method(:foo))
+
+    object.bar.should == "public"
+  end
+
+  it "defines the new method according to the scope visibility when a Method passed and the class/module of the context is equal to the receiver of #define_method" do
+    c = Class.new do
+      def foo; end
+    end
+
+    object = c.new
+    object.singleton_class.class_eval do
+      private
+      define_method(:bar, c.new.method(:foo))
+    end
+
+    -> { object.bar }.should raise_error(NoMethodError)
+  end
 end
 
 describe "Module#define_method" do

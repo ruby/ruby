@@ -1,6 +1,12 @@
-ProgramNode(0...4)(
-  [],
-  StatementsNode(0...4)(
-    [RangeNode(0...4)(IntegerNode(0...1)(), nil, (1...4), 1)]
-  )
-)
+@ ProgramNode (location: (0...4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...4))
+    └── body: (length: 1)
+        └── @ RangeNode (location: (0...4))
+            ├── left:
+            │   @ IntegerNode (location: (0...1))
+            │   └── flags: decimal
+            ├── right: ∅
+            ├── operator_loc: (1...4) = "..."
+            └── flags: exclude_end

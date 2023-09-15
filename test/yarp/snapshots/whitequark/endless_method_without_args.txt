@@ -1,69 +1,85 @@
-ProgramNode(0...86)(
-  [],
-  StatementsNode(0...86)(
-    [DefNode(0...12)(
-       (4...7),
-       nil,
-       nil,
-       StatementsNode(10...12)([IntegerNode(10...12)()]),
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       (8...9),
-       nil
-     ),
-     DefNode(14...37)(
-       (18...21),
-       nil,
-       nil,
-       StatementsNode(24...37)(
-         [RescueModifierNode(24...37)(
-            IntegerNode(24...26)(),
-            (27...33),
-            NilNode(34...37)()
-          )]
-       ),
-       [],
-       (14...17),
-       nil,
-       nil,
-       nil,
-       (22...23),
-       nil
-     ),
-     DefNode(39...56)(
-       (48...51),
-       SelfNode(43...47)(),
-       nil,
-       StatementsNode(54...56)([IntegerNode(54...56)()]),
-       [],
-       (39...42),
-       (47...48),
-       nil,
-       nil,
-       (52...53),
-       nil
-     ),
-     DefNode(58...86)(
-       (67...70),
-       SelfNode(62...66)(),
-       nil,
-       StatementsNode(73...86)(
-         [RescueModifierNode(73...86)(
-            IntegerNode(73...75)(),
-            (76...82),
-            NilNode(83...86)()
-          )]
-       ),
-       [],
-       (58...61),
-       (66...67),
-       nil,
-       nil,
-       (71...72),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...86))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...86))
+    └── body: (length: 4)
+        ├── @ DefNode (location: (0...12))
+        │   ├── name: :foo
+        │   ├── name_loc: (4...7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (10...12))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (10...12))
+        │   │           └── flags: decimal
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (8...9) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (14...37))
+        │   ├── name: :foo
+        │   ├── name_loc: (18...21) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (24...37))
+        │   │   └── body: (length: 1)
+        │   │       └── @ RescueModifierNode (location: (24...37))
+        │   │           ├── expression:
+        │   │           │   @ IntegerNode (location: (24...26))
+        │   │           │   └── flags: decimal
+        │   │           ├── keyword_loc: (27...33) = "rescue"
+        │   │           └── rescue_expression:
+        │   │               @ NilNode (location: (34...37))
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (14...17) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (22...23) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (39...56))
+        │   ├── name: :foo
+        │   ├── name_loc: (48...51) = "foo"
+        │   ├── receiver:
+        │   │   @ SelfNode (location: (43...47))
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (54...56))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (54...56))
+        │   │           └── flags: decimal
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (39...42) = "def"
+        │   ├── operator_loc: (47...48) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (52...53) = "="
+        │   └── end_keyword_loc: ∅
+        └── @ DefNode (location: (58...86))
+            ├── name: :foo
+            ├── name_loc: (67...70) = "foo"
+            ├── receiver:
+            │   @ SelfNode (location: (62...66))
+            ├── parameters: ∅
+            ├── body:
+            │   @ StatementsNode (location: (73...86))
+            │   └── body: (length: 1)
+            │       └── @ RescueModifierNode (location: (73...86))
+            │           ├── expression:
+            │           │   @ IntegerNode (location: (73...75))
+            │           │   └── flags: decimal
+            │           ├── keyword_loc: (76...82) = "rescue"
+            │           └── rescue_expression:
+            │               @ NilNode (location: (83...86))
+            ├── locals: []
+            ├── def_keyword_loc: (58...61) = "def"
+            ├── operator_loc: (66...67) = "."
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: (71...72) = "="
+            └── end_keyword_loc: ∅

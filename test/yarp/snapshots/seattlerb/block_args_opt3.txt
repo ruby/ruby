@@ -1,55 +1,72 @@
-ProgramNode(0...42)(
-  [],
-  StatementsNode(0...42)(
-    [CallNode(0...42)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       BlockNode(2...42)(
-         [:a, :b, :c, :d],
-         BlockParametersNode(4...27)(
-           ParametersNode(5...26)(
-             [RequiredParameterNode(5...6)(:a)],
-             [OptionalParameterNode(8...14)(
-                :b,
-                (8...9),
-                (10...11),
-                IntegerNode(12...14)()
-              ),
-              OptionalParameterNode(16...22)(
-                :c,
-                (16...17),
-                (18...19),
-                IntegerNode(20...22)()
-              )],
-             [],
-             nil,
-             [],
-             nil,
-             BlockParameterNode(24...26)((25...26), (24...25))
-           ),
-           [],
-           (4...5),
-           (26...27)
-         ),
-         StatementsNode(28...40)(
-           [ArrayNode(28...40)(
-              [LocalVariableReadNode(29...30)(:a, 0),
-               LocalVariableReadNode(32...33)(:b, 0),
-               LocalVariableReadNode(35...36)(:c, 0),
-               LocalVariableReadNode(38...39)(:d, 0)],
-              (28...29),
-              (39...40)
-            )]
-         ),
-         (2...3),
-         (41...42)
-       ),
-       0,
-       "f"
-     )]
-  )
-)
+@ ProgramNode (location: (0...42))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...42))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...42))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "f"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (2...42))
+            │   ├── locals: [:a, :b, :c, :d]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (4...27))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (5...26))
+            │   │   │   ├── requireds: (length: 1)
+            │   │   │   │   └── @ RequiredParameterNode (location: (5...6))
+            │   │   │   │       └── name: :a
+            │   │   │   ├── optionals: (length: 2)
+            │   │   │   │   ├── @ OptionalParameterNode (location: (8...14))
+            │   │   │   │   │   ├── name: :b
+            │   │   │   │   │   ├── name_loc: (8...9) = "b"
+            │   │   │   │   │   ├── operator_loc: (10...11) = "="
+            │   │   │   │   │   └── value:
+            │   │   │   │   │       @ IntegerNode (location: (12...14))
+            │   │   │   │   │       └── flags: decimal
+            │   │   │   │   └── @ OptionalParameterNode (location: (16...22))
+            │   │   │   │       ├── name: :c
+            │   │   │   │       ├── name_loc: (16...17) = "c"
+            │   │   │   │       ├── operator_loc: (18...19) = "="
+            │   │   │   │       └── value:
+            │   │   │   │           @ IntegerNode (location: (20...22))
+            │   │   │   │           └── flags: decimal
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 0)
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block:
+            │   │   │       @ BlockParameterNode (location: (24...26))
+            │   │   │       ├── name: :d
+            │   │   │       ├── name_loc: (25...26) = "d"
+            │   │   │       └── operator_loc: (24...25) = "&"
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (4...5) = "|"
+            │   │   └── closing_loc: (26...27) = "|"
+            │   ├── body:
+            │   │   @ StatementsNode (location: (28...40))
+            │   │   └── body: (length: 1)
+            │   │       └── @ ArrayNode (location: (28...40))
+            │   │           ├── elements: (length: 4)
+            │   │           │   ├── @ LocalVariableReadNode (location: (29...30))
+            │   │           │   │   ├── name: :a
+            │   │           │   │   └── depth: 0
+            │   │           │   ├── @ LocalVariableReadNode (location: (32...33))
+            │   │           │   │   ├── name: :b
+            │   │           │   │   └── depth: 0
+            │   │           │   ├── @ LocalVariableReadNode (location: (35...36))
+            │   │           │   │   ├── name: :c
+            │   │           │   │   └── depth: 0
+            │   │           │   └── @ LocalVariableReadNode (location: (38...39))
+            │   │           │       ├── name: :d
+            │   │           │       └── depth: 0
+            │   │           ├── opening_loc: (28...29) = "["
+            │   │           └── closing_loc: (39...40) = "]"
+            │   ├── opening_loc: (2...3) = "{"
+            │   └── closing_loc: (41...42) = "}"
+            ├── flags: ∅
+            └── name: "f"

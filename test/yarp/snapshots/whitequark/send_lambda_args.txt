@@ -1,47 +1,49 @@
-ProgramNode(0...21)(
-  [],
-  StatementsNode(0...21)(
-    [LambdaNode(0...10)(
-       [:a],
-       (0...2),
-       (7...8),
-       (9...10),
-       BlockParametersNode(3...6)(
-         ParametersNode(4...5)(
-           [RequiredParameterNode(4...5)(:a)],
-           [],
-           [],
-           nil,
-           [],
-           nil,
-           nil
-         ),
-         [],
-         (3...4),
-         (5...6)
-       ),
-       nil
-     ),
-     LambdaNode(12...21)(
-       [:a],
-       (12...14),
-       (18...19),
-       (20...21),
-       BlockParametersNode(14...17)(
-         ParametersNode(15...16)(
-           [RequiredParameterNode(15...16)(:a)],
-           [],
-           [],
-           nil,
-           [],
-           nil,
-           nil
-         ),
-         [],
-         (14...15),
-         (16...17)
-       ),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...21))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...21))
+    └── body: (length: 2)
+        ├── @ LambdaNode (location: (0...10))
+        │   ├── locals: [:a]
+        │   ├── operator_loc: (0...2) = "->"
+        │   ├── opening_loc: (7...8) = "{"
+        │   ├── closing_loc: (9...10) = "}"
+        │   ├── parameters:
+        │   │   @ BlockParametersNode (location: (3...6))
+        │   │   ├── parameters:
+        │   │   │   @ ParametersNode (location: (4...5))
+        │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   └── @ RequiredParameterNode (location: (4...5))
+        │   │   │   │       └── name: :a
+        │   │   │   ├── optionals: (length: 0)
+        │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
+        │   │   │   ├── keywords: (length: 0)
+        │   │   │   ├── keyword_rest: ∅
+        │   │   │   └── block: ∅
+        │   │   ├── locals: (length: 0)
+        │   │   ├── opening_loc: (3...4) = "("
+        │   │   └── closing_loc: (5...6) = ")"
+        │   └── body: ∅
+        └── @ LambdaNode (location: (12...21))
+            ├── locals: [:a]
+            ├── operator_loc: (12...14) = "->"
+            ├── opening_loc: (18...19) = "{"
+            ├── closing_loc: (20...21) = "}"
+            ├── parameters:
+            │   @ BlockParametersNode (location: (14...17))
+            │   ├── parameters:
+            │   │   @ ParametersNode (location: (15...16))
+            │   │   ├── requireds: (length: 1)
+            │   │   │   └── @ RequiredParameterNode (location: (15...16))
+            │   │   │       └── name: :a
+            │   │   ├── optionals: (length: 0)
+            │   │   ├── rest: ∅
+            │   │   ├── posts: (length: 0)
+            │   │   ├── keywords: (length: 0)
+            │   │   ├── keyword_rest: ∅
+            │   │   └── block: ∅
+            │   ├── locals: (length: 0)
+            │   ├── opening_loc: (14...15) = "("
+            │   └── closing_loc: (16...17) = ")"
+            └── body: ∅

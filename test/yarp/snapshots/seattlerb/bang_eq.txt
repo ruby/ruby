@@ -1,16 +1,21 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)(
-    [CallNode(0...6)(
-       IntegerNode(0...1)(),
-       nil,
-       (2...4),
-       nil,
-       ArgumentsNode(5...6)([IntegerNode(5...6)()]),
-       nil,
-       nil,
-       0,
-       "!="
-     )]
-  )
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...6))
+            ├── receiver:
+            │   @ IntegerNode (location: (0...1))
+            │   └── flags: decimal
+            ├── call_operator_loc: ∅
+            ├── message_loc: (2...4) = "!="
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (5...6))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (5...6))
+            │           └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "!="

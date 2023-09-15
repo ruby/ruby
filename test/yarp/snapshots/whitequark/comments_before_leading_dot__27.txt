@@ -1,49 +1,85 @@
-ProgramNode(0...55)(
-  [],
-  StatementsNode(0...55)(
-    [CallNode(0...13)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-       (8...10),
-       (10...13),
-       nil,
-       nil,
-       nil,
-       nil,
-       1,
-       "foo"
-     ),
-     CallNode(16...28)(
-       CallNode(16...17)(nil, nil, (16...17), nil, nil, nil, nil, 2, "a"),
-       (24...25),
-       (25...28),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "foo"
-     ),
-     CallNode(31...42)(
-       CallNode(31...32)(nil, nil, (31...32), nil, nil, nil, nil, 2, "a"),
-       (37...39),
-       (39...42),
-       nil,
-       nil,
-       nil,
-       nil,
-       1,
-       "foo"
-     ),
-     CallNode(45...55)(
-       CallNode(45...46)(nil, nil, (45...46), nil, nil, nil, nil, 2, "a"),
-       (51...52),
-       (52...55),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...55))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...55))
+    └── body: (length: 4)
+        ├── @ CallNode (location: (0...13))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (0...1))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...1) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── call_operator_loc: (8...10) = "&."
+        │   ├── message_loc: (10...13) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: safe_navigation
+        │   └── name: "foo"
+        ├── @ CallNode (location: (16...28))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (16...17))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (16...17) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── call_operator_loc: (24...25) = "."
+        │   ├── message_loc: (25...28) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (31...42))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (31...32))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (31...32) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── call_operator_loc: (37...39) = "&."
+        │   ├── message_loc: (39...42) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: safe_navigation
+        │   └── name: "foo"
+        └── @ CallNode (location: (45...55))
+            ├── receiver:
+            │   @ CallNode (location: (45...46))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (45...46) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "a"
+            ├── call_operator_loc: (51...52) = "."
+            ├── message_loc: (52...55) = "foo"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "foo"

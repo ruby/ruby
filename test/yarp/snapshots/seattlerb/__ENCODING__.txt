@@ -1,1 +1,6 @@
-ProgramNode(0...12)([], StatementsNode(0...12)([SourceEncodingNode(0...12)()]))
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ SourceEncodingNode (location: (0...12))

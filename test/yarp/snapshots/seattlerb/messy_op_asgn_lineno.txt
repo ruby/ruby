@@ -1,55 +1,58 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [CallNode(0...15)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...15)(
-         [ParenthesesNode(2...15)(
-            StatementsNode(3...14)(
-              [ConstantPathOperatorWriteNode(3...14)(
-                 ConstantPathNode(3...7)(
-                   ConstantReadNode(3...4)(),
-                   ConstantReadNode(6...7)(),
-                   (4...6)
-                 ),
-                 (8...10),
-                 CallNode(11...14)(
-                   nil,
-                   nil,
-                   (11...12),
-                   nil,
-                   ArgumentsNode(13...14)(
-                     [CallNode(13...14)(
-                        nil,
-                        nil,
-                        (13...14),
-                        nil,
-                        nil,
-                        nil,
-                        nil,
-                        2,
-                        "e"
-                      )]
-                   ),
-                   nil,
-                   nil,
-                   0,
-                   "d"
-                 ),
-                 :*
-               )]
-            ),
-            (2...3),
-            (14...15)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...15))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...15))
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (2...15))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (3...14))
+            │           │   └── body: (length: 1)
+            │           │       └── @ ConstantPathOperatorWriteNode (location: (3...14))
+            │           │           ├── target:
+            │           │           │   @ ConstantPathNode (location: (3...7))
+            │           │           │   ├── parent:
+            │           │           │   │   @ ConstantReadNode (location: (3...4))
+            │           │           │   │   └── name: :B
+            │           │           │   ├── child:
+            │           │           │   │   @ ConstantReadNode (location: (6...7))
+            │           │           │   │   └── name: :C
+            │           │           │   └── delimiter_loc: (4...6) = "::"
+            │           │           ├── operator_loc: (8...10) = "*="
+            │           │           ├── value:
+            │           │           │   @ CallNode (location: (11...14))
+            │           │           │   ├── receiver: ∅
+            │           │           │   ├── call_operator_loc: ∅
+            │           │           │   ├── message_loc: (11...12) = "d"
+            │           │           │   ├── opening_loc: ∅
+            │           │           │   ├── arguments:
+            │           │           │   │   @ ArgumentsNode (location: (13...14))
+            │           │           │   │   └── arguments: (length: 1)
+            │           │           │   │       └── @ CallNode (location: (13...14))
+            │           │           │   │           ├── receiver: ∅
+            │           │           │   │           ├── call_operator_loc: ∅
+            │           │           │   │           ├── message_loc: (13...14) = "e"
+            │           │           │   │           ├── opening_loc: ∅
+            │           │           │   │           ├── arguments: ∅
+            │           │           │   │           ├── closing_loc: ∅
+            │           │           │   │           ├── block: ∅
+            │           │           │   │           ├── flags: variable_call
+            │           │           │   │           └── name: "e"
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   ├── block: ∅
+            │           │           │   ├── flags: ∅
+            │           │           │   └── name: "d"
+            │           │           └── operator: :*
+            │           ├── opening_loc: (2...3) = "("
+            │           └── closing_loc: (14...15) = ")"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

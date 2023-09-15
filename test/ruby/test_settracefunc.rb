@@ -504,7 +504,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     1: trace = TracePoint.trace(*trace_events){|tp| next if !target_thread?
     2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding&.eval("_local_var"), _get_data.(tp)] if tp.path == 'xyzzy'
     3: }
-    4: 1.times{|;_local_var| _local_var = :inner
+    4: [1].each{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
@@ -531,10 +531,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
     answer_events = [
      #
      [:line,     4, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
-     [:c_call,   4, 'xyzzy', Integer,     :times,           1,           nil, :nothing],
+     [:c_call,   4, 'xyzzy', Array,       :each,            [1],         nil,    :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_return, 4, "xyzzy", Integer,     :times,           1,           nil, 1],
+     [:c_return, 4, "xyzzy", Array,       :each,            [1],         nil, [1]],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, :nothing],
      [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, nil],
@@ -639,7 +639,7 @@ CODE
     1: set_trace_func(lambda{|event, file, line, id, binding, klass|
     2:   events << [event, line, file, klass, id, binding&.eval('self'), binding&.eval("_local_var")] if file == 'xyzzy'
     3: })
-    4: 1.times{|;_local_var| _local_var = :inner
+    4: [1].map{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
@@ -994,7 +994,7 @@ CODE
         /return/ =~ tp.event ? tp.return_value : nil
       ]
     }.enable{
-      1.times{
+      [1].map{
         3
       }
       method_for_test_tracepoint_block{
@@ -1004,10 +1004,10 @@ CODE
     # pp events
     # expected_events =
     [[:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
-     [:c_call, :times, Integer, Integer, nil],
+     [:c_call, :map, Array, Array, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 3],
-     [:c_return, :times, Integer, Integer, 1],
+     [:c_return, :map, Array, Array, [3]],
      [:call, :method_for_test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 4],
@@ -1310,7 +1310,7 @@ CODE
       next if !target_thread?
       events << tp.event
     }.enable{
-      1.times{
+      [1].map{
         3
       }
       method_for_test_tracepoint_block{
@@ -1332,7 +1332,7 @@ CODE
       next if !target_thread?
       events << tp.event
     }.enable{
-      1.times{
+      [1].map{
         3
       }
       method_for_test_tracepoint_block{

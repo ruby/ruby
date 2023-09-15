@@ -1,28 +1,49 @@
-ProgramNode(0...30)(
-  [],
-  StatementsNode(0...30)(
-    [ArrayNode(0...30)(
-       [StringNode(4...5)(nil, (4...5), nil, "1"),
-        InterpolatedStringNode(6...12)(
-          nil,
-          [EmbeddedStatementsNode(6...12)(
-             (6...8),
-             StatementsNode(8...11)(
-               [InterpolatedStringNode(8...11)(
-                  (8...11),
-                  [StringNode(15...17)(nil, (15...17), nil, "2\n")],
-                  (17...19)
-                )]
-             ),
-             (11...12)
-           )],
-          nil
-        ),
-        StringNode(13...14)(nil, (13...14), nil, "3"),
-        StringNode(25...26)(nil, (25...26), nil, "4"),
-        StringNode(27...28)(nil, (27...28), nil, "5")],
-       (0...3),
-       (29...30)
-     )]
-  )
-)
+@ ProgramNode (location: (0...30))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...30))
+    └── body: (length: 1)
+        └── @ ArrayNode (location: (0...30))
+            ├── elements: (length: 5)
+            │   ├── @ StringNode (location: (4...5))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (4...5) = "1"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "1"
+            │   ├── @ InterpolatedStringNode (location: (6...12))
+            │   │   ├── opening_loc: ∅
+            │   │   ├── parts: (length: 1)
+            │   │   │   └── @ EmbeddedStatementsNode (location: (6...12))
+            │   │   │       ├── opening_loc: (6...8) = "\#{"
+            │   │   │       ├── statements:
+            │   │   │       │   @ StatementsNode (location: (8...11))
+            │   │   │       │   └── body: (length: 1)
+            │   │   │       │       └── @ StringNode (location: (8...11))
+            │   │   │       │           ├── flags: ∅
+            │   │   │       │           ├── opening_loc: (8...11) = "<<A"
+            │   │   │       │           ├── content_loc: (15...17) = "2\n"
+            │   │   │       │           ├── closing_loc: (17...19) = "A\n"
+            │   │   │       │           └── unescaped: "2\n"
+            │   │   │       └── closing_loc: (11...12) = "}"
+            │   │   └── closing_loc: ∅
+            │   ├── @ StringNode (location: (13...14))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (13...14) = "3"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "3"
+            │   ├── @ StringNode (location: (25...26))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (25...26) = "4"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "4"
+            │   └── @ StringNode (location: (27...28))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (27...28) = "5"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "5"
+            ├── opening_loc: (0...3) = "%W("
+            └── closing_loc: (29...30) = ")"

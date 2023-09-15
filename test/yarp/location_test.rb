@@ -4,8 +4,12 @@ require_relative "test_helper"
 
 module YARP
   class LocationTest < TestCase
-    def test_AliasNode
-      assert_location(AliasNode, "alias foo bar")
+    def test_AliasGlobalVariableNode
+      assert_location(AliasGlobalVariableNode, "alias $foo $bar")
+    end
+
+    def test_AliasMethodNode
+      assert_location(AliasMethodNode, "alias foo bar")
     end
 
     def test_AlternationPatternNode
@@ -65,6 +69,12 @@ module YARP
 
     def test_BlockArgumentNode
       assert_location(BlockArgumentNode, "foo(&bar)", 4...8) { |node| node.arguments.arguments.last }
+    end
+
+    def test_BlockLocalVariableNode
+      assert_location(BlockLocalVariableNode, "foo { |;bar| }", 8...11) do |node|
+        node.block.parameters.locals.first
+      end
     end
 
     def test_BlockNode
@@ -166,9 +176,9 @@ module YARP
       assert_location(CallNode, "foo bar('baz')")
     end
 
-    def test_CallOperatorAndWriteNode
-      assert_location(CallOperatorAndWriteNode, "foo.foo &&= bar")
-      assert_location(CallOperatorAndWriteNode, "foo[foo] &&= bar")
+    def test_CallAndWriteNode
+      assert_location(CallAndWriteNode, "foo.foo &&= bar")
+      assert_location(CallAndWriteNode, "foo[foo] &&= bar")
     end
 
     def test_CallOperatorWriteNode
@@ -176,9 +186,9 @@ module YARP
       assert_location(CallOperatorWriteNode, "foo[foo] += bar")
     end
 
-    def test_CallOperatorOrWriteNode
-      assert_location(CallOperatorOrWriteNode, "foo.foo ||= bar")
-      assert_location(CallOperatorOrWriteNode, "foo[foo] ||= bar")
+    def test_CallOrWriteNode
+      assert_location(CallOrWriteNode, "foo.foo ||= bar")
+      assert_location(CallOrWriteNode, "foo[foo] ||= bar")
     end
 
     def test_CapturePatternNode
@@ -444,13 +454,17 @@ module YARP
       assert_location(IntegerNode, "0o1_000")
     end
 
+    def test_InterpolatedMatchLastLineNode
+      assert_location(InterpolatedMatchLastLineNode, "if /foo \#{bar}/ then end", 3...15, &:predicate)
+    end
+
     def test_InterpolatedRegularExpressionNode
       assert_location(InterpolatedRegularExpressionNode, "/\#{foo}/")
     end
 
     def test_InterpolatedStringNode
       assert_location(InterpolatedStringNode, "\"foo \#@bar baz\"")
-      assert_location(InterpolatedStringNode, "<<~A\nhello world\nA", 0...4)
+      assert_location(InterpolatedStringNode, "<<~A\nhello \#{1} world\nA", 0...4)
     end
 
     def test_InterpolatedSymbolNode
@@ -519,6 +533,10 @@ module YARP
       assert_location(LocalVariableWriteNode, "foo = bar")
     end
 
+    def test_MatchLastLineNode
+      assert_location(MatchLastLineNode, "if /foo/ then end", 3...8, &:predicate)
+    end
+
     def test_MatchPredicateNode
       assert_location(MatchPredicateNode, "foo in bar")
     end
@@ -527,12 +545,23 @@ module YARP
       assert_location(MatchRequiredNode, "foo => bar")
     end
 
+    def test_MatchWriteNode
+      assert_location(MatchWriteNode, "/(?<foo>)/ =~ foo")
+    end
+
     def test_ModuleNode
       assert_location(ModuleNode, "module Foo end")
     end
 
+    def test_MultiTargetNode
+      assert_location(MultiTargetNode, "for foo, bar in baz do end", 4...12, &:index)
+      assert_location(MultiTargetNode, "foo, (bar, baz) = qux", 5...15) { |node| node.targets.last }
+    end
+
     def test_MultiWriteNode
       assert_location(MultiWriteNode, "foo, bar = baz")
+      assert_location(MultiWriteNode, "(foo, bar) = baz")
+      assert_location(MultiWriteNode, "((foo, bar)) = baz")
     end
 
     def test_NextNode
@@ -810,6 +839,14 @@ module YARP
 
       node = result.value.statements.body.last
       node = yield node if block_given?
+
+      if expected.begin == 0
+        assert_equal 0, node.location.start_column
+      end
+
+      if expected.end == source.length
+        assert_equal source.split("\n").last.length, node.location.end_column
+      end
 
       assert_kind_of kind, node
       assert_equal expected.begin, node.location.start_offset

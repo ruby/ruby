@@ -1,31 +1,43 @@
-ProgramNode(0...24)(
-  [:a],
-  StatementsNode(0...24)(
-    [MatchRequiredNode(0...8)(
-       IntegerNode(0...1)(),
-       ArrayPatternNode(5...8)(
-         nil,
-         [LocalVariableTargetNode(6...7)(:a, 0)],
-         nil,
-         [],
-         (5...6),
-         (7...8)
-       ),
-       (2...4)
-     ),
-     LocalVariableReadNode(10...11)(:a, 0),
-     MatchPredicateNode(13...21)(
-       IntegerNode(13...14)(),
-       ArrayPatternNode(18...21)(
-         nil,
-         [LocalVariableTargetNode(19...20)(:a, 0)],
-         nil,
-         [],
-         (18...19),
-         (20...21)
-       ),
-       (15...17)
-     ),
-     LocalVariableReadNode(23...24)(:a, 0)]
-  )
-)
+@ ProgramNode (location: (0...24))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...24))
+    └── body: (length: 4)
+        ├── @ MatchRequiredNode (location: (0...8))
+        │   ├── value:
+        │   │   @ IntegerNode (location: (0...1))
+        │   │   └── flags: decimal
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (5...8))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ LocalVariableTargetNode (location: (6...7))
+        │   │   │       ├── name: :a
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: (5...6) = "["
+        │   │   └── closing_loc: (7...8) = "]"
+        │   └── operator_loc: (2...4) = "=>"
+        ├── @ LocalVariableReadNode (location: (10...11))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (13...21))
+        │   ├── value:
+        │   │   @ IntegerNode (location: (13...14))
+        │   │   └── flags: decimal
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (18...21))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ LocalVariableTargetNode (location: (19...20))
+        │   │   │       ├── name: :a
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: (18...19) = "["
+        │   │   └── closing_loc: (20...21) = "]"
+        │   └── operator_loc: (15...17) = "in"
+        └── @ LocalVariableReadNode (location: (23...24))
+            ├── name: :a
+            └── depth: 0

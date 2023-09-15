@@ -1,83 +1,83 @@
-ProgramNode(0...93)(
-  [],
-  StatementsNode(0...93)(
-    [DefNode(0...14)(
-       (4...9),
-       nil,
-       nil,
-       nil,
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       nil,
-       (11...14)
-     ),
-     DefNode(16...28)(
-       (20...23),
-       nil,
-       nil,
-       nil,
-       [],
-       (16...19),
-       nil,
-       nil,
-       nil,
-       nil,
-       (25...28)
-     ),
-     DefNode(30...45)(
-       (34...40),
-       nil,
-       nil,
-       nil,
-       [],
-       (30...33),
-       nil,
-       nil,
-       nil,
-       nil,
-       (42...45)
-     ),
-     DefNode(47...63)(
-       (51...58),
-       nil,
-       nil,
-       nil,
-       [],
-       (47...50),
-       nil,
-       nil,
-       nil,
-       nil,
-       (60...63)
-     ),
-     DefNode(65...77)(
-       (69...72),
-       nil,
-       nil,
-       nil,
-       [],
-       (65...68),
-       nil,
-       nil,
-       nil,
-       nil,
-       (74...77)
-     ),
-     DefNode(79...93)(
-       (83...88),
-       nil,
-       nil,
-       nil,
-       [],
-       (79...82),
-       nil,
-       nil,
-       nil,
-       nil,
-       (90...93)
-     )]
-  )
-)
+@ ProgramNode (location: (0...93))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...93))
+    └── body: (length: 6)
+        ├── @ DefNode (location: (0...14))
+        │   ├── name: :BEGIN
+        │   ├── name_loc: (4...9) = "BEGIN"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (11...14) = "end"
+        ├── @ DefNode (location: (16...28))
+        │   ├── name: :END
+        │   ├── name_loc: (20...23) = "END"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (16...19) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (25...28) = "end"
+        ├── @ DefNode (location: (30...45))
+        │   ├── name: :String
+        │   ├── name_loc: (34...40) = "String"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (30...33) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (42...45) = "end"
+        ├── @ DefNode (location: (47...63))
+        │   ├── name: :String=
+        │   ├── name_loc: (51...58) = "String="
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (47...50) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (60...63) = "end"
+        ├── @ DefNode (location: (65...77))
+        │   ├── name: :foo
+        │   ├── name_loc: (69...72) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (65...68) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (74...77) = "end"
+        └── @ DefNode (location: (79...93))
+            ├── name: :until
+            ├── name_loc: (83...88) = "until"
+            ├── receiver: ∅
+            ├── parameters: ∅
+            ├── body: ∅
+            ├── locals: []
+            ├── def_keyword_loc: (79...82) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (90...93) = "end"

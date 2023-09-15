@@ -1,12 +1,20 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [InterpolatedStringNode(0...9)(
-       (0...1),
-       [StringNode(1...4)(nil, (1...4), nil, "a\n"),
-        EmbeddedStatementsNode(4...8)((4...6), nil, (7...8))],
-       (8...9)
-     ),
-     TrueNode(10...14)()]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 2)
+        ├── @ InterpolatedStringNode (location: (0...9))
+        │   ├── opening_loc: (0...1) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (1...4))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (1...4) = "a\\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   └── @ EmbeddedStatementsNode (location: (4...8))
+        │   │       ├── opening_loc: (4...6) = "\#{"
+        │   │       ├── statements: ∅
+        │   │       └── closing_loc: (7...8) = "}"
+        │   └── closing_loc: (8...9) = "\""
+        └── @ TrueNode (location: (10...14))

@@ -1,14 +1,26 @@
-ProgramNode(0...27)(
-  [],
-  StatementsNode(0...27)(
-    [UndefNode(0...10)(
-       [SymbolNode(6...10)((6...7), (7...10), nil, "foo")],
-       (0...5)
-     ),
-     UndefNode(11...27)(
-       [SymbolNode(17...21)((17...18), (18...21), nil, "foo"),
-        SymbolNode(23...27)((23...24), (24...27), nil, "bar")],
-       (11...16)
-     )]
-  )
-)
+@ ProgramNode (location: (0...27))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...27))
+    └── body: (length: 2)
+        ├── @ UndefNode (location: (0...10))
+        │   ├── names: (length: 1)
+        │   │   └── @ SymbolNode (location: (6...10))
+        │   │       ├── opening_loc: (6...7) = ":"
+        │   │       ├── value_loc: (7...10) = "foo"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "foo"
+        │   └── keyword_loc: (0...5) = "undef"
+        └── @ UndefNode (location: (11...27))
+            ├── names: (length: 2)
+            │   ├── @ SymbolNode (location: (17...21))
+            │   │   ├── opening_loc: (17...18) = ":"
+            │   │   ├── value_loc: (18...21) = "foo"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "foo"
+            │   └── @ SymbolNode (location: (23...27))
+            │       ├── opening_loc: (23...24) = ":"
+            │       ├── value_loc: (24...27) = "bar"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "bar"
+            └── keyword_loc: (11...16) = "undef"

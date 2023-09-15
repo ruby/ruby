@@ -1,26 +1,29 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [LambdaNode(0...11)(
-       [:k],
-       (0...2),
-       (8...9),
-       (10...11),
-       BlockParametersNode(3...7)(
-         ParametersNode(4...6)(
-           [],
-           [],
-           [],
-           nil,
-           [KeywordParameterNode(4...6)((4...6), nil)],
-           nil,
-           nil
-         ),
-         [],
-         (3...4),
-         (6...7)
-       ),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ LambdaNode (location: (0...11))
+            ├── locals: [:k]
+            ├── operator_loc: (0...2) = "->"
+            ├── opening_loc: (8...9) = "{"
+            ├── closing_loc: (10...11) = "}"
+            ├── parameters:
+            │   @ BlockParametersNode (location: (3...7))
+            │   ├── parameters:
+            │   │   @ ParametersNode (location: (4...6))
+            │   │   ├── requireds: (length: 0)
+            │   │   ├── optionals: (length: 0)
+            │   │   ├── rest: ∅
+            │   │   ├── posts: (length: 0)
+            │   │   ├── keywords: (length: 1)
+            │   │   │   └── @ KeywordParameterNode (location: (4...6))
+            │   │   │       ├── name: :k
+            │   │   │       ├── name_loc: (4...6) = "k:"
+            │   │   │       └── value: ∅
+            │   │   ├── keyword_rest: ∅
+            │   │   └── block: ∅
+            │   ├── locals: (length: 0)
+            │   ├── opening_loc: (3...4) = "("
+            │   └── closing_loc: (6...7) = ")"
+            └── body: ∅

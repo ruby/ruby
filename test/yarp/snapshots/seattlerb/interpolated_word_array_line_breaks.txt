@@ -1,12 +1,23 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [ArrayNode(0...9)(
-       [StringNode(4...5)(nil, (4...5), nil, "a"),
-        StringNode(6...7)(nil, (6...7), nil, "b")],
-       (0...3),
-       (8...9)
-     ),
-     IntegerNode(10...11)()]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 2)
+        ├── @ ArrayNode (location: (0...9))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ StringNode (location: (4...5))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (4...5) = "a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a"
+        │   │   └── @ StringNode (location: (6...7))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (6...7) = "b"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "b"
+        │   ├── opening_loc: (0...3) = "%W("
+        │   └── closing_loc: (8...9) = ")"
+        └── @ IntegerNode (location: (10...11))
+            └── flags: decimal

@@ -1,18 +1,47 @@
-ProgramNode(0...35)(
-  [],
-  StatementsNode(0...35)(
-    [ForwardingSuperNode(0...12)(
-       BlockNode(6...12)([], nil, nil, (6...8), (9...12))
-     ),
-     SuperNode(14...35)(
-       (14...19),
-       nil,
-       ArgumentsNode(20...28)(
-         [CallNode(20...23)(nil, nil, (20...23), nil, nil, nil, nil, 2, "foo"),
-          CallNode(25...28)(nil, nil, (25...28), nil, nil, nil, nil, 2, "bar")]
-       ),
-       nil,
-       BlockNode(29...35)([], nil, nil, (29...31), (32...35))
-     )]
-  )
-)
+@ ProgramNode (location: (0...35))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...35))
+    └── body: (length: 2)
+        ├── @ ForwardingSuperNode (location: (0...12))
+        │   └── block:
+        │       @ BlockNode (location: (6...12))
+        │       ├── locals: []
+        │       ├── parameters: ∅
+        │       ├── body: ∅
+        │       ├── opening_loc: (6...8) = "do"
+        │       └── closing_loc: (9...12) = "end"
+        └── @ SuperNode (location: (14...35))
+            ├── keyword_loc: (14...19) = "super"
+            ├── lparen_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (20...28))
+            │   └── arguments: (length: 2)
+            │       ├── @ CallNode (location: (20...23))
+            │       │   ├── receiver: ∅
+            │       │   ├── call_operator_loc: ∅
+            │       │   ├── message_loc: (20...23) = "foo"
+            │       │   ├── opening_loc: ∅
+            │       │   ├── arguments: ∅
+            │       │   ├── closing_loc: ∅
+            │       │   ├── block: ∅
+            │       │   ├── flags: variable_call
+            │       │   └── name: "foo"
+            │       └── @ CallNode (location: (25...28))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (25...28) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "bar"
+            ├── rparen_loc: ∅
+            └── block:
+                @ BlockNode (location: (29...35))
+                ├── locals: []
+                ├── parameters: ∅
+                ├── body: ∅
+                ├── opening_loc: (29...31) = "do"
+                └── closing_loc: (32...35) = "end"

@@ -1,28 +1,31 @@
-ProgramNode(0...11)(
-  [:a, :b],
-  StatementsNode(0...11)(
-    [LocalVariableWriteNode(0...11)(
-       :a,
-       0,
-       (0...1),
-       LocalVariableWriteNode(4...11)(
-         :b,
-         0,
-         (4...5),
-         CallNode(8...11)(
-           nil,
-           nil,
-           (8...9),
-           nil,
-           ArgumentsNode(10...11)([IntegerNode(10...11)()]),
-           nil,
-           nil,
-           0,
-           "c"
-         ),
-         (6...7)
-       ),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...11))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ LocalVariableWriteNode (location: (4...11))
+            │   ├── name: :b
+            │   ├── depth: 0
+            │   ├── name_loc: (4...5) = "b"
+            │   ├── value:
+            │   │   @ CallNode (location: (8...11))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (8...9) = "c"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments:
+            │   │   │   @ ArgumentsNode (location: (10...11))
+            │   │   │   └── arguments: (length: 1)
+            │   │   │       └── @ IntegerNode (location: (10...11))
+            │   │   │           └── flags: decimal
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: "c"
+            │   └── operator_loc: (6...7) = "="
+            └── operator_loc: (2...3) = "="

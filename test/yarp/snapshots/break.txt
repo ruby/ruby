@@ -1,158 +1,207 @@
-ProgramNode(0...168)(
-  [],
-  StatementsNode(0...168)(
-    [BreakNode(0...5)(nil, (0...5)),
-     BreakNode(7...26)(
-       ArgumentsNode(13...26)(
-         [ParenthesesNode(13...16)(
-            StatementsNode(14...15)([IntegerNode(14...15)()]),
-            (13...14),
-            (15...16)
-          ),
-          ParenthesesNode(18...21)(
-            StatementsNode(19...20)([IntegerNode(19...20)()]),
-            (18...19),
-            (20...21)
-          ),
-          ParenthesesNode(23...26)(
-            StatementsNode(24...25)([IntegerNode(24...25)()]),
-            (23...24),
-            (25...26)
-          )]
-       ),
-       (7...12)
-     ),
-     BreakNode(28...35)(
-       ArgumentsNode(34...35)([IntegerNode(34...35)()]),
-       (28...33)
-     ),
-     BreakNode(37...50)(
-       ArgumentsNode(43...50)(
-         [IntegerNode(43...44)(),
-          IntegerNode(46...47)(),
-          IntegerNode(49...50)()]
-       ),
-       (37...42)
-     ),
-     BreakNode(52...65)(
-       ArgumentsNode(58...65)(
-         [IntegerNode(58...59)(),
-          IntegerNode(61...62)(),
-          IntegerNode(64...65)()]
-       ),
-       (52...57)
-     ),
-     BreakNode(67...82)(
-       ArgumentsNode(73...82)(
-         [ArrayNode(73...82)(
-            [IntegerNode(74...75)(),
-             IntegerNode(77...78)(),
-             IntegerNode(80...81)()],
-            (73...74),
-            (81...82)
-          )]
-       ),
-       (67...72)
-     ),
-     BreakNode(84...100)(
-       ArgumentsNode(89...100)(
-         [ParenthesesNode(89...100)(
-            StatementsNode(93...98)(
-              [IntegerNode(93...94)(), IntegerNode(97...98)()]
-            ),
-            (89...90),
-            (99...100)
-          )]
-       ),
-       (84...89)
-     ),
-     BreakNode(102...109)(
-       ArgumentsNode(107...109)(
-         [ParenthesesNode(107...109)(nil, (107...108), (108...109))]
-       ),
-       (102...107)
-     ),
-     BreakNode(111...119)(
-       ArgumentsNode(116...119)(
-         [ParenthesesNode(116...119)(
-            StatementsNode(117...118)([IntegerNode(117...118)()]),
-            (116...117),
-            (118...119)
-          )]
-       ),
-       (111...116)
-     ),
-     CallNode(121...143)(
-       CallNode(121...137)(
-         nil,
-         nil,
-         (121...124),
-         nil,
-         nil,
-         nil,
-         BlockNode(125...137)(
-           [],
-           nil,
-           StatementsNode(127...135)(
-             [BreakNode(127...135)(
-                ArgumentsNode(133...135)([IntegerNode(133...135)()]),
-                (127...132)
-              )]
-           ),
-           (125...126),
-           (136...137)
-         ),
-         0,
-         "foo"
-       ),
-       nil,
-       (138...140),
-       nil,
-       ArgumentsNode(141...143)([IntegerNode(141...143)()]),
-       nil,
-       nil,
-       0,
-       "=="
-     ),
-     CallNode(145...168)(
-       CallNode(145...162)(
-         nil,
-         nil,
-         (145...148),
-         nil,
-         nil,
-         nil,
-         BlockNode(149...162)(
-           [:a],
-           BlockParametersNode(151...154)(
-             ParametersNode(152...153)(
-               [RequiredParameterNode(152...153)(:a)],
-               [],
-               [],
-               nil,
-               [],
-               nil,
-               nil
-             ),
-             [],
-             (151...152),
-             (153...154)
-           ),
-           StatementsNode(155...160)([BreakNode(155...160)(nil, (155...160))]),
-           (149...150),
-           (161...162)
-         ),
-         0,
-         "foo"
-       ),
-       nil,
-       (163...165),
-       nil,
-       ArgumentsNode(166...168)([IntegerNode(166...168)()]),
-       nil,
-       nil,
-       0,
-       "=="
-     )]
-  )
-)
+@ ProgramNode (location: (0...168))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...168))
+    └── body: (length: 11)
+        ├── @ BreakNode (location: (0...5))
+        │   ├── arguments: ∅
+        │   └── keyword_loc: (0...5) = "break"
+        ├── @ BreakNode (location: (7...26))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (13...26))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ ParenthesesNode (location: (13...16))
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (14...15))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ IntegerNode (location: (14...15))
+        │   │       │   │           └── flags: decimal
+        │   │       │   ├── opening_loc: (13...14) = "("
+        │   │       │   └── closing_loc: (15...16) = ")"
+        │   │       ├── @ ParenthesesNode (location: (18...21))
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (19...20))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ IntegerNode (location: (19...20))
+        │   │       │   │           └── flags: decimal
+        │   │       │   ├── opening_loc: (18...19) = "("
+        │   │       │   └── closing_loc: (20...21) = ")"
+        │   │       └── @ ParenthesesNode (location: (23...26))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (24...25))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (24...25))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (23...24) = "("
+        │   │           └── closing_loc: (25...26) = ")"
+        │   └── keyword_loc: (7...12) = "break"
+        ├── @ BreakNode (location: (28...35))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (34...35))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (34...35))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (28...33) = "break"
+        ├── @ BreakNode (location: (37...50))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (43...50))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ IntegerNode (location: (43...44))
+        │   │       │   └── flags: decimal
+        │   │       ├── @ IntegerNode (location: (46...47))
+        │   │       │   └── flags: decimal
+        │   │       └── @ IntegerNode (location: (49...50))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (37...42) = "break"
+        ├── @ BreakNode (location: (52...65))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (58...65))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ IntegerNode (location: (58...59))
+        │   │       │   └── flags: decimal
+        │   │       ├── @ IntegerNode (location: (61...62))
+        │   │       │   └── flags: decimal
+        │   │       └── @ IntegerNode (location: (64...65))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (52...57) = "break"
+        ├── @ BreakNode (location: (67...82))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (73...82))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ArrayNode (location: (73...82))
+        │   │           ├── elements: (length: 3)
+        │   │           │   ├── @ IntegerNode (location: (74...75))
+        │   │           │   │   └── flags: decimal
+        │   │           │   ├── @ IntegerNode (location: (77...78))
+        │   │           │   │   └── flags: decimal
+        │   │           │   └── @ IntegerNode (location: (80...81))
+        │   │           │       └── flags: decimal
+        │   │           ├── opening_loc: (73...74) = "["
+        │   │           └── closing_loc: (81...82) = "]"
+        │   └── keyword_loc: (67...72) = "break"
+        ├── @ BreakNode (location: (84...100))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (89...100))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (89...100))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (93...98))
+        │   │           │   └── body: (length: 2)
+        │   │           │       ├── @ IntegerNode (location: (93...94))
+        │   │           │       │   └── flags: decimal
+        │   │           │       └── @ IntegerNode (location: (97...98))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (89...90) = "("
+        │   │           └── closing_loc: (99...100) = ")"
+        │   └── keyword_loc: (84...89) = "break"
+        ├── @ BreakNode (location: (102...109))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (107...109))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (107...109))
+        │   │           ├── body: ∅
+        │   │           ├── opening_loc: (107...108) = "("
+        │   │           └── closing_loc: (108...109) = ")"
+        │   └── keyword_loc: (102...107) = "break"
+        ├── @ BreakNode (location: (111...119))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (116...119))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (116...119))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (117...118))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (117...118))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (116...117) = "("
+        │   │           └── closing_loc: (118...119) = ")"
+        │   └── keyword_loc: (111...116) = "break"
+        ├── @ CallNode (location: (121...143))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (121...137))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (121...124) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (125...137))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body:
+        │   │   │   │   @ StatementsNode (location: (127...135))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ BreakNode (location: (127...135))
+        │   │   │   │           ├── arguments:
+        │   │   │   │           │   @ ArgumentsNode (location: (133...135))
+        │   │   │   │           │   └── arguments: (length: 1)
+        │   │   │   │           │       └── @ IntegerNode (location: (133...135))
+        │   │   │   │           │           └── flags: decimal
+        │   │   │   │           └── keyword_loc: (127...132) = "break"
+        │   │   │   ├── opening_loc: (125...126) = "{"
+        │   │   │   └── closing_loc: (136...137) = "}"
+        │   │   ├── flags: ∅
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (138...140) = "=="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (141...143))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (141...143))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "=="
+        └── @ CallNode (location: (145...168))
+            ├── receiver:
+            │   @ CallNode (location: (145...162))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (145...148) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block:
+            │   │   @ BlockNode (location: (149...162))
+            │   │   ├── locals: [:a]
+            │   │   ├── parameters:
+            │   │   │   @ BlockParametersNode (location: (151...154))
+            │   │   │   ├── parameters:
+            │   │   │   │   @ ParametersNode (location: (152...153))
+            │   │   │   │   ├── requireds: (length: 1)
+            │   │   │   │   │   └── @ RequiredParameterNode (location: (152...153))
+            │   │   │   │   │       └── name: :a
+            │   │   │   │   ├── optionals: (length: 0)
+            │   │   │   │   ├── rest: ∅
+            │   │   │   │   ├── posts: (length: 0)
+            │   │   │   │   ├── keywords: (length: 0)
+            │   │   │   │   ├── keyword_rest: ∅
+            │   │   │   │   └── block: ∅
+            │   │   │   ├── locals: (length: 0)
+            │   │   │   ├── opening_loc: (151...152) = "|"
+            │   │   │   └── closing_loc: (153...154) = "|"
+            │   │   ├── body:
+            │   │   │   @ StatementsNode (location: (155...160))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ BreakNode (location: (155...160))
+            │   │   │           ├── arguments: ∅
+            │   │   │           └── keyword_loc: (155...160) = "break"
+            │   │   ├── opening_loc: (149...150) = "{"
+            │   │   └── closing_loc: (161...162) = "}"
+            │   ├── flags: ∅
+            │   └── name: "foo"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (163...165) = "=="
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (166...168))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (166...168))
+            │           └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "=="

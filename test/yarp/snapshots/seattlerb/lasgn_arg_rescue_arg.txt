@@ -1,16 +1,19 @@
-ProgramNode(0...14)(
-  [:a],
-  StatementsNode(0...14)(
-    [LocalVariableWriteNode(0...14)(
-       :a,
-       0,
-       (0...1),
-       RescueModifierNode(4...14)(
-         IntegerNode(4...5)(),
-         (6...12),
-         IntegerNode(13...14)()
-       ),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...14))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ RescueModifierNode (location: (4...14))
+            │   ├── expression:
+            │   │   @ IntegerNode (location: (4...5))
+            │   │   └── flags: decimal
+            │   ├── keyword_loc: (6...12) = "rescue"
+            │   └── rescue_expression:
+            │       @ IntegerNode (location: (13...14))
+            │       └── flags: decimal
+            └── operator_loc: (2...3) = "="

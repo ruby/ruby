@@ -38,22 +38,16 @@ Note: We're only listing outstanding class updates.
     * MatchData#named_captures now accepts optional `symbolize_names`
       keyword. [[Feature #19591]]
 
-* String
+* Module
 
-    * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
-    * String#bytesplice now accepts new arguments index/length or range of the
-      source string to be copied.  [[Feature #19314]]
+    * Module#set_temporary_name added for setting a temporary name for a
+      module. [[Feature #19521]]
 
 * ObjectSpace::WeakKeyMap
 
     * New core class to build collections with weak references.
       The class use equality semantic to lookup keys like a regular hash,
       but it doesn't hold strong references on the keys. [[Feature #18498]]
-
-* Module
-
-    * Module#set_temporary_name added for setting a temporary name for a
-      module. [[Feature #19521]]
 
 * Process.warmup
 
@@ -62,11 +56,21 @@ Note: We're only listing outstanding class updates.
       for long running applications. The actual optimizations performed are entirely
       implementation specific and may change in the future without notice. [[Feature #18885]]
 
+* Process::Status
+
+    * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
+
 * Refinement
 
     * Add Refinement#target as an alternative of Refinement#refined_class.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
+
+* String
+
+    * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
+    * String#bytesplice now accepts new arguments index/length or range of the
+      source string to be copied.  [[Feature #19314]]
 
 ## Stdlib updates
 
@@ -85,7 +89,7 @@ The following default gems are updated.
 * erb 4.0.3
 * fiddle 1.1.2
 * fileutils 1.7.1
-* irb 1.8.0
+* irb 1.8.1
 * nkf 0.1.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
@@ -96,11 +100,11 @@ The following default gems are updated.
 * time 0.2.2
 * timeout 0.4.0
 * uri 0.12.2
-* yarp 0.10.0
+* yarp 0.11.0
 
 The following bundled gems are updated.
 
-* minitest 5.19.0
+* minitest 5.20.0
 * test-unit 3.6.1
 * rexml 3.2.6
 * rss 0.3.0
@@ -182,3 +186,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
+[Bug #19868]:     https://bugs.ruby-lang.org/issues/19868

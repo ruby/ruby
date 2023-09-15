@@ -1,12 +1,13 @@
-ProgramNode(0...7)(
-  [:a],
-  StatementsNode(0...7)(
-    [LocalVariableOrWriteNode(0...7)(
-       (0...1),
-       (2...5),
-       IntegerNode(6...7)(),
-       :a,
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ LocalVariableOrWriteNode (location: (0...7))
+            ├── name_loc: (0...1) = "a"
+            ├── operator_loc: (2...5) = "||="
+            ├── value:
+            │   @ IntegerNode (location: (6...7))
+            │   └── flags: decimal
+            ├── name: :a
+            └── depth: 0

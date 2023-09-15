@@ -1,47 +1,56 @@
-ProgramNode(0...42)(
-  [],
-  StatementsNode(0...42)(
-    [CallNode(0...42)(
-       CallNode(0...37)(
-         nil,
-         nil,
-         (0...4),
-         nil,
-         nil,
-         nil,
-         BlockNode(5...37)(
-           [],
-           nil,
-           BeginNode(10...37)(
-             nil,
-             StatementsNode(10...16)(
-               [SymbolNode(10...16)((10...11), (11...16), nil, "begin")]
-             ),
-             nil,
-             nil,
-             EnsureNode(17...37)(
-               (17...23),
-               StatementsNode(26...33)(
-                 [SymbolNode(26...33)((26...27), (27...33), nil, "ensure")]
-               ),
-               (34...37)
-             ),
-             (34...37)
-           ),
-           (5...7),
-           (34...37)
-         ),
-         0,
-         "proc"
-       ),
-       (37...38),
-       (38...42),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "call"
-     )]
-  )
-)
+@ ProgramNode (location: (0...42))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...42))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...42))
+            ├── receiver:
+            │   @ CallNode (location: (0...37))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...4) = "proc"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block:
+            │   │   @ BlockNode (location: (5...37))
+            │   │   ├── locals: []
+            │   │   ├── parameters: ∅
+            │   │   ├── body:
+            │   │   │   @ BeginNode (location: (10...37))
+            │   │   │   ├── begin_keyword_loc: ∅
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (10...16))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ SymbolNode (location: (10...16))
+            │   │   │   │           ├── opening_loc: (10...11) = ":"
+            │   │   │   │           ├── value_loc: (11...16) = "begin"
+            │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │           └── unescaped: "begin"
+            │   │   │   ├── rescue_clause: ∅
+            │   │   │   ├── else_clause: ∅
+            │   │   │   ├── ensure_clause:
+            │   │   │   │   @ EnsureNode (location: (17...37))
+            │   │   │   │   ├── ensure_keyword_loc: (17...23) = "ensure"
+            │   │   │   │   ├── statements:
+            │   │   │   │   │   @ StatementsNode (location: (26...33))
+            │   │   │   │   │   └── body: (length: 1)
+            │   │   │   │   │       └── @ SymbolNode (location: (26...33))
+            │   │   │   │   │           ├── opening_loc: (26...27) = ":"
+            │   │   │   │   │           ├── value_loc: (27...33) = "ensure"
+            │   │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │   │           └── unescaped: "ensure"
+            │   │   │   │   └── end_keyword_loc: (34...37) = "end"
+            │   │   │   └── end_keyword_loc: (34...37) = "end"
+            │   │   ├── opening_loc: (5...7) = "do"
+            │   │   └── closing_loc: (34...37) = "end"
+            │   ├── flags: ∅
+            │   └── name: "proc"
+            ├── call_operator_loc: (37...38) = "."
+            ├── message_loc: (38...42) = "call"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "call"

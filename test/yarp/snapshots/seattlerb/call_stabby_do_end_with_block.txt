@@ -1,31 +1,38 @@
-ProgramNode(0...22)(
-  [],
-  StatementsNode(0...22)(
-    [CallNode(0...22)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...13)(
-         [LambdaNode(2...13)(
-            [],
-            (2...4),
-            (5...7),
-            (10...13),
-            nil,
-            StatementsNode(8...9)([IntegerNode(8...9)()])
-          )]
-       ),
-       nil,
-       BlockNode(14...22)(
-         [],
-         nil,
-         StatementsNode(17...18)([IntegerNode(17...18)()]),
-         (14...16),
-         (19...22)
-       ),
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...22))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...22))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...22))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...13))
+            │   └── arguments: (length: 1)
+            │       └── @ LambdaNode (location: (2...13))
+            │           ├── locals: []
+            │           ├── operator_loc: (2...4) = "->"
+            │           ├── opening_loc: (5...7) = "do"
+            │           ├── closing_loc: (10...13) = "end"
+            │           ├── parameters: ∅
+            │           └── body:
+            │               @ StatementsNode (location: (8...9))
+            │               └── body: (length: 1)
+            │                   └── @ IntegerNode (location: (8...9))
+            │                       └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (14...22))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (17...18))
+            │   │   └── body: (length: 1)
+            │   │       └── @ IntegerNode (location: (17...18))
+            │   │           └── flags: decimal
+            │   ├── opening_loc: (14...16) = "do"
+            │   └── closing_loc: (19...22) = "end"
+            ├── flags: ∅
+            └── name: "a"

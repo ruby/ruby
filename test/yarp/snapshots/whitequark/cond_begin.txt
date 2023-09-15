@@ -1,20 +1,39 @@
-ProgramNode(0...18)(
-  [],
-  StatementsNode(0...18)(
-    [IfNode(0...18)(
-       (0...2),
-       ParenthesesNode(3...8)(
-         StatementsNode(4...7)(
-           [CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 2, "bar")]
-         ),
-         (3...4),
-         (7...8)
-       ),
-       StatementsNode(10...13)(
-         [CallNode(10...13)(nil, nil, (10...13), nil, nil, nil, nil, 2, "foo")]
-       ),
-       nil,
-       (15...18)
-     )]
-  )
-)
+@ ProgramNode (location: (0...18))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...18))
+    └── body: (length: 1)
+        └── @ IfNode (location: (0...18))
+            ├── if_keyword_loc: (0...2) = "if"
+            ├── predicate:
+            │   @ ParenthesesNode (location: (3...8))
+            │   ├── body:
+            │   │   @ StatementsNode (location: (4...7))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (4...7))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (4...7) = "bar"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "bar"
+            │   ├── opening_loc: (3...4) = "("
+            │   └── closing_loc: (7...8) = ")"
+            ├── statements:
+            │   @ StatementsNode (location: (10...13))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (10...13))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (10...13) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "foo"
+            ├── consequent: ∅
+            └── end_keyword_loc: (15...18) = "end"

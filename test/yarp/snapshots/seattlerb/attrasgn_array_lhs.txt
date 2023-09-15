@@ -1,57 +1,76 @@
-ProgramNode(0...42)(
-  [],
-  StatementsNode(0...42)(
-    [CallNode(0...42)(
-       ArrayNode(0...12)(
-         [IntegerNode(1...2)(),
-          IntegerNode(4...5)(),
-          IntegerNode(7...8)(),
-          IntegerNode(10...11)()],
-         (0...1),
-         (11...12)
-       ),
-       nil,
-       (12...24),
-       (12...13),
-       ArgumentsNode(13...42)(
-         [RangeNode(13...23)(
-            CallNode(13...17)(
-              nil,
-              nil,
-              (13...17),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "from"
-            ),
-            CallNode(21...23)(
-              nil,
-              nil,
-              (21...23),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "to"
-            ),
-            (18...20),
-            0
-          ),
-          ArrayNode(27...42)(
-            [StringNode(28...31)((28...29), (29...30), (30...31), "a"),
-             StringNode(33...36)((33...34), (34...35), (35...36), "b"),
-             StringNode(38...41)((38...39), (39...40), (40...41), "c")],
-            (27...28),
-            (41...42)
-          )]
-       ),
-       (23...24),
-       nil,
-       0,
-       "[]="
-     )]
-  )
-)
+@ ProgramNode (location: (0...42))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...42))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...42))
+            ├── receiver:
+            │   @ ArrayNode (location: (0...12))
+            │   ├── elements: (length: 4)
+            │   │   ├── @ IntegerNode (location: (1...2))
+            │   │   │   └── flags: decimal
+            │   │   ├── @ IntegerNode (location: (4...5))
+            │   │   │   └── flags: decimal
+            │   │   ├── @ IntegerNode (location: (7...8))
+            │   │   │   └── flags: decimal
+            │   │   └── @ IntegerNode (location: (10...11))
+            │   │       └── flags: decimal
+            │   ├── opening_loc: (0...1) = "["
+            │   └── closing_loc: (11...12) = "]"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (12...24) = "[from .. to]"
+            ├── opening_loc: (12...13) = "["
+            ├── arguments:
+            │   @ ArgumentsNode (location: (13...42))
+            │   └── arguments: (length: 2)
+            │       ├── @ RangeNode (location: (13...23))
+            │       │   ├── left:
+            │       │   │   @ CallNode (location: (13...17))
+            │       │   │   ├── receiver: ∅
+            │       │   │   ├── call_operator_loc: ∅
+            │       │   │   ├── message_loc: (13...17) = "from"
+            │       │   │   ├── opening_loc: ∅
+            │       │   │   ├── arguments: ∅
+            │       │   │   ├── closing_loc: ∅
+            │       │   │   ├── block: ∅
+            │       │   │   ├── flags: variable_call
+            │       │   │   └── name: "from"
+            │       │   ├── right:
+            │       │   │   @ CallNode (location: (21...23))
+            │       │   │   ├── receiver: ∅
+            │       │   │   ├── call_operator_loc: ∅
+            │       │   │   ├── message_loc: (21...23) = "to"
+            │       │   │   ├── opening_loc: ∅
+            │       │   │   ├── arguments: ∅
+            │       │   │   ├── closing_loc: ∅
+            │       │   │   ├── block: ∅
+            │       │   │   ├── flags: variable_call
+            │       │   │   └── name: "to"
+            │       │   ├── operator_loc: (18...20) = ".."
+            │       │   └── flags: ∅
+            │       └── @ ArrayNode (location: (27...42))
+            │           ├── elements: (length: 3)
+            │           │   ├── @ StringNode (location: (28...31))
+            │           │   │   ├── flags: ∅
+            │           │   │   ├── opening_loc: (28...29) = "\""
+            │           │   │   ├── content_loc: (29...30) = "a"
+            │           │   │   ├── closing_loc: (30...31) = "\""
+            │           │   │   └── unescaped: "a"
+            │           │   ├── @ StringNode (location: (33...36))
+            │           │   │   ├── flags: ∅
+            │           │   │   ├── opening_loc: (33...34) = "\""
+            │           │   │   ├── content_loc: (34...35) = "b"
+            │           │   │   ├── closing_loc: (35...36) = "\""
+            │           │   │   └── unescaped: "b"
+            │           │   └── @ StringNode (location: (38...41))
+            │           │       ├── flags: ∅
+            │           │       ├── opening_loc: (38...39) = "\""
+            │           │       ├── content_loc: (39...40) = "c"
+            │           │       ├── closing_loc: (40...41) = "\""
+            │           │       └── unescaped: "c"
+            │           ├── opening_loc: (27...28) = "["
+            │           └── closing_loc: (41...42) = "]"
+            ├── closing_loc: (23...24) = "]"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "[]="

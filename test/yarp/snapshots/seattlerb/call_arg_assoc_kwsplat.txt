@@ -1,26 +1,37 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [CallNode(0...16)(
-       nil,
-       nil,
-       (0...1),
-       (1...2),
-       ArgumentsNode(2...15)(
-         [IntegerNode(2...3)(),
-          KeywordHashNode(5...15)(
-            [AssocNode(5...10)(
-               SymbolNode(5...8)(nil, (5...7), (7...8), "kw"),
-               IntegerNode(9...10)(),
-               nil
-             ),
-             AssocSplatNode(12...15)(IntegerNode(14...15)(), (12...14))]
-          )]
-       ),
-       (15...16),
-       nil,
-       0,
-       "f"
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...16))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "f"
+            ├── opening_loc: (1...2) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...15))
+            │   └── arguments: (length: 2)
+            │       ├── @ IntegerNode (location: (2...3))
+            │       │   └── flags: decimal
+            │       └── @ KeywordHashNode (location: (5...15))
+            │           └── elements: (length: 2)
+            │               ├── @ AssocNode (location: (5...10))
+            │               │   ├── key:
+            │               │   │   @ SymbolNode (location: (5...8))
+            │               │   │   ├── opening_loc: ∅
+            │               │   │   ├── value_loc: (5...7) = "kw"
+            │               │   │   ├── closing_loc: (7...8) = ":"
+            │               │   │   └── unescaped: "kw"
+            │               │   ├── value:
+            │               │   │   @ IntegerNode (location: (9...10))
+            │               │   │   └── flags: decimal
+            │               │   └── operator_loc: ∅
+            │               └── @ AssocSplatNode (location: (12...15))
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (14...15))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: (12...14) = "**"
+            ├── closing_loc: (15...16) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "f"

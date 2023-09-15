@@ -1,41 +1,56 @@
-ProgramNode(0...33)(
-  [:o],
-  StatementsNode(0...33)(
-    [DefNode(0...19)(
-       (4...5),
-       nil,
-       ParametersNode(6...8)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(6...8)((6...8), nil)],
-         nil,
-         nil
-       ),
-       StatementsNode(9...15)([ReturnNode(9...15)((9...15), nil)]),
-       [:b],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       nil,
-       (16...19)
-     ),
-     LocalVariableWriteNode(21...33)(
-       :o,
-       0,
-       (21...22),
-       HashNode(25...33)(
-         (25...26),
-         [AssocNode(27...31)(
-            SymbolNode(27...29)(nil, (27...28), (28...29), "a"),
-            IntegerNode(30...31)(),
-            nil
-          )],
-         (32...33)
-       ),
-       (23...24)
-     )]
-  )
-)
+@ ProgramNode (location: (0...33))
+├── locals: [:o]
+└── statements:
+    @ StatementsNode (location: (0...33))
+    └── body: (length: 2)
+        ├── @ DefNode (location: (0...19))
+        │   ├── name: :a
+        │   ├── name_loc: (4...5) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (6...8))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ KeywordParameterNode (location: (6...8))
+        │   │   │       ├── name: :b
+        │   │   │       ├── name_loc: (6...8) = "b:"
+        │   │   │       └── value: ∅
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (9...15))
+        │   │   └── body: (length: 1)
+        │   │       └── @ ReturnNode (location: (9...15))
+        │   │           ├── keyword_loc: (9...15) = "return"
+        │   │           └── arguments: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (16...19) = "end"
+        └── @ LocalVariableWriteNode (location: (21...33))
+            ├── name: :o
+            ├── depth: 0
+            ├── name_loc: (21...22) = "o"
+            ├── value:
+            │   @ HashNode (location: (25...33))
+            │   ├── opening_loc: (25...26) = "{"
+            │   ├── elements: (length: 1)
+            │   │   └── @ AssocNode (location: (27...31))
+            │   │       ├── key:
+            │   │       │   @ SymbolNode (location: (27...29))
+            │   │       │   ├── opening_loc: ∅
+            │   │       │   ├── value_loc: (27...28) = "a"
+            │   │       │   ├── closing_loc: (28...29) = ":"
+            │   │       │   └── unescaped: "a"
+            │   │       ├── value:
+            │   │       │   @ IntegerNode (location: (30...31))
+            │   │       │   └── flags: decimal
+            │   │       └── operator_loc: ∅
+            │   └── closing_loc: (32...33) = "}"
+            └── operator_loc: (23...24) = "="

@@ -1,10 +1,11 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)(
-    [InterpolatedStringNode(0...6)(
-       (0...6),
-       [StringNode(7...23)(nil, (7...23), nil, " some\n" + " heredocs\n")],
-       (23...26)
-     )]
-  )
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...6))
+            ├── flags: ∅
+            ├── opening_loc: (0...6) = "<<-EOE"
+            ├── content_loc: (7...23) = " some\n heredocs\n"
+            ├── closing_loc: (23...26) = "EOE"
+            └── unescaped: " some\n heredocs\n"

@@ -1,16 +1,27 @@
-ProgramNode(0...12)(
-  [:a],
-  StatementsNode(0...12)(
-    [MultiWriteNode(0...12)(
-       [SplatNode(0...2)((0...1), LocalVariableTargetNode(1...2)(:a, 0))],
-       (3...4),
-       ArrayNode(5...12)(
-         [IntegerNode(5...6)(), IntegerNode(8...9)(), IntegerNode(11...12)()],
-         nil,
-         nil
-       ),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...12))
+            ├── targets: (length: 1)
+            │   └── @ SplatNode (location: (0...2))
+            │       ├── operator_loc: (0...1) = "*"
+            │       └── expression:
+            │           @ LocalVariableTargetNode (location: (1...2))
+            │           ├── name: :a
+            │           └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (3...4) = "="
+            └── value:
+                @ ArrayNode (location: (5...12))
+                ├── elements: (length: 3)
+                │   ├── @ IntegerNode (location: (5...6))
+                │   │   └── flags: decimal
+                │   ├── @ IntegerNode (location: (8...9))
+                │   │   └── flags: decimal
+                │   └── @ IntegerNode (location: (11...12))
+                │       └── flags: decimal
+                ├── opening_loc: ∅
+                └── closing_loc: ∅

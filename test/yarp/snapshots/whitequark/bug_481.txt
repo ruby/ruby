@@ -1,41 +1,48 @@
-ProgramNode(0...28)(
-  [],
-  StatementsNode(0...28)(
-    [CallNode(0...14)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...14)(
-         [DefNode(2...14)(
-            (6...7),
-            nil,
-            nil,
-            nil,
-            [],
-            (2...5),
-            nil,
-            (7...8),
-            (8...9),
-            nil,
-            (11...14)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "m"
-     ),
-     CallNode(16...28)(
-       IntegerNode(16...17)(),
-       (17...18),
-       (18...21),
-       nil,
-       nil,
-       nil,
-       BlockNode(22...28)([], nil, nil, (22...24), (25...28)),
-       0,
-       "tap"
-     )]
-  )
-)
+@ ProgramNode (location: (0...28))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...28))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...14))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...1) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (2...14))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ DefNode (location: (2...14))
+        │   │           ├── name: :x
+        │   │           ├── name_loc: (6...7) = "x"
+        │   │           ├── receiver: ∅
+        │   │           ├── parameters: ∅
+        │   │           ├── body: ∅
+        │   │           ├── locals: []
+        │   │           ├── def_keyword_loc: (2...5) = "def"
+        │   │           ├── operator_loc: ∅
+        │   │           ├── lparen_loc: (7...8) = "("
+        │   │           ├── rparen_loc: (8...9) = ")"
+        │   │           ├── equal_loc: ∅
+        │   │           └── end_keyword_loc: (11...14) = "end"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "m"
+        └── @ CallNode (location: (16...28))
+            ├── receiver:
+            │   @ IntegerNode (location: (16...17))
+            │   └── flags: decimal
+            ├── call_operator_loc: (17...18) = "."
+            ├── message_loc: (18...21) = "tap"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (22...28))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body: ∅
+            │   ├── opening_loc: (22...24) = "do"
+            │   └── closing_loc: (25...28) = "end"
+            ├── flags: ∅
+            └── name: "tap"

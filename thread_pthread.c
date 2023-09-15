@@ -637,6 +637,18 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
     clear_thread_cache_altstack();
 }
 
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+static int
+get_native_thread_id(void)
+{
+#ifdef __linux__
+    return (int)syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    return pthread_getthreadid_np();
+#endif
+}
+#endif
+
 #if defined(HAVE_WORKING_FORK)
 static void thread_cache_reset(void);
 static void
@@ -646,6 +658,9 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     thread_cache_reset();
     rb_thread_sched_init(sched);
     thread_sched_to_running(sched, GET_THREAD());
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    GET_THREAD()->nt->tid = get_native_thread_id();
+#endif
 }
 #endif
 
@@ -692,18 +707,6 @@ ruby_thread_set_native(rb_thread_t *th)
     return pthread_setspecific(ruby_native_thread_key, th) == 0;
 #endif
 }
-
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-static int
-get_native_thread_id(void)
-{
-#ifdef __linux__
-    return (int)syscall(SYS_gettid);
-#elif defined(__FreeBSD__)
-    return pthread_getthreadid_np();
-#endif
-}
-#endif
 
 static void
 native_thread_init(struct rb_native_thread *nt)

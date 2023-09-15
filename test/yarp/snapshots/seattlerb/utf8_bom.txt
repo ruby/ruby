@@ -1,16 +1,19 @@
-ProgramNode(26...29)(
-  [],
-  StatementsNode(26...29)(
-    [CallNode(26...29)(
-       nil,
-       nil,
-       (26...27),
-       nil,
-       ArgumentsNode(28...29)([IntegerNode(28...29)()]),
-       nil,
-       nil,
-       0,
-       "p"
-     )]
-  )
-)
+@ ProgramNode (location: (26...29))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (26...29))
+    └── body: (length: 1)
+        └── @ CallNode (location: (26...29))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (26...27) = "p"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (28...29))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (28...29))
+            │           └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "p"

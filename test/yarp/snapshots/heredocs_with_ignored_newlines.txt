@@ -1,23 +1,17 @@
-ProgramNode(0...23)(
-  [],
-  StatementsNode(0...23)(
-    [InterpolatedStringNode(0...7)((0...7), [], (9...14)),
-     InterpolatedStringNode(15...23)(
-       (15...23),
-       [StringNode(25...100)(
-          nil,
-          (25...100),
-          nil,
-          "way over\n" +
-          "<<HERE\n" +
-          "  not here\n" +
-          "HERE\n" +
-          "\n" +
-          "<<~BUT  but\n" +
-          "BUT\n" +
-          "  there\n"
-        )],
-       (100...106)
-     )]
-  )
-)
+@ ProgramNode (location: (0...23))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...23))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (0...7))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...7) = "<<-HERE"
+        │   ├── content_loc: (9...9) = ""
+        │   ├── closing_loc: (9...14) = "HERE\n"
+        │   └── unescaped: ""
+        └── @ StringNode (location: (15...23))
+            ├── flags: ∅
+            ├── opening_loc: (15...23) = "<<~THERE"
+            ├── content_loc: (25...100) = "  way over\n  <<HERE\n    not here\n  HERE\n\n  <<~BUT\\\n    but\n  BUT\n    there\n"
+            ├── closing_loc: (100...106) = "THERE\n"
+            └── unescaped: "way over\n<<HERE\n  not here\nHERE\n\n<<~BUT  but\nBUT\n  there\n"

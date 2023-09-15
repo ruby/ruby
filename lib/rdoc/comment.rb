@@ -133,12 +133,7 @@ class RDoc::Comment
   # HACK dubious
 
   def encode! encoding
-    # TODO: Remove this condition after Ruby 2.2 EOL
-    if RUBY_VERSION < '2.3.0'
-      @text = @text.force_encoding encoding
-    else
-      @text = String.new @text, encoding: encoding
-    end
+    @text = String.new @text, encoding: encoding
     self
   end
 

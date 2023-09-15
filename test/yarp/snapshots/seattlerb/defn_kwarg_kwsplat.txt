@@ -1,26 +1,36 @@
-ProgramNode(0...20)(
-  [],
-  StatementsNode(0...20)(
-    [DefNode(0...20)(
-       (4...5),
-       nil,
-       ParametersNode(6...15)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(6...10)((6...8), IntegerNode(9...10)())],
-         KeywordRestParameterNode(12...15)((12...14), (14...15)),
-         nil
-       ),
-       nil,
-       [:b, :c],
-       (0...3),
-       nil,
-       (5...6),
-       (15...16),
-       nil,
-       (17...20)
-     )]
-  )
-)
+@ ProgramNode (location: (0...20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...20))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...20))
+            ├── name: :a
+            ├── name_loc: (4...5) = "a"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (6...15))
+            │   ├── requireds: (length: 0)
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 1)
+            │   │   └── @ KeywordParameterNode (location: (6...10))
+            │   │       ├── name: :b
+            │   │       ├── name_loc: (6...8) = "b:"
+            │   │       └── value:
+            │   │           @ IntegerNode (location: (9...10))
+            │   │           └── flags: decimal
+            │   ├── keyword_rest:
+            │   │   @ KeywordRestParameterNode (location: (12...15))
+            │   │   ├── name: :c
+            │   │   ├── name_loc: (14...15) = "c"
+            │   │   └── operator_loc: (12...14) = "**"
+            │   └── block: ∅
+            ├── body: ∅
+            ├── locals: [:b, :c]
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (5...6) = "("
+            ├── rparen_loc: (15...16) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (17...20) = "end"

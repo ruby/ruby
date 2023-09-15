@@ -1,11 +1,14 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)(
-    [PostExecutionNode(0...9)(
-       StatementsNode(6...7)([IntegerNode(6...7)()]),
-       (0...3),
-       (4...5),
-       (8...9)
-     )]
-  )
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 1)
+        └── @ PostExecutionNode (location: (0...9))
+            ├── statements:
+            │   @ StatementsNode (location: (6...7))
+            │   └── body: (length: 1)
+            │       └── @ IntegerNode (location: (6...7))
+            │           └── flags: decimal
+            ├── keyword_loc: (0...3) = "END"
+            ├── opening_loc: (4...5) = "{"
+            └── closing_loc: (8...9) = "}"

@@ -1,1 +1,5 @@
-ProgramNode(0...0)([], StatementsNode(0...0)([]))
+@ ProgramNode (location: (0...0))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...0))
+    └── body: (length: 0)

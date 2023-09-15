@@ -1,28 +1,53 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [CallNode(0...15)(
-       CallNode(0...12)(
-         CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-         (1...2),
-         (2...3),
-         nil,
-         ArgumentsNode(4...5)(
-           [CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "c")]
-         ),
-         nil,
-         BlockNode(6...12)([], nil, nil, (6...8), (9...12)),
-         0,
-         "b"
-       ),
-       (12...14),
-       (14...15),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "d"
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...15))
+            ├── receiver:
+            │   @ CallNode (location: (0...12))
+            │   ├── receiver:
+            │   │   @ CallNode (location: (0...1))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (0...1) = "a"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: "a"
+            │   ├── call_operator_loc: (1...2) = "."
+            │   ├── message_loc: (2...3) = "b"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (4...5))
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ CallNode (location: (4...5))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (4...5) = "c"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "c"
+            │   ├── closing_loc: ∅
+            │   ├── block:
+            │   │   @ BlockNode (location: (6...12))
+            │   │   ├── locals: []
+            │   │   ├── parameters: ∅
+            │   │   ├── body: ∅
+            │   │   ├── opening_loc: (6...8) = "do"
+            │   │   └── closing_loc: (9...12) = "end"
+            │   ├── flags: ∅
+            │   └── name: "b"
+            ├── call_operator_loc: (12...14) = "::"
+            ├── message_loc: (14...15) = "d"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "d"

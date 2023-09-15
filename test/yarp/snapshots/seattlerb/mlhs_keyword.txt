@@ -1,16 +1,29 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [CallNode(0...16)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-       (1...2),
-       (2...4),
-       (4...5),
-       ArgumentsNode(5...15)([TrueNode(5...9)(), TrueNode(11...15)()]),
-       (15...16),
-       nil,
-       0,
-       "!="
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...16))
+            ├── receiver:
+            │   @ CallNode (location: (0...1))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...1) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "a"
+            ├── call_operator_loc: (1...2) = "."
+            ├── message_loc: (2...4) = "!="
+            ├── opening_loc: (4...5) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (5...15))
+            │   └── arguments: (length: 2)
+            │       ├── @ TrueNode (location: (5...9))
+            │       └── @ TrueNode (location: (11...15))
+            ├── closing_loc: (15...16) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "!="

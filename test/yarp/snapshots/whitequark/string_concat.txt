@@ -1,17 +1,29 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [StringConcatNode(0...14)(
-       InterpolatedStringNode(0...8)(
-         (0...1),
-         [StringNode(1...4)(nil, (1...4), nil, "foo"),
-          EmbeddedVariableNode(4...7)(
-            (4...5),
-            InstanceVariableReadNode(5...7)(:@a)
-          )],
-         (7...8)
-       ),
-       StringNode(9...14)((9...10), (10...13), (13...14), "bar")
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ StringConcatNode (location: (0...14))
+            ├── left:
+            │   @ InterpolatedStringNode (location: (0...8))
+            │   ├── opening_loc: (0...1) = "\""
+            │   ├── parts: (length: 2)
+            │   │   ├── @ StringNode (location: (1...4))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (1...4) = "foo"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "foo"
+            │   │   └── @ EmbeddedVariableNode (location: (4...7))
+            │   │       ├── operator_loc: (4...5) = "#"
+            │   │       └── variable:
+            │   │           @ InstanceVariableReadNode (location: (5...7))
+            │   │           └── name: :@a
+            │   └── closing_loc: (7...8) = "\""
+            └── right:
+                @ StringNode (location: (9...14))
+                ├── flags: ∅
+                ├── opening_loc: (9...10) = "\""
+                ├── content_loc: (10...13) = "bar"
+                ├── closing_loc: (13...14) = "\""
+                └── unescaped: "bar"

@@ -1,48 +1,47 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [CallNode(0...14)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...14)(
-         [ParenthesesNode(2...14)(
-            StatementsNode(3...13)(
-              [RescueModifierNode(3...13)(
-                 CallNode(3...4)(
-                   nil,
-                   nil,
-                   (3...4),
-                   nil,
-                   nil,
-                   nil,
-                   nil,
-                   2,
-                   "b"
-                 ),
-                 (5...11),
-                 CallNode(12...13)(
-                   nil,
-                   nil,
-                   (12...13),
-                   nil,
-                   nil,
-                   nil,
-                   nil,
-                   2,
-                   "c"
-                 )
-               )]
-            ),
-            (2...3),
-            (13...14)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...14))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...14))
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (2...14))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (3...13))
+            │           │   └── body: (length: 1)
+            │           │       └── @ RescueModifierNode (location: (3...13))
+            │           │           ├── expression:
+            │           │           │   @ CallNode (location: (3...4))
+            │           │           │   ├── receiver: ∅
+            │           │           │   ├── call_operator_loc: ∅
+            │           │           │   ├── message_loc: (3...4) = "b"
+            │           │           │   ├── opening_loc: ∅
+            │           │           │   ├── arguments: ∅
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   ├── block: ∅
+            │           │           │   ├── flags: variable_call
+            │           │           │   └── name: "b"
+            │           │           ├── keyword_loc: (5...11) = "rescue"
+            │           │           └── rescue_expression:
+            │           │               @ CallNode (location: (12...13))
+            │           │               ├── receiver: ∅
+            │           │               ├── call_operator_loc: ∅
+            │           │               ├── message_loc: (12...13) = "c"
+            │           │               ├── opening_loc: ∅
+            │           │               ├── arguments: ∅
+            │           │               ├── closing_loc: ∅
+            │           │               ├── block: ∅
+            │           │               ├── flags: variable_call
+            │           │               └── name: "c"
+            │           ├── opening_loc: (2...3) = "("
+            │           └── closing_loc: (13...14) = ")"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

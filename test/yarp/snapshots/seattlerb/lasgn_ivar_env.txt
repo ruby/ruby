@@ -1,11 +1,12 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)(
-    [InstanceVariableWriteNode(0...7)(
-       :@a,
-       (0...2),
-       IntegerNode(5...7)(),
-       (3...4)
-     )]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ InstanceVariableWriteNode (location: (0...7))
+            ├── name: :@a
+            ├── name_loc: (0...2) = "@a"
+            ├── value:
+            │   @ IntegerNode (location: (5...7))
+            │   └── flags: decimal
+            └── operator_loc: (3...4) = "="

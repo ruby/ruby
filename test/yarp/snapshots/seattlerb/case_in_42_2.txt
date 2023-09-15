@@ -1,27 +1,39 @@
-ProgramNode(0...32)(
-  [:list],
-  StatementsNode(0...32)(
-    [CaseNode(0...32)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...28)(
-          ArrayPatternNode(11...19)(
-            ConstantReadNode(11...12)(),
-            [],
-            SplatNode(13...18)(
-              (13...14),
-              LocalVariableTargetNode(14...18)(:list, 0)
-            ),
-            [],
-            (12...13),
-            (18...19)
-          ),
-          StatementsNode(25...28)([NilNode(25...28)()]),
-          (8...10),
-          (20...24)
-        )],
-       nil,
-       (0...4),
-       (29...32)
-     )]
-  )
-)
+@ ProgramNode (location: (0...32))
+├── locals: [:list]
+└── statements:
+    @ StatementsNode (location: (0...32))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...32))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...28))
+            │       ├── pattern:
+            │       │   @ ArrayPatternNode (location: (11...19))
+            │       │   ├── constant:
+            │       │   │   @ ConstantReadNode (location: (11...12))
+            │       │   │   └── name: :A
+            │       │   ├── requireds: (length: 0)
+            │       │   ├── rest:
+            │       │   │   @ SplatNode (location: (13...18))
+            │       │   │   ├── operator_loc: (13...14) = "*"
+            │       │   │   └── expression:
+            │       │   │       @ LocalVariableTargetNode (location: (14...18))
+            │       │   │       ├── name: :list
+            │       │   │       └── depth: 0
+            │       │   ├── posts: (length: 0)
+            │       │   ├── opening_loc: (12...13) = "("
+            │       │   └── closing_loc: (18...19) = ")"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (25...28))
+            │       │   └── body: (length: 1)
+            │       │       └── @ NilNode (location: (25...28))
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: (20...24) = "then"
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (29...32) = "end"

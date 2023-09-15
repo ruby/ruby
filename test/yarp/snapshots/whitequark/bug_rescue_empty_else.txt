@@ -1,20 +1,25 @@
-ProgramNode(0...34)(
-  [],
-  StatementsNode(0...34)(
-    [BeginNode(0...34)(
-       (0...5),
-       nil,
-       RescueNode(7...23)(
-         (7...13),
-         [ConstantReadNode(14...23)()],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       ElseNode(25...34)((25...29), nil, (31...34)),
-       nil,
-       (31...34)
-     )]
-  )
-)
+@ ProgramNode (location: (0...34))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...34))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (0...34))
+            ├── begin_keyword_loc: (0...5) = "begin"
+            ├── statements: ∅
+            ├── rescue_clause:
+            │   @ RescueNode (location: (7...23))
+            │   ├── keyword_loc: (7...13) = "rescue"
+            │   ├── exceptions: (length: 1)
+            │   │   └── @ ConstantReadNode (location: (14...23))
+            │   │       └── name: :LoadError
+            │   ├── operator_loc: ∅
+            │   ├── reference: ∅
+            │   ├── statements: ∅
+            │   └── consequent: ∅
+            ├── else_clause:
+            │   @ ElseNode (location: (25...34))
+            │   ├── else_keyword_loc: (25...29) = "else"
+            │   ├── statements: ∅
+            │   └── end_keyword_loc: (31...34) = "end"
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (31...34) = "end"

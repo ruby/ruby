@@ -14,11 +14,17 @@ end
 module YARP
   module Serialize
     MAJOR_VERSION = 0
-    MINOR_VERSION = 10
+    MINOR_VERSION = 11
     PATCH_VERSION = 0
 
     def self.load(input, serialized)
-      Loader.new(Source.new(input), serialized).load_result
+      input = input.dup
+      source = Source.new(input)
+      loader = Loader.new(source, serialized)
+      result = loader.load_result
+
+      input.force_encoding(loader.encoding)
+      result
     end
 
     def self.load_tokens(source, serialized)
@@ -152,21 +158,34 @@ module YARP
         load_location if io.getbyte != 0
       end
 
-      def load_constant
-        index = load_varint - 1
+      def load_constant(index)
         constant = constant_pool[index]
 
         unless constant
           offset = constant_pool_offset + index * 8
-
           start = serialized.unpack1("L", offset: offset)
           length = serialized.unpack1("L", offset: offset + 4)
 
-          constant = input.byteslice(start, length).to_sym
+          constant =
+            if start.nobits?(1 << 31)
+              input.byteslice(start, length).to_sym
+            else
+              serialized.byteslice(start & ((1 << 31) - 1), length).to_sym
+            end
+
           constant_pool[index] = constant
         end
 
         constant
+      end
+
+      def load_required_constant
+        load_constant(load_varint - 1)
+      end
+
+      def load_optional_constant
+        index = load_varint
+        load_constant(index - 1) if index != 0
       end
 
       def load_node
@@ -185,9 +204,9 @@ module YARP
             when YARP::OptionalNodeField then "load_optional_node"
             when YARP::StringField then "load_string"
             when YARP::NodeListField then "Array.new(load_varint) { load_node }"
-            when YARP::LocationListField then "Array.new(load_varint) { load_location }"
-            when YARP::ConstantField then "load_constant"
-            when YARP::ConstantListField then "Array.new(load_varint) { load_constant }"
+            when YARP::ConstantField then "load_required_constant"
+            when YARP::OptionalConstantField then "load_optional_constant"
+            when YARP::ConstantListField then "Array.new(load_varint) { load_required_constant }"
             when YARP::LocationField then "load_location"
             when YARP::OptionalLocationField then "load_optional_location"
             when YARP::UInt32Field, YARP::FlagsField then "load_varint"

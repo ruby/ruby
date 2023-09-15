@@ -1,88 +1,123 @@
-ProgramNode(0...118)(
-  [],
-  StatementsNode(0...118)(
-    [NextNode(0...4)(nil, (0...4)),
-     NextNode(6...24)(
-       ArgumentsNode(11...24)(
-         [ParenthesesNode(11...14)(
-            StatementsNode(12...13)([IntegerNode(12...13)()]),
-            (11...12),
-            (13...14)
-          ),
-          ParenthesesNode(16...19)(
-            StatementsNode(17...18)([IntegerNode(17...18)()]),
-            (16...17),
-            (18...19)
-          ),
-          ParenthesesNode(21...24)(
-            StatementsNode(22...23)([IntegerNode(22...23)()]),
-            (21...22),
-            (23...24)
-          )]
-       ),
-       (6...10)
-     ),
-     NextNode(26...32)(
-       ArgumentsNode(31...32)([IntegerNode(31...32)()]),
-       (26...30)
-     ),
-     NextNode(34...46)(
-       ArgumentsNode(39...46)(
-         [IntegerNode(39...40)(),
-          IntegerNode(42...43)(),
-          IntegerNode(45...46)()]
-       ),
-       (34...38)
-     ),
-     NextNode(48...60)(
-       ArgumentsNode(53...60)(
-         [IntegerNode(53...54)(),
-          IntegerNode(56...57)(),
-          IntegerNode(59...60)()]
-       ),
-       (48...52)
-     ),
-     NextNode(62...76)(
-       ArgumentsNode(67...76)(
-         [ArrayNode(67...76)(
-            [IntegerNode(68...69)(),
-             IntegerNode(71...72)(),
-             IntegerNode(74...75)()],
-            (67...68),
-            (75...76)
-          )]
-       ),
-       (62...66)
-     ),
-     NextNode(78...93)(
-       ArgumentsNode(82...93)(
-         [ParenthesesNode(82...93)(
-            StatementsNode(86...91)(
-              [IntegerNode(86...87)(), IntegerNode(90...91)()]
-            ),
-            (82...83),
-            (92...93)
-          )]
-       ),
-       (78...82)
-     ),
-     NextNode(95...99)(nil, (95...99)),
-     IntegerNode(100...101)(),
-     NextNode(103...109)(
-       ArgumentsNode(107...109)(
-         [ParenthesesNode(107...109)(nil, (107...108), (108...109))]
-       ),
-       (103...107)
-     ),
-     NextNode(111...118)(
-       ArgumentsNode(115...118)(
-         [ParenthesesNode(115...118)(
-            StatementsNode(116...117)([IntegerNode(116...117)()]),
-            (115...116),
-            (117...118)
-          )]
-       ),
-       (111...115)
-     )]
-  )
-)
+@ ProgramNode (location: (0...118))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...118))
+    └── body: (length: 11)
+        ├── @ NextNode (location: (0...4))
+        │   ├── arguments: ∅
+        │   └── keyword_loc: (0...4) = "next"
+        ├── @ NextNode (location: (6...24))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (11...24))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ ParenthesesNode (location: (11...14))
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (12...13))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ IntegerNode (location: (12...13))
+        │   │       │   │           └── flags: decimal
+        │   │       │   ├── opening_loc: (11...12) = "("
+        │   │       │   └── closing_loc: (13...14) = ")"
+        │   │       ├── @ ParenthesesNode (location: (16...19))
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (17...18))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ IntegerNode (location: (17...18))
+        │   │       │   │           └── flags: decimal
+        │   │       │   ├── opening_loc: (16...17) = "("
+        │   │       │   └── closing_loc: (18...19) = ")"
+        │   │       └── @ ParenthesesNode (location: (21...24))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (22...23))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (22...23))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (21...22) = "("
+        │   │           └── closing_loc: (23...24) = ")"
+        │   └── keyword_loc: (6...10) = "next"
+        ├── @ NextNode (location: (26...32))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (31...32))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (31...32))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (26...30) = "next"
+        ├── @ NextNode (location: (34...46))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (39...46))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ IntegerNode (location: (39...40))
+        │   │       │   └── flags: decimal
+        │   │       ├── @ IntegerNode (location: (42...43))
+        │   │       │   └── flags: decimal
+        │   │       └── @ IntegerNode (location: (45...46))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (34...38) = "next"
+        ├── @ NextNode (location: (48...60))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (53...60))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ IntegerNode (location: (53...54))
+        │   │       │   └── flags: decimal
+        │   │       ├── @ IntegerNode (location: (56...57))
+        │   │       │   └── flags: decimal
+        │   │       └── @ IntegerNode (location: (59...60))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (48...52) = "next"
+        ├── @ NextNode (location: (62...76))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (67...76))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ArrayNode (location: (67...76))
+        │   │           ├── elements: (length: 3)
+        │   │           │   ├── @ IntegerNode (location: (68...69))
+        │   │           │   │   └── flags: decimal
+        │   │           │   ├── @ IntegerNode (location: (71...72))
+        │   │           │   │   └── flags: decimal
+        │   │           │   └── @ IntegerNode (location: (74...75))
+        │   │           │       └── flags: decimal
+        │   │           ├── opening_loc: (67...68) = "["
+        │   │           └── closing_loc: (75...76) = "]"
+        │   └── keyword_loc: (62...66) = "next"
+        ├── @ NextNode (location: (78...93))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (82...93))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (82...93))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (86...91))
+        │   │           │   └── body: (length: 2)
+        │   │           │       ├── @ IntegerNode (location: (86...87))
+        │   │           │       │   └── flags: decimal
+        │   │           │       └── @ IntegerNode (location: (90...91))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (82...83) = "("
+        │   │           └── closing_loc: (92...93) = ")"
+        │   └── keyword_loc: (78...82) = "next"
+        ├── @ NextNode (location: (95...99))
+        │   ├── arguments: ∅
+        │   └── keyword_loc: (95...99) = "next"
+        ├── @ IntegerNode (location: (100...101))
+        │   └── flags: decimal
+        ├── @ NextNode (location: (103...109))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (107...109))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (107...109))
+        │   │           ├── body: ∅
+        │   │           ├── opening_loc: (107...108) = "("
+        │   │           └── closing_loc: (108...109) = ")"
+        │   └── keyword_loc: (103...107) = "next"
+        └── @ NextNode (location: (111...118))
+            ├── arguments:
+            │   @ ArgumentsNode (location: (115...118))
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (115...118))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (116...117))
+            │           │   └── body: (length: 1)
+            │           │       └── @ IntegerNode (location: (116...117))
+            │           │           └── flags: decimal
+            │           ├── opening_loc: (115...116) = "("
+            │           └── closing_loc: (117...118) = ")"
+            └── keyword_loc: (111...115) = "next"

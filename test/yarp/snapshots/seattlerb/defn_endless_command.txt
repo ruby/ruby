@@ -1,30 +1,34 @@
-ProgramNode(0...33)(
-  [],
-  StatementsNode(0...33)(
-    [DefNode(0...33)(
-       (4...15),
-       nil,
-       nil,
-       StatementsNode(18...33)(
-         [CallNode(18...33)(
-            nil,
-            nil,
-            (18...30),
-            nil,
-            ArgumentsNode(31...33)([IntegerNode(31...33)()]),
-            nil,
-            nil,
-            0,
-            "other_method"
-          )]
-       ),
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       (16...17),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...33))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...33))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...33))
+            ├── name: :some_method
+            ├── name_loc: (4...15) = "some_method"
+            ├── receiver: ∅
+            ├── parameters: ∅
+            ├── body:
+            │   @ StatementsNode (location: (18...33))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (18...33))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (18...30) = "other_method"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (31...33))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ IntegerNode (location: (31...33))
+            │           │           └── flags: decimal
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "other_method"
+            ├── locals: []
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: (16...17) = "="
+            └── end_keyword_loc: ∅

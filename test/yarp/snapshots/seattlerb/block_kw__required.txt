@@ -1,35 +1,38 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [CallNode(0...16)(
-       nil,
-       nil,
-       (0...4),
-       nil,
-       nil,
-       nil,
-       BlockNode(5...16)(
-         [:k],
-         BlockParametersNode(8...12)(
-           ParametersNode(9...11)(
-             [],
-             [],
-             [],
-             nil,
-             [KeywordParameterNode(9...11)((9...11), nil)],
-             nil,
-             nil
-           ),
-           [],
-           (8...9),
-           (11...12)
-         ),
-         nil,
-         (5...7),
-         (13...16)
-       ),
-       0,
-       "blah"
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...16))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...4) = "blah"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (5...16))
+            │   ├── locals: [:k]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (8...12))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (9...11))
+            │   │   │   ├── requireds: (length: 0)
+            │   │   │   ├── optionals: (length: 0)
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 1)
+            │   │   │   │   └── @ KeywordParameterNode (location: (9...11))
+            │   │   │   │       ├── name: :k
+            │   │   │   │       ├── name_loc: (9...11) = "k:"
+            │   │   │   │       └── value: ∅
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (8...9) = "|"
+            │   │   └── closing_loc: (11...12) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (5...7) = "do"
+            │   └── closing_loc: (13...16) = "end"
+            ├── flags: ∅
+            └── name: "blah"

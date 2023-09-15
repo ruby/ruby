@@ -1,37 +1,45 @@
-ProgramNode(18...90)(
-  [],
-  StatementsNode(18...90)(
-    [ClassNode(18...90)(
-       [],
-       (18...23),
-       ConstantReadNode(24...52)(),
-       nil,
-       nil,
-       StatementsNode(54...86)(
-         [DefNode(54...86)(
-            (63...65),
-            SelfNode(58...62)(),
-            nil,
-            StatementsNode(67...81)(
-              [LocalVariableWriteNode(67...81)(
-                 :così,
-                 0,
-                 (67...72),
-                 SymbolNode(75...81)((75...76), (76...81), nil, "però"),
-                 (73...74)
-               )]
-            ),
-            [:così],
-            (54...57),
-            (62...63),
-            nil,
-            nil,
-            nil,
-            (83...86)
-          )]
-       ),
-       (87...90),
-       "ExampleUTF8ClassNameVarietà"
-     )]
-  )
-)
+@ ProgramNode (location: (18...90))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (18...90))
+    └── body: (length: 1)
+        └── @ ClassNode (location: (18...90))
+            ├── locals: []
+            ├── class_keyword_loc: (18...23) = "class"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (24...52))
+            │   └── name: :ExampleUTF8ClassNameVarietà
+            ├── inheritance_operator_loc: ∅
+            ├── superclass: ∅
+            ├── body:
+            │   @ StatementsNode (location: (54...86))
+            │   └── body: (length: 1)
+            │       └── @ DefNode (location: (54...86))
+            │           ├── name: :è
+            │           ├── name_loc: (63...65) = "è"
+            │           ├── receiver:
+            │           │   @ SelfNode (location: (58...62))
+            │           ├── parameters: ∅
+            │           ├── body:
+            │           │   @ StatementsNode (location: (67...81))
+            │           │   └── body: (length: 1)
+            │           │       └── @ LocalVariableWriteNode (location: (67...81))
+            │           │           ├── name: :così
+            │           │           ├── depth: 0
+            │           │           ├── name_loc: (67...72) = "così"
+            │           │           ├── value:
+            │           │           │   @ SymbolNode (location: (75...81))
+            │           │           │   ├── opening_loc: (75...76) = ":"
+            │           │           │   ├── value_loc: (76...81) = "però"
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   └── unescaped: "però"
+            │           │           └── operator_loc: (73...74) = "="
+            │           ├── locals: [:così]
+            │           ├── def_keyword_loc: (54...57) = "def"
+            │           ├── operator_loc: (62...63) = "."
+            │           ├── lparen_loc: ∅
+            │           ├── rparen_loc: ∅
+            │           ├── equal_loc: ∅
+            │           └── end_keyword_loc: (83...86) = "end"
+            ├── end_keyword_loc: (87...90) = "end"
+            └── name: :ExampleUTF8ClassNameVarietà

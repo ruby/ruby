@@ -1,130 +1,166 @@
-ProgramNode(0...119)(
-  [:a, :b],
-  StatementsNode(0...119)(
-    [CallNode(0...30)(
-       nil,
-       nil,
-       (0...3),
-       (3...4),
-       ArgumentsNode(4...29)(
-         [ForNode(4...29)(
-            MultiWriteNode(8...9)(
-              [LocalVariableTargetNode(8...9)(:a, 0)],
-              nil,
-              nil,
-              nil,
-              nil
-            ),
-            CallNode(13...16)(
-              nil,
-              nil,
-              (13...16),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            ),
-            StatementsNode(22...25)(
-              [CallNode(22...25)(
-                 nil,
-                 nil,
-                 (22...25),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 2,
-                 "baz"
-               )]
-            ),
-            (4...7),
-            (10...12),
-            (17...19),
-            (26...29)
-          )]
-       ),
-       (29...30),
-       nil,
-       0,
-       "bar"
-     ),
-     ForNode(31...56)(
-       MultiWriteNode(35...36)(
-         [LocalVariableTargetNode(35...36)(:a, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 2, "bar"),
-       StatementsNode(49...52)(
-         [CallNode(49...52)(nil, nil, (49...52), nil, nil, nil, nil, 2, "baz")]
-       ),
-       (31...34),
-       (37...39),
-       (44...46),
-       (53...56)
-     ),
-     ForNode(57...88)(
-       MultiWriteNode(61...68)(
-         [LocalVariableTargetNode(62...63)(:a, 0),
-          SplatNode(65...67)(
-            (65...66),
-            LocalVariableTargetNode(66...67)(:b, 0)
-          )],
-         nil,
-         nil,
-         (61...62),
-         (67...68)
-       ),
-       CallNode(72...75)(nil, nil, (72...75), nil, nil, nil, nil, 2, "bar"),
-       StatementsNode(81...84)(
-         [CallNode(81...84)(nil, nil, (81...84), nil, nil, nil, nil, 2, "baz")]
-       ),
-       (57...60),
-       (69...71),
-       (76...78),
-       (85...88)
-     ),
-     ForNode(89...119)(
-       MultiWriteNode(93...99)(
-         [LocalVariableTargetNode(94...95)(:a, 0),
-          LocalVariableTargetNode(97...98)(:b, 0)],
-         nil,
-         nil,
-         (93...94),
-         (98...99)
-       ),
-       CallNode(103...106)(
-         nil,
-         nil,
-         (103...106),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "bar"
-       ),
-       StatementsNode(112...115)(
-         [CallNode(112...115)(
-            nil,
-            nil,
-            (112...115),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "baz"
-          )]
-       ),
-       (89...92),
-       (100...102),
-       (107...109),
-       (116...119)
-     )]
-  )
-)
+@ ProgramNode (location: (0...119))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (0...119))
+    └── body: (length: 4)
+        ├── @ CallNode (location: (0...30))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "bar"
+        │   ├── opening_loc: (3...4) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (4...29))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ForNode (location: (4...29))
+        │   │           ├── index:
+        │   │           │   @ LocalVariableTargetNode (location: (8...9))
+        │   │           │   ├── name: :a
+        │   │           │   └── depth: 0
+        │   │           ├── collection:
+        │   │           │   @ CallNode (location: (13...16))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (13...16) = "bar"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: variable_call
+        │   │           │   └── name: "bar"
+        │   │           ├── statements:
+        │   │           │   @ StatementsNode (location: (22...25))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ CallNode (location: (22...25))
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── message_loc: (22...25) = "baz"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           ├── block: ∅
+        │   │           │           ├── flags: variable_call
+        │   │           │           └── name: "baz"
+        │   │           ├── for_keyword_loc: (4...7) = "for"
+        │   │           ├── in_keyword_loc: (10...12) = "in"
+        │   │           ├── do_keyword_loc: (17...19) = "do"
+        │   │           └── end_keyword_loc: (26...29) = "end"
+        │   ├── closing_loc: (29...30) = ")"
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ ForNode (location: (31...56))
+        │   ├── index:
+        │   │   @ LocalVariableTargetNode (location: (35...36))
+        │   │   ├── name: :a
+        │   │   └── depth: 0
+        │   ├── collection:
+        │   │   @ CallNode (location: (40...43))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (40...43) = "bar"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "bar"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (49...52))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (49...52))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (49...52) = "baz"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "baz"
+        │   ├── for_keyword_loc: (31...34) = "for"
+        │   ├── in_keyword_loc: (37...39) = "in"
+        │   ├── do_keyword_loc: (44...46) = "do"
+        │   └── end_keyword_loc: (53...56) = "end"
+        ├── @ ForNode (location: (57...88))
+        │   ├── index:
+        │   │   @ MultiTargetNode (location: (61...68))
+        │   │   ├── targets: (length: 2)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (62...63))
+        │   │   │   │   ├── name: :a
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ SplatNode (location: (65...67))
+        │   │   │       ├── operator_loc: (65...66) = "*"
+        │   │   │       └── expression:
+        │   │   │           @ LocalVariableTargetNode (location: (66...67))
+        │   │   │           ├── name: :b
+        │   │   │           └── depth: 0
+        │   │   ├── lparen_loc: (61...62) = "("
+        │   │   └── rparen_loc: (67...68) = ")"
+        │   ├── collection:
+        │   │   @ CallNode (location: (72...75))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (72...75) = "bar"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "bar"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (81...84))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (81...84))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (81...84) = "baz"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "baz"
+        │   ├── for_keyword_loc: (57...60) = "for"
+        │   ├── in_keyword_loc: (69...71) = "in"
+        │   ├── do_keyword_loc: (76...78) = "do"
+        │   └── end_keyword_loc: (85...88) = "end"
+        └── @ ForNode (location: (89...119))
+            ├── index:
+            │   @ MultiTargetNode (location: (93...99))
+            │   ├── targets: (length: 2)
+            │   │   ├── @ LocalVariableTargetNode (location: (94...95))
+            │   │   │   ├── name: :a
+            │   │   │   └── depth: 0
+            │   │   └── @ LocalVariableTargetNode (location: (97...98))
+            │   │       ├── name: :b
+            │   │       └── depth: 0
+            │   ├── lparen_loc: (93...94) = "("
+            │   └── rparen_loc: (98...99) = ")"
+            ├── collection:
+            │   @ CallNode (location: (103...106))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (103...106) = "bar"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "bar"
+            ├── statements:
+            │   @ StatementsNode (location: (112...115))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (112...115))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (112...115) = "baz"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "baz"
+            ├── for_keyword_loc: (89...92) = "for"
+            ├── in_keyword_loc: (100...102) = "in"
+            ├── do_keyword_loc: (107...109) = "do"
+            └── end_keyword_loc: (116...119) = "end"

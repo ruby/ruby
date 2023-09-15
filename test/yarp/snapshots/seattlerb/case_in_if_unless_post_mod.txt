@@ -1,39 +1,62 @@
-ProgramNode(0...52)(
-  [],
-  StatementsNode(0...52)(
-    [CaseNode(0...52)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...25)(
-          IfNode(11...20)(
-            (13...15),
-            TrueNode(16...20)(),
-            StatementsNode(11...12)([ConstantReadNode(11...12)()]),
-            nil,
-            nil
-          ),
-          StatementsNode(23...25)(
-            [SymbolNode(23...25)((23...24), (24...25), nil, "C")]
-          ),
-          (8...10),
-          nil
-        ),
-        InNode(26...48)(
-          UnlessNode(29...43)(
-            (31...37),
-            FalseNode(38...43)(),
-            StatementsNode(29...30)([ConstantReadNode(29...30)()]),
-            nil,
-            nil
-          ),
-          StatementsNode(46...48)(
-            [SymbolNode(46...48)((46...47), (47...48), nil, "E")]
-          ),
-          (26...28),
-          nil
-        )],
-       nil,
-       (0...4),
-       (49...52)
-     )]
-  )
-)
+@ ProgramNode (location: (0...52))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...52))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...52))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 2)
+            │   ├── @ InNode (location: (8...25))
+            │   │   ├── pattern:
+            │   │   │   @ IfNode (location: (11...20))
+            │   │   │   ├── if_keyword_loc: (13...15) = "if"
+            │   │   │   ├── predicate:
+            │   │   │   │   @ TrueNode (location: (16...20))
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (11...12))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ ConstantReadNode (location: (11...12))
+            │   │   │   │           └── name: :A
+            │   │   │   ├── consequent: ∅
+            │   │   │   └── end_keyword_loc: ∅
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (23...25))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ SymbolNode (location: (23...25))
+            │   │   │           ├── opening_loc: (23...24) = ":"
+            │   │   │           ├── value_loc: (24...25) = "C"
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           └── unescaped: "C"
+            │   │   ├── in_loc: (8...10) = "in"
+            │   │   └── then_loc: ∅
+            │   └── @ InNode (location: (26...48))
+            │       ├── pattern:
+            │       │   @ UnlessNode (location: (29...43))
+            │       │   ├── keyword_loc: (31...37) = "unless"
+            │       │   ├── predicate:
+            │       │   │   @ FalseNode (location: (38...43))
+            │       │   ├── statements:
+            │       │   │   @ StatementsNode (location: (29...30))
+            │       │   │   └── body: (length: 1)
+            │       │   │       └── @ ConstantReadNode (location: (29...30))
+            │       │   │           └── name: :D
+            │       │   ├── consequent: ∅
+            │       │   └── end_keyword_loc: ∅
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (46...48))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (46...48))
+            │       │           ├── opening_loc: (46...47) = ":"
+            │       │           ├── value_loc: (47...48) = "E"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "E"
+            │       ├── in_loc: (26...28) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (49...52) = "end"

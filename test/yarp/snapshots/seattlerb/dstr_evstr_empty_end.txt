@@ -1,26 +1,25 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [InterpolatedSymbolNode(0...11)(
-       (0...2),
-       [EmbeddedStatementsNode(2...10)(
-          (2...4),
-          StatementsNode(4...9)(
-            [CallNode(4...9)(
-               nil,
-               nil,
-               (4...9),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "field"
-             )]
-          ),
-          (9...10)
-        )],
-       (10...11)
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ InterpolatedSymbolNode (location: (0...11))
+            ├── opening_loc: (0...2) = ":\""
+            ├── parts: (length: 1)
+            │   └── @ EmbeddedStatementsNode (location: (2...10))
+            │       ├── opening_loc: (2...4) = "\#{"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (4...9))
+            │       │   └── body: (length: 1)
+            │       │       └── @ CallNode (location: (4...9))
+            │       │           ├── receiver: ∅
+            │       │           ├── call_operator_loc: ∅
+            │       │           ├── message_loc: (4...9) = "field"
+            │       │           ├── opening_loc: ∅
+            │       │           ├── arguments: ∅
+            │       │           ├── closing_loc: ∅
+            │       │           ├── block: ∅
+            │       │           ├── flags: variable_call
+            │       │           └── name: "field"
+            │       └── closing_loc: (9...10) = "}"
+            └── closing_loc: (10...11) = "\""

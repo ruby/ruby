@@ -1,27 +1,53 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [CallNode(0...6)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "f"),
-       (1...2),
-       nil,
-       (2...3),
-       ArgumentsNode(3...5)([IntegerNode(3...5)()]),
-       (5...6),
-       nil,
-       0,
-       "call"
-     ),
-     CallNode(8...15)(
-       CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "f"),
-       (9...11),
-       nil,
-       (11...12),
-       ArgumentsNode(12...14)([IntegerNode(12...14)()]),
-       (14...15),
-       nil,
-       0,
-       "call"
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...6))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (0...1))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...1) = "f"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "f"
+        │   ├── call_operator_loc: (1...2) = "."
+        │   ├── message_loc: ∅
+        │   ├── opening_loc: (2...3) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (3...5))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (3...5))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: (5...6) = ")"
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "call"
+        └── @ CallNode (location: (8...15))
+            ├── receiver:
+            │   @ CallNode (location: (8...9))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (8...9) = "f"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "f"
+            ├── call_operator_loc: (9...11) = "::"
+            ├── message_loc: ∅
+            ├── opening_loc: (11...12) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (12...14))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (12...14))
+            │           └── flags: decimal
+            ├── closing_loc: (14...15) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "call"

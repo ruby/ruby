@@ -1,14 +1,30 @@
-ProgramNode(0...11)(
-  [:a, :b],
-  StatementsNode(0...11)(
-    [MultiWriteNode(0...11)(
-       [LocalVariableTargetNode(0...1)(:a, 0),
-        SplatNode(3...4)((3...4), nil),
-        LocalVariableTargetNode(6...7)(:b, 0)],
-       (8...9),
-       CallNode(10...11)(nil, nil, (10...11), nil, nil, nil, nil, 2, "c"),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...11))
+            ├── targets: (length: 3)
+            │   ├── @ LocalVariableTargetNode (location: (0...1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   ├── @ SplatNode (location: (3...4))
+            │   │   ├── operator_loc: (3...4) = "*"
+            │   │   └── expression: ∅
+            │   └── @ LocalVariableTargetNode (location: (6...7))
+            │       ├── name: :b
+            │       └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (8...9) = "="
+            └── value:
+                @ CallNode (location: (10...11))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (10...11) = "c"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: variable_call
+                └── name: "c"

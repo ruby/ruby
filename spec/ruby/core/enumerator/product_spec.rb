@@ -44,6 +44,11 @@ ruby_version_is "3.2" do
       elems.should == [[1, "X"], [1, "Y"], [2, "X"], [2, "Y"]]
     end
 
+    it "returns nil when a block passed" do
+      Enumerator.product(1..2) {}.should == nil
+    end
+
+    # https://bugs.ruby-lang.org/issues/19829
     it "reject keyword arguments" do
       -> {
         Enumerator.product(1..3, foo: 1, bar: 2)

@@ -1,12 +1,24 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [ArrayNode(0...15)(
-       [SymbolNode(3...4)(nil, (3...4), nil, "a"),
-        SymbolNode(5...12)(nil, (5...12), nil, "b\#{1+1}"),
-        SymbolNode(13...14)(nil, (13...14), nil, "c")],
-       (0...3),
-       (14...15)
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ ArrayNode (location: (0...15))
+            ├── elements: (length: 3)
+            │   ├── @ SymbolNode (location: (3...4))
+            │   │   ├── opening_loc: ∅
+            │   │   ├── value_loc: (3...4) = "a"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "a"
+            │   ├── @ SymbolNode (location: (5...12))
+            │   │   ├── opening_loc: ∅
+            │   │   ├── value_loc: (5...12) = "b\#{1+1}"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "b\#{1+1}"
+            │   └── @ SymbolNode (location: (13...14))
+            │       ├── opening_loc: ∅
+            │       ├── value_loc: (13...14) = "c"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "c"
+            ├── opening_loc: (0...3) = "%i("
+            └── closing_loc: (14...15) = ")"

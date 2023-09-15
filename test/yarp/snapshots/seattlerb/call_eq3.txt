@@ -1,16 +1,21 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)(
-    [CallNode(0...7)(
-       IntegerNode(0...1)(),
-       nil,
-       (2...5),
-       nil,
-       ArgumentsNode(6...7)([IntegerNode(6...7)()]),
-       nil,
-       nil,
-       0,
-       "==="
-     )]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...7))
+            ├── receiver:
+            │   @ IntegerNode (location: (0...1))
+            │   └── flags: decimal
+            ├── call_operator_loc: ∅
+            ├── message_loc: (2...5) = "==="
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (6...7))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (6...7))
+            │           └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "==="

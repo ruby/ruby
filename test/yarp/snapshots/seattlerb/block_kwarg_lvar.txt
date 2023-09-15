@@ -1,38 +1,48 @@
-ProgramNode(0...20)(
-  [],
-  StatementsNode(0...20)(
-    [CallNode(0...20)(
-       nil,
-       nil,
-       (0...2),
-       nil,
-       nil,
-       nil,
-       BlockNode(3...20)(
-         [:kw],
-         BlockParametersNode(5...15)(
-           ParametersNode(6...14)(
-             [],
-             [],
-             [],
-             nil,
-             [KeywordParameterNode(6...14)(
-                (6...9),
-                SymbolNode(10...14)((10...11), (11...14), nil, "val")
-              )],
-             nil,
-             nil
-           ),
-           [],
-           (5...6),
-           (14...15)
-         ),
-         StatementsNode(16...18)([LocalVariableReadNode(16...18)(:kw, 0)]),
-         (3...4),
-         (19...20)
-       ),
-       0,
-       "bl"
-     )]
-  )
-)
+@ ProgramNode (location: (0...20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...20))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...20))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...2) = "bl"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (3...20))
+            │   ├── locals: [:kw]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (5...15))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (6...14))
+            │   │   │   ├── requireds: (length: 0)
+            │   │   │   ├── optionals: (length: 0)
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 1)
+            │   │   │   │   └── @ KeywordParameterNode (location: (6...14))
+            │   │   │   │       ├── name: :kw
+            │   │   │   │       ├── name_loc: (6...9) = "kw:"
+            │   │   │   │       └── value:
+            │   │   │   │           @ SymbolNode (location: (10...14))
+            │   │   │   │           ├── opening_loc: (10...11) = ":"
+            │   │   │   │           ├── value_loc: (11...14) = "val"
+            │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │           └── unescaped: "val"
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (5...6) = "|"
+            │   │   └── closing_loc: (14...15) = "|"
+            │   ├── body:
+            │   │   @ StatementsNode (location: (16...18))
+            │   │   └── body: (length: 1)
+            │   │       └── @ LocalVariableReadNode (location: (16...18))
+            │   │           ├── name: :kw
+            │   │           └── depth: 0
+            │   ├── opening_loc: (3...4) = "{"
+            │   └── closing_loc: (19...20) = "}"
+            ├── flags: ∅
+            └── name: "bl"

@@ -1,16 +1,19 @@
-ProgramNode(0...8)(
-  [],
-  StatementsNode(0...8)(
-    [ArrayNode(0...8)(
-       [KeywordHashNode(1...7)(
-          [AssocNode(1...7)(
-             IntegerNode(1...2)(),
-             IntegerNode(6...7)(),
-             (3...5)
-           )]
-        )],
-       (0...1),
-       (7...8)
-     )]
-  )
-)
+@ ProgramNode (location: (0...8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...8))
+    └── body: (length: 1)
+        └── @ ArrayNode (location: (0...8))
+            ├── elements: (length: 1)
+            │   └── @ KeywordHashNode (location: (1...7))
+            │       └── elements: (length: 1)
+            │           └── @ AssocNode (location: (1...7))
+            │               ├── key:
+            │               │   @ IntegerNode (location: (1...2))
+            │               │   └── flags: decimal
+            │               ├── value:
+            │               │   @ IntegerNode (location: (6...7))
+            │               │   └── flags: decimal
+            │               └── operator_loc: (3...5) = "=>"
+            ├── opening_loc: (0...1) = "["
+            └── closing_loc: (7...8) = "]"

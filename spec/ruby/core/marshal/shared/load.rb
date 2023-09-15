@@ -1034,13 +1034,17 @@ describe :marshal_load, shared: true do
 
   describe "for a Rational" do
     it "loads" do
-      Marshal.send(@method, Marshal.dump(Rational(1, 3))).should == Rational(1, 3)
+      r = Marshal.send(@method, Marshal.dump(Rational(1, 3)))
+      r.should == Rational(1, 3)
+      r.should.frozen?
     end
   end
 
   describe "for a Complex" do
     it "loads" do
-      Marshal.send(@method, Marshal.dump(Complex(4, 3))).should == Complex(4, 3)
+      c = Marshal.send(@method, Marshal.dump(Complex(4, 3)))
+      c.should == Complex(4, 3)
+      c.should.frozen?
     end
   end
 

@@ -1,88 +1,97 @@
-ProgramNode(0...77)(
-  [],
-  StatementsNode(0...77)(
-    [DefNode(0...27)(
-       (4...7),
-       nil,
-       ParametersNode(8...11)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(8...11)(),
-         nil
-       ),
-       StatementsNode(14...22)(
-         [CallNode(14...22)(
-            nil,
-            nil,
-            (14...17),
-            (17...18),
-            ArgumentsNode(18...21)([ForwardingArgumentsNode(18...21)()]),
-            (21...22),
-            nil,
-            0,
-            "bar"
-          )]
-       ),
-       [:"..."],
-       (0...3),
-       nil,
-       (7...8),
-       (11...12),
-       nil,
-       (24...27)
-     ),
-     DefNode(29...46)(
-       (33...36),
-       nil,
-       ParametersNode(37...40)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(37...40)(),
-         nil
-       ),
-       nil,
-       [:"..."],
-       (29...32),
-       nil,
-       (36...37),
-       (40...41),
-       nil,
-       (43...46)
-     ),
-     DefNode(48...77)(
-       (52...55),
-       nil,
-       ParametersNode(56...59)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(56...59)(),
-         nil
-       ),
-       StatementsNode(62...72)(
-         [SuperNode(62...72)(
-            (62...67),
-            (67...68),
-            ArgumentsNode(68...71)([ForwardingArgumentsNode(68...71)()]),
-            (71...72),
-            nil
-          )]
-       ),
-       [:"..."],
-       (48...51),
-       nil,
-       (55...56),
-       (59...60),
-       nil,
-       (74...77)
-     )]
-  )
-)
+@ ProgramNode (location: (0...77))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...77))
+    └── body: (length: 3)
+        ├── @ DefNode (location: (0...27))
+        │   ├── name: :foo
+        │   ├── name_loc: (4...7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (8...11))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (8...11))
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (14...22))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (14...22))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (14...17) = "bar"
+        │   │           ├── opening_loc: (17...18) = "("
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (18...21))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (18...21))
+        │   │           ├── closing_loc: (21...22) = ")"
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "bar"
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (7...8) = "("
+        │   ├── rparen_loc: (11...12) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (24...27) = "end"
+        ├── @ DefNode (location: (29...46))
+        │   ├── name: :foo
+        │   ├── name_loc: (33...36) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (37...40))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (37...40))
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (29...32) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (36...37) = "("
+        │   ├── rparen_loc: (40...41) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (43...46) = "end"
+        └── @ DefNode (location: (48...77))
+            ├── name: :foo
+            ├── name_loc: (52...55) = "foo"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (56...59))
+            │   ├── requireds: (length: 0)
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest:
+            │   │   @ ForwardingParameterNode (location: (56...59))
+            │   └── block: ∅
+            ├── body:
+            │   @ StatementsNode (location: (62...72))
+            │   └── body: (length: 1)
+            │       └── @ SuperNode (location: (62...72))
+            │           ├── keyword_loc: (62...67) = "super"
+            │           ├── lparen_loc: (67...68) = "("
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (68...71))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ ForwardingArgumentsNode (location: (68...71))
+            │           ├── rparen_loc: (71...72) = ")"
+            │           └── block: ∅
+            ├── locals: [:"..."]
+            ├── def_keyword_loc: (48...51) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (55...56) = "("
+            ├── rparen_loc: (59...60) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (74...77) = "end"

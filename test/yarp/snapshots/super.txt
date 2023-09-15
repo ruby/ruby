@@ -1,25 +1,37 @@
-ProgramNode(0...40)(
-  [],
-  StatementsNode(0...40)(
-    [ForwardingSuperNode(0...5)(nil),
-     SuperNode(7...14)((7...12), (12...13), nil, (13...14), nil),
-     SuperNode(16...24)(
-       (16...21),
-       (21...22),
-       ArgumentsNode(22...23)([IntegerNode(22...23)()]),
-       (23...24),
-       nil
-     ),
-     SuperNode(26...40)(
-       (26...31),
-       (31...32),
-       ArgumentsNode(32...39)(
-         [IntegerNode(32...33)(),
-          IntegerNode(35...36)(),
-          IntegerNode(38...39)()]
-       ),
-       (39...40),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...40))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...40))
+    └── body: (length: 4)
+        ├── @ ForwardingSuperNode (location: (0...5))
+        │   └── block: ∅
+        ├── @ SuperNode (location: (7...14))
+        │   ├── keyword_loc: (7...12) = "super"
+        │   ├── lparen_loc: (12...13) = "("
+        │   ├── arguments: ∅
+        │   ├── rparen_loc: (13...14) = ")"
+        │   └── block: ∅
+        ├── @ SuperNode (location: (16...24))
+        │   ├── keyword_loc: (16...21) = "super"
+        │   ├── lparen_loc: (21...22) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (22...23))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (22...23))
+        │   │           └── flags: decimal
+        │   ├── rparen_loc: (23...24) = ")"
+        │   └── block: ∅
+        └── @ SuperNode (location: (26...40))
+            ├── keyword_loc: (26...31) = "super"
+            ├── lparen_loc: (31...32) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (32...39))
+            │   └── arguments: (length: 3)
+            │       ├── @ IntegerNode (location: (32...33))
+            │       │   └── flags: decimal
+            │       ├── @ IntegerNode (location: (35...36))
+            │       │   └── flags: decimal
+            │       └── @ IntegerNode (location: (38...39))
+            │           └── flags: decimal
+            ├── rparen_loc: (39...40) = ")"
+            └── block: ∅

@@ -1,75 +1,91 @@
-ProgramNode(0...51)(
-  [],
-  StatementsNode(0...51)(
-    [DefNode(0...23)(
-       (4...7),
-       nil,
-       ParametersNode(8...9)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         BlockParameterNode(8...9)(nil, (8...9))
-       ),
-       StatementsNode(13...19)(
-         [CallNode(13...19)(
-            nil,
-            nil,
-            (13...16),
-            (16...17),
-            ArgumentsNode(17...18)(
-              [BlockArgumentNode(17...18)(nil, (17...18))]
-            ),
-            (18...19),
-            nil,
-            0,
-            "bar"
-          )]
-       ),
-       [:&],
-       (0...3),
-       nil,
-       (7...8),
-       (9...10),
-       nil,
-       (20...23)
-     ),
-     DefNode(25...51)(
-       (29...32),
-       nil,
-       ParametersNode(33...37)(
-         [RequiredParameterNode(33...34)(:a)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         BlockParameterNode(36...37)(nil, (36...37))
-       ),
-       StatementsNode(41...47)(
-         [CallNode(41...47)(
-            nil,
-            nil,
-            (41...44),
-            (44...45),
-            ArgumentsNode(45...46)(
-              [BlockArgumentNode(45...46)(nil, (45...46))]
-            ),
-            (46...47),
-            nil,
-            0,
-            "bar"
-          )]
-       ),
-       [:a, :&],
-       (25...28),
-       nil,
-       (32...33),
-       (37...38),
-       nil,
-       (48...51)
-     )]
-  )
-)
+@ ProgramNode (location: (0...51))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...51))
+    └── body: (length: 2)
+        ├── @ DefNode (location: (0...23))
+        │   ├── name: :foo
+        │   ├── name_loc: (4...7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (8...9))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block:
+        │   │       @ BlockParameterNode (location: (8...9))
+        │   │       ├── name: nil
+        │   │       ├── name_loc: ∅
+        │   │       └── operator_loc: (8...9) = "&"
+        │   ├── body:
+        │   │   @ StatementsNode (location: (13...19))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (13...19))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (13...16) = "bar"
+        │   │           ├── opening_loc: (16...17) = "("
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (17...18))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ BlockArgumentNode (location: (17...18))
+        │   │           │           ├── expression: ∅
+        │   │           │           └── operator_loc: (17...18) = "&"
+        │   │           ├── closing_loc: (18...19) = ")"
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "bar"
+        │   ├── locals: [:&]
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (7...8) = "("
+        │   ├── rparen_loc: (9...10) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (20...23) = "end"
+        └── @ DefNode (location: (25...51))
+            ├── name: :foo
+            ├── name_loc: (29...32) = "foo"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (33...37))
+            │   ├── requireds: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (33...34))
+            │   │       └── name: :a
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest: ∅
+            │   └── block:
+            │       @ BlockParameterNode (location: (36...37))
+            │       ├── name: nil
+            │       ├── name_loc: ∅
+            │       └── operator_loc: (36...37) = "&"
+            ├── body:
+            │   @ StatementsNode (location: (41...47))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (41...47))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (41...44) = "bar"
+            │           ├── opening_loc: (44...45) = "("
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (45...46))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ BlockArgumentNode (location: (45...46))
+            │           │           ├── expression: ∅
+            │           │           └── operator_loc: (45...46) = "&"
+            │           ├── closing_loc: (46...47) = ")"
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "bar"
+            ├── locals: [:a, :&]
+            ├── def_keyword_loc: (25...28) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (32...33) = "("
+            ├── rparen_loc: (37...38) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (48...51) = "end"

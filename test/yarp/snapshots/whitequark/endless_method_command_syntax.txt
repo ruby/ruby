@@ -1,316 +1,380 @@
-ProgramNode(0...278)(
-  [],
-  StatementsNode(0...278)(
-    [DefNode(0...22)(
-       (4...7),
-       nil,
-       nil,
-       StatementsNode(10...22)(
-         [CallNode(10...22)(
-            nil,
-            nil,
-            (10...14),
-            nil,
-            ArgumentsNode(15...22)(
-              [StringNode(15...22)((15...16), (16...21), (21...22), "Hello")]
-            ),
-            nil,
-            nil,
-            0,
-            "puts"
-          )]
-       ),
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       (8...9),
-       nil
-     ),
-     DefNode(24...48)(
-       (28...31),
-       nil,
-       nil,
-       StatementsNode(36...48)(
-         [CallNode(36...48)(
-            nil,
-            nil,
-            (36...40),
-            nil,
-            ArgumentsNode(41...48)(
-              [StringNode(41...48)((41...42), (42...47), (47...48), "Hello")]
-            ),
-            nil,
-            nil,
-            0,
-            "puts"
-          )]
-       ),
-       [],
-       (24...27),
-       nil,
-       (31...32),
-       (32...33),
-       (34...35),
-       nil
-     ),
-     DefNode(50...69)(
-       (54...57),
-       nil,
-       ParametersNode(58...59)(
-         [RequiredParameterNode(58...59)(:x)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(63...69)(
-         [CallNode(63...69)(
-            nil,
-            nil,
-            (63...67),
-            nil,
-            ArgumentsNode(68...69)([LocalVariableReadNode(68...69)(:x, 0)]),
-            nil,
-            nil,
-            0,
-            "puts"
-          )]
-       ),
-       [:x],
-       (50...53),
-       nil,
-       (57...58),
-       (59...60),
-       (61...62),
-       nil
-     ),
-     DefNode(71...97)(
-       (79...82),
-       CallNode(75...78)(nil, nil, (75...78), nil, nil, nil, nil, 2, "obj"),
-       nil,
-       StatementsNode(85...97)(
-         [CallNode(85...97)(
-            nil,
-            nil,
-            (85...89),
-            nil,
-            ArgumentsNode(90...97)(
-              [StringNode(90...97)((90...91), (91...96), (96...97), "Hello")]
-            ),
-            nil,
-            nil,
-            0,
-            "puts"
-          )]
-       ),
-       [],
-       (71...74),
-       (78...79),
-       nil,
-       nil,
-       (83...84),
-       nil
-     ),
-     DefNode(99...127)(
-       (107...110),
-       CallNode(103...106)(
-         nil,
-         nil,
-         (103...106),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "obj"
-       ),
-       nil,
-       StatementsNode(115...127)(
-         [CallNode(115...127)(
-            nil,
-            nil,
-            (115...119),
-            nil,
-            ArgumentsNode(120...127)(
-              [StringNode(120...127)(
-                 (120...121),
-                 (121...126),
-                 (126...127),
-                 "Hello"
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "puts"
-          )]
-       ),
-       [],
-       (99...102),
-       (106...107),
-       (110...111),
-       (111...112),
-       (113...114),
-       nil
-     ),
-     DefNode(129...152)(
-       (137...140),
-       CallNode(133...136)(
-         nil,
-         nil,
-         (133...136),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "obj"
-       ),
-       ParametersNode(141...142)(
-         [RequiredParameterNode(141...142)(:x)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(146...152)(
-         [CallNode(146...152)(
-            nil,
-            nil,
-            (146...150),
-            nil,
-            ArgumentsNode(151...152)(
-              [LocalVariableReadNode(151...152)(:x, 0)]
-            ),
-            nil,
-            nil,
-            0,
-            "puts"
-          )]
-       ),
-       [:x],
-       (129...132),
-       (136...137),
-       (140...141),
-       (142...143),
-       (144...145),
-       nil
-     ),
-     DefNode(154...214)(
-       (158...165),
-       nil,
-       ParametersNode(166...167)(
-         [RequiredParameterNode(166...167)(:x)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(171...214)(
-         [CallNode(171...214)(
-            nil,
-            nil,
-            (171...176),
-            nil,
-            ArgumentsNode(177...214)(
-              [RescueModifierNode(177...214)(
-                 StringNode(177...191)(
-                   (177...178),
-                   (178...190),
-                   (190...191),
-                   "to be caught"
-                 ),
-                 (192...198),
-                 InterpolatedStringNode(199...214)(
-                   (199...200),
-                   [StringNode(200...209)(nil, (200...209), nil, "instance "),
-                    EmbeddedStatementsNode(209...213)(
-                      (209...211),
-                      StatementsNode(211...212)(
-                        [LocalVariableReadNode(211...212)(:x, 0)]
-                      ),
-                      (212...213)
-                    )],
-                   (213...214)
-                 )
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "raise"
-          )]
-       ),
-       [:x],
-       (154...157),
-       nil,
-       (165...166),
-       (167...168),
-       (169...170),
-       nil
-     ),
-     DefNode(216...278)(
-       (225...232),
-       SelfNode(220...224)(),
-       ParametersNode(233...234)(
-         [RequiredParameterNode(233...234)(:x)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(238...278)(
-         [CallNode(238...278)(
-            nil,
-            nil,
-            (238...243),
-            nil,
-            ArgumentsNode(244...278)(
-              [RescueModifierNode(244...278)(
-                 StringNode(244...258)(
-                   (244...245),
-                   (245...257),
-                   (257...258),
-                   "to be caught"
-                 ),
-                 (259...265),
-                 InterpolatedStringNode(266...278)(
-                   (266...267),
-                   [StringNode(267...273)(nil, (267...273), nil, "class "),
-                    EmbeddedStatementsNode(273...277)(
-                      (273...275),
-                      StatementsNode(275...276)(
-                        [LocalVariableReadNode(275...276)(:x, 0)]
-                      ),
-                      (276...277)
-                    )],
-                   (277...278)
-                 )
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "raise"
-          )]
-       ),
-       [:x],
-       (216...219),
-       (224...225),
-       (232...233),
-       (234...235),
-       (236...237),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...278))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...278))
+    └── body: (length: 8)
+        ├── @ DefNode (location: (0...22))
+        │   ├── name: :foo
+        │   ├── name_loc: (4...7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (10...22))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (10...22))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (10...14) = "puts"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (15...22))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ StringNode (location: (15...22))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── opening_loc: (15...16) = "\""
+        │   │           │           ├── content_loc: (16...21) = "Hello"
+        │   │           │           ├── closing_loc: (21...22) = "\""
+        │   │           │           └── unescaped: "Hello"
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "puts"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (8...9) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (24...48))
+        │   ├── name: :foo
+        │   ├── name_loc: (28...31) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (36...48))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (36...48))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (36...40) = "puts"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (41...48))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ StringNode (location: (41...48))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── opening_loc: (41...42) = "\""
+        │   │           │           ├── content_loc: (42...47) = "Hello"
+        │   │           │           ├── closing_loc: (47...48) = "\""
+        │   │           │           └── unescaped: "Hello"
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "puts"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (24...27) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (31...32) = "("
+        │   ├── rparen_loc: (32...33) = ")"
+        │   ├── equal_loc: (34...35) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (50...69))
+        │   ├── name: :foo
+        │   ├── name_loc: (54...57) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (58...59))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (58...59))
+        │   │   │       └── name: :x
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (63...69))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (63...69))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (63...67) = "puts"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (68...69))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ LocalVariableReadNode (location: (68...69))
+        │   │           │           ├── name: :x
+        │   │           │           └── depth: 0
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "puts"
+        │   ├── locals: [:x]
+        │   ├── def_keyword_loc: (50...53) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (57...58) = "("
+        │   ├── rparen_loc: (59...60) = ")"
+        │   ├── equal_loc: (61...62) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (71...97))
+        │   ├── name: :foo
+        │   ├── name_loc: (79...82) = "foo"
+        │   ├── receiver:
+        │   │   @ CallNode (location: (75...78))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (75...78) = "obj"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "obj"
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (85...97))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (85...97))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (85...89) = "puts"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (90...97))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ StringNode (location: (90...97))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── opening_loc: (90...91) = "\""
+        │   │           │           ├── content_loc: (91...96) = "Hello"
+        │   │           │           ├── closing_loc: (96...97) = "\""
+        │   │           │           └── unescaped: "Hello"
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "puts"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (71...74) = "def"
+        │   ├── operator_loc: (78...79) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (83...84) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (99...127))
+        │   ├── name: :foo
+        │   ├── name_loc: (107...110) = "foo"
+        │   ├── receiver:
+        │   │   @ CallNode (location: (103...106))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (103...106) = "obj"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "obj"
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (115...127))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (115...127))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (115...119) = "puts"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (120...127))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ StringNode (location: (120...127))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── opening_loc: (120...121) = "\""
+        │   │           │           ├── content_loc: (121...126) = "Hello"
+        │   │           │           ├── closing_loc: (126...127) = "\""
+        │   │           │           └── unescaped: "Hello"
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "puts"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (99...102) = "def"
+        │   ├── operator_loc: (106...107) = "."
+        │   ├── lparen_loc: (110...111) = "("
+        │   ├── rparen_loc: (111...112) = ")"
+        │   ├── equal_loc: (113...114) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (129...152))
+        │   ├── name: :foo
+        │   ├── name_loc: (137...140) = "foo"
+        │   ├── receiver:
+        │   │   @ CallNode (location: (133...136))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (133...136) = "obj"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "obj"
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (141...142))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (141...142))
+        │   │   │       └── name: :x
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (146...152))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (146...152))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (146...150) = "puts"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (151...152))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ LocalVariableReadNode (location: (151...152))
+        │   │           │           ├── name: :x
+        │   │           │           └── depth: 0
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "puts"
+        │   ├── locals: [:x]
+        │   ├── def_keyword_loc: (129...132) = "def"
+        │   ├── operator_loc: (136...137) = "."
+        │   ├── lparen_loc: (140...141) = "("
+        │   ├── rparen_loc: (142...143) = ")"
+        │   ├── equal_loc: (144...145) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (154...214))
+        │   ├── name: :rescued
+        │   ├── name_loc: (158...165) = "rescued"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (166...167))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (166...167))
+        │   │   │       └── name: :x
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (171...214))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (171...214))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (171...176) = "raise"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (177...214))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ RescueModifierNode (location: (177...214))
+        │   │           │           ├── expression:
+        │   │           │           │   @ StringNode (location: (177...191))
+        │   │           │           │   ├── flags: ∅
+        │   │           │           │   ├── opening_loc: (177...178) = "\""
+        │   │           │           │   ├── content_loc: (178...190) = "to be caught"
+        │   │           │           │   ├── closing_loc: (190...191) = "\""
+        │   │           │           │   └── unescaped: "to be caught"
+        │   │           │           ├── keyword_loc: (192...198) = "rescue"
+        │   │           │           └── rescue_expression:
+        │   │           │               @ InterpolatedStringNode (location: (199...214))
+        │   │           │               ├── opening_loc: (199...200) = "\""
+        │   │           │               ├── parts: (length: 2)
+        │   │           │               │   ├── @ StringNode (location: (200...209))
+        │   │           │               │   │   ├── flags: ∅
+        │   │           │               │   │   ├── opening_loc: ∅
+        │   │           │               │   │   ├── content_loc: (200...209) = "instance "
+        │   │           │               │   │   ├── closing_loc: ∅
+        │   │           │               │   │   └── unescaped: "instance "
+        │   │           │               │   └── @ EmbeddedStatementsNode (location: (209...213))
+        │   │           │               │       ├── opening_loc: (209...211) = "\#{"
+        │   │           │               │       ├── statements:
+        │   │           │               │       │   @ StatementsNode (location: (211...212))
+        │   │           │               │       │   └── body: (length: 1)
+        │   │           │               │       │       └── @ LocalVariableReadNode (location: (211...212))
+        │   │           │               │       │           ├── name: :x
+        │   │           │               │       │           └── depth: 0
+        │   │           │               │       └── closing_loc: (212...213) = "}"
+        │   │           │               └── closing_loc: (213...214) = "\""
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "raise"
+        │   ├── locals: [:x]
+        │   ├── def_keyword_loc: (154...157) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (165...166) = "("
+        │   ├── rparen_loc: (167...168) = ")"
+        │   ├── equal_loc: (169...170) = "="
+        │   └── end_keyword_loc: ∅
+        └── @ DefNode (location: (216...278))
+            ├── name: :rescued
+            ├── name_loc: (225...232) = "rescued"
+            ├── receiver:
+            │   @ SelfNode (location: (220...224))
+            ├── parameters:
+            │   @ ParametersNode (location: (233...234))
+            │   ├── requireds: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (233...234))
+            │   │       └── name: :x
+            │   ├── optionals: (length: 0)
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest: ∅
+            │   └── block: ∅
+            ├── body:
+            │   @ StatementsNode (location: (238...278))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (238...278))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (238...243) = "raise"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (244...278))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ RescueModifierNode (location: (244...278))
+            │           │           ├── expression:
+            │           │           │   @ StringNode (location: (244...258))
+            │           │           │   ├── flags: ∅
+            │           │           │   ├── opening_loc: (244...245) = "\""
+            │           │           │   ├── content_loc: (245...257) = "to be caught"
+            │           │           │   ├── closing_loc: (257...258) = "\""
+            │           │           │   └── unescaped: "to be caught"
+            │           │           ├── keyword_loc: (259...265) = "rescue"
+            │           │           └── rescue_expression:
+            │           │               @ InterpolatedStringNode (location: (266...278))
+            │           │               ├── opening_loc: (266...267) = "\""
+            │           │               ├── parts: (length: 2)
+            │           │               │   ├── @ StringNode (location: (267...273))
+            │           │               │   │   ├── flags: ∅
+            │           │               │   │   ├── opening_loc: ∅
+            │           │               │   │   ├── content_loc: (267...273) = "class "
+            │           │               │   │   ├── closing_loc: ∅
+            │           │               │   │   └── unescaped: "class "
+            │           │               │   └── @ EmbeddedStatementsNode (location: (273...277))
+            │           │               │       ├── opening_loc: (273...275) = "\#{"
+            │           │               │       ├── statements:
+            │           │               │       │   @ StatementsNode (location: (275...276))
+            │           │               │       │   └── body: (length: 1)
+            │           │               │       │       └── @ LocalVariableReadNode (location: (275...276))
+            │           │               │       │           ├── name: :x
+            │           │               │       │           └── depth: 0
+            │           │               │       └── closing_loc: (276...277) = "}"
+            │           │               └── closing_loc: (277...278) = "\""
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "raise"
+            ├── locals: [:x]
+            ├── def_keyword_loc: (216...219) = "def"
+            ├── operator_loc: (224...225) = "."
+            ├── lparen_loc: (232...233) = "("
+            ├── rparen_loc: (234...235) = ")"
+            ├── equal_loc: (236...237) = "="
+            └── end_keyword_loc: ∅

@@ -1,81 +1,90 @@
-ProgramNode(6...66)(
-  [],
-  StatementsNode(6...66)(
-    [HashNode(6...66)(
-       (6...7),
-       [AssocNode(16...41)(
-          SymbolNode(16...18)(nil, (16...17), (17...18), "a"),
-          CallNode(19...41)(
-            nil,
-            nil,
-            (19...25),
-            nil,
-            nil,
-            nil,
-            BlockNode(26...41)(
-              [],
-              nil,
-              StatementsNode(28...39)(
-                [IfNode(28...39)(
-                   nil,
-                   CallNode(28...29)(
-                     nil,
-                     nil,
-                     (28...29),
-                     nil,
-                     nil,
-                     nil,
-                     nil,
-                     2,
-                     "b"
-                   ),
-                   StatementsNode(32...35)(
-                     [CallNode(32...35)(
-                        nil,
-                        nil,
-                        (32...33),
-                        (33...34),
-                        nil,
-                        (34...35),
-                        nil,
-                        0,
-                        "c"
-                      )]
-                   ),
-                   ElseNode(36...39)(
-                     (36...37),
-                     StatementsNode(38...39)(
-                       [CallNode(38...39)(
-                          nil,
-                          nil,
-                          (38...39),
-                          nil,
-                          nil,
-                          nil,
-                          nil,
-                          2,
-                          "d"
-                        )]
-                     ),
-                     nil
-                   ),
-                   nil
-                 )]
-              ),
-              (26...27),
-              (40...41)
-            ),
-            0,
-            "lambda"
-          ),
-          nil
-        ),
-        AssocNode(51...57)(
-          SymbolNode(51...53)(nil, (51...52), (52...53), "e"),
-          NilNode(54...57)(),
-          nil
-        )],
-       (65...66)
-     )]
-  )
-)
+@ ProgramNode (location: (6...66))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (6...66))
+    └── body: (length: 1)
+        └── @ HashNode (location: (6...66))
+            ├── opening_loc: (6...7) = "{"
+            ├── elements: (length: 2)
+            │   ├── @ AssocNode (location: (16...41))
+            │   │   ├── key:
+            │   │   │   @ SymbolNode (location: (16...18))
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── value_loc: (16...17) = "a"
+            │   │   │   ├── closing_loc: (17...18) = ":"
+            │   │   │   └── unescaped: "a"
+            │   │   ├── value:
+            │   │   │   @ CallNode (location: (19...41))
+            │   │   │   ├── receiver: ∅
+            │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── message_loc: (19...25) = "lambda"
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── arguments: ∅
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   ├── block:
+            │   │   │   │   @ BlockNode (location: (26...41))
+            │   │   │   │   ├── locals: []
+            │   │   │   │   ├── parameters: ∅
+            │   │   │   │   ├── body:
+            │   │   │   │   │   @ StatementsNode (location: (28...39))
+            │   │   │   │   │   └── body: (length: 1)
+            │   │   │   │   │       └── @ IfNode (location: (28...39))
+            │   │   │   │   │           ├── if_keyword_loc: ∅
+            │   │   │   │   │           ├── predicate:
+            │   │   │   │   │           │   @ CallNode (location: (28...29))
+            │   │   │   │   │           │   ├── receiver: ∅
+            │   │   │   │   │           │   ├── call_operator_loc: ∅
+            │   │   │   │   │           │   ├── message_loc: (28...29) = "b"
+            │   │   │   │   │           │   ├── opening_loc: ∅
+            │   │   │   │   │           │   ├── arguments: ∅
+            │   │   │   │   │           │   ├── closing_loc: ∅
+            │   │   │   │   │           │   ├── block: ∅
+            │   │   │   │   │           │   ├── flags: variable_call
+            │   │   │   │   │           │   └── name: "b"
+            │   │   │   │   │           ├── statements:
+            │   │   │   │   │           │   @ StatementsNode (location: (32...35))
+            │   │   │   │   │           │   └── body: (length: 1)
+            │   │   │   │   │           │       └── @ CallNode (location: (32...35))
+            │   │   │   │   │           │           ├── receiver: ∅
+            │   │   │   │   │           │           ├── call_operator_loc: ∅
+            │   │   │   │   │           │           ├── message_loc: (32...33) = "c"
+            │   │   │   │   │           │           ├── opening_loc: (33...34) = "("
+            │   │   │   │   │           │           ├── arguments: ∅
+            │   │   │   │   │           │           ├── closing_loc: (34...35) = ")"
+            │   │   │   │   │           │           ├── block: ∅
+            │   │   │   │   │           │           ├── flags: ∅
+            │   │   │   │   │           │           └── name: "c"
+            │   │   │   │   │           ├── consequent:
+            │   │   │   │   │           │   @ ElseNode (location: (36...39))
+            │   │   │   │   │           │   ├── else_keyword_loc: (36...37) = ":"
+            │   │   │   │   │           │   ├── statements:
+            │   │   │   │   │           │   │   @ StatementsNode (location: (38...39))
+            │   │   │   │   │           │   │   └── body: (length: 1)
+            │   │   │   │   │           │   │       └── @ CallNode (location: (38...39))
+            │   │   │   │   │           │   │           ├── receiver: ∅
+            │   │   │   │   │           │   │           ├── call_operator_loc: ∅
+            │   │   │   │   │           │   │           ├── message_loc: (38...39) = "d"
+            │   │   │   │   │           │   │           ├── opening_loc: ∅
+            │   │   │   │   │           │   │           ├── arguments: ∅
+            │   │   │   │   │           │   │           ├── closing_loc: ∅
+            │   │   │   │   │           │   │           ├── block: ∅
+            │   │   │   │   │           │   │           ├── flags: variable_call
+            │   │   │   │   │           │   │           └── name: "d"
+            │   │   │   │   │           │   └── end_keyword_loc: ∅
+            │   │   │   │   │           └── end_keyword_loc: ∅
+            │   │   │   │   ├── opening_loc: (26...27) = "{"
+            │   │   │   │   └── closing_loc: (40...41) = "}"
+            │   │   │   ├── flags: ∅
+            │   │   │   └── name: "lambda"
+            │   │   └── operator_loc: ∅
+            │   └── @ AssocNode (location: (51...57))
+            │       ├── key:
+            │       │   @ SymbolNode (location: (51...53))
+            │       │   ├── opening_loc: ∅
+            │       │   ├── value_loc: (51...52) = "e"
+            │       │   ├── closing_loc: (52...53) = ":"
+            │       │   └── unescaped: "e"
+            │       ├── value:
+            │       │   @ NilNode (location: (54...57))
+            │       └── operator_loc: ∅
+            └── closing_loc: (65...66) = "}"

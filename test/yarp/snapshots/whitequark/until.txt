@@ -1,43 +1,61 @@
-ProgramNode(0...42)(
-  [],
-  StatementsNode(0...42)(
-    [UntilNode(0...21)(
-       (0...5),
-       (18...21),
-       CallNode(6...9)(nil, nil, (6...9), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(13...17)(
-         [CallNode(13...17)(
-            nil,
-            nil,
-            (13...17),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "meth"
-          )]
-       ),
-       0
-     ),
-     UntilNode(23...42)(
-       (23...28),
-       (39...42),
-       CallNode(29...32)(nil, nil, (29...32), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(34...38)(
-         [CallNode(34...38)(
-            nil,
-            nil,
-            (34...38),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "meth"
-          )]
-       ),
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...42))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...42))
+    └── body: (length: 2)
+        ├── @ UntilNode (location: (0...21))
+        │   ├── keyword_loc: (0...5) = "until"
+        │   ├── closing_loc: (18...21) = "end"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (6...9))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (6...9) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (13...17))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (13...17))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (13...17) = "meth"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "meth"
+        │   └── flags: ∅
+        └── @ UntilNode (location: (23...42))
+            ├── keyword_loc: (23...28) = "until"
+            ├── closing_loc: (39...42) = "end"
+            ├── predicate:
+            │   @ CallNode (location: (29...32))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (29...32) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── statements:
+            │   @ StatementsNode (location: (34...38))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (34...38))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (34...38) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "meth"
+            └── flags: ∅

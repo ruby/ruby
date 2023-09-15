@@ -1,22 +1,49 @@
-ProgramNode(0...33)(
-  [],
-  StatementsNode(0...33)(
-    [PreExecutionNode(0...15)(
-       StatementsNode(10...13)(
-         [CallNode(10...13)(nil, nil, (10...13), nil, nil, nil, nil, 2, "foo")]
-       ),
-       (0...5),
-       (6...7),
-       (14...15)
-     ),
-     CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 2, "bar"),
-     PostExecutionNode(20...33)(
-       StatementsNode(28...31)(
-         [CallNode(28...31)(nil, nil, (28...31), nil, nil, nil, nil, 2, "baz")]
-       ),
-       (20...23),
-       (24...25),
-       (32...33)
-     )]
-  )
-)
+@ ProgramNode (location: (0...33))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...33))
+    └── body: (length: 3)
+        ├── @ PreExecutionNode (location: (0...15))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (10...13))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (10...13))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (10...13) = "foo"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "foo"
+        │   ├── keyword_loc: (0...5) = "BEGIN"
+        │   ├── opening_loc: (6...7) = "{"
+        │   └── closing_loc: (14...15) = "}"
+        ├── @ CallNode (location: (16...19))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (16...19) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "bar"
+        └── @ PostExecutionNode (location: (20...33))
+            ├── statements:
+            │   @ StatementsNode (location: (28...31))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (28...31))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (28...31) = "baz"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "baz"
+            ├── keyword_loc: (20...23) = "END"
+            ├── opening_loc: (24...25) = "{"
+            └── closing_loc: (32...33) = "}"

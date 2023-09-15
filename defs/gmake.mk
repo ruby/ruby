@@ -193,15 +193,22 @@ $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
 .PHONY: commit
-commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS))) up
+COMMIT_PREPARE := $(filter-out commit do-commit,$(MAKECMDGOALS)) up
+
+commit: pre-commit $(DOT_WAIT) do-commit $(DOT_WAIT) post_commit
+pre-commit: $(COMMIT_PREPARE)
+do-commit: $(if $(DOT_WAIT),,pre-commit)
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
+post-commit: $(if $(DOT_WAIT),,do-commit)
 	+$(Q) \
 	{ \
 	  $(in-srcdir) \
 	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
-	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
-		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
+	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) \
+		top_srcdir="$(top_srcdir)" srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
+		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" BOOTSTRAPRUBY_OPT="$(BOOTSTRAPRUBY_OPT)" \
+		MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" HAVE_BASERUBY="$(HAVE_BASERUBY)" \
 		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
 
@@ -511,9 +518,7 @@ matz: up
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk
 
-ifneq ($(DOT_WAIT),)
-ripper_srcs: $(addprefix $(DOT_WAIT) ,$(RIPPER_SRCS))
-else
+ifeq ($(DOT_WAIT),)
 ripper_src =
 $(foreach r,$(RIPPER_SRCS),$(eval $(value r): | $(value ripper_src))\
 	$(eval ripper_src := $(value r)))

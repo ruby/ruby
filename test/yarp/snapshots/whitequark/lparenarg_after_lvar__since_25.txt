@@ -1,59 +1,63 @@
-ProgramNode(0...31)(
-  [],
-  StatementsNode(0...31)(
-    [CallNode(0...14)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       ArgumentsNode(4...14)(
-         [CallNode(4...14)(
-            ParenthesesNode(4...10)(
-              StatementsNode(5...9)([FloatNode(5...9)()]),
-              (4...5),
-              (9...10)
-            ),
-            (10...11),
-            (11...14),
-            nil,
-            nil,
-            nil,
-            nil,
-            0,
-            "abs"
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "foo"
-     ),
-     CallNode(16...31)(
-       nil,
-       nil,
-       (16...20),
-       nil,
-       ArgumentsNode(21...31)(
-         [CallNode(21...31)(
-            ParenthesesNode(21...27)(
-              StatementsNode(22...26)([FloatNode(22...26)()]),
-              (21...22),
-              (26...27)
-            ),
-            (27...28),
-            (28...31),
-            nil,
-            nil,
-            nil,
-            nil,
-            0,
-            "abs"
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "meth"
-     )]
-  )
-)
+@ ProgramNode (location: (0...31))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...31))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...14))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (4...14))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (4...14))
+        │   │           ├── receiver:
+        │   │           │   @ ParenthesesNode (location: (4...10))
+        │   │           │   ├── body:
+        │   │           │   │   @ StatementsNode (location: (5...9))
+        │   │           │   │   └── body: (length: 1)
+        │   │           │   │       └── @ FloatNode (location: (5...9))
+        │   │           │   ├── opening_loc: (4...5) = "("
+        │   │           │   └── closing_loc: (9...10) = ")"
+        │   │           ├── call_operator_loc: (10...11) = "."
+        │   │           ├── message_loc: (11...14) = "abs"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "abs"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        └── @ CallNode (location: (16...31))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (16...20) = "meth"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (21...31))
+            │   └── arguments: (length: 1)
+            │       └── @ CallNode (location: (21...31))
+            │           ├── receiver:
+            │           │   @ ParenthesesNode (location: (21...27))
+            │           │   ├── body:
+            │           │   │   @ StatementsNode (location: (22...26))
+            │           │   │   └── body: (length: 1)
+            │           │   │       └── @ FloatNode (location: (22...26))
+            │           │   ├── opening_loc: (21...22) = "("
+            │           │   └── closing_loc: (26...27) = ")"
+            │           ├── call_operator_loc: (27...28) = "."
+            │           ├── message_loc: (28...31) = "abs"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "abs"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "meth"

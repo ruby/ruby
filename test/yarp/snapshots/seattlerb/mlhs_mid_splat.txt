@@ -1,18 +1,45 @@
-ProgramNode(0...24)(
-  [:a, :b, :c, :s, :x, :y, :z],
-  StatementsNode(0...24)(
-    [MultiWriteNode(0...24)(
-       [LocalVariableTargetNode(0...1)(:a, 0),
-        LocalVariableTargetNode(3...4)(:b, 0),
-        LocalVariableTargetNode(6...7)(:c, 0),
-        SplatNode(9...11)((9...10), LocalVariableTargetNode(10...11)(:s, 0)),
-        LocalVariableTargetNode(13...14)(:x, 0),
-        LocalVariableTargetNode(16...17)(:y, 0),
-        LocalVariableTargetNode(19...20)(:z, 0)],
-       (21...22),
-       CallNode(23...24)(nil, nil, (23...24), nil, nil, nil, nil, 2, "f"),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...24))
+├── locals: [:a, :b, :c, :s, :x, :y, :z]
+└── statements:
+    @ StatementsNode (location: (0...24))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...24))
+            ├── targets: (length: 7)
+            │   ├── @ LocalVariableTargetNode (location: (0...1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   ├── @ LocalVariableTargetNode (location: (3...4))
+            │   │   ├── name: :b
+            │   │   └── depth: 0
+            │   ├── @ LocalVariableTargetNode (location: (6...7))
+            │   │   ├── name: :c
+            │   │   └── depth: 0
+            │   ├── @ SplatNode (location: (9...11))
+            │   │   ├── operator_loc: (9...10) = "*"
+            │   │   └── expression:
+            │   │       @ LocalVariableTargetNode (location: (10...11))
+            │   │       ├── name: :s
+            │   │       └── depth: 0
+            │   ├── @ LocalVariableTargetNode (location: (13...14))
+            │   │   ├── name: :x
+            │   │   └── depth: 0
+            │   ├── @ LocalVariableTargetNode (location: (16...17))
+            │   │   ├── name: :y
+            │   │   └── depth: 0
+            │   └── @ LocalVariableTargetNode (location: (19...20))
+            │       ├── name: :z
+            │       └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (21...22) = "="
+            └── value:
+                @ CallNode (location: (23...24))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (23...24) = "f"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: variable_call
+                └── name: "f"

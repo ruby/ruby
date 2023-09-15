@@ -1,45 +1,55 @@
-ProgramNode(0...44)(
-  [],
-  StatementsNode(0...44)(
-    [BeginNode(0...44)(
-       (0...5),
-       StatementsNode(7...11)(
-         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 2, "meth")]
-       ),
-       RescueNode(13...39)(
-         (13...19),
-         [ConstantReadNode(20...29)(),
-          CallNode(31...34)(
-            nil,
-            nil,
-            (31...34),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "foo"
-          )],
-         nil,
-         nil,
-         StatementsNode(36...39)(
-           [CallNode(36...39)(
-              nil,
-              nil,
-              (36...39),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (41...44)
-     )]
-  )
-)
+@ ProgramNode (location: (0...44))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...44))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (0...44))
+            ├── begin_keyword_loc: (0...5) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (7...11))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (7...11))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (7...11) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "meth"
+            ├── rescue_clause:
+            │   @ RescueNode (location: (13...39))
+            │   ├── keyword_loc: (13...19) = "rescue"
+            │   ├── exceptions: (length: 2)
+            │   │   ├── @ ConstantReadNode (location: (20...29))
+            │   │   │   └── name: :Exception
+            │   │   └── @ CallNode (location: (31...34))
+            │   │       ├── receiver: ∅
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (31...34) = "foo"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block: ∅
+            │   │       ├── flags: variable_call
+            │   │       └── name: "foo"
+            │   ├── operator_loc: ∅
+            │   ├── reference: ∅
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (36...39))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (36...39))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (36...39) = "bar"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "bar"
+            │   └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (41...44) = "end"

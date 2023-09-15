@@ -1,256 +1,547 @@
-ProgramNode(0...608)(
-  [],
-  StatementsNode(0...608)(
-    [InterpolatedStringNode(0...5)((0...5), [], (6...10)),
-     InterpolatedStringNode(11...18)((11...18), [], (19...23)),
-     InterpolatedStringNode(24...30)((24...30), [], (31...35)),
-     InterpolatedStringNode(36...44)((36...44), [], (45...49)),
-     InterpolatedStringNode(50...55)(
-       (50...55),
-       [StringNode(56...60)(nil, (56...60), nil, "  a\n")],
-       (60...64)
-     ),
-     InterpolatedStringNode(65...72)(
-       (65...72),
-       [StringNode(73...77)(nil, (73...77), nil, "  a\n")],
-       (77...81)
-     ),
-     InterpolatedStringNode(82...87)(
-       (82...87),
-       [StringNode(88...94)(nil, (88...94), nil, "  a\n" + "  "),
-        EmbeddedStatementsNode(94...97)((94...96), nil, (96...97)),
-        StringNode(97...98)(nil, (97...98), nil, "\n")],
-       (98...102)
-     ),
-     InterpolatedStringNode(103...109)(
-       (103...109),
-       [StringNode(110...116)(nil, (110...116), nil, "a\n"),
-        EmbeddedStatementsNode(116...119)((116...118), nil, (118...119)),
-        StringNode(119...120)(nil, (119...120), nil, "\n")],
-       (120...124)
-     ),
-     InterpolatedStringNode(125...131)(
-       (125...131),
-       [StringNode(132...138)(nil, (132...138), nil, "a\n"),
-        EmbeddedStatementsNode(138...141)((138...140), nil, (140...141)),
-        StringNode(141...146)(nil, (141...146), nil, "\n" + "b\n")],
-       (146...150)
-     ),
-     InterpolatedStringNode(151...157)(
-       (151...157),
-       [StringNode(158...168)(nil, (158...168), nil, "a\n" + "  b\n")],
-       (168...172)
-     ),
-     InterpolatedStringNode(173...180)(
-       (173...180),
-       [StringNode(181...186)(nil, (181...186), nil, "a\n" + "\n" + "b\n")],
-       (186...190)
-     ),
-     InterpolatedStringNode(191...198)(
-       (191...198),
-       [StringNode(199...206)(nil, (199...206), nil, " a\n" + "\n" + " b\n")],
-       (206...210)
-     ),
-     InterpolatedStringNode(211...218)(
-       (211...218),
-       [StringNode(219...225)(nil, (219...225), nil, " a\\nb\n")],
-       (225...229)
-     ),
-     InterpolatedStringNode(230...235)(
-       (230...235),
-       [EmbeddedStatementsNode(236...239)((236...238), nil, (238...239)),
-        StringNode(239...242)(nil, (239...242), nil, "a\n" + " "),
-        EmbeddedStatementsNode(242...245)((242...244), nil, (244...245)),
-        StringNode(245...247)(nil, (245...247), nil, "a\n")],
-       (247...251)
-     ),
-     InterpolatedStringNode(252...257)(
-       (252...257),
-       [StringNode(258...260)(nil, (258...260), nil, "  "),
-        EmbeddedStatementsNode(260...263)((260...262), nil, (262...263)),
-        StringNode(263...271)(nil, (263...271), nil, "\n" + "  \#{}\n")],
-       (271...275)
-     ),
-     InterpolatedStringNode(276...281)(
-       (276...281),
-       [StringNode(282...284)(nil, (282...284), nil, " a"),
-        EmbeddedStatementsNode(284...287)((284...286), nil, (286...287)),
-        StringNode(287...292)(nil, (287...292), nil, "b\n" + " c\n")],
-       (292...296)
-     ),
-     InterpolatedStringNode(297...303)(
-       (297...303),
-       [EmbeddedStatementsNode(306...309)((306...308), nil, (308...309)),
-        StringNode(309...310)(nil, (309...310), nil, "\n")],
-       (310...314)
-     ),
-     IfNode(315...349)(
-       (315...317),
-       TrueNode(318...322)(),
-       StatementsNode(325...331)(
-         [InterpolatedStringNode(325...331)(
-            (325...331),
-            [EmbeddedStatementsNode(336...339)((336...338), nil, (338...339)),
-             StringNode(339...340)(nil, (339...340), nil, "\n")],
-            (340...346)
-          )]
-       ),
-       nil,
-       (346...349)
-     ),
-     IfNode(351...386)(
-       (351...353),
-       TrueNode(354...358)(),
-       StatementsNode(361...367)(
-         [InterpolatedStringNode(361...367)(
-            (361...367),
-            [StringNode(368...373)(nil, (368...373), nil, "b"),
-             EmbeddedStatementsNode(373...376)((373...375), nil, (375...376)),
-             StringNode(376...377)(nil, (376...377), nil, "\n")],
-            (377...383)
-          )]
-       ),
-       nil,
-       (383...386)
-     ),
-     IfNode(388...423)(
-       (388...390),
-       TrueNode(391...395)(),
-       StatementsNode(398...404)(
-         [InterpolatedStringNode(398...404)(
-            (398...404),
-            [EmbeddedStatementsNode(409...412)((409...411), nil, (411...412)),
-             StringNode(412...414)(nil, (412...414), nil, "a\n")],
-            (414...420)
-          )]
-       ),
-       nil,
-       (420...423)
-     ),
-     IfNode(425...464)(
-       (425...427),
-       TrueNode(428...432)(),
-       StatementsNode(435...443)(
-         [InterpolatedStringNode(435...443)(
-            (435...443),
-            [StringNode(444...455)(
-               nil,
-               (444...455),
-               nil,
-               "   a\n" + "\n" + "   b\n"
-             )],
-            (455...461)
-          )]
-       ),
-       nil,
-       (461...464)
-     ),
-     InterpolatedStringNode(466...472)(
-       (466...467),
-       [EmbeddedStatementsNode(467...470)((467...469), nil, (469...470)),
-        StringNode(470...471)(nil, (470...471), nil, "a")],
-       (471...472)
-     ),
-     InterpolatedStringNode(474...486)(
-       (474...476),
-       [StringNode(476...479)(nil, (476...479), nil, "\n" + "\""),
-        EmbeddedStatementsNode(479...482)((479...481), nil, (481...482)),
-        StringNode(482...485)(nil, (482...485), nil, "\"\n")],
-       (485...486)
-     ),
-     InterpolatedStringNode(488...502)(
-       (488...491),
-       [StringNode(491...495)(nil, (491...495), nil, "-\n" + "\""),
-        EmbeddedStatementsNode(495...498)((495...497), nil, (497...498)),
-        StringNode(498...501)(nil, (498...501), nil, "\"\n")],
-       (501...502)
-     ),
-     InterpolatedStringNode(504...513)(
-       (504...505),
-       [StringNode(505...507)(nil, (505...507), nil, "a\n"),
-        EmbeddedStatementsNode(507...510)((507...509), nil, (509...510)),
-        StringNode(510...512)(nil, (510...512), nil, "\n" + "b")],
-       (512...513)
-     ),
-     InterpolatedStringNode(515...525)(
-       (515...516),
-       [StringNode(516...519)(nil, (516...519), nil, "a\n"),
-        EmbeddedStatementsNode(519...522)((519...521), nil, (521...522)),
-        StringNode(522...524)(nil, (522...524), nil, "\n" + "b")],
-       (524...525)
-     ),
-     InterpolatedStringNode(527...537)(
-       (527...528),
-       [StringNode(528...530)(nil, (528...530), nil, "a\n"),
-        EmbeddedStatementsNode(530...533)((530...532), nil, (532...533)),
-        StringNode(533...536)(nil, (533...536), nil, "\n" + "b")],
-       (536...537)
-     ),
-     StringConcatNode(539...550)(
-       StringNode(539...542)((539...540), (540...541), (541...542), "a"),
-       InterpolatedStringNode(545...550)(
-         (545...546),
-         [EmbeddedStatementsNode(546...549)((546...548), nil, (548...549))],
-         (549...550)
-       )
-     ),
-     StringConcatNode(552...560)(
-       StringConcatNode(552...557)(
-         StringNode(552...554)((552...553), (553...553), (553...554), ""),
-         StringNode(555...557)((555...556), (556...556), (556...557), "")
-       ),
-       StringNode(558...560)((558...559), (559...559), (559...560), "")
-     ),
-     StringConcatNode(562...574)(
-       InterpolatedStringNode(562...570)(
-         (562...563),
-         [StringNode(563...564)(nil, (563...564), nil, "a"),
-          EmbeddedStatementsNode(564...569)(
-            (564...566),
-            StatementsNode(566...568)(
-              [InstanceVariableReadNode(566...568)(:@a)]
-            ),
-            (568...569)
-          )],
-         (569...570)
-       ),
-       StringNode(571...574)((571...572), (572...573), (573...574), "b")
-     ),
-     StringConcatNode(575...585)(
-       InterpolatedStringNode(575...581)(
-         (575...576),
-         [StringNode(576...577)(nil, (576...577), nil, "a"),
-          EmbeddedVariableNode(577...580)(
-            (577...578),
-            InstanceVariableReadNode(578...580)(:@a)
-          )],
-         (580...581)
-       ),
-       StringNode(582...585)((582...583), (583...584), (584...585), "b")
-     ),
-     StringConcatNode(586...596)(
-       InterpolatedStringNode(586...592)(
-         (586...587),
-         [StringNode(587...588)(nil, (587...588), nil, "a"),
-          EmbeddedVariableNode(588...591)(
-            (588...589),
-            GlobalVariableReadNode(589...591)(:$a)
-          )],
-         (591...592)
-       ),
-       StringNode(593...596)((593...594), (594...595), (595...596), "b")
-     ),
-     StringConcatNode(597...608)(
-       InterpolatedStringNode(597...604)(
-         (597...598),
-         [StringNode(598...599)(nil, (598...599), nil, "a"),
-          EmbeddedVariableNode(599...603)(
-            (599...600),
-            ClassVariableReadNode(600...603)(:@@a)
-          )],
-         (603...604)
-       ),
-       StringNode(605...608)((605...606), (606...607), (607...608), "b")
-     )]
-  )
-)
+@ ProgramNode (location: (0...608))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...608))
+    └── body: (length: 33)
+        ├── @ StringNode (location: (0...5))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...5) = "<<DOC"
+        │   ├── content_loc: (6...6) = ""
+        │   ├── closing_loc: (6...10) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (11...18))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (11...18) = "<<'DOC'"
+        │   ├── content_loc: (19...19) = ""
+        │   ├── closing_loc: (19...23) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (24...30))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (24...30) = "<<~DOC"
+        │   ├── content_loc: (31...31) = ""
+        │   ├── closing_loc: (31...35) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (36...44))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (36...44) = "<<~'DOC'"
+        │   ├── content_loc: (45...45) = ""
+        │   ├── closing_loc: (45...49) = "DOC\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (50...55))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (50...55) = "<<DOC"
+        │   ├── content_loc: (56...60) = "  a\n"
+        │   ├── closing_loc: (60...64) = "DOC\n"
+        │   └── unescaped: "  a\n"
+        ├── @ StringNode (location: (65...72))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (65...72) = "<<'DOC'"
+        │   ├── content_loc: (73...77) = "  a\n"
+        │   ├── closing_loc: (77...81) = "DOC\n"
+        │   └── unescaped: "  a\n"
+        ├── @ InterpolatedStringNode (location: (82...87))
+        │   ├── opening_loc: (82...87) = "<<DOC"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (88...94))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (88...94) = "  a\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "  a\n  "
+        │   │   ├── @ EmbeddedStatementsNode (location: (94...97))
+        │   │   │   ├── opening_loc: (94...96) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (96...97) = "}"
+        │   │   └── @ StringNode (location: (97...98))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (97...98) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (98...102) = "DOC\n"
+        ├── @ InterpolatedStringNode (location: (103...109))
+        │   ├── opening_loc: (103...109) = "<<~DOC"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (110...116))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (110...116) = "  a\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (116...119))
+        │   │   │   ├── opening_loc: (116...118) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (118...119) = "}"
+        │   │   └── @ StringNode (location: (119...120))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (119...120) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (120...124) = "DOC\n"
+        ├── @ InterpolatedStringNode (location: (125...131))
+        │   ├── opening_loc: (125...131) = "<<~DOC"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (132...138))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (132...138) = "  a\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (138...141))
+        │   │   │   ├── opening_loc: (138...140) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (140...141) = "}"
+        │   │   └── @ StringNode (location: (141...146))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (141...146) = "\n  b\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\nb\n"
+        │   └── closing_loc: (146...150) = "DOC\n"
+        ├── @ StringNode (location: (151...157))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (151...157) = "<<~DOC"
+        │   ├── content_loc: (158...168) = "  a\n    b\n"
+        │   ├── closing_loc: (168...172) = "DOC\n"
+        │   └── unescaped: "a\n  b\n"
+        ├── @ StringNode (location: (173...180))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (173...180) = "<<'DOC'"
+        │   ├── content_loc: (181...186) = "a\n\nb\n"
+        │   ├── closing_loc: (186...190) = "DOC\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (191...198))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (191...198) = "<<'DOC'"
+        │   ├── content_loc: (199...206) = " a\n\n b\n"
+        │   ├── closing_loc: (206...210) = "DOC\n"
+        │   └── unescaped: " a\n\n b\n"
+        ├── @ StringNode (location: (211...218))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (211...218) = "<<'DOC'"
+        │   ├── content_loc: (219...225) = " a\\nb\n"
+        │   ├── closing_loc: (225...229) = "DOC\n"
+        │   └── unescaped: " a\\nb\n"
+        ├── @ InterpolatedStringNode (location: (230...235))
+        │   ├── opening_loc: (230...235) = "<<DOC"
+        │   ├── parts: (length: 4)
+        │   │   ├── @ EmbeddedStatementsNode (location: (236...239))
+        │   │   │   ├── opening_loc: (236...238) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (238...239) = "}"
+        │   │   ├── @ StringNode (location: (239...242))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (239...242) = "a\n "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n "
+        │   │   ├── @ EmbeddedStatementsNode (location: (242...245))
+        │   │   │   ├── opening_loc: (242...244) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (244...245) = "}"
+        │   │   └── @ StringNode (location: (245...247))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (245...247) = "a\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "a\n"
+        │   └── closing_loc: (247...251) = "DOC\n"
+        ├── @ InterpolatedStringNode (location: (252...257))
+        │   ├── opening_loc: (252...257) = "<<DOC"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (258...260))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (258...260) = "  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "  "
+        │   │   ├── @ EmbeddedStatementsNode (location: (260...263))
+        │   │   │   ├── opening_loc: (260...262) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (262...263) = "}"
+        │   │   └── @ StringNode (location: (263...271))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (263...271) = "\n  \\\#{}\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n  \#{}\n"
+        │   └── closing_loc: (271...275) = "DOC\n"
+        ├── @ InterpolatedStringNode (location: (276...281))
+        │   ├── opening_loc: (276...281) = "<<DOC"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (282...284))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (282...284) = " a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: " a"
+        │   │   ├── @ EmbeddedStatementsNode (location: (284...287))
+        │   │   │   ├── opening_loc: (284...286) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (286...287) = "}"
+        │   │   └── @ StringNode (location: (287...292))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (287...292) = "b\n c\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "b\n c\n"
+        │   └── closing_loc: (292...296) = "DOC\n"
+        ├── @ InterpolatedStringNode (location: (297...303))
+        │   ├── opening_loc: (297...303) = "<<~DOC"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ EmbeddedStatementsNode (location: (306...309))
+        │   │   │   ├── opening_loc: (306...308) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (308...309) = "}"
+        │   │   └── @ StringNode (location: (309...310))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (309...310) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (310...314) = "DOC\n"
+        ├── @ IfNode (location: (315...349))
+        │   ├── if_keyword_loc: (315...317) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (318...322))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (325...331))
+        │   │   └── body: (length: 1)
+        │   │       └── @ InterpolatedStringNode (location: (325...331))
+        │   │           ├── opening_loc: (325...331) = "<<~DOC"
+        │   │           ├── parts: (length: 2)
+        │   │           │   ├── @ EmbeddedStatementsNode (location: (336...339))
+        │   │           │   │   ├── opening_loc: (336...338) = "\#{"
+        │   │           │   │   ├── statements: ∅
+        │   │           │   │   └── closing_loc: (338...339) = "}"
+        │   │           │   └── @ StringNode (location: (339...340))
+        │   │           │       ├── flags: ∅
+        │   │           │       ├── opening_loc: ∅
+        │   │           │       ├── content_loc: (339...340) = "\n"
+        │   │           │       ├── closing_loc: ∅
+        │   │           │       └── unescaped: "\n"
+        │   │           └── closing_loc: (340...346) = "  DOC\n"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (346...349) = "end"
+        ├── @ IfNode (location: (351...386))
+        │   ├── if_keyword_loc: (351...353) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (354...358))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (361...367))
+        │   │   └── body: (length: 1)
+        │   │       └── @ InterpolatedStringNode (location: (361...367))
+        │   │           ├── opening_loc: (361...367) = "<<~DOC"
+        │   │           ├── parts: (length: 3)
+        │   │           │   ├── @ StringNode (location: (368...373))
+        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── opening_loc: ∅
+        │   │           │   │   ├── content_loc: (368...373) = "    b"
+        │   │           │   │   ├── closing_loc: ∅
+        │   │           │   │   └── unescaped: "b"
+        │   │           │   ├── @ EmbeddedStatementsNode (location: (373...376))
+        │   │           │   │   ├── opening_loc: (373...375) = "\#{"
+        │   │           │   │   ├── statements: ∅
+        │   │           │   │   └── closing_loc: (375...376) = "}"
+        │   │           │   └── @ StringNode (location: (376...377))
+        │   │           │       ├── flags: ∅
+        │   │           │       ├── opening_loc: ∅
+        │   │           │       ├── content_loc: (376...377) = "\n"
+        │   │           │       ├── closing_loc: ∅
+        │   │           │       └── unescaped: "\n"
+        │   │           └── closing_loc: (377...383) = "  DOC\n"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (383...386) = "end"
+        ├── @ IfNode (location: (388...423))
+        │   ├── if_keyword_loc: (388...390) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (391...395))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (398...404))
+        │   │   └── body: (length: 1)
+        │   │       └── @ InterpolatedStringNode (location: (398...404))
+        │   │           ├── opening_loc: (398...404) = "<<~DOC"
+        │   │           ├── parts: (length: 2)
+        │   │           │   ├── @ EmbeddedStatementsNode (location: (409...412))
+        │   │           │   │   ├── opening_loc: (409...411) = "\#{"
+        │   │           │   │   ├── statements: ∅
+        │   │           │   │   └── closing_loc: (411...412) = "}"
+        │   │           │   └── @ StringNode (location: (412...414))
+        │   │           │       ├── flags: ∅
+        │   │           │       ├── opening_loc: ∅
+        │   │           │       ├── content_loc: (412...414) = "a\n"
+        │   │           │       ├── closing_loc: ∅
+        │   │           │       └── unescaped: "a\n"
+        │   │           └── closing_loc: (414...420) = "  DOC\n"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (420...423) = "end"
+        ├── @ IfNode (location: (425...464))
+        │   ├── if_keyword_loc: (425...427) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (428...432))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (435...443))
+        │   │   └── body: (length: 1)
+        │   │       └── @ StringNode (location: (435...443))
+        │   │           ├── flags: ∅
+        │   │           ├── opening_loc: (435...443) = "<<-'DOC'"
+        │   │           ├── content_loc: (444...455) = "   a\n\n   b\n"
+        │   │           ├── closing_loc: (455...461) = "  DOC\n"
+        │   │           └── unescaped: "   a\n\n   b\n"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (461...464) = "end"
+        ├── @ InterpolatedStringNode (location: (466...472))
+        │   ├── opening_loc: (466...467) = "\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ EmbeddedStatementsNode (location: (467...470))
+        │   │   │   ├── opening_loc: (467...469) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (469...470) = "}"
+        │   │   └── @ StringNode (location: (470...471))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (470...471) = "a"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "a"
+        │   └── closing_loc: (471...472) = "\""
+        ├── @ InterpolatedStringNode (location: (474...486))
+        │   ├── opening_loc: (474...476) = "%("
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (476...479))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (476...479) = "\\n\""
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\n\""
+        │   │   ├── @ EmbeddedStatementsNode (location: (479...482))
+        │   │   │   ├── opening_loc: (479...481) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (481...482) = "}"
+        │   │   └── @ StringNode (location: (482...485))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (482...485) = "\"\\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\"\n"
+        │   └── closing_loc: (485...486) = ")"
+        ├── @ InterpolatedStringNode (location: (488...502))
+        │   ├── opening_loc: (488...491) = "%Q("
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (491...495))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (491...495) = "-\\n\""
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "-\n\""
+        │   │   ├── @ EmbeddedStatementsNode (location: (495...498))
+        │   │   │   ├── opening_loc: (495...497) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (497...498) = "}"
+        │   │   └── @ StringNode (location: (498...501))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (498...501) = "\"\\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\"\n"
+        │   └── closing_loc: (501...502) = ")"
+        ├── @ InterpolatedStringNode (location: (504...513))
+        │   ├── opening_loc: (504...505) = "\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (505...507))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (505...507) = "a\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (507...510))
+        │   │   │   ├── opening_loc: (507...509) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (509...510) = "}"
+        │   │   └── @ StringNode (location: (510...512))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (510...512) = "\nb"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\nb"
+        │   └── closing_loc: (512...513) = "\""
+        ├── @ InterpolatedStringNode (location: (515...525))
+        │   ├── opening_loc: (515...516) = "\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (516...519))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (516...519) = "a\\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (519...522))
+        │   │   │   ├── opening_loc: (519...521) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (521...522) = "}"
+        │   │   └── @ StringNode (location: (522...524))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (522...524) = "\nb"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\nb"
+        │   └── closing_loc: (524...525) = "\""
+        ├── @ InterpolatedStringNode (location: (527...537))
+        │   ├── opening_loc: (527...528) = "\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (528...530))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (528...530) = "a\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (530...533))
+        │   │   │   ├── opening_loc: (530...532) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (532...533) = "}"
+        │   │   └── @ StringNode (location: (533...536))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (533...536) = "\\nb"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\nb"
+        │   └── closing_loc: (536...537) = "\""
+        ├── @ StringConcatNode (location: (539...550))
+        │   ├── left:
+        │   │   @ StringNode (location: (539...542))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (539...540) = "'"
+        │   │   ├── content_loc: (540...541) = "a"
+        │   │   ├── closing_loc: (541...542) = "'"
+        │   │   └── unescaped: "a"
+        │   └── right:
+        │       @ InterpolatedStringNode (location: (545...550))
+        │       ├── opening_loc: (545...546) = "\""
+        │       ├── parts: (length: 1)
+        │       │   └── @ EmbeddedStatementsNode (location: (546...549))
+        │       │       ├── opening_loc: (546...548) = "\#{"
+        │       │       ├── statements: ∅
+        │       │       └── closing_loc: (548...549) = "}"
+        │       └── closing_loc: (549...550) = "\""
+        ├── @ StringConcatNode (location: (552...560))
+        │   ├── left:
+        │   │   @ StringConcatNode (location: (552...557))
+        │   │   ├── left:
+        │   │   │   @ StringNode (location: (552...554))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (552...553) = "\""
+        │   │   │   ├── content_loc: (553...553) = ""
+        │   │   │   ├── closing_loc: (553...554) = "\""
+        │   │   │   └── unescaped: ""
+        │   │   └── right:
+        │   │       @ StringNode (location: (555...557))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (555...556) = "\""
+        │   │       ├── content_loc: (556...556) = ""
+        │   │       ├── closing_loc: (556...557) = "\""
+        │   │       └── unescaped: ""
+        │   └── right:
+        │       @ StringNode (location: (558...560))
+        │       ├── flags: ∅
+        │       ├── opening_loc: (558...559) = "\""
+        │       ├── content_loc: (559...559) = ""
+        │       ├── closing_loc: (559...560) = "\""
+        │       └── unescaped: ""
+        ├── @ StringConcatNode (location: (562...574))
+        │   ├── left:
+        │   │   @ InterpolatedStringNode (location: (562...570))
+        │   │   ├── opening_loc: (562...563) = "\""
+        │   │   ├── parts: (length: 2)
+        │   │   │   ├── @ StringNode (location: (563...564))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── content_loc: (563...564) = "a"
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   └── unescaped: "a"
+        │   │   │   └── @ EmbeddedStatementsNode (location: (564...569))
+        │   │   │       ├── opening_loc: (564...566) = "\#{"
+        │   │   │       ├── statements:
+        │   │   │       │   @ StatementsNode (location: (566...568))
+        │   │   │       │   └── body: (length: 1)
+        │   │   │       │       └── @ InstanceVariableReadNode (location: (566...568))
+        │   │   │       │           └── name: :@a
+        │   │   │       └── closing_loc: (568...569) = "}"
+        │   │   └── closing_loc: (569...570) = "\""
+        │   └── right:
+        │       @ StringNode (location: (571...574))
+        │       ├── flags: ∅
+        │       ├── opening_loc: (571...572) = "\""
+        │       ├── content_loc: (572...573) = "b"
+        │       ├── closing_loc: (573...574) = "\""
+        │       └── unescaped: "b"
+        ├── @ StringConcatNode (location: (575...585))
+        │   ├── left:
+        │   │   @ InterpolatedStringNode (location: (575...581))
+        │   │   ├── opening_loc: (575...576) = "\""
+        │   │   ├── parts: (length: 2)
+        │   │   │   ├── @ StringNode (location: (576...577))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── content_loc: (576...577) = "a"
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   └── unescaped: "a"
+        │   │   │   └── @ EmbeddedVariableNode (location: (577...580))
+        │   │   │       ├── operator_loc: (577...578) = "#"
+        │   │   │       └── variable:
+        │   │   │           @ InstanceVariableReadNode (location: (578...580))
+        │   │   │           └── name: :@a
+        │   │   └── closing_loc: (580...581) = "\""
+        │   └── right:
+        │       @ StringNode (location: (582...585))
+        │       ├── flags: ∅
+        │       ├── opening_loc: (582...583) = "\""
+        │       ├── content_loc: (583...584) = "b"
+        │       ├── closing_loc: (584...585) = "\""
+        │       └── unescaped: "b"
+        ├── @ StringConcatNode (location: (586...596))
+        │   ├── left:
+        │   │   @ InterpolatedStringNode (location: (586...592))
+        │   │   ├── opening_loc: (586...587) = "\""
+        │   │   ├── parts: (length: 2)
+        │   │   │   ├── @ StringNode (location: (587...588))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── content_loc: (587...588) = "a"
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   └── unescaped: "a"
+        │   │   │   └── @ EmbeddedVariableNode (location: (588...591))
+        │   │   │       ├── operator_loc: (588...589) = "#"
+        │   │   │       └── variable:
+        │   │   │           @ GlobalVariableReadNode (location: (589...591))
+        │   │   │           └── name: :$a
+        │   │   └── closing_loc: (591...592) = "\""
+        │   └── right:
+        │       @ StringNode (location: (593...596))
+        │       ├── flags: ∅
+        │       ├── opening_loc: (593...594) = "\""
+        │       ├── content_loc: (594...595) = "b"
+        │       ├── closing_loc: (595...596) = "\""
+        │       └── unescaped: "b"
+        └── @ StringConcatNode (location: (597...608))
+            ├── left:
+            │   @ InterpolatedStringNode (location: (597...604))
+            │   ├── opening_loc: (597...598) = "\""
+            │   ├── parts: (length: 2)
+            │   │   ├── @ StringNode (location: (598...599))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (598...599) = "a"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "a"
+            │   │   └── @ EmbeddedVariableNode (location: (599...603))
+            │   │       ├── operator_loc: (599...600) = "#"
+            │   │       └── variable:
+            │   │           @ ClassVariableReadNode (location: (600...603))
+            │   │           └── name: :@@a
+            │   └── closing_loc: (603...604) = "\""
+            └── right:
+                @ StringNode (location: (605...608))
+                ├── flags: ∅
+                ├── opening_loc: (605...606) = "\""
+                ├── content_loc: (606...607) = "b"
+                ├── closing_loc: (607...608) = "\""
+                └── unescaped: "b"

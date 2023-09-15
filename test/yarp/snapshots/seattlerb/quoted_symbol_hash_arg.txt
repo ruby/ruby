@@ -1,24 +1,32 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [CallNode(0...12)(
-       nil,
-       nil,
-       (0...4),
-       nil,
-       ArgumentsNode(5...12)(
-         [KeywordHashNode(5...12)(
-            [AssocNode(5...12)(
-               SymbolNode(5...9)((5...6), (6...7), (7...9), "a"),
-               HashNode(10...12)((10...11), [], (11...12)),
-               nil
-             )]
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "puts"
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...12))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...4) = "puts"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (5...12))
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (5...12))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (5...12))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (5...9))
+            │                   │   ├── opening_loc: (5...6) = "'"
+            │                   │   ├── value_loc: (6...7) = "a"
+            │                   │   ├── closing_loc: (7...9) = "':"
+            │                   │   └── unescaped: "a"
+            │                   ├── value:
+            │                   │   @ HashNode (location: (10...12))
+            │                   │   ├── opening_loc: (10...11) = "{"
+            │                   │   ├── elements: (length: 0)
+            │                   │   └── closing_loc: (11...12) = "}"
+            │                   └── operator_loc: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "puts"

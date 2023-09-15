@@ -1107,9 +1107,9 @@ describe "A method" do
       m({a: 1}).should == {a: 1}
       m({"a" => 1}).should == {"a" => 1}
 
-      -> { m(a: 1) }.should raise_error(ArgumentError)
-      -> { m(**{a: 1}) }.should raise_error(ArgumentError)
-      -> { m("a" => 1) }.should raise_error(ArgumentError)
+      -> { m(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
     end
 
     evaluate <<-ruby do
@@ -1193,14 +1193,42 @@ describe "A method call with a space between method name and parentheses" do
     end
   end
 
-  context "when a single argument provided" do
-    it "assigns it" do
+  context "when a single argument is provided" do
+    it "assigns a simple expression" do
+      args = m (1)
+      args.should == [1]
+    end
+
+    it "assigns an expression consisting of multiple statements" do
+      args = m ((0; 1))
+      args.should == [1]
+    end
+
+    it "assigns one single statement, without the need of parentheses" do
       args = m (1 == 1 ? true : false)
       args.should == [true]
     end
+
+    ruby_version_is "3.3" do
+      it "supports multiple statements" do
+        eval("m (1; 2)").should == [2]
+      end
+    end
   end
 
-  context "when 2+ arguments provided" do
+  context "when multiple arguments are provided" do
+    it "assigns simple expressions" do
+      args = m (1), (2)
+      args.should == [1, 2]
+    end
+
+    it "assigns expressions consisting of multiple statements" do
+      args = m ((0; 1)), ((2; 3))
+      args.should == [1, 3]
+    end
+  end
+
+  context "when the argument looks like an argument list" do
     it "raises a syntax error" do
       -> {
         eval("m (1, 2)")

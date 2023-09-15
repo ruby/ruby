@@ -1,71 +1,88 @@
-ProgramNode(0...63)(
-  [:foo],
-  StatementsNode(0...63)(
-    [MultiWriteNode(0...17)(
-       [CallNode(0...6)(
-          SelfNode(0...4)(),
-          (4...5),
-          (5...6),
-          nil,
-          nil,
-          nil,
-          nil,
-          0,
-          "A="
-        ),
-        LocalVariableTargetNode(8...11)(:foo, 0)],
-       (12...13),
-       LocalVariableReadNode(14...17)(:foo, 0),
-       nil,
-       nil
-     ),
-     MultiWriteNode(19...43)(
-       [CallNode(19...25)(
-          SelfNode(19...23)(),
-          (23...24),
-          (24...25),
-          nil,
-          nil,
-          nil,
-          nil,
-          0,
-          "a="
-        ),
-        CallNode(27...37)(
-          SelfNode(27...31)(),
-          nil,
-          (31...37),
-          (31...32),
-          ArgumentsNode(32...36)(
-            [IntegerNode(32...33)(), IntegerNode(35...36)()]
-          ),
-          (36...37),
-          nil,
-          0,
-          "[]="
-        )],
-       (38...39),
-       LocalVariableReadNode(40...43)(:foo, 0),
-       nil,
-       nil
-     ),
-     MultiWriteNode(45...63)(
-       [CallNode(45...52)(
-          SelfNode(45...49)(),
-          (49...51),
-          (51...52),
-          nil,
-          nil,
-          nil,
-          nil,
-          0,
-          "a="
-        ),
-        LocalVariableTargetNode(54...57)(:foo, 0)],
-       (58...59),
-       LocalVariableReadNode(60...63)(:foo, 0),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...63))
+├── locals: [:foo]
+└── statements:
+    @ StatementsNode (location: (0...63))
+    └── body: (length: 3)
+        ├── @ MultiWriteNode (location: (0...17))
+        │   ├── targets: (length: 2)
+        │   │   ├── @ CallNode (location: (0...6))
+        │   │   │   ├── receiver:
+        │   │   │   │   @ SelfNode (location: (0...4))
+        │   │   │   ├── call_operator_loc: (4...5) = "."
+        │   │   │   ├── message_loc: (5...6) = "A"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: ∅
+        │   │   │   └── name: "A="
+        │   │   └── @ LocalVariableTargetNode (location: (8...11))
+        │   │       ├── name: :foo
+        │   │       └── depth: 0
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (12...13) = "="
+        │   └── value:
+        │       @ LocalVariableReadNode (location: (14...17))
+        │       ├── name: :foo
+        │       └── depth: 0
+        ├── @ MultiWriteNode (location: (19...43))
+        │   ├── targets: (length: 2)
+        │   │   ├── @ CallNode (location: (19...25))
+        │   │   │   ├── receiver:
+        │   │   │   │   @ SelfNode (location: (19...23))
+        │   │   │   ├── call_operator_loc: (23...24) = "."
+        │   │   │   ├── message_loc: (24...25) = "a"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: ∅
+        │   │   │   └── name: "a="
+        │   │   └── @ CallNode (location: (27...37))
+        │   │       ├── receiver:
+        │   │       │   @ SelfNode (location: (27...31))
+        │   │       ├── call_operator_loc: ∅
+        │   │       ├── message_loc: (31...37) = "[1, 2]"
+        │   │       ├── opening_loc: (31...32) = "["
+        │   │       ├── arguments:
+        │   │       │   @ ArgumentsNode (location: (32...36))
+        │   │       │   └── arguments: (length: 2)
+        │   │       │       ├── @ IntegerNode (location: (32...33))
+        │   │       │       │   └── flags: decimal
+        │   │       │       └── @ IntegerNode (location: (35...36))
+        │   │       │           └── flags: decimal
+        │   │       ├── closing_loc: (36...37) = "]"
+        │   │       ├── block: ∅
+        │   │       ├── flags: ∅
+        │   │       └── name: "[]="
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (38...39) = "="
+        │   └── value:
+        │       @ LocalVariableReadNode (location: (40...43))
+        │       ├── name: :foo
+        │       └── depth: 0
+        └── @ MultiWriteNode (location: (45...63))
+            ├── targets: (length: 2)
+            │   ├── @ CallNode (location: (45...52))
+            │   │   ├── receiver:
+            │   │   │   @ SelfNode (location: (45...49))
+            │   │   ├── call_operator_loc: (49...51) = "::"
+            │   │   ├── message_loc: (51...52) = "a"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: "a="
+            │   └── @ LocalVariableTargetNode (location: (54...57))
+            │       ├── name: :foo
+            │       └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (58...59) = "="
+            └── value:
+                @ LocalVariableReadNode (location: (60...63))
+                ├── name: :foo
+                └── depth: 0

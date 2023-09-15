@@ -1,29 +1,46 @@
-ProgramNode(0...28)(
-  [:c],
-  StatementsNode(0...28)(
-    [CaseNode(0...28)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...24)(
-          ArrayPatternNode(11...19)(
-            nil,
-            [SymbolNode(12...14)((12...13), (13...14), nil, "b")],
-            SplatNode(16...18)(
-              (16...17),
-              LocalVariableTargetNode(17...18)(:c, 0)
-            ),
-            [],
-            (11...12),
-            (18...19)
-          ),
-          StatementsNode(22...24)(
-            [SymbolNode(22...24)((22...23), (23...24), nil, "d")]
-          ),
-          (8...10),
-          nil
-        )],
-       nil,
-       (0...4),
-       (25...28)
-     )]
-  )
-)
+@ ProgramNode (location: (0...28))
+├── locals: [:c]
+└── statements:
+    @ StatementsNode (location: (0...28))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...28))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...24))
+            │       ├── pattern:
+            │       │   @ ArrayPatternNode (location: (11...19))
+            │       │   ├── constant: ∅
+            │       │   ├── requireds: (length: 1)
+            │       │   │   └── @ SymbolNode (location: (12...14))
+            │       │   │       ├── opening_loc: (12...13) = ":"
+            │       │   │       ├── value_loc: (13...14) = "b"
+            │       │   │       ├── closing_loc: ∅
+            │       │   │       └── unescaped: "b"
+            │       │   ├── rest:
+            │       │   │   @ SplatNode (location: (16...18))
+            │       │   │   ├── operator_loc: (16...17) = "*"
+            │       │   │   └── expression:
+            │       │   │       @ LocalVariableTargetNode (location: (17...18))
+            │       │   │       ├── name: :c
+            │       │   │       └── depth: 0
+            │       │   ├── posts: (length: 0)
+            │       │   ├── opening_loc: (11...12) = "["
+            │       │   └── closing_loc: (18...19) = "]"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (22...24))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (22...24))
+            │       │           ├── opening_loc: (22...23) = ":"
+            │       │           ├── value_loc: (23...24) = "d"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "d"
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (25...28) = "end"

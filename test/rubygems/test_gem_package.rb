@@ -574,6 +574,32 @@ class TestGemPackage < Gem::Package::TarTestCase
                  File.read(extracted)
   end
 
+  def test_extract_symlink_into_symlink_dir
+    package = Gem::Package.new @gem
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/link", "./inside.rb", 0o644
+      tar.add_file    "lib/inside.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
+
+    destination_subdir = File.join @destination, "subdir"
+    FileUtils.mkdir_p destination_subdir
+
+    destination_linkdir = File.join @destination, "linkdir"
+    File.symlink(destination_subdir, destination_linkdir)
+
+    package.extract_tar_gz tgz_io, destination_linkdir
+
+    extracted = File.join destination_subdir, "lib/link"
+    assert_path_exist extracted
+    assert_equal "./inside.rb",
+                 File.readlink(extracted)
+    assert_equal "hi",
+                 File.read(extracted)
+  end
+
   def test_extract_tar_gz_symlink_broken_relative_path
     package = Gem::Package.new @gem
     package.verify

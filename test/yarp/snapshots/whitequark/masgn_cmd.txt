@@ -1,23 +1,32 @@
-ProgramNode(0...16)(
-  [:foo, :bar],
-  StatementsNode(0...16)(
-    [MultiWriteNode(0...16)(
-       [LocalVariableTargetNode(0...3)(:foo, 0),
-        LocalVariableTargetNode(5...8)(:bar, 0)],
-       (9...10),
-       CallNode(11...16)(
-         nil,
-         nil,
-         (11...12),
-         nil,
-         ArgumentsNode(13...16)([LocalVariableReadNode(13...16)(:foo, 0)]),
-         nil,
-         nil,
-         0,
-         "m"
-       ),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: [:foo, :bar]
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...16))
+            ├── targets: (length: 2)
+            │   ├── @ LocalVariableTargetNode (location: (0...3))
+            │   │   ├── name: :foo
+            │   │   └── depth: 0
+            │   └── @ LocalVariableTargetNode (location: (5...8))
+            │       ├── name: :bar
+            │       └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (9...10) = "="
+            └── value:
+                @ CallNode (location: (11...16))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (11...12) = "m"
+                ├── opening_loc: ∅
+                ├── arguments:
+                │   @ ArgumentsNode (location: (13...16))
+                │   └── arguments: (length: 1)
+                │       └── @ LocalVariableReadNode (location: (13...16))
+                │           ├── name: :foo
+                │           └── depth: 0
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: ∅
+                └── name: "m"

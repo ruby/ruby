@@ -1,28 +1,43 @@
-ProgramNode(0...26)(
-  [],
-  StatementsNode(0...26)(
-    [LambdaNode(0...8)(
-       [:*],
-       (0...2),
-       (5...6),
-       (7...8),
-       BlockParametersNode(3...4)(
-         ParametersNode(3...4)(
-           [],
-           [],
-           [],
-           RestParameterNode(3...4)((3...4), nil),
-           [],
-           nil,
-           nil
-         ),
-         [],
-         nil,
-         nil
-       ),
-       nil
-     ),
-     LambdaNode(10...19)([], (10...12), (13...15), (16...19), nil, nil),
-     LambdaNode(21...26)([], (21...23), (23...24), (25...26), nil, nil)]
-  )
-)
+@ ProgramNode (location: (0...26))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...26))
+    └── body: (length: 3)
+        ├── @ LambdaNode (location: (0...8))
+        │   ├── locals: [:*]
+        │   ├── operator_loc: (0...2) = "->"
+        │   ├── opening_loc: (5...6) = "{"
+        │   ├── closing_loc: (7...8) = "}"
+        │   ├── parameters:
+        │   │   @ BlockParametersNode (location: (3...4))
+        │   │   ├── parameters:
+        │   │   │   @ ParametersNode (location: (3...4))
+        │   │   │   ├── requireds: (length: 0)
+        │   │   │   ├── optionals: (length: 0)
+        │   │   │   ├── rest:
+        │   │   │   │   @ RestParameterNode (location: (3...4))
+        │   │   │   │   ├── name: nil
+        │   │   │   │   ├── name_loc: ∅
+        │   │   │   │   └── operator_loc: (3...4) = "*"
+        │   │   │   ├── posts: (length: 0)
+        │   │   │   ├── keywords: (length: 0)
+        │   │   │   ├── keyword_rest: ∅
+        │   │   │   └── block: ∅
+        │   │   ├── locals: (length: 0)
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── body: ∅
+        ├── @ LambdaNode (location: (10...19))
+        │   ├── locals: []
+        │   ├── operator_loc: (10...12) = "->"
+        │   ├── opening_loc: (13...15) = "do"
+        │   ├── closing_loc: (16...19) = "end"
+        │   ├── parameters: ∅
+        │   └── body: ∅
+        └── @ LambdaNode (location: (21...26))
+            ├── locals: []
+            ├── operator_loc: (21...23) = "->"
+            ├── opening_loc: (23...24) = "{"
+            ├── closing_loc: (25...26) = "}"
+            ├── parameters: ∅
+            └── body: ∅

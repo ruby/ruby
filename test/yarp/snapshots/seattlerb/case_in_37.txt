@@ -1,36 +1,55 @@
-ProgramNode(0...36)(
-  [],
-  StatementsNode(0...36)(
-    [CaseNode(0...36)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...32)(
-          HashPatternNode(11...27)(
-            nil,
-            [AssocNode(13...25)(
-               SymbolNode(13...15)(nil, (13...14), (14...15), "b"),
-               ArrayPatternNode(16...25)(
-                 nil,
-                 [ConstantReadNode(17...21)()],
-                 SplatNode(23...24)((23...24), nil),
-                 [],
-                 (16...17),
-                 (24...25)
-               ),
-               nil
-             )],
-            nil,
-            (11...12),
-            (26...27)
-          ),
-          StatementsNode(30...32)(
-            [SymbolNode(30...32)((30...31), (31...32), nil, "c")]
-          ),
-          (8...10),
-          nil
-        )],
-       nil,
-       (0...4),
-       (33...36)
-     )]
-  )
-)
+@ ProgramNode (location: (0...36))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...36))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...36))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...32))
+            │       ├── pattern:
+            │       │   @ HashPatternNode (location: (11...27))
+            │       │   ├── constant: ∅
+            │       │   ├── assocs: (length: 1)
+            │       │   │   └── @ AssocNode (location: (13...25))
+            │       │   │       ├── key:
+            │       │   │       │   @ SymbolNode (location: (13...15))
+            │       │   │       │   ├── opening_loc: ∅
+            │       │   │       │   ├── value_loc: (13...14) = "b"
+            │       │   │       │   ├── closing_loc: (14...15) = ":"
+            │       │   │       │   └── unescaped: "b"
+            │       │   │       ├── value:
+            │       │   │       │   @ ArrayPatternNode (location: (16...25))
+            │       │   │       │   ├── constant: ∅
+            │       │   │       │   ├── requireds: (length: 1)
+            │       │   │       │   │   └── @ ConstantReadNode (location: (17...21))
+            │       │   │       │   │       └── name: :Hash
+            │       │   │       │   ├── rest:
+            │       │   │       │   │   @ SplatNode (location: (23...24))
+            │       │   │       │   │   ├── operator_loc: (23...24) = "*"
+            │       │   │       │   │   └── expression: ∅
+            │       │   │       │   ├── posts: (length: 0)
+            │       │   │       │   ├── opening_loc: (16...17) = "["
+            │       │   │       │   └── closing_loc: (24...25) = "]"
+            │       │   │       └── operator_loc: ∅
+            │       │   ├── kwrest: ∅
+            │       │   ├── opening_loc: (11...12) = "{"
+            │       │   └── closing_loc: (26...27) = "}"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (30...32))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (30...32))
+            │       │           ├── opening_loc: (30...31) = ":"
+            │       │           ├── value_loc: (31...32) = "c"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "c"
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (33...36) = "end"

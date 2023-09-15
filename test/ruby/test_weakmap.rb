@@ -223,6 +223,18 @@ class TestWeakMap < Test::Unit::TestCase
 
       assert_equal(val, wm[key])
     end;
+
+    assert_separately(["-W0"], <<-'end;')
+      wm = ObjectSpace::WeakMap.new
+
+      ary = 10_000.times.map do
+        o = Object.new
+        wm[o] = 1
+        o
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+    end;
   end
 
   def test_replaced_values_bug_19531

@@ -1,74 +1,90 @@
-ProgramNode(0...100)(
-  [],
-  StatementsNode(0...100)(
-    [DefNode(0...18)(
-       (10...13),
-       ParenthesesNode(4...9)(
-         CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "foo"),
-         (4...5),
-         (8...9)
-       ),
-       nil,
-       nil,
-       [],
-       (0...3),
-       (9...10),
-       nil,
-       nil,
-       nil,
-       (15...18)
-     ),
-     DefNode(20...39)(
-       (31...34),
-       ConstantReadNode(24...30)(),
-       nil,
-       nil,
-       [],
-       (20...23),
-       (30...31),
-       nil,
-       nil,
-       nil,
-       (36...39)
-     ),
-     DefNode(41...61)(
-       (53...56),
-       ConstantReadNode(45...51)(),
-       nil,
-       nil,
-       [],
-       (41...44),
-       (51...53),
-       nil,
-       nil,
-       nil,
-       (58...61)
-     ),
-     DefNode(63...80)(
-       (72...75),
-       SelfNode(67...71)(),
-       nil,
-       nil,
-       [],
-       (63...66),
-       (71...72),
-       nil,
-       nil,
-       nil,
-       (77...80)
-     ),
-     DefNode(82...100)(
-       (92...95),
-       SelfNode(86...90)(),
-       nil,
-       nil,
-       [],
-       (82...85),
-       (90...92),
-       nil,
-       nil,
-       nil,
-       (97...100)
-     )]
-  )
-)
+@ ProgramNode (location: (0...100))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...100))
+    └── body: (length: 5)
+        ├── @ DefNode (location: (0...18))
+        │   ├── name: :foo
+        │   ├── name_loc: (10...13) = "foo"
+        │   ├── receiver:
+        │   │   @ ParenthesesNode (location: (4...9))
+        │   │   ├── body:
+        │   │   │   @ CallNode (location: (5...8))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (5...8) = "foo"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "foo"
+        │   │   ├── opening_loc: (4...5) = "("
+        │   │   └── closing_loc: (8...9) = ")"
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: (9...10) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (15...18) = "end"
+        ├── @ DefNode (location: (20...39))
+        │   ├── name: :foo
+        │   ├── name_loc: (31...34) = "foo"
+        │   ├── receiver:
+        │   │   @ ConstantReadNode (location: (24...30))
+        │   │   └── name: :String
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (20...23) = "def"
+        │   ├── operator_loc: (30...31) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (36...39) = "end"
+        ├── @ DefNode (location: (41...61))
+        │   ├── name: :foo
+        │   ├── name_loc: (53...56) = "foo"
+        │   ├── receiver:
+        │   │   @ ConstantReadNode (location: (45...51))
+        │   │   └── name: :String
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (41...44) = "def"
+        │   ├── operator_loc: (51...53) = "::"
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (58...61) = "end"
+        ├── @ DefNode (location: (63...80))
+        │   ├── name: :foo
+        │   ├── name_loc: (72...75) = "foo"
+        │   ├── receiver:
+        │   │   @ SelfNode (location: (67...71))
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (63...66) = "def"
+        │   ├── operator_loc: (71...72) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (77...80) = "end"
+        └── @ DefNode (location: (82...100))
+            ├── name: :foo
+            ├── name_loc: (92...95) = "foo"
+            ├── receiver:
+            │   @ SelfNode (location: (86...90))
+            ├── parameters: ∅
+            ├── body: ∅
+            ├── locals: []
+            ├── def_keyword_loc: (82...85) = "def"
+            ├── operator_loc: (90...92) = "::"
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (97...100) = "end"

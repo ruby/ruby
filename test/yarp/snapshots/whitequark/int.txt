@@ -1,6 +1,11 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [IntegerNode(0...3)(), IntegerNode(5...8)(), IntegerNode(10...12)()]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 3)
+        ├── @ IntegerNode (location: (0...3))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (5...8))
+        │   └── flags: decimal
+        └── @ IntegerNode (location: (10...12))
+            └── flags: decimal

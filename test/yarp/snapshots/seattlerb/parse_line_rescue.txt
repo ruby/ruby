@@ -1,43 +1,62 @@
-ProgramNode(0...35)(
-  [],
-  StatementsNode(0...35)(
-    [BeginNode(0...35)(
-       (0...5),
-       StatementsNode(8...9)(
-         [CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "a")]
-       ),
-       RescueNode(10...31)(
-         (10...16),
-         [],
-         nil,
-         nil,
-         StatementsNode(19...20)(
-           [CallNode(19...20)(nil, nil, (19...20), nil, nil, nil, nil, 2, "b")]
-         ),
-         RescueNode(21...31)(
-           (21...27),
-           [],
-           nil,
-           nil,
-           StatementsNode(30...31)(
-             [CallNode(30...31)(
-                nil,
-                nil,
-                (30...31),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "c"
-              )]
-           ),
-           nil
-         )
-       ),
-       nil,
-       nil,
-       (32...35)
-     )]
-  )
-)
+@ ProgramNode (location: (0...35))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...35))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (0...35))
+            ├── begin_keyword_loc: (0...5) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (8...9))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (8...9))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (8...9) = "a"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "a"
+            ├── rescue_clause:
+            │   @ RescueNode (location: (10...31))
+            │   ├── keyword_loc: (10...16) = "rescue"
+            │   ├── exceptions: (length: 0)
+            │   ├── operator_loc: ∅
+            │   ├── reference: ∅
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (19...20))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (19...20))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (19...20) = "b"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "b"
+            │   └── consequent:
+            │       @ RescueNode (location: (21...31))
+            │       ├── keyword_loc: (21...27) = "rescue"
+            │       ├── exceptions: (length: 0)
+            │       ├── operator_loc: ∅
+            │       ├── reference: ∅
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (30...31))
+            │       │   └── body: (length: 1)
+            │       │       └── @ CallNode (location: (30...31))
+            │       │           ├── receiver: ∅
+            │       │           ├── call_operator_loc: ∅
+            │       │           ├── message_loc: (30...31) = "c"
+            │       │           ├── opening_loc: ∅
+            │       │           ├── arguments: ∅
+            │       │           ├── closing_loc: ∅
+            │       │           ├── block: ∅
+            │       │           ├── flags: variable_call
+            │       │           └── name: "c"
+            │       └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (32...35) = "end"

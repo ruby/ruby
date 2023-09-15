@@ -1,151 +1,197 @@
-ProgramNode(0...190)(
-  [],
-  StatementsNode(0...190)(
-    [WhileNode(0...45)(
-       (0...5),
-       (42...45),
-       DefNode(6...33)(
-         (10...13),
-         nil,
-         ParametersNode(14...28)(
-           [],
-           [OptionalParameterNode(14...28)(
-              :a,
-              (14...15),
-              (16...17),
-              CallNode(18...28)(
-                nil,
-                nil,
-                (18...21),
-                nil,
-                nil,
-                nil,
-                BlockNode(22...28)([], nil, nil, (22...24), (25...28)),
-                0,
-                "tap"
-              )
-            )],
-           [],
-           nil,
-           [],
-           nil,
-           nil
-         ),
-         nil,
-         [:a],
-         (6...9),
-         nil,
-         nil,
-         nil,
-         nil,
-         (30...33)
-       ),
-       StatementsNode(35...40)([BreakNode(35...40)(nil, (35...40))]),
-       0
-     ),
-     WhileNode(47...89)(
-       (47...52),
-       (86...89),
-       DefNode(53...77)(
-         (57...60),
-         nil,
-         nil,
-         StatementsNode(62...72)(
-           [CallNode(62...72)(
-              nil,
-              nil,
-              (62...65),
-              nil,
-              nil,
-              nil,
-              BlockNode(66...72)([], nil, nil, (66...68), (69...72)),
-              0,
-              "tap"
-            )]
-         ),
-         [],
-         (53...56),
-         nil,
-         nil,
-         nil,
-         nil,
-         (74...77)
-       ),
-       StatementsNode(79...84)([BreakNode(79...84)(nil, (79...84))]),
-       0
-     ),
-     WhileNode(91...141)(
-       (91...96),
-       (138...141),
-       DefNode(97...129)(
-         (106...109),
-         SelfNode(101...105)(),
-         ParametersNode(110...124)(
-           [],
-           [OptionalParameterNode(110...124)(
-              :a,
-              (110...111),
-              (112...113),
-              CallNode(114...124)(
-                nil,
-                nil,
-                (114...117),
-                nil,
-                nil,
-                nil,
-                BlockNode(118...124)([], nil, nil, (118...120), (121...124)),
-                0,
-                "tap"
-              )
-            )],
-           [],
-           nil,
-           [],
-           nil,
-           nil
-         ),
-         nil,
-         [:a],
-         (97...100),
-         (105...106),
-         nil,
-         nil,
-         nil,
-         (126...129)
-       ),
-       StatementsNode(131...136)([BreakNode(131...136)(nil, (131...136))]),
-       0
-     ),
-     WhileNode(143...190)(
-       (143...148),
-       (187...190),
-       DefNode(149...178)(
-         (158...161),
-         SelfNode(153...157)(),
-         nil,
-         StatementsNode(163...173)(
-           [CallNode(163...173)(
-              nil,
-              nil,
-              (163...166),
-              nil,
-              nil,
-              nil,
-              BlockNode(167...173)([], nil, nil, (167...169), (170...173)),
-              0,
-              "tap"
-            )]
-         ),
-         [],
-         (149...152),
-         (157...158),
-         nil,
-         nil,
-         nil,
-         (175...178)
-       ),
-       StatementsNode(180...185)([BreakNode(180...185)(nil, (180...185))]),
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...190))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...190))
+    └── body: (length: 4)
+        ├── @ WhileNode (location: (0...45))
+        │   ├── keyword_loc: (0...5) = "while"
+        │   ├── closing_loc: (42...45) = "end"
+        │   ├── predicate:
+        │   │   @ DefNode (location: (6...33))
+        │   │   ├── name: :foo
+        │   │   ├── name_loc: (10...13) = "foo"
+        │   │   ├── receiver: ∅
+        │   │   ├── parameters:
+        │   │   │   @ ParametersNode (location: (14...28))
+        │   │   │   ├── requireds: (length: 0)
+        │   │   │   ├── optionals: (length: 1)
+        │   │   │   │   └── @ OptionalParameterNode (location: (14...28))
+        │   │   │   │       ├── name: :a
+        │   │   │   │       ├── name_loc: (14...15) = "a"
+        │   │   │   │       ├── operator_loc: (16...17) = "="
+        │   │   │   │       └── value:
+        │   │   │   │           @ CallNode (location: (18...28))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (18...21) = "tap"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block:
+        │   │   │   │           │   @ BlockNode (location: (22...28))
+        │   │   │   │           │   ├── locals: []
+        │   │   │   │           │   ├── parameters: ∅
+        │   │   │   │           │   ├── body: ∅
+        │   │   │   │           │   ├── opening_loc: (22...24) = "do"
+        │   │   │   │           │   └── closing_loc: (25...28) = "end"
+        │   │   │   │           ├── flags: ∅
+        │   │   │   │           └── name: "tap"
+        │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
+        │   │   │   ├── keywords: (length: 0)
+        │   │   │   ├── keyword_rest: ∅
+        │   │   │   └── block: ∅
+        │   │   ├── body: ∅
+        │   │   ├── locals: [:a]
+        │   │   ├── def_keyword_loc: (6...9) = "def"
+        │   │   ├── operator_loc: ∅
+        │   │   ├── lparen_loc: ∅
+        │   │   ├── rparen_loc: ∅
+        │   │   ├── equal_loc: ∅
+        │   │   └── end_keyword_loc: (30...33) = "end"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (35...40))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (35...40))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (35...40) = "break"
+        │   └── flags: ∅
+        ├── @ WhileNode (location: (47...89))
+        │   ├── keyword_loc: (47...52) = "while"
+        │   ├── closing_loc: (86...89) = "end"
+        │   ├── predicate:
+        │   │   @ DefNode (location: (53...77))
+        │   │   ├── name: :foo
+        │   │   ├── name_loc: (57...60) = "foo"
+        │   │   ├── receiver: ∅
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (62...72))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (62...72))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (62...65) = "tap"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block:
+        │   │   │           │   @ BlockNode (location: (66...72))
+        │   │   │           │   ├── locals: []
+        │   │   │           │   ├── parameters: ∅
+        │   │   │           │   ├── body: ∅
+        │   │   │           │   ├── opening_loc: (66...68) = "do"
+        │   │   │           │   └── closing_loc: (69...72) = "end"
+        │   │   │           ├── flags: ∅
+        │   │   │           └── name: "tap"
+        │   │   ├── locals: []
+        │   │   ├── def_keyword_loc: (53...56) = "def"
+        │   │   ├── operator_loc: ∅
+        │   │   ├── lparen_loc: ∅
+        │   │   ├── rparen_loc: ∅
+        │   │   ├── equal_loc: ∅
+        │   │   └── end_keyword_loc: (74...77) = "end"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (79...84))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (79...84))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (79...84) = "break"
+        │   └── flags: ∅
+        ├── @ WhileNode (location: (91...141))
+        │   ├── keyword_loc: (91...96) = "while"
+        │   ├── closing_loc: (138...141) = "end"
+        │   ├── predicate:
+        │   │   @ DefNode (location: (97...129))
+        │   │   ├── name: :foo
+        │   │   ├── name_loc: (106...109) = "foo"
+        │   │   ├── receiver:
+        │   │   │   @ SelfNode (location: (101...105))
+        │   │   ├── parameters:
+        │   │   │   @ ParametersNode (location: (110...124))
+        │   │   │   ├── requireds: (length: 0)
+        │   │   │   ├── optionals: (length: 1)
+        │   │   │   │   └── @ OptionalParameterNode (location: (110...124))
+        │   │   │   │       ├── name: :a
+        │   │   │   │       ├── name_loc: (110...111) = "a"
+        │   │   │   │       ├── operator_loc: (112...113) = "="
+        │   │   │   │       └── value:
+        │   │   │   │           @ CallNode (location: (114...124))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (114...117) = "tap"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block:
+        │   │   │   │           │   @ BlockNode (location: (118...124))
+        │   │   │   │           │   ├── locals: []
+        │   │   │   │           │   ├── parameters: ∅
+        │   │   │   │           │   ├── body: ∅
+        │   │   │   │           │   ├── opening_loc: (118...120) = "do"
+        │   │   │   │           │   └── closing_loc: (121...124) = "end"
+        │   │   │   │           ├── flags: ∅
+        │   │   │   │           └── name: "tap"
+        │   │   │   ├── rest: ∅
+        │   │   │   ├── posts: (length: 0)
+        │   │   │   ├── keywords: (length: 0)
+        │   │   │   ├── keyword_rest: ∅
+        │   │   │   └── block: ∅
+        │   │   ├── body: ∅
+        │   │   ├── locals: [:a]
+        │   │   ├── def_keyword_loc: (97...100) = "def"
+        │   │   ├── operator_loc: (105...106) = "."
+        │   │   ├── lparen_loc: ∅
+        │   │   ├── rparen_loc: ∅
+        │   │   ├── equal_loc: ∅
+        │   │   └── end_keyword_loc: (126...129) = "end"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (131...136))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (131...136))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (131...136) = "break"
+        │   └── flags: ∅
+        └── @ WhileNode (location: (143...190))
+            ├── keyword_loc: (143...148) = "while"
+            ├── closing_loc: (187...190) = "end"
+            ├── predicate:
+            │   @ DefNode (location: (149...178))
+            │   ├── name: :foo
+            │   ├── name_loc: (158...161) = "foo"
+            │   ├── receiver:
+            │   │   @ SelfNode (location: (153...157))
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (163...173))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (163...173))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (163...166) = "tap"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block:
+            │   │           │   @ BlockNode (location: (167...173))
+            │   │           │   ├── locals: []
+            │   │           │   ├── parameters: ∅
+            │   │           │   ├── body: ∅
+            │   │           │   ├── opening_loc: (167...169) = "do"
+            │   │           │   └── closing_loc: (170...173) = "end"
+            │   │           ├── flags: ∅
+            │   │           └── name: "tap"
+            │   ├── locals: []
+            │   ├── def_keyword_loc: (149...152) = "def"
+            │   ├── operator_loc: (157...158) = "."
+            │   ├── lparen_loc: ∅
+            │   ├── rparen_loc: ∅
+            │   ├── equal_loc: ∅
+            │   └── end_keyword_loc: (175...178) = "end"
+            ├── statements:
+            │   @ StatementsNode (location: (180...185))
+            │   └── body: (length: 1)
+            │       └── @ BreakNode (location: (180...185))
+            │           ├── arguments: ∅
+            │           └── keyword_loc: (180...185) = "break"
+            └── flags: ∅

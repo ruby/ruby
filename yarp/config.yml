@@ -333,6 +333,16 @@ flags:
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+  - name: IntegerBaseFlags
+    values:
+      - name: BINARY
+        comment: "0b prefix"
+      - name: OCTAL
+        comment: "0o or 0 prefix"
+      - name: DECIMAL
+        comment: "0d or no prefix"
+      - name: HEXADECIMAL
+        comment: "0x prefix"
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
@@ -345,10 +355,10 @@ flags:
     values:
       - name: IGNORE_CASE
         comment: "i - ignores the case of characters when matching"
-      - name: MULTI_LINE
-        comment: "m - allows $ to match the end of lines within strings"
       - name: EXTENDED
         comment: "x - ignores whitespace and allows comments in regular expressions"
+      - name: MULTI_LINE
+        comment: "m - allows $ to match the end of lines within strings"
       - name: EUC_JP
         comment: "e - forces the EUC-JP encoding"
       - name: ASCII_8BIT
@@ -359,8 +369,12 @@ flags:
         comment: "u - forces the UTF-8 encoding"
       - name: ONCE
         comment: "o - only interpolates values into the regular expression once"
+  - name: StringFlags
+    values:
+      - name: FROZEN
+        comment: "frozen by virtue of a frozen_string_literal comment"
 nodes:
-  - name: AliasNode
+  - name: AliasGlobalVariableNode
     fields:
       - name: new_name
         type: node
@@ -369,7 +383,20 @@ nodes:
       - name: keyword_loc
         type: location
     comment: |
-      Represents the use of the `alias` keyword.
+      Represents the use of the `alias` keyword to alias a global variable.
+
+          alias $foo $bar
+          ^^^^^^^^^^^^^^^
+  - name: AliasMethodNode
+    fields:
+      - name: new_name
+        type: node
+      - name: old_name
+        type: node
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `alias` keyword to alias a method.
 
           alias foo bar
           ^^^^^^^^^^^^^
@@ -520,6 +547,15 @@ nodes:
 
           bar(&args)
           ^^^^^^^^^^
+  - name: BlockLocalVariableNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents a block local variable.
+
+          a { |; b| }
+                 ^
   - name: BlockNode
     fields:
       - name: locals
@@ -540,6 +576,8 @@ nodes:
                      ^^^^^^^^^^^^^^
   - name: BlockParameterNode
     fields:
+      - name: name
+        type: constant?
       - name: name_loc
         type: location?
       - name: operator_loc
@@ -556,7 +594,7 @@ nodes:
         type: node?
         kind: ParametersNode
       - name: locals
-        type: location[]
+        type: node[]
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -582,11 +620,42 @@ nodes:
 
           break foo
           ^^^^^^^^^
+  - name: CallAndWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: string
+      - name: write_name
+        type: string
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator on a call.
+
+          foo.bar &&= value
+          ^^^^^^^^^^^^^^^^^
   - name: CallNode
     fields:
       - name: receiver
         type: node?
-      - name: operator_loc
+      - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
@@ -625,50 +694,70 @@ nodes:
 
           foo&.bar
           ^^^^^^^^
-  - name: CallOperatorAndWriteNode
-    fields:
-      - name: target
-        type: node
-        kind: CallNode
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator on a call.
-
-          foo.bar &&= value
-          ^^^^^^^^^^^^^^^^^
-  - name: CallOperatorOrWriteNode
-    fields:
-      - name: target
-        type: node
-        kind: CallNode
-      - name: value
-        type: node
-      - name: operator_loc
-        type: location
-    comment: |
-      Represents the use of the `||=` operator on a call.
-
-          foo.bar ||= value
-          ^^^^^^^^^^^^^^^^^
   - name: CallOperatorWriteNode
     fields:
-      - name: target
-        type: node
-        kind: CallNode
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: string
+      - name: write_name
+        type: string
+      - name: operator
+        type: constant
       - name: operator_loc
         type: location
       - name: value
         type: node
-      - name: operator
-        type: constant
     comment: |
       Represents the use of an assignment operator on a call.
 
           foo.bar += baz
           ^^^^^^^^^^^^^^
+  - name: CallOrWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: string
+      - name: write_name
+        type: string
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator on a call.
+
+          foo.bar ||= value
+          ^^^^^^^^^^^^^^^^^
   - name: CapturePatternNode
     fields:
       - name: value
@@ -719,7 +808,7 @@ nodes:
       - name: end_keyword_loc
         type: location
       - name: name
-        type: string
+        type: constant
     comment: |
       Represents a class declaration involving the `class` keyword.
 
@@ -797,7 +886,7 @@ nodes:
       - name: name_loc
         type: location
       - name: value
-        type: node?
+        type: node
       - name: operator_loc
         type: location?
     comment: |
@@ -807,6 +896,8 @@ nodes:
           ^^^^^^^^^
   - name: ConstantAndWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -820,6 +911,8 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: ConstantOperatorWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -835,6 +928,8 @@ nodes:
           ^^^^^^^^^^^^^^^
   - name: ConstantOrWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -937,12 +1032,18 @@ nodes:
           ::Foo::Bar = 1
           ^^^^^^^^^^^^^^
   - name: ConstantReadNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents referencing a constant.
 
           Foo
           ^^^
   - name: ConstantTargetNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents writing to a constant in a context that doesn't have an explicit value.
 
@@ -950,6 +1051,8 @@ nodes:
           ^^^  ^^^
   - name: ConstantWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value
@@ -963,6 +1066,8 @@ nodes:
           ^^^^^^^
   - name: DefNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: receiver
@@ -1405,11 +1510,34 @@ nodes:
           @foo = 1
           ^^^^^^^^
   - name: IntegerNode
+    fields:
+      - name: flags
+        type: flags
+        kind: IntegerBaseFlags
     comment: |
       Represents an integer number literal.
 
           1
           ^
+  - name: InterpolatedMatchLastLineNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    newline: parts
+    comment: |
+      Represents a regular expression literal that contains interpolation that
+      is being used in the predicate of a conditional to implicitly match
+      against the last line read by an IO object.
+
+          if /foo #{bar} baz/ then end
+             ^^^^^^^^^^^^^^^^
   - name: InterpolatedRegularExpressionNode
     fields:
       - name: opening_loc
@@ -1480,6 +1608,8 @@ nodes:
               ^^^^
   - name: KeywordParameterNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value
@@ -1496,10 +1626,12 @@ nodes:
           end
   - name: KeywordRestParameterNode
     fields:
-      - name: operator_loc
-        type: location
+      - name: name
+        type: constant?
       - name: name_loc
         type: location?
+      - name: operator_loc
+        type: location
     comment: |
       Represents a keyword rest parameter to a method, block, or lambda definition.
 
@@ -1620,6 +1752,26 @@ nodes:
 
           foo = 1
           ^^^^^^^
+  - name: MatchLastLineNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: content_loc
+        type: location
+      - name: closing_loc
+        type: location
+      - name: unescaped
+        type: string
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    comment: |
+      Represents a regular expression literal used in the predicate of a
+      conditional to implicitly match against the last line read by an IO
+      object.
+
+          if /foo/i then end
+             ^^^^^^
   - name: MatchPredicateNode
     fields:
       - name: value
@@ -1646,6 +1798,19 @@ nodes:
 
           foo => bar
           ^^^^^^^^^^
+  - name: MatchWriteNode
+    fields:
+      - name: call
+        type: node
+        kind: CallNode
+      - name: locals
+        type: constant[]
+    comment: |
+      Represents writing local variables using a regular expression match with
+      named capture groups.
+
+          /(?<foo>bar)/ =~ baz
+          ^^^^^^^^^^^^^^^^^^^^
   - name: MissingNode
     comment: |
       Represents a node that is missing from the source and results in a syntax
@@ -1663,26 +1828,39 @@ nodes:
       - name: end_keyword_loc
         type: location
       - name: name
-        type: string
+        type: constant
     comment: |
       Represents a module declaration involving the `module` keyword.
 
           module Foo end
           ^^^^^^^^^^^^^^
-  - name: MultiWriteNode
+  - name: MultiTargetNode
     fields:
       - name: targets
         type: node[]
-      - name: operator_loc
-        type: location?
-      - name: value
-        type: node?
       - name: lparen_loc
         type: location?
       - name: rparen_loc
         type: location?
     comment: |
       Represents a multi-target expression.
+
+          a, b, c = 1, 2, 3
+          ^^^^^^^
+  - name: MultiWriteNode
+    fields:
+      - name: targets
+        type: node[]
+      - name: lparen_loc
+        type: location?
+      - name: rparen_loc
+        type: location?
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents a write to a multi-target expression.
 
           a, b, c = 1, 2, 3
           ^^^^^^^^^^^^^^^^^
@@ -1760,11 +1938,11 @@ nodes:
         type: node[]
       - name: optionals
         type: node[]
-      - name: posts
-        type: node[]
       - name: rest
         type: node?
         kind: RestParameterNode
+      - name: posts
+        type: node[]
       - name: keywords
         type: node[]
       - name: keyword_rest
@@ -1979,10 +2157,12 @@ nodes:
       `ex` is in the `exception` field.
   - name: RestParameterNode
     fields:
-      - name: operator_loc
-        type: location
+      - name: name
+        type: constant?
       - name: name_loc
         type: location?
+      - name: operator_loc
+        type: location
     comment: |
       Represents a rest parameter to a method, block, or lambda definition.
 
@@ -2086,6 +2266,9 @@ nodes:
           ^^^^^^^^^^^
   - name: StringNode
     fields:
+      - name: flags
+        type: flags
+        kind: StringFlags
       - name: opening_loc
         type: location?
       - name: content_loc

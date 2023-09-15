@@ -1,20 +1,22 @@
-ProgramNode(0...52)(
-  [],
-  StatementsNode(0...52)(
-    [InterpolatedStringNode(0...8)(
-       (0...8),
-       [StringNode(9...17)(nil, (9...17), nil, "foo\n" + "bar\n")],
-       (17...22)
-     ),
-     InterpolatedStringNode(23...29)(
-       (23...29),
-       [StringNode(30...38)(nil, (30...38), nil, "foo\n" + "bar\n")],
-       (38...43)
-     ),
-     InterpolatedXStringNode(44...52)(
-       (44...52),
-       [StringNode(53...61)(nil, (53...61), nil, "foo\n" + "bar\n")],
-       (61...66)
-     )]
-  )
-)
+@ ProgramNode (location: (0...52))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...52))
+    └── body: (length: 3)
+        ├── @ StringNode (location: (0...8))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...8) = "<<'HERE'"
+        │   ├── content_loc: (9...17) = "foo\nbar\n"
+        │   ├── closing_loc: (17...22) = "HERE\n"
+        │   └── unescaped: "foo\nbar\n"
+        ├── @ StringNode (location: (23...29))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (23...29) = "<<HERE"
+        │   ├── content_loc: (30...38) = "foo\nbar\n"
+        │   ├── closing_loc: (38...43) = "HERE\n"
+        │   └── unescaped: "foo\nbar\n"
+        └── @ XStringNode (location: (44...52))
+            ├── opening_loc: (44...52) = "<<`HERE`"
+            ├── content_loc: (53...61) = "foo\nbar\n"
+            ├── closing_loc: (61...66) = "HERE\n"
+            └── unescaped: "foo\nbar\n"

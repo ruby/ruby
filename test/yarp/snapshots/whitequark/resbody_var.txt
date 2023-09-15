@@ -1,73 +1,86 @@
-ProgramNode(0...73)(
-  [:ex],
-  StatementsNode(0...73)(
-    [BeginNode(0...36)(
-       (0...5),
-       StatementsNode(7...11)(
-         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 2, "meth")]
-       ),
-       RescueNode(13...31)(
-         (13...19),
-         [],
-         (20...22),
-         InstanceVariableTargetNode(23...26)(:@ex),
-         StatementsNode(28...31)(
-           [CallNode(28...31)(
-              nil,
-              nil,
-              (28...31),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (33...36)
-     ),
-     BeginNode(38...73)(
-       (38...43),
-       StatementsNode(45...49)(
-         [CallNode(45...49)(
-            nil,
-            nil,
-            (45...49),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "meth"
-          )]
-       ),
-       RescueNode(51...68)(
-         (51...57),
-         [],
-         (58...60),
-         LocalVariableTargetNode(61...63)(:ex, 0),
-         StatementsNode(65...68)(
-           [CallNode(65...68)(
-              nil,
-              nil,
-              (65...68),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (70...73)
-     )]
-  )
-)
+@ ProgramNode (location: (0...73))
+├── locals: [:ex]
+└── statements:
+    @ StatementsNode (location: (0...73))
+    └── body: (length: 2)
+        ├── @ BeginNode (location: (0...36))
+        │   ├── begin_keyword_loc: (0...5) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (7...11))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (7...11))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (7...11) = "meth"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "meth"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (13...31))
+        │   │   ├── keyword_loc: (13...19) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: (20...22) = "=>"
+        │   │   ├── reference:
+        │   │   │   @ InstanceVariableTargetNode (location: (23...26))
+        │   │   │   └── name: :@ex
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (28...31))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (28...31))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (28...31) = "bar"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "bar"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (33...36) = "end"
+        └── @ BeginNode (location: (38...73))
+            ├── begin_keyword_loc: (38...43) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (45...49))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (45...49))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (45...49) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "meth"
+            ├── rescue_clause:
+            │   @ RescueNode (location: (51...68))
+            │   ├── keyword_loc: (51...57) = "rescue"
+            │   ├── exceptions: (length: 0)
+            │   ├── operator_loc: (58...60) = "=>"
+            │   ├── reference:
+            │   │   @ LocalVariableTargetNode (location: (61...63))
+            │   │   ├── name: :ex
+            │   │   └── depth: 0
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (65...68))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (65...68))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (65...68) = "bar"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "bar"
+            │   └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (70...73) = "end"

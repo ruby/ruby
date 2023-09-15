@@ -1,21 +1,34 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)(
-    [CallNode(0...9)(
-       nil,
-       nil,
-       (0...1),
-       (1...2),
-       ArgumentsNode(2...8)(
-         [CallNode(2...3)(nil, nil, (2...3), nil, nil, nil, nil, 2, "b"),
-          KeywordHashNode(5...8)(
-            [AssocSplatNode(5...8)(IntegerNode(7...8)(), (5...7))]
-          )]
-       ),
-       (8...9),
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...9))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: (1...2) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...8))
+            │   └── arguments: (length: 2)
+            │       ├── @ CallNode (location: (2...3))
+            │       │   ├── receiver: ∅
+            │       │   ├── call_operator_loc: ∅
+            │       │   ├── message_loc: (2...3) = "b"
+            │       │   ├── opening_loc: ∅
+            │       │   ├── arguments: ∅
+            │       │   ├── closing_loc: ∅
+            │       │   ├── block: ∅
+            │       │   ├── flags: variable_call
+            │       │   └── name: "b"
+            │       └── @ KeywordHashNode (location: (5...8))
+            │           └── elements: (length: 1)
+            │               └── @ AssocSplatNode (location: (5...8))
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (7...8))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: (5...7) = "**"
+            ├── closing_loc: (8...9) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

@@ -1,29 +1,47 @@
-ProgramNode(0...28)(
-  [],
-  StatementsNode(0...28)(
-    [CaseNode(0...28)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...24)(
-          HashPatternNode(11...19)(
-            ConstantReadNode(11...12)(),
-            [AssocNode(13...18)(
-               SymbolNode(13...15)(nil, (13...14), (14...15), "a"),
-               IntegerNode(16...18)(),
-               nil
-             )],
-            nil,
-            (12...13),
-            (18...19)
-          ),
-          StatementsNode(22...24)(
-            [SymbolNode(22...24)((22...23), (23...24), nil, "d")]
-          ),
-          (8...10),
-          nil
-        )],
-       nil,
-       (0...4),
-       (25...28)
-     )]
-  )
-)
+@ ProgramNode (location: (0...28))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...28))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...28))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...24))
+            │       ├── pattern:
+            │       │   @ HashPatternNode (location: (11...19))
+            │       │   ├── constant:
+            │       │   │   @ ConstantReadNode (location: (11...12))
+            │       │   │   └── name: :B
+            │       │   ├── assocs: (length: 1)
+            │       │   │   └── @ AssocNode (location: (13...18))
+            │       │   │       ├── key:
+            │       │   │       │   @ SymbolNode (location: (13...15))
+            │       │   │       │   ├── opening_loc: ∅
+            │       │   │       │   ├── value_loc: (13...14) = "a"
+            │       │   │       │   ├── closing_loc: (14...15) = ":"
+            │       │   │       │   └── unescaped: "a"
+            │       │   │       ├── value:
+            │       │   │       │   @ IntegerNode (location: (16...18))
+            │       │   │       │   └── flags: decimal
+            │       │   │       └── operator_loc: ∅
+            │       │   ├── kwrest: ∅
+            │       │   ├── opening_loc: (12...13) = "("
+            │       │   └── closing_loc: (18...19) = ")"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (22...24))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (22...24))
+            │       │           ├── opening_loc: (22...23) = ":"
+            │       │           ├── value_loc: (23...24) = "d"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "d"
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (25...28) = "end"

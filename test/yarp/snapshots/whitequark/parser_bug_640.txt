@@ -1,10 +1,11 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)(
-    [InterpolatedStringNode(0...6)(
-       (0...6),
-       [StringNode(7...20)(nil, (7...20), nil, "bazqux\n")],
-       (20...24)
-     )]
-  )
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...6))
+            ├── flags: ∅
+            ├── opening_loc: (0...6) = "<<~FOO"
+            ├── content_loc: (7...20) = "  baz\\\n  qux\n"
+            ├── closing_loc: (20...24) = "FOO\n"
+            └── unescaped: "bazqux\n"

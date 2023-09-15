@@ -1,11 +1,20 @@
-ProgramNode(0...26)(
-  [],
-  StatementsNode(0...26)(
-    [AndNode(0...13)(TrueNode(0...4)(), TrueNode(9...13)(), (5...8)),
-     AndNode(15...26)(
-       TrueNode(15...19)(),
-       ArrayNode(24...26)([], (24...25), (25...26)),
-       (20...23)
-     )]
-  )
-)
+@ ProgramNode (location: (0...26))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...26))
+    └── body: (length: 2)
+        ├── @ AndNode (location: (0...13))
+        │   ├── left:
+        │   │   @ TrueNode (location: (0...4))
+        │   ├── right:
+        │   │   @ TrueNode (location: (9...13))
+        │   └── operator_loc: (5...8) = "and"
+        └── @ AndNode (location: (15...26))
+            ├── left:
+            │   @ TrueNode (location: (15...19))
+            ├── right:
+            │   @ ArrayNode (location: (24...26))
+            │   ├── elements: (length: 0)
+            │   ├── opening_loc: (24...25) = "["
+            │   └── closing_loc: (25...26) = "]"
+            └── operator_loc: (20...23) = "and"

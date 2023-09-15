@@ -1,19 +1,20 @@
-ProgramNode(0...131)(
-  [],
-  StatementsNode(0...131)(
-    [StringConcatNode(0...131)(
-       StringNode(0...62)(
-         (0...1),
-         (1...61),
-         (61...62),
-         "\xE3Ӌー\x83\xE3\x83コ\xA3\x82\x99"
-       ),
-       StringNode(73...131)(
-         (73...74),
-         (74...130),
-         (130...131),
-         "ンパý;foo@bar.com"
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...131))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...131))
+    └── body: (length: 1)
+        └── @ StringConcatNode (location: (0...131))
+            ├── left:
+            │   @ StringNode (location: (0...62))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (0...1) = "\""
+            │   ├── content_loc: (1...61) = "\\xE3\\xD3\\x8B\\xE3\\x83\\xBC\\x83\\xE3\\x83\\xE3\\x82\\xB3\\xA3\\x82\\x99"
+            │   ├── closing_loc: (61...62) = "\""
+            │   └── unescaped: "\xE3Ӌー\x83\xE3\x83コ\xA3\x82\x99"
+            └── right:
+                @ StringNode (location: (73...131))
+                ├── flags: ∅
+                ├── opening_loc: (73...74) = "\""
+                ├── content_loc: (74...130) = "\\xE3\\x83\\xB3\\xE3\\x83\\x8F\\xE3\\x82\\x9A\\xC3\\xBD;foo@bar.com"
+                ├── closing_loc: (130...131) = "\""
+                └── unescaped: "ンパý;foo@bar.com"

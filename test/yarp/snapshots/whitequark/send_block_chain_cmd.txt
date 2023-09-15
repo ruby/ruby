@@ -1,194 +1,305 @@
-ProgramNode(0...173)(
-  [],
-  StatementsNode(0...173)(
-    [CallNode(0...21)(
-       CallNode(0...13)(
-         nil,
-         nil,
-         (0...4),
-         nil,
-         ArgumentsNode(5...6)([IntegerNode(5...6)()]),
-         nil,
-         BlockNode(7...13)([], nil, nil, (7...9), (10...13)),
-         0,
-         "meth"
-       ),
-       (13...14),
-       (14...17),
-       nil,
-       ArgumentsNode(18...21)(
-         [CallNode(18...21)(nil, nil, (18...21), nil, nil, nil, nil, 2, "bar")]
-       ),
-       nil,
-       nil,
-       0,
-       "fun"
-     ),
-     CallNode(23...51)(
-       CallNode(23...36)(
-         nil,
-         nil,
-         (23...27),
-         nil,
-         ArgumentsNode(28...29)([IntegerNode(28...29)()]),
-         nil,
-         BlockNode(30...36)([], nil, nil, (30...32), (33...36)),
-         0,
-         "meth"
-       ),
-       (36...37),
-       (37...40),
-       nil,
-       ArgumentsNode(41...44)(
-         [CallNode(41...44)(nil, nil, (41...44), nil, nil, nil, nil, 2, "bar")]
-       ),
-       nil,
-       BlockNode(45...51)([], nil, nil, (45...47), (48...51)),
-       0,
-       "fun"
-     ),
-     CallNode(53...73)(
-       CallNode(53...66)(
-         nil,
-         nil,
-         (53...57),
-         nil,
-         ArgumentsNode(58...59)([IntegerNode(58...59)()]),
-         nil,
-         BlockNode(60...66)([], nil, nil, (60...62), (63...66)),
-         0,
-         "meth"
-       ),
-       (66...67),
-       (67...70),
-       nil,
-       nil,
-       nil,
-       BlockNode(71...73)([], nil, nil, (71...72), (72...73)),
-       0,
-       "fun"
-     ),
-     CallNode(75...97)(
-       CallNode(75...88)(
-         nil,
-         nil,
-         (75...79),
-         nil,
-         ArgumentsNode(80...81)([IntegerNode(80...81)()]),
-         nil,
-         BlockNode(82...88)([], nil, nil, (82...84), (85...88)),
-         0,
-         "meth"
-       ),
-       (88...89),
-       (89...92),
-       (92...93),
-       ArgumentsNode(93...96)(
-         [CallNode(93...96)(nil, nil, (93...96), nil, nil, nil, nil, 2, "bar")]
-       ),
-       (96...97),
-       nil,
-       0,
-       "fun"
-     ),
-     CallNode(99...124)(
-       CallNode(99...112)(
-         nil,
-         nil,
-         (99...103),
-         nil,
-         ArgumentsNode(104...105)([IntegerNode(104...105)()]),
-         nil,
-         BlockNode(106...112)([], nil, nil, (106...108), (109...112)),
-         0,
-         "meth"
-       ),
-       (112...113),
-       (113...116),
-       (116...117),
-       ArgumentsNode(117...120)(
-         [CallNode(117...120)(
-            nil,
-            nil,
-            (117...120),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "bar"
-          )]
-       ),
-       (120...121),
-       BlockNode(122...124)([], nil, nil, (122...123), (123...124)),
-       0,
-       "fun"
-     ),
-     CallNode(126...148)(
-       CallNode(126...139)(
-         nil,
-         nil,
-         (126...130),
-         nil,
-         ArgumentsNode(131...132)([IntegerNode(131...132)()]),
-         nil,
-         BlockNode(133...139)([], nil, nil, (133...135), (136...139)),
-         0,
-         "meth"
-       ),
-       (139...141),
-       (141...144),
-       nil,
-       ArgumentsNode(145...148)(
-         [CallNode(145...148)(
-            nil,
-            nil,
-            (145...148),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "bar"
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "fun"
-     ),
-     CallNode(150...173)(
-       CallNode(150...163)(
-         nil,
-         nil,
-         (150...154),
-         nil,
-         ArgumentsNode(155...156)([IntegerNode(155...156)()]),
-         nil,
-         BlockNode(157...163)([], nil, nil, (157...159), (160...163)),
-         0,
-         "meth"
-       ),
-       (163...165),
-       (165...168),
-       (168...169),
-       ArgumentsNode(169...172)(
-         [CallNode(169...172)(
-            nil,
-            nil,
-            (169...172),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "bar"
-          )]
-       ),
-       (172...173),
-       nil,
-       0,
-       "fun"
-     )]
-  )
-)
+@ ProgramNode (location: (0...173))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...173))
+    └── body: (length: 7)
+        ├── @ CallNode (location: (0...21))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (0...13))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...4) = "meth"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (5...6))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (5...6))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (7...13))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (7...9) = "do"
+        │   │   │   └── closing_loc: (10...13) = "end"
+        │   │   ├── flags: ∅
+        │   │   └── name: "meth"
+        │   ├── call_operator_loc: (13...14) = "."
+        │   ├── message_loc: (14...17) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (18...21))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (18...21))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (18...21) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (23...51))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (23...36))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (23...27) = "meth"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (28...29))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (28...29))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (30...36))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (30...32) = "do"
+        │   │   │   └── closing_loc: (33...36) = "end"
+        │   │   ├── flags: ∅
+        │   │   └── name: "meth"
+        │   ├── call_operator_loc: (36...37) = "."
+        │   ├── message_loc: (37...40) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (41...44))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (41...44))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (41...44) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (45...51))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (45...47) = "do"
+        │   │   └── closing_loc: (48...51) = "end"
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (53...73))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (53...66))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (53...57) = "meth"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (58...59))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (58...59))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (60...66))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (60...62) = "do"
+        │   │   │   └── closing_loc: (63...66) = "end"
+        │   │   ├── flags: ∅
+        │   │   └── name: "meth"
+        │   ├── call_operator_loc: (66...67) = "."
+        │   ├── message_loc: (67...70) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (71...73))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (71...72) = "{"
+        │   │   └── closing_loc: (72...73) = "}"
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (75...97))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (75...88))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (75...79) = "meth"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (80...81))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (80...81))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (82...88))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (82...84) = "do"
+        │   │   │   └── closing_loc: (85...88) = "end"
+        │   │   ├── flags: ∅
+        │   │   └── name: "meth"
+        │   ├── call_operator_loc: (88...89) = "."
+        │   ├── message_loc: (89...92) = "fun"
+        │   ├── opening_loc: (92...93) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (93...96))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (93...96))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (93...96) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── closing_loc: (96...97) = ")"
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (99...124))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (99...112))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (99...103) = "meth"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (104...105))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (104...105))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (106...112))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (106...108) = "do"
+        │   │   │   └── closing_loc: (109...112) = "end"
+        │   │   ├── flags: ∅
+        │   │   └── name: "meth"
+        │   ├── call_operator_loc: (112...113) = "."
+        │   ├── message_loc: (113...116) = "fun"
+        │   ├── opening_loc: (116...117) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (117...120))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (117...120))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (117...120) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── closing_loc: (120...121) = ")"
+        │   ├── block:
+        │   │   @ BlockNode (location: (122...124))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (122...123) = "{"
+        │   │   └── closing_loc: (123...124) = "}"
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (126...148))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (126...139))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (126...130) = "meth"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (131...132))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (131...132))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (133...139))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (133...135) = "do"
+        │   │   │   └── closing_loc: (136...139) = "end"
+        │   │   ├── flags: ∅
+        │   │   └── name: "meth"
+        │   ├── call_operator_loc: (139...141) = "::"
+        │   ├── message_loc: (141...144) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (145...148))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (145...148))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (145...148) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        └── @ CallNode (location: (150...173))
+            ├── receiver:
+            │   @ CallNode (location: (150...163))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (150...154) = "meth"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (155...156))
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ IntegerNode (location: (155...156))
+            │   │           └── flags: decimal
+            │   ├── closing_loc: ∅
+            │   ├── block:
+            │   │   @ BlockNode (location: (157...163))
+            │   │   ├── locals: []
+            │   │   ├── parameters: ∅
+            │   │   ├── body: ∅
+            │   │   ├── opening_loc: (157...159) = "do"
+            │   │   └── closing_loc: (160...163) = "end"
+            │   ├── flags: ∅
+            │   └── name: "meth"
+            ├── call_operator_loc: (163...165) = "::"
+            ├── message_loc: (165...168) = "fun"
+            ├── opening_loc: (168...169) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (169...172))
+            │   └── arguments: (length: 1)
+            │       └── @ CallNode (location: (169...172))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (169...172) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "bar"
+            ├── closing_loc: (172...173) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "fun"

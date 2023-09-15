@@ -1,22 +1,28 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [IfNode(0...12)(
-       (0...2),
-       CallNode(3...7)(
-         nil,
-         nil,
-         (3...4),
-         nil,
-         ArgumentsNode(5...7)([SymbolNode(5...7)((5...6), (6...7), nil, "x")]),
-         nil,
-         nil,
-         0,
-         "f"
-       ),
-       nil,
-       nil,
-       (9...12)
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ IfNode (location: (0...12))
+            ├── if_keyword_loc: (0...2) = "if"
+            ├── predicate:
+            │   @ CallNode (location: (3...7))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (3...4) = "f"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (5...7))
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ SymbolNode (location: (5...7))
+            │   │           ├── opening_loc: (5...6) = ":"
+            │   │           ├── value_loc: (6...7) = "x"
+            │   │           ├── closing_loc: ∅
+            │   │           └── unescaped: "x"
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "f"
+            ├── statements: ∅
+            ├── consequent: ∅
+            └── end_keyword_loc: (9...12) = "end"

@@ -1,61 +1,68 @@
-ProgramNode(0...26)(
-  [],
-  StatementsNode(0...26)(
-    [CallNode(0...9)(
-       nil,
-       nil,
-       (0...3),
-       (3...4),
-       ArgumentsNode(4...8)(
-         [SplatNode(4...8)(
-            (4...5),
-            CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "bar")
-          )]
-       ),
-       (8...9),
-       nil,
-       0,
-       "fun"
-     ),
-     CallNode(11...26)(
-       nil,
-       nil,
-       (11...14),
-       (14...15),
-       ArgumentsNode(15...25)(
-         [SplatNode(15...19)(
-            (15...16),
-            CallNode(16...19)(
-              nil,
-              nil,
-              (16...19),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            )
-          ),
-          BlockArgumentNode(21...25)(
-            CallNode(22...25)(
-              nil,
-              nil,
-              (22...25),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "baz"
-            ),
-            (21...22)
-          )]
-       ),
-       (25...26),
-       nil,
-       0,
-       "fun"
-     )]
-  )
-)
+@ ProgramNode (location: (0...26))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...26))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...9))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "fun"
+        │   ├── opening_loc: (3...4) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (4...8))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ SplatNode (location: (4...8))
+        │   │           ├── operator_loc: (4...5) = "*"
+        │   │           └── expression:
+        │   │               @ CallNode (location: (5...8))
+        │   │               ├── receiver: ∅
+        │   │               ├── call_operator_loc: ∅
+        │   │               ├── message_loc: (5...8) = "bar"
+        │   │               ├── opening_loc: ∅
+        │   │               ├── arguments: ∅
+        │   │               ├── closing_loc: ∅
+        │   │               ├── block: ∅
+        │   │               ├── flags: variable_call
+        │   │               └── name: "bar"
+        │   ├── closing_loc: (8...9) = ")"
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        └── @ CallNode (location: (11...26))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (11...14) = "fun"
+            ├── opening_loc: (14...15) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (15...25))
+            │   └── arguments: (length: 2)
+            │       ├── @ SplatNode (location: (15...19))
+            │       │   ├── operator_loc: (15...16) = "*"
+            │       │   └── expression:
+            │       │       @ CallNode (location: (16...19))
+            │       │       ├── receiver: ∅
+            │       │       ├── call_operator_loc: ∅
+            │       │       ├── message_loc: (16...19) = "bar"
+            │       │       ├── opening_loc: ∅
+            │       │       ├── arguments: ∅
+            │       │       ├── closing_loc: ∅
+            │       │       ├── block: ∅
+            │       │       ├── flags: variable_call
+            │       │       └── name: "bar"
+            │       └── @ BlockArgumentNode (location: (21...25))
+            │           ├── expression:
+            │           │   @ CallNode (location: (22...25))
+            │           │   ├── receiver: ∅
+            │           │   ├── call_operator_loc: ∅
+            │           │   ├── message_loc: (22...25) = "baz"
+            │           │   ├── opening_loc: ∅
+            │           │   ├── arguments: ∅
+            │           │   ├── closing_loc: ∅
+            │           │   ├── block: ∅
+            │           │   ├── flags: variable_call
+            │           │   └── name: "baz"
+            │           └── operator_loc: (21...22) = "&"
+            ├── closing_loc: (25...26) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "fun"

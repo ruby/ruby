@@ -1,10 +1,11 @@
-ProgramNode(0...5)(
-  [],
-  StatementsNode(0...5)(
-    [InterpolatedStringNode(0...5)(
-       (0...5),
-       [StringNode(6...21)(nil, (6...21), nil, "foo\rbar\n" + "baz\r\n")],
-       (21...25)
-     )]
-  )
-)
+@ ProgramNode (location: (0...5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...5))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...5))
+            ├── flags: ∅
+            ├── opening_loc: (0...5) = "<<EOS"
+            ├── content_loc: (6...21) = "foo\\rbar\nbaz\\r\n"
+            ├── closing_loc: (21...25) = "EOS\n"
+            └── unescaped: "foo\rbar\nbaz\r\n"

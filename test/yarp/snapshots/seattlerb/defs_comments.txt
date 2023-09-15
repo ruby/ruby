@@ -1,18 +1,19 @@
-ProgramNode(19...36)(
-  [],
-  StatementsNode(19...36)(
-    [DefNode(19...36)(
-       (28...32),
-       SelfNode(23...27)(),
-       nil,
-       nil,
-       [],
-       (19...22),
-       (27...28),
-       nil,
-       nil,
-       nil,
-       (33...36)
-     )]
-  )
-)
+@ ProgramNode (location: (19...36))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (19...36))
+    └── body: (length: 1)
+        └── @ DefNode (location: (19...36))
+            ├── name: :blah
+            ├── name_loc: (28...32) = "blah"
+            ├── receiver:
+            │   @ SelfNode (location: (23...27))
+            ├── parameters: ∅
+            ├── body: ∅
+            ├── locals: []
+            ├── def_keyword_loc: (19...22) = "def"
+            ├── operator_loc: (27...28) = "."
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (33...36) = "end"

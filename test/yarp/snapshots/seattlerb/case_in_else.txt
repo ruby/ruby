@@ -1,25 +1,38 @@
-ProgramNode(0...38)(
-  [],
-  StatementsNode(0...38)(
-    [CaseNode(0...38)(
-       ConstantReadNode(5...10)(),
-       [InNode(11...24)(
-          ConstantReadNode(14...19)(),
-          StatementsNode(22...24)(
-            [SymbolNode(22...24)((22...23), (23...24), nil, "b")]
-          ),
-          (11...13),
-          nil
-        )],
-       ElseNode(25...38)(
-         (25...29),
-         StatementsNode(32...34)(
-           [SymbolNode(32...34)((32...33), (33...34), nil, "c")]
-         ),
-         (35...38)
-       ),
-       (0...4),
-       (35...38)
-     )]
-  )
-)
+@ ProgramNode (location: (0...38))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...38))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...38))
+            ├── predicate:
+            │   @ ConstantReadNode (location: (5...10))
+            │   └── name: :Array
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (11...24))
+            │       ├── pattern:
+            │       │   @ ConstantReadNode (location: (14...19))
+            │       │   └── name: :Class
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (22...24))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (22...24))
+            │       │           ├── opening_loc: (22...23) = ":"
+            │       │           ├── value_loc: (23...24) = "b"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "b"
+            │       ├── in_loc: (11...13) = "in"
+            │       └── then_loc: ∅
+            ├── consequent:
+            │   @ ElseNode (location: (25...38))
+            │   ├── else_keyword_loc: (25...29) = "else"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (32...34))
+            │   │   └── body: (length: 1)
+            │   │       └── @ SymbolNode (location: (32...34))
+            │   │           ├── opening_loc: (32...33) = ":"
+            │   │           ├── value_loc: (33...34) = "c"
+            │   │           ├── closing_loc: ∅
+            │   │           └── unescaped: "c"
+            │   └── end_keyword_loc: (35...38) = "end"
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (35...38) = "end"

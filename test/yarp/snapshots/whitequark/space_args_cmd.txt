@@ -1,46 +1,45 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [CallNode(0...11)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       ArgumentsNode(4...11)(
-         [ParenthesesNode(4...11)(
-            StatementsNode(5...10)(
-              [CallNode(5...10)(
-                 nil,
-                 nil,
-                 (5...6),
-                 nil,
-                 ArgumentsNode(7...10)(
-                   [CallNode(7...10)(
-                      nil,
-                      nil,
-                      (7...10),
-                      nil,
-                      nil,
-                      nil,
-                      nil,
-                      2,
-                      "bar"
-                    )]
-                 ),
-                 nil,
-                 nil,
-                 0,
-                 "f"
-               )]
-            ),
-            (4...5),
-            (10...11)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "fun"
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...11))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...3) = "fun"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (4...11))
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (4...11))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (5...10))
+            │           │   └── body: (length: 1)
+            │           │       └── @ CallNode (location: (5...10))
+            │           │           ├── receiver: ∅
+            │           │           ├── call_operator_loc: ∅
+            │           │           ├── message_loc: (5...6) = "f"
+            │           │           ├── opening_loc: ∅
+            │           │           ├── arguments:
+            │           │           │   @ ArgumentsNode (location: (7...10))
+            │           │           │   └── arguments: (length: 1)
+            │           │           │       └── @ CallNode (location: (7...10))
+            │           │           │           ├── receiver: ∅
+            │           │           │           ├── call_operator_loc: ∅
+            │           │           │           ├── message_loc: (7...10) = "bar"
+            │           │           │           ├── opening_loc: ∅
+            │           │           │           ├── arguments: ∅
+            │           │           │           ├── closing_loc: ∅
+            │           │           │           ├── block: ∅
+            │           │           │           ├── flags: variable_call
+            │           │           │           └── name: "bar"
+            │           │           ├── closing_loc: ∅
+            │           │           ├── block: ∅
+            │           │           ├── flags: ∅
+            │           │           └── name: "f"
+            │           ├── opening_loc: (4...5) = "("
+            │           └── closing_loc: (10...11) = ")"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "fun"

@@ -1,10 +1,29 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [RescueModifierNode(0...15)(
-       CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 2, "meth"),
-       (5...11),
-       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "bar")
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ RescueModifierNode (location: (0...15))
+            ├── expression:
+            │   @ CallNode (location: (0...4))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...4) = "meth"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "meth"
+            ├── keyword_loc: (5...11) = "rescue"
+            └── rescue_expression:
+                @ CallNode (location: (12...15))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (12...15) = "bar"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: variable_call
+                └── name: "bar"

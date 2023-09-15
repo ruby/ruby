@@ -82,7 +82,7 @@ jobs:
             ${{ steps.find-patch.outputs.needs }}
         if: ${{ steps.find-patch.outputs.needs != '' }}
 
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
@@ -90,7 +90,7 @@ jobs:
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
 
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
@@ -147,9 +147,14 @@ jobs:
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
+      # We use OpenSSL instealled by vcpkg instead
+      - name: disable system OpenSSL
+        run: |
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
             ren c:\Windows\System32\%%I.dll %%I.dll_
           )
+        # windows-2019 image doesn't have OpenSSL as of 2023/9/14
+        if: ${{ matrix.vs != 2019 }}
 
       - name: Configure
         run: >-

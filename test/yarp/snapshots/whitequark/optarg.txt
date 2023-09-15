@@ -1,63 +1,68 @@
-ProgramNode(0...44)(
-  [],
-  StatementsNode(0...44)(
-    [DefNode(0...18)(
-       (4...5),
-       nil,
-       ParametersNode(6...13)(
-         [],
-         [OptionalParameterNode(6...13)(
-            :foo,
-            (6...9),
-            (10...11),
-            IntegerNode(12...13)()
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:foo],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       nil,
-       (15...18)
-     ),
-     DefNode(20...44)(
-       (24...25),
-       nil,
-       ParametersNode(26...38)(
-         [],
-         [OptionalParameterNode(26...31)(
-            :foo,
-            (26...29),
-            (29...30),
-            IntegerNode(30...31)()
-          ),
-          OptionalParameterNode(33...38)(
-            :bar,
-            (33...36),
-            (36...37),
-            IntegerNode(37...38)()
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:foo, :bar],
-       (20...23),
-       nil,
-       (25...26),
-       (38...39),
-       nil,
-       (41...44)
-     )]
-  )
-)
+@ ProgramNode (location: (0...44))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...44))
+    └── body: (length: 2)
+        ├── @ DefNode (location: (0...18))
+        │   ├── name: :f
+        │   ├── name_loc: (4...5) = "f"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (6...13))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 1)
+        │   │   │   └── @ OptionalParameterNode (location: (6...13))
+        │   │   │       ├── name: :foo
+        │   │   │       ├── name_loc: (6...9) = "foo"
+        │   │   │       ├── operator_loc: (10...11) = "="
+        │   │   │       └── value:
+        │   │   │           @ IntegerNode (location: (12...13))
+        │   │   │           └── flags: decimal
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:foo]
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (15...18) = "end"
+        └── @ DefNode (location: (20...44))
+            ├── name: :f
+            ├── name_loc: (24...25) = "f"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (26...38))
+            │   ├── requireds: (length: 0)
+            │   ├── optionals: (length: 2)
+            │   │   ├── @ OptionalParameterNode (location: (26...31))
+            │   │   │   ├── name: :foo
+            │   │   │   ├── name_loc: (26...29) = "foo"
+            │   │   │   ├── operator_loc: (29...30) = "="
+            │   │   │   └── value:
+            │   │   │       @ IntegerNode (location: (30...31))
+            │   │   │       └── flags: decimal
+            │   │   └── @ OptionalParameterNode (location: (33...38))
+            │   │       ├── name: :bar
+            │   │       ├── name_loc: (33...36) = "bar"
+            │   │       ├── operator_loc: (36...37) = "="
+            │   │       └── value:
+            │   │           @ IntegerNode (location: (37...38))
+            │   │           └── flags: decimal
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest: ∅
+            │   └── block: ∅
+            ├── body: ∅
+            ├── locals: [:foo, :bar]
+            ├── def_keyword_loc: (20...23) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (25...26) = "("
+            ├── rparen_loc: (38...39) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (41...44) = "end"

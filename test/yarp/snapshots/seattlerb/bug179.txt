@@ -1,23 +1,27 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)(
-    [CallNode(0...9)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...9)(
-         [RangeNode(2...9)(
-            ParenthesesNode(2...4)(nil, (2...3), (3...4)),
-            NilNode(6...9)(),
-            (4...6),
-            0
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     )]
-  )
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...9))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "p"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...9))
+            │   └── arguments: (length: 1)
+            │       └── @ RangeNode (location: (2...9))
+            │           ├── left:
+            │           │   @ ParenthesesNode (location: (2...4))
+            │           │   ├── body: ∅
+            │           │   ├── opening_loc: (2...3) = "("
+            │           │   └── closing_loc: (3...4) = ")"
+            │           ├── right:
+            │           │   @ NilNode (location: (6...9))
+            │           ├── operator_loc: (4...6) = ".."
+            │           └── flags: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "p"

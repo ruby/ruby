@@ -1,12 +1,13 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [StringNode(0...11)(
-       (0...1),
-       (1...10),
-       (10...11),
-       "\n" + "\n" + "\n" + "\n" + "#"
-     ),
-     IntegerNode(12...13)()]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (0...11))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...1) = "\""
+        │   ├── content_loc: (1...10) = "\\n\\n\\n\\n#"
+        │   ├── closing_loc: (10...11) = "\""
+        │   └── unescaped: "\n\n\n\n#"
+        └── @ IntegerNode (location: (12...13))
+            └── flags: decimal

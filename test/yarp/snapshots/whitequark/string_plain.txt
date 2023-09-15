@@ -1,7 +1,17 @@
-ProgramNode(0...20)(
-  [],
-  StatementsNode(0...20)(
-    [StringNode(0...10)((0...3), (3...9), (9...10), "foobar"),
-     StringNode(12...20)((12...13), (13...19), (19...20), "foobar")]
-  )
-)
+@ ProgramNode (location: (0...20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...20))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (0...10))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...3) = "%q("
+        │   ├── content_loc: (3...9) = "foobar"
+        │   ├── closing_loc: (9...10) = ")"
+        │   └── unescaped: "foobar"
+        └── @ StringNode (location: (12...20))
+            ├── flags: ∅
+            ├── opening_loc: (12...13) = "'"
+            ├── content_loc: (13...19) = "foobar"
+            ├── closing_loc: (19...20) = "'"
+            └── unescaped: "foobar"

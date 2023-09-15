@@ -1,18 +1,39 @@
-ProgramNode(0...17)(
-  [],
-  StatementsNode(0...17)(
-    [CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "fun"),
-     CallNode(5...9)(nil, nil, (5...9), nil, nil, nil, nil, 0, "fun!"),
-     CallNode(11...17)(
-       nil,
-       nil,
-       (11...14),
-       (14...15),
-       ArgumentsNode(15...16)([IntegerNode(15...16)()]),
-       (16...17),
-       nil,
-       0,
-       "fun"
-     )]
-  )
-)
+@ ProgramNode (location: (0...17))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...17))
+    └── body: (length: 3)
+        ├── @ CallNode (location: (0...3))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "fun"
+        ├── @ CallNode (location: (5...9))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (5...9) = "fun!"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "fun!"
+        └── @ CallNode (location: (11...17))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (11...14) = "fun"
+            ├── opening_loc: (14...15) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (15...16))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (15...16))
+            │           └── flags: decimal
+            ├── closing_loc: (16...17) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "fun"

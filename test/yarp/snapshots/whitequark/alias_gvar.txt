@@ -1,15 +1,20 @@
-ProgramNode(0...24)(
-  [],
-  StatementsNode(0...24)(
-    [AliasNode(0...11)(
-       GlobalVariableReadNode(6...8)(:$a),
-       BackReferenceReadNode(9...11)(),
-       (0...5)
-     ),
-     AliasNode(13...24)(
-       GlobalVariableReadNode(19...21)(:$a),
-       GlobalVariableReadNode(22...24)(:$b),
-       (13...18)
-     )]
-  )
-)
+@ ProgramNode (location: (0...24))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...24))
+    └── body: (length: 2)
+        ├── @ AliasGlobalVariableNode (location: (0...11))
+        │   ├── new_name:
+        │   │   @ GlobalVariableReadNode (location: (6...8))
+        │   │   └── name: :$a
+        │   ├── old_name:
+        │   │   @ BackReferenceReadNode (location: (9...11))
+        │   └── keyword_loc: (0...5) = "alias"
+        └── @ AliasGlobalVariableNode (location: (13...24))
+            ├── new_name:
+            │   @ GlobalVariableReadNode (location: (19...21))
+            │   └── name: :$a
+            ├── old_name:
+            │   @ GlobalVariableReadNode (location: (22...24))
+            │   └── name: :$b
+            └── keyword_loc: (13...18) = "alias"

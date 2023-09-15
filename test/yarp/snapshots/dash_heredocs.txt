@@ -1,176 +1,251 @@
-ProgramNode(0...278)(
-  [],
-  StatementsNode(0...278)(
-    [InterpolatedStringNode(0...6)(
-       (0...6),
-       [StringNode(7...11)(nil, (7...11), nil, "  a\n")],
-       (11...15)
-     ),
-     CallNode(16...36)(
-       InterpolatedStringNode(16...24)(
-         (16...24),
-         [StringNode(37...41)(nil, (37...41), nil, "  a\n")],
-         (41...47)
-       ),
-       nil,
-       (25...26),
-       nil,
-       ArgumentsNode(27...36)(
-         [InterpolatedStringNode(27...36)(
-            (27...36),
-            [StringNode(47...51)(nil, (47...51), nil, "  b\n")],
-            (51...58)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "+"
-     ),
-     InterpolatedXStringNode(59...67)(
-       (59...67),
-       [StringNode(68...72)(nil, (68...72), nil, "  a\n"),
-        EmbeddedStatementsNode(72...76)(
-          (72...74),
-          StatementsNode(74...75)(
-            [CallNode(74...75)(
-               nil,
-               nil,
-               (74...75),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "b"
-             )]
-          ),
-          (75...76)
-        ),
-        StringNode(76...77)(nil, (76...77), nil, "\n")],
-       (77...81)
-     ),
-     InterpolatedStringNode(82...88)(
-       (82...88),
-       [StringNode(98...102)(nil, (98...102), nil, "  a\n")],
-       (102...106)
-     ),
-     InterpolatedStringNode(107...113)(
-       (107...113),
-       [StringNode(114...122)(nil, (114...122), nil, "  a\n" + "  b\n")],
-       (122...128)
-     ),
-     InterpolatedStringNode(129...137)(
-       (129...137),
-       [StringNode(138...142)(nil, (138...142), nil, "  a\n"),
-        EmbeddedStatementsNode(142...146)(
-          (142...144),
-          StatementsNode(144...145)(
-            [CallNode(144...145)(
-               nil,
-               nil,
-               (144...145),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "b"
-             )]
-          ),
-          (145...146)
-        ),
-        StringNode(146...147)(nil, (146...147), nil, "\n")],
-       (147...151)
-     ),
-     InterpolatedStringNode(152...158)(
-       (152...158),
-       [StringNode(159...163)(nil, (159...163), nil, "  a\n"),
-        EmbeddedStatementsNode(163...167)(
-          (163...165),
-          StatementsNode(165...166)(
-            [CallNode(165...166)(
-               nil,
-               nil,
-               (165...166),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "b"
-             )]
-          ),
-          (166...167)
-        ),
-        StringNode(167...168)(nil, (167...168), nil, "\n")],
-       (168...172)
-     ),
-     StringNode(173...179)((173...175), (175...178), (178...179), "abc"),
-     InterpolatedStringNode(181...187)(
-       (181...187),
-       [StringNode(188...196)(nil, (188...196), nil, "  a\n" + "  b\n")],
-       (196...200)
-     ),
-     InterpolatedStringNode(201...206)((201...206), [], (207...208)),
-     InterpolatedStringNode(209...217)(
-       (209...217),
-       [StringNode(218...227)(nil, (218...227), nil, "  a \#{1}\n")],
-       (227...231)
-     ),
-     CallNode(232...243)(
-       InterpolatedStringNode(232...236)(
-         (232...236),
-         [StringNode(244...248)(nil, (244...248), nil, "  a\n")],
-         (248...250)
-       ),
-       nil,
-       (237...238),
-       nil,
-       ArgumentsNode(239...243)(
-         [InterpolatedStringNode(239...243)(
-            (239...243),
-            [StringNode(250...256)(nil, (250...256), nil, "  b\n" + "  "),
-             EmbeddedStatementsNode(256...263)(
-               (256...258),
-               StatementsNode(258...259)([IntegerNode(258...259)()]),
-               (262...263)
-             ),
-             StringNode(263...264)(nil, (263...264), nil, "\n")],
-            (264...266)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "+"
-     ),
-     CallNode(267...278)(
-       InterpolatedStringNode(267...271)(
-         (267...271),
-         [StringNode(279...283)(nil, (279...283), nil, "  a\n")],
-         (283...285)
-       ),
-       nil,
-       (272...273),
-       nil,
-       ArgumentsNode(274...278)(
-         [InterpolatedStringNode(274...278)(
-            (274...278),
-            [StringNode(285...291)(nil, (285...291), nil, "  b\n" + "  "),
-             EmbeddedStatementsNode(291...298)(
-               (291...293),
-               StatementsNode(296...297)([IntegerNode(296...297)()]),
-               (297...298)
-             ),
-             StringNode(298...299)(nil, (298...299), nil, "\n")],
-            (299...301)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "+"
-     )]
-  )
-)
+@ ProgramNode (location: (0...278))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...278))
+    └── body: (length: 13)
+        ├── @ StringNode (location: (0...6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (0...6) = "<<-EOF"
+        │   ├── content_loc: (7...11) = "  a\n"
+        │   ├── closing_loc: (11...15) = "EOF\n"
+        │   └── unescaped: "  a\n"
+        ├── @ CallNode (location: (16...36))
+        │   ├── receiver:
+        │   │   @ StringNode (location: (16...24))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (16...24) = "<<-FIRST"
+        │   │   ├── content_loc: (37...41) = "  a\n"
+        │   │   ├── closing_loc: (41...47) = "FIRST\n"
+        │   │   └── unescaped: "  a\n"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (25...26) = "+"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (27...36))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ StringNode (location: (27...36))
+        │   │           ├── flags: ∅
+        │   │           ├── opening_loc: (27...36) = "<<-SECOND"
+        │   │           ├── content_loc: (47...51) = "  b\n"
+        │   │           ├── closing_loc: (51...58) = "SECOND\n"
+        │   │           └── unescaped: "  b\n"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "+"
+        ├── @ InterpolatedXStringNode (location: (59...67))
+        │   ├── opening_loc: (59...67) = "<<-`EOF`"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (68...72))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (68...72) = "  a\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "  a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (72...76))
+        │   │   │   ├── opening_loc: (72...74) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (74...75))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (74...75))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (74...75) = "b"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "b"
+        │   │   │   └── closing_loc: (75...76) = "}"
+        │   │   └── @ StringNode (location: (76...77))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (76...77) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (77...81) = "EOF\n"
+        ├── @ StringNode (location: (82...88))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (82...88) = "<<-EOF"
+        │   ├── content_loc: (98...102) = "  a\n"
+        │   ├── closing_loc: (102...106) = "EOF\n"
+        │   └── unescaped: "  a\n"
+        ├── @ StringNode (location: (107...113))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (107...113) = "<<-EOF"
+        │   ├── content_loc: (114...122) = "  a\n  b\n"
+        │   ├── closing_loc: (122...128) = "  EOF\n"
+        │   └── unescaped: "  a\n  b\n"
+        ├── @ InterpolatedStringNode (location: (129...137))
+        │   ├── opening_loc: (129...137) = "<<-\"EOF\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (138...142))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (138...142) = "  a\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "  a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (142...146))
+        │   │   │   ├── opening_loc: (142...144) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (144...145))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (144...145))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (144...145) = "b"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "b"
+        │   │   │   └── closing_loc: (145...146) = "}"
+        │   │   └── @ StringNode (location: (146...147))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (146...147) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (147...151) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (152...158))
+        │   ├── opening_loc: (152...158) = "<<-EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (159...163))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (159...163) = "  a\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "  a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (163...167))
+        │   │   │   ├── opening_loc: (163...165) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (165...166))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (165...166))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (165...166) = "b"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "b"
+        │   │   │   └── closing_loc: (166...167) = "}"
+        │   │   └── @ StringNode (location: (167...168))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (167...168) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (168...172) = "EOF\n"
+        ├── @ StringNode (location: (173...179))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (173...175) = "%#"
+        │   ├── content_loc: (175...178) = "abc"
+        │   ├── closing_loc: (178...179) = "#"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (181...187))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (181...187) = "<<-EOF"
+        │   ├── content_loc: (188...196) = "  a\n  b\n"
+        │   ├── closing_loc: (196...200) = "EOF\n"
+        │   └── unescaped: "  a\n  b\n"
+        ├── @ StringNode (location: (201...206))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (201...206) = "<<-''"
+        │   ├── content_loc: (207...207) = ""
+        │   ├── closing_loc: (207...208) = "\n"
+        │   └── unescaped: ""
+        ├── @ StringNode (location: (209...217))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (209...217) = "<<-'EOF'"
+        │   ├── content_loc: (218...227) = "  a \#{1}\n"
+        │   ├── closing_loc: (227...231) = "EOF\n"
+        │   └── unescaped: "  a \#{1}\n"
+        ├── @ CallNode (location: (232...243))
+        │   ├── receiver:
+        │   │   @ StringNode (location: (232...236))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (232...236) = "<<-A"
+        │   │   ├── content_loc: (244...248) = "  a\n"
+        │   │   ├── closing_loc: (248...250) = "A\n"
+        │   │   └── unescaped: "  a\n"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (237...238) = "+"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (239...243))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ InterpolatedStringNode (location: (239...243))
+        │   │           ├── opening_loc: (239...243) = "<<-B"
+        │   │           ├── parts: (length: 3)
+        │   │           │   ├── @ StringNode (location: (250...256))
+        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── opening_loc: ∅
+        │   │           │   │   ├── content_loc: (250...256) = "  b\n  "
+        │   │           │   │   ├── closing_loc: ∅
+        │   │           │   │   └── unescaped: "  b\n  "
+        │   │           │   ├── @ EmbeddedStatementsNode (location: (256...263))
+        │   │           │   │   ├── opening_loc: (256...258) = "\#{"
+        │   │           │   │   ├── statements:
+        │   │           │   │   │   @ StatementsNode (location: (258...259))
+        │   │           │   │   │   └── body: (length: 1)
+        │   │           │   │   │       └── @ IntegerNode (location: (258...259))
+        │   │           │   │   │           └── flags: decimal
+        │   │           │   │   └── closing_loc: (262...263) = "}"
+        │   │           │   └── @ StringNode (location: (263...264))
+        │   │           │       ├── flags: ∅
+        │   │           │       ├── opening_loc: ∅
+        │   │           │       ├── content_loc: (263...264) = "\n"
+        │   │           │       ├── closing_loc: ∅
+        │   │           │       └── unescaped: "\n"
+        │   │           └── closing_loc: (264...266) = "B\n"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "+"
+        └── @ CallNode (location: (267...278))
+            ├── receiver:
+            │   @ StringNode (location: (267...271))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (267...271) = "<<-A"
+            │   ├── content_loc: (279...283) = "  a\n"
+            │   ├── closing_loc: (283...285) = "A\n"
+            │   └── unescaped: "  a\n"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (272...273) = "+"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (274...278))
+            │   └── arguments: (length: 1)
+            │       └── @ InterpolatedStringNode (location: (274...278))
+            │           ├── opening_loc: (274...278) = "<<-B"
+            │           ├── parts: (length: 3)
+            │           │   ├── @ StringNode (location: (285...291))
+            │           │   │   ├── flags: ∅
+            │           │   │   ├── opening_loc: ∅
+            │           │   │   ├── content_loc: (285...291) = "  b\n  "
+            │           │   │   ├── closing_loc: ∅
+            │           │   │   └── unescaped: "  b\n  "
+            │           │   ├── @ EmbeddedStatementsNode (location: (291...298))
+            │           │   │   ├── opening_loc: (291...293) = "\#{"
+            │           │   │   ├── statements:
+            │           │   │   │   @ StatementsNode (location: (296...297))
+            │           │   │   │   └── body: (length: 1)
+            │           │   │   │       └── @ IntegerNode (location: (296...297))
+            │           │   │   │           └── flags: decimal
+            │           │   │   └── closing_loc: (297...298) = "}"
+            │           │   └── @ StringNode (location: (298...299))
+            │           │       ├── flags: ∅
+            │           │       ├── opening_loc: ∅
+            │           │       ├── content_loc: (298...299) = "\n"
+            │           │       ├── closing_loc: ∅
+            │           │       └── unescaped: "\n"
+            │           └── closing_loc: (299...301) = "B\n"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "+"

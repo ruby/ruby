@@ -1,60 +1,69 @@
-ProgramNode(0...43)(
-  [],
-  StatementsNode(0...43)(
-    [CaseNode(0...43)(
-       CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "foo"),
-       [WhenNode(10...27)(
-          (10...14),
-          [IntegerNode(15...16)(),
-           SplatNode(18...22)(
-             (18...19),
-             CallNode(19...22)(
-               nil,
-               nil,
-               (19...22),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "baz"
-             )
-           )],
-          StatementsNode(24...27)(
-            [CallNode(24...27)(
-               nil,
-               nil,
-               (24...27),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "bar"
-             )]
-          )
-        ),
-        WhenNode(29...38)(
-          (29...33),
-          [SplatNode(34...38)(
-             (34...35),
-             CallNode(35...38)(
-               nil,
-               nil,
-               (35...38),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "foo"
-             )
-           )],
-          nil
-        )],
-       nil,
-       (0...4),
-       (40...43)
-     )]
-  )
-)
+@ ProgramNode (location: (0...43))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...43))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...43))
+            ├── predicate:
+            │   @ CallNode (location: (5...8))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (5...8) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── conditions: (length: 2)
+            │   ├── @ WhenNode (location: (10...27))
+            │   │   ├── keyword_loc: (10...14) = "when"
+            │   │   ├── conditions: (length: 2)
+            │   │   │   ├── @ IntegerNode (location: (15...16))
+            │   │   │   │   └── flags: decimal
+            │   │   │   └── @ SplatNode (location: (18...22))
+            │   │   │       ├── operator_loc: (18...19) = "*"
+            │   │   │       └── expression:
+            │   │   │           @ CallNode (location: (19...22))
+            │   │   │           ├── receiver: ∅
+            │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── message_loc: (19...22) = "baz"
+            │   │   │           ├── opening_loc: ∅
+            │   │   │           ├── arguments: ∅
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           ├── block: ∅
+            │   │   │           ├── flags: variable_call
+            │   │   │           └── name: "baz"
+            │   │   └── statements:
+            │   │       @ StatementsNode (location: (24...27))
+            │   │       └── body: (length: 1)
+            │   │           └── @ CallNode (location: (24...27))
+            │   │               ├── receiver: ∅
+            │   │               ├── call_operator_loc: ∅
+            │   │               ├── message_loc: (24...27) = "bar"
+            │   │               ├── opening_loc: ∅
+            │   │               ├── arguments: ∅
+            │   │               ├── closing_loc: ∅
+            │   │               ├── block: ∅
+            │   │               ├── flags: variable_call
+            │   │               └── name: "bar"
+            │   └── @ WhenNode (location: (29...38))
+            │       ├── keyword_loc: (29...33) = "when"
+            │       ├── conditions: (length: 1)
+            │       │   └── @ SplatNode (location: (34...38))
+            │       │       ├── operator_loc: (34...35) = "*"
+            │       │       └── expression:
+            │       │           @ CallNode (location: (35...38))
+            │       │           ├── receiver: ∅
+            │       │           ├── call_operator_loc: ∅
+            │       │           ├── message_loc: (35...38) = "foo"
+            │       │           ├── opening_loc: ∅
+            │       │           ├── arguments: ∅
+            │       │           ├── closing_loc: ∅
+            │       │           ├── block: ∅
+            │       │           ├── flags: variable_call
+            │       │           └── name: "foo"
+            │       └── statements: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (40...43) = "end"

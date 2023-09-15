@@ -1,23 +1,52 @@
-ProgramNode(0...66)(
-  [],
-  StatementsNode(0...66)(
-    [CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-     InstanceVariableReadNode(2...4)(:@a),
-     ClassVariableReadNode(5...8)(:@@a),
-     GlobalVariableReadNode(9...11)(:$a),
-     NumberedReferenceReadNode(12...14)(1),
-     BackReferenceReadNode(15...17)(),
-     ConstantReadNode(18...23)(),
-     ConstantPathNode(24...37)(
-       ConstantReadNode(24...30)(),
-       ConstantReadNode(32...37)(),
-       (30...32)
-     ),
-     ConstantPathNode(38...48)(nil, ConstantReadNode(40...48)(), (38...40)),
-     ConstantPathNode(49...66)(
-       ConstantPathNode(49...59)(nil, ConstantReadNode(51...59)(), (49...51)),
-       ConstantReadNode(61...66)(),
-       (59...61)
-     )]
-  )
-)
+@ ProgramNode (location: (0...66))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...66))
+    └── body: (length: 10)
+        ├── @ CallNode (location: (0...1))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...1) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "a"
+        ├── @ InstanceVariableReadNode (location: (2...4))
+        │   └── name: :@a
+        ├── @ ClassVariableReadNode (location: (5...8))
+        │   └── name: :@@a
+        ├── @ GlobalVariableReadNode (location: (9...11))
+        │   └── name: :$a
+        ├── @ NumberedReferenceReadNode (location: (12...14))
+        │   └── number: 1
+        ├── @ BackReferenceReadNode (location: (15...17))
+        ├── @ ConstantReadNode (location: (18...23))
+        │   └── name: :CONST
+        ├── @ ConstantPathNode (location: (24...37))
+        │   ├── parent:
+        │   │   @ ConstantReadNode (location: (24...30))
+        │   │   └── name: :SCOPED
+        │   ├── child:
+        │   │   @ ConstantReadNode (location: (32...37))
+        │   │   └── name: :CONST
+        │   └── delimiter_loc: (30...32) = "::"
+        ├── @ ConstantPathNode (location: (38...48))
+        │   ├── parent: ∅
+        │   ├── child:
+        │   │   @ ConstantReadNode (location: (40...48))
+        │   │   └── name: :TOPLEVEL
+        │   └── delimiter_loc: (38...40) = "::"
+        └── @ ConstantPathNode (location: (49...66))
+            ├── parent:
+            │   @ ConstantPathNode (location: (49...59))
+            │   ├── parent: ∅
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (51...59))
+            │   │   └── name: :TOPLEVEL
+            │   └── delimiter_loc: (49...51) = "::"
+            ├── child:
+            │   @ ConstantReadNode (location: (61...66))
+            │   └── name: :CONST
+            └── delimiter_loc: (59...61) = "::"
