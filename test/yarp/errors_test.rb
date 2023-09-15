@@ -152,6 +152,13 @@ module YARP
       ]
     end
 
+    def test_incomplete_instance_var_string
+      assert_errors expression('%@#@@#'), '%@#@@#', [
+        ["Incomplete instance variable", 4..5],
+        ["Expected a newline or semicolon after the statement", 4..4]
+      ]
+    end
+
     def test_unterminated_s_symbol
       assert_errors expression("%s[abc"), "%s[abc", [
         ["Expected a closing delimiter for the dynamic symbol", 3..3]

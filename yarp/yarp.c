@@ -5801,7 +5801,7 @@ lex_interpolation(yp_parser_t *parser, const uint8_t *pound) {
             // If we didn't get an valid interpolation, then this is just regular
             // string content. This is like if we get "#@-". In this case the caller
             // should keep lexing.
-            parser->current.end = variable;
+            parser->current.end = pound + 1;
             return YP_TOKEN_NOT_PROVIDED;
         }
         case '$':
