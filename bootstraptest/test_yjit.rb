@@ -1,3 +1,15 @@
+# regression test for invokeblock iseq guard
+assert_equal 'ok', %q{
+  return :ok unless defined?(GC.compact)
+  def foo = yield
+  10.times do |i|
+    ret = eval("foo { #{i} }")
+    raise "failed at #{i}" unless ret == i
+    GC.compact
+  end
+  :ok
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
   # In faulty versions, the following happens:

@@ -7494,7 +7494,7 @@ fn gen_invokeblock_specialized(
         asm_comment!(asm, "guard known ISEQ");
         let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
         let iseq_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32 * 2));
-        asm.cmp(iseq_opnd, (comptime_iseq as usize).into());
+        asm.cmp(iseq_opnd, VALUE::from(comptime_iseq).into());
         jit_chain_guard(
             JCC_JNE,
             jit,
