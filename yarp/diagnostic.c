@@ -67,6 +67,7 @@ static const char* const diagnostic_messages[YP_DIAGNOSTIC_ID_LEN] = {
     [YP_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT]   = "Unexpected `*` splat argument after a `**` keyword splat argument",
     [YP_ERR_ARGUMENT_SPLAT_AFTER_SPLAT]         = "Unexpected `*` splat argument after a `*` splat argument",
     [YP_ERR_ARGUMENT_TERM_PAREN]                = "Expected a `)` to close the arguments",
+    [YP_ERR_ARGUMENT_UNEXPECTED_BLOCK]          = "Unexpected `{` after a method call without parenthesis",
     [YP_ERR_ARRAY_ELEMENT]                      = "Expected an element for the array",
     [YP_ERR_ARRAY_EXPRESSION]                   = "Expected an expression for the array element",
     [YP_ERR_ARRAY_EXPRESSION_AFTER_STAR]        = "Expected an expression after `*` in the array",

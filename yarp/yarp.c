@@ -576,6 +576,21 @@ yp_arguments_validate(yp_parser_t *parser, yp_arguments_t *arguments) {
             YP_ERR_ARGUMENT_BLOCK_MULTI
         );
     }
+
+    // Brace blocks can't be attached to arguments, only to the call
+    if (arguments->block != NULL &&
+            *arguments->block->opening_loc.start == '{' &&
+            arguments->arguments != NULL &&
+            !(arguments->arguments->arguments.size == 1 &&
+                YP_NODE_TYPE_P(arguments->arguments->arguments.nodes[0], YP_PARENTHESES_NODE)) &&
+            !arguments->closing_loc.end) {
+        yp_diagnostic_list_append(
+            &parser->error_list,
+            arguments->block->base.location.start,
+            arguments->block->base.location.end,
+            YP_ERR_ARGUMENT_BLOCK_MULTI
+        );
+    }
 }
 
 /******************************************************************************/
