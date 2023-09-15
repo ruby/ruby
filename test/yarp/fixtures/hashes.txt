@@ -18,3 +18,9 @@
 { a: b, c: d, **e, f: g }
 
 { "a": !b? }
+
+a = 1
+tap do
+  b = 1
+  { a:, b:, c:, D: }
+end
