@@ -47,10 +47,10 @@ yp_constant_id_list_free(yp_constant_id_list_t *list) {
 
 // A relatively simple hash function (djb2) that is used to hash strings. We are
 // optimizing here for simplicity and speed.
-static inline size_t
+static inline uint32_t
 yp_constant_pool_hash(const uint8_t *start, size_t length) {
     // This is a prime number used as the initial value for the hash function.
-    size_t value = 5381;
+    uint32_t value = 5381;
 
     for (size_t index = 0; index < length; index++) {
         value = ((value << 5) + value) + start[index];
@@ -60,8 +60,8 @@ yp_constant_pool_hash(const uint8_t *start, size_t length) {
 }
 
 // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-static size_t
-next_power_of_two(size_t v) {
+static uint32_t
+next_power_of_two(uint32_t v) {
     // Avoid underflow in subtraction on next line.
     if (v == 0) {
         // 1 is the nearest power of 2 to 0 (2^0)
@@ -73,16 +73,13 @@ next_power_of_two(size_t v) {
     v |= v >> 4;
     v |= v >> 8;
     v |= v >> 16;
-#if defined(__LP64__) || defined(_WIN64)
-    v |= v >> 32;
-#endif
     v++;
     return v;
 }
 
 #ifndef NDEBUG
 static bool
-is_power_of_two(size_t size) {
+is_power_of_two(uint32_t size) {
     return (size & (size - 1)) == 0;
 }
 #endif
@@ -91,22 +88,23 @@ is_power_of_two(size_t size) {
 static inline bool
 yp_constant_pool_resize(yp_constant_pool_t *pool) {
     assert(is_power_of_two(pool->capacity));
-    size_t next_capacity = pool->capacity * 2;
+
+    uint32_t next_capacity = pool->capacity * 2;
     if (next_capacity < pool->capacity) return false;
 
-    const size_t mask = next_capacity - 1;
+    const uint32_t mask = next_capacity - 1;
     yp_constant_t *next_constants = calloc(next_capacity, sizeof(yp_constant_t));
     if (next_constants == NULL) return false;
 
     // For each constant in the current constant pool, rehash the content, find
     // the index in the next constant pool, and insert it.
-    for (size_t index = 0; index < pool->capacity; index++) {
+    for (uint32_t index = 0; index < pool->capacity; index++) {
         yp_constant_t *constant = &pool->constants[index];
 
         // If an id is set on this constant, then we know we have content here.
         // In this case we need to insert it into the next constant pool.
         if (constant->id != 0) {
-            size_t next_index = constant->hash & mask;
+            uint32_t next_index = constant->hash & mask;
 
             // This implements linear scanning to find the next available slot
             // in case this index is already taken. We don't need to bother
@@ -129,9 +127,9 @@ yp_constant_pool_resize(yp_constant_pool_t *pool) {
 
 // Initialize a new constant pool with a given capacity.
 bool
-yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity) {
-    const size_t size_t_max = (~((size_t) 0));
-    if (capacity >= ((size_t_max / 2) + 1)) return false;
+yp_constant_pool_init(yp_constant_pool_t *pool, uint32_t capacity) {
+    const uint32_t maximum = (~((uint32_t) 0));
+    if (capacity >= ((maximum / 2) + 1)) return false;
 
     capacity = next_power_of_two(capacity);
     pool->constants = calloc(capacity, sizeof(yp_constant_t));
@@ -150,9 +148,10 @@ yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t l
     }
 
     assert(is_power_of_two(pool->capacity));
-    const size_t mask = pool->capacity - 1;
-    size_t hash = yp_constant_pool_hash(start, length);
-    size_t index = hash & mask;
+    const uint32_t mask = pool->capacity - 1;
+
+    uint32_t hash = yp_constant_pool_hash(start, length);
+    uint32_t index = hash & mask;
     yp_constant_t *constant;
 
     while (constant = &pool->constants[index], constant->id != 0) {
@@ -185,7 +184,7 @@ yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t l
     }
 
     pool->size++;
-    assert(pool->size < ((size_t) (1 << 31)));
+    assert(pool->size < ((uint32_t) (1 << 31)));
 
     *constant = (yp_constant_t) {
         .id = (unsigned int) (pool->size & 0x7FFFFFFF),

@@ -44,20 +44,20 @@ typedef struct {
     bool owned: 1;
     const uint8_t *start;
     size_t length;
-    size_t hash;
+    uint32_t hash;
 } yp_constant_t;
 
 typedef struct {
     yp_constant_t *constants;
-    size_t size;
-    size_t capacity;
+    uint32_t size;
+    uint32_t capacity;
 } yp_constant_pool_t;
 
 // Define an empty constant pool.
 #define YP_CONSTANT_POOL_EMPTY ((yp_constant_pool_t) { .constants = NULL, .size = 0, .capacity = 0 })
 
 // Initialize a new constant pool with a given capacity.
-bool yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity);
+bool yp_constant_pool_init(yp_constant_pool_t *pool, uint32_t capacity);
 
 // Insert a constant into a constant pool that is a slice of a source string.
 // Returns the id of the constant, or 0 if any potential calls to resize fail.

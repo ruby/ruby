@@ -81,7 +81,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
     VALUE source = yp_source_new(parser, encoding);
     ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
 
-    for (size_t index = 0; index < parser->constant_pool.capacity; index++) {
+    for (uint32_t index = 0; index < parser->constant_pool.capacity; index++) {
         yp_constant_t constant = parser->constant_pool.constants[index];
 
         if (constant.id != 0) {

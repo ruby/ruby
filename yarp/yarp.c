@@ -14381,7 +14381,7 @@ yp_parser_init(yp_parser_t *parser, const uint8_t *source, size_t size, const ch
     //
     // This ratio will need to change if we add more constants to the constant
     // pool for another node type.
-    size_t constant_size = size / 95;
+    uint32_t constant_size = ((uint32_t) size) / 95;
     yp_constant_pool_init(&parser->constant_pool, constant_size < 4 ? 4 : constant_size);
 
     // Initialize the newline list. Similar to the constant pool, we're going to
