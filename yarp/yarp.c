@@ -10050,7 +10050,7 @@ parse_symbol(yp_parser_t *parser, yp_lex_mode_t *lex_mode, yp_lex_state_t next_s
         // what looks like an interpolated symbol into a regular symbol.
         if (part && YP_NODE_TYPE_P(part, YP_STRING_NODE) && match2(parser, YP_TOKEN_STRING_END, YP_TOKEN_EOF)) {
             if (next_state != YP_LEX_STATE_NONE) lex_state_set(parser, next_state);
-            parser_lex(parser);
+            expect1(parser, YP_TOKEN_STRING_END, YP_ERR_SYMBOL_TERM_INTERPOLATED);
 
             return (yp_node_t *) yp_string_node_to_symbol_node(parser, (yp_string_node_t *) part, &opening, &parser->previous);
         }

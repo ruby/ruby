@@ -186,6 +186,12 @@ module YARP
       ]
     end
 
+    def test_unterminated_interpolated_symbol
+      assert_error_messages ":\"#", [
+        "Expected a closing delimiter for the interpolated symbol"
+      ]
+    end
+
     def test_cr_without_lf_in_percent_expression
       assert_errors expression("%\r"), "%\r", [
         ["Invalid `%` token", 0..2],
