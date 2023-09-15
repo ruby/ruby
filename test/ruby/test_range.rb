@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'delegate'
 require 'timeout'
+require 'date'
 require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
@@ -622,6 +623,28 @@ class TestRange < Test::Unit::TestCase
       end
     }
     assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
+  end
+
+  def test_eqq_unbounded_ruby_bug_19864
+    t1 = Date.today
+    t2 = t1 + 1
+    assert_equal(true, (..t1) === t1)
+    assert_equal(false, (..t1) === t2)
+    assert_equal(true, (..t2) === t1)
+    assert_equal(true, (..t2) === t2)
+    assert_equal(false, (...t1) === t1)
+    assert_equal(false, (...t1) === t2)
+    assert_equal(true, (...t2) === t1)
+    assert_equal(false, (...t2) === t2)
+
+    assert_equal(true, (t1..) === t1)
+    assert_equal(true, (t1..) === t2)
+    assert_equal(false, (t2..) === t1)
+    assert_equal(true, (t2..) === t2)
+    assert_equal(true, (t1...) === t1)
+    assert_equal(true, (t1...) === t2)
+    assert_equal(false, (t2...) === t1)
+    assert_equal(true, (t2...) === t2)
   end
 
   def test_eqq_non_iteratable
