@@ -661,6 +661,7 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error(':@@1', /is not allowed/)
     assert_syntax_error(':@', /is not allowed/)
     assert_syntax_error(':@1', /is not allowed/)
+    assert_syntax_error(':$01234', /is not allowed/)
   end
 
   def test_parse_string
@@ -1478,8 +1479,8 @@ x = __ENCODING__
   end
 
   def test_ungettable_gvar
-    assert_syntax_error('$01234', /not valid to get/)
-    assert_syntax_error('"#$01234"', /not valid to get/)
+    assert_syntax_error('$01234', /not allowed/)
+    assert_syntax_error('"#$01234"', /not allowed/)
   end
 
 =begin

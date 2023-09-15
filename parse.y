@@ -573,6 +573,7 @@ static void numparam_name(struct parser_params *p, ID id);
 #define STR_NEW2(ptr) rb_enc_str_new((ptr),strlen(ptr),p->enc)
 #define STR_NEW3(ptr,len,e,func) parser_str_new(p, (ptr),(len),(e),(func),p->enc)
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
+#define VALID_SYMNAME_P(s, l, enc, type) (rb_enc_symname_type(s, l, enc, (1U<<(type))) == (int)(type))
 
 static st_table *
 push_pvtbl(struct parser_params *p)
@@ -9640,7 +9641,13 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 
     if (tokadd_ident(p, c)) return 0;
     SET_LEX_STATE(EXPR_END);
-    tokenize_ident(p);
+    if (VALID_SYMNAME_P(tok(p), toklen(p), p->enc, ID_GLOBAL)) {
+        tokenize_ident(p);
+    }
+    else {
+        compile_error(p, "`%.*s' is not allowed as a global variable name", toklen(p), tok(p));
+        set_yylval_noname();
+    }
     return tGVAR;
 }
 
@@ -13661,7 +13668,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     NODE *node, *succ;
 
     if (!len) return ST_CONTINUE;
-    if (rb_enc_symname_type(s, len, enc, (1U<<ID_LOCAL)) != ID_LOCAL)
+    if (!VALID_SYMNAME_P(s, len, enc, ID_LOCAL))
         return ST_CONTINUE;
 
     var = intern_cstr(s, len, enc);
