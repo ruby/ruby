@@ -1868,7 +1868,8 @@ rb_objspace_free(rb_objspace_t *objspace)
     }
     if (heap_pages_sorted) {
         size_t i;
-        for (i = 0; i < heap_allocated_pages; ++i) {
+        size_t total_heap_pages = heap_allocated_pages;
+        for (i = 0; i < total_heap_pages; ++i) {
             heap_page_free(objspace, heap_pages_sorted[i]);
         }
         free(heap_pages_sorted);
