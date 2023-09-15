@@ -1,8 +1,8 @@
-@ ProgramNode (location: (0...272))
+@ ProgramNode (location: (0...299))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...272))
-    └── body: (length: 8)
+    @ StatementsNode (location: (0...299))
+    └── body: (length: 9)
         ├── @ CaseNode (location: (0...21))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (5...8))
@@ -222,32 +222,44 @@
         │   │   └── end_keyword_loc: (227...230) = "end"
         │   ├── case_keyword_loc: (200...204) = "case"
         │   └── end_keyword_loc: (227...230) = "end"
-        └── @ CaseNode (location: (232...272))
-            ├── predicate:
-            │   @ CallNode (location: (237...241))
-            │   ├── receiver: ∅
-            │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (237...241) = "type"
-            │   ├── opening_loc: ∅
-            │   ├── arguments: ∅
-            │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: "type"
+        ├── @ CaseNode (location: (232...272))
+        │   ├── predicate:
+        │   │   @ CallNode (location: (237...241))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (237...241) = "type"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "type"
+        │   ├── conditions: (length: 1)
+        │   │   └── @ WhenNode (location: (246...253))
+        │   │       ├── keyword_loc: (246...250) = "when"
+        │   │       ├── conditions: (length: 1)
+        │   │       │   └── @ SymbolNode (location: (251...253))
+        │   │       │       ├── opening_loc: (251...252) = ":"
+        │   │       │       ├── value_loc: (252...253) = "b"
+        │   │       │       ├── closing_loc: ∅
+        │   │       │       └── unescaped: "b"
+        │   │       └── statements: ∅
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (260...272))
+        │   │   ├── else_keyword_loc: (260...264) = "else"
+        │   │   ├── statements: ∅
+        │   │   └── end_keyword_loc: (269...272) = "end"
+        │   ├── case_keyword_loc: (232...236) = "case"
+        │   └── end_keyword_loc: (269...272) = "end"
+        └── @ CaseNode (location: (274...299))
+            ├── predicate: ∅
             ├── conditions: (length: 1)
-            │   └── @ WhenNode (location: (246...253))
-            │       ├── keyword_loc: (246...250) = "when"
+            │   └── @ WhenNode (location: (288...294))
+            │       ├── keyword_loc: (288...292) = "when"
             │       ├── conditions: (length: 1)
-            │       │   └── @ SymbolNode (location: (251...253))
-            │       │       ├── opening_loc: (251...252) = ":"
-            │       │       ├── value_loc: (252...253) = "b"
-            │       │       ├── closing_loc: ∅
-            │       │       └── unescaped: "b"
+            │       │   └── @ IntegerNode (location: (293...294))
+            │       │       └── flags: decimal
             │       └── statements: ∅
-            ├── consequent:
-            │   @ ElseNode (location: (260...272))
-            │   ├── else_keyword_loc: (260...264) = "else"
-            │   ├── statements: ∅
-            │   └── end_keyword_loc: (269...272) = "end"
-            ├── case_keyword_loc: (232...236) = "case"
-            └── end_keyword_loc: (269...272) = "end"
+            ├── consequent: ∅
+            ├── case_keyword_loc: (274...278) = "case"
+            └── end_keyword_loc: (296...299) = "end"

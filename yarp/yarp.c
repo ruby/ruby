@@ -11810,11 +11810,12 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_token_t case_keyword = parser->previous;
             yp_node_t *predicate = NULL;
 
-            if (
-                accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON) ||
-                match3(parser, YP_TOKEN_KEYWORD_WHEN, YP_TOKEN_KEYWORD_IN, YP_TOKEN_KEYWORD_END) ||
-                !token_begins_expression_p(parser->current.type)
-            ) {
+            if (accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
+                while (accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON));
+                predicate = NULL;
+            } else if (match3(parser, YP_TOKEN_KEYWORD_WHEN, YP_TOKEN_KEYWORD_IN, YP_TOKEN_KEYWORD_END)) {
+                predicate = NULL;
+             } else if (!token_begins_expression_p(parser->current.type)) {
                 predicate = NULL;
             } else {
                 predicate = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_CASE_EXPRESSION_AFTER_CASE);

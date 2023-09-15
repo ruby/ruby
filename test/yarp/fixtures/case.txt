@@ -28,3 +28,5 @@ case type;
   ;when :b;
   ;  else;
    end
+
+case ;;;;;;;; when 1; end
