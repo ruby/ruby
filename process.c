@@ -8789,6 +8789,7 @@ static VALUE rb_mProcID_Syscall;
  *  * Precomputes the coderange of all strings.
  *  * Frees all empty heap pages and increments the allocatable pages counter
  *    by the number of pages freed.
+ *  * Invoke +malloc_trim+ if available to free empty malloc pages.
  */
 
 static VALUE

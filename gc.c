@@ -9740,6 +9740,10 @@ rb_gc_prepare_heap(void)
     rb_objspace_each_objects(gc_set_candidate_object_i, NULL);
     gc_start_internal(NULL, Qtrue, Qtrue, Qtrue, Qtrue, Qtrue);
     free_empty_pages();
+
+#if defined(HAVE_MALLOC_TRIM) && !defined(RUBY_ALTERNATIVE_MALLOC_HEADER)
+    malloc_trim(0);
+#endif
 }
 
 static int
