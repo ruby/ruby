@@ -949,7 +949,21 @@ module YARP
       )
 
       assert_errors expected, "case :a\nelse\nend", [
-        ["Unexpected `else` in `case` statement; a `when` clause must precede `else`", 8..12]
+        ["Expected a `when` or `in` clause after `case`", 0..4]
+      ]
+    end
+
+    def test_case_without_clauses
+      expected = CaseNode(
+        SymbolNode(Location(), Location(), nil, "a"),
+        [],
+        nil,
+        Location(),
+        Location()
+      )
+
+      assert_errors expected, "case :a\nend", [
+        ["Expected a `when` or `in` clause after `case`", 0..4]
       ]
     end
 

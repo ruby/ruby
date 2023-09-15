@@ -11935,6 +11935,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             }
 
             if (accept1(parser, YP_TOKEN_KEYWORD_END)) {
+                yp_diagnostic_list_append(&parser->error_list, case_keyword.start, case_keyword.end, YP_ERR_CASE_MISSING_CONDITIONS);
                 return (yp_node_t *) yp_case_node_create(parser, &case_keyword, predicate, NULL, &parser->previous);
             }
 
@@ -12041,12 +12042,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 }
             }
 
+            // If we didn't parse any conditions (in or when) then we need to
+            // indicate that we have an error.
+            if (case_node->conditions.size == 0) {
+                yp_diagnostic_list_append(&parser->error_list, case_keyword.start, case_keyword.end, YP_ERR_CASE_MISSING_CONDITIONS);
+            }
+
             accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             if (accept1(parser, YP_TOKEN_KEYWORD_ELSE)) {
-                if (case_node->conditions.size < 1) {
-                    yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_CASE_LONELY_ELSE);
-                }
-
                 yp_token_t else_keyword = parser->previous;
                 yp_else_node_t *else_node;
 
