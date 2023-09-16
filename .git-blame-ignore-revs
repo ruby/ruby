@@ -22,3 +22,6 @@ f28287d34c03f472ffe90ea262bdde9affd4b965
 
 # Make benchmark indentation consistent
 fc4acf8cae82e5196186d3278d831f2438479d91
+
+# Make yarp_compiler.c indentation consistent
+28be58cbc2b7b1e144b1c6825c68f7e1509657cc
