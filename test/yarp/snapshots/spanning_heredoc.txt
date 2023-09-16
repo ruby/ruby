@@ -179,7 +179,7 @@
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (532...535) = "j\\\n"
         │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │   └── unescaped: "j\\\n"
+        │   │           │   │   └── unescaped: "j\n"
         │   │           │   └── @ StringNode (location: (539...540))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅

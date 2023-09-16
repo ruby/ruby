@@ -491,6 +491,12 @@ unescape_minimal(VALUE self, VALUE source) {
     return unescape(source, YP_UNESCAPE_MINIMAL);
 }
 
+// Escape the given string minimally plus whitespace. Returns the unescaped string.
+static VALUE
+unescape_whitespace(VALUE self, VALUE source) {
+    return unescape(source, YP_UNESCAPE_WHITESPACE);
+}
+
 // Unescape everything in the given string. Return the unescaped string.
 static VALUE
 unescape_all(VALUE self, VALUE source) {
@@ -608,6 +614,7 @@ Init_yarp(void) {
     rb_define_singleton_method(rb_cYARPDebug, "named_captures", named_captures, 1);
     rb_define_singleton_method(rb_cYARPDebug, "unescape_none", unescape_none, 1);
     rb_define_singleton_method(rb_cYARPDebug, "unescape_minimal", unescape_minimal, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_whitespace", unescape_whitespace, 1);
     rb_define_singleton_method(rb_cYARPDebug, "unescape_all", unescape_all, 1);
     rb_define_singleton_method(rb_cYARPDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cYARPDebug, "profile_file", profile_file, 1);

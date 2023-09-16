@@ -12987,7 +12987,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
                 yp_token_t opening = not_provided(parser);
                 yp_token_t closing = not_provided(parser);
-                yp_node_t *string = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, YP_UNESCAPE_MINIMAL);
+                yp_node_t *string = (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, YP_UNESCAPE_WHITESPACE);
                 yp_array_node_elements_append(array, string);
             }
 

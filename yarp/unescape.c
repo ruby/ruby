@@ -509,7 +509,17 @@ yp_unescape_manipulate_string_or_char_literal(yp_parser_t *parser, yp_string_t *
                 cursor = backslash + 2;
                 break;
             default:
-                if (unescape_type == YP_UNESCAPE_MINIMAL) {
+                if (unescape_type == YP_UNESCAPE_WHITESPACE) {
+                    if (backslash[1] == '\r' && backslash[2] == '\n') {
+                        cursor = backslash + 2;
+                        break;
+                    }
+                    if (yp_strspn_whitespace(backslash + 1, 1)) {
+                        cursor = backslash + 1;
+                        break;
+                    }
+                }
+                if (unescape_type == YP_UNESCAPE_WHITESPACE || unescape_type == YP_UNESCAPE_MINIMAL) {
                     // In this case we're escaping something that doesn't need escaping.
                     dest[dest_length++] = '\\';
                     cursor = backslash + 1;
@@ -579,7 +589,16 @@ yp_unescape_calculate_difference(yp_parser_t *parser, const uint8_t *backslash, 
         case '\'':
             return 2;
         default: {
-            if (unescape_type == YP_UNESCAPE_MINIMAL) {
+            if (unescape_type == YP_UNESCAPE_WHITESPACE) {
+                if (backslash[1] == '\r' && backslash[2] == '\n') {
+                    return 2;
+                }
+                size_t whitespace = yp_strspn_whitespace(backslash + 1, 1);
+                if (whitespace > 0) {
+                    return whitespace;
+                }
+            }
+            if (unescape_type == YP_UNESCAPE_WHITESPACE || unescape_type == YP_UNESCAPE_MINIMAL) {
                 return 1 + yp_char_width(parser, backslash + 1, parser->end);
             }
 

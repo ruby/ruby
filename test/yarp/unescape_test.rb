@@ -136,6 +136,13 @@ module YARP
       assert_unescape_all("g", "\\g")
     end
 
+    def test_whitespace_escaping_string_list
+      assert_equal("a b", Debug.unescape_whitespace("a\\ b"))
+      assert_equal("a\tb", Debug.unescape_whitespace("a\\\tb"))
+      assert_equal("a\nb", Debug.unescape_whitespace("a\\\nb"))
+      assert_equal("a\nb", Debug.unescape_whitespace("a\\\r\nb"))
+    end
+
     private
 
     def unescape_all(source)

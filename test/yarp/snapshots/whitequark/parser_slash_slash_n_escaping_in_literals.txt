@@ -67,7 +67,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (81...85) = "a\\\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\\\nb"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (78...81) = "%w{"
         │   └── closing_loc: (85...86) = "}"
         ├── @ XStringNode (location: (88...96))

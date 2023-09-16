@@ -292,7 +292,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (290...298) = "foo\\ bar"
         │   │   │   ├── closing_loc: ∅
-        │   │   │   └── unescaped: "foo\\ bar"
+        │   │   │   └── unescaped: "foo bar"
         │   │   └── @ StringNode (location: (299...304))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
@@ -308,7 +308,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── content_loc: (310...318) = "foo\\ bar"
         │   │   │   ├── closing_loc: ∅
-        │   │   │   └── unescaped: "foo\\ bar"
+        │   │   │   └── unescaped: "foo bar"
         │   │   └── @ StringNode (location: (319...322))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅

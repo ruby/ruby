@@ -24,9 +24,13 @@ typedef enum {
     // single quotes and backslashes.
     YP_UNESCAPE_MINIMAL,
 
+    // When we're unescaping a string list, in addition to MINIMAL, we need to
+    // unescape whitespace.
+    YP_UNESCAPE_WHITESPACE,
+
     // When we're unescaping a double-quoted string, we need to unescape all
     // escapes.
-    YP_UNESCAPE_ALL
+    YP_UNESCAPE_ALL,
 } yp_unescape_type_t;
 
 // Unescape the contents of the given token into the given string using the given unescape mode.
