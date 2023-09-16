@@ -624,12 +624,12 @@ impl CodeBlock {
         freed_pages.append(&mut virtual_pages);
 
         if let Some(&first_page) = freed_pages.first() {
-            let mut cb = CodegenGlobals::get_inline_cb();
+            let cb = CodegenGlobals::get_inline_cb();
             cb.write_pos = cb.get_page_pos(first_page);
             cb.dropped_bytes = false;
             cb.clear_comments();
 
-            let mut ocb = CodegenGlobals::get_outlined_cb().unwrap();
+            let ocb = CodegenGlobals::get_outlined_cb().unwrap();
             ocb.write_pos = ocb.get_page_pos(first_page);
             ocb.dropped_bytes = false;
             ocb.clear_comments();
