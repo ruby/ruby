@@ -447,15 +447,7 @@ module SyncDefaultGems
 
     # Gem-specific patterns
     case gem
-    when "yarp"
-      %r[\A(?:
-        Makefile\.in
-        |configure\.ac
-        |fuzz/.*
-        |rust/.*
-        |tasks/.*
-        |ext/yarp/extconf\.rb
-      )\z]mx
+    when nil
     end&.tap do |pattern|
       patterns << pattern
     end
@@ -606,6 +598,8 @@ module SyncDefaultGems
       if picked
         system(*%w"git commit --amend --no-edit --", *remove, %i[out err] => File::NULL)
       end
+      remove = remove.map {|d| d + "/"}
+      changed.delete_if {|f| remove.any? {|d| f.start_with?(d)}}
     end
 
     unless ignore.empty?
