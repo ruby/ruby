@@ -9557,22 +9557,22 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
         pushback(p, c);
         c = '_';
         /* fall through */
-      case '~':		/* $~: match-data */
-      case '*':		/* $*: argv */
-      case '$':		/* $$: pid */
-      case '?':		/* $?: last status */
-      case '!':		/* $!: error string */
-      case '@':		/* $@: error position */
-      case '/':		/* $/: input record separator */
-      case '\\':		/* $\: output record separator */
-      case ';':		/* $;: field separator */
-      case ',':		/* $,: output field separator */
-      case '.':		/* $.: last read line number */
-      case '=':		/* $=: ignorecase */
-      case ':':		/* $:: load path */
-      case '<':		/* $<: reading filename */
-      case '>':		/* $>: default output handle */
-      case '\"':		/* $": already loaded files */
+      case '~': 	/* $~: match-data */
+      case '*': 	/* $*: argv */
+      case '$': 	/* $$: pid */
+      case '?': 	/* $?: last status */
+      case '!': 	/* $!: error string */
+      case '@': 	/* $@: error position */
+      case '/': 	/* $/: input record separator */
+      case '\\':	/* $\: output record separator */
+      case ';': 	/* $;: field separator */
+      case ',': 	/* $,: output field separator */
+      case '.': 	/* $.: last read line number */
+      case '=': 	/* $=: ignorecase */
+      case ':': 	/* $:: load path */
+      case '<': 	/* $<: reading filename */
+      case '>': 	/* $>: default output handle */
+      case '\"':	/* $": already loaded files */
         tokadd(p, '$');
         tokadd(p, c);
         goto gvar;
@@ -9593,10 +9593,10 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
         set_yylval_name(TOK_INTERN());
         return tGVAR;
 
-      case '&':		/* $&: last match */
-      case '`':		/* $`: string before last match */
-      case '\'':		/* $': string after last match */
-      case '+':		/* $+: string matches last paren. */
+      case '&': 	/* $&: last match */
+      case '`': 	/* $`: string before last match */
+      case '\'':	/* $': string after last match */
+      case '+': 	/* $+: string matches last paren. */
         if (IS_lex_state_for(last_state, EXPR_FNAME)) {
             tokadd(p, '$');
             tokadd(p, c);
