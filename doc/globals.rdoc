@@ -269,6 +269,8 @@ Whether command-line option <tt>-a</tt> was given; read-only.
 Contains the extension given with command-line option <tt>-i</tt>,
 or +nil+ if none.
 
+An alias of ARGF.inplace_mode.
+
 ==== <tt>$-l</tt>
 
 Whether command-line option <tt>-l</tt> was set; read-only.
@@ -307,7 +309,7 @@ The standard error stream (the default value for <tt>$stderr</tt>):
 
 === Enviroment
 
-==== <tt>ENV</tt>
+==== ENV
 
 A hash of the contains current environment variables names and values:
 
@@ -319,10 +321,11 @@ A hash of the contains current environment variables names and values:
    ["DISPLAY", ":0"],
    ["GDMSESSION", "ubuntu"]]
 
-==== <tt>ARGF</tt>
+==== ARGF
 
-The virtual concatenation of the files given on the command line,
-or from <tt>$stdin</tt> if no files were given.
+The virtual concatenation of the files given on the command line, or from
+<tt>$stdin</tt> if no files were given, <tt>"-"</tt> is given, or after
+all files have been read.
 
 ==== <tt>ARGV</tt>
 
