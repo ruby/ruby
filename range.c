@@ -758,6 +758,7 @@ range_bsearch(VALUE range)
                 return bsearch_integer_range(beg, mid, 0);
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
+            beg = mid;
         }
     }
     else if (NIL_P(beg) && is_integer_p(end)) {
@@ -770,6 +771,7 @@ range_bsearch(VALUE range)
                 return bsearch_integer_range(mid, end, 0);
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
+            end = mid;
         }
     }
     else {
