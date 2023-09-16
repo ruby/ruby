@@ -10,6 +10,7 @@ module IRB
 
     def load_history
       history = self.class::HISTORY
+
       if history_file = IRB.conf[:HISTORY_FILE]
         history_file = File.expand_path(history_file)
       end
@@ -32,7 +33,8 @@ module IRB
     end
 
     def save_history
-      history = self.class::HISTORY
+      history = self.class::HISTORY.to_a
+
       if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) != 0
         if history_file = IRB.conf[:HISTORY_FILE]
           history_file = File.expand_path(history_file)
