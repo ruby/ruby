@@ -14,11 +14,7 @@ use crate::core::{Context, RegTemps, MAX_REG_TEMPS};
 use crate::options::*;
 use crate::stats::*;
 
-#[cfg(target_arch = "x86_64")]
-use crate::backend::x86_64::*;
-
-#[cfg(target_arch = "aarch64")]
-use crate::backend::arm64::*;
+use crate::backend::current::*;
 
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
@@ -1028,10 +1024,9 @@ impl Assembler
     }
 
     /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs() -> Vec<Reg> {
+    pub fn get_temp_regs() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
-        let mut regs = Self::TEMP_REGS.to_vec();
-        regs.drain(0..num_regs).collect()
+        &TEMP_REGS[0..num_regs]
     }
 
     /// Set a context for generating side exits
