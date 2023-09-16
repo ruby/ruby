@@ -8467,6 +8467,7 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
             // expression.
             if (
                 (call->call_operator_loc.start == NULL) &&
+                (call->message_loc.start != NULL) &&
                 (call->message_loc.start[0] == '[') &&
                 (call->message_loc.end[-1] == ']') &&
                 (call->block == NULL)
