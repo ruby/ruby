@@ -62,6 +62,11 @@
 
 #ifdef HAVE_MALLOC_TRIM
 # include <malloc.h>
+
+# ifdef __EMSCRIPTEN__
+/* malloc_trim is defined in emscripten/emmalloc.h on emscripten. */
+#  include <emscripten/emmalloc.h>
+# endif
 #endif
 
 #if !defined(PAGE_SIZE) && defined(HAVE_SYS_USER_H)
