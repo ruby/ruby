@@ -13052,14 +13052,6 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
             lhs->nd_value = rhs;
             nd_set_loc(lhs, loc);
             asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
-            if (is_notop_id(vid)) {
-                switch (id_type(vid)) {
-                  case ID_GLOBAL:
-                  case ID_INSTANCE:
-                  case ID_CLASS:
-                    asgn->nd_aid = vid;
-                }
-            }
         }
         else if (op == tANDOP) {
             if (shareable) {
