@@ -113,6 +113,7 @@ module TestIRB
       # Test should not depend on user's irbrc file
       @envs["HOME"] ||= tmp_dir
       @envs["XDG_CONFIG_HOME"] ||= tmp_dir
+      @envs["IRBRC"] = nil unless @envs.key?("IRBRC")
 
       PTY.spawn(@envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
         Timeout.timeout(TIMEOUT_SEC) do
