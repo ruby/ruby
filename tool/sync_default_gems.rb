@@ -434,15 +434,12 @@ module SyncDefaultGems
 
     # Common patterns
     patterns << %r[\A(?:
-      [A-Z]\w*\.(?:md|txt)
-      |[^/]+\.yml
+      [^/]+ # top-level entries
       |\.git.*
-      |[A-Z]\w+file
-      |COPYING
-      |Gemfile.lock
       |bin/.*
       |rakelib/.*
-      |test/lib/.*
+      |test/(?:lib|fixtures)/.*
+      |tool/.*
     )\z]mx
 
     # Gem-specific patterns
@@ -570,11 +567,6 @@ module SyncDefaultGems
            }
         # Remove any new top-level directories.
         true
-      when !f.include?("/"),
-           f.start_with?("test/fixtures/", "test/lib/", "tool/")
-        # Forcibly reset any top-level entries, and any changes under
-        # /test/fixtures, /test/lib, or /tool.
-        ignore << f
       when ignore_file_pattern.match?(f)
         # Forcibly reset any changes matching ignore_file_pattern.
         ignore << f
