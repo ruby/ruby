@@ -46,7 +46,7 @@ RUN_OPTS      = --disable-gems
 # GITPULLOPTIONS = --no-tags
 
 YARP_SRCDIR = $(srcdir)/yarp
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(YARP_SRCDIR) -I$(UNICODE_HDR_DIR)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(YARP_SRCDIR) -I$(UNICODE_HDR_DIR) $(incflags)
 
 GEM_HOME =
 GEM_PATH =
