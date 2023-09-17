@@ -1628,6 +1628,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var
 %type <ctxt> lex_ctxt begin_defined k_class k_module
+%type <tbl>  p_lparen p_lbracket
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -4625,14 +4626,14 @@ p_alt		: p_alt '|' p_expr_basic
                 | p_expr_basic
                 ;
 
-p_lparen	: '(' {$<tbl>$ = push_pktbl(p);};
-p_lbracket	: '[' {$<tbl>$ = push_pktbl(p);};
+p_lparen	: '(' {$$ = push_pktbl(p);};
+p_lbracket	: '[' {$$ = push_pktbl(p);};
 
 p_expr_basic	: p_value
                 | p_variable
                 | p_const p_lparen p_args rparen
                     {
-                        pop_pktbl(p, $<tbl>2);
+                        pop_pktbl(p, $2);
                         $$ = new_array_pattern(p, $1, Qnone, $3, &@$);
                     /*%%%*/
                         nd_set_first_loc($$, @1.beg_pos);
@@ -4641,7 +4642,7 @@ p_expr_basic	: p_value
                     }
                 | p_const p_lparen p_find rparen
                     {
-                        pop_pktbl(p, $<tbl>2);
+                        pop_pktbl(p, $2);
                         $$ = new_find_pattern(p, $1, $3, &@$);
                     /*%%%*/
                         nd_set_first_loc($$, @1.beg_pos);
@@ -4650,7 +4651,7 @@ p_expr_basic	: p_value
                     }
                 | p_const p_lparen p_kwargs rparen
                     {
-                        pop_pktbl(p, $<tbl>2);
+                        pop_pktbl(p, $2);
                         $$ = new_hash_pattern(p, $1, $3, &@$);
                     /*%%%*/
                         nd_set_first_loc($$, @1.beg_pos);
@@ -4664,7 +4665,7 @@ p_expr_basic	: p_value
                     }
                 | p_const p_lbracket p_args rbracket
                     {
-                        pop_pktbl(p, $<tbl>2);
+                        pop_pktbl(p, $2);
                         $$ = new_array_pattern(p, $1, Qnone, $3, &@$);
                     /*%%%*/
                         nd_set_first_loc($$, @1.beg_pos);
@@ -4673,7 +4674,7 @@ p_expr_basic	: p_value
                     }
                 | p_const p_lbracket p_find rbracket
                     {
-                        pop_pktbl(p, $<tbl>2);
+                        pop_pktbl(p, $2);
                         $$ = new_find_pattern(p, $1, $3, &@$);
                     /*%%%*/
                         nd_set_first_loc($$, @1.beg_pos);
@@ -4682,7 +4683,7 @@ p_expr_basic	: p_value
                     }
                 | p_const p_lbracket p_kwargs rbracket
                     {
-                        pop_pktbl(p, $<tbl>2);
+                        pop_pktbl(p, $2);
                         $$ = new_hash_pattern(p, $1, $3, &@$);
                     /*%%%*/
                         nd_set_first_loc($$, @1.beg_pos);
