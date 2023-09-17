@@ -188,6 +188,8 @@ module Test_SyncDefaultGems
       File.write("#@target/docs/NEWS.md", "= NEWS!!!\n")
       git(*%W"add --", "docs/NEWS.md", chdir: @target)
       File.write("#@target/docs/hello.md", "Hello\n")
+      git(*%W"add --", "docs/hello.md", chdir: @target)
+      git(*%W"commit -q -m", "It's a news", chdir: @target)
       out = assert_sync()
       assert_equal(@sha["src"], top_commit("src"), out)
     end

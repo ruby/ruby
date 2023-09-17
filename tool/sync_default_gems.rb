@@ -562,8 +562,8 @@ module SyncDefaultGems
     changed = changed.reject do |f|
       case
       when toplevels.fetch(top = f[%r[\A[^/]+(?=/|\z)]m]) {
-             remove << top unless
-               toplevels[top] = system(*%w"git cat-file -e", "#{base}:#{top}", err: File::NULL)
+             remove << top if toplevels[top] =
+                              !system(*%w"git cat-file -e", "#{base}:#{top}", err: File::NULL)
            }
         # Remove any new top-level directories.
         true
@@ -590,8 +590,6 @@ module SyncDefaultGems
       if picked
         system(*%w"git commit --amend --no-edit --", *remove, %i[out err] => File::NULL)
       end
-      remove = remove.map {|d| d + "/"}
-      changed.delete_if {|f| remove.any? {|d| f.start_with?(d)}}
     end
 
     unless ignore.empty?
