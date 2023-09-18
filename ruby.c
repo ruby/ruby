@@ -904,12 +904,13 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 
     opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
 
-    argstr = rb_str_tmp_new((len = strlen(s)) + (envopt!=0));
+    const int hyphen = *s != '-';
+    argstr = rb_str_tmp_new((len = strlen(s)) + hyphen);
     argary = rb_str_tmp_new(0);
 
     p = RSTRING_PTR(argstr);
-    if (envopt) *p++ = ' ';
-    memcpy(p, s, len + 1);
+    if (hyphen) *p = '-';
+    memcpy(p + hyphen, s, len + 1);
     ap = 0;
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
     while (*p) {

@@ -416,6 +416,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(), "p Warning[:experimental]", ["false"])
     ENV['RUBYOPT'] = '-W:qux'
     assert_in_out_err(%w(), "", [], /unknown warning category: `qux'/)
+
+    ENV['RUBYOPT'] = 'w'
+    assert_in_out_err(%w(), "p $VERBOSE", ["true"])
   ensure
     ENV['RUBYOPT'] = rubyopt_orig
   end
