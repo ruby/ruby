@@ -4357,22 +4357,28 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
     return lineno;
 }
 
-/*
- *  call-seq:
- *    readline(sep = $/, chomp: false)   -> string
- *    readline(limit, chomp: false)      -> string
- *    readline(sep, limit, chomp: false) -> string
- *
- *  Reads a line as with IO#gets, but raises EOFError if already at end-of-stream.
- *
- *  Optional keyword argument +chomp+ specifies whether line separators
- *  are to be omitted.
- */
-
+/* :nodoc: */
 static VALUE
-rb_io_readline(int argc, VALUE *argv, VALUE io)
+io_readline(rb_execution_context_t *ec, VALUE io, VALUE sep, VALUE lim, VALUE chomp)
 {
-    VALUE line = rb_io_gets_m(argc, argv, io);
+    if (NIL_P(lim)) {
+        // If sep is specified, but it's not a string and not nil, then assume
+        // it's the limit (it should be an integer)
+        if (!NIL_P(sep) && NIL_P(rb_check_string_type(sep))) {
+            // If the user has specified a non-nil / non-string value
+            // for the separator, we assume it's the limit and set the
+            // separator to default: rb_rs.
+            lim = sep;
+            sep = rb_rs;
+        }
+    }
+
+    if (!NIL_P(sep)) {
+        StringValue(sep);
+    }
+
+    VALUE line = rb_io_getline_1(sep, NIL_P(lim) ? -1L : NUM2LONG(lim), RTEST(chomp), io);
+    rb_lastline_set_up(line, 1);
 
     if (NIL_P(line)) {
         rb_eof_error();
@@ -15420,7 +15426,6 @@ Init_IO(void)
     rb_define_method(rb_cIO, "read", io_read, -1);
     rb_define_method(rb_cIO, "write", io_write_m, -1);
     rb_define_method(rb_cIO, "gets", rb_io_gets_m, -1);
-    rb_define_method(rb_cIO, "readline", rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc", rb_io_getc, 0);
     rb_define_method(rb_cIO, "getbyte", rb_io_getbyte, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);

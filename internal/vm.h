@@ -58,6 +58,8 @@ VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
 
+void rb_lastline_set_up(VALUE val, unsigned int up);
+
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);

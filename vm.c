@@ -1750,6 +1750,17 @@ rb_lastline_set(VALUE val)
     vm_svar_set(GET_EC(), VM_SVAR_LASTLINE, val);
 }
 
+void
+rb_lastline_set_up(VALUE val, unsigned int up)
+{
+    rb_control_frame_t * cfp = GET_EC()->cfp;
+
+    for(unsigned int i = 0; i < up; i++) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    vm_cfp_svar_set(GET_EC(), cfp, VM_SVAR_LASTLINE, val);
+}
+
 /* misc */
 
 const char *
