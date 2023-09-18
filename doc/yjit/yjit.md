@@ -241,31 +241,6 @@ Performance counter names are not guaranteed to remain the same between Ruby ver
 
 The printed text after a --yjit-stats run includes other information that may be named differently than the information in runtime_stats.
 
-## Speeding Up YJIT
-
-While YJIT options default to what we think would work well for most workloads,
-they might not necessarily be the best configuration for your application.
-
-This section covers tips on improving YJIT performance in case YJIT does not
-speed up your application in production.
-
-### Increasing --yjit-exec-mem-size
-
-When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches this value,
-YJIT triggers "code GC" that frees all JIT code and starts recompiling everything.
-Compiling code takes some time, so scheduling code GC too frequently slows down your application.
-Increasing `--yjit-exec-mem-size` may speed up your application if `RubyVM::YJIT.runtime_stats[:code_gc_count]` is not 0 or 1.
-
-### Running workers as long as possible
-
-It's helpful to call the same code as many times as possible before a process restarts.
-If a process is killed too frequently, the time taken for compiling methods may outweigh
-the speedup obtained by compiling them.
-
-You should monitor the number of requests each process has served.
-If you're periodically killing worker processes, e.g. with `unicorn-worker-killer` or `puma_worker_killer`,
-you may want to reduce the killing frequency or increase the limit.
-
 ## Saving YJIT Memory Usage
 
 YJIT allocates memory for JIT code and metadata. Enabling YJIT generally results in more memory usage.
@@ -290,6 +265,31 @@ which often consumes more memory than JIT code. Generally, YJIT adds memory over
 of worker processes to estimate the worst case memory overhead.
 
 Running code GC adds overhead, but it could be still faster than recovering from a whole process killed by OOM.
+
+## Speeding Up YJIT
+
+While YJIT options default to what we think would work well for most workloads,
+they might not necessarily be the best configuration for your application.
+
+This section covers tips on improving YJIT performance in case YJIT does not
+speed up your application in production.
+
+### Increasing --yjit-exec-mem-size
+
+When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches this value,
+YJIT triggers "code GC" that frees all JIT code and starts recompiling everything.
+Compiling code takes some time, so scheduling code GC too frequently slows down your application.
+Increasing `--yjit-exec-mem-size` may speed up your application if `RubyVM::YJIT.runtime_stats[:code_gc_count]` is not 0 or 1.
+
+### Running workers as long as possible
+
+It's helpful to call the same code as many times as possible before a process restarts.
+If a process is killed too frequently, the time taken for compiling methods may outweigh
+the speedup obtained by compiling them.
+
+You should monitor the number of requests each process has served.
+If you're periodically killing worker processes, e.g. with `unicorn-worker-killer` or `puma_worker_killer`,
+you may want to reduce the killing frequency or increase the limit.
 
 ## Contributing
 
