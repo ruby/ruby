@@ -86,6 +86,10 @@ module YARP
     # Writes                                                                   #
     ############################################################################
 
+    def test_ClassVariableTargetNode
+      test_yarp_eval("class YARP::CompilerTest; @@yct, @@yct1 = 1; end")
+    end
+
     def test_ClassVariableWriteNode
       test_yarp_eval("class YARP::CompilerTest; @@yct = 1; end")
     end

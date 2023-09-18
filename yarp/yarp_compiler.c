@@ -851,6 +851,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_CLASS_VARIABLE_TARGET_NODE: {
+          yp_class_variable_target_node_t *write_node = (yp_class_variable_target_node_t *) node;
+          ID cvar_name = yp_constant_id_lookup(compile_context, write_node->name);
+          ADD_INSN2(ret, &dummy_line_node, setclassvariable, ID2SYM(cvar_name), get_cvar_ic_value(iseq, cvar_name));
+          return;
+      }
       case YP_CLASS_VARIABLE_WRITE_NODE: {
           yp_class_variable_write_node_t *write_node = (yp_class_variable_write_node_t *) node;
           YP_COMPILE_NOT_POPPED(write_node->value);
