@@ -267,9 +267,9 @@ local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 0001 leave                                                            (  89)[Br]
 
 == disasm: #<ISeq:block in <compiled>@<compiled>:94 (94,0)-(96,0)>
-0000 putself                                                          (  94)[Bc]
-0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0003 putself
-0004 opt_send_without_block                 <calldata!mid:_2, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
-0008 leave                                                            (  93)[Br]
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] _1@0       [ 1] _2@1
+0000 getlocal_WC_0                          _1@0                      (  94)[Bc]
+0002 getlocal_WC_0                          _2@1
+0004 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0006 leave                                                            (  93)[Br]

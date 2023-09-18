@@ -6,9 +6,9 @@
 0008 leave
 
 == disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,0)-(2,1)>
-0000 putself                                                          (   1)[Bc]
-0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0003 putself
-0004 opt_send_without_block                 <calldata!mid:_2, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
-0008 leave                                  [Br]
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] _1@0       [ 1] _2@1
+0000 getlocal_WC_0                          _1@0                      (   1)[Bc]
+0002 getlocal_WC_0                          _2@1
+0004 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0006 leave                                  [Br]

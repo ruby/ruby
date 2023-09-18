@@ -1,4 +1,4 @@
-== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(100,7)>
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(104,4)>
 0000 getclassvariable                       :@@foo, <is:1>            (  30)
 0003 dup
 0004 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
@@ -45,5 +45,5 @@
 0068 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
 0070 anytostring
 0071 pop
-0072 putstring                              "abc"                     ( 100)
+0072 putstring                              "#"                       ( 104)
 0074 leave
