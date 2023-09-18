@@ -551,10 +551,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
           ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
-          YP_COMPILE(alias_node->new_name);
-          YP_COMPILE(alias_node->old_name);
+          YP_COMPILE_NOT_POPPED(alias_node->new_name);
+          YP_COMPILE_NOT_POPPED(alias_node->old_name);
 
           ADD_SEND(ret, &dummy_line_node, id_core_set_method_alias, INT2FIX(3));
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
           return;
       }
       case YP_AND_NODE: {
