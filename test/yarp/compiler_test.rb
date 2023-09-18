@@ -3,7 +3,7 @@
 module YARP
   class CompilerTest < Test::Unit::TestCase
     def test_empty_program
-      assert_nil compile("")
+      test_yarp_eval("")
     end
 
     ############################################################################
@@ -11,47 +11,47 @@ module YARP
     ############################################################################
 
     def test_FalseNode
-      assert_equal false, compile("false")
+      test_yarp_eval("false")
     end
 
     def test_FloatNode
-      assert_equal 1.2, compile("1.2")
-      assert_equal 1.2e3, compile("1.2e3")
-      assert_equal(+1.2e+3, compile("+1.2e+3"))
-      assert_equal(-1.2e-3, compile("-1.2e-3"))
+      test_yarp_eval("1.2")
+      test_yarp_eval("1.2e3")
+      test_yarp_eval("+1.2e+3")
+      test_yarp_eval("-1.2e-3")
     end
 
     def test_ImaginaryNode
-      assert_equal 1i, compile("1i")
-      assert_equal +1.0i, compile("+1.0i")
-      assert_equal 1ri, compile("1ri")
+      test_yarp_eval("1i")
+      test_yarp_eval("+1.0i")
+      test_yarp_eval("1ri")
     end
 
     def test_IntegerNode
-      assert_equal 1, compile("1")
-      assert_equal(+1, compile("+1"))
-      assert_equal(-1, compile("-1"))
-      assert_equal 0x10, compile("0x10")
-      assert_equal 0b10, compile("0b10")
-      assert_equal 0o10, compile("0o10")
-      assert_equal 010, compile("010")
+      test_yarp_eval("1")
+      test_yarp_eval("+1")
+      test_yarp_eval("-1")
+      test_yarp_eval("0x10")
+      test_yarp_eval("0b10")
+      test_yarp_eval("0o10")
+      test_yarp_eval("010")
     end
 
     def test_NilNode
-      assert_nil compile("nil")
+      test_yarp_eval("nil")
     end
 
     def test_RationalNode
-      assert_equal 1.2r, compile("1.2r")
-      assert_equal +1.2r, compile("+1.2r")
+      test_yarp_eval("1.2r")
+      test_yarp_eval("+1.2r")
     end
 
     def test_SelfNode
-      assert_equal TOPLEVEL_BINDING.eval("self"), compile("self")
+      test_yarp_eval("self")
     end
 
     def test_TrueNode
-      assert_equal true, compile("true")
+      test_yarp_eval("true")
     end
 
     ############################################################################
@@ -59,27 +59,27 @@ module YARP
     ############################################################################
 
     def test_ClassVariableReadNode
-      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; @@yct; end")
+      test_yarp_eval("class YARP::CompilerTest; @@yct = 1; @@yct; end")
     end
 
     def test_ConstantPathNode
-      assert_equal YARP::CompilerTest, compile("YARP::CompilerTest")
+      test_yarp_eval("YARP::CompilerTest")
     end
 
     def test_ConstantReadNode
-      assert_equal YARP, compile("YARP")
+      test_yarp_eval("YARP")
     end
 
     def test_GlobalVariableReadNode
-      assert_equal 1, compile("$yct = 1; $yct")
+      test_yarp_eval("$yct = 1; $yct")
     end
 
     def test_InstanceVariableReadNode
-      assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; @yct; end")
+      test_yarp_eval("class YARP::CompilerTest; @yct = 1; @yct; end")
     end
 
     def test_LocalVariableReadNode
-      assert_equal 1, compile("yct = 1; yct")
+      test_yarp_eval("yct = 1; yct")
     end
 
     ############################################################################
@@ -87,80 +87,84 @@ module YARP
     ############################################################################
 
     def test_ClassVariableWriteNode
-      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; end")
+      test_yarp_eval("class YARP::CompilerTest; @@yct = 1; end")
     end
 
     def test_ClassVariableAndWriteNode
-      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 0; @@yct &&= 1; end")
+      test_yarp_eval("class YARP::CompilerTest; @@yct = 0; @@yct &&= 1; end")
     end
 
     def test_ClassVariableOrWriteNode
-      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; @@yct ||= 0; end")
-      assert_equal 1, compile("class YARP::CompilerTest; @@yct = nil; @@yct ||= 1; end")
+      test_yarp_eval("class YARP::CompilerTest; @@yct = 1; @@yct ||= 0; end")
+      test_yarp_eval("class YARP::CompilerTest; @@yct = nil; @@yct ||= 1; end")
     end
 
     def test_ClassVariableOperatorWriteNode
-      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 0; @@yct += 1; end")
+      test_yarp_eval("class YARP::CompilerTest; @@yct = 0; @@yct += 1; end")
     end
 
     def test_ConstantWriteNode
+      # We don't call test_yarp_eval directly in this case becuase we
+      # don't want to assign the constant mutliple times if we run
+      # with `--repeat-count`
+      # Instead, we eval manually here, and remove the constant to
       constant_name = "YCT"
-      assert_equal 1, compile("#{constant_name} = 1")
-      # We remove the constant to avoid assigning it mutliple
-      # times if we run with `--repeat_count`
+      source = "#{constant_name} = 1"
+      yarp_eval = RubyVM::InstructionSequence.compile_yarp(source).eval
+      assert_equal yarp_eval, 1
       Object.send(:remove_const, constant_name)
     end
 
     def test_ConstantPathWriteNode
-      # assert_equal 1, compile("YARP::YCT = 1")
+      # test_yarp_eval("YARP::YCT = 1")
     end
 
     def test_GlobalVariableWriteNode
-      assert_equal 1, compile("$yct = 1")
+      test_yarp_eval("$yct = 1")
     end
 
     def test_GlobalVariableAndWriteNode
-      assert_equal 1, compile("$yct = 0; $yct &&= 1")
+      test_yarp_eval("$yct = 0; $yct &&= 1")
     end
 
     def test_GlobalVariableOrWriteNode
-      assert_equal 1, compile("$yct ||= 1")
+      test_yarp_eval("$yct ||= 1")
     end
 
     def test_GlobalVariableOperatorWriteNode
-      assert_equal 1, compile("$yct = 0; $yct += 1")
+      test_yarp_eval("$yct = 0; $yct += 1")
     end
 
     def test_InstanceVariableWriteNode
-      assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; end")
+      test_yarp_eval("class YARP::CompilerTest; @yct = 1; end")
     end
 
     def test_InstanceVariableAndWriteNode
-      assert_equal 1, compile("@yct = 0; @yct &&= 1")
+      test_yarp_eval("@yct = 0; @yct &&= 1")
     end
 
     def test_InstanceVariableOrWriteNode
-      assert_equal 1, compile("@yct ||= 1")
+      test_yarp_eval("@yct ||= 1")
     end
 
     def test_InstanceVariableOperatorWriteNode
-      assert_equal 1, compile("@yct = 0; @yct += 1")
+      test_yarp_eval("@yct = 0; @yct += 1")
     end
 
     def test_LocalVariableWriteNode
-      assert_equal 1, compile("yct = 1")
+      test_yarp_eval("yct = 1")
     end
 
     def test_LocalVariableAndWriteNode
-      assert_equal 1, compile("yct = 0; yct &&= 1")
+      test_yarp_eval("yct = 0; yct &&= 1")
     end
 
     def test_LocalVariableOrWriteNode
-      assert_equal 1, compile("yct ||= 1")
+      test_yarp_eval("yct ||= 1")
     end
 
     def test_LocalVariableOperatorWriteNode
-      assert_equal 1, compile("yct = 0; yct += 1")
+      test_yarp_eval("yct = 0; yct += 1")
     end
 
     ############################################################################
@@ -168,50 +172,50 @@ module YARP
     ############################################################################
 
     def test_EmbeddedVariableNode
-      # assert_equal "1", compile('class YARP::CompilerTest; @yct = 1; "#@yct"; end')
-      # assert_equal "1", compile('class YARP::CompilerTest; @@yct = 1; "#@@yct"; end')
-      assert_equal "1", compile('$yct = 1; "#$yct"')
+      # test_yarp_eval('class YARP::CompilerTest; @yct = 1; "#@yct"; end')
+      # test_yarp_eval('class YARP::CompilerTest; @@yct = 1; "#@@yct"; end')
+      test_yarp_eval('$yct = 1; "#$yct"')
     end
 
     def test_InterpolatedRegularExpressionNode
-      assert_equal /1 1 1/, compile('$yct = 1; /1 #$yct 1/')
-      assert_equal /1 3 1/, compile('/1 #{1 + 2} 1/')
-      assert_equal /1 2 3 1/, compile('/1 #{"2"} #{1 + 2} 1/')
+      test_yarp_eval('$yct = 1; /1 #$yct 1/')
+      test_yarp_eval('/1 #{1 + 2} 1/')
+      test_yarp_eval('/1 #{"2"} #{1 + 2} 1/')
     end
 
     def test_InterpolatedStringNode
-      assert_equal "1 1 1", compile('$yct = 1; "1 #$yct 1"')
-      assert_equal "1 3 1", compile('"1 #{1 + 2} 1"')
+      test_yarp_eval('$yct = 1; "1 #$yct 1"')
+      test_yarp_eval('"1 #{1 + 2} 1"')
     end
 
     def test_InterpolatedSymbolNode
-      assert_equal :"1 1 1", compile('$yct = 1; :"1 #$yct 1"')
-      assert_equal :"1 3 1", compile(':"1 #{1 + 2} 1"')
+      test_yarp_eval('$yct = 1; :"1 #$yct 1"')
+      test_yarp_eval(':"1 #{1 + 2} 1"')
     end
 
     def test_InterpolatedXStringNode
-      assert_equal "1\n", compile('`echo #{1}`')
-      assert_equal "100", compile('`printf "100"`')
+      test_yarp_eval('`echo #{1}`')
+      test_yarp_eval('`printf "100"`')
     end
 
     def test_RegularExpressionNode
-      assert_equal /yct/, compile('/yct/')
+      test_yarp_eval('/yct/')
     end
 
     def test_StringConcatNode
-      # assert_equal "YARP::CompilerTest", compile('"YARP" "::" "CompilerTest"')
+      # test_yarp_eval('"YARP" "::" "CompilerTest"')
     end
 
     def test_StringNode
-      assert_equal "yct", compile('"yct"')
+      test_yarp_eval('"yct"')
     end
 
     def test_SymbolNode
-      assert_equal :yct, compile(":yct")
+      test_yarp_eval(":yct")
     end
 
     def test_XStringNode
-      # assert_equal "yctyct", compile(<<~RUBY)
+      # test_yarp_eval(<<~RUBY)
       #   class YARP::CompilerTest
       #     def self.`(command) = command * 2
       #     `yct`
@@ -224,13 +228,13 @@ module YARP
     ############################################################################
 
     def test_AndNode
-      assert_equal 1, compile("true && 1")
-      assert_equal false, compile("false && 1")
+      test_yarp_eval("true && 1")
+      test_yarp_eval("false && 1")
     end
 
     def test_OrNode
-      assert_equal true, compile("true || 1")
-      assert_equal 1, compile("false || 1")
+      test_yarp_eval("true || 1")
+      test_yarp_eval("false || 1")
     end
 
     ############################################################################
@@ -238,14 +242,17 @@ module YARP
     ############################################################################
 
     def test_ParenthesesNode
-      assert_equal (), compile("()")
-      assert_equal (1), compile("(1)")
+      test_yarp_eval("()")
+      test_yarp_eval("(1)")
     end
 
     private
 
-    def compile(source)
-      RubyVM::InstructionSequence.compile_yarp(source).eval
+    def test_yarp_eval(source)
+      ruby_eval = RubyVM::InstructionSequence.compile(source).eval
+      yarp_eval = RubyVM::InstructionSequence.compile_yarp(source).eval
+
+      assert_equal ruby_eval, yarp_eval
     end
   end
 end
