@@ -1,147 +1,398 @@
-ProgramNode(0...345)(
-  [],
-  StatementsNode(0...345)(
-    [SymbolNode(0...6)((0...2), (2...5), (5...6), "abc"),
-     InterpolatedSymbolNode(8...17)(
-       (8...10),
-       [EmbeddedStatementsNode(10...16)(
-          (10...12),
-          StatementsNode(12...15)(
-            [CallNode(12...15)(
-               nil,
-               nil,
-               (12...15),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "var"
-             )]
-          ),
-          (15...16)
-        )],
-       (16...17)
-     ),
-     InterpolatedSymbolNode(19...29)(
-       (19...21),
-       [StringNode(21...24)(nil, (21...24), nil, "abc"),
-        EmbeddedStatementsNode(24...28)(
-          (24...26),
-          StatementsNode(26...27)([IntegerNode(26...27)()]),
-          (27...28)
-        )],
-       (28...29)
-     ),
-     ArrayNode(31...51)(
-       [SymbolNode(32...35)((32...33), (33...35), nil, "Υ"),
-        SymbolNode(37...40)((37...38), (38...40), nil, "ά"),
-        SymbolNode(42...45)((42...43), (43...45), nil, "ŗ"),
-        SymbolNode(47...50)((47...48), (48...50), nil, "ρ")],
-       (31...32),
-       (50...51)
-     ),
-     SymbolNode(53...56)((53...54), (54...56), nil, "-@"),
-     SymbolNode(58...60)((58...59), (59...60), nil, "-"),
-     SymbolNode(62...64)((62...63), (63...64), nil, "%"),
-     SymbolNode(66...68)((66...67), (67...68), nil, "|"),
-     SymbolNode(70...73)((70...71), (71...73), nil, "+@"),
-     SymbolNode(75...77)((75...76), (76...77), nil, "+"),
-     SymbolNode(79...81)((79...80), (80...81), nil, "/"),
-     SymbolNode(83...86)((83...84), (84...86), nil, "**"),
-     SymbolNode(88...90)((88...89), (89...90), nil, "*"),
-     SymbolNode(92...95)((92...93), (93...95), nil, "~@"),
-     ArrayNode(97...113)(
-       [IntegerNode(98...99)(),
-        FloatNode(101...104)(),
-        RationalNode(106...108)(IntegerNode(106...107)()),
-        ImaginaryNode(110...112)(IntegerNode(110...111)())],
-       (97...98),
-       (112...113)
-     ),
-     SymbolNode(115...117)((115...116), (116...117), nil, "~"),
-     SymbolNode(119...121)((119...120), (120...121), nil, "a"),
-     ArrayNode(123...132)(
-       [SymbolNode(126...127)(nil, (126...127), nil, "a"),
-        SymbolNode(128...129)(nil, (128...129), nil, "b"),
-        SymbolNode(130...131)(nil, (130...131), nil, "c")],
-       (123...126),
-       (131...132)
-     ),
-     ArrayNode(134...158)(
-       [SymbolNode(137...138)(nil, (137...138), nil, "a"),
-        SymbolNode(139...144)(nil, (139...144), nil, "b\#{1}"),
-        SymbolNode(145...150)(nil, (145...150), nil, "\#{2}c"),
-        SymbolNode(151...157)(nil, (151...157), nil, "d\#{3}f")],
-       (134...137),
-       (157...158)
-     ),
-     ArrayNode(160...184)(
-       [SymbolNode(163...164)(nil, (163...164), nil, "a"),
-        InterpolatedSymbolNode(165...170)(
-          nil,
-          [StringNode(165...166)(nil, (165...166), nil, "b"),
-           EmbeddedStatementsNode(166...170)(
-             (166...168),
-             StatementsNode(168...169)([IntegerNode(168...169)()]),
-             (169...170)
-           )],
-          nil
-        ),
-        InterpolatedSymbolNode(171...176)(
-          nil,
-          [EmbeddedStatementsNode(171...175)(
-             (171...173),
-             StatementsNode(173...174)([IntegerNode(173...174)()]),
-             (174...175)
-           ),
-           StringNode(175...176)(nil, (175...176), nil, "c")],
-          nil
-        ),
-        InterpolatedSymbolNode(177...183)(
-          nil,
-          [StringNode(177...178)(nil, (177...178), nil, "d"),
-           EmbeddedStatementsNode(178...182)(
-             (178...180),
-             StatementsNode(180...181)([IntegerNode(180...181)()]),
-             (181...182)
-           ),
-           StringNode(182...183)(nil, (182...183), nil, "f")],
-          nil
-        )],
-       (160...163),
-       (183...184)
-     ),
-     SymbolNode(186...190)((186...187), (187...190), nil, "@@a"),
-     SymbolNode(192...197)((192...193), (193...197), nil, "👍"),
-     ArrayNode(199...206)(
-       [SymbolNode(202...205)(nil, (202...205), nil, "a\\b")],
-       (199...202),
-       (205...206)
-     ),
-     SymbolNode(208...211)((208...209), (209...211), nil, "$a"),
-     SymbolNode(213...216)((213...214), (214...216), nil, "@a"),
-     SymbolNode(218...221)((218...219), (219...221), nil, "do"),
-     SymbolNode(223...225)((223...224), (224...225), nil, "&"),
-     SymbolNode(227...229)((227...228), (228...229), nil, "`"),
-     SymbolNode(231...234)((231...232), (232...234), nil, "!@"),
-     SymbolNode(236...239)((236...237), (237...239), nil, "!~"),
-     SymbolNode(241...243)((241...242), (242...243), nil, "!"),
-     SymbolNode(245...248)((245...246), (246...248), nil, "[]"),
-     SymbolNode(250...254)((250...251), (251...254), nil, "[]="),
-     SymbolNode(256...258)((256...257), (257...258), nil, "^"),
-     SymbolNode(260...263)((260...261), (261...263), nil, "=="),
-     SymbolNode(265...269)((265...266), (266...269), nil, "==="),
-     SymbolNode(271...274)((271...272), (272...274), nil, "=~"),
-     SymbolNode(276...279)((276...277), (277...279), nil, ">="),
-     SymbolNode(281...284)((281...282), (282...284), nil, ">>"),
-     SymbolNode(286...288)((286...287), (287...288), nil, ">"),
-     SymbolNode(290...294)((290...291), (291...294), nil, "<=>"),
-     SymbolNode(296...299)((296...297), (297...299), nil, "<="),
-     SymbolNode(301...304)((301...302), (302...304), nil, "<<"),
-     SymbolNode(306...308)((306...307), (307...308), nil, "<"),
-     SymbolNode(310...319)((310...311), (311...319), nil, "__LINE__"),
-     SymbolNode(321...330)((321...322), (322...330), nil, "__FILE__"),
-     SymbolNode(332...345)((332...333), (333...345), nil, "__ENCODING__")]
-  )
-)
+@ ProgramNode (location: (0...345))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...345))
+    └── body: (length: 47)
+        ├── @ SymbolNode (location: (0...6))
+        │   ├── opening_loc: (0...2) = ":'"
+        │   ├── value_loc: (2...5) = "abc"
+        │   ├── closing_loc: (5...6) = "'"
+        │   └── unescaped: "abc"
+        ├── @ InterpolatedSymbolNode (location: (8...17))
+        │   ├── opening_loc: (8...10) = ":\""
+        │   ├── parts: (length: 1)
+        │   │   └── @ EmbeddedStatementsNode (location: (10...16))
+        │   │       ├── opening_loc: (10...12) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (12...15))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ CallNode (location: (12...15))
+        │   │       │           ├── receiver: ∅
+        │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── message_loc: (12...15) = "var"
+        │   │       │           ├── opening_loc: ∅
+        │   │       │           ├── arguments: ∅
+        │   │       │           ├── closing_loc: ∅
+        │   │       │           ├── block: ∅
+        │   │       │           ├── flags: variable_call
+        │   │       │           └── name: "var"
+        │   │       └── closing_loc: (15...16) = "}"
+        │   └── closing_loc: (16...17) = "\""
+        ├── @ InterpolatedSymbolNode (location: (19...29))
+        │   ├── opening_loc: (19...21) = ":\""
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (21...24))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (21...24) = "abc"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "abc"
+        │   │   └── @ EmbeddedStatementsNode (location: (24...28))
+        │   │       ├── opening_loc: (24...26) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (26...27))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ IntegerNode (location: (26...27))
+        │   │       │           └── flags: decimal
+        │   │       └── closing_loc: (27...28) = "}"
+        │   └── closing_loc: (28...29) = "\""
+        ├── @ ArrayNode (location: (31...51))
+        │   ├── elements: (length: 4)
+        │   │   ├── @ SymbolNode (location: (32...35))
+        │   │   │   ├── opening_loc: (32...33) = ":"
+        │   │   │   ├── value_loc: (33...35) = "Υ"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "Υ"
+        │   │   ├── @ SymbolNode (location: (37...40))
+        │   │   │   ├── opening_loc: (37...38) = ":"
+        │   │   │   ├── value_loc: (38...40) = "ά"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "ά"
+        │   │   ├── @ SymbolNode (location: (42...45))
+        │   │   │   ├── opening_loc: (42...43) = ":"
+        │   │   │   ├── value_loc: (43...45) = "ŗ"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "ŗ"
+        │   │   └── @ SymbolNode (location: (47...50))
+        │   │       ├── opening_loc: (47...48) = ":"
+        │   │       ├── value_loc: (48...50) = "ρ"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "ρ"
+        │   ├── opening_loc: (31...32) = "["
+        │   └── closing_loc: (50...51) = "]"
+        ├── @ SymbolNode (location: (53...56))
+        │   ├── opening_loc: (53...54) = ":"
+        │   ├── value_loc: (54...56) = "-@"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "-@"
+        ├── @ SymbolNode (location: (58...60))
+        │   ├── opening_loc: (58...59) = ":"
+        │   ├── value_loc: (59...60) = "-"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "-"
+        ├── @ SymbolNode (location: (62...64))
+        │   ├── opening_loc: (62...63) = ":"
+        │   ├── value_loc: (63...64) = "%"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "%"
+        ├── @ SymbolNode (location: (66...68))
+        │   ├── opening_loc: (66...67) = ":"
+        │   ├── value_loc: (67...68) = "|"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "|"
+        ├── @ SymbolNode (location: (70...73))
+        │   ├── opening_loc: (70...71) = ":"
+        │   ├── value_loc: (71...73) = "+@"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "+@"
+        ├── @ SymbolNode (location: (75...77))
+        │   ├── opening_loc: (75...76) = ":"
+        │   ├── value_loc: (76...77) = "+"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "+"
+        ├── @ SymbolNode (location: (79...81))
+        │   ├── opening_loc: (79...80) = ":"
+        │   ├── value_loc: (80...81) = "/"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "/"
+        ├── @ SymbolNode (location: (83...86))
+        │   ├── opening_loc: (83...84) = ":"
+        │   ├── value_loc: (84...86) = "**"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "**"
+        ├── @ SymbolNode (location: (88...90))
+        │   ├── opening_loc: (88...89) = ":"
+        │   ├── value_loc: (89...90) = "*"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "*"
+        ├── @ SymbolNode (location: (92...95))
+        │   ├── opening_loc: (92...93) = ":"
+        │   ├── value_loc: (93...95) = "~@"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "~@"
+        ├── @ ArrayNode (location: (97...113))
+        │   ├── elements: (length: 4)
+        │   │   ├── @ IntegerNode (location: (98...99))
+        │   │   │   └── flags: decimal
+        │   │   ├── @ FloatNode (location: (101...104))
+        │   │   ├── @ RationalNode (location: (106...108))
+        │   │   │   └── numeric:
+        │   │   │       @ IntegerNode (location: (106...107))
+        │   │   │       └── flags: decimal
+        │   │   └── @ ImaginaryNode (location: (110...112))
+        │   │       └── numeric:
+        │   │           @ IntegerNode (location: (110...111))
+        │   │           └── flags: decimal
+        │   ├── opening_loc: (97...98) = "["
+        │   └── closing_loc: (112...113) = "]"
+        ├── @ SymbolNode (location: (115...117))
+        │   ├── opening_loc: (115...116) = ":"
+        │   ├── value_loc: (116...117) = "~"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "~"
+        ├── @ SymbolNode (location: (119...121))
+        │   ├── opening_loc: (119...120) = ":"
+        │   ├── value_loc: (120...121) = "a"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "a"
+        ├── @ ArrayNode (location: (123...132))
+        │   ├── elements: (length: 3)
+        │   │   ├── @ SymbolNode (location: (126...127))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── value_loc: (126...127) = "a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a"
+        │   │   ├── @ SymbolNode (location: (128...129))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── value_loc: (128...129) = "b"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "b"
+        │   │   └── @ SymbolNode (location: (130...131))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (130...131) = "c"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "c"
+        │   ├── opening_loc: (123...126) = "%i["
+        │   └── closing_loc: (131...132) = "]"
+        ├── @ ArrayNode (location: (134...158))
+        │   ├── elements: (length: 4)
+        │   │   ├── @ SymbolNode (location: (137...138))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── value_loc: (137...138) = "a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a"
+        │   │   ├── @ SymbolNode (location: (139...144))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── value_loc: (139...144) = "b\#{1}"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "b\#{1}"
+        │   │   ├── @ SymbolNode (location: (145...150))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── value_loc: (145...150) = "\#{2}c"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\#{2}c"
+        │   │   └── @ SymbolNode (location: (151...157))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (151...157) = "d\#{3}f"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "d\#{3}f"
+        │   ├── opening_loc: (134...137) = "%i["
+        │   └── closing_loc: (157...158) = "]"
+        ├── @ ArrayNode (location: (160...184))
+        │   ├── elements: (length: 4)
+        │   │   ├── @ SymbolNode (location: (163...164))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── value_loc: (163...164) = "a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a"
+        │   │   ├── @ InterpolatedSymbolNode (location: (165...170))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── parts: (length: 2)
+        │   │   │   │   ├── @ StringNode (location: (165...166))
+        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   ├── content_loc: (165...166) = "b"
+        │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   └── unescaped: "b"
+        │   │   │   │   └── @ EmbeddedStatementsNode (location: (166...170))
+        │   │   │   │       ├── opening_loc: (166...168) = "\#{"
+        │   │   │   │       ├── statements:
+        │   │   │   │       │   @ StatementsNode (location: (168...169))
+        │   │   │   │       │   └── body: (length: 1)
+        │   │   │   │       │       └── @ IntegerNode (location: (168...169))
+        │   │   │   │       │           └── flags: decimal
+        │   │   │   │       └── closing_loc: (169...170) = "}"
+        │   │   │   └── closing_loc: ∅
+        │   │   ├── @ InterpolatedSymbolNode (location: (171...176))
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── parts: (length: 2)
+        │   │   │   │   ├── @ EmbeddedStatementsNode (location: (171...175))
+        │   │   │   │   │   ├── opening_loc: (171...173) = "\#{"
+        │   │   │   │   │   ├── statements:
+        │   │   │   │   │   │   @ StatementsNode (location: (173...174))
+        │   │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │   │       └── @ IntegerNode (location: (173...174))
+        │   │   │   │   │   │           └── flags: decimal
+        │   │   │   │   │   └── closing_loc: (174...175) = "}"
+        │   │   │   │   └── @ StringNode (location: (175...176))
+        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── opening_loc: ∅
+        │   │   │   │       ├── content_loc: (175...176) = "c"
+        │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │       └── unescaped: "c"
+        │   │   │   └── closing_loc: ∅
+        │   │   └── @ InterpolatedSymbolNode (location: (177...183))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── parts: (length: 3)
+        │   │       │   ├── @ StringNode (location: (177...178))
+        │   │       │   │   ├── flags: ∅
+        │   │       │   │   ├── opening_loc: ∅
+        │   │       │   │   ├── content_loc: (177...178) = "d"
+        │   │       │   │   ├── closing_loc: ∅
+        │   │       │   │   └── unescaped: "d"
+        │   │       │   ├── @ EmbeddedStatementsNode (location: (178...182))
+        │   │       │   │   ├── opening_loc: (178...180) = "\#{"
+        │   │       │   │   ├── statements:
+        │   │       │   │   │   @ StatementsNode (location: (180...181))
+        │   │       │   │   │   └── body: (length: 1)
+        │   │       │   │   │       └── @ IntegerNode (location: (180...181))
+        │   │       │   │   │           └── flags: decimal
+        │   │       │   │   └── closing_loc: (181...182) = "}"
+        │   │       │   └── @ StringNode (location: (182...183))
+        │   │       │       ├── flags: ∅
+        │   │       │       ├── opening_loc: ∅
+        │   │       │       ├── content_loc: (182...183) = "f"
+        │   │       │       ├── closing_loc: ∅
+        │   │       │       └── unescaped: "f"
+        │   │       └── closing_loc: ∅
+        │   ├── opening_loc: (160...163) = "%I["
+        │   └── closing_loc: (183...184) = "]"
+        ├── @ SymbolNode (location: (186...190))
+        │   ├── opening_loc: (186...187) = ":"
+        │   ├── value_loc: (187...190) = "@@a"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "@@a"
+        ├── @ SymbolNode (location: (192...197))
+        │   ├── opening_loc: (192...193) = ":"
+        │   ├── value_loc: (193...197) = "👍"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "👍"
+        ├── @ ArrayNode (location: (199...206))
+        │   ├── elements: (length: 1)
+        │   │   └── @ SymbolNode (location: (202...205))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (202...205) = "a\\b"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "a\\b"
+        │   ├── opening_loc: (199...202) = "%i["
+        │   └── closing_loc: (205...206) = "]"
+        ├── @ SymbolNode (location: (208...211))
+        │   ├── opening_loc: (208...209) = ":"
+        │   ├── value_loc: (209...211) = "$a"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "$a"
+        ├── @ SymbolNode (location: (213...216))
+        │   ├── opening_loc: (213...214) = ":"
+        │   ├── value_loc: (214...216) = "@a"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "@a"
+        ├── @ SymbolNode (location: (218...221))
+        │   ├── opening_loc: (218...219) = ":"
+        │   ├── value_loc: (219...221) = "do"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "do"
+        ├── @ SymbolNode (location: (223...225))
+        │   ├── opening_loc: (223...224) = ":"
+        │   ├── value_loc: (224...225) = "&"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "&"
+        ├── @ SymbolNode (location: (227...229))
+        │   ├── opening_loc: (227...228) = ":"
+        │   ├── value_loc: (228...229) = "`"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "`"
+        ├── @ SymbolNode (location: (231...234))
+        │   ├── opening_loc: (231...232) = ":"
+        │   ├── value_loc: (232...234) = "!@"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "!@"
+        ├── @ SymbolNode (location: (236...239))
+        │   ├── opening_loc: (236...237) = ":"
+        │   ├── value_loc: (237...239) = "!~"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "!~"
+        ├── @ SymbolNode (location: (241...243))
+        │   ├── opening_loc: (241...242) = ":"
+        │   ├── value_loc: (242...243) = "!"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "!"
+        ├── @ SymbolNode (location: (245...248))
+        │   ├── opening_loc: (245...246) = ":"
+        │   ├── value_loc: (246...248) = "[]"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "[]"
+        ├── @ SymbolNode (location: (250...254))
+        │   ├── opening_loc: (250...251) = ":"
+        │   ├── value_loc: (251...254) = "[]="
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "[]="
+        ├── @ SymbolNode (location: (256...258))
+        │   ├── opening_loc: (256...257) = ":"
+        │   ├── value_loc: (257...258) = "^"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "^"
+        ├── @ SymbolNode (location: (260...263))
+        │   ├── opening_loc: (260...261) = ":"
+        │   ├── value_loc: (261...263) = "=="
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "=="
+        ├── @ SymbolNode (location: (265...269))
+        │   ├── opening_loc: (265...266) = ":"
+        │   ├── value_loc: (266...269) = "==="
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "==="
+        ├── @ SymbolNode (location: (271...274))
+        │   ├── opening_loc: (271...272) = ":"
+        │   ├── value_loc: (272...274) = "=~"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "=~"
+        ├── @ SymbolNode (location: (276...279))
+        │   ├── opening_loc: (276...277) = ":"
+        │   ├── value_loc: (277...279) = ">="
+        │   ├── closing_loc: ∅
+        │   └── unescaped: ">="
+        ├── @ SymbolNode (location: (281...284))
+        │   ├── opening_loc: (281...282) = ":"
+        │   ├── value_loc: (282...284) = ">>"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: ">>"
+        ├── @ SymbolNode (location: (286...288))
+        │   ├── opening_loc: (286...287) = ":"
+        │   ├── value_loc: (287...288) = ">"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: ">"
+        ├── @ SymbolNode (location: (290...294))
+        │   ├── opening_loc: (290...291) = ":"
+        │   ├── value_loc: (291...294) = "<=>"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "<=>"
+        ├── @ SymbolNode (location: (296...299))
+        │   ├── opening_loc: (296...297) = ":"
+        │   ├── value_loc: (297...299) = "<="
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "<="
+        ├── @ SymbolNode (location: (301...304))
+        │   ├── opening_loc: (301...302) = ":"
+        │   ├── value_loc: (302...304) = "<<"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "<<"
+        ├── @ SymbolNode (location: (306...308))
+        │   ├── opening_loc: (306...307) = ":"
+        │   ├── value_loc: (307...308) = "<"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "<"
+        ├── @ SymbolNode (location: (310...319))
+        │   ├── opening_loc: (310...311) = ":"
+        │   ├── value_loc: (311...319) = "__LINE__"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "__LINE__"
+        ├── @ SymbolNode (location: (321...330))
+        │   ├── opening_loc: (321...322) = ":"
+        │   ├── value_loc: (322...330) = "__FILE__"
+        │   ├── closing_loc: ∅
+        │   └── unescaped: "__FILE__"
+        └── @ SymbolNode (location: (332...345))
+            ├── opening_loc: (332...333) = ":"
+            ├── value_loc: (333...345) = "__ENCODING__"
+            ├── closing_loc: ∅
+            └── unescaped: "__ENCODING__"

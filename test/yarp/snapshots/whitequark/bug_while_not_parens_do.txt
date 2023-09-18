@@ -1,26 +1,28 @@
-ProgramNode(0...23)(
-  [],
-  StatementsNode(0...23)(
-    [WhileNode(0...23)(
-       (0...5),
-       (20...23),
-       CallNode(6...16)(
-         ParenthesesNode(10...16)(
-           StatementsNode(11...15)([TrueNode(11...15)()]),
-           (10...11),
-           (15...16)
-         ),
-         nil,
-         (6...9),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "!"
-       ),
-       nil,
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...23))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...23))
+    └── body: (length: 1)
+        └── @ WhileNode (location: (0...23))
+            ├── keyword_loc: (0...5) = "while"
+            ├── closing_loc: (20...23) = "end"
+            ├── predicate:
+            │   @ CallNode (location: (6...16))
+            │   ├── receiver:
+            │   │   @ ParenthesesNode (location: (10...16))
+            │   │   ├── body:
+            │   │   │   @ StatementsNode (location: (11...15))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ TrueNode (location: (11...15))
+            │   │   ├── opening_loc: (10...11) = "("
+            │   │   └── closing_loc: (15...16) = ")"
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (6...9) = "not"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "!"
+            ├── statements: ∅
+            └── flags: ∅

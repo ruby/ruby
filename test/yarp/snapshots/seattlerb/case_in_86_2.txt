@@ -1,33 +1,49 @@
-ProgramNode(0...43)(
-  [],
-  StatementsNode(0...43)(
-    [CaseNode(0...43)(
-       ArrayNode(5...13)(
-         [SymbolNode(6...8)((6...7), (7...8), nil, "a"),
-          SymbolNode(10...12)((10...11), (11...12), nil, "b")],
-         (5...6),
-         (12...13)
-       ),
-       [InNode(14...39)(
-          ArrayPatternNode(17...30)(
-            nil,
-            [],
-            SplatNode(17...18)((17...18), nil),
-            [ConstantPathNode(20...30)(
-               nil,
-               ConstantReadNode(22...30)(),
-               (20...22)
-             )],
-            nil,
-            nil
-          ),
-          StatementsNode(36...39)([NilNode(36...39)()]),
-          (14...16),
-          (31...35)
-        )],
-       nil,
-       (0...4),
-       (40...43)
-     )]
-  )
-)
+@ ProgramNode (location: (0...43))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...43))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...43))
+            ├── predicate:
+            │   @ ArrayNode (location: (5...13))
+            │   ├── elements: (length: 2)
+            │   │   ├── @ SymbolNode (location: (6...8))
+            │   │   │   ├── opening_loc: (6...7) = ":"
+            │   │   │   ├── value_loc: (7...8) = "a"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "a"
+            │   │   └── @ SymbolNode (location: (10...12))
+            │   │       ├── opening_loc: (10...11) = ":"
+            │   │       ├── value_loc: (11...12) = "b"
+            │   │       ├── closing_loc: ∅
+            │   │       └── unescaped: "b"
+            │   ├── opening_loc: (5...6) = "["
+            │   └── closing_loc: (12...13) = "]"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (14...39))
+            │       ├── pattern:
+            │       │   @ ArrayPatternNode (location: (17...30))
+            │       │   ├── constant: ∅
+            │       │   ├── requireds: (length: 0)
+            │       │   ├── rest:
+            │       │   │   @ SplatNode (location: (17...18))
+            │       │   │   ├── operator_loc: (17...18) = "*"
+            │       │   │   └── expression: ∅
+            │       │   ├── posts: (length: 1)
+            │       │   │   └── @ ConstantPathNode (location: (20...30))
+            │       │   │       ├── parent: ∅
+            │       │   │       ├── child:
+            │       │   │       │   @ ConstantReadNode (location: (22...30))
+            │       │   │       │   └── name: :NilClass
+            │       │   │       └── delimiter_loc: (20...22) = "::"
+            │       │   ├── opening_loc: ∅
+            │       │   └── closing_loc: ∅
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (36...39))
+            │       │   └── body: (length: 1)
+            │       │       └── @ NilNode (location: (36...39))
+            │       ├── in_loc: (14...16) = "in"
+            │       └── then_loc: (31...35) = "then"
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (40...43) = "end"

@@ -1,34 +1,43 @@
-ProgramNode(0...29)(
-  [],
-  StatementsNode(0...29)(
-    [BeginNode(0...29)(
-       (0...5),
-       StatementsNode(7...11)(
-         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 2, "meth")]
-       ),
-       RescueNode(13...24)(
-         (13...19),
-         [],
-         nil,
-         nil,
-         StatementsNode(21...24)(
-           [CallNode(21...24)(
-              nil,
-              nil,
-              (21...24),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "foo"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (26...29)
-     )]
-  )
-)
+@ ProgramNode (location: (0...29))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...29))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (0...29))
+            ├── begin_keyword_loc: (0...5) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (7...11))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (7...11))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (7...11) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "meth"
+            ├── rescue_clause:
+            │   @ RescueNode (location: (13...24))
+            │   ├── keyword_loc: (13...19) = "rescue"
+            │   ├── exceptions: (length: 0)
+            │   ├── operator_loc: ∅
+            │   ├── reference: ∅
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (21...24))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (21...24))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (21...24) = "foo"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "foo"
+            │   └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (26...29) = "end"

@@ -1,52 +1,73 @@
-ProgramNode(0...48)(
-  [:b, :c],
-  StatementsNode(0...48)(
-    [IfNode(0...46)(
-       (0...2),
-       TrueNode(3...7)(),
-       StatementsNode(15...42)(
-         [CallNode(15...21)(
-            nil,
-            nil,
-            (15...16),
-            (16...17),
-            ArgumentsNode(17...20)(
-              [StringNode(17...20)((17...18), (18...19), (19...20), "a")]
-            ),
-            (20...21),
-            nil,
-            0,
-            "p"
-          ),
-          LocalVariableWriteNode(24...29)(
-            :b,
-            0,
-            (24...25),
-            IntegerNode(28...29)(),
-            (26...27)
-          ),
-          CallNode(32...35)(
-            nil,
-            nil,
-            (32...33),
-            nil,
-            ArgumentsNode(34...35)([LocalVariableReadNode(34...35)(:b, 0)]),
-            nil,
-            nil,
-            0,
-            "p"
-          ),
-          LocalVariableWriteNode(38...42)(
-            :c,
-            0,
-            (38...39),
-            IntegerNode(41...42)(),
-            (40...41)
-          )]
-       ),
-       nil,
-       (43...46)
-     ),
-     CallNode(47...48)(nil, nil, (47...48), nil, nil, nil, nil, 2, "a")]
-  )
-)
+@ ProgramNode (location: (0...48))
+├── locals: [:b, :c]
+└── statements:
+    @ StatementsNode (location: (0...48))
+    └── body: (length: 2)
+        ├── @ IfNode (location: (0...46))
+        │   ├── if_keyword_loc: (0...2) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (3...7))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (15...42))
+        │   │   └── body: (length: 4)
+        │   │       ├── @ CallNode (location: (15...21))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── message_loc: (15...16) = "p"
+        │   │       │   ├── opening_loc: (16...17) = "("
+        │   │       │   ├── arguments:
+        │   │       │   │   @ ArgumentsNode (location: (17...20))
+        │   │       │   │   └── arguments: (length: 1)
+        │   │       │   │       └── @ StringNode (location: (17...20))
+        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── opening_loc: (17...18) = "\""
+        │   │       │   │           ├── content_loc: (18...19) = "a"
+        │   │       │   │           ├── closing_loc: (19...20) = "\""
+        │   │       │   │           └── unescaped: "a"
+        │   │       │   ├── closing_loc: (20...21) = ")"
+        │   │       │   ├── block: ∅
+        │   │       │   ├── flags: ∅
+        │   │       │   └── name: "p"
+        │   │       ├── @ LocalVariableWriteNode (location: (24...29))
+        │   │       │   ├── name: :b
+        │   │       │   ├── depth: 0
+        │   │       │   ├── name_loc: (24...25) = "b"
+        │   │       │   ├── value:
+        │   │       │   │   @ IntegerNode (location: (28...29))
+        │   │       │   │   └── flags: decimal
+        │   │       │   └── operator_loc: (26...27) = "="
+        │   │       ├── @ CallNode (location: (32...35))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── message_loc: (32...33) = "p"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments:
+        │   │       │   │   @ ArgumentsNode (location: (34...35))
+        │   │       │   │   └── arguments: (length: 1)
+        │   │       │   │       └── @ LocalVariableReadNode (location: (34...35))
+        │   │       │   │           ├── name: :b
+        │   │       │   │           └── depth: 0
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   ├── flags: ∅
+        │   │       │   └── name: "p"
+        │   │       └── @ LocalVariableWriteNode (location: (38...42))
+        │   │           ├── name: :c
+        │   │           ├── depth: 0
+        │   │           ├── name_loc: (38...39) = "c"
+        │   │           ├── value:
+        │   │           │   @ IntegerNode (location: (41...42))
+        │   │           │   └── flags: decimal
+        │   │           └── operator_loc: (40...41) = "="
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (43...46) = "end"
+        └── @ CallNode (location: (47...48))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (47...48) = "a"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: variable_call
+            └── name: "a"

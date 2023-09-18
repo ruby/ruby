@@ -1,91 +1,115 @@
-ProgramNode(0...178)(
-  [],
-  StatementsNode(0...178)(
-    [ClassNode(0...38)(
-       [],
-       (0...5),
-       ConstantPathNode(6...33)(
-         IfNode(6...25)(
-           (6...8),
-           TrueNode(9...13)(),
-           StatementsNode(15...21)([ConstantReadNode(15...21)()]),
-           nil,
-           (22...25)
-         ),
-         ConstantReadNode(27...33)(),
-         (25...27)
-       ),
-       nil,
-       nil,
-       nil,
-       (35...38),
-       "Kernel"
-     ),
-     ClassNode(40...87)(
-       [],
-       (40...45),
-       ConstantPathNode(46...82)(
-         WhileNode(46...74)(
-           (46...51),
-           (71...74),
-           TrueNode(52...56)(),
-           StatementsNode(58...70)(
-             [BreakNode(58...70)(
-                ArgumentsNode(64...70)([ConstantReadNode(64...70)()]),
-                (58...63)
-              )]
-           ),
-           0
-         ),
-         ConstantReadNode(76...82)(),
-         (74...76)
-       ),
-       nil,
-       nil,
-       nil,
-       (84...87),
-       "Kernel"
-     ),
-     ModuleNode(89...128)(
-       [],
-       (89...95),
-       ConstantPathNode(96...123)(
-         IfNode(96...115)(
-           (96...98),
-           TrueNode(99...103)(),
-           StatementsNode(105...111)([ConstantReadNode(105...111)()]),
-           nil,
-           (112...115)
-         ),
-         ConstantReadNode(117...123)(),
-         (115...117)
-       ),
-       nil,
-       (125...128),
-       "Kernel"
-     ),
-     ModuleNode(130...178)(
-       [],
-       (130...136),
-       ConstantPathNode(137...173)(
-         WhileNode(137...165)(
-           (137...142),
-           (162...165),
-           TrueNode(143...147)(),
-           StatementsNode(149...161)(
-             [BreakNode(149...161)(
-                ArgumentsNode(155...161)([ConstantReadNode(155...161)()]),
-                (149...154)
-              )]
-           ),
-           0
-         ),
-         ConstantReadNode(167...173)(),
-         (165...167)
-       ),
-       nil,
-       (175...178),
-       "Kernel"
-     )]
-  )
-)
+@ ProgramNode (location: (0...178))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...178))
+    └── body: (length: 4)
+        ├── @ ClassNode (location: (0...38))
+        │   ├── locals: []
+        │   ├── class_keyword_loc: (0...5) = "class"
+        │   ├── constant_path:
+        │   │   @ ConstantPathNode (location: (6...33))
+        │   │   ├── parent:
+        │   │   │   @ IfNode (location: (6...25))
+        │   │   │   ├── if_keyword_loc: (6...8) = "if"
+        │   │   │   ├── predicate:
+        │   │   │   │   @ TrueNode (location: (9...13))
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (15...21))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ ConstantReadNode (location: (15...21))
+        │   │   │   │           └── name: :Object
+        │   │   │   ├── consequent: ∅
+        │   │   │   └── end_keyword_loc: (22...25) = "end"
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (27...33))
+        │   │   │   └── name: :Kernel
+        │   │   └── delimiter_loc: (25...27) = "::"
+        │   ├── inheritance_operator_loc: ∅
+        │   ├── superclass: ∅
+        │   ├── body: ∅
+        │   ├── end_keyword_loc: (35...38) = "end"
+        │   └── name: :Kernel
+        ├── @ ClassNode (location: (40...87))
+        │   ├── locals: []
+        │   ├── class_keyword_loc: (40...45) = "class"
+        │   ├── constant_path:
+        │   │   @ ConstantPathNode (location: (46...82))
+        │   │   ├── parent:
+        │   │   │   @ WhileNode (location: (46...74))
+        │   │   │   ├── keyword_loc: (46...51) = "while"
+        │   │   │   ├── closing_loc: (71...74) = "end"
+        │   │   │   ├── predicate:
+        │   │   │   │   @ TrueNode (location: (52...56))
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (58...70))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ BreakNode (location: (58...70))
+        │   │   │   │           ├── arguments:
+        │   │   │   │           │   @ ArgumentsNode (location: (64...70))
+        │   │   │   │           │   └── arguments: (length: 1)
+        │   │   │   │           │       └── @ ConstantReadNode (location: (64...70))
+        │   │   │   │           │           └── name: :Object
+        │   │   │   │           └── keyword_loc: (58...63) = "break"
+        │   │   │   └── flags: ∅
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (76...82))
+        │   │   │   └── name: :Kernel
+        │   │   └── delimiter_loc: (74...76) = "::"
+        │   ├── inheritance_operator_loc: ∅
+        │   ├── superclass: ∅
+        │   ├── body: ∅
+        │   ├── end_keyword_loc: (84...87) = "end"
+        │   └── name: :Kernel
+        ├── @ ModuleNode (location: (89...128))
+        │   ├── locals: []
+        │   ├── module_keyword_loc: (89...95) = "module"
+        │   ├── constant_path:
+        │   │   @ ConstantPathNode (location: (96...123))
+        │   │   ├── parent:
+        │   │   │   @ IfNode (location: (96...115))
+        │   │   │   ├── if_keyword_loc: (96...98) = "if"
+        │   │   │   ├── predicate:
+        │   │   │   │   @ TrueNode (location: (99...103))
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (105...111))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ ConstantReadNode (location: (105...111))
+        │   │   │   │           └── name: :Object
+        │   │   │   ├── consequent: ∅
+        │   │   │   └── end_keyword_loc: (112...115) = "end"
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (117...123))
+        │   │   │   └── name: :Kernel
+        │   │   └── delimiter_loc: (115...117) = "::"
+        │   ├── body: ∅
+        │   ├── end_keyword_loc: (125...128) = "end"
+        │   └── name: :Kernel
+        └── @ ModuleNode (location: (130...178))
+            ├── locals: []
+            ├── module_keyword_loc: (130...136) = "module"
+            ├── constant_path:
+            │   @ ConstantPathNode (location: (137...173))
+            │   ├── parent:
+            │   │   @ WhileNode (location: (137...165))
+            │   │   ├── keyword_loc: (137...142) = "while"
+            │   │   ├── closing_loc: (162...165) = "end"
+            │   │   ├── predicate:
+            │   │   │   @ TrueNode (location: (143...147))
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (149...161))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ BreakNode (location: (149...161))
+            │   │   │           ├── arguments:
+            │   │   │           │   @ ArgumentsNode (location: (155...161))
+            │   │   │           │   └── arguments: (length: 1)
+            │   │   │           │       └── @ ConstantReadNode (location: (155...161))
+            │   │   │           │           └── name: :Object
+            │   │   │           └── keyword_loc: (149...154) = "break"
+            │   │   └── flags: ∅
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (167...173))
+            │   │   └── name: :Kernel
+            │   └── delimiter_loc: (165...167) = "::"
+            ├── body: ∅
+            ├── end_keyword_loc: (175...178) = "end"
+            └── name: :Kernel

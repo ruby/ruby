@@ -1,20 +1,24 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)(
-    [CallNode(0...6)(
-       nil,
-       nil,
-       (0...1),
-       (1...2),
-       ArgumentsNode(2...5)(
-         [KeywordHashNode(2...5)(
-            [AssocSplatNode(2...5)(IntegerNode(4...5)(), (2...4))]
-          )]
-       ),
-       (5...6),
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...6))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: (1...2) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...5))
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (2...5))
+            │           └── elements: (length: 1)
+            │               └── @ AssocSplatNode (location: (2...5))
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (4...5))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: (2...4) = "**"
+            ├── closing_loc: (5...6) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

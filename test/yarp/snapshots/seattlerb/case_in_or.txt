@@ -1,23 +1,36 @@
-ProgramNode(0...25)(
-  [],
-  StatementsNode(0...25)(
-    [CaseNode(0...25)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...21)(
-          AlternationPatternNode(11...16)(
-            ConstantReadNode(11...12)(),
-            ConstantReadNode(15...16)(),
-            (13...14)
-          ),
-          StatementsNode(19...21)(
-            [SymbolNode(19...21)((19...20), (20...21), nil, "d")]
-          ),
-          (8...10),
-          nil
-        )],
-       nil,
-       (0...4),
-       (22...25)
-     )]
-  )
-)
+@ ProgramNode (location: (0...25))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...25))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...25))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...21))
+            │       ├── pattern:
+            │       │   @ AlternationPatternNode (location: (11...16))
+            │       │   ├── left:
+            │       │   │   @ ConstantReadNode (location: (11...12))
+            │       │   │   └── name: :B
+            │       │   ├── right:
+            │       │   │   @ ConstantReadNode (location: (15...16))
+            │       │   │   └── name: :C
+            │       │   └── operator_loc: (13...14) = "|"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (19...21))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (19...21))
+            │       │           ├── opening_loc: (19...20) = ":"
+            │       │           ├── value_loc: (20...21) = "d"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "d"
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (22...25) = "end"

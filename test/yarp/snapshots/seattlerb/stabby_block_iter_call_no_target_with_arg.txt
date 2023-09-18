@@ -1,37 +1,51 @@
-ProgramNode(0...26)(
-  [],
-  StatementsNode(0...26)(
-    [CallNode(0...26)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...26)(
-         [LambdaNode(2...26)(
-            [],
-            (2...4),
-            (8...10),
-            (23...26),
-            BlockParametersNode(5...7)(nil, [], (5...6), (6...7)),
-            StatementsNode(11...22)(
-              [CallNode(11...22)(
-                 nil,
-                 nil,
-                 (11...12),
-                 (12...13),
-                 ArgumentsNode(13...14)([IntegerNode(13...14)()]),
-                 (14...15),
-                 BlockNode(16...22)([], nil, nil, (16...18), (19...22)),
-                 0,
-                 "a"
-               )]
-            )
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "x"
-     )]
-  )
-)
+@ ProgramNode (location: (0...26))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...26))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...26))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "x"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...26))
+            │   └── arguments: (length: 1)
+            │       └── @ LambdaNode (location: (2...26))
+            │           ├── locals: []
+            │           ├── operator_loc: (2...4) = "->"
+            │           ├── opening_loc: (8...10) = "do"
+            │           ├── closing_loc: (23...26) = "end"
+            │           ├── parameters:
+            │           │   @ BlockParametersNode (location: (5...7))
+            │           │   ├── parameters: ∅
+            │           │   ├── locals: (length: 0)
+            │           │   ├── opening_loc: (5...6) = "("
+            │           │   └── closing_loc: (6...7) = ")"
+            │           └── body:
+            │               @ StatementsNode (location: (11...22))
+            │               └── body: (length: 1)
+            │                   └── @ CallNode (location: (11...22))
+            │                       ├── receiver: ∅
+            │                       ├── call_operator_loc: ∅
+            │                       ├── message_loc: (11...12) = "a"
+            │                       ├── opening_loc: (12...13) = "("
+            │                       ├── arguments:
+            │                       │   @ ArgumentsNode (location: (13...14))
+            │                       │   └── arguments: (length: 1)
+            │                       │       └── @ IntegerNode (location: (13...14))
+            │                       │           └── flags: decimal
+            │                       ├── closing_loc: (14...15) = ")"
+            │                       ├── block:
+            │                       │   @ BlockNode (location: (16...22))
+            │                       │   ├── locals: []
+            │                       │   ├── parameters: ∅
+            │                       │   ├── body: ∅
+            │                       │   ├── opening_loc: (16...18) = "do"
+            │                       │   └── closing_loc: (19...22) = "end"
+            │                       ├── flags: ∅
+            │                       └── name: "a"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "x"

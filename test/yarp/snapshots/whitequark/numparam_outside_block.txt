@@ -1,53 +1,114 @@
-ProgramNode(0...83)(
-  [],
-  StatementsNode(0...83)(
-    [CallNode(0...2)(nil, nil, (0...2), nil, nil, nil, nil, 2, "_1"),
-     SingletonClassNode(4...25)(
-       [],
-       (4...9),
-       (10...12),
-       CallNode(13...16)(nil, nil, (13...16), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(18...20)(
-         [CallNode(18...20)(nil, nil, (18...20), nil, nil, nil, nil, 2, "_1")]
-       ),
-       (22...25)
-     ),
-     ClassNode(27...43)(
-       [],
-       (27...32),
-       ConstantReadNode(33...34)(),
-       nil,
-       nil,
-       StatementsNode(36...38)(
-         [CallNode(36...38)(nil, nil, (36...38), nil, nil, nil, nil, 2, "_1")]
-       ),
-       (40...43),
-       "A"
-     ),
-     DefNode(45...64)(
-       (54...55),
-       SelfNode(49...53)(),
-       nil,
-       StatementsNode(57...59)(
-         [CallNode(57...59)(nil, nil, (57...59), nil, nil, nil, nil, 2, "_1")]
-       ),
-       [],
-       (45...48),
-       (53...54),
-       nil,
-       nil,
-       nil,
-       (61...64)
-     ),
-     ModuleNode(66...83)(
-       [],
-       (66...72),
-       ConstantReadNode(73...74)(),
-       StatementsNode(76...78)(
-         [CallNode(76...78)(nil, nil, (76...78), nil, nil, nil, nil, 2, "_1")]
-       ),
-       (80...83),
-       "A"
-     )]
-  )
-)
+@ ProgramNode (location: (0...83))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...83))
+    └── body: (length: 5)
+        ├── @ CallNode (location: (0...2))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...2) = "_1"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "_1"
+        ├── @ SingletonClassNode (location: (4...25))
+        │   ├── locals: []
+        │   ├── class_keyword_loc: (4...9) = "class"
+        │   ├── operator_loc: (10...12) = "<<"
+        │   ├── expression:
+        │   │   @ CallNode (location: (13...16))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (13...16) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── body:
+        │   │   @ StatementsNode (location: (18...20))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (18...20))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (18...20) = "_1"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "_1"
+        │   └── end_keyword_loc: (22...25) = "end"
+        ├── @ ClassNode (location: (27...43))
+        │   ├── locals: []
+        │   ├── class_keyword_loc: (27...32) = "class"
+        │   ├── constant_path:
+        │   │   @ ConstantReadNode (location: (33...34))
+        │   │   └── name: :A
+        │   ├── inheritance_operator_loc: ∅
+        │   ├── superclass: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (36...38))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (36...38))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (36...38) = "_1"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "_1"
+        │   ├── end_keyword_loc: (40...43) = "end"
+        │   └── name: :A
+        ├── @ DefNode (location: (45...64))
+        │   ├── name: :m
+        │   ├── name_loc: (54...55) = "m"
+        │   ├── receiver:
+        │   │   @ SelfNode (location: (49...53))
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (57...59))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (57...59))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (57...59) = "_1"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "_1"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (45...48) = "def"
+        │   ├── operator_loc: (53...54) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (61...64) = "end"
+        └── @ ModuleNode (location: (66...83))
+            ├── locals: []
+            ├── module_keyword_loc: (66...72) = "module"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (73...74))
+            │   └── name: :A
+            ├── body:
+            │   @ StatementsNode (location: (76...78))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (76...78))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (76...78) = "_1"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "_1"
+            ├── end_keyword_loc: (80...83) = "end"
+            └── name: :A

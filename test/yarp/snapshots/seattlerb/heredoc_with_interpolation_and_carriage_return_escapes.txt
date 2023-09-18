@@ -1,15 +1,26 @@
-ProgramNode(0...5)(
-  [],
-  StatementsNode(0...5)(
-    [InterpolatedStringNode(0...5)(
-       (0...5),
-       [StringNode(6...11)(nil, (6...11), nil, "foo\r"),
-        EmbeddedVariableNode(11...16)(
-          (11...12),
-          InstanceVariableReadNode(12...16)(:@bar)
-        ),
-        StringNode(16...17)(nil, (16...17), nil, "\n")],
-       (17...21)
-     )]
-  )
-)
+@ ProgramNode (location: (0...5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...5))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (0...5))
+            ├── opening_loc: (0...5) = "<<EOS"
+            ├── parts: (length: 3)
+            │   ├── @ StringNode (location: (6...11))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (6...11) = "foo\\r"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "foo\r"
+            │   ├── @ EmbeddedVariableNode (location: (11...16))
+            │   │   ├── operator_loc: (11...12) = "#"
+            │   │   └── variable:
+            │   │       @ InstanceVariableReadNode (location: (12...16))
+            │   │       └── name: :@bar
+            │   └── @ StringNode (location: (16...17))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (16...17) = "\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\n"
+            └── closing_loc: (17...21) = "EOS\n"

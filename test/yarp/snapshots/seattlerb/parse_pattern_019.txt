@@ -1,22 +1,30 @@
-ProgramNode(0...26)(
-  [],
-  StatementsNode(0...26)(
-    [CaseNode(0...26)(
-       IntegerNode(5...6)(),
-       [InNode(7...22)(
-          RangeNode(10...15)(
-            IntegerNode(10...12)(),
-            IntegerNode(14...15)(),
-            (12...14),
-            0
-          ),
-          StatementsNode(18...22)([TrueNode(18...22)()]),
-          (7...9),
-          nil
-        )],
-       nil,
-       (0...4),
-       (23...26)
-     )]
-  )
-)
+@ ProgramNode (location: (0...26))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...26))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...26))
+            ├── predicate:
+            │   @ IntegerNode (location: (5...6))
+            │   └── flags: decimal
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (7...22))
+            │       ├── pattern:
+            │       │   @ RangeNode (location: (10...15))
+            │       │   ├── left:
+            │       │   │   @ IntegerNode (location: (10...12))
+            │       │   │   └── flags: decimal
+            │       │   ├── right:
+            │       │   │   @ IntegerNode (location: (14...15))
+            │       │   │   └── flags: decimal
+            │       │   ├── operator_loc: (12...14) = ".."
+            │       │   └── flags: ∅
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (18...22))
+            │       │   └── body: (length: 1)
+            │       │       └── @ TrueNode (location: (18...22))
+            │       ├── in_loc: (7...9) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (23...26) = "end"

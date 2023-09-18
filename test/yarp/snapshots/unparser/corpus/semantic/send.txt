@@ -1,117 +1,157 @@
-ProgramNode(0...44)(
-  [],
-  StatementsNode(0...44)(
-    [CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-     CallNode(4...10)(
-       nil,
-       nil,
-       (4...7),
-       (7...8),
-       ArgumentsNode(8...9)([IntegerNode(8...9)()]),
-       (9...10),
-       nil,
-       0,
-       "foo"
-     ),
-     CallNode(12...27)(
-       CallNode(12...22)(
-         CallNode(12...20)(
-           CallNode(12...13)(nil, nil, (12...13), nil, nil, nil, nil, 2, "a"),
-           (13...14),
-           (14...17),
-           (17...18),
-           ArgumentsNode(18...19)(
-             [CallNode(18...19)(
-                nil,
-                nil,
-                (18...19),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "b"
-              )]
-           ),
-           (19...20),
-           nil,
-           0,
-           "==="
-         ),
-         (20...21),
-         (21...22),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "c"
-       ),
-       nil,
-       (23...25),
-       nil,
-       ArgumentsNode(26...27)(
-         [CallNode(26...27)(nil, nil, (26...27), nil, nil, nil, nil, 2, "d")]
-       ),
-       nil,
-       nil,
-       0,
-       "=="
-     ),
-     CallNode(29...44)(
-       CallNode(29...30)(nil, nil, (29...30), nil, nil, nil, nil, 2, "a"),
-       nil,
-       (31...33),
-       nil,
-       ArgumentsNode(34...44)(
-         [CallNode(34...44)(
-            CallNode(34...37)(
-              CallNode(34...35)(
-                nil,
-                nil,
-                (34...35),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "d"
-              ),
-              (35...36),
-              (36...37),
-              nil,
-              nil,
-              nil,
-              nil,
-              0,
-              "c"
-            ),
-            (37...38),
-            (38...41),
-            (41...42),
-            ArgumentsNode(42...43)(
-              [CallNode(42...43)(
-                 nil,
-                 nil,
-                 (42...43),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 2,
-                 "c"
-               )]
-            ),
-            (43...44),
-            nil,
-            0,
-            "==="
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "=="
-     )]
-  )
-)
+@ ProgramNode (location: (0...44))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...44))
+    └── body: (length: 4)
+        ├── @ CallNode (location: (0...3))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "foo"
+        ├── @ CallNode (location: (4...10))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (4...7) = "foo"
+        │   ├── opening_loc: (7...8) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (8...9))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (8...9))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: (9...10) = ")"
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (12...27))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (12...22))
+        │   │   ├── receiver:
+        │   │   │   @ CallNode (location: (12...20))
+        │   │   │   ├── receiver:
+        │   │   │   │   @ CallNode (location: (12...13))
+        │   │   │   │   ├── receiver: ∅
+        │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── message_loc: (12...13) = "a"
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── arguments: ∅
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   ├── block: ∅
+        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   └── name: "a"
+        │   │   │   ├── call_operator_loc: (13...14) = "."
+        │   │   │   ├── message_loc: (14...17) = "==="
+        │   │   │   ├── opening_loc: (17...18) = "("
+        │   │   │   ├── arguments:
+        │   │   │   │   @ ArgumentsNode (location: (18...19))
+        │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (18...19))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (18...19) = "b"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "b"
+        │   │   │   ├── closing_loc: (19...20) = ")"
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: ∅
+        │   │   │   └── name: "==="
+        │   │   ├── call_operator_loc: (20...21) = "."
+        │   │   ├── message_loc: (21...22) = "c"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "c"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (23...25) = "=="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (26...27))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (26...27))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (26...27) = "d"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "d"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "=="
+        └── @ CallNode (location: (29...44))
+            ├── receiver:
+            │   @ CallNode (location: (29...30))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (29...30) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "a"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (31...33) = "=="
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (34...44))
+            │   └── arguments: (length: 1)
+            │       └── @ CallNode (location: (34...44))
+            │           ├── receiver:
+            │           │   @ CallNode (location: (34...37))
+            │           │   ├── receiver:
+            │           │   │   @ CallNode (location: (34...35))
+            │           │   │   ├── receiver: ∅
+            │           │   │   ├── call_operator_loc: ∅
+            │           │   │   ├── message_loc: (34...35) = "d"
+            │           │   │   ├── opening_loc: ∅
+            │           │   │   ├── arguments: ∅
+            │           │   │   ├── closing_loc: ∅
+            │           │   │   ├── block: ∅
+            │           │   │   ├── flags: variable_call
+            │           │   │   └── name: "d"
+            │           │   ├── call_operator_loc: (35...36) = "."
+            │           │   ├── message_loc: (36...37) = "c"
+            │           │   ├── opening_loc: ∅
+            │           │   ├── arguments: ∅
+            │           │   ├── closing_loc: ∅
+            │           │   ├── block: ∅
+            │           │   ├── flags: ∅
+            │           │   └── name: "c"
+            │           ├── call_operator_loc: (37...38) = "."
+            │           ├── message_loc: (38...41) = "==="
+            │           ├── opening_loc: (41...42) = "("
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (42...43))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ CallNode (location: (42...43))
+            │           │           ├── receiver: ∅
+            │           │           ├── call_operator_loc: ∅
+            │           │           ├── message_loc: (42...43) = "c"
+            │           │           ├── opening_loc: ∅
+            │           │           ├── arguments: ∅
+            │           │           ├── closing_loc: ∅
+            │           │           ├── block: ∅
+            │           │           ├── flags: variable_call
+            │           │           └── name: "c"
+            │           ├── closing_loc: (43...44) = ")"
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "==="
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "=="

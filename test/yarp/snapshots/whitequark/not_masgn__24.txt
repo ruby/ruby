@@ -1,39 +1,43 @@
-ProgramNode(0...13)(
-  [:a, :b],
-  StatementsNode(0...13)(
-    [CallNode(0...13)(
-       ParenthesesNode(1...13)(
-         StatementsNode(2...12)(
-           [MultiWriteNode(2...12)(
-              [LocalVariableTargetNode(2...3)(:a, 0),
-               LocalVariableTargetNode(5...6)(:b, 0)],
-              (7...8),
-              CallNode(9...12)(
-                nil,
-                nil,
-                (9...12),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "foo"
-              ),
-              nil,
-              nil
-            )]
-         ),
-         (1...2),
-         (12...13)
-       ),
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "!"
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...13))
+            ├── receiver:
+            │   @ ParenthesesNode (location: (1...13))
+            │   ├── body:
+            │   │   @ StatementsNode (location: (2...12))
+            │   │   └── body: (length: 1)
+            │   │       └── @ MultiWriteNode (location: (2...12))
+            │   │           ├── targets: (length: 2)
+            │   │           │   ├── @ LocalVariableTargetNode (location: (2...3))
+            │   │           │   │   ├── name: :a
+            │   │           │   │   └── depth: 0
+            │   │           │   └── @ LocalVariableTargetNode (location: (5...6))
+            │   │           │       ├── name: :b
+            │   │           │       └── depth: 0
+            │   │           ├── lparen_loc: ∅
+            │   │           ├── rparen_loc: ∅
+            │   │           ├── operator_loc: (7...8) = "="
+            │   │           └── value:
+            │   │               @ CallNode (location: (9...12))
+            │   │               ├── receiver: ∅
+            │   │               ├── call_operator_loc: ∅
+            │   │               ├── message_loc: (9...12) = "foo"
+            │   │               ├── opening_loc: ∅
+            │   │               ├── arguments: ∅
+            │   │               ├── closing_loc: ∅
+            │   │               ├── block: ∅
+            │   │               ├── flags: variable_call
+            │   │               └── name: "foo"
+            │   ├── opening_loc: (1...2) = "("
+            │   └── closing_loc: (12...13) = ")"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "!"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "!"

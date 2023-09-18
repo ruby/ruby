@@ -1,131 +1,179 @@
-ProgramNode(0...140)(
-  [],
-  StatementsNode(0...140)(
-    [ModuleNode(0...18)(
-       [:a],
-       (0...6),
-       ConstantReadNode(7...8)(),
-       StatementsNode(9...14)(
-         [LocalVariableWriteNode(9...14)(
-            :a,
-            0,
-            (9...10),
-            IntegerNode(13...14)(),
-            (11...12)
-          )]
-       ),
-       (15...18),
-       "A"
-     ),
-     InterpolatedStringNode(20...38)(
-       (20...23),
-       [StringNode(23...27)(nil, (23...27), nil, "aaa "),
-        EmbeddedStatementsNode(27...33)(
-          (27...29),
-          StatementsNode(29...32)(
-            [CallNode(29...32)(
-               nil,
-               nil,
-               (29...32),
-               nil,
-               nil,
-               nil,
-               nil,
-               2,
-               "bbb"
-             )]
-          ),
-          (32...33)
-        ),
-        StringNode(33...37)(nil, (33...37), nil, " ccc")],
-       (37...38)
-     ),
-     ModuleNode(40...55)(
-       [],
-       (40...46),
-       ConstantPathNode(47...51)(
-         CallNode(47...48)(nil, nil, (47...48), nil, nil, nil, nil, 2, "m"),
-         ConstantReadNode(50...51)(),
-         (48...50)
-       ),
-       nil,
-       (52...55),
-       "M"
-     ),
-     ModuleNode(57...85)(
-       [:x],
-       (57...63),
-       ConstantReadNode(64...65)(),
-       BeginNode(67...85)(
-         nil,
-         StatementsNode(67...72)(
-           [LocalVariableWriteNode(67...72)(
-              :x,
-              0,
-              (67...68),
-              IntegerNode(71...72)(),
-              (69...70)
-            )]
-         ),
-         RescueNode(74...80)((74...80), [], nil, nil, nil, nil),
-         nil,
-         nil,
-         (82...85)
-       ),
-       (82...85),
-       "A"
-     ),
-     ModuleNode(87...101)(
-       [],
-       (87...93),
-       ConstantPathNode(94...97)(nil, ConstantReadNode(96...97)(), (94...96)),
-       nil,
-       (98...101),
-       "A"
-     ),
-     ModuleNode(103...120)(
-       [],
-       (103...109),
-       ConstantPathNode(110...116)(
-         CallNode(110...113)(
-           ConstantReadNode(110...111)(),
-           nil,
-           (111...113),
-           (111...112),
-           nil,
-           (112...113),
-           nil,
-           0,
-           "[]"
-         ),
-         ConstantReadNode(115...116)(),
-         (113...115)
-       ),
-       nil,
-       (117...120),
-       "B"
-     ),
-     ModuleNode(122...140)(
-       [],
-       (122...128),
-       ConstantPathNode(129...136)(
-         CallNode(129...133)(
-           ConstantReadNode(129...130)(),
-           nil,
-           (130...133),
-           (130...131),
-           ArgumentsNode(131...132)([IntegerNode(131...132)()]),
-           (132...133),
-           nil,
-           0,
-           "[]"
-         ),
-         ConstantReadNode(135...136)(),
-         (133...135)
-       ),
-       nil,
-       (137...140),
-       "B"
-     )]
-  )
-)
+@ ProgramNode (location: (0...140))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...140))
+    └── body: (length: 7)
+        ├── @ ModuleNode (location: (0...18))
+        │   ├── locals: [:a]
+        │   ├── module_keyword_loc: (0...6) = "module"
+        │   ├── constant_path:
+        │   │   @ ConstantReadNode (location: (7...8))
+        │   │   └── name: :A
+        │   ├── body:
+        │   │   @ StatementsNode (location: (9...14))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableWriteNode (location: (9...14))
+        │   │           ├── name: :a
+        │   │           ├── depth: 0
+        │   │           ├── name_loc: (9...10) = "a"
+        │   │           ├── value:
+        │   │           │   @ IntegerNode (location: (13...14))
+        │   │           │   └── flags: decimal
+        │   │           └── operator_loc: (11...12) = "="
+        │   ├── end_keyword_loc: (15...18) = "end"
+        │   └── name: :A
+        ├── @ InterpolatedStringNode (location: (20...38))
+        │   ├── opening_loc: (20...23) = "%Q{"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (23...27))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (23...27) = "aaa "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "aaa "
+        │   │   ├── @ EmbeddedStatementsNode (location: (27...33))
+        │   │   │   ├── opening_loc: (27...29) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (29...32))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (29...32))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (29...32) = "bbb"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bbb"
+        │   │   │   └── closing_loc: (32...33) = "}"
+        │   │   └── @ StringNode (location: (33...37))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (33...37) = " ccc"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: " ccc"
+        │   └── closing_loc: (37...38) = "}"
+        ├── @ ModuleNode (location: (40...55))
+        │   ├── locals: []
+        │   ├── module_keyword_loc: (40...46) = "module"
+        │   ├── constant_path:
+        │   │   @ ConstantPathNode (location: (47...51))
+        │   │   ├── parent:
+        │   │   │   @ CallNode (location: (47...48))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (47...48) = "m"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "m"
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (50...51))
+        │   │   │   └── name: :M
+        │   │   └── delimiter_loc: (48...50) = "::"
+        │   ├── body: ∅
+        │   ├── end_keyword_loc: (52...55) = "end"
+        │   └── name: :M
+        ├── @ ModuleNode (location: (57...85))
+        │   ├── locals: [:x]
+        │   ├── module_keyword_loc: (57...63) = "module"
+        │   ├── constant_path:
+        │   │   @ ConstantReadNode (location: (64...65))
+        │   │   └── name: :A
+        │   ├── body:
+        │   │   @ BeginNode (location: (67...85))
+        │   │   ├── begin_keyword_loc: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (67...72))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ LocalVariableWriteNode (location: (67...72))
+        │   │   │           ├── name: :x
+        │   │   │           ├── depth: 0
+        │   │   │           ├── name_loc: (67...68) = "x"
+        │   │   │           ├── value:
+        │   │   │           │   @ IntegerNode (location: (71...72))
+        │   │   │           │   └── flags: decimal
+        │   │   │           └── operator_loc: (69...70) = "="
+        │   │   ├── rescue_clause:
+        │   │   │   @ RescueNode (location: (74...80))
+        │   │   │   ├── keyword_loc: (74...80) = "rescue"
+        │   │   │   ├── exceptions: (length: 0)
+        │   │   │   ├── operator_loc: ∅
+        │   │   │   ├── reference: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   └── consequent: ∅
+        │   │   ├── else_clause: ∅
+        │   │   ├── ensure_clause: ∅
+        │   │   └── end_keyword_loc: (82...85) = "end"
+        │   ├── end_keyword_loc: (82...85) = "end"
+        │   └── name: :A
+        ├── @ ModuleNode (location: (87...101))
+        │   ├── locals: []
+        │   ├── module_keyword_loc: (87...93) = "module"
+        │   ├── constant_path:
+        │   │   @ ConstantPathNode (location: (94...97))
+        │   │   ├── parent: ∅
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (96...97))
+        │   │   │   └── name: :A
+        │   │   └── delimiter_loc: (94...96) = "::"
+        │   ├── body: ∅
+        │   ├── end_keyword_loc: (98...101) = "end"
+        │   └── name: :A
+        ├── @ ModuleNode (location: (103...120))
+        │   ├── locals: []
+        │   ├── module_keyword_loc: (103...109) = "module"
+        │   ├── constant_path:
+        │   │   @ ConstantPathNode (location: (110...116))
+        │   │   ├── parent:
+        │   │   │   @ CallNode (location: (110...113))
+        │   │   │   ├── receiver:
+        │   │   │   │   @ ConstantReadNode (location: (110...111))
+        │   │   │   │   └── name: :A
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (111...113) = "[]"
+        │   │   │   ├── opening_loc: (111...112) = "["
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: (112...113) = "]"
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: ∅
+        │   │   │   └── name: "[]"
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (115...116))
+        │   │   │   └── name: :B
+        │   │   └── delimiter_loc: (113...115) = "::"
+        │   ├── body: ∅
+        │   ├── end_keyword_loc: (117...120) = "end"
+        │   └── name: :B
+        └── @ ModuleNode (location: (122...140))
+            ├── locals: []
+            ├── module_keyword_loc: (122...128) = "module"
+            ├── constant_path:
+            │   @ ConstantPathNode (location: (129...136))
+            │   ├── parent:
+            │   │   @ CallNode (location: (129...133))
+            │   │   ├── receiver:
+            │   │   │   @ ConstantReadNode (location: (129...130))
+            │   │   │   └── name: :A
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (130...133) = "[1]"
+            │   │   ├── opening_loc: (130...131) = "["
+            │   │   ├── arguments:
+            │   │   │   @ ArgumentsNode (location: (131...132))
+            │   │   │   └── arguments: (length: 1)
+            │   │   │       └── @ IntegerNode (location: (131...132))
+            │   │   │           └── flags: decimal
+            │   │   ├── closing_loc: (132...133) = "]"
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: "[]"
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (135...136))
+            │   │   └── name: :B
+            │   └── delimiter_loc: (133...135) = "::"
+            ├── body: ∅
+            ├── end_keyword_loc: (137...140) = "end"
+            └── name: :B

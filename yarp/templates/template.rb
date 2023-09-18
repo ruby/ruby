@@ -5,7 +5,7 @@ require "fileutils"
 require "yaml"
 
 module YARP
-  COMMON_FLAGS = 1
+  COMMON_FLAGS = 2
 
   # This represents a field on a node. It contains all of the necessary
   # information to template out the code for that field.
@@ -73,22 +73,23 @@ module YARP
     end
   end
 
-  # This represents a field on a node that is a list of locations.
-  class LocationListField < Field
-    def rbs_class
-      "Array[Location]"
-    end
-
-    def java_type
-      "Location[]"
-    end
-  end
-
   # This represents a field on a node that is the ID of a string interned
   # through the parser's constant pool.
   class ConstantField < Field
     def rbs_class
       "Symbol"
+    end
+
+    def java_type
+      "byte[]"
+    end
+  end
+
+  # This represents a field on a node that is the ID of a string interned
+  # through the parser's constant pool and can be optionally null.
+  class OptionalConstantField < Field
+    def rbs_class
+      "Symbol?"
     end
 
     def java_type
@@ -179,7 +180,7 @@ module YARP
       @name = config.fetch("name")
 
       type = @name.gsub(/(?<=.)[A-Z]/, "_\\0")
-      @type = "YP_NODE_#{type.upcase}"
+      @type = "YP_#{type.upcase}"
       @human = type.downcase
 
       @fields =
@@ -205,8 +206,8 @@ module YARP
       when "node?"      then OptionalNodeField
       when "node[]"     then NodeListField
       when "string"     then StringField
-      when "location[]" then LocationListField
       when "constant"   then ConstantField
+      when "constant?"  then OptionalConstantField
       when "constant[]" then ConstantListField
       when "location"   then LocationField
       when "location?"  then OptionalLocationField
@@ -266,7 +267,6 @@ module YARP
       template = File.expand_path("../#{filepath}", __dir__)
 
       erb = read_template(template)
-      erb.filename = template
 
       non_ruby_heading = <<~HEADING
       /******************************************************************************/
@@ -288,7 +288,8 @@ module YARP
 
       HEADING
 
-      heading = if File.extname(filepath.gsub(".erb", "")) == ".rb"
+      heading =
+        if File.extname(filepath.gsub(".erb", "")) == ".rb"
           ruby_heading
         else
           non_ruby_heading
@@ -304,21 +305,19 @@ module YARP
     private
 
     def read_template(filepath)
-      previous_verbosity = $VERBOSE
-      previous_default_external = Encoding.default_external
-      $VERBOSE = nil
+      template = File.read(filepath, encoding: Encoding::UTF_8)
+      erb = erb(template)
+      erb.filename = filepath
+      erb
+    end
 
-      begin
-        Encoding.default_external = Encoding::UTF_8
-
-        if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-          ERB.new(File.read(filepath), trim_mode: "-")
-        else
-          ERB.new(File.read(filepath), nil, "-")
-        end
-      ensure
-        Encoding.default_external = previous_default_external
-        $VERBOSE = previous_verbosity
+    if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+      def erb(template)
+        ERB.new(template, trim_mode: "-")
+      end
+    else
+      def erb(template)
+        ERB.new(template, nil, "-")
       end
     end
 

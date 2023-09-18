@@ -1,29 +1,35 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [CallNode(0...12)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...12)(
-         [InterpolatedStringNode(2...12)(
-            (2...3),
-            [EmbeddedStatementsNode(3...6)((3...5), nil, (5...6)),
-             EmbeddedStatementsNode(6...11)(
-               (6...8),
-               StatementsNode(8...10)(
-                 [ParenthesesNode(8...10)(nil, (8...9), (9...10))]
-               ),
-               (10...11)
-             )],
-            (11...12)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "m"
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...12))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "m"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...12))
+            │   └── arguments: (length: 1)
+            │       └── @ InterpolatedStringNode (location: (2...12))
+            │           ├── opening_loc: (2...3) = "\""
+            │           ├── parts: (length: 2)
+            │           │   ├── @ EmbeddedStatementsNode (location: (3...6))
+            │           │   │   ├── opening_loc: (3...5) = "\#{"
+            │           │   │   ├── statements: ∅
+            │           │   │   └── closing_loc: (5...6) = "}"
+            │           │   └── @ EmbeddedStatementsNode (location: (6...11))
+            │           │       ├── opening_loc: (6...8) = "\#{"
+            │           │       ├── statements:
+            │           │       │   @ StatementsNode (location: (8...10))
+            │           │       │   └── body: (length: 1)
+            │           │       │       └── @ ParenthesesNode (location: (8...10))
+            │           │       │           ├── body: ∅
+            │           │       │           ├── opening_loc: (8...9) = "("
+            │           │       │           └── closing_loc: (9...10) = ")"
+            │           │       └── closing_loc: (10...11) = "}"
+            │           └── closing_loc: (11...12) = "\""
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "m"

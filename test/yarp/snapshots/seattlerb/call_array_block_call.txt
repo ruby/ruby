@@ -1,33 +1,38 @@
-ProgramNode(0...19)(
-  [],
-  StatementsNode(0...19)(
-    [CallNode(0...19)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...19)(
-         [ArrayNode(2...19)(
-            [NilNode(4...7)(),
-             CallNode(9...17)(
-               nil,
-               nil,
-               (9...10),
-               nil,
-               nil,
-               nil,
-               BlockNode(11...17)([], nil, nil, (11...13), (14...17)),
-               0,
-               "b"
-             )],
-            (2...3),
-            (18...19)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...19))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...19))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...19))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...19))
+            │   └── arguments: (length: 1)
+            │       └── @ ArrayNode (location: (2...19))
+            │           ├── elements: (length: 2)
+            │           │   ├── @ NilNode (location: (4...7))
+            │           │   └── @ CallNode (location: (9...17))
+            │           │       ├── receiver: ∅
+            │           │       ├── call_operator_loc: ∅
+            │           │       ├── message_loc: (9...10) = "b"
+            │           │       ├── opening_loc: ∅
+            │           │       ├── arguments: ∅
+            │           │       ├── closing_loc: ∅
+            │           │       ├── block:
+            │           │       │   @ BlockNode (location: (11...17))
+            │           │       │   ├── locals: []
+            │           │       │   ├── parameters: ∅
+            │           │       │   ├── body: ∅
+            │           │       │   ├── opening_loc: (11...13) = "do"
+            │           │       │   └── closing_loc: (14...17) = "end"
+            │           │       ├── flags: ∅
+            │           │       └── name: "b"
+            │           ├── opening_loc: (2...3) = "["
+            │           └── closing_loc: (18...19) = "]"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

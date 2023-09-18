@@ -1,35 +1,56 @@
-ProgramNode(0...37)(
-  [],
-  StatementsNode(0...37)(
-    [CaseNode(0...37)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...20)(
-          ConstantPathNode(11...15)(
-            ConstantReadNode(11...12)(),
-            ConstantReadNode(14...15)(),
-            (12...14)
-          ),
-          StatementsNode(18...20)(
-            [SymbolNode(18...20)((18...19), (19...20), nil, "C")]
-          ),
-          (8...10),
-          nil
-        ),
-        InNode(21...33)(
-          ConstantPathNode(24...28)(
-            ConstantReadNode(24...25)(),
-            ConstantReadNode(27...28)(),
-            (25...27)
-          ),
-          StatementsNode(31...33)(
-            [SymbolNode(31...33)((31...32), (32...33), nil, "F")]
-          ),
-          (21...23),
-          nil
-        )],
-       nil,
-       (0...4),
-       (34...37)
-     )]
-  )
-)
+@ ProgramNode (location: (0...37))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...37))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...37))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 2)
+            │   ├── @ InNode (location: (8...20))
+            │   │   ├── pattern:
+            │   │   │   @ ConstantPathNode (location: (11...15))
+            │   │   │   ├── parent:
+            │   │   │   │   @ ConstantReadNode (location: (11...12))
+            │   │   │   │   └── name: :A
+            │   │   │   ├── child:
+            │   │   │   │   @ ConstantReadNode (location: (14...15))
+            │   │   │   │   └── name: :B
+            │   │   │   └── delimiter_loc: (12...14) = "::"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (18...20))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ SymbolNode (location: (18...20))
+            │   │   │           ├── opening_loc: (18...19) = ":"
+            │   │   │           ├── value_loc: (19...20) = "C"
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           └── unescaped: "C"
+            │   │   ├── in_loc: (8...10) = "in"
+            │   │   └── then_loc: ∅
+            │   └── @ InNode (location: (21...33))
+            │       ├── pattern:
+            │       │   @ ConstantPathNode (location: (24...28))
+            │       │   ├── parent:
+            │       │   │   @ ConstantReadNode (location: (24...25))
+            │       │   │   └── name: :D
+            │       │   ├── child:
+            │       │   │   @ ConstantReadNode (location: (27...28))
+            │       │   │   └── name: :E
+            │       │   └── delimiter_loc: (25...27) = "::"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (31...33))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (31...33))
+            │       │           ├── opening_loc: (31...32) = ":"
+            │       │           ├── value_loc: (32...33) = "F"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "F"
+            │       ├── in_loc: (21...23) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (34...37) = "end"

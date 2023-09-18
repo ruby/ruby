@@ -1,25 +1,34 @@
-ProgramNode(0...19)(
-  [],
-  StatementsNode(0...19)(
-    [CallNode(0...19)(
-       nil,
-       nil,
-       (0...3),
-       (3...4),
-       ArgumentsNode(4...18)(
-         [SymbolNode(4...8)((4...5), (5...8), nil, "bar"),
-          KeywordHashNode(10...18)(
-            [AssocNode(10...18)(
-               SymbolNode(10...14)(nil, (10...13), (13...14), "baz"),
-               NilNode(15...18)(),
-               nil
-             )]
-          )]
-       ),
-       (18...19),
-       nil,
-       0,
-       "foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...19))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...19))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...19))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...3) = "foo"
+            ├── opening_loc: (3...4) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (4...18))
+            │   └── arguments: (length: 2)
+            │       ├── @ SymbolNode (location: (4...8))
+            │       │   ├── opening_loc: (4...5) = ":"
+            │       │   ├── value_loc: (5...8) = "bar"
+            │       │   ├── closing_loc: ∅
+            │       │   └── unescaped: "bar"
+            │       └── @ KeywordHashNode (location: (10...18))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (10...18))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (10...14))
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── value_loc: (10...13) = "baz"
+            │                   │   ├── closing_loc: (13...14) = ":"
+            │                   │   └── unescaped: "baz"
+            │                   ├── value:
+            │                   │   @ NilNode (location: (15...18))
+            │                   └── operator_loc: ∅
+            ├── closing_loc: (18...19) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "foo"

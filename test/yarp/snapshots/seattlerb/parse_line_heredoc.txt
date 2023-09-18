@@ -1,42 +1,42 @@
-ProgramNode(6...88)(
-  [:string],
-  StatementsNode(6...88)(
-    [LocalVariableWriteNode(6...31)(
-       :string,
-       0,
-       (6...12),
-       CallNode(15...31)(
-         InterpolatedStringNode(15...25)(
-           (15...25),
-           [StringNode(32...57)(
-              nil,
-              (32...57),
-              nil,
-              "        very long string\n"
-            )],
-           (57...71)
-         ),
-         (25...26),
-         (26...31),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "strip"
-       ),
-       (13...14)
-     ),
-     CallNode(77...88)(
-       nil,
-       nil,
-       (77...81),
-       nil,
-       ArgumentsNode(82...88)([LocalVariableReadNode(82...88)(:string, 0)]),
-       nil,
-       nil,
-       0,
-       "puts"
-     )]
-  )
-)
+@ ProgramNode (location: (6...88))
+├── locals: [:string]
+└── statements:
+    @ StatementsNode (location: (6...88))
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (6...31))
+        │   ├── name: :string
+        │   ├── depth: 0
+        │   ├── name_loc: (6...12) = "string"
+        │   ├── value:
+        │   │   @ CallNode (location: (15...31))
+        │   │   ├── receiver:
+        │   │   │   @ StringNode (location: (15...25))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (15...25) = "<<-HEREDOC"
+        │   │   │   ├── content_loc: (32...57) = "        very long string\n"
+        │   │   │   ├── closing_loc: (57...71) = "      HEREDOC\n"
+        │   │   │   └── unescaped: "        very long string\n"
+        │   │   ├── call_operator_loc: (25...26) = "."
+        │   │   ├── message_loc: (26...31) = "strip"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "strip"
+        │   └── operator_loc: (13...14) = "="
+        └── @ CallNode (location: (77...88))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (77...81) = "puts"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (82...88))
+            │   └── arguments: (length: 1)
+            │       └── @ LocalVariableReadNode (location: (82...88))
+            │           ├── name: :string
+            │           └── depth: 0
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "puts"

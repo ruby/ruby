@@ -1,33 +1,38 @@
-ProgramNode(0...21)(
-  [],
-  StatementsNode(0...21)(
-    [ReturnNode(0...21)(
-       (0...6),
-       ArgumentsNode(7...21)(
-         [CallNode(7...21)(
-            nil,
-            nil,
-            (7...10),
-            nil,
-            ArgumentsNode(11...14)(
-              [CallNode(11...14)(
-                 nil,
-                 nil,
-                 (11...14),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 2,
-                 "foo"
-               )]
-            ),
-            nil,
-            BlockNode(15...21)([], nil, nil, (15...17), (18...21)),
-            0,
-            "fun"
-          )]
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...21))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...21))
+    └── body: (length: 1)
+        └── @ ReturnNode (location: (0...21))
+            ├── keyword_loc: (0...6) = "return"
+            └── arguments:
+                @ ArgumentsNode (location: (7...21))
+                └── arguments: (length: 1)
+                    └── @ CallNode (location: (7...21))
+                        ├── receiver: ∅
+                        ├── call_operator_loc: ∅
+                        ├── message_loc: (7...10) = "fun"
+                        ├── opening_loc: ∅
+                        ├── arguments:
+                        │   @ ArgumentsNode (location: (11...14))
+                        │   └── arguments: (length: 1)
+                        │       └── @ CallNode (location: (11...14))
+                        │           ├── receiver: ∅
+                        │           ├── call_operator_loc: ∅
+                        │           ├── message_loc: (11...14) = "foo"
+                        │           ├── opening_loc: ∅
+                        │           ├── arguments: ∅
+                        │           ├── closing_loc: ∅
+                        │           ├── block: ∅
+                        │           ├── flags: variable_call
+                        │           └── name: "foo"
+                        ├── closing_loc: ∅
+                        ├── block:
+                        │   @ BlockNode (location: (15...21))
+                        │   ├── locals: []
+                        │   ├── parameters: ∅
+                        │   ├── body: ∅
+                        │   ├── opening_loc: (15...17) = "do"
+                        │   └── closing_loc: (18...21) = "end"
+                        ├── flags: ∅
+                        └── name: "fun"

@@ -1,34 +1,73 @@
-ProgramNode(0...78)(
-  [:x],
-  StatementsNode(0...78)(
-    [AndNode(0...25)(
-       DefinedNode(0...10)(nil, IntegerNode(9...10)(), nil, (0...8)),
-       DefinedNode(15...25)(nil, IntegerNode(24...25)(), nil, (15...23)),
-       (11...14)
-     ),
-     DefinedNode(27...43)(
-       (35...36),
-       LocalVariableOperatorWriteNode(36...42)(
-         (36...37),
-         (38...40),
-         IntegerNode(41...42)(),
-         :x,
-         :%,
-         0
-       ),
-       (42...43),
-       (27...35)
-     ),
-     DefinedNode(45...66)(
-       (53...54),
-       AndNode(54...65)(
-         CallNode(54...57)(nil, nil, (54...57), nil, nil, nil, nil, 2, "foo"),
-         CallNode(62...65)(nil, nil, (62...65), nil, nil, nil, nil, 2, "bar"),
-         (58...61)
-       ),
-       (65...66),
-       (45...53)
-     ),
-     DefinedNode(68...78)(nil, IntegerNode(77...78)(), nil, (68...76))]
-  )
-)
+@ ProgramNode (location: (0...78))
+├── locals: [:x]
+└── statements:
+    @ StatementsNode (location: (0...78))
+    └── body: (length: 4)
+        ├── @ AndNode (location: (0...25))
+        │   ├── left:
+        │   │   @ DefinedNode (location: (0...10))
+        │   │   ├── lparen_loc: ∅
+        │   │   ├── value:
+        │   │   │   @ IntegerNode (location: (9...10))
+        │   │   │   └── flags: decimal
+        │   │   ├── rparen_loc: ∅
+        │   │   └── keyword_loc: (0...8) = "defined?"
+        │   ├── right:
+        │   │   @ DefinedNode (location: (15...25))
+        │   │   ├── lparen_loc: ∅
+        │   │   ├── value:
+        │   │   │   @ IntegerNode (location: (24...25))
+        │   │   │   └── flags: decimal
+        │   │   ├── rparen_loc: ∅
+        │   │   └── keyword_loc: (15...23) = "defined?"
+        │   └── operator_loc: (11...14) = "and"
+        ├── @ DefinedNode (location: (27...43))
+        │   ├── lparen_loc: (35...36) = "("
+        │   ├── value:
+        │   │   @ LocalVariableOperatorWriteNode (location: (36...42))
+        │   │   ├── name_loc: (36...37) = "x"
+        │   │   ├── operator_loc: (38...40) = "%="
+        │   │   ├── value:
+        │   │   │   @ IntegerNode (location: (41...42))
+        │   │   │   └── flags: decimal
+        │   │   ├── name: :x
+        │   │   ├── operator: :%
+        │   │   └── depth: 0
+        │   ├── rparen_loc: (42...43) = ")"
+        │   └── keyword_loc: (27...35) = "defined?"
+        ├── @ DefinedNode (location: (45...66))
+        │   ├── lparen_loc: (53...54) = "("
+        │   ├── value:
+        │   │   @ AndNode (location: (54...65))
+        │   │   ├── left:
+        │   │   │   @ CallNode (location: (54...57))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (54...57) = "foo"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "foo"
+        │   │   ├── right:
+        │   │   │   @ CallNode (location: (62...65))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (62...65) = "bar"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "bar"
+        │   │   └── operator_loc: (58...61) = "and"
+        │   ├── rparen_loc: (65...66) = ")"
+        │   └── keyword_loc: (45...53) = "defined?"
+        └── @ DefinedNode (location: (68...78))
+            ├── lparen_loc: ∅
+            ├── value:
+            │   @ IntegerNode (location: (77...78))
+            │   └── flags: decimal
+            ├── rparen_loc: ∅
+            └── keyword_loc: (68...76) = "defined?"

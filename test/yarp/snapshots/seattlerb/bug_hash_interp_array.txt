@@ -1,18 +1,25 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [HashNode(0...13)(
-       (0...1),
-       [AssocNode(2...11)(
-          InterpolatedSymbolNode(2...8)(
-            (2...3),
-            [EmbeddedStatementsNode(3...6)((3...5), nil, (5...6))],
-            (6...8)
-          ),
-          ArrayNode(9...11)([], (9...10), (10...11)),
-          nil
-        )],
-       (12...13)
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ HashNode (location: (0...13))
+            ├── opening_loc: (0...1) = "{"
+            ├── elements: (length: 1)
+            │   └── @ AssocNode (location: (2...11))
+            │       ├── key:
+            │       │   @ InterpolatedSymbolNode (location: (2...8))
+            │       │   ├── opening_loc: (2...3) = "\""
+            │       │   ├── parts: (length: 1)
+            │       │   │   └── @ EmbeddedStatementsNode (location: (3...6))
+            │       │   │       ├── opening_loc: (3...5) = "\#{"
+            │       │   │       ├── statements: ∅
+            │       │   │       └── closing_loc: (5...6) = "}"
+            │       │   └── closing_loc: (6...8) = "\":"
+            │       ├── value:
+            │       │   @ ArrayNode (location: (9...11))
+            │       │   ├── elements: (length: 0)
+            │       │   ├── opening_loc: (9...10) = "["
+            │       │   └── closing_loc: (10...11) = "]"
+            │       └── operator_loc: ∅
+            └── closing_loc: (12...13) = "}"

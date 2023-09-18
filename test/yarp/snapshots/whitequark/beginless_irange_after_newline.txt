@@ -1,7 +1,22 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)(
-    [CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-     RangeNode(4...9)(nil, IntegerNode(6...9)(), (4...6), 0)]
-  )
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...3))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "foo"
+        └── @ RangeNode (location: (4...9))
+            ├── left: ∅
+            ├── right:
+            │   @ IntegerNode (location: (6...9))
+            │   └── flags: decimal
+            ├── operator_loc: (4...6) = ".."
+            └── flags: ∅

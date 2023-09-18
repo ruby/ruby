@@ -1,137 +1,221 @@
-ProgramNode(0...142)(
-  [:a, :b, :value],
-  StatementsNode(0...142)(
-    [MatchRequiredNode(0...14)(
-       ArrayNode(0...6)(
-         [IntegerNode(1...2)(), IntegerNode(4...5)()],
-         (0...1),
-         (5...6)
-       ),
-       ArrayPatternNode(10...14)(
-         nil,
-         [LocalVariableTargetNode(10...11)(:a, 0),
-          LocalVariableTargetNode(13...14)(:b, 0)],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       (7...9)
-     ),
-     LocalVariableReadNode(16...17)(:a, 0),
-     MatchPredicateNode(19...33)(
-       ArrayNode(19...25)(
-         [IntegerNode(20...21)(), IntegerNode(23...24)()],
-         (19...20),
-         (24...25)
-       ),
-       ArrayPatternNode(29...33)(
-         nil,
-         [LocalVariableTargetNode(29...30)(:a, 0),
-          LocalVariableTargetNode(32...33)(:b, 0)],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       (26...28)
-     ),
-     LocalVariableReadNode(35...36)(:a, 0),
-     MatchRequiredNode(38...50)(
-       HashNode(38...44)(
-         (38...39),
-         [AssocNode(39...43)(
-            SymbolNode(39...41)(nil, (39...40), (40...41), "a"),
-            IntegerNode(42...43)(),
-            nil
-          )],
-         (43...44)
-       ),
-       HashPatternNode(48...50)(
-         nil,
-         [AssocNode(48...50)(
-            SymbolNode(48...50)(nil, (48...49), (49...50), "a"),
-            nil,
-            nil
-          )],
-         nil,
-         nil,
-         nil
-       ),
-       (45...47)
-     ),
-     LocalVariableReadNode(52...53)(:a, 0),
-     MatchPredicateNode(55...67)(
-       HashNode(55...61)(
-         (55...56),
-         [AssocNode(56...60)(
-            SymbolNode(56...58)(nil, (56...57), (57...58), "a"),
-            IntegerNode(59...60)(),
-            nil
-          )],
-         (60...61)
-       ),
-       HashPatternNode(65...67)(
-         nil,
-         [AssocNode(65...67)(
-            SymbolNode(65...67)(nil, (65...66), (66...67), "a"),
-            nil,
-            nil
-          )],
-         nil,
-         nil,
-         nil
-       ),
-       (62...64)
-     ),
-     LocalVariableReadNode(69...70)(:a, 0),
-     MatchRequiredNode(72...99)(
-       HashNode(72...85)(
-         (72...73),
-         [AssocNode(73...84)(
-            SymbolNode(73...77)(nil, (73...76), (76...77), "key"),
-            SymbolNode(78...84)((78...79), (79...84), nil, "value"),
-            nil
-          )],
-         (84...85)
-       ),
-       HashPatternNode(89...99)(
-         nil,
-         [AssocNode(89...99)(
-            SymbolNode(89...93)(nil, (89...92), (92...93), "key"),
-            LocalVariableTargetNode(94...99)(:value, 0),
-            nil
-          )],
-         nil,
-         nil,
-         nil
-       ),
-       (86...88)
-     ),
-     LocalVariableReadNode(101...106)(:value, 0),
-     MatchPredicateNode(108...135)(
-       HashNode(108...121)(
-         (108...109),
-         [AssocNode(109...120)(
-            SymbolNode(109...113)(nil, (109...112), (112...113), "key"),
-            SymbolNode(114...120)((114...115), (115...120), nil, "value"),
-            nil
-          )],
-         (120...121)
-       ),
-       HashPatternNode(125...135)(
-         nil,
-         [AssocNode(125...135)(
-            SymbolNode(125...129)(nil, (125...128), (128...129), "key"),
-            LocalVariableTargetNode(130...135)(:value, 0),
-            nil
-          )],
-         nil,
-         nil,
-         nil
-       ),
-       (122...124)
-     ),
-     LocalVariableReadNode(137...142)(:value, 0)]
-  )
-)
+@ ProgramNode (location: (0...142))
+├── locals: [:a, :b, :value]
+└── statements:
+    @ StatementsNode (location: (0...142))
+    └── body: (length: 12)
+        ├── @ MatchRequiredNode (location: (0...14))
+        │   ├── value:
+        │   │   @ ArrayNode (location: (0...6))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (1...2))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (4...5))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: (0...1) = "["
+        │   │   └── closing_loc: (5...6) = "]"
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (10...14))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 2)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (10...11))
+        │   │   │   │   ├── name: :a
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ LocalVariableTargetNode (location: (13...14))
+        │   │   │       ├── name: :b
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (7...9) = "=>"
+        ├── @ LocalVariableReadNode (location: (16...17))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (19...33))
+        │   ├── value:
+        │   │   @ ArrayNode (location: (19...25))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (20...21))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (23...24))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: (19...20) = "["
+        │   │   └── closing_loc: (24...25) = "]"
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (29...33))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 2)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (29...30))
+        │   │   │   │   ├── name: :a
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ LocalVariableTargetNode (location: (32...33))
+        │   │   │       ├── name: :b
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (26...28) = "in"
+        ├── @ LocalVariableReadNode (location: (35...36))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchRequiredNode (location: (38...50))
+        │   ├── value:
+        │   │   @ HashNode (location: (38...44))
+        │   │   ├── opening_loc: (38...39) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (39...43))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (39...41))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (39...40) = "a"
+        │   │   │       │   ├── closing_loc: (40...41) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value:
+        │   │   │       │   @ IntegerNode (location: (42...43))
+        │   │   │       │   └── flags: decimal
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (43...44) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (48...50))
+        │   │   ├── constant: ∅
+        │   │   ├── assocs: (length: 1)
+        │   │   │   └── @ AssocNode (location: (48...50))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (48...50))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (48...49) = "a"
+        │   │   │       │   ├── closing_loc: (49...50) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value: ∅
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── kwrest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (45...47) = "=>"
+        ├── @ LocalVariableReadNode (location: (52...53))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (55...67))
+        │   ├── value:
+        │   │   @ HashNode (location: (55...61))
+        │   │   ├── opening_loc: (55...56) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (56...60))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (56...58))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (56...57) = "a"
+        │   │   │       │   ├── closing_loc: (57...58) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value:
+        │   │   │       │   @ IntegerNode (location: (59...60))
+        │   │   │       │   └── flags: decimal
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (60...61) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (65...67))
+        │   │   ├── constant: ∅
+        │   │   ├── assocs: (length: 1)
+        │   │   │   └── @ AssocNode (location: (65...67))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (65...67))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (65...66) = "a"
+        │   │   │       │   ├── closing_loc: (66...67) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value: ∅
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── kwrest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (62...64) = "in"
+        ├── @ LocalVariableReadNode (location: (69...70))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchRequiredNode (location: (72...99))
+        │   ├── value:
+        │   │   @ HashNode (location: (72...85))
+        │   │   ├── opening_loc: (72...73) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (73...84))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (73...77))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (73...76) = "key"
+        │   │   │       │   ├── closing_loc: (76...77) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ SymbolNode (location: (78...84))
+        │   │   │       │   ├── opening_loc: (78...79) = ":"
+        │   │   │       │   ├── value_loc: (79...84) = "value"
+        │   │   │       │   ├── closing_loc: ∅
+        │   │   │       │   └── unescaped: "value"
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (84...85) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (89...99))
+        │   │   ├── constant: ∅
+        │   │   ├── assocs: (length: 1)
+        │   │   │   └── @ AssocNode (location: (89...99))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (89...93))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (89...92) = "key"
+        │   │   │       │   ├── closing_loc: (92...93) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ LocalVariableTargetNode (location: (94...99))
+        │   │   │       │   ├── name: :value
+        │   │   │       │   └── depth: 0
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── kwrest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (86...88) = "=>"
+        ├── @ LocalVariableReadNode (location: (101...106))
+        │   ├── name: :value
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (108...135))
+        │   ├── value:
+        │   │   @ HashNode (location: (108...121))
+        │   │   ├── opening_loc: (108...109) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (109...120))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (109...113))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (109...112) = "key"
+        │   │   │       │   ├── closing_loc: (112...113) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ SymbolNode (location: (114...120))
+        │   │   │       │   ├── opening_loc: (114...115) = ":"
+        │   │   │       │   ├── value_loc: (115...120) = "value"
+        │   │   │       │   ├── closing_loc: ∅
+        │   │   │       │   └── unescaped: "value"
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (120...121) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (125...135))
+        │   │   ├── constant: ∅
+        │   │   ├── assocs: (length: 1)
+        │   │   │   └── @ AssocNode (location: (125...135))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (125...129))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (125...128) = "key"
+        │   │   │       │   ├── closing_loc: (128...129) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ LocalVariableTargetNode (location: (130...135))
+        │   │   │       │   ├── name: :value
+        │   │   │       │   └── depth: 0
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── kwrest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (122...124) = "in"
+        └── @ LocalVariableReadNode (location: (137...142))
+            ├── name: :value
+            └── depth: 0

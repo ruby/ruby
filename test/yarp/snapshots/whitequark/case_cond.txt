@@ -1,28 +1,33 @@
-ProgramNode(0...26)(
-  [],
-  StatementsNode(0...26)(
-    [CaseNode(0...26)(
-       nil,
-       [WhenNode(6...21)(
-          (6...10),
-          [CallNode(11...14)(
-             nil,
-             nil,
-             (11...14),
-             nil,
-             nil,
-             nil,
-             nil,
-             2,
-             "foo"
-           )],
-          StatementsNode(16...21)(
-            [StringNode(16...21)((16...17), (17...20), (20...21), "foo")]
-          )
-        )],
-       nil,
-       (0...4),
-       (23...26)
-     )]
-  )
-)
+@ ProgramNode (location: (0...26))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...26))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...26))
+            ├── predicate: ∅
+            ├── conditions: (length: 1)
+            │   └── @ WhenNode (location: (6...21))
+            │       ├── keyword_loc: (6...10) = "when"
+            │       ├── conditions: (length: 1)
+            │       │   └── @ CallNode (location: (11...14))
+            │       │       ├── receiver: ∅
+            │       │       ├── call_operator_loc: ∅
+            │       │       ├── message_loc: (11...14) = "foo"
+            │       │       ├── opening_loc: ∅
+            │       │       ├── arguments: ∅
+            │       │       ├── closing_loc: ∅
+            │       │       ├── block: ∅
+            │       │       ├── flags: variable_call
+            │       │       └── name: "foo"
+            │       └── statements:
+            │           @ StatementsNode (location: (16...21))
+            │           └── body: (length: 1)
+            │               └── @ StringNode (location: (16...21))
+            │                   ├── flags: ∅
+            │                   ├── opening_loc: (16...17) = "'"
+            │                   ├── content_loc: (17...20) = "foo"
+            │                   ├── closing_loc: (20...21) = "'"
+            │                   └── unescaped: "foo"
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (23...26) = "end"

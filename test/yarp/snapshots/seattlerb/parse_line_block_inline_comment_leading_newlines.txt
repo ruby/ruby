@@ -1,8 +1,35 @@
-ProgramNode(3...36)(
-  [],
-  StatementsNode(3...36)(
-    [CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 2, "a"),
-     CallNode(5...6)(nil, nil, (5...6), nil, nil, nil, nil, 2, "b"),
-     CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 2, "c")]
-  )
-)
+@ ProgramNode (location: (3...36))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (3...36))
+    └── body: (length: 3)
+        ├── @ CallNode (location: (3...4))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (3...4) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "a"
+        ├── @ CallNode (location: (5...6))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (5...6) = "b"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: variable_call
+        │   └── name: "b"
+        └── @ CallNode (location: (35...36))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (35...36) = "c"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: variable_call
+            └── name: "c"

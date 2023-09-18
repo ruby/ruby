@@ -356,13 +356,13 @@ describe :kernel_sprintf, shared: true do
 
       it "raises TypeError if converting to Integer with to_int returns non-Integer" do
         obj = BasicObject.new
-        def obj.to_str
+        def obj.to_int
           :foo
         end
 
         -> {
           @method.call("%c", obj)
-        }.should raise_error(TypeError, /can't convert BasicObject to String/)
+        }.should raise_error(TypeError, /can't convert BasicObject to Integer/)
       end
     end
 

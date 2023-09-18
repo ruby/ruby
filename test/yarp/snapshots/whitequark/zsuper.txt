@@ -1,4 +1,7 @@
-ProgramNode(0...5)(
-  [],
-  StatementsNode(0...5)([ForwardingSuperNode(0...5)(nil)])
-)
+@ ProgramNode (location: (0...5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...5))
+    └── body: (length: 1)
+        └── @ ForwardingSuperNode (location: (0...5))
+            └── block: ∅

@@ -1,25 +1,32 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [CallNode(0...12)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...12)(
-         [StringConcatNode(2...12)(
-            InterpolatedStringNode(2...6)(
-              (2...6),
-              [StringNode(13...17)(nil, (13...17), nil, "x\n")],
-              (17...19)
-            ),
-            StringNode(7...12)((7...8), (8...11), (11...12), "  y")
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...12))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "p"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...12))
+            │   └── arguments: (length: 1)
+            │       └── @ StringConcatNode (location: (2...12))
+            │           ├── left:
+            │           │   @ StringNode (location: (2...6))
+            │           │   ├── flags: ∅
+            │           │   ├── opening_loc: (2...6) = "<<~E"
+            │           │   ├── content_loc: (13...17) = "  x\n"
+            │           │   ├── closing_loc: (17...19) = "E\n"
+            │           │   └── unescaped: "x\n"
+            │           └── right:
+            │               @ StringNode (location: (7...12))
+            │               ├── flags: ∅
+            │               ├── opening_loc: (7...8) = "\""
+            │               ├── content_loc: (8...11) = "  y"
+            │               ├── closing_loc: (11...12) = "\""
+            │               └── unescaped: "  y"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "p"

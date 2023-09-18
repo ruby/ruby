@@ -1,13 +1,37 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [RangeNode(0...4)(nil, IntegerNode(2...4)(), (0...2), 0),
-     RangeNode(7...10)(
-       nil,
-       CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 2, "a"),
-       (7...9),
-       0
-     ),
-     CallNode(13...14)(nil, nil, (13...14), nil, nil, nil, nil, 2, "c")]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 3)
+        ├── @ RangeNode (location: (0...4))
+        │   ├── left: ∅
+        │   ├── right:
+        │   │   @ IntegerNode (location: (2...4))
+        │   │   └── flags: decimal
+        │   ├── operator_loc: (0...2) = ".."
+        │   └── flags: ∅
+        ├── @ RangeNode (location: (7...10))
+        │   ├── left: ∅
+        │   ├── right:
+        │   │   @ CallNode (location: (9...10))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (9...10) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── operator_loc: (7...9) = ".."
+        │   └── flags: ∅
+        └── @ CallNode (location: (13...14))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (13...14) = "c"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: variable_call
+            └── name: "c"

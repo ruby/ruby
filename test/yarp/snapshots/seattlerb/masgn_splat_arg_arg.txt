@@ -1,20 +1,37 @@
-ProgramNode(0...12)(
-  [:a, :b, :c],
-  StatementsNode(0...12)(
-    [MultiWriteNode(0...12)(
-       [MultiWriteNode(0...2)(
-          [SplatNode(0...2)((0...1), LocalVariableTargetNode(1...2)(:a, 0))],
-          nil,
-          nil,
-          nil,
-          nil
-        ),
-        LocalVariableTargetNode(4...5)(:b, 0),
-        LocalVariableTargetNode(7...8)(:c, 0)],
-       (9...10),
-       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "d"),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: [:a, :b, :c]
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...12))
+            ├── targets: (length: 3)
+            │   ├── @ MultiTargetNode (location: (0...2))
+            │   │   ├── targets: (length: 1)
+            │   │   │   └── @ SplatNode (location: (0...2))
+            │   │   │       ├── operator_loc: (0...1) = "*"
+            │   │   │       └── expression:
+            │   │   │           @ LocalVariableTargetNode (location: (1...2))
+            │   │   │           ├── name: :a
+            │   │   │           └── depth: 0
+            │   │   ├── lparen_loc: ∅
+            │   │   └── rparen_loc: ∅
+            │   ├── @ LocalVariableTargetNode (location: (4...5))
+            │   │   ├── name: :b
+            │   │   └── depth: 0
+            │   └── @ LocalVariableTargetNode (location: (7...8))
+            │       ├── name: :c
+            │       └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (9...10) = "="
+            └── value:
+                @ CallNode (location: (11...12))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (11...12) = "d"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: variable_call
+                └── name: "d"

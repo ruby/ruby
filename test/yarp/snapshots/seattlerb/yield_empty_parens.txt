@@ -1,4 +1,10 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)([YieldNode(0...7)((0...5), (5...6), nil, (6...7))])
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ YieldNode (location: (0...7))
+            ├── keyword_loc: (0...5) = "yield"
+            ├── lparen_loc: (5...6) = "("
+            ├── arguments: ∅
+            └── rparen_loc: (6...7) = ")"

@@ -1,45 +1,65 @@
-ProgramNode(0...62)(
-  [],
-  StatementsNode(0...62)(
-    [CallNode(0...25)(
-       InterpolatedStringNode(0...9)((0...9), [], (27...34)),
-       (9...10),
-       (10...14),
-       nil,
-       ArgumentsNode(15...25)(
-         [RegularExpressionNode(15...21)(
-            (15...16),
-            (16...20),
-            (20...21),
-            "^ {",
-            0
-          ),
-          StringNode(23...25)((23...24), (24...24), (24...25), "")]
-       ),
-       nil,
-       nil,
-       0,
-       "gsub"
-     ),
-     CallNode(37...62)(
-       InterpolatedStringNode(37...46)((37...46), [], (65...73)),
-       (46...47),
-       (47...51),
-       nil,
-       ArgumentsNode(52...62)(
-         [RegularExpressionNode(52...58)(
-            (52...53),
-            (53...57),
-            (57...58),
-            "^ {",
-            0
-          ),
-          StringNode(60...62)((60...61), (61...61), (61...62), "")]
-       ),
-       nil,
-       nil,
-       0,
-       "gsub"
-     )]
-  )
-)
+@ ProgramNode (location: (0...62))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...62))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (0...25))
+        │   ├── receiver:
+        │   │   @ StringNode (location: (0...9))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (0...9) = "<<-TARGET"
+        │   │   ├── content_loc: (27...27) = ""
+        │   │   ├── closing_loc: (27...34) = "TARGET\n"
+        │   │   └── unescaped: ""
+        │   ├── call_operator_loc: (9...10) = "."
+        │   ├── message_loc: (10...14) = "gsub"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (15...25))
+        │   │   └── arguments: (length: 2)
+        │   │       ├── @ RegularExpressionNode (location: (15...21))
+        │   │       │   ├── opening_loc: (15...16) = "/"
+        │   │       │   ├── content_loc: (16...20) = "^\\s{"
+        │   │       │   ├── closing_loc: (20...21) = "/"
+        │   │       │   ├── unescaped: "^ {"
+        │   │       │   └── flags: ∅
+        │   │       └── @ StringNode (location: (23...25))
+        │   │           ├── flags: ∅
+        │   │           ├── opening_loc: (23...24) = "'"
+        │   │           ├── content_loc: (24...24) = ""
+        │   │           ├── closing_loc: (24...25) = "'"
+        │   │           └── unescaped: ""
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "gsub"
+        └── @ CallNode (location: (37...62))
+            ├── receiver:
+            │   @ StringNode (location: (37...46))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (37...46) = "<<-TARGET"
+            │   ├── content_loc: (65...65) = ""
+            │   ├── closing_loc: (65...73) = "TARGET\r\n"
+            │   └── unescaped: ""
+            ├── call_operator_loc: (46...47) = "."
+            ├── message_loc: (47...51) = "gsub"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (52...62))
+            │   └── arguments: (length: 2)
+            │       ├── @ RegularExpressionNode (location: (52...58))
+            │       │   ├── opening_loc: (52...53) = "/"
+            │       │   ├── content_loc: (53...57) = "^\\s{"
+            │       │   ├── closing_loc: (57...58) = "/"
+            │       │   ├── unescaped: "^ {"
+            │       │   └── flags: ∅
+            │       └── @ StringNode (location: (60...62))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (60...61) = "'"
+            │           ├── content_loc: (61...61) = ""
+            │           ├── closing_loc: (61...62) = "'"
+            │           └── unescaped: ""
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "gsub"

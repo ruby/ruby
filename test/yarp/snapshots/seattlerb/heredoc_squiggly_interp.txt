@@ -1,22 +1,35 @@
-ProgramNode(0...10)(
-  [:a],
-  StatementsNode(0...10)(
-    [LocalVariableWriteNode(0...10)(
-       :a,
-       0,
-       (0...1),
-       InterpolatedStringNode(4...10)(
-         (4...10),
-         [StringNode(11...22)(nil, (11...22), nil, "    w\n" + "x"),
-          EmbeddedStatementsNode(22...27)(
-            (22...24),
-            StatementsNode(24...26)([IntegerNode(24...26)()]),
-            (26...27)
-          ),
-          StringNode(27...36)(nil, (27...36), nil, " y\n" + "  z\n")],
-         (36...42)
-       ),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...10))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ InterpolatedStringNode (location: (4...10))
+            │   ├── opening_loc: (4...10) = "<<~EOF"
+            │   ├── parts: (length: 3)
+            │   │   ├── @ StringNode (location: (11...22))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (11...22) = "      w\n  x"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "    w\nx"
+            │   │   ├── @ EmbeddedStatementsNode (location: (22...27))
+            │   │   │   ├── opening_loc: (22...24) = "\#{"
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (24...26))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ IntegerNode (location: (24...26))
+            │   │   │   │           └── flags: decimal
+            │   │   │   └── closing_loc: (26...27) = "}"
+            │   │   └── @ StringNode (location: (27...36))
+            │   │       ├── flags: ∅
+            │   │       ├── opening_loc: ∅
+            │   │       ├── content_loc: (27...36) = " y\n    z\n"
+            │   │       ├── closing_loc: ∅
+            │   │       └── unescaped: " y\n  z\n"
+            │   └── closing_loc: (36...42) = "  EOF\n"
+            └── operator_loc: (2...3) = "="

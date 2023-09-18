@@ -9,7 +9,7 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
       omit "Only for FIPS mode environment"
     end
 
-    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;")
+    assert_separately(["-ropenssl"], <<~"end;")
       assert OpenSSL.fips_mode == true, ".fips_mode should return true on FIPS mode enabled"
     end;
   end
@@ -19,7 +19,7 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
       omit "Only for non-FIPS mode environment"
     end
 
-    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;")
+    assert_separately(["-ropenssl"], <<~"end;")
       message = ".fips_mode should return false on FIPS mode disabled. " \
                 "If you run the test on FIPS mode, please set " \
                 "TEST_RUBY_OPENSSL_FIPS_ENABLED=true"
@@ -35,7 +35,7 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
   def test_fips_mode_get_with_fips_mode_set
     omit('OpenSSL is not FIPS-capable') unless OpenSSL::OPENSSL_FIPS
 
-    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;")
+    assert_separately(["-ropenssl"], <<~"end;")
       begin
         OpenSSL.fips_mode = true
         assert OpenSSL.fips_mode == true, ".fips_mode should return true when .fips_mode=true"

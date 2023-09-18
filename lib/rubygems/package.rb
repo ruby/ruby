@@ -413,6 +413,8 @@ EOM
   # extracted.
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
+    destination_dir = File.realpath(destination_dir)
+
     directories = []
     symlinks = []
 

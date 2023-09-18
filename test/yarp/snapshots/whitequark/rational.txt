@@ -1,7 +1,12 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [RationalNode(0...5)(FloatNode(0...4)()),
-     RationalNode(7...10)(IntegerNode(7...9)())]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 2)
+        ├── @ RationalNode (location: (0...5))
+        │   └── numeric:
+        │       @ FloatNode (location: (0...4))
+        └── @ RationalNode (location: (7...10))
+            └── numeric:
+                @ IntegerNode (location: (7...9))
+                └── flags: decimal

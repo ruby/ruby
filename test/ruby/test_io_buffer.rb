@@ -251,6 +251,18 @@ class TestIOBuffer < Test::Unit::TestCase
 
     chunk = buffer.get_string(0, message.bytesize, Encoding::BINARY)
     assert_equal Encoding::BINARY, chunk.encoding
+
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
+      buffer.get_string(0, 129)
+    end
+
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
+      buffer.get_string(129)
+    end
+
+    assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
+      buffer.get_string(-1)
+    end
   end
 
   # We check that values are correctly round tripped.

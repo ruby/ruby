@@ -5,6 +5,7 @@ use crate::invariants::*;
 use crate::options::*;
 use crate::stats::YjitExitLocations;
 use crate::stats::incr_counter;
+use crate::stats::with_compile_time;
 
 use std::os::raw;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -113,6 +114,11 @@ fn rb_bug_panic_hook() {
 /// See [jit_compile_exception] for details.
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> *const u8 {
+    // Don't compile when there is insufficient native stack space
+    if unsafe { rb_ec_stack_check(ec as _) } != 0 {
+        return std::ptr::null();
+    }
+
     // Reject ISEQs with very large temp stacks,
     // this will allow us to use u8/i8 values to track stack_size and sp_offset
     let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
@@ -130,7 +136,7 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         return std::ptr::null();
     }
 
-    let maybe_code_ptr = gen_entry_point(iseq, ec, jit_exception);
+    let maybe_code_ptr = with_compile_time(|| { gen_entry_point(iseq, ec, jit_exception) });
 
     match maybe_code_ptr {
         Some(ptr) => ptr.raw_ptr(),

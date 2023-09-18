@@ -1,21 +1,31 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [MultiWriteNode(0...15)(
-       [ConstantPathTargetNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
-        ConstantPathTargetNode(5...8)(
-          nil,
-          ConstantReadNode(7...8)(),
-          (5...7)
-        )],
-       (9...10),
-       ArrayNode(11...15)(
-         [IntegerNode(11...12)(), IntegerNode(14...15)()],
-         nil,
-         nil
-       ),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...15))
+            ├── targets: (length: 2)
+            │   ├── @ ConstantPathTargetNode (location: (0...3))
+            │   │   ├── parent: ∅
+            │   │   ├── child:
+            │   │   │   @ ConstantReadNode (location: (2...3))
+            │   │   │   └── name: :A
+            │   │   └── delimiter_loc: (0...2) = "::"
+            │   └── @ ConstantPathTargetNode (location: (5...8))
+            │       ├── parent: ∅
+            │       ├── child:
+            │       │   @ ConstantReadNode (location: (7...8))
+            │       │   └── name: :B
+            │       └── delimiter_loc: (5...7) = "::"
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (9...10) = "="
+            └── value:
+                @ ArrayNode (location: (11...15))
+                ├── elements: (length: 2)
+                │   ├── @ IntegerNode (location: (11...12))
+                │   │   └── flags: decimal
+                │   └── @ IntegerNode (location: (14...15))
+                │       └── flags: decimal
+                ├── opening_loc: ∅
+                └── closing_loc: ∅

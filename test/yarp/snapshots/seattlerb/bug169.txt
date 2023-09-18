@@ -1,16 +1,27 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)(
-    [CallNode(0...7)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...4)([ParenthesesNode(2...4)(nil, (2...3), (3...4))]),
-       nil,
-       BlockNode(5...7)([], nil, nil, (5...6), (6...7)),
-       0,
-       "m"
-     )]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...7))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "m"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...4))
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (2...4))
+            │           ├── body: ∅
+            │           ├── opening_loc: (2...3) = "("
+            │           └── closing_loc: (3...4) = ")"
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (5...7))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body: ∅
+            │   ├── opening_loc: (5...6) = "{"
+            │   └── closing_loc: (6...7) = "}"
+            ├── flags: ∅
+            └── name: "m"

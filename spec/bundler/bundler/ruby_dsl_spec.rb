@@ -21,11 +21,13 @@ RSpec.describe Bundler::RubyDsl do
       :engine => engine,
       :engine_version => engine_version }
   end
+  let(:project_root) { Pathname.new("/path/to/project") }
+  before { allow(Bundler).to receive(:root).and_return(project_root) }
 
   let(:invoke) do
     proc do
       args = []
-      args << Array(ruby_version_arg) if ruby_version_arg
+      args << ruby_version_arg if ruby_version_arg
       args << options
 
       dsl.ruby(*args)
@@ -97,53 +99,67 @@ RSpec.describe Bundler::RubyDsl do
     end
 
     context "with a file option" do
-      let(:options) { { :file => "foo" } }
-      let(:version) { "3.2.2" }
-      let(:ruby_version) { "3.2.2" }
+      let(:file) { ".ruby-version" }
+      let(:options) do
+        { :file => file,
+          :patchlevel => patchlevel,
+          :engine => engine,
+          :engine_version => engine_version }
+      end
       let(:ruby_version_arg) { nil }
-      let(:engine_version) { version }
-      let(:patchlevel) { nil }
-      let(:engine) { "ruby" }
-      let(:project_root) { Pathname.new("/path/to/project") }
+      let(:file_content) { "#{version}\n" }
 
       before do
-        allow(Bundler).to receive(:read_file).with(project_root.join("foo")).and_return("#{version}\n")
-        allow(Bundler).to receive(:root).and_return(Pathname.new("/path/to/project"))
+        allow(Bundler).to receive(:read_file).with(project_root.join(file)).and_return(file_content)
       end
 
       it_behaves_like "it stores the ruby version"
 
+      context "with the ruby- prefix in the file" do
+        let(:file_content) { "ruby-#{version}\n" }
+
+        it_behaves_like "it stores the ruby version"
+      end
+
       context "and a version" do
-        let(:ruby_version_arg) { "2.0.0" }
+        let(:ruby_version_arg) { version }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Bundler::GemfileError, "Cannot specify version when using the file option")
+          expect { subject }.to raise_error(Bundler::GemfileError, "Do not pass version argument when using :file option")
         end
       end
-    end
 
-    context "with a (.tool-versions) file option" do
-      let(:options) { { :file => "foo" } }
-      let(:version) { "3.2.2" }
-      let(:ruby_version) { "3.2.2" }
-      let(:ruby_version_arg) { nil }
-      let(:engine_version) { version }
-      let(:patchlevel) { nil }
-      let(:engine) { "ruby" }
-      let(:project_root) { Pathname.new("/path/to/project") }
-
-      before do
-        allow(Bundler).to receive(:read_file).with(project_root.join("foo")).and_return("nodejs 18.16.0\nruby #{version} # This is a comment\npnpm 8.6.12\n")
-        allow(Bundler).to receive(:root).and_return(Pathname.new("/path/to/project"))
-      end
-
-      it_behaves_like "it stores the ruby version"
-
-      context "and a version" do
-        let(:ruby_version_arg) { "2.0.0" }
+      context "with a @gemset" do
+        let(:file_content) { "ruby-#{version}@gemset\n" }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Bundler::GemfileError, "Cannot specify version when using the file option")
+          expect { subject }.to raise_error(Gem::Requirement::BadRequirementError, "Illformed requirement [\"#{version}@gemset\"]")
+        end
+      end
+
+      context "with a .tool-versions file format" do
+        let(:file) { ".tool-versions" }
+        let(:ruby_version_arg) { nil }
+        let(:file_content) do
+          <<~TOOLS
+            nodejs 18.16.0
+            ruby #{version} # This is a comment
+            pnpm 8.6.12
+          TOOLS
+        end
+
+        it_behaves_like "it stores the ruby version"
+
+        context "with extra spaces and a very cozy comment" do
+          let(:file_content) do
+            <<~TOOLS
+              nodejs 18.16.0
+              ruby   #{version}# This is a cozy comment
+              pnpm   8.6.12
+            TOOLS
+          end
+
+          it_behaves_like "it stores the ruby version"
         end
       end
     end

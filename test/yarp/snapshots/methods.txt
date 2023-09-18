@@ -1,1406 +1,1642 @@
-ProgramNode(0...1194)(
-  [:a, :c],
-  StatementsNode(0...1194)(
-    [DefNode(0...23)(
-       (4...7),
-       nil,
-       ParametersNode(8...18)(
-         [RequiredDestructuredParameterNode(8...18)(
-            [RequiredParameterNode(9...12)(:bar),
-             RequiredParameterNode(14...17)(:baz)],
-            (8...9),
-            (17...18)
-          )],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:bar, :baz],
-       (0...3),
-       nil,
-       (7...8),
-       (18...19),
-       nil,
-       (20...23)
-     ),
-     DefNode(25...74)(
-       (29...32),
-       nil,
-       ParametersNode(33...69)(
-         [RequiredDestructuredParameterNode(33...43)(
-            [RequiredParameterNode(34...37)(:bar),
-             RequiredParameterNode(39...42)(:baz)],
-            (33...34),
-            (42...43)
-          )],
-         [OptionalParameterNode(45...57)(
-            :optional,
-            (45...53),
-            (54...55),
-            IntegerNode(56...57)()
-          )],
-         [RequiredDestructuredParameterNode(59...69)(
-            [RequiredParameterNode(60...63)(:bin),
-             RequiredParameterNode(65...68)(:bag)],
-            (59...60),
-            (68...69)
-          )],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:bar, :baz, :optional, :bin, :bag],
-       (25...28),
-       nil,
-       (32...33),
-       (69...70),
-       nil,
-       (71...74)
-     ),
-     DefNode(77...95)(
-       (81...82),
-       nil,
-       nil,
-       BeginNode(84...95)(
-         nil,
-         nil,
-         nil,
-         nil,
-         EnsureNode(84...95)((84...90), nil, (92...95)),
-         (92...95)
-       ),
-       [],
-       (77...80),
-       nil,
-       nil,
-       nil,
-       nil,
-       (92...95)
-     ),
-     DefNode(97...110)(
-       (105...106),
-       ParenthesesNode(101...104)(
-         CallNode(102...103)(
-           nil,
-           nil,
-           (102...103),
-           nil,
-           nil,
-           nil,
-           nil,
-           2,
-           "b"
-         ),
-         (101...102),
-         (103...104)
-       ),
-       nil,
-       nil,
-       [],
-       (97...100),
-       (104...105),
-       nil,
-       nil,
-       nil,
-       (107...110)
-     ),
-     DefNode(112...126)(
-       (121...122),
-       ParenthesesNode(116...119)(
-         CallNode(117...118)(
-           nil,
-           nil,
-           (117...118),
-           nil,
-           nil,
-           nil,
-           nil,
-           2,
-           "a"
-         ),
-         (116...117),
-         (118...119)
-       ),
-       nil,
-       nil,
-       [],
-       (112...115),
-       (119...121),
-       nil,
-       nil,
-       nil,
-       (123...126)
-     ),
-     DefNode(128...143)(
-       (138...139),
-       FalseNode(132...137)(),
-       nil,
-       nil,
-       [],
-       (128...131),
-       (137...138),
-       nil,
-       nil,
-       nil,
-       (140...143)
-     ),
-     DefNode(145...159)(
-       (149...150),
-       nil,
-       ParametersNode(151...154)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(151...154)(),
-         nil
-       ),
-       nil,
-       [:"..."],
-       (145...148),
-       nil,
-       (150...151),
-       (154...155),
-       nil,
-       (156...159)
-     ),
-     DefNode(161...175)(
-       (170...171),
-       GlobalVariableReadNode(165...169)(:$var),
-       nil,
-       nil,
-       [],
-       (161...164),
-       (169...170),
-       nil,
-       nil,
-       nil,
-       (172...175)
-     ),
-     DefNode(177...188)(
-       (183...184),
-       CallNode(181...182)(nil, nil, (181...182), nil, nil, nil, nil, 2, "a"),
-       nil,
-       nil,
-       [],
-       (177...180),
-       (182...183),
-       nil,
-       nil,
-       nil,
-       (185...188)
-     ),
-     DefNode(190...204)(
-       (199...200),
-       InstanceVariableReadNode(194...198)(:@var),
-       nil,
-       nil,
-       [],
-       (190...193),
-       (198...199),
-       nil,
-       nil,
-       nil,
-       (201...204)
-     ),
-     DefNode(206...219)(
-       (210...211),
-       nil,
-       ParametersNode(212...214)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(212...214)((212...214), nil)],
-         nil,
-         nil
-       ),
-       nil,
-       [:b],
-       (206...209),
-       nil,
-       nil,
-       nil,
-       nil,
-       (216...219)
-     ),
-     StringNode(221...227)((221...223), (223...226), (226...227), "abc"),
-     DefNode(229...242)(
-       (233...234),
-       nil,
-       ParametersNode(235...237)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(235...237)((235...237), nil)],
-         nil,
-         nil
-       ),
-       nil,
-       [:b],
-       (229...232),
-       nil,
-       (234...235),
-       (237...238),
-       nil,
-       (239...242)
-     ),
-     DefNode(244...258)(
-       (248...249),
-       nil,
-       ParametersNode(250...253)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         KeywordRestParameterNode(250...253)((250...252), (252...253)),
-         nil
-       ),
-       nil,
-       [:b],
-       (244...247),
-       nil,
-       (249...250),
-       (253...254),
-       nil,
-       (255...258)
-     ),
-     DefNode(260...273)(
-       (264...265),
-       nil,
-       ParametersNode(266...268)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         KeywordRestParameterNode(266...268)((266...268), nil),
-         nil
-       ),
-       nil,
-       [:**],
-       (260...263),
-       nil,
-       (265...266),
-       (268...269),
-       nil,
-       (270...273)
-     ),
-     LocalVariableWriteNode(275...280)(
-       :a,
-       0,
-       (275...276),
-       IntegerNode(279...280)(),
-       (277...278)
-     ),
-     DefNode(282...291)(
-       (286...287),
-       nil,
-       nil,
-       nil,
-       [],
-       (282...285),
-       nil,
-       nil,
-       nil,
-       nil,
-       (288...291)
-     ),
-     DefNode(293...310)(
-       (297...298),
-       nil,
-       ParametersNode(299...306)(
-         [RequiredParameterNode(299...300)(:b),
-          RequiredParameterNode(302...303)(:c),
-          RequiredParameterNode(305...306)(:d)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:b, :c, :d],
-       (293...296),
-       nil,
-       nil,
-       nil,
-       nil,
-       (307...310)
-     ),
-     DefNode(312...325)(
-       (320...321),
-       NilNode(316...319)(),
-       nil,
-       nil,
-       [],
-       (312...315),
-       (319...320),
-       nil,
-       nil,
-       nil,
-       (322...325)
-     ),
-     DefNode(327...345)(
-       (331...332),
-       nil,
-       ParametersNode(333...341)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(333...335)((333...335), nil),
-          KeywordParameterNode(337...341)(
-            (337...339),
-            IntegerNode(340...341)()
-          )],
-         nil,
-         nil
-       ),
-       nil,
-       [:b, :c],
-       (327...330),
-       nil,
-       nil,
-       nil,
-       nil,
-       (342...345)
-     ),
-     DefNode(347...366)(
-       (351...352),
-       nil,
-       ParametersNode(353...361)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(353...355)((353...355), nil),
-          KeywordParameterNode(357...361)(
-            (357...359),
-            IntegerNode(360...361)()
-          )],
-         nil,
-         nil
-       ),
-       nil,
-       [:b, :c],
-       (347...350),
-       nil,
-       (352...353),
-       (361...362),
-       nil,
-       (363...366)
-     ),
-     DefNode(368...389)(
-       (372...373),
-       nil,
-       ParametersNode(374...384)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(374...380)(
-            (374...376),
-            IntegerNode(379...380)()
-          ),
-          KeywordParameterNode(382...384)((382...384), nil)],
-         nil,
-         nil
-       ),
-       nil,
-       [:b, :c],
-       (368...371),
-       nil,
-       (373...374),
-       (384...385),
-       nil,
-       (386...389)
-     ),
-     StringNode(391...397)((391...393), (393...396), (396...397), "abc"),
-     DefNode(399...421)(
-       (403...404),
-       nil,
-       ParametersNode(405...417)(
-         [],
-         [OptionalParameterNode(405...410)(
-            :b,
-            (405...406),
-            (407...408),
-            IntegerNode(409...410)()
-          ),
-          OptionalParameterNode(412...417)(
-            :c,
-            (412...413),
-            (414...415),
-            IntegerNode(416...417)()
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:b, :c],
-       (399...402),
-       nil,
-       nil,
-       nil,
-       nil,
-       (418...421)
-     ),
-     DefNode(423...434)(
-       (427...428),
-       nil,
-       nil,
-       nil,
-       [],
-       (423...426),
-       nil,
-       (428...429),
-       (429...430),
-       nil,
-       (431...434)
-     ),
-     DefNode(436...454)(
-       (440...441),
-       nil,
-       ParametersNode(442...450)(
-         [RequiredParameterNode(442...443)(:b)],
-         [OptionalParameterNode(445...450)(
-            :c,
-            (445...446),
-            (447...448),
-            IntegerNode(449...450)()
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:b, :c],
-       (436...439),
-       nil,
-       nil,
-       nil,
-       nil,
-       (451...454)
-     ),
-     DefNode(456...467)(
-       (460...461),
-       nil,
-       ParametersNode(462...463)(
-         [RequiredParameterNode(462...463)(:b)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:b],
-       (456...459),
-       nil,
-       nil,
-       nil,
-       nil,
-       (464...467)
-     ),
-     DefNode(469...501)(
-       (473...474),
-       nil,
-       nil,
-       BeginNode(476...501)(
-         nil,
-         nil,
-         RescueNode(476...482)((476...482), [], nil, nil, nil, nil),
-         ElseNode(484...496)((484...488), nil, (490...496)),
-         EnsureNode(490...501)((490...496), nil, (498...501)),
-         (498...501)
-       ),
-       [],
-       (469...472),
-       nil,
-       nil,
-       nil,
-       nil,
-       (498...501)
-     ),
-     DefNode(503...515)(
-       (507...508),
-       nil,
-       ParametersNode(509...511)(
-         [],
-         [],
-         [],
-         RestParameterNode(509...511)((509...510), (510...511)),
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:b],
-       (503...506),
-       nil,
-       nil,
-       nil,
-       nil,
-       (512...515)
-     ),
-     DefNode(517...529)(
-       (521...522),
-       nil,
-       ParametersNode(523...524)(
-         [],
-         [],
-         [],
-         RestParameterNode(523...524)((523...524), nil),
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:*],
-       (517...520),
-       nil,
-       (522...523),
-       (524...525),
-       nil,
-       (526...529)
-     ),
-     DefNode(531...546)(
-       (535...536),
-       nil,
-       nil,
-       StatementsNode(537...542)(
-         [LocalVariableWriteNode(537...542)(
-            :b,
-            0,
-            (537...538),
-            IntegerNode(541...542)(),
-            (539...540)
-          )]
-       ),
-       [:b],
-       (531...534),
-       nil,
-       nil,
-       nil,
-       nil,
-       (543...546)
-     ),
-     DefNode(548...562)(
-       (557...558),
-       SelfNode(552...556)(),
-       nil,
-       nil,
-       [],
-       (548...551),
-       (556...557),
-       nil,
-       nil,
-       nil,
-       (559...562)
-     ),
-     DefNode(564...578)(
-       (573...574),
-       TrueNode(568...572)(),
-       nil,
-       nil,
-       [],
-       (564...567),
-       (572...573),
-       nil,
-       nil,
-       nil,
-       (575...578)
-     ),
-     DefNode(580...589)(
-       (584...585),
-       nil,
-       nil,
-       nil,
-       [],
-       (580...583),
-       nil,
-       nil,
-       nil,
-       nil,
-       (586...589)
-     ),
-     DefNode(591...625)(
-       (595...597),
-       nil,
-       nil,
-       StatementsNode(598...621)(
-         [IfNode(598...616)(
-            (609...611),
-            TrueNode(612...616)(),
-            StatementsNode(598...608)(
-              [ReturnNode(598...608)(
-                 (598...604),
-                 ArgumentsNode(605...608)(
-                   [SymbolNode(605...608)((605...606), (606...608), nil, "hi")]
-                 )
-               )]
-            ),
-            nil,
-            nil
-          ),
-          SymbolNode(617...621)((617...618), (618...621), nil, "bye")]
-       ),
-       [],
-       (591...594),
-       nil,
-       nil,
-       nil,
-       nil,
-       (622...625)
-     ),
-     DefNode(627...638)(
-       (631...634),
-       nil,
-       nil,
-       StatementsNode(637...638)([IntegerNode(637...638)()]),
-       [],
-       (627...630),
-       nil,
-       nil,
-       nil,
-       (635...636),
-       nil
-     ),
-     DefNode(639...650)(
-       (643...646),
-       nil,
-       nil,
-       StatementsNode(649...650)([IntegerNode(649...650)()]),
-       [],
-       (639...642),
-       nil,
-       nil,
-       nil,
-       (647...648),
-       nil
-     ),
-     DefNode(652...670)(
-       (656...659),
-       nil,
-       ParametersNode(660...663)(
-         [RequiredParameterNode(660...663)(:bar)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(667...670)([IntegerNode(667...670)()]),
-       [:bar],
-       (652...655),
-       nil,
-       (659...660),
-       (663...664),
-       (665...666),
-       nil
-     ),
-     DefNode(672...685)(
-       (676...679),
-       nil,
-       nil,
-       StatementsNode(682...685)([IntegerNode(682...685)()]),
-       [],
-       (672...675),
-       nil,
-       nil,
-       nil,
-       (680...681),
-       nil
-     ),
-     DefNode(687...706)(
-       (691...692),
-       nil,
-       ParametersNode(693...694)(
-         [],
-         [],
-         [],
-         RestParameterNode(693...694)((693...694), nil),
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(697...701)(
-         [CallNode(697...701)(
-            nil,
-            nil,
-            (697...698),
-            (698...699),
-            ArgumentsNode(699...700)([SplatNode(699...700)((699...700), nil)]),
-            (700...701),
-            nil,
-            0,
-            "b"
-          )]
-       ),
-       [:*],
-       (687...690),
-       nil,
-       (692...693),
-       (694...695),
-       nil,
-       (703...706)
-     ),
-     DefNode(708...731)(
-       (712...713),
-       nil,
-       ParametersNode(714...717)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(714...717)(),
-         nil
-       ),
-       StatementsNode(720...726)(
-         [CallNode(720...726)(
-            nil,
-            nil,
-            (720...721),
-            (721...722),
-            ArgumentsNode(722...725)([ForwardingArgumentsNode(722...725)()]),
-            (725...726),
-            nil,
-            0,
-            "b"
-          )]
-       ),
-       [:"..."],
-       (708...711),
-       nil,
-       (713...714),
-       (717...718),
-       nil,
-       (728...731)
-     ),
-     DefNode(733...762)(
-       (737...738),
-       nil,
-       ParametersNode(739...742)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(739...742)(),
-         nil
-       ),
-       StatementsNode(745...757)(
-         [CallNode(745...757)(
-            nil,
-            nil,
-            (745...746),
-            (746...747),
-            ArgumentsNode(747...756)(
-              [IntegerNode(747...748)(),
-               IntegerNode(750...751)(),
-               ForwardingArgumentsNode(753...756)()]
-            ),
-            (756...757),
-            nil,
-            0,
-            "b"
-          )]
-       ),
-       [:"..."],
-       (733...736),
-       nil,
-       (738...739),
-       (742...743),
-       nil,
-       (759...762)
-     ),
-     DefNode(764...781)(
-       (776...777),
-       ParenthesesNode(768...775)(
-         LocalVariableWriteNode(769...774)(
-           :c,
-           0,
-           (769...770),
-           CallNode(773...774)(
-             nil,
-             nil,
-             (773...774),
-             nil,
-             nil,
-             nil,
-             nil,
-             2,
-             "b"
-           ),
-           (771...772)
-         ),
-         (768...769),
-         (774...775)
-       ),
-       nil,
-       nil,
-       [],
-       (764...767),
-       (775...776),
-       nil,
-       nil,
-       nil,
-       (778...781)
-     ),
-     DefNode(783...795)(
-       (787...788),
-       nil,
-       ParametersNode(789...791)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         BlockParameterNode(789...791)((790...791), (789...790))
-       ),
-       nil,
-       [:b],
-       (783...786),
-       nil,
-       nil,
-       nil,
-       nil,
-       (792...795)
-     ),
-     DefNode(797...809)(
-       (801...802),
-       nil,
-       ParametersNode(803...804)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         BlockParameterNode(803...804)(nil, (803...804))
-       ),
-       nil,
-       [:&],
-       (797...800),
-       nil,
-       (802...803),
-       (804...805),
-       nil,
-       (806...809)
-     ),
-     DefNode(811...826)(
-       (821...822),
-       ClassVariableReadNode(815...820)(:@@var),
-       nil,
-       nil,
-       [],
-       (811...814),
-       (820...821),
-       nil,
-       nil,
-       nil,
-       (823...826)
-     ),
-     DefNode(828...845)(
-       (840...841),
-       ParenthesesNode(832...839)(
-         LocalVariableWriteNode(833...838)(
-           :a,
-           0,
-           (833...834),
-           CallNode(837...838)(
-             nil,
-             nil,
-             (837...838),
-             nil,
-             nil,
-             nil,
-             nil,
-             2,
-             "b"
-           ),
-           (835...836)
-         ),
-         (832...833),
-         (838...839)
-       ),
-       nil,
-       nil,
-       [],
-       (828...831),
-       (839...840),
-       nil,
-       nil,
-       nil,
-       (842...845)
-     ),
-     DefNode(847...875)(
-       (856...870),
-       SelfNode(851...855)(),
-       nil,
-       nil,
-       [],
-       (847...850),
-       (855...856),
-       nil,
-       nil,
-       nil,
-       (872...875)
-     ),
-     ConstantWriteNode(877...886)(
-       (877...882),
-       IntegerNode(885...886)(),
-       (883...884)
-     ),
-     DefNode(888...903)(
-       (898...899),
-       ConstantReadNode(892...897)(),
-       nil,
-       nil,
-       [],
-       (888...891),
-       (897...898),
-       nil,
-       nil,
-       nil,
-       (900...903)
-     ),
-     DefNode(905...936)(
-       (909...910),
-       nil,
-       ParametersNode(911...914)(
-         [],
-         [],
-         [],
-         nil,
-         [],
-         ForwardingParameterNode(911...914)(),
-         nil
-       ),
-       StatementsNode(917...931)(
-         [InterpolatedStringNode(917...931)(
-            (917...918),
-            [StringNode(918...921)(nil, (918...921), nil, "foo"),
-             EmbeddedStatementsNode(921...930)(
-               (921...923),
-               StatementsNode(923...929)(
-                 [CallNode(923...929)(
-                    nil,
-                    nil,
-                    (923...924),
-                    (924...925),
-                    ArgumentsNode(925...928)(
-                      [ForwardingArgumentsNode(925...928)()]
-                    ),
-                    (928...929),
-                    nil,
-                    0,
-                    "b"
-                  )]
-               ),
-               (929...930)
-             )],
-            (930...931)
-          )]
-       ),
-       [:"..."],
-       (905...908),
-       nil,
-       (910...911),
-       (914...915),
-       nil,
-       (933...936)
-     ),
-     DefNode(938...980)(
-       (942...945),
-       nil,
-       nil,
-       StatementsNode(948...976)(
-         [CallNode(948...976)(
-            HashNode(948...950)((948...949), [], (949...950)),
-            (950...951),
-            (951...956),
-            nil,
-            ArgumentsNode(957...976)(
-              [KeywordHashNode(957...976)(
-                 [AssocSplatNode(957...962)(
-                    CallNode(959...962)(
-                      nil,
-                      nil,
-                      (959...962),
-                      nil,
-                      nil,
-                      nil,
-                      nil,
-                      2,
-                      "bar"
-                    ),
-                    (957...959)
-                  ),
-                  AssocSplatNode(964...969)(
-                    CallNode(966...969)(
-                      nil,
-                      nil,
-                      (966...969),
-                      nil,
-                      nil,
-                      nil,
-                      nil,
-                      2,
-                      "baz"
-                    ),
-                    (964...966)
-                  ),
-                  AssocSplatNode(971...976)(
-                    CallNode(973...976)(
-                      nil,
-                      nil,
-                      (973...976),
-                      nil,
-                      nil,
-                      nil,
-                      nil,
-                      2,
-                      "qux"
-                    ),
-                    (971...973)
-                  )]
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "merge"
-          )]
-       ),
-       [],
-       (938...941),
-       nil,
-       nil,
-       nil,
-       nil,
-       (977...980)
-     ),
-     DefNode(982...1006)(
-       (986...989),
-       nil,
-       ParametersNode(990...1001)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(990...1001)(
-            (990...992),
-            ParenthesesNode(993...1001)(
-              StatementsNode(994...1000)(
-                [RangeNode(994...1000)(
-                   IntegerNode(994...995)(),
-                   IntegerNode(998...1000)(),
-                   (995...998),
-                   1
-                 )]
-              ),
-              (993...994),
-              (1000...1001)
-            )
-          )],
-         nil,
-         nil
-       ),
-       nil,
-       [:a],
-       (982...985),
-       nil,
-       (989...990),
-       (1001...1002),
-       nil,
-       (1003...1006)
-     ),
-     DefNode(1008...1031)(
-       (1012...1015),
-       nil,
-       ParametersNode(1016...1026)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(1016...1026)(
-            (1016...1018),
-            ParenthesesNode(1019...1026)(
-              StatementsNode(1020...1025)(
-                [RangeNode(1020...1025)(
-                   nil,
-                   IntegerNode(1023...1025)(),
-                   (1020...1023),
-                   1
-                 )]
-              ),
-              (1019...1020),
-              (1025...1026)
-            )
-          )],
-         nil,
-         nil
-       ),
-       nil,
-       [:a],
-       (1008...1011),
-       nil,
-       (1015...1016),
-       (1026...1027),
-       nil,
-       (1028...1031)
-     ),
-     DefNode(1033...1055)(
-       (1037...1040),
-       nil,
-       ParametersNode(1041...1050)(
-         [],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(1041...1050)(
-            (1041...1043),
-            ParenthesesNode(1044...1050)(
-              StatementsNode(1045...1049)(
-                [RangeNode(1045...1049)(
-                   IntegerNode(1045...1046)(),
-                   nil,
-                   (1046...1049),
-                   1
-                 )]
-              ),
-              (1044...1045),
-              (1049...1050)
-            )
-          )],
-         nil,
-         nil
-       ),
-       nil,
-       [:a],
-       (1033...1036),
-       nil,
-       (1040...1041),
-       (1050...1051),
-       nil,
-       (1052...1055)
-     ),
-     DefNode(1057...1082)(
-       (1061...1064),
-       nil,
-       ParametersNode(1065...1077)(
-         [],
-         [OptionalParameterNode(1065...1077)(
-            :a,
-            (1065...1066),
-            (1067...1068),
-            ParenthesesNode(1069...1077)(
-              StatementsNode(1070...1076)(
-                [RangeNode(1070...1076)(
-                   IntegerNode(1070...1071)(),
-                   IntegerNode(1074...1076)(),
-                   (1071...1074),
-                   1
-                 )]
-              ),
-              (1069...1070),
-              (1076...1077)
-            )
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:a],
-       (1057...1060),
-       nil,
-       (1064...1065),
-       (1077...1078),
-       nil,
-       (1079...1082)
-     ),
-     DefNode(1084...1108)(
-       (1088...1091),
-       nil,
-       ParametersNode(1092...1103)(
-         [],
-         [OptionalParameterNode(1092...1103)(
-            :a,
-            (1092...1093),
-            (1094...1095),
-            ParenthesesNode(1096...1103)(
-              StatementsNode(1097...1102)(
-                [RangeNode(1097...1102)(
-                   nil,
-                   IntegerNode(1100...1102)(),
-                   (1097...1100),
-                   1
-                 )]
-              ),
-              (1096...1097),
-              (1102...1103)
-            )
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:a],
-       (1084...1087),
-       nil,
-       (1091...1092),
-       (1103...1104),
-       nil,
-       (1105...1108)
-     ),
-     DefNode(1110...1133)(
-       (1114...1117),
-       nil,
-       ParametersNode(1118...1128)(
-         [],
-         [OptionalParameterNode(1118...1128)(
-            :a,
-            (1118...1119),
-            (1120...1121),
-            ParenthesesNode(1122...1128)(
-              StatementsNode(1123...1127)(
-                [RangeNode(1123...1127)(
-                   IntegerNode(1123...1124)(),
-                   nil,
-                   (1124...1127),
-                   1
-                 )]
-              ),
-              (1122...1123),
-              (1127...1128)
-            )
-          )],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:a],
-       (1110...1113),
-       nil,
-       (1117...1118),
-       (1128...1129),
-       nil,
-       (1130...1133)
-     ),
-     DefNode(1135...1167)(
-       (1139...1145),
-       nil,
-       ParametersNode(1146...1147)(
-         [RequiredParameterNode(1146...1147)(:a)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       StatementsNode(1151...1163)(
-         [CallNode(1151...1163)(
-            CallNode(1151...1155)(
-              nil,
-              nil,
-              (1151...1155),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "item"
-            ),
-            nil,
-            (1156...1158),
-            nil,
-            ArgumentsNode(1159...1163)(
-              [CallNode(1159...1163)(
-                 nil,
-                 nil,
-                 (1159...1160),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(1161...1163)(
-                   [],
-                   nil,
-                   nil,
-                   (1161...1162),
-                   (1162...1163)
-                 ),
-                 0,
-                 "a"
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            ">>"
-          )]
-       ),
-       [:a],
-       (1135...1138),
-       nil,
-       (1145...1146),
-       (1147...1148),
-       nil,
-       (1164...1167)
-     ),
-     DefNode(1169...1194)(
-       (1173...1176),
-       nil,
-       ParametersNode(1177...1189)(
-         [RequiredParameterNode(1177...1179)(:_a),
-          RequiredParameterNode(1181...1183)(:_a),
-          RequiredParameterNode(1185...1186)(:b),
-          RequiredParameterNode(1188...1189)(:c)],
-         [],
-         [],
-         nil,
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:_a, :b, :c],
-       (1169...1172),
-       nil,
-       (1176...1177),
-       (1189...1190),
-       nil,
-       (1191...1194)
-     )]
-  )
-)
+@ ProgramNode (location: (0...1220))
+├── locals: [:a, :c, :foo]
+└── statements:
+    @ StatementsNode (location: (0...1220))
+    └── body: (length: 62)
+        ├── @ DefNode (location: (0...23))
+        │   ├── name: :foo
+        │   ├── name_loc: (4...7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (8...18))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredDestructuredParameterNode (location: (8...18))
+        │   │   │       ├── parameters: (length: 2)
+        │   │   │       │   ├── @ RequiredParameterNode (location: (9...12))
+        │   │   │       │   │   └── name: :bar
+        │   │   │       │   └── @ RequiredParameterNode (location: (14...17))
+        │   │   │       │       └── name: :baz
+        │   │   │       ├── opening_loc: (8...9) = "("
+        │   │   │       └── closing_loc: (17...18) = ")"
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:bar, :baz]
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (7...8) = "("
+        │   ├── rparen_loc: (18...19) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (20...23) = "end"
+        ├── @ DefNode (location: (25...74))
+        │   ├── name: :foo
+        │   ├── name_loc: (29...32) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (33...69))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredDestructuredParameterNode (location: (33...43))
+        │   │   │       ├── parameters: (length: 2)
+        │   │   │       │   ├── @ RequiredParameterNode (location: (34...37))
+        │   │   │       │   │   └── name: :bar
+        │   │   │       │   └── @ RequiredParameterNode (location: (39...42))
+        │   │   │       │       └── name: :baz
+        │   │   │       ├── opening_loc: (33...34) = "("
+        │   │   │       └── closing_loc: (42...43) = ")"
+        │   │   ├── optionals: (length: 1)
+        │   │   │   └── @ OptionalParameterNode (location: (45...57))
+        │   │   │       ├── name: :optional
+        │   │   │       ├── name_loc: (45...53) = "optional"
+        │   │   │       ├── operator_loc: (54...55) = "="
+        │   │   │       └── value:
+        │   │   │           @ IntegerNode (location: (56...57))
+        │   │   │           └── flags: decimal
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 1)
+        │   │   │   └── @ RequiredDestructuredParameterNode (location: (59...69))
+        │   │   │       ├── parameters: (length: 2)
+        │   │   │       │   ├── @ RequiredParameterNode (location: (60...63))
+        │   │   │       │   │   └── name: :bin
+        │   │   │       │   └── @ RequiredParameterNode (location: (65...68))
+        │   │   │       │       └── name: :bag
+        │   │   │       ├── opening_loc: (59...60) = "("
+        │   │   │       └── closing_loc: (68...69) = ")"
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:bar, :baz, :optional, :bin, :bag]
+        │   ├── def_keyword_loc: (25...28) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (32...33) = "("
+        │   ├── rparen_loc: (69...70) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (71...74) = "end"
+        ├── @ DefNode (location: (77...95))
+        │   ├── name: :a
+        │   ├── name_loc: (81...82) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ BeginNode (location: (84...95))
+        │   │   ├── begin_keyword_loc: ∅
+        │   │   ├── statements: ∅
+        │   │   ├── rescue_clause: ∅
+        │   │   ├── else_clause: ∅
+        │   │   ├── ensure_clause:
+        │   │   │   @ EnsureNode (location: (84...95))
+        │   │   │   ├── ensure_keyword_loc: (84...90) = "ensure"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── end_keyword_loc: (92...95) = "end"
+        │   │   └── end_keyword_loc: (92...95) = "end"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (77...80) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (92...95) = "end"
+        ├── @ DefNode (location: (97...110))
+        │   ├── name: :a
+        │   ├── name_loc: (105...106) = "a"
+        │   ├── receiver:
+        │   │   @ ParenthesesNode (location: (101...104))
+        │   │   ├── body:
+        │   │   │   @ CallNode (location: (102...103))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (102...103) = "b"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "b"
+        │   │   ├── opening_loc: (101...102) = "("
+        │   │   └── closing_loc: (103...104) = ")"
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (97...100) = "def"
+        │   ├── operator_loc: (104...105) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (107...110) = "end"
+        ├── @ DefNode (location: (112...126))
+        │   ├── name: :b
+        │   ├── name_loc: (121...122) = "b"
+        │   ├── receiver:
+        │   │   @ ParenthesesNode (location: (116...119))
+        │   │   ├── body:
+        │   │   │   @ CallNode (location: (117...118))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (117...118) = "a"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "a"
+        │   │   ├── opening_loc: (116...117) = "("
+        │   │   └── closing_loc: (118...119) = ")"
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (112...115) = "def"
+        │   ├── operator_loc: (119...121) = "::"
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (123...126) = "end"
+        ├── @ DefNode (location: (128...143))
+        │   ├── name: :a
+        │   ├── name_loc: (138...139) = "a"
+        │   ├── receiver:
+        │   │   @ FalseNode (location: (132...137))
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (128...131) = "def"
+        │   ├── operator_loc: (137...138) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (140...143) = "end"
+        ├── @ DefNode (location: (145...159))
+        │   ├── name: :a
+        │   ├── name_loc: (149...150) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (151...154))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (151...154))
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (145...148) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (150...151) = "("
+        │   ├── rparen_loc: (154...155) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (156...159) = "end"
+        ├── @ DefNode (location: (161...175))
+        │   ├── name: :a
+        │   ├── name_loc: (170...171) = "a"
+        │   ├── receiver:
+        │   │   @ GlobalVariableReadNode (location: (165...169))
+        │   │   └── name: :$var
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (161...164) = "def"
+        │   ├── operator_loc: (169...170) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (172...175) = "end"
+        ├── @ DefNode (location: (177...188))
+        │   ├── name: :b
+        │   ├── name_loc: (183...184) = "b"
+        │   ├── receiver:
+        │   │   @ CallNode (location: (181...182))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (181...182) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (177...180) = "def"
+        │   ├── operator_loc: (182...183) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (185...188) = "end"
+        ├── @ DefNode (location: (190...204))
+        │   ├── name: :a
+        │   ├── name_loc: (199...200) = "a"
+        │   ├── receiver:
+        │   │   @ InstanceVariableReadNode (location: (194...198))
+        │   │   └── name: :@var
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (190...193) = "def"
+        │   ├── operator_loc: (198...199) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (201...204) = "end"
+        ├── @ DefNode (location: (206...219))
+        │   ├── name: :a
+        │   ├── name_loc: (210...211) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (212...214))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ KeywordParameterNode (location: (212...214))
+        │   │   │       ├── name: :b
+        │   │   │       ├── name_loc: (212...214) = "b:"
+        │   │   │       └── value: ∅
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (206...209) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (216...219) = "end"
+        ├── @ StringNode (location: (221...227))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (221...223) = "%,"
+        │   ├── content_loc: (223...226) = "abc"
+        │   ├── closing_loc: (226...227) = ","
+        │   └── unescaped: "abc"
+        ├── @ DefNode (location: (229...242))
+        │   ├── name: :a
+        │   ├── name_loc: (233...234) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (235...237))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ KeywordParameterNode (location: (235...237))
+        │   │   │       ├── name: :b
+        │   │   │       ├── name_loc: (235...237) = "b:"
+        │   │   │       └── value: ∅
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (229...232) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (234...235) = "("
+        │   ├── rparen_loc: (237...238) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (239...242) = "end"
+        ├── @ DefNode (location: (244...258))
+        │   ├── name: :a
+        │   ├── name_loc: (248...249) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (250...253))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ KeywordRestParameterNode (location: (250...253))
+        │   │   │   ├── name: :b
+        │   │   │   ├── name_loc: (252...253) = "b"
+        │   │   │   └── operator_loc: (250...252) = "**"
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (244...247) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (249...250) = "("
+        │   ├── rparen_loc: (253...254) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (255...258) = "end"
+        ├── @ DefNode (location: (260...273))
+        │   ├── name: :a
+        │   ├── name_loc: (264...265) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (266...268))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ KeywordRestParameterNode (location: (266...268))
+        │   │   │   ├── name: nil
+        │   │   │   ├── name_loc: ∅
+        │   │   │   └── operator_loc: (266...268) = "**"
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:**]
+        │   ├── def_keyword_loc: (260...263) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (265...266) = "("
+        │   ├── rparen_loc: (268...269) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (270...273) = "end"
+        ├── @ LocalVariableWriteNode (location: (275...280))
+        │   ├── name: :a
+        │   ├── depth: 0
+        │   ├── name_loc: (275...276) = "a"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (279...280))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (277...278) = "="
+        ├── @ DefNode (location: (282...291))
+        │   ├── name: :a
+        │   ├── name_loc: (286...287) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (282...285) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (288...291) = "end"
+        ├── @ DefNode (location: (293...310))
+        │   ├── name: :a
+        │   ├── name_loc: (297...298) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (299...306))
+        │   │   ├── requireds: (length: 3)
+        │   │   │   ├── @ RequiredParameterNode (location: (299...300))
+        │   │   │   │   └── name: :b
+        │   │   │   ├── @ RequiredParameterNode (location: (302...303))
+        │   │   │   │   └── name: :c
+        │   │   │   └── @ RequiredParameterNode (location: (305...306))
+        │   │   │       └── name: :d
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b, :c, :d]
+        │   ├── def_keyword_loc: (293...296) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (307...310) = "end"
+        ├── @ DefNode (location: (312...325))
+        │   ├── name: :a
+        │   ├── name_loc: (320...321) = "a"
+        │   ├── receiver:
+        │   │   @ NilNode (location: (316...319))
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (312...315) = "def"
+        │   ├── operator_loc: (319...320) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (322...325) = "end"
+        ├── @ DefNode (location: (327...345))
+        │   ├── name: :a
+        │   ├── name_loc: (331...332) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (333...341))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 2)
+        │   │   │   ├── @ KeywordParameterNode (location: (333...335))
+        │   │   │   │   ├── name: :b
+        │   │   │   │   ├── name_loc: (333...335) = "b:"
+        │   │   │   │   └── value: ∅
+        │   │   │   └── @ KeywordParameterNode (location: (337...341))
+        │   │   │       ├── name: :c
+        │   │   │       ├── name_loc: (337...339) = "c:"
+        │   │   │       └── value:
+        │   │   │           @ IntegerNode (location: (340...341))
+        │   │   │           └── flags: decimal
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b, :c]
+        │   ├── def_keyword_loc: (327...330) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (342...345) = "end"
+        ├── @ DefNode (location: (347...366))
+        │   ├── name: :a
+        │   ├── name_loc: (351...352) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (353...361))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 2)
+        │   │   │   ├── @ KeywordParameterNode (location: (353...355))
+        │   │   │   │   ├── name: :b
+        │   │   │   │   ├── name_loc: (353...355) = "b:"
+        │   │   │   │   └── value: ∅
+        │   │   │   └── @ KeywordParameterNode (location: (357...361))
+        │   │   │       ├── name: :c
+        │   │   │       ├── name_loc: (357...359) = "c:"
+        │   │   │       └── value:
+        │   │   │           @ IntegerNode (location: (360...361))
+        │   │   │           └── flags: decimal
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b, :c]
+        │   ├── def_keyword_loc: (347...350) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (352...353) = "("
+        │   ├── rparen_loc: (361...362) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (363...366) = "end"
+        ├── @ DefNode (location: (368...389))
+        │   ├── name: :a
+        │   ├── name_loc: (372...373) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (374...384))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 2)
+        │   │   │   ├── @ KeywordParameterNode (location: (374...380))
+        │   │   │   │   ├── name: :b
+        │   │   │   │   ├── name_loc: (374...376) = "b:"
+        │   │   │   │   └── value:
+        │   │   │   │       @ IntegerNode (location: (379...380))
+        │   │   │   │       └── flags: decimal
+        │   │   │   └── @ KeywordParameterNode (location: (382...384))
+        │   │   │       ├── name: :c
+        │   │   │       ├── name_loc: (382...384) = "c:"
+        │   │   │       └── value: ∅
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b, :c]
+        │   ├── def_keyword_loc: (368...371) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (373...374) = "("
+        │   ├── rparen_loc: (384...385) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (386...389) = "end"
+        ├── @ StringNode (location: (391...397))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (391...393) = "%."
+        │   ├── content_loc: (393...396) = "abc"
+        │   ├── closing_loc: (396...397) = "."
+        │   └── unescaped: "abc"
+        ├── @ DefNode (location: (399...421))
+        │   ├── name: :a
+        │   ├── name_loc: (403...404) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (405...417))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 2)
+        │   │   │   ├── @ OptionalParameterNode (location: (405...410))
+        │   │   │   │   ├── name: :b
+        │   │   │   │   ├── name_loc: (405...406) = "b"
+        │   │   │   │   ├── operator_loc: (407...408) = "="
+        │   │   │   │   └── value:
+        │   │   │   │       @ IntegerNode (location: (409...410))
+        │   │   │   │       └── flags: decimal
+        │   │   │   └── @ OptionalParameterNode (location: (412...417))
+        │   │   │       ├── name: :c
+        │   │   │       ├── name_loc: (412...413) = "c"
+        │   │   │       ├── operator_loc: (414...415) = "="
+        │   │   │       └── value:
+        │   │   │           @ IntegerNode (location: (416...417))
+        │   │   │           └── flags: decimal
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b, :c]
+        │   ├── def_keyword_loc: (399...402) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (418...421) = "end"
+        ├── @ DefNode (location: (423...434))
+        │   ├── name: :a
+        │   ├── name_loc: (427...428) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (423...426) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (428...429) = "("
+        │   ├── rparen_loc: (429...430) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (431...434) = "end"
+        ├── @ DefNode (location: (436...454))
+        │   ├── name: :a
+        │   ├── name_loc: (440...441) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (442...450))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (442...443))
+        │   │   │       └── name: :b
+        │   │   ├── optionals: (length: 1)
+        │   │   │   └── @ OptionalParameterNode (location: (445...450))
+        │   │   │       ├── name: :c
+        │   │   │       ├── name_loc: (445...446) = "c"
+        │   │   │       ├── operator_loc: (447...448) = "="
+        │   │   │       └── value:
+        │   │   │           @ IntegerNode (location: (449...450))
+        │   │   │           └── flags: decimal
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b, :c]
+        │   ├── def_keyword_loc: (436...439) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (451...454) = "end"
+        ├── @ DefNode (location: (456...467))
+        │   ├── name: :a
+        │   ├── name_loc: (460...461) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (462...463))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (462...463))
+        │   │   │       └── name: :b
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (456...459) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (464...467) = "end"
+        ├── @ DefNode (location: (469...501))
+        │   ├── name: :a
+        │   ├── name_loc: (473...474) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ BeginNode (location: (476...501))
+        │   │   ├── begin_keyword_loc: ∅
+        │   │   ├── statements: ∅
+        │   │   ├── rescue_clause:
+        │   │   │   @ RescueNode (location: (476...482))
+        │   │   │   ├── keyword_loc: (476...482) = "rescue"
+        │   │   │   ├── exceptions: (length: 0)
+        │   │   │   ├── operator_loc: ∅
+        │   │   │   ├── reference: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   └── consequent: ∅
+        │   │   ├── else_clause:
+        │   │   │   @ ElseNode (location: (484...496))
+        │   │   │   ├── else_keyword_loc: (484...488) = "else"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── end_keyword_loc: (490...496) = "ensure"
+        │   │   ├── ensure_clause:
+        │   │   │   @ EnsureNode (location: (490...501))
+        │   │   │   ├── ensure_keyword_loc: (490...496) = "ensure"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── end_keyword_loc: (498...501) = "end"
+        │   │   └── end_keyword_loc: (498...501) = "end"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (469...472) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (498...501) = "end"
+        ├── @ DefNode (location: (503...515))
+        │   ├── name: :a
+        │   ├── name_loc: (507...508) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (509...511))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest:
+        │   │   │   @ RestParameterNode (location: (509...511))
+        │   │   │   ├── name: :b
+        │   │   │   ├── name_loc: (510...511) = "b"
+        │   │   │   └── operator_loc: (509...510) = "*"
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (503...506) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (512...515) = "end"
+        ├── @ DefNode (location: (517...529))
+        │   ├── name: :a
+        │   ├── name_loc: (521...522) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (523...524))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest:
+        │   │   │   @ RestParameterNode (location: (523...524))
+        │   │   │   ├── name: nil
+        │   │   │   ├── name_loc: ∅
+        │   │   │   └── operator_loc: (523...524) = "*"
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:*]
+        │   ├── def_keyword_loc: (517...520) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (522...523) = "("
+        │   ├── rparen_loc: (524...525) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (526...529) = "end"
+        ├── @ DefNode (location: (531...546))
+        │   ├── name: :a
+        │   ├── name_loc: (535...536) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (537...542))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableWriteNode (location: (537...542))
+        │   │           ├── name: :b
+        │   │           ├── depth: 0
+        │   │           ├── name_loc: (537...538) = "b"
+        │   │           ├── value:
+        │   │           │   @ IntegerNode (location: (541...542))
+        │   │           │   └── flags: decimal
+        │   │           └── operator_loc: (539...540) = "="
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (531...534) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (543...546) = "end"
+        ├── @ DefNode (location: (548...562))
+        │   ├── name: :a
+        │   ├── name_loc: (557...558) = "a"
+        │   ├── receiver:
+        │   │   @ SelfNode (location: (552...556))
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (548...551) = "def"
+        │   ├── operator_loc: (556...557) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (559...562) = "end"
+        ├── @ DefNode (location: (564...578))
+        │   ├── name: :a
+        │   ├── name_loc: (573...574) = "a"
+        │   ├── receiver:
+        │   │   @ TrueNode (location: (568...572))
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (564...567) = "def"
+        │   ├── operator_loc: (572...573) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (575...578) = "end"
+        ├── @ DefNode (location: (580...589))
+        │   ├── name: :a
+        │   ├── name_loc: (584...585) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (580...583) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (586...589) = "end"
+        ├── @ DefNode (location: (591...625))
+        │   ├── name: :hi
+        │   ├── name_loc: (595...597) = "hi"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (598...621))
+        │   │   └── body: (length: 2)
+        │   │       ├── @ IfNode (location: (598...616))
+        │   │       │   ├── if_keyword_loc: (609...611) = "if"
+        │   │       │   ├── predicate:
+        │   │       │   │   @ TrueNode (location: (612...616))
+        │   │       │   ├── statements:
+        │   │       │   │   @ StatementsNode (location: (598...608))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ ReturnNode (location: (598...608))
+        │   │       │   │           ├── keyword_loc: (598...604) = "return"
+        │   │       │   │           └── arguments:
+        │   │       │   │               @ ArgumentsNode (location: (605...608))
+        │   │       │   │               └── arguments: (length: 1)
+        │   │       │   │                   └── @ SymbolNode (location: (605...608))
+        │   │       │   │                       ├── opening_loc: (605...606) = ":"
+        │   │       │   │                       ├── value_loc: (606...608) = "hi"
+        │   │       │   │                       ├── closing_loc: ∅
+        │   │       │   │                       └── unescaped: "hi"
+        │   │       │   ├── consequent: ∅
+        │   │       │   └── end_keyword_loc: ∅
+        │   │       └── @ SymbolNode (location: (617...621))
+        │   │           ├── opening_loc: (617...618) = ":"
+        │   │           ├── value_loc: (618...621) = "bye"
+        │   │           ├── closing_loc: ∅
+        │   │           └── unescaped: "bye"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (591...594) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (622...625) = "end"
+        ├── @ DefNode (location: (627...638))
+        │   ├── name: :foo
+        │   ├── name_loc: (631...634) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (637...638))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (637...638))
+        │   │           └── flags: decimal
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (627...630) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (635...636) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (639...650))
+        │   ├── name: :bar
+        │   ├── name_loc: (643...646) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (649...650))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (649...650))
+        │   │           └── flags: decimal
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (639...642) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (647...648) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (652...670))
+        │   ├── name: :foo
+        │   ├── name_loc: (656...659) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (660...663))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (660...663))
+        │   │   │       └── name: :bar
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (667...670))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (667...670))
+        │   │           └── flags: decimal
+        │   ├── locals: [:bar]
+        │   ├── def_keyword_loc: (652...655) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (659...660) = "("
+        │   ├── rparen_loc: (663...664) = ")"
+        │   ├── equal_loc: (665...666) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (672...685))
+        │   ├── name: :foo
+        │   ├── name_loc: (676...679) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (682...685))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (682...685))
+        │   │           └── flags: decimal
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (672...675) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: (680...681) = "="
+        │   └── end_keyword_loc: ∅
+        ├── @ DefNode (location: (687...706))
+        │   ├── name: :a
+        │   ├── name_loc: (691...692) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (693...694))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest:
+        │   │   │   @ RestParameterNode (location: (693...694))
+        │   │   │   ├── name: nil
+        │   │   │   ├── name_loc: ∅
+        │   │   │   └── operator_loc: (693...694) = "*"
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (697...701))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (697...701))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (697...698) = "b"
+        │   │           ├── opening_loc: (698...699) = "("
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (699...700))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ SplatNode (location: (699...700))
+        │   │           │           ├── operator_loc: (699...700) = "*"
+        │   │           │           └── expression: ∅
+        │   │           ├── closing_loc: (700...701) = ")"
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "b"
+        │   ├── locals: [:*]
+        │   ├── def_keyword_loc: (687...690) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (692...693) = "("
+        │   ├── rparen_loc: (694...695) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (703...706) = "end"
+        ├── @ DefNode (location: (708...731))
+        │   ├── name: :a
+        │   ├── name_loc: (712...713) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (714...717))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (714...717))
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (720...726))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (720...726))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (720...721) = "b"
+        │   │           ├── opening_loc: (721...722) = "("
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (722...725))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (722...725))
+        │   │           ├── closing_loc: (725...726) = ")"
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "b"
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (708...711) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (713...714) = "("
+        │   ├── rparen_loc: (717...718) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (728...731) = "end"
+        ├── @ DefNode (location: (733...762))
+        │   ├── name: :a
+        │   ├── name_loc: (737...738) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (739...742))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (739...742))
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (745...757))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (745...757))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (745...746) = "b"
+        │   │           ├── opening_loc: (746...747) = "("
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (747...756))
+        │   │           │   └── arguments: (length: 3)
+        │   │           │       ├── @ IntegerNode (location: (747...748))
+        │   │           │       │   └── flags: decimal
+        │   │           │       ├── @ IntegerNode (location: (750...751))
+        │   │           │       │   └── flags: decimal
+        │   │           │       └── @ ForwardingArgumentsNode (location: (753...756))
+        │   │           ├── closing_loc: (756...757) = ")"
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "b"
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (733...736) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (738...739) = "("
+        │   ├── rparen_loc: (742...743) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (759...762) = "end"
+        ├── @ DefNode (location: (764...781))
+        │   ├── name: :a
+        │   ├── name_loc: (776...777) = "a"
+        │   ├── receiver:
+        │   │   @ ParenthesesNode (location: (768...775))
+        │   │   ├── body:
+        │   │   │   @ LocalVariableWriteNode (location: (769...774))
+        │   │   │   ├── name: :c
+        │   │   │   ├── depth: 0
+        │   │   │   ├── name_loc: (769...770) = "c"
+        │   │   │   ├── value:
+        │   │   │   │   @ CallNode (location: (773...774))
+        │   │   │   │   ├── receiver: ∅
+        │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── message_loc: (773...774) = "b"
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── arguments: ∅
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   ├── block: ∅
+        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   └── name: "b"
+        │   │   │   └── operator_loc: (771...772) = "="
+        │   │   ├── opening_loc: (768...769) = "("
+        │   │   └── closing_loc: (774...775) = ")"
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (764...767) = "def"
+        │   ├── operator_loc: (775...776) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (778...781) = "end"
+        ├── @ DefNode (location: (783...795))
+        │   ├── name: :a
+        │   ├── name_loc: (787...788) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (789...791))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block:
+        │   │       @ BlockParameterNode (location: (789...791))
+        │   │       ├── name: :b
+        │   │       ├── name_loc: (790...791) = "b"
+        │   │       └── operator_loc: (789...790) = "&"
+        │   ├── body: ∅
+        │   ├── locals: [:b]
+        │   ├── def_keyword_loc: (783...786) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (792...795) = "end"
+        ├── @ DefNode (location: (797...809))
+        │   ├── name: :a
+        │   ├── name_loc: (801...802) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (803...804))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block:
+        │   │       @ BlockParameterNode (location: (803...804))
+        │   │       ├── name: nil
+        │   │       ├── name_loc: ∅
+        │   │       └── operator_loc: (803...804) = "&"
+        │   ├── body: ∅
+        │   ├── locals: [:&]
+        │   ├── def_keyword_loc: (797...800) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (802...803) = "("
+        │   ├── rparen_loc: (804...805) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (806...809) = "end"
+        ├── @ DefNode (location: (811...826))
+        │   ├── name: :a
+        │   ├── name_loc: (821...822) = "a"
+        │   ├── receiver:
+        │   │   @ ClassVariableReadNode (location: (815...820))
+        │   │   └── name: :@@var
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (811...814) = "def"
+        │   ├── operator_loc: (820...821) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (823...826) = "end"
+        ├── @ DefNode (location: (828...845))
+        │   ├── name: :C
+        │   ├── name_loc: (840...841) = "C"
+        │   ├── receiver:
+        │   │   @ ParenthesesNode (location: (832...839))
+        │   │   ├── body:
+        │   │   │   @ LocalVariableWriteNode (location: (833...838))
+        │   │   │   ├── name: :a
+        │   │   │   ├── depth: 0
+        │   │   │   ├── name_loc: (833...834) = "a"
+        │   │   │   ├── value:
+        │   │   │   │   @ CallNode (location: (837...838))
+        │   │   │   │   ├── receiver: ∅
+        │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── message_loc: (837...838) = "b"
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── arguments: ∅
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   ├── block: ∅
+        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   └── name: "b"
+        │   │   │   └── operator_loc: (835...836) = "="
+        │   │   ├── opening_loc: (832...833) = "("
+        │   │   └── closing_loc: (838...839) = ")"
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (828...831) = "def"
+        │   ├── operator_loc: (839...840) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (842...845) = "end"
+        ├── @ DefNode (location: (847...875))
+        │   ├── name: :Array_function
+        │   ├── name_loc: (856...870) = "Array_function"
+        │   ├── receiver:
+        │   │   @ SelfNode (location: (851...855))
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (847...850) = "def"
+        │   ├── operator_loc: (855...856) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (872...875) = "end"
+        ├── @ ConstantWriteNode (location: (877...886))
+        │   ├── name: :Const
+        │   ├── name_loc: (877...882) = "Const"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (885...886))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (883...884) = "="
+        ├── @ DefNode (location: (888...903))
+        │   ├── name: :a
+        │   ├── name_loc: (898...899) = "a"
+        │   ├── receiver:
+        │   │   @ ConstantReadNode (location: (892...897))
+        │   │   └── name: :Const
+        │   ├── parameters: ∅
+        │   ├── body: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (888...891) = "def"
+        │   ├── operator_loc: (897...898) = "."
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (900...903) = "end"
+        ├── @ DefNode (location: (905...936))
+        │   ├── name: :a
+        │   ├── name_loc: (909...910) = "a"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (911...914))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (911...914))
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (917...931))
+        │   │   └── body: (length: 1)
+        │   │       └── @ InterpolatedStringNode (location: (917...931))
+        │   │           ├── opening_loc: (917...918) = "\""
+        │   │           ├── parts: (length: 2)
+        │   │           │   ├── @ StringNode (location: (918...921))
+        │   │           │   │   ├── flags: ∅
+        │   │           │   │   ├── opening_loc: ∅
+        │   │           │   │   ├── content_loc: (918...921) = "foo"
+        │   │           │   │   ├── closing_loc: ∅
+        │   │           │   │   └── unescaped: "foo"
+        │   │           │   └── @ EmbeddedStatementsNode (location: (921...930))
+        │   │           │       ├── opening_loc: (921...923) = "\#{"
+        │   │           │       ├── statements:
+        │   │           │       │   @ StatementsNode (location: (923...929))
+        │   │           │       │   └── body: (length: 1)
+        │   │           │       │       └── @ CallNode (location: (923...929))
+        │   │           │       │           ├── receiver: ∅
+        │   │           │       │           ├── call_operator_loc: ∅
+        │   │           │       │           ├── message_loc: (923...924) = "b"
+        │   │           │       │           ├── opening_loc: (924...925) = "("
+        │   │           │       │           ├── arguments:
+        │   │           │       │           │   @ ArgumentsNode (location: (925...928))
+        │   │           │       │           │   └── arguments: (length: 1)
+        │   │           │       │           │       └── @ ForwardingArgumentsNode (location: (925...928))
+        │   │           │       │           ├── closing_loc: (928...929) = ")"
+        │   │           │       │           ├── block: ∅
+        │   │           │       │           ├── flags: ∅
+        │   │           │       │           └── name: "b"
+        │   │           │       └── closing_loc: (929...930) = "}"
+        │   │           └── closing_loc: (930...931) = "\""
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (905...908) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (910...911) = "("
+        │   ├── rparen_loc: (914...915) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (933...936) = "end"
+        ├── @ DefNode (location: (938...980))
+        │   ├── name: :foo
+        │   ├── name_loc: (942...945) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (948...976))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (948...976))
+        │   │           ├── receiver:
+        │   │           │   @ HashNode (location: (948...950))
+        │   │           │   ├── opening_loc: (948...949) = "{"
+        │   │           │   ├── elements: (length: 0)
+        │   │           │   └── closing_loc: (949...950) = "}"
+        │   │           ├── call_operator_loc: (950...951) = "."
+        │   │           ├── message_loc: (951...956) = "merge"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (957...976))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ KeywordHashNode (location: (957...976))
+        │   │           │           └── elements: (length: 3)
+        │   │           │               ├── @ AssocSplatNode (location: (957...962))
+        │   │           │               │   ├── value:
+        │   │           │               │   │   @ CallNode (location: (959...962))
+        │   │           │               │   │   ├── receiver: ∅
+        │   │           │               │   │   ├── call_operator_loc: ∅
+        │   │           │               │   │   ├── message_loc: (959...962) = "bar"
+        │   │           │               │   │   ├── opening_loc: ∅
+        │   │           │               │   │   ├── arguments: ∅
+        │   │           │               │   │   ├── closing_loc: ∅
+        │   │           │               │   │   ├── block: ∅
+        │   │           │               │   │   ├── flags: variable_call
+        │   │           │               │   │   └── name: "bar"
+        │   │           │               │   └── operator_loc: (957...959) = "**"
+        │   │           │               ├── @ AssocSplatNode (location: (964...969))
+        │   │           │               │   ├── value:
+        │   │           │               │   │   @ CallNode (location: (966...969))
+        │   │           │               │   │   ├── receiver: ∅
+        │   │           │               │   │   ├── call_operator_loc: ∅
+        │   │           │               │   │   ├── message_loc: (966...969) = "baz"
+        │   │           │               │   │   ├── opening_loc: ∅
+        │   │           │               │   │   ├── arguments: ∅
+        │   │           │               │   │   ├── closing_loc: ∅
+        │   │           │               │   │   ├── block: ∅
+        │   │           │               │   │   ├── flags: variable_call
+        │   │           │               │   │   └── name: "baz"
+        │   │           │               │   └── operator_loc: (964...966) = "**"
+        │   │           │               └── @ AssocSplatNode (location: (971...976))
+        │   │           │                   ├── value:
+        │   │           │                   │   @ CallNode (location: (973...976))
+        │   │           │                   │   ├── receiver: ∅
+        │   │           │                   │   ├── call_operator_loc: ∅
+        │   │           │                   │   ├── message_loc: (973...976) = "qux"
+        │   │           │                   │   ├── opening_loc: ∅
+        │   │           │                   │   ├── arguments: ∅
+        │   │           │                   │   ├── closing_loc: ∅
+        │   │           │                   │   ├── block: ∅
+        │   │           │                   │   ├── flags: variable_call
+        │   │           │                   │   └── name: "qux"
+        │   │           │                   └── operator_loc: (971...973) = "**"
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "merge"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (938...941) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (977...980) = "end"
+        ├── @ DefNode (location: (982...1006))
+        │   ├── name: :bar
+        │   ├── name_loc: (986...989) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (990...1001))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ KeywordParameterNode (location: (990...1001))
+        │   │   │       ├── name: :a
+        │   │   │       ├── name_loc: (990...992) = "a:"
+        │   │   │       └── value:
+        │   │   │           @ ParenthesesNode (location: (993...1001))
+        │   │   │           ├── body:
+        │   │   │           │   @ StatementsNode (location: (994...1000))
+        │   │   │           │   └── body: (length: 1)
+        │   │   │           │       └── @ RangeNode (location: (994...1000))
+        │   │   │           │           ├── left:
+        │   │   │           │           │   @ IntegerNode (location: (994...995))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── right:
+        │   │   │           │           │   @ IntegerNode (location: (998...1000))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── operator_loc: (995...998) = "..."
+        │   │   │           │           └── flags: exclude_end
+        │   │   │           ├── opening_loc: (993...994) = "("
+        │   │   │           └── closing_loc: (1000...1001) = ")"
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (982...985) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (989...990) = "("
+        │   ├── rparen_loc: (1001...1002) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1003...1006) = "end"
+        ├── @ DefNode (location: (1008...1031))
+        │   ├── name: :bar
+        │   ├── name_loc: (1012...1015) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1016...1026))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ KeywordParameterNode (location: (1016...1026))
+        │   │   │       ├── name: :a
+        │   │   │       ├── name_loc: (1016...1018) = "a:"
+        │   │   │       └── value:
+        │   │   │           @ ParenthesesNode (location: (1019...1026))
+        │   │   │           ├── body:
+        │   │   │           │   @ StatementsNode (location: (1020...1025))
+        │   │   │           │   └── body: (length: 1)
+        │   │   │           │       └── @ RangeNode (location: (1020...1025))
+        │   │   │           │           ├── left: ∅
+        │   │   │           │           ├── right:
+        │   │   │           │           │   @ IntegerNode (location: (1023...1025))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── operator_loc: (1020...1023) = "..."
+        │   │   │           │           └── flags: exclude_end
+        │   │   │           ├── opening_loc: (1019...1020) = "("
+        │   │   │           └── closing_loc: (1025...1026) = ")"
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (1008...1011) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1015...1016) = "("
+        │   ├── rparen_loc: (1026...1027) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1028...1031) = "end"
+        ├── @ DefNode (location: (1033...1055))
+        │   ├── name: :bar
+        │   ├── name_loc: (1037...1040) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1041...1050))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ KeywordParameterNode (location: (1041...1050))
+        │   │   │       ├── name: :a
+        │   │   │       ├── name_loc: (1041...1043) = "a:"
+        │   │   │       └── value:
+        │   │   │           @ ParenthesesNode (location: (1044...1050))
+        │   │   │           ├── body:
+        │   │   │           │   @ StatementsNode (location: (1045...1049))
+        │   │   │           │   └── body: (length: 1)
+        │   │   │           │       └── @ RangeNode (location: (1045...1049))
+        │   │   │           │           ├── left:
+        │   │   │           │           │   @ IntegerNode (location: (1045...1046))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── right: ∅
+        │   │   │           │           ├── operator_loc: (1046...1049) = "..."
+        │   │   │           │           └── flags: exclude_end
+        │   │   │           ├── opening_loc: (1044...1045) = "("
+        │   │   │           └── closing_loc: (1049...1050) = ")"
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (1033...1036) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1040...1041) = "("
+        │   ├── rparen_loc: (1050...1051) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1052...1055) = "end"
+        ├── @ DefNode (location: (1057...1082))
+        │   ├── name: :bar
+        │   ├── name_loc: (1061...1064) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1065...1077))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 1)
+        │   │   │   └── @ OptionalParameterNode (location: (1065...1077))
+        │   │   │       ├── name: :a
+        │   │   │       ├── name_loc: (1065...1066) = "a"
+        │   │   │       ├── operator_loc: (1067...1068) = "="
+        │   │   │       └── value:
+        │   │   │           @ ParenthesesNode (location: (1069...1077))
+        │   │   │           ├── body:
+        │   │   │           │   @ StatementsNode (location: (1070...1076))
+        │   │   │           │   └── body: (length: 1)
+        │   │   │           │       └── @ RangeNode (location: (1070...1076))
+        │   │   │           │           ├── left:
+        │   │   │           │           │   @ IntegerNode (location: (1070...1071))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── right:
+        │   │   │           │           │   @ IntegerNode (location: (1074...1076))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── operator_loc: (1071...1074) = "..."
+        │   │   │           │           └── flags: exclude_end
+        │   │   │           ├── opening_loc: (1069...1070) = "("
+        │   │   │           └── closing_loc: (1076...1077) = ")"
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (1057...1060) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1064...1065) = "("
+        │   ├── rparen_loc: (1077...1078) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1079...1082) = "end"
+        ├── @ DefNode (location: (1084...1108))
+        │   ├── name: :bar
+        │   ├── name_loc: (1088...1091) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1092...1103))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 1)
+        │   │   │   └── @ OptionalParameterNode (location: (1092...1103))
+        │   │   │       ├── name: :a
+        │   │   │       ├── name_loc: (1092...1093) = "a"
+        │   │   │       ├── operator_loc: (1094...1095) = "="
+        │   │   │       └── value:
+        │   │   │           @ ParenthesesNode (location: (1096...1103))
+        │   │   │           ├── body:
+        │   │   │           │   @ StatementsNode (location: (1097...1102))
+        │   │   │           │   └── body: (length: 1)
+        │   │   │           │       └── @ RangeNode (location: (1097...1102))
+        │   │   │           │           ├── left: ∅
+        │   │   │           │           ├── right:
+        │   │   │           │           │   @ IntegerNode (location: (1100...1102))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── operator_loc: (1097...1100) = "..."
+        │   │   │           │           └── flags: exclude_end
+        │   │   │           ├── opening_loc: (1096...1097) = "("
+        │   │   │           └── closing_loc: (1102...1103) = ")"
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (1084...1087) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1091...1092) = "("
+        │   ├── rparen_loc: (1103...1104) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1105...1108) = "end"
+        ├── @ DefNode (location: (1110...1133))
+        │   ├── name: :bar
+        │   ├── name_loc: (1114...1117) = "bar"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1118...1128))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 1)
+        │   │   │   └── @ OptionalParameterNode (location: (1118...1128))
+        │   │   │       ├── name: :a
+        │   │   │       ├── name_loc: (1118...1119) = "a"
+        │   │   │       ├── operator_loc: (1120...1121) = "="
+        │   │   │       └── value:
+        │   │   │           @ ParenthesesNode (location: (1122...1128))
+        │   │   │           ├── body:
+        │   │   │           │   @ StatementsNode (location: (1123...1127))
+        │   │   │           │   └── body: (length: 1)
+        │   │   │           │       └── @ RangeNode (location: (1123...1127))
+        │   │   │           │           ├── left:
+        │   │   │           │           │   @ IntegerNode (location: (1123...1124))
+        │   │   │           │           │   └── flags: decimal
+        │   │   │           │           ├── right: ∅
+        │   │   │           │           ├── operator_loc: (1124...1127) = "..."
+        │   │   │           │           └── flags: exclude_end
+        │   │   │           ├── opening_loc: (1122...1123) = "("
+        │   │   │           └── closing_loc: (1127...1128) = ")"
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (1110...1113) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1117...1118) = "("
+        │   ├── rparen_loc: (1128...1129) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1130...1133) = "end"
+        ├── @ DefNode (location: (1135...1167))
+        │   ├── name: :method
+        │   ├── name_loc: (1139...1145) = "method"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1146...1147))
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ RequiredParameterNode (location: (1146...1147))
+        │   │   │       └── name: :a
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (1151...1163))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (1151...1163))
+        │   │           ├── receiver:
+        │   │           │   @ CallNode (location: (1151...1155))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (1151...1155) = "item"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: variable_call
+        │   │           │   └── name: "item"
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (1156...1158) = ">>"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (1159...1163))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ CallNode (location: (1159...1163))
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── message_loc: (1159...1160) = "a"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           ├── block:
+        │   │           │           │   @ BlockNode (location: (1161...1163))
+        │   │           │           │   ├── locals: []
+        │   │           │           │   ├── parameters: ∅
+        │   │           │           │   ├── body: ∅
+        │   │           │           │   ├── opening_loc: (1161...1162) = "{"
+        │   │           │           │   └── closing_loc: (1162...1163) = "}"
+        │   │           │           ├── flags: ∅
+        │   │           │           └── name: "a"
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: ">>"
+        │   ├── locals: [:a]
+        │   ├── def_keyword_loc: (1135...1138) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1145...1146) = "("
+        │   ├── rparen_loc: (1147...1148) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1164...1167) = "end"
+        ├── @ DefNode (location: (1169...1194))
+        │   ├── name: :foo
+        │   ├── name_loc: (1173...1176) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1177...1189))
+        │   │   ├── requireds: (length: 4)
+        │   │   │   ├── @ RequiredParameterNode (location: (1177...1179))
+        │   │   │   │   └── name: :_a
+        │   │   │   ├── @ RequiredParameterNode (location: (1181...1183))
+        │   │   │   │   └── name: :_a
+        │   │   │   ├── @ RequiredParameterNode (location: (1185...1186))
+        │   │   │   │   └── name: :b
+        │   │   │   └── @ RequiredParameterNode (location: (1188...1189))
+        │   │   │       └── name: :c
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:_a, :b, :c]
+        │   ├── def_keyword_loc: (1169...1172) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1176...1177) = "("
+        │   ├── rparen_loc: (1189...1190) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1191...1194) = "end"
+        ├── @ LocalVariableWriteNode (location: (1196...1203))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (1196...1199) = "foo"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (1202...1203))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (1200...1201) = "="
+        └── @ DefNode (location: (1204...1220))
+            ├── name: :bar
+            ├── name_loc: (1212...1215) = "bar"
+            ├── receiver:
+            │   @ LocalVariableReadNode (location: (1208...1211))
+            │   ├── name: :foo
+            │   └── depth: 0
+            ├── parameters: ∅
+            ├── body: ∅
+            ├── locals: []
+            ├── def_keyword_loc: (1204...1207) = "def"
+            ├── operator_loc: (1211...1212) = "."
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (1217...1220) = "end"

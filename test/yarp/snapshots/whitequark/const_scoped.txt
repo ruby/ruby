@@ -1,10 +1,13 @@
-ProgramNode(0...8)(
-  [],
-  StatementsNode(0...8)(
-    [ConstantPathNode(0...8)(
-       ConstantReadNode(0...3)(),
-       ConstantReadNode(5...8)(),
-       (3...5)
-     )]
-  )
-)
+@ ProgramNode (location: (0...8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...8))
+    └── body: (length: 1)
+        └── @ ConstantPathNode (location: (0...8))
+            ├── parent:
+            │   @ ConstantReadNode (location: (0...3))
+            │   └── name: :Bar
+            ├── child:
+            │   @ ConstantReadNode (location: (5...8))
+            │   └── name: :Foo
+            └── delimiter_loc: (3...5) = "::"

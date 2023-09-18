@@ -1,52 +1,62 @@
-ProgramNode(0...32)(
-  [],
-  StatementsNode(0...32)(
-    [CallNode(0...32)(
-       nil,
-       nil,
-       (0...2),
-       nil,
-       ArgumentsNode(3...11)(
-         [KeywordHashNode(3...11)(
-            [AssocNode(3...11)(
-               SymbolNode(3...5)((3...4), (4...5), nil, "k"),
-               CallNode(9...11)(
-                 nil,
-                 nil,
-                 (9...11),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 2,
-                 "m2"
-               ),
-               (6...8)
-             )]
-          )]
-       ),
-       nil,
-       BlockNode(12...32)(
-         [],
-         nil,
-         StatementsNode(16...27)(
-           [CallNode(16...27)(
-              nil,
-              nil,
-              (16...18),
-              (18...19),
-              nil,
-              (19...20),
-              BlockNode(21...27)([], nil, nil, (21...23), (24...27)),
-              0,
-              "m3"
-            )]
-         ),
-         (12...14),
-         (29...32)
-       ),
-       0,
-       "m1"
-     )]
-  )
-)
+@ ProgramNode (location: (0...32))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...32))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...32))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...2) = "m1"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (3...11))
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (3...11))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (3...11))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (3...5))
+            │                   │   ├── opening_loc: (3...4) = ":"
+            │                   │   ├── value_loc: (4...5) = "k"
+            │                   │   ├── closing_loc: ∅
+            │                   │   └── unescaped: "k"
+            │                   ├── value:
+            │                   │   @ CallNode (location: (9...11))
+            │                   │   ├── receiver: ∅
+            │                   │   ├── call_operator_loc: ∅
+            │                   │   ├── message_loc: (9...11) = "m2"
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── arguments: ∅
+            │                   │   ├── closing_loc: ∅
+            │                   │   ├── block: ∅
+            │                   │   ├── flags: variable_call
+            │                   │   └── name: "m2"
+            │                   └── operator_loc: (6...8) = "=>"
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (12...32))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (16...27))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (16...27))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (16...18) = "m3"
+            │   │           ├── opening_loc: (18...19) = "("
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: (19...20) = ")"
+            │   │           ├── block:
+            │   │           │   @ BlockNode (location: (21...27))
+            │   │           │   ├── locals: []
+            │   │           │   ├── parameters: ∅
+            │   │           │   ├── body: ∅
+            │   │           │   ├── opening_loc: (21...23) = "do"
+            │   │           │   └── closing_loc: (24...27) = "end"
+            │   │           ├── flags: ∅
+            │   │           └── name: "m3"
+            │   ├── opening_loc: (12...14) = "do"
+            │   └── closing_loc: (29...32) = "end"
+            ├── flags: ∅
+            └── name: "m1"

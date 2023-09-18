@@ -1,6 +1,11 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [RegularExpressionNode(0...10)((0...1), (1...7), (7...10), "source", 3)]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ RegularExpressionNode (location: (0...10))
+            ├── opening_loc: (0...1) = "/"
+            ├── content_loc: (1...7) = "source"
+            ├── closing_loc: (7...10) = "/im"
+            ├── unescaped: "source"
+            └── flags: ignore_case, multi_line

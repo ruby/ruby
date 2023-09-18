@@ -1282,6 +1282,32 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
     return adjust;
 }
 
+static void
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
+{
+    const char *types = insn_op_types(insn->insn_id);
+    for (int j = 0; types[j]; j++) {
+        char type = types[j];
+        switch (type) {
+          case TS_CDHASH:
+          case TS_ISEQ:
+          case TS_VALUE:
+          case TS_IC: // constant path array
+          case TS_CALLDATA: // ci is stored.
+            func(&OPERAND_AT(insn, j), data);
+            break;
+          default:
+            break;
+        }
+    }
+}
+
+static void
+iseq_insn_each_object_write_barrier(VALUE *obj_ptr, VALUE iseq)
+{
+    RB_OBJ_WRITTEN(iseq, Qundef, *obj_ptr);
+}
+
 static INSN *
 new_insn_core(rb_iseq_t *iseq, const NODE *line_node,
               int insn_id, int argc, VALUE *argv)
@@ -1299,6 +1325,9 @@ new_insn_core(rb_iseq_t *iseq, const NODE *line_node,
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
+
+    iseq_insn_each_markable_object(iobj, iseq_insn_each_object_write_barrier, (VALUE)iseq);
+
     return iobj;
 }
 
@@ -2336,8 +2365,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
                         int line = iobj->insn_info.line_no - 1;
                         if (line >= 0 && line < RARRAY_LEN(ISEQ_LINE_COVERAGE(iseq))) {
-                            if (RARRAY_AREF(ISEQ_LINE_COVERAGE(iseq), line) == Qnil)
-                                RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line, INT2FIX(0));
+                            RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line, INT2FIX(0));
                         }
                     }
                     if (ISEQ_BRANCH_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_BRANCH)) {
@@ -2393,7 +2421,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     generated_iseq = ALLOC_N(VALUE, code_index);
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
     positions = ALLOC_N(unsigned int, insn_num);
-    body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
+    if (ISEQ_IS_SIZE(body)) {
+        body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
+    }
+    else {
+        body->is_entries = NULL;
+    }
     body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
     ISEQ_COMPILE_DATA(iseq)->ci_index = 0;
 
@@ -2532,8 +2565,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         case TS_CALLDATA:
                         {
                             const struct rb_callinfo *source_ci = (const struct rb_callinfo *)operands[j];
-                            struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             assert(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
+                            struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             cd->ci = source_ci;
                             cd->cc = vm_cc_empty();
                             generated_iseq[code_index + 1 + j] = (VALUE)cd;
@@ -4126,9 +4159,10 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 }
 
 static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label);
 
+#define COMPILE_SINGLE 2
 static int
 compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
                 LABEL *then_label, LABEL *else_label)
@@ -4147,28 +4181,39 @@ compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
             return COMPILE_OK;
     }
     if (!label->refcnt) {
-        ADD_INSN(seq, cond, putnil);
+        return COMPILE_SINGLE;
     }
-    else {
-        ADD_LABEL(seq, label);
-    }
+    ADD_LABEL(seq, label);
     ADD_SEQ(ret, seq);
     return COMPILE_OK;
 }
 
 static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
 {
+    int ok;
+    DECL_ANCHOR(ignore);
+
   again:
     switch (nd_type(cond)) {
       case NODE_AND:
-        CHECK(compile_logical(iseq, ret, cond->nd_1st, NULL, else_label));
+        CHECK(ok = compile_logical(iseq, ret, cond->nd_1st, NULL, else_label));
         cond = cond->nd_2nd;
+        if (ok == COMPILE_SINGLE) {
+            INIT_ANCHOR(ignore);
+            ret = ignore;
+            then_label = NEW_LABEL(nd_line(cond));
+        }
         goto again;
       case NODE_OR:
-        CHECK(compile_logical(iseq, ret, cond->nd_1st, then_label, NULL));
+        CHECK(ok = compile_logical(iseq, ret, cond->nd_1st, then_label, NULL));
         cond = cond->nd_2nd;
+        if (ok == COMPILE_SINGLE) {
+            INIT_ANCHOR(ignore);
+            ret = ignore;
+            else_label = NEW_LABEL(nd_line(cond));
+        }
         goto again;
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
@@ -5092,8 +5137,6 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         const NODE *ln = lhsn->nd_head;
         switch (nd_type(ln)) {
           case NODE_LASGN:
-            MEMORY(ln->nd_vid);
-            break;
           case NODE_DASGN:
           case NODE_IASGN:
           case NODE_CVASGN:
@@ -10736,6 +10779,12 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     return keyword;
 }
 
+static void
+iseq_insn_each_object_mark_and_move(VALUE *obj_ptr, VALUE _)
+{
+    rb_gc_mark_and_move(obj_ptr);
+}
+
 void
 rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
 {
@@ -10762,23 +10811,7 @@ rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                int j;
-                const char *types = insn_op_types(iobj->insn_id);
-
-                for (j = 0; types[j]; j++) {
-                    char type = types[j];
-                    switch (type) {
-                      case TS_CDHASH:
-                      case TS_ISEQ:
-                      case TS_VALUE:
-                      case TS_IC: // constant path array
-                      case TS_CALLDATA: // ci is stored.
-                        rb_gc_mark_and_move(&OPERAND_AT(iobj, j));
-                        break;
-                      default:
-                        break;
-                    }
-                }
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_move, (VALUE)0);
             }
             pos += (int)size;
         }
@@ -12269,7 +12302,13 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->icvarc_size          = icvarc_size;
     load_body->ise_size             = ise_size;
     load_body->ic_size              = ic_size;
-    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
+
+    if (ISEQ_IS_SIZE(load_body)) {
+        load_body->is_entries       = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
+    }
+    else {
+        load_body->is_entries       = NULL;
+    }
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
     load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);

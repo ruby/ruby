@@ -1,11 +1,14 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [PreExecutionNode(0...12)(
-       StatementsNode(8...10)([IntegerNode(8...10)()]),
-       (0...5),
-       (6...7),
-       (11...12)
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ PreExecutionNode (location: (0...12))
+            ├── statements:
+            │   @ StatementsNode (location: (8...10))
+            │   └── body: (length: 1)
+            │       └── @ IntegerNode (location: (8...10))
+            │           └── flags: decimal
+            ├── keyword_loc: (0...5) = "BEGIN"
+            ├── opening_loc: (6...7) = "{"
+            └── closing_loc: (11...12) = "}"

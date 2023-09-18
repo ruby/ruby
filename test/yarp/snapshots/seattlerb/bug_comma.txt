@@ -1,35 +1,39 @@
-ProgramNode(0...24)(
-  [],
-  StatementsNode(0...24)(
-    [IfNode(0...24)(
-       (0...2),
-       CallNode(3...15)(
-         nil,
-         nil,
-         (3...7),
-         nil,
-         ArgumentsNode(8...15)(
-           [StringNode(8...10)((8...9), (9...10), nil, "d"),
-            CallNode(12...15)(
-              nil,
-              nil,
-              (12...15),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "dir"
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "test"
-       ),
-       nil,
-       nil,
-       (21...24)
-     )]
-  )
-)
+@ ProgramNode (location: (0...24))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...24))
+    └── body: (length: 1)
+        └── @ IfNode (location: (0...24))
+            ├── if_keyword_loc: (0...2) = "if"
+            ├── predicate:
+            │   @ CallNode (location: (3...15))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (3...7) = "test"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (8...15))
+            │   │   └── arguments: (length: 2)
+            │   │       ├── @ StringNode (location: (8...10))
+            │   │       │   ├── flags: ∅
+            │   │       │   ├── opening_loc: (8...9) = "?"
+            │   │       │   ├── content_loc: (9...10) = "d"
+            │   │       │   ├── closing_loc: ∅
+            │   │       │   └── unescaped: "d"
+            │   │       └── @ CallNode (location: (12...15))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (12...15) = "dir"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "dir"
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "test"
+            ├── statements: ∅
+            ├── consequent: ∅
+            └── end_keyword_loc: (21...24) = "end"

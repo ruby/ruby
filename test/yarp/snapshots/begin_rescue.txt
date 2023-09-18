@@ -1,595 +1,699 @@
-ProgramNode(0...578)(
-  [:ex],
-  StatementsNode(0...578)(
-    [BeginNode(0...33)(
-       (0...5),
-       StatementsNode(7...8)(
-         [CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 2, "a")]
-       ),
-       RescueNode(10...19)(
-         (10...16),
-         [],
-         nil,
-         nil,
-         StatementsNode(18...19)(
-           [CallNode(18...19)(nil, nil, (18...19), nil, nil, nil, nil, 2, "b")]
-         ),
-         nil
-       ),
-       ElseNode(21...33)(
-         (21...25),
-         StatementsNode(27...28)(
-           [CallNode(27...28)(nil, nil, (27...28), nil, nil, nil, nil, 2, "c")]
-         ),
-         (30...33)
-       ),
-       nil,
-       (30...33)
-     ),
-     BeginNode(35...79)(
-       (35...40),
-       StatementsNode(42...43)(
-         [CallNode(42...43)(nil, nil, (42...43), nil, nil, nil, nil, 2, "a")]
-       ),
-       RescueNode(45...54)(
-         (45...51),
-         [],
-         nil,
-         nil,
-         StatementsNode(53...54)(
-           [CallNode(53...54)(nil, nil, (53...54), nil, nil, nil, nil, 2, "b")]
-         ),
-         nil
-       ),
-       ElseNode(56...71)(
-         (56...60),
-         StatementsNode(62...63)(
-           [CallNode(62...63)(nil, nil, (62...63), nil, nil, nil, nil, 2, "c")]
-         ),
-         (65...71)
-       ),
-       EnsureNode(65...79)(
-         (65...71),
-         StatementsNode(73...74)(
-           [CallNode(73...74)(nil, nil, (73...74), nil, nil, nil, nil, 2, "d")]
-         ),
-         (76...79)
-       ),
-       (76...79)
-     ),
-     BeginNode(81...92)(
-       (81...86),
-       StatementsNode(87...88)(
-         [CallNode(87...88)(nil, nil, (87...88), nil, nil, nil, nil, 2, "a")]
-       ),
-       nil,
-       nil,
-       nil,
-       (89...92)
-     ),
-     BeginNode(94...107)(
-       (94...99),
-       StatementsNode(101...102)(
-         [CallNode(101...102)(
-            nil,
-            nil,
-            (101...102),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       nil,
-       nil,
-       nil,
-       (104...107)
-     ),
-     BeginNode(109...121)(
-       (109...114),
-       StatementsNode(115...116)(
-         [CallNode(115...116)(
-            nil,
-            nil,
-            (115...116),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       nil,
-       nil,
-       nil,
-       (118...121)
-     ),
-     BeginNode(123...135)(
-       (123...128),
-       StatementsNode(129...130)(
-         [CallNode(129...130)(
-            nil,
-            nil,
-            (129...130),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       nil,
-       nil,
-       nil,
-       (132...135)
-     ),
-     BeginNode(137...175)(
-       (137...142),
-       StatementsNode(143...144)(
-         [CallNode(143...144)(
-            nil,
-            nil,
-            (143...144),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(145...171)(
-         (145...151),
-         [],
-         nil,
-         nil,
-         StatementsNode(152...153)(
-           [CallNode(152...153)(
-              nil,
-              nil,
-              (152...153),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         RescueNode(154...171)(
-           (154...160),
-           [],
-           nil,
-           nil,
-           StatementsNode(161...162)(
-             [CallNode(161...162)(
-                nil,
-                nil,
-                (161...162),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "c"
-              )]
-           ),
-           RescueNode(163...171)(
-             (163...169),
-             [],
-             nil,
-             nil,
-             StatementsNode(170...171)(
-               [CallNode(170...171)(
-                  nil,
-                  nil,
-                  (170...171),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "d"
-                )]
-             ),
-             nil
-           )
-         )
-       ),
-       nil,
-       nil,
-       (172...175)
-     ),
-     BeginNode(177...269)(
-       (177...182),
-       StatementsNode(185...186)(
-         [CallNode(185...186)(
-            nil,
-            nil,
-            (185...186),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(187...265)(
-         (187...193),
-         [ConstantReadNode(194...203)()],
-         (204...206),
-         LocalVariableTargetNode(207...209)(:ex, 0),
-         StatementsNode(212...213)(
-           [CallNode(212...213)(
-              nil,
-              nil,
-              (212...213),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         RescueNode(214...265)(
-           (214...220),
-           [ConstantReadNode(221...237)(), ConstantReadNode(239...255)()],
-           (256...258),
-           LocalVariableTargetNode(259...261)(:ex, 0),
-           StatementsNode(264...265)(
-             [CallNode(264...265)(
-                nil,
-                nil,
-                (264...265),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "c"
-              )]
-           ),
-           nil
-         )
-       ),
-       nil,
-       nil,
-       (266...269)
-     ),
-     BeginNode(271...322)(
-       (271...276),
-       StatementsNode(279...280)(
-         [CallNode(279...280)(
-            nil,
-            nil,
-            (279...280),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(281...307)(
-         (281...287),
-         [ConstantReadNode(288...297)()],
-         (298...300),
-         LocalVariableTargetNode(301...303)(:ex, 0),
-         StatementsNode(306...307)(
-           [CallNode(306...307)(
-              nil,
-              nil,
-              (306...307),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       EnsureNode(308...322)(
-         (308...314),
-         StatementsNode(317...318)(
-           [CallNode(317...318)(
-              nil,
-              nil,
-              (317...318),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (319...322)
-       ),
-       (319...322)
-     ),
-     StringNode(324...330)((324...326), (326...329), (329...330), "abc"),
-     BeginNode(332...352)(
-       (332...337),
-       StatementsNode(338...339)(
-         [CallNode(338...339)(
-            nil,
-            nil,
-            (338...339),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(340...348)(
-         (340...346),
-         [],
-         nil,
-         nil,
-         StatementsNode(347...348)(
-           [CallNode(347...348)(
-              nil,
-              nil,
-              (347...348),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (349...352)
-     ),
-     BeginNode(354...374)(
-       (354...359),
-       StatementsNode(360...361)(
-         [CallNode(360...361)(
-            nil,
-            nil,
-            (360...361),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(362...370)(
-         (362...368),
-         [],
-         nil,
-         nil,
-         StatementsNode(369...370)(
-           [CallNode(369...370)(
-              nil,
-              nil,
-              (369...370),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (371...374)
-     ),
-     BeginNode(376...396)(
-       (376...381),
-       StatementsNode(382...383)(
-         [CallNode(382...383)(
-            nil,
-            nil,
-            (382...383),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(384...392)(
-         (384...390),
-         [],
-         nil,
-         nil,
-         StatementsNode(391...392)(
-           [CallNode(391...392)(
-              nil,
-              nil,
-              (391...392),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (393...396)
-     ),
-     BeginNode(398...428)(
-       (398...403),
-       StatementsNode(404...405)(
-         [CallNode(404...405)(
-            nil,
-            nil,
-            (404...405),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(406...424)(
-         (406...412),
-         [ConstantReadNode(413...422)()],
-         nil,
-         nil,
-         StatementsNode(423...424)(
-           [CallNode(423...424)(
-              nil,
-              nil,
-              (423...424),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (425...428)
-     ),
-     BeginNode(430...477)(
-       (430...435),
-       StatementsNode(436...437)(
-         [CallNode(436...437)(
-            nil,
-            nil,
-            (436...437),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(438...473)(
-         (438...444),
-         [ConstantReadNode(445...454)(), ConstantReadNode(456...471)()],
-         nil,
-         nil,
-         StatementsNode(472...473)(
-           [CallNode(472...473)(
-              nil,
-              nil,
-              (472...473),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (474...477)
-     ),
-     BeginNode(479...536)(
-       (479...484),
-       StatementsNode(487...488)(
-         [CallNode(487...488)(
-            nil,
-            nil,
-            (487...488),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(489...532)(
-         (489...495),
-         [ConstantReadNode(496...505)(), ConstantReadNode(507...522)()],
-         (523...525),
-         LocalVariableTargetNode(526...528)(:ex, 0),
-         StatementsNode(531...532)(
-           [CallNode(531...532)(
-              nil,
-              nil,
-              (531...532),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (533...536)
-     ),
-     BeginNode(538...578)(
-       (538...543),
-       StatementsNode(546...547)(
-         [CallNode(546...547)(
-            nil,
-            nil,
-            (546...547),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "a"
-          )]
-       ),
-       RescueNode(548...574)(
-         (548...554),
-         [ConstantReadNode(555...564)()],
-         (565...567),
-         LocalVariableTargetNode(568...570)(:ex, 0),
-         StatementsNode(573...574)(
-           [CallNode(573...574)(
-              nil,
-              nil,
-              (573...574),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         nil
-       ),
-       nil,
-       nil,
-       (575...578)
-     )]
-  )
-)
+@ ProgramNode (location: (0...578))
+├── locals: [:ex]
+└── statements:
+    @ StatementsNode (location: (0...578))
+    └── body: (length: 17)
+        ├── @ BeginNode (location: (0...33))
+        │   ├── begin_keyword_loc: (0...5) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (7...8))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (7...8))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (7...8) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (10...19))
+        │   │   ├── keyword_loc: (10...16) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (18...19))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (18...19))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (18...19) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause:
+        │   │   @ ElseNode (location: (21...33))
+        │   │   ├── else_keyword_loc: (21...25) = "else"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (27...28))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (27...28))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (27...28) = "c"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "c"
+        │   │   └── end_keyword_loc: (30...33) = "end"
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (30...33) = "end"
+        ├── @ BeginNode (location: (35...79))
+        │   ├── begin_keyword_loc: (35...40) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (42...43))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (42...43))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (42...43) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (45...54))
+        │   │   ├── keyword_loc: (45...51) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (53...54))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (53...54))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (53...54) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause:
+        │   │   @ ElseNode (location: (56...71))
+        │   │   ├── else_keyword_loc: (56...60) = "else"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (62...63))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (62...63))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (62...63) = "c"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "c"
+        │   │   └── end_keyword_loc: (65...71) = "ensure"
+        │   ├── ensure_clause:
+        │   │   @ EnsureNode (location: (65...79))
+        │   │   ├── ensure_keyword_loc: (65...71) = "ensure"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (73...74))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (73...74))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (73...74) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   └── end_keyword_loc: (76...79) = "end"
+        │   └── end_keyword_loc: (76...79) = "end"
+        ├── @ BeginNode (location: (81...92))
+        │   ├── begin_keyword_loc: (81...86) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (87...88))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (87...88))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (87...88) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (89...92) = "end"
+        ├── @ BeginNode (location: (94...107))
+        │   ├── begin_keyword_loc: (94...99) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (101...102))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (101...102))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (101...102) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (104...107) = "end"
+        ├── @ BeginNode (location: (109...121))
+        │   ├── begin_keyword_loc: (109...114) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (115...116))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (115...116))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (115...116) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (118...121) = "end"
+        ├── @ BeginNode (location: (123...135))
+        │   ├── begin_keyword_loc: (123...128) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (129...130))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (129...130))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (129...130) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (132...135) = "end"
+        ├── @ BeginNode (location: (137...175))
+        │   ├── begin_keyword_loc: (137...142) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (143...144))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (143...144))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (143...144) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (145...171))
+        │   │   ├── keyword_loc: (145...151) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (152...153))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (152...153))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (152...153) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent:
+        │   │       @ RescueNode (location: (154...171))
+        │   │       ├── keyword_loc: (154...160) = "rescue"
+        │   │       ├── exceptions: (length: 0)
+        │   │       ├── operator_loc: ∅
+        │   │       ├── reference: ∅
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (161...162))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ CallNode (location: (161...162))
+        │   │       │           ├── receiver: ∅
+        │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── message_loc: (161...162) = "c"
+        │   │       │           ├── opening_loc: ∅
+        │   │       │           ├── arguments: ∅
+        │   │       │           ├── closing_loc: ∅
+        │   │       │           ├── block: ∅
+        │   │       │           ├── flags: variable_call
+        │   │       │           └── name: "c"
+        │   │       └── consequent:
+        │   │           @ RescueNode (location: (163...171))
+        │   │           ├── keyword_loc: (163...169) = "rescue"
+        │   │           ├── exceptions: (length: 0)
+        │   │           ├── operator_loc: ∅
+        │   │           ├── reference: ∅
+        │   │           ├── statements:
+        │   │           │   @ StatementsNode (location: (170...171))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ CallNode (location: (170...171))
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── message_loc: (170...171) = "d"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           ├── block: ∅
+        │   │           │           ├── flags: variable_call
+        │   │           │           └── name: "d"
+        │   │           └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (172...175) = "end"
+        ├── @ BeginNode (location: (177...269))
+        │   ├── begin_keyword_loc: (177...182) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (185...186))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (185...186))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (185...186) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (187...265))
+        │   │   ├── keyword_loc: (187...193) = "rescue"
+        │   │   ├── exceptions: (length: 1)
+        │   │   │   └── @ ConstantReadNode (location: (194...203))
+        │   │   │       └── name: :Exception
+        │   │   ├── operator_loc: (204...206) = "=>"
+        │   │   ├── reference:
+        │   │   │   @ LocalVariableTargetNode (location: (207...209))
+        │   │   │   ├── name: :ex
+        │   │   │   └── depth: 0
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (212...213))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (212...213))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (212...213) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent:
+        │   │       @ RescueNode (location: (214...265))
+        │   │       ├── keyword_loc: (214...220) = "rescue"
+        │   │       ├── exceptions: (length: 2)
+        │   │       │   ├── @ ConstantReadNode (location: (221...237))
+        │   │       │   │   └── name: :AnotherException
+        │   │       │   └── @ ConstantReadNode (location: (239...255))
+        │   │       │       └── name: :OneMoreException
+        │   │       ├── operator_loc: (256...258) = "=>"
+        │   │       ├── reference:
+        │   │       │   @ LocalVariableTargetNode (location: (259...261))
+        │   │       │   ├── name: :ex
+        │   │       │   └── depth: 0
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (264...265))
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ CallNode (location: (264...265))
+        │   │       │           ├── receiver: ∅
+        │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── message_loc: (264...265) = "c"
+        │   │       │           ├── opening_loc: ∅
+        │   │       │           ├── arguments: ∅
+        │   │       │           ├── closing_loc: ∅
+        │   │       │           ├── block: ∅
+        │   │       │           ├── flags: variable_call
+        │   │       │           └── name: "c"
+        │   │       └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (266...269) = "end"
+        ├── @ BeginNode (location: (271...322))
+        │   ├── begin_keyword_loc: (271...276) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (279...280))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (279...280))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (279...280) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (281...307))
+        │   │   ├── keyword_loc: (281...287) = "rescue"
+        │   │   ├── exceptions: (length: 1)
+        │   │   │   └── @ ConstantReadNode (location: (288...297))
+        │   │   │       └── name: :Exception
+        │   │   ├── operator_loc: (298...300) = "=>"
+        │   │   ├── reference:
+        │   │   │   @ LocalVariableTargetNode (location: (301...303))
+        │   │   │   ├── name: :ex
+        │   │   │   └── depth: 0
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (306...307))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (306...307))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (306...307) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause:
+        │   │   @ EnsureNode (location: (308...322))
+        │   │   ├── ensure_keyword_loc: (308...314) = "ensure"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (317...318))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (317...318))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (317...318) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── end_keyword_loc: (319...322) = "end"
+        │   └── end_keyword_loc: (319...322) = "end"
+        ├── @ StringNode (location: (324...330))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (324...326) = "%!"
+        │   ├── content_loc: (326...329) = "abc"
+        │   ├── closing_loc: (329...330) = "!"
+        │   └── unescaped: "abc"
+        ├── @ BeginNode (location: (332...352))
+        │   ├── begin_keyword_loc: (332...337) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (338...339))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (338...339))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (338...339) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (340...348))
+        │   │   ├── keyword_loc: (340...346) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (347...348))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (347...348))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (347...348) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (349...352) = "end"
+        ├── @ BeginNode (location: (354...374))
+        │   ├── begin_keyword_loc: (354...359) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (360...361))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (360...361))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (360...361) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (362...370))
+        │   │   ├── keyword_loc: (362...368) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (369...370))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (369...370))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (369...370) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (371...374) = "end"
+        ├── @ BeginNode (location: (376...396))
+        │   ├── begin_keyword_loc: (376...381) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (382...383))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (382...383))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (382...383) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (384...392))
+        │   │   ├── keyword_loc: (384...390) = "rescue"
+        │   │   ├── exceptions: (length: 0)
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (391...392))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (391...392))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (391...392) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (393...396) = "end"
+        ├── @ BeginNode (location: (398...428))
+        │   ├── begin_keyword_loc: (398...403) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (404...405))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (404...405))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (404...405) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (406...424))
+        │   │   ├── keyword_loc: (406...412) = "rescue"
+        │   │   ├── exceptions: (length: 1)
+        │   │   │   └── @ ConstantReadNode (location: (413...422))
+        │   │   │       └── name: :Exception
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (423...424))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (423...424))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (423...424) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (425...428) = "end"
+        ├── @ BeginNode (location: (430...477))
+        │   ├── begin_keyword_loc: (430...435) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (436...437))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (436...437))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (436...437) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (438...473))
+        │   │   ├── keyword_loc: (438...444) = "rescue"
+        │   │   ├── exceptions: (length: 2)
+        │   │   │   ├── @ ConstantReadNode (location: (445...454))
+        │   │   │   │   └── name: :Exception
+        │   │   │   └── @ ConstantReadNode (location: (456...471))
+        │   │   │       └── name: :CustomException
+        │   │   ├── operator_loc: ∅
+        │   │   ├── reference: ∅
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (472...473))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (472...473))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (472...473) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (474...477) = "end"
+        ├── @ BeginNode (location: (479...536))
+        │   ├── begin_keyword_loc: (479...484) = "begin"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (487...488))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (487...488))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (487...488) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "a"
+        │   ├── rescue_clause:
+        │   │   @ RescueNode (location: (489...532))
+        │   │   ├── keyword_loc: (489...495) = "rescue"
+        │   │   ├── exceptions: (length: 2)
+        │   │   │   ├── @ ConstantReadNode (location: (496...505))
+        │   │   │   │   └── name: :Exception
+        │   │   │   └── @ ConstantReadNode (location: (507...522))
+        │   │   │       └── name: :CustomException
+        │   │   ├── operator_loc: (523...525) = "=>"
+        │   │   ├── reference:
+        │   │   │   @ LocalVariableTargetNode (location: (526...528))
+        │   │   │   ├── name: :ex
+        │   │   │   └── depth: 0
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (531...532))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (531...532))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (531...532) = "b"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "b"
+        │   │   └── consequent: ∅
+        │   ├── else_clause: ∅
+        │   ├── ensure_clause: ∅
+        │   └── end_keyword_loc: (533...536) = "end"
+        └── @ BeginNode (location: (538...578))
+            ├── begin_keyword_loc: (538...543) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (546...547))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (546...547))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (546...547) = "a"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "a"
+            ├── rescue_clause:
+            │   @ RescueNode (location: (548...574))
+            │   ├── keyword_loc: (548...554) = "rescue"
+            │   ├── exceptions: (length: 1)
+            │   │   └── @ ConstantReadNode (location: (555...564))
+            │   │       └── name: :Exception
+            │   ├── operator_loc: (565...567) = "=>"
+            │   ├── reference:
+            │   │   @ LocalVariableTargetNode (location: (568...570))
+            │   │   ├── name: :ex
+            │   │   └── depth: 0
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (573...574))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (573...574))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (573...574) = "b"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "b"
+            │   └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (575...578) = "end"

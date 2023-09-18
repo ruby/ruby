@@ -1,13 +1,16 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [BeginNode(0...16)(
-       (0...5),
-       nil,
-       nil,
-       nil,
-       EnsureNode(6...16)((6...12), nil, (13...16)),
-       (13...16)
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (0...16))
+            ├── begin_keyword_loc: (0...5) = "begin"
+            ├── statements: ∅
+            ├── rescue_clause: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause:
+            │   @ EnsureNode (location: (6...16))
+            │   ├── ensure_keyword_loc: (6...12) = "ensure"
+            │   ├── statements: ∅
+            │   └── end_keyword_loc: (13...16) = "end"
+            └── end_keyword_loc: (13...16) = "end"

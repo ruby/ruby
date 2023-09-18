@@ -38,8 +38,8 @@ yp_string_new(yp_string_t *string, rb_encoding *encoding) {
 
 // Create a YARP::Source object from the given parser.
 VALUE
-yp_source_new(yp_parser_t *parser) {
-    VALUE source = rb_str_new((const char *) parser->start, parser->end - parser->start);
+yp_source_new(yp_parser_t *parser, rb_encoding *encoding) {
+    VALUE source = rb_enc_str_new((const char *) parser->start, parser->end - parser->start, encoding);
     VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
 
     for (size_t index = 0; index < parser->newline_list.size; index++) {
@@ -78,7 +78,7 @@ yp_node_stack_pop(yp_node_stack_node_t **stack) {
 
 VALUE
 yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
-    VALUE source = yp_source_new(parser);
+    VALUE source = yp_source_new(parser, encoding);
     ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
 
     for (size_t index = 0; index < parser->constant_pool.capacity; index++) {
@@ -135,7 +135,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                 <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
-                    <%- if node.fields.any? { |field| ![YARP::NodeField, YARP::OptionalNodeField].include?(field.class) } -%>
+                    <%- if node.fields.any? { |field| ![YARP::NodeField, YARP::OptionalNodeField, YARP::FlagsField].include?(field.class) } -%>
                     yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
                     <%- end -%>
                     VALUE argv[<%= node.fields.length + 1 %>];
@@ -144,34 +144,41 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     // <%= field.name %>
                     <%- case field -%>
                     <%- when YARP::NodeField, YARP::OptionalNodeField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_pop(value_stack);
                     <%- when YARP::NodeListField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         rb_ary_push(argv[<%= index %>], rb_ary_pop(value_stack));
                     }
                     <%- when YARP::StringField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = yp_string_new(&cast-><%= field.name %>, encoding);
-                    <%- when YARP::LocationListField -%>
-                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
-                    for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
-                        yp_location_t location = cast-><%= field.name %>.locations[index];
-                        rb_ary_push(argv[<%= index %>], yp_location_new(parser, location.start, location.end, source));
-                    }
                     <%- when YARP::ConstantField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+                    assert(cast-><%= field.name %> != 0);
                     argv[<%= index %>] = rb_id2sym(constants[cast-><%= field.name %> - 1]);
+                    <%- when YARP::OptionalConstantField -%>
+                    argv[<%= index %>] = cast-><%= field.name %> == 0 ? Qnil : rb_id2sym(constants[cast-><%= field.name %> - 1]);
                     <%- when YARP::ConstantListField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
+                        assert(cast-><%= field.name %>.ids[index] != 0);
                         rb_ary_push(argv[<%= index %>], rb_id2sym(constants[cast-><%= field.name %>.ids[index] - 1]));
                     }
                     <%- when YARP::LocationField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = yp_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
                     <%- when YARP::OptionalLocationField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : yp_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
                     <%- when YARP::UInt32Field -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);
                     <%- when YARP::FlagsField -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(node->flags >> <%= YARP::COMMON_FLAGS %>);
                     <%- else -%>
                     <%- raise -%>

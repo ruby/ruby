@@ -3,4 +3,4 @@
 $LOAD_PATH << File.join(__dir__, "../lib")
 require "lrama"
 
-Lrama::Command.new(ARGV.dup).run
+Lrama::Command.new.run(ARGV.dup)

@@ -1,14 +1,33 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [WhileNode(0...14)(
-       (5...10),
-       nil,
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(0...4)(
-         [CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 2, "meth")]
-       ),
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ WhileNode (location: (0...14))
+            ├── keyword_loc: (5...10) = "while"
+            ├── closing_loc: ∅
+            ├── predicate:
+            │   @ CallNode (location: (11...14))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (11...14) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── statements:
+            │   @ StatementsNode (location: (0...4))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (0...4))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (0...4) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "meth"
+            └── flags: ∅

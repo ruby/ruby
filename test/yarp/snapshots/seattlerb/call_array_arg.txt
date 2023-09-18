@@ -1,23 +1,33 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [CallNode(0...13)(
-       IntegerNode(0...1)(),
-       nil,
-       (2...4),
-       nil,
-       ArgumentsNode(5...13)(
-         [ArrayNode(5...13)(
-            [SymbolNode(6...8)((6...7), (7...8), nil, "b"),
-             SymbolNode(10...12)((10...11), (11...12), nil, "c")],
-            (5...6),
-            (12...13)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "=="
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...13))
+            ├── receiver:
+            │   @ IntegerNode (location: (0...1))
+            │   └── flags: decimal
+            ├── call_operator_loc: ∅
+            ├── message_loc: (2...4) = "=="
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (5...13))
+            │   └── arguments: (length: 1)
+            │       └── @ ArrayNode (location: (5...13))
+            │           ├── elements: (length: 2)
+            │           │   ├── @ SymbolNode (location: (6...8))
+            │           │   │   ├── opening_loc: (6...7) = ":"
+            │           │   │   ├── value_loc: (7...8) = "b"
+            │           │   │   ├── closing_loc: ∅
+            │           │   │   └── unescaped: "b"
+            │           │   └── @ SymbolNode (location: (10...12))
+            │           │       ├── opening_loc: (10...11) = ":"
+            │           │       ├── value_loc: (11...12) = "c"
+            │           │       ├── closing_loc: ∅
+            │           │       └── unescaped: "c"
+            │           ├── opening_loc: (5...6) = "["
+            │           └── closing_loc: (12...13) = "]"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "=="

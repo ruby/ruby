@@ -1,131 +1,166 @@
-ProgramNode(0...93)(
-  [],
-  StatementsNode(0...93)(
-    [IfNode(0...33)(
-       nil,
-       FalseNode(0...5)(),
-       StatementsNode(8...20)(
-         [CallNode(8...20)(
-            nil,
-            nil,
-            (8...13),
-            nil,
-            nil,
-            nil,
-            BlockNode(14...20)([], nil, nil, (14...16), (17...20)),
-            0,
-            "raise"
-          )]
-       ),
-       ElseNode(21...33)(
-         (21...22),
-         StatementsNode(23...33)(
-           [CallNode(23...33)(
-              nil,
-              nil,
-              (23...26),
-              nil,
-              nil,
-              nil,
-              BlockNode(27...33)([], nil, nil, (27...29), (30...33)),
-              0,
-              "tap"
-            )]
-         ),
-         nil
-       ),
-       nil
-     ),
-     IfNode(35...60)(
-       nil,
-       FalseNode(35...40)(),
-       StatementsNode(43...51)(
-         [CallNode(43...51)(
-            nil,
-            nil,
-            (43...48),
-            nil,
-            nil,
-            nil,
-            BlockNode(49...51)([], nil, nil, (49...50), (50...51)),
-            0,
-            "raise"
-          )]
-       ),
-       ElseNode(52...60)(
-         (52...53),
-         StatementsNode(54...60)(
-           [CallNode(54...60)(
-              nil,
-              nil,
-              (54...57),
-              nil,
-              nil,
-              nil,
-              BlockNode(58...60)([], nil, nil, (58...59), (59...60)),
-              0,
-              "tap"
-            )]
-         ),
-         nil
-       ),
-       nil
-     ),
-     IfNode(62...93)(
-       nil,
-       TrueNode(62...66)(),
-       StatementsNode(69...89)(
-         [CallNode(69...89)(
-            IntegerNode(69...70)(),
-            (70...71),
-            (71...74),
-            nil,
-            nil,
-            nil,
-            BlockNode(75...89)(
-              [:n],
-              BlockParametersNode(78...81)(
-                ParametersNode(79...80)(
-                  [RequiredParameterNode(79...80)(:n)],
-                  [],
-                  [],
-                  nil,
-                  [],
-                  nil,
-                  nil
-                ),
-                [],
-                (78...79),
-                (80...81)
-              ),
-              StatementsNode(82...85)(
-                [CallNode(82...85)(
-                   nil,
-                   nil,
-                   (82...83),
-                   nil,
-                   ArgumentsNode(84...85)(
-                     [LocalVariableReadNode(84...85)(:n, 0)]
-                   ),
-                   nil,
-                   nil,
-                   0,
-                   "p"
-                 )]
-              ),
-              (75...77),
-              (86...89)
-            ),
-            0,
-            "tap"
-          )]
-       ),
-       ElseNode(90...93)(
-         (90...91),
-         StatementsNode(92...93)([IntegerNode(92...93)()]),
-         nil
-       ),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...93))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...93))
+    └── body: (length: 3)
+        ├── @ IfNode (location: (0...33))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ FalseNode (location: (0...5))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (8...20))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (8...20))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (8...13) = "raise"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block:
+        │   │           │   @ BlockNode (location: (14...20))
+        │   │           │   ├── locals: []
+        │   │           │   ├── parameters: ∅
+        │   │           │   ├── body: ∅
+        │   │           │   ├── opening_loc: (14...16) = "do"
+        │   │           │   └── closing_loc: (17...20) = "end"
+        │   │           ├── flags: ∅
+        │   │           └── name: "raise"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (21...33))
+        │   │   ├── else_keyword_loc: (21...22) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (23...33))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (23...33))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (23...26) = "tap"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block:
+        │   │   │           │   @ BlockNode (location: (27...33))
+        │   │   │           │   ├── locals: []
+        │   │   │           │   ├── parameters: ∅
+        │   │   │           │   ├── body: ∅
+        │   │   │           │   ├── opening_loc: (27...29) = "do"
+        │   │   │           │   └── closing_loc: (30...33) = "end"
+        │   │   │           ├── flags: ∅
+        │   │   │           └── name: "tap"
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (35...60))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ FalseNode (location: (35...40))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (43...51))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (43...51))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (43...48) = "raise"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block:
+        │   │           │   @ BlockNode (location: (49...51))
+        │   │           │   ├── locals: []
+        │   │           │   ├── parameters: ∅
+        │   │           │   ├── body: ∅
+        │   │           │   ├── opening_loc: (49...50) = "{"
+        │   │           │   └── closing_loc: (50...51) = "}"
+        │   │           ├── flags: ∅
+        │   │           └── name: "raise"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (52...60))
+        │   │   ├── else_keyword_loc: (52...53) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (54...60))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (54...60))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (54...57) = "tap"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block:
+        │   │   │           │   @ BlockNode (location: (58...60))
+        │   │   │           │   ├── locals: []
+        │   │   │           │   ├── parameters: ∅
+        │   │   │           │   ├── body: ∅
+        │   │   │           │   ├── opening_loc: (58...59) = "{"
+        │   │   │           │   └── closing_loc: (59...60) = "}"
+        │   │   │           ├── flags: ∅
+        │   │   │           └── name: "tap"
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        └── @ IfNode (location: (62...93))
+            ├── if_keyword_loc: ∅
+            ├── predicate:
+            │   @ TrueNode (location: (62...66))
+            ├── statements:
+            │   @ StatementsNode (location: (69...89))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (69...89))
+            │           ├── receiver:
+            │           │   @ IntegerNode (location: (69...70))
+            │           │   └── flags: decimal
+            │           ├── call_operator_loc: (70...71) = "."
+            │           ├── message_loc: (71...74) = "tap"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block:
+            │           │   @ BlockNode (location: (75...89))
+            │           │   ├── locals: [:n]
+            │           │   ├── parameters:
+            │           │   │   @ BlockParametersNode (location: (78...81))
+            │           │   │   ├── parameters:
+            │           │   │   │   @ ParametersNode (location: (79...80))
+            │           │   │   │   ├── requireds: (length: 1)
+            │           │   │   │   │   └── @ RequiredParameterNode (location: (79...80))
+            │           │   │   │   │       └── name: :n
+            │           │   │   │   ├── optionals: (length: 0)
+            │           │   │   │   ├── rest: ∅
+            │           │   │   │   ├── posts: (length: 0)
+            │           │   │   │   ├── keywords: (length: 0)
+            │           │   │   │   ├── keyword_rest: ∅
+            │           │   │   │   └── block: ∅
+            │           │   │   ├── locals: (length: 0)
+            │           │   │   ├── opening_loc: (78...79) = "|"
+            │           │   │   └── closing_loc: (80...81) = "|"
+            │           │   ├── body:
+            │           │   │   @ StatementsNode (location: (82...85))
+            │           │   │   └── body: (length: 1)
+            │           │   │       └── @ CallNode (location: (82...85))
+            │           │   │           ├── receiver: ∅
+            │           │   │           ├── call_operator_loc: ∅
+            │           │   │           ├── message_loc: (82...83) = "p"
+            │           │   │           ├── opening_loc: ∅
+            │           │   │           ├── arguments:
+            │           │   │           │   @ ArgumentsNode (location: (84...85))
+            │           │   │           │   └── arguments: (length: 1)
+            │           │   │           │       └── @ LocalVariableReadNode (location: (84...85))
+            │           │   │           │           ├── name: :n
+            │           │   │           │           └── depth: 0
+            │           │   │           ├── closing_loc: ∅
+            │           │   │           ├── block: ∅
+            │           │   │           ├── flags: ∅
+            │           │   │           └── name: "p"
+            │           │   ├── opening_loc: (75...77) = "do"
+            │           │   └── closing_loc: (86...89) = "end"
+            │           ├── flags: ∅
+            │           └── name: "tap"
+            ├── consequent:
+            │   @ ElseNode (location: (90...93))
+            │   ├── else_keyword_loc: (90...91) = ":"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (92...93))
+            │   │   └── body: (length: 1)
+            │   │       └── @ IntegerNode (location: (92...93))
+            │   │           └── flags: decimal
+            │   └── end_keyword_loc: ∅
+            └── end_keyword_loc: ∅

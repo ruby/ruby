@@ -1,47 +1,61 @@
-ProgramNode(0...76)(
-  [],
-  StatementsNode(0...76)(
-    [CallNode(0...76)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       BlockNode(2...76)(
-         [:v],
-         nil,
-         StatementsNode(7...72)(
-           [LocalVariableWriteNode(7...14)(
-              :v,
-              0,
-              (7...8),
-              NilNode(11...14)(),
-              (9...10)
-            ),
-            BeginNode(17...72)(
-              (17...22),
-              StatementsNode(27...32)(
-                [YieldNode(27...32)((27...32), nil, nil, nil)]
-              ),
-              RescueNode(35...66)(
-                (35...41),
-                [ConstantReadNode(42...51)()],
-                (52...54),
-                LocalVariableTargetNode(55...56)(:v, 0),
-                StatementsNode(61...66)([BreakNode(61...66)(nil, (61...66))]),
-                nil
-              ),
-              nil,
-              nil,
-              (69...72)
-            )]
-         ),
-         (2...4),
-         (73...76)
-       ),
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...76))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...76))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...76))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (2...76))
+            │   ├── locals: [:v]
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (7...72))
+            │   │   └── body: (length: 2)
+            │   │       ├── @ LocalVariableWriteNode (location: (7...14))
+            │   │       │   ├── name: :v
+            │   │       │   ├── depth: 0
+            │   │       │   ├── name_loc: (7...8) = "v"
+            │   │       │   ├── value:
+            │   │       │   │   @ NilNode (location: (11...14))
+            │   │       │   └── operator_loc: (9...10) = "="
+            │   │       └── @ BeginNode (location: (17...72))
+            │   │           ├── begin_keyword_loc: (17...22) = "begin"
+            │   │           ├── statements:
+            │   │           │   @ StatementsNode (location: (27...32))
+            │   │           │   └── body: (length: 1)
+            │   │           │       └── @ YieldNode (location: (27...32))
+            │   │           │           ├── keyword_loc: (27...32) = "yield"
+            │   │           │           ├── lparen_loc: ∅
+            │   │           │           ├── arguments: ∅
+            │   │           │           └── rparen_loc: ∅
+            │   │           ├── rescue_clause:
+            │   │           │   @ RescueNode (location: (35...66))
+            │   │           │   ├── keyword_loc: (35...41) = "rescue"
+            │   │           │   ├── exceptions: (length: 1)
+            │   │           │   │   └── @ ConstantReadNode (location: (42...51))
+            │   │           │   │       └── name: :Exception
+            │   │           │   ├── operator_loc: (52...54) = "=>"
+            │   │           │   ├── reference:
+            │   │           │   │   @ LocalVariableTargetNode (location: (55...56))
+            │   │           │   │   ├── name: :v
+            │   │           │   │   └── depth: 0
+            │   │           │   ├── statements:
+            │   │           │   │   @ StatementsNode (location: (61...66))
+            │   │           │   │   └── body: (length: 1)
+            │   │           │   │       └── @ BreakNode (location: (61...66))
+            │   │           │   │           ├── arguments: ∅
+            │   │           │   │           └── keyword_loc: (61...66) = "break"
+            │   │           │   └── consequent: ∅
+            │   │           ├── else_clause: ∅
+            │   │           ├── ensure_clause: ∅
+            │   │           └── end_keyword_loc: (69...72) = "end"
+            │   ├── opening_loc: (2...4) = "do"
+            │   └── closing_loc: (73...76) = "end"
+            ├── flags: ∅
+            └── name: "a"

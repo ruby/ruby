@@ -1,46 +1,64 @@
-ProgramNode(0...43)(
-  [:a, :rest],
-  StatementsNode(0...43)(
-    [CaseNode(0...43)(
-       HashNode(5...11)(
-         (5...6),
-         [AssocNode(6...10)(
-            SymbolNode(6...8)(nil, (6...7), (7...8), "a"),
-            IntegerNode(9...10)(),
-            nil
-          )],
-         (10...11)
-       ),
-       [InNode(12...39)(
-          HashPatternNode(15...27)(
-            nil,
-            [AssocNode(16...18)(
-               SymbolNode(16...18)(nil, (16...17), (17...18), "a"),
-               nil,
-               nil
-             ),
-             AssocSplatNode(20...26)(
-               LocalVariableTargetNode(22...26)(:rest, 0),
-               (20...22)
-             )],
-            nil,
-            (15...16),
-            (26...27)
-          ),
-          StatementsNode(30...39)(
-            [ArrayNode(30...39)(
-               [LocalVariableReadNode(31...32)(:a, 0),
-                LocalVariableReadNode(34...38)(:rest, 0)],
-               (30...31),
-               (38...39)
-             )]
-          ),
-          (12...14),
-          nil
-        )],
-       nil,
-       (0...4),
-       (40...43)
-     )]
-  )
-)
+@ ProgramNode (location: (0...43))
+├── locals: [:a, :rest]
+└── statements:
+    @ StatementsNode (location: (0...43))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...43))
+            ├── predicate:
+            │   @ HashNode (location: (5...11))
+            │   ├── opening_loc: (5...6) = "{"
+            │   ├── elements: (length: 1)
+            │   │   └── @ AssocNode (location: (6...10))
+            │   │       ├── key:
+            │   │       │   @ SymbolNode (location: (6...8))
+            │   │       │   ├── opening_loc: ∅
+            │   │       │   ├── value_loc: (6...7) = "a"
+            │   │       │   ├── closing_loc: (7...8) = ":"
+            │   │       │   └── unescaped: "a"
+            │   │       ├── value:
+            │   │       │   @ IntegerNode (location: (9...10))
+            │   │       │   └── flags: decimal
+            │   │       └── operator_loc: ∅
+            │   └── closing_loc: (10...11) = "}"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (12...39))
+            │       ├── pattern:
+            │       │   @ HashPatternNode (location: (15...27))
+            │       │   ├── constant: ∅
+            │       │   ├── assocs: (length: 2)
+            │       │   │   ├── @ AssocNode (location: (16...18))
+            │       │   │   │   ├── key:
+            │       │   │   │   │   @ SymbolNode (location: (16...18))
+            │       │   │   │   │   ├── opening_loc: ∅
+            │       │   │   │   │   ├── value_loc: (16...17) = "a"
+            │       │   │   │   │   ├── closing_loc: (17...18) = ":"
+            │       │   │   │   │   └── unescaped: "a"
+            │       │   │   │   ├── value: ∅
+            │       │   │   │   └── operator_loc: ∅
+            │       │   │   └── @ AssocSplatNode (location: (20...26))
+            │       │   │       ├── value:
+            │       │   │       │   @ LocalVariableTargetNode (location: (22...26))
+            │       │   │       │   ├── name: :rest
+            │       │   │       │   └── depth: 0
+            │       │   │       └── operator_loc: (20...22) = "**"
+            │       │   ├── kwrest: ∅
+            │       │   ├── opening_loc: (15...16) = "{"
+            │       │   └── closing_loc: (26...27) = "}"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (30...39))
+            │       │   └── body: (length: 1)
+            │       │       └── @ ArrayNode (location: (30...39))
+            │       │           ├── elements: (length: 2)
+            │       │           │   ├── @ LocalVariableReadNode (location: (31...32))
+            │       │           │   │   ├── name: :a
+            │       │           │   │   └── depth: 0
+            │       │           │   └── @ LocalVariableReadNode (location: (34...38))
+            │       │           │       ├── name: :rest
+            │       │           │       └── depth: 0
+            │       │           ├── opening_loc: (30...31) = "["
+            │       │           └── closing_loc: (38...39) = "]"
+            │       ├── in_loc: (12...14) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (40...43) = "end"

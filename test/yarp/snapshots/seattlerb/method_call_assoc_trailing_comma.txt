@@ -1,24 +1,37 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [CallNode(0...10)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-       (1...2),
-       (2...3),
-       (3...4),
-       ArgumentsNode(4...8)(
-         [KeywordHashNode(4...8)(
-            [AssocNode(4...8)(
-               IntegerNode(4...5)(),
-               IntegerNode(7...8)(),
-               (5...7)
-             )]
-          )]
-       ),
-       (9...10),
-       nil,
-       0,
-       "f"
-     )]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...10))
+            ├── receiver:
+            │   @ CallNode (location: (0...1))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...1) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "a"
+            ├── call_operator_loc: (1...2) = "."
+            ├── message_loc: (2...3) = "f"
+            ├── opening_loc: (3...4) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (4...8))
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (4...8))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (4...8))
+            │                   ├── key:
+            │                   │   @ IntegerNode (location: (4...5))
+            │                   │   └── flags: decimal
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (7...8))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: (5...7) = "=>"
+            ├── closing_loc: (9...10) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "f"

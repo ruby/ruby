@@ -1,38 +1,37 @@
-ProgramNode(0...8)(
-  [],
-  StatementsNode(0...8)(
-    [CallNode(0...8)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...8)(
-         [InterpolatedXStringNode(2...8)(
-            (2...3),
-            [EmbeddedStatementsNode(3...7)(
-               (3...5),
-               StatementsNode(5...6)(
-                 [CallNode(5...6)(
-                    nil,
-                    nil,
-                    (5...6),
-                    nil,
-                    nil,
-                    nil,
-                    nil,
-                    2,
-                    "y"
-                  )]
-               ),
-               (6...7)
-             )],
-            (7...8)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "x"
-     )]
-  )
-)
+@ ProgramNode (location: (0...8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...8))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...8))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "x"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...8))
+            │   └── arguments: (length: 1)
+            │       └── @ InterpolatedXStringNode (location: (2...8))
+            │           ├── opening_loc: (2...3) = "`"
+            │           ├── parts: (length: 1)
+            │           │   └── @ EmbeddedStatementsNode (location: (3...7))
+            │           │       ├── opening_loc: (3...5) = "\#{"
+            │           │       ├── statements:
+            │           │       │   @ StatementsNode (location: (5...6))
+            │           │       │   └── body: (length: 1)
+            │           │       │       └── @ CallNode (location: (5...6))
+            │           │       │           ├── receiver: ∅
+            │           │       │           ├── call_operator_loc: ∅
+            │           │       │           ├── message_loc: (5...6) = "y"
+            │           │       │           ├── opening_loc: ∅
+            │           │       │           ├── arguments: ∅
+            │           │       │           ├── closing_loc: ∅
+            │           │       │           ├── block: ∅
+            │           │       │           ├── flags: variable_call
+            │           │       │           └── name: "y"
+            │           │       └── closing_loc: (6...7) = "}"
+            │           └── closing_loc: (7...8) = "`"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "x"

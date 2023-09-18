@@ -1,1 +1,6 @@
-ProgramNode(0...3)([], StatementsNode(0...3)([NilNode(0...3)()]))
+@ ProgramNode (location: (0...3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...3))
+    └── body: (length: 1)
+        └── @ NilNode (location: (0...3))

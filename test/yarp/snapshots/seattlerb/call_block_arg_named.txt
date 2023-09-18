@@ -1,21 +1,30 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)(
-    [CallNode(0...7)(
-       nil,
-       nil,
-       (0...1),
-       (1...2),
-       ArgumentsNode(2...6)(
-         [BlockArgumentNode(2...6)(
-            CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 2, "blk"),
-            (2...3)
-          )]
-       ),
-       (6...7),
-       nil,
-       0,
-       "x"
-     )]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...7))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "x"
+            ├── opening_loc: (1...2) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...6))
+            │   └── arguments: (length: 1)
+            │       └── @ BlockArgumentNode (location: (2...6))
+            │           ├── expression:
+            │           │   @ CallNode (location: (3...6))
+            │           │   ├── receiver: ∅
+            │           │   ├── call_operator_loc: ∅
+            │           │   ├── message_loc: (3...6) = "blk"
+            │           │   ├── opening_loc: ∅
+            │           │   ├── arguments: ∅
+            │           │   ├── closing_loc: ∅
+            │           │   ├── block: ∅
+            │           │   ├── flags: variable_call
+            │           │   └── name: "blk"
+            │           └── operator_loc: (2...3) = "&"
+            ├── closing_loc: (6...7) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "x"

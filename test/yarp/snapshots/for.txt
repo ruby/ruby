@@ -1,128 +1,172 @@
-ProgramNode(0...143)(
-  [:i, :j, :k],
-  StatementsNode(0...143)(
-    [ForNode(0...20)(
-       MultiWriteNode(4...5)(
-         [LocalVariableTargetNode(4...5)(:i, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       RangeNode(9...14)(
-         IntegerNode(9...10)(),
-         IntegerNode(12...14)(),
-         (10...12),
-         0
-       ),
-       StatementsNode(15...16)([LocalVariableReadNode(15...16)(:i, 0)]),
-       (0...3),
-       (6...8),
-       nil,
-       (17...20)
-     ),
-     ForNode(22...44)(
-       MultiWriteNode(26...27)(
-         [LocalVariableTargetNode(26...27)(:i, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       RangeNode(31...36)(
-         IntegerNode(31...32)(),
-         IntegerNode(34...36)(),
-         (32...34),
-         0
-       ),
-       StatementsNode(38...39)([LocalVariableReadNode(38...39)(:i, 0)]),
-       (22...25),
-       (28...30),
-       nil,
-       (41...44)
-     ),
-     ForNode(46...68)(
-       MultiWriteNode(50...53)(
-         [LocalVariableTargetNode(50...51)(:i, 0),
-          LocalVariableTargetNode(52...53)(:j, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       RangeNode(57...62)(
-         IntegerNode(57...58)(),
-         IntegerNode(60...62)(),
-         (58...60),
-         0
-       ),
-       StatementsNode(63...64)([LocalVariableReadNode(63...64)(:i, 0)]),
-       (46...49),
-       (54...56),
-       nil,
-       (65...68)
-     ),
-     ForNode(70...94)(
-       MultiWriteNode(74...79)(
-         [LocalVariableTargetNode(74...75)(:i, 0),
-          LocalVariableTargetNode(76...77)(:j, 0),
-          LocalVariableTargetNode(78...79)(:k, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       RangeNode(83...88)(
-         IntegerNode(83...84)(),
-         IntegerNode(86...88)(),
-         (84...86),
-         0
-       ),
-       StatementsNode(89...90)([LocalVariableReadNode(89...90)(:i, 0)]),
-       (70...73),
-       (80...82),
-       nil,
-       (91...94)
-     ),
-     ForNode(96...119)(
-       MultiWriteNode(100...101)(
-         [LocalVariableTargetNode(100...101)(:i, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       RangeNode(105...110)(
-         IntegerNode(105...106)(),
-         IntegerNode(108...110)(),
-         (106...108),
-         0
-       ),
-       StatementsNode(114...115)([LocalVariableReadNode(114...115)(:i, 0)]),
-       (96...99),
-       (102...104),
-       (111...113),
-       (116...119)
-     ),
-     ForNode(121...143)(
-       MultiWriteNode(125...126)(
-         [LocalVariableTargetNode(125...126)(:i, 0)],
-         nil,
-         nil,
-         nil,
-         nil
-       ),
-       RangeNode(130...135)(
-         IntegerNode(130...131)(),
-         IntegerNode(133...135)(),
-         (131...133),
-         0
-       ),
-       StatementsNode(137...138)([LocalVariableReadNode(137...138)(:i, 0)]),
-       (121...124),
-       (127...129),
-       nil,
-       (140...143)
-     )]
-  )
-)
+@ ProgramNode (location: (0...143))
+├── locals: [:i, :j, :k]
+└── statements:
+    @ StatementsNode (location: (0...143))
+    └── body: (length: 6)
+        ├── @ ForNode (location: (0...20))
+        │   ├── index:
+        │   │   @ LocalVariableTargetNode (location: (4...5))
+        │   │   ├── name: :i
+        │   │   └── depth: 0
+        │   ├── collection:
+        │   │   @ RangeNode (location: (9...14))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (9...10))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (12...14))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (10...12) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (15...16))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (15...16))
+        │   │           ├── name: :i
+        │   │           └── depth: 0
+        │   ├── for_keyword_loc: (0...3) = "for"
+        │   ├── in_keyword_loc: (6...8) = "in"
+        │   ├── do_keyword_loc: ∅
+        │   └── end_keyword_loc: (17...20) = "end"
+        ├── @ ForNode (location: (22...44))
+        │   ├── index:
+        │   │   @ LocalVariableTargetNode (location: (26...27))
+        │   │   ├── name: :i
+        │   │   └── depth: 0
+        │   ├── collection:
+        │   │   @ RangeNode (location: (31...36))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (31...32))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (34...36))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (32...34) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (38...39))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (38...39))
+        │   │           ├── name: :i
+        │   │           └── depth: 0
+        │   ├── for_keyword_loc: (22...25) = "for"
+        │   ├── in_keyword_loc: (28...30) = "in"
+        │   ├── do_keyword_loc: ∅
+        │   └── end_keyword_loc: (41...44) = "end"
+        ├── @ ForNode (location: (46...68))
+        │   ├── index:
+        │   │   @ MultiTargetNode (location: (50...53))
+        │   │   ├── targets: (length: 2)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (50...51))
+        │   │   │   │   ├── name: :i
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ LocalVariableTargetNode (location: (52...53))
+        │   │   │       ├── name: :j
+        │   │   │       └── depth: 0
+        │   │   ├── lparen_loc: ∅
+        │   │   └── rparen_loc: ∅
+        │   ├── collection:
+        │   │   @ RangeNode (location: (57...62))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (57...58))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (60...62))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (58...60) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (63...64))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (63...64))
+        │   │           ├── name: :i
+        │   │           └── depth: 0
+        │   ├── for_keyword_loc: (46...49) = "for"
+        │   ├── in_keyword_loc: (54...56) = "in"
+        │   ├── do_keyword_loc: ∅
+        │   └── end_keyword_loc: (65...68) = "end"
+        ├── @ ForNode (location: (70...94))
+        │   ├── index:
+        │   │   @ MultiTargetNode (location: (74...79))
+        │   │   ├── targets: (length: 3)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (74...75))
+        │   │   │   │   ├── name: :i
+        │   │   │   │   └── depth: 0
+        │   │   │   ├── @ LocalVariableTargetNode (location: (76...77))
+        │   │   │   │   ├── name: :j
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ LocalVariableTargetNode (location: (78...79))
+        │   │   │       ├── name: :k
+        │   │   │       └── depth: 0
+        │   │   ├── lparen_loc: ∅
+        │   │   └── rparen_loc: ∅
+        │   ├── collection:
+        │   │   @ RangeNode (location: (83...88))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (83...84))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (86...88))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (84...86) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (89...90))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (89...90))
+        │   │           ├── name: :i
+        │   │           └── depth: 0
+        │   ├── for_keyword_loc: (70...73) = "for"
+        │   ├── in_keyword_loc: (80...82) = "in"
+        │   ├── do_keyword_loc: ∅
+        │   └── end_keyword_loc: (91...94) = "end"
+        ├── @ ForNode (location: (96...119))
+        │   ├── index:
+        │   │   @ LocalVariableTargetNode (location: (100...101))
+        │   │   ├── name: :i
+        │   │   └── depth: 0
+        │   ├── collection:
+        │   │   @ RangeNode (location: (105...110))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (105...106))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (108...110))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (106...108) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (114...115))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (114...115))
+        │   │           ├── name: :i
+        │   │           └── depth: 0
+        │   ├── for_keyword_loc: (96...99) = "for"
+        │   ├── in_keyword_loc: (102...104) = "in"
+        │   ├── do_keyword_loc: (111...113) = "do"
+        │   └── end_keyword_loc: (116...119) = "end"
+        └── @ ForNode (location: (121...143))
+            ├── index:
+            │   @ LocalVariableTargetNode (location: (125...126))
+            │   ├── name: :i
+            │   └── depth: 0
+            ├── collection:
+            │   @ RangeNode (location: (130...135))
+            │   ├── left:
+            │   │   @ IntegerNode (location: (130...131))
+            │   │   └── flags: decimal
+            │   ├── right:
+            │   │   @ IntegerNode (location: (133...135))
+            │   │   └── flags: decimal
+            │   ├── operator_loc: (131...133) = ".."
+            │   └── flags: ∅
+            ├── statements:
+            │   @ StatementsNode (location: (137...138))
+            │   └── body: (length: 1)
+            │       └── @ LocalVariableReadNode (location: (137...138))
+            │           ├── name: :i
+            │           └── depth: 0
+            ├── for_keyword_loc: (121...124) = "for"
+            ├── in_keyword_loc: (127...129) = "in"
+            ├── do_keyword_loc: ∅
+            └── end_keyword_loc: (140...143) = "end"

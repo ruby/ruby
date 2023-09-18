@@ -1,24 +1,44 @@
-ProgramNode(0...37)(
-  [],
-  StatementsNode(0...37)(
-    [HashNode(0...10)(
-       (0...1),
-       [AssocNode(2...8)(IntegerNode(2...3)(), IntegerNode(7...8)(), (4...6))],
-       (9...10)
-     ),
-     HashNode(12...37)(
-       (12...13),
-       [AssocNode(14...20)(
-          IntegerNode(14...15)(),
-          IntegerNode(19...20)(),
-          (16...18)
-        ),
-        AssocNode(22...35)(
-          SymbolNode(22...26)((22...23), (23...26), nil, "foo"),
-          StringNode(30...35)((30...31), (31...34), (34...35), "bar"),
-          (27...29)
-        )],
-       (36...37)
-     )]
-  )
-)
+@ ProgramNode (location: (0...37))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...37))
+    └── body: (length: 2)
+        ├── @ HashNode (location: (0...10))
+        │   ├── opening_loc: (0...1) = "{"
+        │   ├── elements: (length: 1)
+        │   │   └── @ AssocNode (location: (2...8))
+        │   │       ├── key:
+        │   │       │   @ IntegerNode (location: (2...3))
+        │   │       │   └── flags: decimal
+        │   │       ├── value:
+        │   │       │   @ IntegerNode (location: (7...8))
+        │   │       │   └── flags: decimal
+        │   │       └── operator_loc: (4...6) = "=>"
+        │   └── closing_loc: (9...10) = "}"
+        └── @ HashNode (location: (12...37))
+            ├── opening_loc: (12...13) = "{"
+            ├── elements: (length: 2)
+            │   ├── @ AssocNode (location: (14...20))
+            │   │   ├── key:
+            │   │   │   @ IntegerNode (location: (14...15))
+            │   │   │   └── flags: decimal
+            │   │   ├── value:
+            │   │   │   @ IntegerNode (location: (19...20))
+            │   │   │   └── flags: decimal
+            │   │   └── operator_loc: (16...18) = "=>"
+            │   └── @ AssocNode (location: (22...35))
+            │       ├── key:
+            │       │   @ SymbolNode (location: (22...26))
+            │       │   ├── opening_loc: (22...23) = ":"
+            │       │   ├── value_loc: (23...26) = "foo"
+            │       │   ├── closing_loc: ∅
+            │       │   └── unescaped: "foo"
+            │       ├── value:
+            │       │   @ StringNode (location: (30...35))
+            │       │   ├── flags: ∅
+            │       │   ├── opening_loc: (30...31) = "\""
+            │       │   ├── content_loc: (31...34) = "bar"
+            │       │   ├── closing_loc: (34...35) = "\""
+            │       │   └── unescaped: "bar"
+            │       └── operator_loc: (27...29) = "=>"
+            └── closing_loc: (36...37) = "}"

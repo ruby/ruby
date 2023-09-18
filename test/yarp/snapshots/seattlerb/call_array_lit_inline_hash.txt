@@ -1,29 +1,39 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [CallNode(0...16)(
-       nil,
-       nil,
-       (0...1),
-       (1...2),
-       ArgumentsNode(2...15)(
-         [ArrayNode(2...15)(
-            [SymbolNode(3...5)((3...4), (4...5), nil, "b"),
-             KeywordHashNode(7...14)(
-               [AssocNode(7...14)(
-                  SymbolNode(7...9)((7...8), (8...9), nil, "c"),
-                  IntegerNode(13...14)(),
-                  (10...12)
-                )]
-             )],
-            (2...3),
-            (14...15)
-          )]
-       ),
-       (15...16),
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...16))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: (1...2) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...15))
+            │   └── arguments: (length: 1)
+            │       └── @ ArrayNode (location: (2...15))
+            │           ├── elements: (length: 2)
+            │           │   ├── @ SymbolNode (location: (3...5))
+            │           │   │   ├── opening_loc: (3...4) = ":"
+            │           │   │   ├── value_loc: (4...5) = "b"
+            │           │   │   ├── closing_loc: ∅
+            │           │   │   └── unescaped: "b"
+            │           │   └── @ KeywordHashNode (location: (7...14))
+            │           │       └── elements: (length: 1)
+            │           │           └── @ AssocNode (location: (7...14))
+            │           │               ├── key:
+            │           │               │   @ SymbolNode (location: (7...9))
+            │           │               │   ├── opening_loc: (7...8) = ":"
+            │           │               │   ├── value_loc: (8...9) = "c"
+            │           │               │   ├── closing_loc: ∅
+            │           │               │   └── unescaped: "c"
+            │           │               ├── value:
+            │           │               │   @ IntegerNode (location: (13...14))
+            │           │               │   └── flags: decimal
+            │           │               └── operator_loc: (10...12) = "=>"
+            │           ├── opening_loc: (2...3) = "["
+            │           └── closing_loc: (14...15) = "]"
+            ├── closing_loc: (15...16) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

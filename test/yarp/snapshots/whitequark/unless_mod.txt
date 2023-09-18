@@ -1,14 +1,33 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [UnlessNode(0...14)(
-       (4...10),
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(0...3)(
-         [CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "bar")]
-       ),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ UnlessNode (location: (0...14))
+            ├── keyword_loc: (4...10) = "unless"
+            ├── predicate:
+            │   @ CallNode (location: (11...14))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (11...14) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── statements:
+            │   @ StatementsNode (location: (0...3))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (0...3))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (0...3) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "bar"
+            ├── consequent: ∅
+            └── end_keyword_loc: ∅

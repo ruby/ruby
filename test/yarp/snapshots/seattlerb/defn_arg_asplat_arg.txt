@@ -1,26 +1,34 @@
-ProgramNode(0...29)(
-  [],
-  StatementsNode(0...29)(
-    [DefNode(0...29)(
-       (4...8),
-       nil,
-       ParametersNode(9...24)(
-         [RequiredParameterNode(9...15)(:interp)],
-         [],
-         [RequiredParameterNode(20...24)(:args)],
-         RestParameterNode(17...18)((17...18), nil),
-         [],
-         nil,
-         nil
-       ),
-       nil,
-       [:interp, :*, :args],
-       (0...3),
-       nil,
-       (8...9),
-       (24...25),
-       nil,
-       (26...29)
-     )]
-  )
-)
+@ ProgramNode (location: (0...29))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...29))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...29))
+            ├── name: :call
+            ├── name_loc: (4...8) = "call"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (9...24))
+            │   ├── requireds: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (9...15))
+            │   │       └── name: :interp
+            │   ├── optionals: (length: 0)
+            │   ├── rest:
+            │   │   @ RestParameterNode (location: (17...18))
+            │   │   ├── name: nil
+            │   │   ├── name_loc: ∅
+            │   │   └── operator_loc: (17...18) = "*"
+            │   ├── posts: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (20...24))
+            │   │       └── name: :args
+            │   ├── keywords: (length: 0)
+            │   ├── keyword_rest: ∅
+            │   └── block: ∅
+            ├── body: ∅
+            ├── locals: [:interp, :*, :args]
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (8...9) = "("
+            ├── rparen_loc: (24...25) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (26...29) = "end"

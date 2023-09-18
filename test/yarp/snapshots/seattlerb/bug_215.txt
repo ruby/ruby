@@ -1,9 +1,13 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [UndefNode(0...13)(
-       [SymbolNode(6...13)((6...9), (9...12), (12...13), "foo")],
-       (0...5)
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ UndefNode (location: (0...13))
+            ├── names: (length: 1)
+            │   └── @ SymbolNode (location: (6...13))
+            │       ├── opening_loc: (6...9) = "%s("
+            │       ├── value_loc: (9...12) = "foo"
+            │       ├── closing_loc: (12...13) = ")"
+            │       └── unescaped: "foo"
+            └── keyword_loc: (0...5) = "undef"

@@ -1,23 +1,27 @@
-ProgramNode(0...12)(
-  [:foo],
-  StatementsNode(0...12)(
-    [LocalVariableOperatorWriteNode(0...12)(
-       (0...3),
-       (4...6),
-       CallNode(7...12)(
-         nil,
-         nil,
-         (7...8),
-         nil,
-         ArgumentsNode(9...12)([LocalVariableReadNode(9...12)(:foo, 0)]),
-         nil,
-         nil,
-         0,
-         "m"
-       ),
-       :foo,
-       :+,
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: [:foo]
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ LocalVariableOperatorWriteNode (location: (0...12))
+            ├── name_loc: (0...3) = "foo"
+            ├── operator_loc: (4...6) = "+="
+            ├── value:
+            │   @ CallNode (location: (7...12))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (7...8) = "m"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (9...12))
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ LocalVariableReadNode (location: (9...12))
+            │   │           ├── name: :foo
+            │   │           └── depth: 0
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "m"
+            ├── name: :foo
+            ├── operator: :+
+            └── depth: 0

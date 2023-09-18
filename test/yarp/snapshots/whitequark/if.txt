@@ -1,23 +1,61 @@
-ProgramNode(0...38)(
-  [],
-  StatementsNode(0...38)(
-    [IfNode(0...20)(
-       (0...2),
-       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(12...15)(
-         [CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "bar")]
-       ),
-       nil,
-       (17...20)
-     ),
-     IfNode(22...38)(
-       (22...24),
-       CallNode(25...28)(nil, nil, (25...28), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(30...33)(
-         [CallNode(30...33)(nil, nil, (30...33), nil, nil, nil, nil, 2, "bar")]
-       ),
-       nil,
-       (35...38)
-     )]
-  )
-)
+@ ProgramNode (location: (0...38))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...38))
+    └── body: (length: 2)
+        ├── @ IfNode (location: (0...20))
+        │   ├── if_keyword_loc: (0...2) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (3...6))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (3...6) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (12...15))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (12...15))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (12...15) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (17...20) = "end"
+        └── @ IfNode (location: (22...38))
+            ├── if_keyword_loc: (22...24) = "if"
+            ├── predicate:
+            │   @ CallNode (location: (25...28))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (25...28) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── statements:
+            │   @ StatementsNode (location: (30...33))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (30...33))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (30...33) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "bar"
+            ├── consequent: ∅
+            └── end_keyword_loc: (35...38) = "end"

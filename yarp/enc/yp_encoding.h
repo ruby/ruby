@@ -60,7 +60,7 @@ size_t yp_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
 
 // This lookup table is referenced in both the UTF-8 encoding file and the
 // parser directly in order to speed up the default encoding processing.
-extern uint8_t yp_encoding_unicode_table[256];
+extern const uint8_t yp_encoding_unicode_table[256];
 
 // These are the encodings that are supported by the parser. They are defined in
 // their own files in the src/enc directory.

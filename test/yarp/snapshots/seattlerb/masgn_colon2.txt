@@ -1,21 +1,38 @@
-ProgramNode(0...14)(
-  [:a],
-  StatementsNode(0...14)(
-    [MultiWriteNode(0...14)(
-       [LocalVariableTargetNode(0...1)(:a, 0),
-        ConstantPathTargetNode(3...7)(
-          CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 2, "b"),
-          ConstantReadNode(6...7)(),
-          (4...6)
-        )],
-       (8...9),
-       ArrayNode(10...14)(
-         [IntegerNode(10...11)(), IntegerNode(13...14)()],
-         nil,
-         nil
-       ),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...14))
+            ├── targets: (length: 2)
+            │   ├── @ LocalVariableTargetNode (location: (0...1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   └── @ ConstantPathTargetNode (location: (3...7))
+            │       ├── parent:
+            │       │   @ CallNode (location: (3...4))
+            │       │   ├── receiver: ∅
+            │       │   ├── call_operator_loc: ∅
+            │       │   ├── message_loc: (3...4) = "b"
+            │       │   ├── opening_loc: ∅
+            │       │   ├── arguments: ∅
+            │       │   ├── closing_loc: ∅
+            │       │   ├── block: ∅
+            │       │   ├── flags: variable_call
+            │       │   └── name: "b"
+            │       ├── child:
+            │       │   @ ConstantReadNode (location: (6...7))
+            │       │   └── name: :C
+            │       └── delimiter_loc: (4...6) = "::"
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (8...9) = "="
+            └── value:
+                @ ArrayNode (location: (10...14))
+                ├── elements: (length: 2)
+                │   ├── @ IntegerNode (location: (10...11))
+                │   │   └── flags: decimal
+                │   └── @ IntegerNode (location: (13...14))
+                │       └── flags: decimal
+                ├── opening_loc: ∅
+                └── closing_loc: ∅

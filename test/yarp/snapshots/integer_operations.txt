@@ -1,383 +1,539 @@
-ProgramNode(0...247)(
-  [],
-  StatementsNode(0...247)(
-    [CallNode(0...2)(
-       IntegerNode(1...2)(),
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "!"
-     ),
-     CallNode(4...6)(
-       IntegerNode(5...6)(),
-       nil,
-       (4...5),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "~"
-     ),
-     CallNode(8...14)(
-       IntegerNode(8...9)(),
-       nil,
-       (10...12),
-       nil,
-       ArgumentsNode(13...14)([IntegerNode(13...14)()]),
-       nil,
-       nil,
-       0,
-       "!="
-     ),
-     CallNode(16...22)(
-       IntegerNode(16...17)(),
-       nil,
-       (18...20),
-       nil,
-       ArgumentsNode(21...22)([IntegerNode(21...22)()]),
-       nil,
-       nil,
-       0,
-       "!~"
-     ),
-     CallNode(24...29)(
-       IntegerNode(24...25)(),
-       nil,
-       (26...27),
-       nil,
-       ArgumentsNode(28...29)([IntegerNode(28...29)()]),
-       nil,
-       nil,
-       0,
-       "%"
-     ),
-     CallNode(31...36)(
-       IntegerNode(31...32)(),
-       nil,
-       (33...34),
-       nil,
-       ArgumentsNode(35...36)([IntegerNode(35...36)()]),
-       nil,
-       nil,
-       0,
-       "&"
-     ),
-     CallNode(38...43)(
-       IntegerNode(38...39)(),
-       nil,
-       (40...41),
-       nil,
-       ArgumentsNode(42...43)([IntegerNode(42...43)()]),
-       nil,
-       nil,
-       0,
-       "*"
-     ),
-     CallNode(45...49)(
-       IntegerNode(45...46)(),
-       nil,
-       (46...48),
-       nil,
-       ArgumentsNode(48...49)([IntegerNode(48...49)()]),
-       nil,
-       nil,
-       0,
-       "**"
-     ),
-     CallNode(51...56)(
-       IntegerNode(51...52)(),
-       nil,
-       (53...54),
-       nil,
-       ArgumentsNode(55...56)([IntegerNode(55...56)()]),
-       nil,
-       nil,
-       0,
-       "+"
-     ),
-     CallNode(58...63)(
-       IntegerNode(58...59)(),
-       nil,
-       (60...61),
-       nil,
-       ArgumentsNode(62...63)([IntegerNode(62...63)()]),
-       nil,
-       nil,
-       0,
-       "-"
-     ),
-     CallNode(65...70)(
-       IntegerNode(65...66)(),
-       nil,
-       (67...68),
-       nil,
-       ArgumentsNode(69...70)([IntegerNode(69...70)()]),
-       nil,
-       nil,
-       0,
-       "/"
-     ),
-     CallNode(72...77)(
-       CallNode(72...75)(
-         IntegerNode(72...73)(),
-         nil,
-         (73...74),
-         nil,
-         ArgumentsNode(74...75)([IntegerNode(74...75)()]),
-         nil,
-         nil,
-         0,
-         "/"
-       ),
-       nil,
-       (75...76),
-       nil,
-       ArgumentsNode(76...77)([IntegerNode(76...77)()]),
-       nil,
-       nil,
-       0,
-       "/"
-     ),
-     CallNode(79...84)(
-       IntegerNode(79...80)(),
-       nil,
-       (81...82),
-       nil,
-       ArgumentsNode(83...84)([IntegerNode(83...84)()]),
-       nil,
-       nil,
-       0,
-       "<"
-     ),
-     CallNode(86...92)(
-       IntegerNode(86...87)(),
-       nil,
-       (88...90),
-       nil,
-       ArgumentsNode(91...92)([IntegerNode(91...92)()]),
-       nil,
-       nil,
-       0,
-       "<<"
-     ),
-     CallNode(94...100)(
-       IntegerNode(94...95)(),
-       nil,
-       (96...98),
-       nil,
-       ArgumentsNode(99...100)([IntegerNode(99...100)()]),
-       nil,
-       nil,
-       0,
-       "<="
-     ),
-     CallNode(102...109)(
-       IntegerNode(102...103)(),
-       nil,
-       (104...107),
-       nil,
-       ArgumentsNode(108...109)([IntegerNode(108...109)()]),
-       nil,
-       nil,
-       0,
-       "<=>"
-     ),
-     CallNode(111...117)(
-       IntegerNode(111...112)(),
-       nil,
-       (113...115),
-       nil,
-       ArgumentsNode(116...117)([IntegerNode(116...117)()]),
-       nil,
-       nil,
-       0,
-       "=="
-     ),
-     CallNode(119...126)(
-       IntegerNode(119...120)(),
-       nil,
-       (121...124),
-       nil,
-       ArgumentsNode(125...126)([IntegerNode(125...126)()]),
-       nil,
-       nil,
-       0,
-       "==="
-     ),
-     CallNode(128...134)(
-       IntegerNode(128...129)(),
-       nil,
-       (130...132),
-       nil,
-       ArgumentsNode(133...134)([IntegerNode(133...134)()]),
-       nil,
-       nil,
-       0,
-       "=~"
-     ),
-     CallNode(136...141)(
-       IntegerNode(136...137)(),
-       nil,
-       (138...139),
-       nil,
-       ArgumentsNode(140...141)([IntegerNode(140...141)()]),
-       nil,
-       nil,
-       0,
-       ">"
-     ),
-     CallNode(143...149)(
-       IntegerNode(143...144)(),
-       nil,
-       (145...147),
-       nil,
-       ArgumentsNode(148...149)([IntegerNode(148...149)()]),
-       nil,
-       nil,
-       0,
-       ">="
-     ),
-     CallNode(151...157)(
-       IntegerNode(151...152)(),
-       nil,
-       (153...155),
-       nil,
-       ArgumentsNode(156...157)([IntegerNode(156...157)()]),
-       nil,
-       nil,
-       0,
-       ">>"
-     ),
-     CallNode(159...164)(
-       IntegerNode(159...160)(),
-       nil,
-       (161...162),
-       nil,
-       ArgumentsNode(163...164)([IntegerNode(163...164)()]),
-       nil,
-       nil,
-       0,
-       "^"
-     ),
-     CallNode(166...171)(
-       IntegerNode(166...167)(),
-       nil,
-       (168...169),
-       nil,
-       ArgumentsNode(170...171)([IntegerNode(170...171)()]),
-       nil,
-       nil,
-       0,
-       "|"
-     ),
-     AndNode(173...179)(
-       IntegerNode(173...174)(),
-       IntegerNode(178...179)(),
-       (175...177)
-     ),
-     AndNode(181...188)(
-       IntegerNode(181...182)(),
-       IntegerNode(187...188)(),
-       (183...186)
-     ),
-     CallNode(190...200)(
-       IntegerNode(190...191)(),
-       nil,
-       (192...193),
-       nil,
-       ArgumentsNode(194...200)(
-         [CallNode(194...200)(
-            IntegerNode(194...195)(),
-            nil,
-            (196...198),
-            nil,
-            ArgumentsNode(199...200)([IntegerNode(199...200)()]),
-            nil,
-            nil,
-            0,
-            "**"
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "*"
-     ),
-     CallNode(202...211)(
-       CallNode(202...207)(
-         IntegerNode(202...203)(),
-         nil,
-         (204...205),
-         nil,
-         ArgumentsNode(206...207)([IntegerNode(206...207)()]),
-         nil,
-         nil,
-         0,
-         "*"
-       ),
-       nil,
-       (208...209),
-       nil,
-       ArgumentsNode(210...211)([IntegerNode(210...211)()]),
-       nil,
-       nil,
-       0,
-       "+"
-     ),
-     OrNode(213...219)(
-       IntegerNode(213...214)(),
-       IntegerNode(218...219)(),
-       (215...217)
-     ),
-     OrNode(221...227)(
-       IntegerNode(221...222)(),
-       IntegerNode(226...227)(),
-       (223...225)
-     ),
-     CallNode(229...238)(
-       IntegerNode(229...230)(),
-       nil,
-       (231...232),
-       nil,
-       ArgumentsNode(233...238)(
-         [CallNode(233...238)(
-            IntegerNode(233...234)(),
-            nil,
-            (235...236),
-            nil,
-            ArgumentsNode(237...238)([IntegerNode(237...238)()]),
-            nil,
-            nil,
-            0,
-            "*"
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "+"
-     ),
-     ParenthesesNode(240...247)(
-       StatementsNode(241...246)(
-         [CallNode(241...246)(
-            IntegerNode(241...242)(),
-            nil,
-            (243...244),
-            nil,
-            ArgumentsNode(245...246)([IntegerNode(245...246)()]),
-            nil,
-            nil,
-            0,
-            "+"
-          )]
-       ),
-       (240...241),
-       (246...247)
-     )]
-  )
-)
+@ ProgramNode (location: (0...247))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...247))
+    └── body: (length: 32)
+        ├── @ CallNode (location: (0...2))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (1...2))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...1) = "!"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "!"
+        ├── @ CallNode (location: (4...6))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (5...6))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (4...5) = "~"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "~"
+        ├── @ CallNode (location: (8...14))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (8...9))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (10...12) = "!="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (13...14))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (13...14))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "!="
+        ├── @ CallNode (location: (16...22))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (16...17))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (18...20) = "!~"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (21...22))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (21...22))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "!~"
+        ├── @ CallNode (location: (24...29))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (24...25))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (26...27) = "%"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (28...29))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (28...29))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "%"
+        ├── @ CallNode (location: (31...36))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (31...32))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (33...34) = "&"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (35...36))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (35...36))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "&"
+        ├── @ CallNode (location: (38...43))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (38...39))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (40...41) = "*"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (42...43))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (42...43))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "*"
+        ├── @ CallNode (location: (45...49))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (45...46))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (46...48) = "**"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (48...49))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (48...49))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "**"
+        ├── @ CallNode (location: (51...56))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (51...52))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (53...54) = "+"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (55...56))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (55...56))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "+"
+        ├── @ CallNode (location: (58...63))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (58...59))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (60...61) = "-"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (62...63))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (62...63))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "-"
+        ├── @ CallNode (location: (65...70))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (65...66))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (67...68) = "/"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (69...70))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (69...70))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "/"
+        ├── @ CallNode (location: (72...77))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (72...75))
+        │   │   ├── receiver:
+        │   │   │   @ IntegerNode (location: (72...73))
+        │   │   │   └── flags: decimal
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (73...74) = "/"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (74...75))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (74...75))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "/"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (75...76) = "/"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (76...77))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (76...77))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "/"
+        ├── @ CallNode (location: (79...84))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (79...80))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (81...82) = "<"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (83...84))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (83...84))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "<"
+        ├── @ CallNode (location: (86...92))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (86...87))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (88...90) = "<<"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (91...92))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (91...92))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "<<"
+        ├── @ CallNode (location: (94...100))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (94...95))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (96...98) = "<="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (99...100))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (99...100))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "<="
+        ├── @ CallNode (location: (102...109))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (102...103))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (104...107) = "<=>"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (108...109))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (108...109))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "<=>"
+        ├── @ CallNode (location: (111...117))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (111...112))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (113...115) = "=="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (116...117))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (116...117))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "=="
+        ├── @ CallNode (location: (119...126))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (119...120))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (121...124) = "==="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (125...126))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (125...126))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "==="
+        ├── @ CallNode (location: (128...134))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (128...129))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (130...132) = "=~"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (133...134))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (133...134))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "=~"
+        ├── @ CallNode (location: (136...141))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (136...137))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (138...139) = ">"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (140...141))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (140...141))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: ">"
+        ├── @ CallNode (location: (143...149))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (143...144))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (145...147) = ">="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (148...149))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (148...149))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: ">="
+        ├── @ CallNode (location: (151...157))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (151...152))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (153...155) = ">>"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (156...157))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (156...157))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: ">>"
+        ├── @ CallNode (location: (159...164))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (159...160))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (161...162) = "^"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (163...164))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (163...164))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "^"
+        ├── @ CallNode (location: (166...171))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (166...167))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (168...169) = "|"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (170...171))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (170...171))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "|"
+        ├── @ AndNode (location: (173...179))
+        │   ├── left:
+        │   │   @ IntegerNode (location: (173...174))
+        │   │   └── flags: decimal
+        │   ├── right:
+        │   │   @ IntegerNode (location: (178...179))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (175...177) = "&&"
+        ├── @ AndNode (location: (181...188))
+        │   ├── left:
+        │   │   @ IntegerNode (location: (181...182))
+        │   │   └── flags: decimal
+        │   ├── right:
+        │   │   @ IntegerNode (location: (187...188))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (183...186) = "and"
+        ├── @ CallNode (location: (190...200))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (190...191))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (192...193) = "*"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (194...200))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (194...200))
+        │   │           ├── receiver:
+        │   │           │   @ IntegerNode (location: (194...195))
+        │   │           │   └── flags: decimal
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (196...198) = "**"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (199...200))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (199...200))
+        │   │           │           └── flags: decimal
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "**"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "*"
+        ├── @ CallNode (location: (202...211))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (202...207))
+        │   │   ├── receiver:
+        │   │   │   @ IntegerNode (location: (202...203))
+        │   │   │   └── flags: decimal
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (204...205) = "*"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (206...207))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (206...207))
+        │   │   │           └── flags: decimal
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "*"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (208...209) = "+"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (210...211))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (210...211))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "+"
+        ├── @ OrNode (location: (213...219))
+        │   ├── left:
+        │   │   @ IntegerNode (location: (213...214))
+        │   │   └── flags: decimal
+        │   ├── right:
+        │   │   @ IntegerNode (location: (218...219))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (215...217) = "or"
+        ├── @ OrNode (location: (221...227))
+        │   ├── left:
+        │   │   @ IntegerNode (location: (221...222))
+        │   │   └── flags: decimal
+        │   ├── right:
+        │   │   @ IntegerNode (location: (226...227))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (223...225) = "||"
+        ├── @ CallNode (location: (229...238))
+        │   ├── receiver:
+        │   │   @ IntegerNode (location: (229...230))
+        │   │   └── flags: decimal
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (231...232) = "+"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (233...238))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (233...238))
+        │   │           ├── receiver:
+        │   │           │   @ IntegerNode (location: (233...234))
+        │   │           │   └── flags: decimal
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (235...236) = "*"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (237...238))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (237...238))
+        │   │           │           └── flags: decimal
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: "*"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "+"
+        └── @ ParenthesesNode (location: (240...247))
+            ├── body:
+            │   @ StatementsNode (location: (241...246))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (241...246))
+            │           ├── receiver:
+            │           │   @ IntegerNode (location: (241...242))
+            │           │   └── flags: decimal
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (243...244) = "+"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (245...246))
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ IntegerNode (location: (245...246))
+            │           │           └── flags: decimal
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: "+"
+            ├── opening_loc: (240...241) = "("
+            └── closing_loc: (246...247) = ")"

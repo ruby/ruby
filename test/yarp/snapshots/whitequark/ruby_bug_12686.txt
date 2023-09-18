@@ -1,38 +1,38 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [CallNode(0...16)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...16)(
-         [ParenthesesNode(2...16)(
-            StatementsNode(3...15)(
-              [RescueModifierNode(3...15)(
-                 CallNode(3...4)(
-                   nil,
-                   nil,
-                   (3...4),
-                   nil,
-                   nil,
-                   nil,
-                   nil,
-                   2,
-                   "g"
-                 ),
-                 (5...11),
-                 NilNode(12...15)()
-               )]
-            ),
-            (2...3),
-            (15...16)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "f"
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...16))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "f"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...16))
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (2...16))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (3...15))
+            │           │   └── body: (length: 1)
+            │           │       └── @ RescueModifierNode (location: (3...15))
+            │           │           ├── expression:
+            │           │           │   @ CallNode (location: (3...4))
+            │           │           │   ├── receiver: ∅
+            │           │           │   ├── call_operator_loc: ∅
+            │           │           │   ├── message_loc: (3...4) = "g"
+            │           │           │   ├── opening_loc: ∅
+            │           │           │   ├── arguments: ∅
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   ├── block: ∅
+            │           │           │   ├── flags: variable_call
+            │           │           │   └── name: "g"
+            │           │           ├── keyword_loc: (5...11) = "rescue"
+            │           │           └── rescue_expression:
+            │           │               @ NilNode (location: (12...15))
+            │           ├── opening_loc: (2...3) = "("
+            │           └── closing_loc: (15...16) = ")"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "f"

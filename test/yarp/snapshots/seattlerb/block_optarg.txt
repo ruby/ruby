@@ -1,40 +1,44 @@
-ProgramNode(0...14)(
-  [],
-  StatementsNode(0...14)(
-    [CallNode(0...14)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       BlockNode(2...14)(
-         [:b],
-         BlockParametersNode(4...12)(
-           ParametersNode(5...11)(
-             [],
-             [OptionalParameterNode(5...11)(
-                :b,
-                (5...6),
-                (7...8),
-                SymbolNode(9...11)((9...10), (10...11), nil, "c")
-              )],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (4...5),
-           (11...12)
-         ),
-         nil,
-         (2...3),
-         (13...14)
-       ),
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...14))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...14))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (2...14))
+            │   ├── locals: [:b]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (4...12))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (5...11))
+            │   │   │   ├── requireds: (length: 0)
+            │   │   │   ├── optionals: (length: 1)
+            │   │   │   │   └── @ OptionalParameterNode (location: (5...11))
+            │   │   │   │       ├── name: :b
+            │   │   │   │       ├── name_loc: (5...6) = "b"
+            │   │   │   │       ├── operator_loc: (7...8) = "="
+            │   │   │   │       └── value:
+            │   │   │   │           @ SymbolNode (location: (9...11))
+            │   │   │   │           ├── opening_loc: (9...10) = ":"
+            │   │   │   │           ├── value_loc: (10...11) = "c"
+            │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │           └── unescaped: "c"
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 0)
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (4...5) = "|"
+            │   │   └── closing_loc: (11...12) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (2...3) = "{"
+            │   └── closing_loc: (13...14) = "}"
+            ├── flags: ∅
+            └── name: "a"

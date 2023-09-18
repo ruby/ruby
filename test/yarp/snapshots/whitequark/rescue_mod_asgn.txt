@@ -1,16 +1,35 @@
-ProgramNode(0...21)(
-  [:foo],
-  StatementsNode(0...21)(
-    [LocalVariableWriteNode(0...21)(
-       :foo,
-       0,
-       (0...3),
-       RescueModifierNode(6...21)(
-         CallNode(6...10)(nil, nil, (6...10), nil, nil, nil, nil, 2, "meth"),
-         (11...17),
-         CallNode(18...21)(nil, nil, (18...21), nil, nil, nil, nil, 2, "bar")
-       ),
-       (4...5)
-     )]
-  )
-)
+@ ProgramNode (location: (0...21))
+├── locals: [:foo]
+└── statements:
+    @ StatementsNode (location: (0...21))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...21))
+            ├── name: :foo
+            ├── depth: 0
+            ├── name_loc: (0...3) = "foo"
+            ├── value:
+            │   @ RescueModifierNode (location: (6...21))
+            │   ├── expression:
+            │   │   @ CallNode (location: (6...10))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (6...10) = "meth"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: "meth"
+            │   ├── keyword_loc: (11...17) = "rescue"
+            │   └── rescue_expression:
+            │       @ CallNode (location: (18...21))
+            │       ├── receiver: ∅
+            │       ├── call_operator_loc: ∅
+            │       ├── message_loc: (18...21) = "bar"
+            │       ├── opening_loc: ∅
+            │       ├── arguments: ∅
+            │       ├── closing_loc: ∅
+            │       ├── block: ∅
+            │       ├── flags: variable_call
+            │       └── name: "bar"
+            └── operator_loc: (4...5) = "="

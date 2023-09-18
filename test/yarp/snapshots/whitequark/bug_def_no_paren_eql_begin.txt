@@ -1,18 +1,18 @@
-ProgramNode(0...23)(
-  [],
-  StatementsNode(0...23)(
-    [DefNode(0...23)(
-       (4...7),
-       nil,
-       nil,
-       nil,
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       nil,
-       (20...23)
-     )]
-  )
-)
+@ ProgramNode (location: (0...23))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...23))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...23))
+            ├── name: :foo
+            ├── name_loc: (4...7) = "foo"
+            ├── receiver: ∅
+            ├── parameters: ∅
+            ├── body: ∅
+            ├── locals: []
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (20...23) = "end"

@@ -1,4 +1,9 @@
-ProgramNode(0...31)(
-  [],
-  StatementsNode(0...31)([IntegerNode(0...1)(), IntegerNode(30...31)()])
-)
+@ ProgramNode (location: (0...31))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...31))
+    └── body: (length: 2)
+        ├── @ IntegerNode (location: (0...1))
+        │   └── flags: decimal
+        └── @ IntegerNode (location: (30...31))
+            └── flags: decimal

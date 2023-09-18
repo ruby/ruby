@@ -1,123 +1,249 @@
-ProgramNode(1...465)(
-  [],
-  StatementsNode(1...465)(
-    [StringNode(1...6)((1...2), (2...5), (5...6), "\#@1"),
-     StringNode(10...16)((10...11), (11...15), (15...16), "\#@@1"),
-     ArrayNode(20...27)(
-       [SymbolNode(23...26)(nil, (23...26), nil, "\#@1")],
-       (20...23),
-       (26...27)
-     ),
-     ArrayNode(31...39)(
-       [SymbolNode(34...38)(nil, (34...38), nil, "\#@@1")],
-       (31...34),
-       (38...39)
-     ),
-     StringNode(43...50)((43...46), (46...49), (49...50), "\#@1"),
-     StringNode(54...62)((54...57), (57...61), (61...62), "\#@@1"),
-     ArrayNode(66...73)(
-       [StringNode(69...72)(nil, (69...72), nil, "\#@1")],
-       (66...69),
-       (72...73)
-     ),
-     ArrayNode(77...85)(
-       [StringNode(80...84)(nil, (80...84), nil, "\#@@1")],
-       (77...80),
-       (84...85)
-     ),
-     ArrayNode(89...98)(
-       [SymbolNode(93...96)(nil, (93...96), nil, "\#@1")],
-       (89...92),
-       (97...98)
-     ),
-     ArrayNode(102...112)(
-       [SymbolNode(106...110)(nil, (106...110), nil, "\#@@1")],
-       (102...105),
-       (111...112)
-     ),
-     StringNode(116...123)((116...119), (119...122), (122...123), "\#@1"),
-     StringNode(127...135)((127...130), (130...134), (134...135), "\#@@1"),
-     RegularExpressionNode(139...146)(
-       (139...142),
-       (142...145),
-       (145...146),
-       "\#@1",
-       0
-     ),
-     RegularExpressionNode(150...158)(
-       (150...153),
-       (153...157),
-       (157...158),
-       "\#@@1",
-       0
-     ),
-     SymbolNode(162...169)((162...165), (165...168), (168...169), "\#@1"),
-     SymbolNode(173...181)((173...176), (176...180), (180...181), "\#@@1"),
-     ArrayNode(185...194)(
-       [StringNode(189...192)(nil, (189...192), nil, "\#@1")],
-       (185...188),
-       (193...194)
-     ),
-     ArrayNode(198...208)(
-       [StringNode(202...206)(nil, (202...206), nil, "\#@@1")],
-       (198...201),
-       (207...208)
-     ),
-     XStringNode(212...219)((212...215), (215...218), (218...219), "\#@1"),
-     XStringNode(223...231)((223...226), (226...230), (230...231), "\#@@1"),
-     StringNode(235...241)((235...237), (237...240), (240...241), "\#@1"),
-     StringNode(245...252)((245...247), (247...251), (251...252), "\#@@1"),
-     StringNode(256...261)((256...257), (257...260), (260...261), "\#@1"),
-     StringNode(265...271)((265...266), (266...270), (270...271), "\#@@1"),
-     RegularExpressionNode(275...280)(
-       (275...276),
-       (276...279),
-       (279...280),
-       "\#@1",
-       0
-     ),
-     RegularExpressionNode(284...290)(
-       (284...285),
-       (285...289),
-       (289...290),
-       "\#@@1",
-       0
-     ),
-     SymbolNode(294...300)((294...296), (296...299), (299...300), "\#@1"),
-     SymbolNode(304...311)((304...306), (306...310), (310...311), "\#@@1"),
-     SymbolNode(315...321)((315...317), (317...320), (320...321), "\#@1"),
-     SymbolNode(325...332)((325...327), (327...331), (331...332), "\#@@1"),
-     XStringNode(336...341)((336...337), (337...340), (340...341), "\#@1"),
-     XStringNode(345...351)((345...346), (346...350), (350...351), "\#@@1"),
-     InterpolatedStringNode(354...363)(
-       (354...363),
-       [StringNode(364...368)(nil, (364...368), nil, "\#@1\n")],
-       (368...373)
-     ),
-     InterpolatedStringNode(374...383)(
-       (374...383),
-       [StringNode(384...389)(nil, (384...389), nil, "\#@@1\n")],
-       (389...394)
-     ),
-     InterpolatedStringNode(395...404)(
-       (395...404),
-       [StringNode(405...409)(nil, (405...409), nil, "\#@1\n")],
-       (409...414)
-     ),
-     InterpolatedStringNode(415...424)(
-       (415...424),
-       [StringNode(425...430)(nil, (425...430), nil, "\#@@1\n")],
-       (430...435)
-     ),
-     InterpolatedXStringNode(436...445)(
-       (436...445),
-       [StringNode(446...450)(nil, (446...450), nil, "\#@1\n")],
-       (450...455)
-     ),
-     InterpolatedXStringNode(456...465)(
-       (456...465),
-       [StringNode(466...471)(nil, (466...471), nil, "\#@@1\n")],
-       (471...476)
-     )]
-  )
-)
+@ ProgramNode (location: (1...465))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1...465))
+    └── body: (length: 38)
+        ├── @ StringNode (location: (1...6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (1...2) = "\""
+        │   ├── content_loc: (2...5) = "\#@1"
+        │   ├── closing_loc: (5...6) = "\""
+        │   └── unescaped: "\#@1"
+        ├── @ StringNode (location: (10...16))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (10...11) = "\""
+        │   ├── content_loc: (11...15) = "\#@@1"
+        │   ├── closing_loc: (15...16) = "\""
+        │   └── unescaped: "\#@@1"
+        ├── @ ArrayNode (location: (20...27))
+        │   ├── elements: (length: 1)
+        │   │   └── @ SymbolNode (location: (23...26))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (23...26) = "\#@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@1"
+        │   ├── opening_loc: (20...23) = "%I["
+        │   └── closing_loc: (26...27) = "]"
+        ├── @ ArrayNode (location: (31...39))
+        │   ├── elements: (length: 1)
+        │   │   └── @ SymbolNode (location: (34...38))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (34...38) = "\#@@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@@1"
+        │   ├── opening_loc: (31...34) = "%I["
+        │   └── closing_loc: (38...39) = "]"
+        ├── @ StringNode (location: (43...50))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (43...46) = "%Q{"
+        │   ├── content_loc: (46...49) = "\#@1"
+        │   ├── closing_loc: (49...50) = "}"
+        │   └── unescaped: "\#@1"
+        ├── @ StringNode (location: (54...62))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (54...57) = "%Q{"
+        │   ├── content_loc: (57...61) = "\#@@1"
+        │   ├── closing_loc: (61...62) = "}"
+        │   └── unescaped: "\#@@1"
+        ├── @ ArrayNode (location: (66...73))
+        │   ├── elements: (length: 1)
+        │   │   └── @ StringNode (location: (69...72))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (69...72) = "\#@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@1"
+        │   ├── opening_loc: (66...69) = "%W["
+        │   └── closing_loc: (72...73) = "]"
+        ├── @ ArrayNode (location: (77...85))
+        │   ├── elements: (length: 1)
+        │   │   └── @ StringNode (location: (80...84))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (80...84) = "\#@@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@@1"
+        │   ├── opening_loc: (77...80) = "%W["
+        │   └── closing_loc: (84...85) = "]"
+        ├── @ ArrayNode (location: (89...98))
+        │   ├── elements: (length: 1)
+        │   │   └── @ SymbolNode (location: (93...96))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (93...96) = "\#@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@1"
+        │   ├── opening_loc: (89...92) = "%i["
+        │   └── closing_loc: (97...98) = "]"
+        ├── @ ArrayNode (location: (102...112))
+        │   ├── elements: (length: 1)
+        │   │   └── @ SymbolNode (location: (106...110))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (106...110) = "\#@@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@@1"
+        │   ├── opening_loc: (102...105) = "%i["
+        │   └── closing_loc: (111...112) = "]"
+        ├── @ StringNode (location: (116...123))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (116...119) = "%q{"
+        │   ├── content_loc: (119...122) = "\#@1"
+        │   ├── closing_loc: (122...123) = "}"
+        │   └── unescaped: "\#@1"
+        ├── @ StringNode (location: (127...135))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (127...130) = "%q{"
+        │   ├── content_loc: (130...134) = "\#@@1"
+        │   ├── closing_loc: (134...135) = "}"
+        │   └── unescaped: "\#@@1"
+        ├── @ RegularExpressionNode (location: (139...146))
+        │   ├── opening_loc: (139...142) = "%r{"
+        │   ├── content_loc: (142...145) = "\#@1"
+        │   ├── closing_loc: (145...146) = "}"
+        │   ├── unescaped: "\#@1"
+        │   └── flags: ∅
+        ├── @ RegularExpressionNode (location: (150...158))
+        │   ├── opening_loc: (150...153) = "%r{"
+        │   ├── content_loc: (153...157) = "\#@@1"
+        │   ├── closing_loc: (157...158) = "}"
+        │   ├── unescaped: "\#@@1"
+        │   └── flags: ∅
+        ├── @ SymbolNode (location: (162...169))
+        │   ├── opening_loc: (162...165) = "%s{"
+        │   ├── value_loc: (165...168) = "\#@1"
+        │   ├── closing_loc: (168...169) = "}"
+        │   └── unescaped: "\#@1"
+        ├── @ SymbolNode (location: (173...181))
+        │   ├── opening_loc: (173...176) = "%s{"
+        │   ├── value_loc: (176...180) = "\#@@1"
+        │   ├── closing_loc: (180...181) = "}"
+        │   └── unescaped: "\#@@1"
+        ├── @ ArrayNode (location: (185...194))
+        │   ├── elements: (length: 1)
+        │   │   └── @ StringNode (location: (189...192))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (189...192) = "\#@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@1"
+        │   ├── opening_loc: (185...188) = "%w["
+        │   └── closing_loc: (193...194) = "]"
+        ├── @ ArrayNode (location: (198...208))
+        │   ├── elements: (length: 1)
+        │   │   └── @ StringNode (location: (202...206))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (202...206) = "\#@@1"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\#@@1"
+        │   ├── opening_loc: (198...201) = "%w["
+        │   └── closing_loc: (207...208) = "]"
+        ├── @ XStringNode (location: (212...219))
+        │   ├── opening_loc: (212...215) = "%x{"
+        │   ├── content_loc: (215...218) = "\#@1"
+        │   ├── closing_loc: (218...219) = "}"
+        │   └── unescaped: "\#@1"
+        ├── @ XStringNode (location: (223...231))
+        │   ├── opening_loc: (223...226) = "%x{"
+        │   ├── content_loc: (226...230) = "\#@@1"
+        │   ├── closing_loc: (230...231) = "}"
+        │   └── unescaped: "\#@@1"
+        ├── @ StringNode (location: (235...241))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (235...237) = "%{"
+        │   ├── content_loc: (237...240) = "\#@1"
+        │   ├── closing_loc: (240...241) = "}"
+        │   └── unescaped: "\#@1"
+        ├── @ StringNode (location: (245...252))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (245...247) = "%{"
+        │   ├── content_loc: (247...251) = "\#@@1"
+        │   ├── closing_loc: (251...252) = "}"
+        │   └── unescaped: "\#@@1"
+        ├── @ StringNode (location: (256...261))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (256...257) = "'"
+        │   ├── content_loc: (257...260) = "\#@1"
+        │   ├── closing_loc: (260...261) = "'"
+        │   └── unescaped: "\#@1"
+        ├── @ StringNode (location: (265...271))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (265...266) = "'"
+        │   ├── content_loc: (266...270) = "\#@@1"
+        │   ├── closing_loc: (270...271) = "'"
+        │   └── unescaped: "\#@@1"
+        ├── @ RegularExpressionNode (location: (275...280))
+        │   ├── opening_loc: (275...276) = "/"
+        │   ├── content_loc: (276...279) = "\#@1"
+        │   ├── closing_loc: (279...280) = "/"
+        │   ├── unescaped: "\#@1"
+        │   └── flags: ∅
+        ├── @ RegularExpressionNode (location: (284...290))
+        │   ├── opening_loc: (284...285) = "/"
+        │   ├── content_loc: (285...289) = "\#@@1"
+        │   ├── closing_loc: (289...290) = "/"
+        │   ├── unescaped: "\#@@1"
+        │   └── flags: ∅
+        ├── @ SymbolNode (location: (294...300))
+        │   ├── opening_loc: (294...296) = ":\""
+        │   ├── value_loc: (296...299) = "\#@1"
+        │   ├── closing_loc: (299...300) = "\""
+        │   └── unescaped: "\#@1"
+        ├── @ SymbolNode (location: (304...311))
+        │   ├── opening_loc: (304...306) = ":\""
+        │   ├── value_loc: (306...310) = "\#@@1"
+        │   ├── closing_loc: (310...311) = "\""
+        │   └── unescaped: "\#@@1"
+        ├── @ SymbolNode (location: (315...321))
+        │   ├── opening_loc: (315...317) = ":'"
+        │   ├── value_loc: (317...320) = "\#@1"
+        │   ├── closing_loc: (320...321) = "'"
+        │   └── unescaped: "\#@1"
+        ├── @ SymbolNode (location: (325...332))
+        │   ├── opening_loc: (325...327) = ":'"
+        │   ├── value_loc: (327...331) = "\#@@1"
+        │   ├── closing_loc: (331...332) = "'"
+        │   └── unescaped: "\#@@1"
+        ├── @ XStringNode (location: (336...341))
+        │   ├── opening_loc: (336...337) = "`"
+        │   ├── content_loc: (337...340) = "\#@1"
+        │   ├── closing_loc: (340...341) = "`"
+        │   └── unescaped: "\#@1"
+        ├── @ XStringNode (location: (345...351))
+        │   ├── opening_loc: (345...346) = "`"
+        │   ├── content_loc: (346...350) = "\#@@1"
+        │   ├── closing_loc: (350...351) = "`"
+        │   └── unescaped: "\#@@1"
+        ├── @ StringNode (location: (354...363))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (354...363) = "<<-\"HERE\""
+        │   ├── content_loc: (364...368) = "\#@1\n"
+        │   ├── closing_loc: (368...373) = "HERE\n"
+        │   └── unescaped: "\#@1\n"
+        ├── @ StringNode (location: (374...383))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (374...383) = "<<-\"HERE\""
+        │   ├── content_loc: (384...389) = "\#@@1\n"
+        │   ├── closing_loc: (389...394) = "HERE\n"
+        │   └── unescaped: "\#@@1\n"
+        ├── @ StringNode (location: (395...404))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (395...404) = "<<-'HERE'"
+        │   ├── content_loc: (405...409) = "\#@1\n"
+        │   ├── closing_loc: (409...414) = "HERE\n"
+        │   └── unescaped: "\#@1\n"
+        ├── @ StringNode (location: (415...424))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (415...424) = "<<-'HERE'"
+        │   ├── content_loc: (425...430) = "\#@@1\n"
+        │   ├── closing_loc: (430...435) = "HERE\n"
+        │   └── unescaped: "\#@@1\n"
+        ├── @ XStringNode (location: (436...445))
+        │   ├── opening_loc: (436...445) = "<<-`HERE`"
+        │   ├── content_loc: (446...450) = "\#@1\n"
+        │   ├── closing_loc: (450...455) = "HERE\n"
+        │   └── unescaped: "\#@1\n"
+        └── @ XStringNode (location: (456...465))
+            ├── opening_loc: (456...465) = "<<-`HERE`"
+            ├── content_loc: (466...471) = "\#@@1\n"
+            ├── closing_loc: (471...476) = "HERE\n"
+            └── unescaped: "\#@@1\n"

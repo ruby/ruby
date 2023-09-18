@@ -1,1 +1,6 @@
-ProgramNode(0...2)([], StatementsNode(0...2)([BackReferenceReadNode(0...2)()]))
+@ ProgramNode (location: (0...2))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...2))
+    └── body: (length: 1)
+        └── @ BackReferenceReadNode (location: (0...2))

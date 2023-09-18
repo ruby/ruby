@@ -1,42 +1,49 @@
-ProgramNode(0...33)(
-  [],
-  StatementsNode(0...33)(
-    [CallNode(0...33)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       ArgumentsNode(4...33)(
-         [DefNode(4...33)(
-            (8...11),
-            nil,
-            nil,
-            StatementsNode(13...29)(
-              [CallNode(13...29)(
-                 SelfNode(13...17)(),
-                 (17...18),
-                 (18...22),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(23...29)([], nil, nil, (23...25), (26...29)),
-                 0,
-                 "each"
-               )]
-            ),
-            [],
-            (4...7),
-            nil,
-            nil,
-            nil,
-            nil,
-            (30...33)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "bar"
-     )]
-  )
-)
+@ ProgramNode (location: (0...33))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...33))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...33))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...3) = "bar"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (4...33))
+            │   └── arguments: (length: 1)
+            │       └── @ DefNode (location: (4...33))
+            │           ├── name: :foo
+            │           ├── name_loc: (8...11) = "foo"
+            │           ├── receiver: ∅
+            │           ├── parameters: ∅
+            │           ├── body:
+            │           │   @ StatementsNode (location: (13...29))
+            │           │   └── body: (length: 1)
+            │           │       └── @ CallNode (location: (13...29))
+            │           │           ├── receiver:
+            │           │           │   @ SelfNode (location: (13...17))
+            │           │           ├── call_operator_loc: (17...18) = "."
+            │           │           ├── message_loc: (18...22) = "each"
+            │           │           ├── opening_loc: ∅
+            │           │           ├── arguments: ∅
+            │           │           ├── closing_loc: ∅
+            │           │           ├── block:
+            │           │           │   @ BlockNode (location: (23...29))
+            │           │           │   ├── locals: []
+            │           │           │   ├── parameters: ∅
+            │           │           │   ├── body: ∅
+            │           │           │   ├── opening_loc: (23...25) = "do"
+            │           │           │   └── closing_loc: (26...29) = "end"
+            │           │           ├── flags: ∅
+            │           │           └── name: "each"
+            │           ├── locals: []
+            │           ├── def_keyword_loc: (4...7) = "def"
+            │           ├── operator_loc: ∅
+            │           ├── lparen_loc: ∅
+            │           ├── rparen_loc: ∅
+            │           ├── equal_loc: ∅
+            │           └── end_keyword_loc: (30...33) = "end"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "bar"

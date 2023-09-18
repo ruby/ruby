@@ -1,16 +1,17 @@
-ProgramNode(0...12)(
-  [:a],
-  StatementsNode(0...12)(
-    [LocalVariableWriteNode(0...12)(
-       :a,
-       0,
-       (0...1),
-       InterpolatedStringNode(4...12)(
-         (4...12),
-         [StringNode(13...25)(nil, (13...25), nil, "x\n" + "y\n" + "z\n")],
-         (25...31)
-       ),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...12))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ StringNode (location: (4...12))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (4...12) = "<<~\"EOF\""
+            │   ├── content_loc: (13...25) = "  x\n  y\n  z\n"
+            │   ├── closing_loc: (25...31) = "  EOF\n"
+            │   └── unescaped: "x\ny\nz\n"
+            └── operator_loc: (2...3) = "="

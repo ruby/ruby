@@ -1,163 +1,285 @@
-ProgramNode(0...131)(
-  [:_a],
-  StatementsNode(0...131)(
-    [IfNode(0...9)(
-       nil,
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-       StatementsNode(4...5)(
-         [CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "b")]
-       ),
-       ElseNode(6...9)(
-         (6...7),
-         StatementsNode(8...9)(
-           [CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "c")]
-         ),
-         nil
-       ),
-       nil
-     ),
-     IfNode(11...38)(
-       nil,
-       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "a"),
-       StatementsNode(15...25)(
-         [DefinedNode(15...25)(
-            nil,
-            CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 2, "b"),
-            nil,
-            (15...23)
-          )]
-       ),
-       ElseNode(26...38)(
-         (26...27),
-         StatementsNode(28...38)(
-           [DefinedNode(28...38)(
-              nil,
-              CallNode(37...38)(
-                nil,
-                nil,
-                (37...38),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "c"
-              ),
-              nil,
-              (28...36)
-            )]
-         ),
-         nil
-       ),
-       nil
-     ),
-     IfNode(40...55)(
-       nil,
-       CallNode(40...46)(nil, nil, (40...46), nil, nil, nil, nil, 0, "empty?"),
-       StatementsNode(47...51)([TrueNode(47...51)()]),
-       ElseNode(51...55)(
-         (51...52),
-         StatementsNode(52...55)([NilNode(52...55)()]),
-         nil
-       ),
-       nil
-     ),
-     IfNode(57...73)(
-       nil,
-       CallNode(57...63)(nil, nil, (57...63), nil, nil, nil, nil, 0, "empty?"),
-       StatementsNode(64...69)([FalseNode(64...69)()]),
-       ElseNode(69...73)(
-         (69...70),
-         StatementsNode(70...73)([NilNode(70...73)()]),
-         nil
-       ),
-       nil
-     ),
-     IfNode(75...89)(
-       nil,
-       CallNode(75...81)(nil, nil, (75...81), nil, nil, nil, nil, 0, "empty?"),
-       StatementsNode(82...85)([NilNode(82...85)()]),
-       ElseNode(85...89)(
-         (85...86),
-         StatementsNode(86...89)([NilNode(86...89)()]),
-         nil
-       ),
-       nil
-     ),
-     IfNode(91...101)(
-       nil,
-       CallNode(91...93)(nil, nil, (91...93), nil, nil, nil, nil, 0, "a?"),
-       StatementsNode(94...97)([NilNode(94...97)()]),
-       ElseNode(97...101)(
-         (97...98),
-         StatementsNode(98...101)([NilNode(98...101)()]),
-         nil
-       ),
-       nil
-     ),
-     IfNode(103...117)(
-       nil,
-       CallNode(103...104)(nil, nil, (103...104), nil, nil, nil, nil, 2, "a"),
-       StatementsNode(106...110)(
-         [CallNode(106...110)(
-            nil,
-            nil,
-            (106...110),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "var1"
-          )]
-       ),
-       ElseNode(111...117)(
-         (111...112),
-         StatementsNode(113...117)(
-           [CallNode(113...117)(
-              nil,
-              nil,
-              (113...117),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "var2"
-            )]
-         ),
-         nil
-       ),
-       nil
-     ),
-     IfNode(119...131)(
-       nil,
-       CallNode(119...123)(
-         nil,
-         nil,
-         (119...123),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "nil?"
-       ),
-       StatementsNode(124...129)(
-         [LocalVariableWriteNode(124...129)(
-            :_a,
-            0,
-            (124...126),
-            IntegerNode(128...129)(),
-            (127...128)
-          )]
-       ),
-       ElseNode(129...131)(
-         (129...130),
-         StatementsNode(130...131)([IntegerNode(130...131)()]),
-         nil
-       ),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...131))
+├── locals: [:_a]
+└── statements:
+    @ StatementsNode (location: (0...131))
+    └── body: (length: 8)
+        ├── @ IfNode (location: (0...9))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (0...1))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...1) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (4...5))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (4...5))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (4...5) = "b"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "b"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (6...9))
+        │   │   ├── else_keyword_loc: (6...7) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (8...9))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (8...9))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (8...9) = "c"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "c"
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (11...38))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (11...12))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (11...12) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (15...25))
+        │   │   └── body: (length: 1)
+        │   │       └── @ DefinedNode (location: (15...25))
+        │   │           ├── lparen_loc: ∅
+        │   │           ├── value:
+        │   │           │   @ CallNode (location: (24...25))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (24...25) = "b"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: variable_call
+        │   │           │   └── name: "b"
+        │   │           ├── rparen_loc: ∅
+        │   │           └── keyword_loc: (15...23) = "defined?"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (26...38))
+        │   │   ├── else_keyword_loc: (26...27) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (28...38))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ DefinedNode (location: (28...38))
+        │   │   │           ├── lparen_loc: ∅
+        │   │   │           ├── value:
+        │   │   │           │   @ CallNode (location: (37...38))
+        │   │   │           │   ├── receiver: ∅
+        │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── message_loc: (37...38) = "c"
+        │   │   │           │   ├── opening_loc: ∅
+        │   │   │           │   ├── arguments: ∅
+        │   │   │           │   ├── closing_loc: ∅
+        │   │   │           │   ├── block: ∅
+        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   └── name: "c"
+        │   │   │           ├── rparen_loc: ∅
+        │   │   │           └── keyword_loc: (28...36) = "defined?"
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (40...55))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (40...46))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (40...46) = "empty?"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "empty?"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (47...51))
+        │   │   └── body: (length: 1)
+        │   │       └── @ TrueNode (location: (47...51))
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (51...55))
+        │   │   ├── else_keyword_loc: (51...52) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (52...55))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (52...55))
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (57...73))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (57...63))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (57...63) = "empty?"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "empty?"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (64...69))
+        │   │   └── body: (length: 1)
+        │   │       └── @ FalseNode (location: (64...69))
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (69...73))
+        │   │   ├── else_keyword_loc: (69...70) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (70...73))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (70...73))
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (75...89))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (75...81))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (75...81) = "empty?"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "empty?"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (82...85))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NilNode (location: (82...85))
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (85...89))
+        │   │   ├── else_keyword_loc: (85...86) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (86...89))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (86...89))
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (91...101))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (91...93))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (91...93) = "a?"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: "a?"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (94...97))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NilNode (location: (94...97))
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (97...101))
+        │   │   ├── else_keyword_loc: (97...98) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (98...101))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (98...101))
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (103...117))
+        │   ├── if_keyword_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (103...104))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (103...104) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "a"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (106...110))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (106...110))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (106...110) = "var1"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "var1"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (111...117))
+        │   │   ├── else_keyword_loc: (111...112) = ":"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (113...117))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (113...117))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (113...117) = "var2"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "var2"
+        │   │   └── end_keyword_loc: ∅
+        │   └── end_keyword_loc: ∅
+        └── @ IfNode (location: (119...131))
+            ├── if_keyword_loc: ∅
+            ├── predicate:
+            │   @ CallNode (location: (119...123))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (119...123) = "nil?"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "nil?"
+            ├── statements:
+            │   @ StatementsNode (location: (124...129))
+            │   └── body: (length: 1)
+            │       └── @ LocalVariableWriteNode (location: (124...129))
+            │           ├── name: :_a
+            │           ├── depth: 0
+            │           ├── name_loc: (124...126) = "_a"
+            │           ├── value:
+            │           │   @ IntegerNode (location: (128...129))
+            │           │   └── flags: decimal
+            │           └── operator_loc: (127...128) = "="
+            ├── consequent:
+            │   @ ElseNode (location: (129...131))
+            │   ├── else_keyword_loc: (129...130) = ":"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (130...131))
+            │   │   └── body: (length: 1)
+            │   │       └── @ IntegerNode (location: (130...131))
+            │   │           └── flags: decimal
+            │   └── end_keyword_loc: ∅
+            └── end_keyword_loc: ∅

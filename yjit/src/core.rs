@@ -550,7 +550,7 @@ impl BranchGenFn {
                 asm.jb(target0)
             }
             BranchGenFn::JITReturn => {
-                asm.comment("update cfp->jit_return");
+                asm_comment!(asm, "update cfp->jit_return");
                 asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.unwrap_code_ptr().raw_ptr()));
             }
         }
@@ -2213,7 +2213,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
 // Change the entry's jump target from an entry stub to a next entry
 pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: CodePtr) {
     let mut asm = Assembler::new();
-    asm.comment("regenerate_entry");
+    asm_comment!(asm, "regenerate_entry");
 
     // gen_entry_guard generates cmp + jne. We're rewriting only jne.
     asm.jne(next_entry.into());
@@ -2248,7 +2248,7 @@ c_callable! {
     /// See [gen_call_entry_stub_hit].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            match entry_stub_hit_body(entry_ptr, ec) {
+            match with_compile_time(|| { entry_stub_hit_body(entry_ptr, ec) }) {
                 Some(addr) => addr,
                 // Failed to service the stub by generating a new block so now we
                 // need to exit to the interpreter at the stubbed location.
@@ -2322,7 +2322,7 @@ pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<Code
     let stub_addr = ocb.get_write_ptr();
 
     let mut asm = Assembler::new();
-    asm.comment("entry stub hit");
+    asm_comment!(asm, "entry stub hit");
 
     asm.mov(C_ARG_OPNDS[0], entry_address.into());
 
@@ -2347,7 +2347,7 @@ pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     let mut asm = Assembler::new();
 
     // See gen_entry_guard for how it's used.
-    asm.comment("entry_stub_hit() trampoline");
+    asm_comment!(asm, "entry_stub_hit() trampoline");
     let jump_addr = asm.ccall(entry_stub_hit as *mut u8, vec![C_ARG_OPNDS[0], EC]);
 
     // Jump to the address returned by the entry_stub_hit() call
@@ -2370,7 +2370,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
 
     // Generate the branch
     let mut asm = Assembler::new();
-    asm.comment("regenerate_branch");
+    asm_comment!(asm, "regenerate_branch");
     branch.gen_fn.call(
         &mut asm,
         Target::CodePtr(branch.get_target_address(0).unwrap()),
@@ -2441,7 +2441,7 @@ c_callable! {
         ec: EcPtr,
     ) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            branch_stub_hit_body(branch_ptr, target_idx, ec)
+            with_compile_time(|| { branch_stub_hit_body(branch_ptr, target_idx, ec) })
         })
     }
 }
@@ -2482,9 +2482,6 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         (target.get_blockid(), target.get_ctx())
     };
 
-    let cb = CodegenGlobals::get_inline_cb();
-    let ocb = CodegenGlobals::get_outlined_cb();
-
     let (cfp, original_interp_sp) = unsafe {
         let cfp = get_ec_cfp(ec);
         let original_interp_sp = get_cfp_sp(cfp);
@@ -2506,8 +2503,17 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         // So we do it here instead.
         rb_set_cfp_sp(cfp, reconned_sp);
 
+        // Bail if we're about to run out of native stack space.
+        // We've just reconstructed interpreter state.
+        if rb_ec_stack_check(ec as _) != 0 {
+            return CodegenGlobals::get_stub_exit_code().raw_ptr();
+        }
+
         (cfp, original_interp_sp)
     };
+
+    let cb = CodegenGlobals::get_inline_cb();
+    let ocb = CodegenGlobals::get_outlined_cb();
 
     // Try to find an existing compiled version of this block
     let mut block = find_block_version(target_blockid, &target_ctx);
@@ -2617,7 +2623,7 @@ fn gen_branch_stub(
     let mut asm = Assembler::new();
     asm.ctx = ctx.clone();
     asm.set_reg_temps(ctx.reg_temps);
-    asm.comment("branch stub hit");
+    asm_comment!(asm, "branch stub hit");
 
     // Save caller-saved registers before C_ARG_OPNDS get clobbered.
     // Spill all registers for consistency with the trampoline.
@@ -2662,7 +2668,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // is the unchanging part.
     // Since this trampoline is static, it allows code GC inside
     // branch_stub_hit() to free stubs without problems.
-    asm.comment("branch_stub_hit() trampoline");
+    asm_comment!(asm, "branch_stub_hit() trampoline");
     let jump_addr = asm.ccall(
         branch_stub_hit as *mut u8,
         vec![
@@ -2787,7 +2793,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
         let block_addr = block.start_addr;
 
         // Call the branch generation function
-        asm.comment("gen_direct_jmp: existing block");
+        asm_comment!(asm, "gen_direct_jmp: existing block");
         asm.mark_branch_start(&branch);
         branch.gen_fn.call(asm, Target::CodePtr(block_addr), None);
         asm.mark_branch_end(&branch);
@@ -2795,7 +2801,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
         BranchTarget::Block(blockref)
     } else {
         // The branch is effectively empty (a noop)
-        asm.comment("gen_direct_jmp: fallthrough");
+        asm_comment!(asm, "gen_direct_jmp: fallthrough");
         asm.mark_branch_start(&branch);
         asm.mark_branch_end(&branch);
         branch.gen_fn.set_shape(BranchShape::Next0);
@@ -2841,7 +2847,7 @@ pub fn defer_compilation(
     let target0_address = branch.set_target(0, blockid, &next_ctx, ocb);
 
     // Call the branch generation function
-    asm.comment("defer_compilation");
+    asm_comment!(asm, "defer_compilation");
     asm.mark_branch_start(&branch);
     if let Some(dst_addr) = target0_address {
         branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);

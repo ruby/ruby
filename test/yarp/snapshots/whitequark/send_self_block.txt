@@ -1,49 +1,73 @@
-ProgramNode(0...42)(
-  [],
-  StatementsNode(0...42)(
-    [CallNode(0...10)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       nil,
-       nil,
-       BlockNode(4...10)([], nil, nil, (4...6), (7...10)),
-       0,
-       "fun"
-     ),
-     CallNode(12...19)(
-       nil,
-       nil,
-       (12...15),
-       nil,
-       nil,
-       nil,
-       BlockNode(16...19)([], nil, nil, (16...17), (18...19)),
-       0,
-       "fun"
-     ),
-     CallNode(21...30)(
-       nil,
-       nil,
-       (21...24),
-       (24...25),
-       nil,
-       (25...26),
-       BlockNode(27...30)([], nil, nil, (27...28), (29...30)),
-       0,
-       "fun"
-     ),
-     CallNode(32...42)(
-       nil,
-       nil,
-       (32...35),
-       (35...36),
-       ArgumentsNode(36...37)([IntegerNode(36...37)()]),
-       (37...38),
-       BlockNode(39...42)([], nil, nil, (39...40), (41...42)),
-       0,
-       "fun"
-     )]
-  )
-)
+@ ProgramNode (location: (0...42))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...42))
+    └── body: (length: 4)
+        ├── @ CallNode (location: (0...10))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (4...10))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (4...6) = "do"
+        │   │   └── closing_loc: (7...10) = "end"
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (12...19))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (12...15) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (16...19))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (16...17) = "{"
+        │   │   └── closing_loc: (18...19) = "}"
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (21...30))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (21...24) = "fun"
+        │   ├── opening_loc: (24...25) = "("
+        │   ├── arguments: ∅
+        │   ├── closing_loc: (25...26) = ")"
+        │   ├── block:
+        │   │   @ BlockNode (location: (27...30))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (27...28) = "{"
+        │   │   └── closing_loc: (29...30) = "}"
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        └── @ CallNode (location: (32...42))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (32...35) = "fun"
+            ├── opening_loc: (35...36) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (36...37))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (36...37))
+            │           └── flags: decimal
+            ├── closing_loc: (37...38) = ")"
+            ├── block:
+            │   @ BlockNode (location: (39...42))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body: ∅
+            │   ├── opening_loc: (39...40) = "{"
+            │   └── closing_loc: (41...42) = "}"
+            ├── flags: ∅
+            └── name: "fun"

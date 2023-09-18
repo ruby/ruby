@@ -1,26 +1,31 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)(
-    [CallNode(0...9)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...9)(
-         [InterpolatedStringNode(2...9)(
-            (2...3),
-            [EmbeddedStatementsNode(3...8)(
-               (3...5),
-               StatementsNode(5...7)([ArrayNode(5...7)([], (5...6), (6...7))]),
-               (7...8)
-             )],
-            (8...9)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "m"
-     )]
-  )
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...9))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "m"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...9))
+            │   └── arguments: (length: 1)
+            │       └── @ InterpolatedStringNode (location: (2...9))
+            │           ├── opening_loc: (2...3) = "\""
+            │           ├── parts: (length: 1)
+            │           │   └── @ EmbeddedStatementsNode (location: (3...8))
+            │           │       ├── opening_loc: (3...5) = "\#{"
+            │           │       ├── statements:
+            │           │       │   @ StatementsNode (location: (5...7))
+            │           │       │   └── body: (length: 1)
+            │           │       │       └── @ ArrayNode (location: (5...7))
+            │           │       │           ├── elements: (length: 0)
+            │           │       │           ├── opening_loc: (5...6) = "["
+            │           │       │           └── closing_loc: (6...7) = "]"
+            │           │       └── closing_loc: (7...8) = "}"
+            │           └── closing_loc: (8...9) = "\""
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "m"

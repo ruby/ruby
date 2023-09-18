@@ -1,97 +1,106 @@
-ProgramNode(0...132)(
-  [],
-  StatementsNode(0...132)(
-    [DefNode(0...39)(
-       (4...5),
-       nil,
-       nil,
-       StatementsNode(7...34)(
-         [SingletonClassNode(7...34)(
-            [],
-            (7...12),
-            (13...15),
-            SelfNode(16...20)(),
-            StatementsNode(22...29)(
-              [ConstantWriteNode(22...29)(
-                 (22...23),
-                 NilNode(26...29)(),
-                 (24...25)
-               )]
-            ),
-            (31...34)
-          )]
-       ),
-       [],
-       (0...3),
-       nil,
-       nil,
-       nil,
-       nil,
-       (36...39)
-     ),
-     DefNode(41...85)(
-       (45...46),
-       nil,
-       nil,
-       StatementsNode(48...80)(
-         [SingletonClassNode(48...80)(
-            [],
-            (48...53),
-            (54...56),
-            SelfNode(57...61)(),
-            StatementsNode(63...75)(
-              [ClassNode(63...75)(
-                 [],
-                 (63...68),
-                 ConstantReadNode(69...70)(),
-                 nil,
-                 nil,
-                 nil,
-                 (72...75),
-                 "C"
-               )]
-            ),
-            (77...80)
-          )]
-       ),
-       [],
-       (41...44),
-       nil,
-       nil,
-       nil,
-       nil,
-       (82...85)
-     ),
-     DefNode(87...132)(
-       (91...92),
-       nil,
-       nil,
-       StatementsNode(94...127)(
-         [SingletonClassNode(94...127)(
-            [],
-            (94...99),
-            (100...102),
-            SelfNode(103...107)(),
-            StatementsNode(109...122)(
-              [ModuleNode(109...122)(
-                 [],
-                 (109...115),
-                 ConstantReadNode(116...117)(),
-                 nil,
-                 (119...122),
-                 "M"
-               )]
-            ),
-            (124...127)
-          )]
-       ),
-       [],
-       (87...90),
-       nil,
-       nil,
-       nil,
-       nil,
-       (129...132)
-     )]
-  )
-)
+@ ProgramNode (location: (0...132))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...132))
+    └── body: (length: 3)
+        ├── @ DefNode (location: (0...39))
+        │   ├── name: :m
+        │   ├── name_loc: (4...5) = "m"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (7...34))
+        │   │   └── body: (length: 1)
+        │   │       └── @ SingletonClassNode (location: (7...34))
+        │   │           ├── locals: []
+        │   │           ├── class_keyword_loc: (7...12) = "class"
+        │   │           ├── operator_loc: (13...15) = "<<"
+        │   │           ├── expression:
+        │   │           │   @ SelfNode (location: (16...20))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (22...29))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ ConstantWriteNode (location: (22...29))
+        │   │           │           ├── name: :A
+        │   │           │           ├── name_loc: (22...23) = "A"
+        │   │           │           ├── value:
+        │   │           │           │   @ NilNode (location: (26...29))
+        │   │           │           └── operator_loc: (24...25) = "="
+        │   │           └── end_keyword_loc: (31...34) = "end"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (36...39) = "end"
+        ├── @ DefNode (location: (41...85))
+        │   ├── name: :m
+        │   ├── name_loc: (45...46) = "m"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (48...80))
+        │   │   └── body: (length: 1)
+        │   │       └── @ SingletonClassNode (location: (48...80))
+        │   │           ├── locals: []
+        │   │           ├── class_keyword_loc: (48...53) = "class"
+        │   │           ├── operator_loc: (54...56) = "<<"
+        │   │           ├── expression:
+        │   │           │   @ SelfNode (location: (57...61))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (63...75))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ ClassNode (location: (63...75))
+        │   │           │           ├── locals: []
+        │   │           │           ├── class_keyword_loc: (63...68) = "class"
+        │   │           │           ├── constant_path:
+        │   │           │           │   @ ConstantReadNode (location: (69...70))
+        │   │           │           │   └── name: :C
+        │   │           │           ├── inheritance_operator_loc: ∅
+        │   │           │           ├── superclass: ∅
+        │   │           │           ├── body: ∅
+        │   │           │           ├── end_keyword_loc: (72...75) = "end"
+        │   │           │           └── name: :C
+        │   │           └── end_keyword_loc: (77...80) = "end"
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (41...44) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (82...85) = "end"
+        └── @ DefNode (location: (87...132))
+            ├── name: :m
+            ├── name_loc: (91...92) = "m"
+            ├── receiver: ∅
+            ├── parameters: ∅
+            ├── body:
+            │   @ StatementsNode (location: (94...127))
+            │   └── body: (length: 1)
+            │       └── @ SingletonClassNode (location: (94...127))
+            │           ├── locals: []
+            │           ├── class_keyword_loc: (94...99) = "class"
+            │           ├── operator_loc: (100...102) = "<<"
+            │           ├── expression:
+            │           │   @ SelfNode (location: (103...107))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (109...122))
+            │           │   └── body: (length: 1)
+            │           │       └── @ ModuleNode (location: (109...122))
+            │           │           ├── locals: []
+            │           │           ├── module_keyword_loc: (109...115) = "module"
+            │           │           ├── constant_path:
+            │           │           │   @ ConstantReadNode (location: (116...117))
+            │           │           │   └── name: :M
+            │           │           ├── body: ∅
+            │           │           ├── end_keyword_loc: (119...122) = "end"
+            │           │           └── name: :M
+            │           └── end_keyword_loc: (124...127) = "end"
+            ├── locals: []
+            ├── def_keyword_loc: (87...90) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (129...132) = "end"

@@ -1,35 +1,40 @@
-ProgramNode(0...15)(
-  [],
-  StatementsNode(0...15)(
-    [CallNode(0...15)(
-       nil,
-       nil,
-       (0...4),
-       nil,
-       nil,
-       nil,
-       BlockNode(5...15)(
-         [:k],
-         BlockParametersNode(7...13)(
-           ParametersNode(8...12)(
-             [],
-             [],
-             [],
-             nil,
-             [KeywordParameterNode(8...12)((8...10), IntegerNode(10...12)())],
-             nil,
-             nil
-           ),
-           [],
-           (7...8),
-           (12...13)
-         ),
-         nil,
-         (5...6),
-         (14...15)
-       ),
-       0,
-       "blah"
-     )]
-  )
-)
+@ ProgramNode (location: (0...15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...15))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...15))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...4) = "blah"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (5...15))
+            │   ├── locals: [:k]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (7...13))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (8...12))
+            │   │   │   ├── requireds: (length: 0)
+            │   │   │   ├── optionals: (length: 0)
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 1)
+            │   │   │   │   └── @ KeywordParameterNode (location: (8...12))
+            │   │   │   │       ├── name: :k
+            │   │   │   │       ├── name_loc: (8...10) = "k:"
+            │   │   │   │       └── value:
+            │   │   │   │           @ IntegerNode (location: (10...12))
+            │   │   │   │           └── flags: decimal
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (7...8) = "|"
+            │   │   └── closing_loc: (12...13) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (5...6) = "{"
+            │   └── closing_loc: (14...15) = "}"
+            ├── flags: ∅
+            └── name: "blah"

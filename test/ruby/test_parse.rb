@@ -453,10 +453,30 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_define_singleton_error
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /singleton method for literals/) do
-      begin;
-        def ("foo").foo; end
-      end;
+    msg = /singleton method for literals/
+    assert_parse_error(%q[def ("foo").foo; end], msg)
+    assert_parse_error(%q[def (1).foo; end], msg)
+    assert_parse_error(%q[def ((1;1)).foo; end], msg)
+    assert_parse_error(%q[def ((;1)).foo; end], msg)
+    assert_parse_error(%q[def ((1+1;1)).foo; end], msg)
+    assert_parse_error(%q[def ((%s();1)).foo; end], msg)
+    assert_parse_error(%q[def ((%w();1)).foo; end], msg)
+    assert_parse_error(%q[def ("#{42}").foo; end], msg)
+    assert_parse_error(%q[def (:"#{42}").foo; end], msg)
+  end
+
+  def test_flip_flop
+    [
+      '((cond1..cond2))',
+      '(; cond1..cond2)',
+      '(1; cond1..cond2)',
+      '(%s(); cond1..cond2)',
+      '(%w(); cond1..cond2)',
+      '(1; (2; (3; 4; cond1..cond2)))',
+      '(1+1; cond1..cond2)',
+    ].each do |code|
+      code = code.sub("cond1", "n==4").sub("cond2", "n==5")
+      assert_equal([4,5], eval("(1..9).select {|n| true if #{code}}"))
     end
   end
 
@@ -965,6 +985,20 @@ x = __ENCODING__
     assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
   end
 
+  def test_named_capture_in_block
+    [
+      '(/(?<a>.*)/)',
+      '(;/(?<a>.*)/)',
+      '(%s();/(?<a>.*)/)',
+      '(%w();/(?<a>.*)/)',
+      '(1; (2; 3; (4; /(?<a>.*)/)))',
+      '(1+1; /(?<a>.*)/)',
+    ].each do |code|
+      token = Random.bytes(4).unpack1("H*")
+      assert_equal(token, eval("#{code} =~ #{token.dump}; a"))
+    end
+  end
+
   def test_rescue_in_command_assignment
     bug = '[ruby-core:75621] [Bug #12402]'
     all_assertions(bug) do |a|
@@ -1443,9 +1477,24 @@ x = __ENCODING__
     assert_equal(expected, obj.arg)
   end
 
+  def test_ungettable_gvar
+    assert_syntax_error('$01234', /not valid to get/)
+    assert_syntax_error('"#$01234"', /not valid to get/)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
   end
 =end
+
+  def assert_parse(code)
+    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.parse(code))
+  end
+
+  def assert_parse_error(code, message)
+    assert_raise_with_message(SyntaxError, message) do
+      RubyVM::AbstractSyntaxTree.parse(code)
+    end
+  end
 end

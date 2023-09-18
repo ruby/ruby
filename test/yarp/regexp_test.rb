@@ -192,10 +192,46 @@ module YARP
       refute_nil(named_captures("foo{1, 2}"))
     end
 
+    ##############################################################################
+    # These test that flag values are correct.
+    ##############################################################################
+
+    def test_flag_ignorecase
+      assert_equal(Regexp::IGNORECASE, options("i"))
+    end
+
+    def test_flag_extended
+      assert_equal(Regexp::EXTENDED, options("x"))
+    end
+
+    def test_flag_multiline
+      assert_equal(Regexp::MULTILINE, options("m"))
+    end
+
+    def test_flag_combined
+      value = Regexp::IGNORECASE | Regexp::MULTILINE | Regexp::EXTENDED
+      assert_equal(value, options("mix"))
+    end
+
     private
 
     def named_captures(source)
       Debug.named_captures(source)
+    end
+
+    def options(flags)
+      options =
+        ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
+          YARP.parse(source).value.statements.body.first.options
+        end
+
+      # Check that we get the same set of options from both regular expressions
+      # and interpolated regular expressions.
+      assert_equal(1, options.uniq.length)
+
+      # Return the options from the first regular expression since we know they
+      # are the same.
+      options.first
     end
   end
 end

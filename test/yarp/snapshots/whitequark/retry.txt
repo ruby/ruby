@@ -1,1 +1,6 @@
-ProgramNode(0...5)([], StatementsNode(0...5)([RetryNode(0...5)()]))
+@ ProgramNode (location: (0...5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...5))
+    └── body: (length: 1)
+        └── @ RetryNode (location: (0...5))

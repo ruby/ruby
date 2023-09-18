@@ -1,47 +1,99 @@
-ProgramNode(0...44)(
-  [],
-  StatementsNode(0...44)(
-    [CallNode(0...9)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-       (3...4),
-       (4...5),
-       nil,
-       ArgumentsNode(8...9)([IntegerNode(8...9)()]),
-       nil,
-       nil,
-       0,
-       "A="
-     ),
-     CallNode(11...20)(
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "foo"),
-       (14...15),
-       (15...16),
-       nil,
-       ArgumentsNode(19...20)([IntegerNode(19...20)()]),
-       nil,
-       nil,
-       0,
-       "a="
-     ),
-     ConstantPathWriteNode(22...32)(
-       ConstantPathNode(22...28)(
-         CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 2, "foo"),
-         ConstantReadNode(27...28)(),
-         (25...27)
-       ),
-       (29...30),
-       IntegerNode(31...32)()
-     ),
-     CallNode(34...44)(
-       CallNode(34...37)(nil, nil, (34...37), nil, nil, nil, nil, 2, "foo"),
-       (37...39),
-       (39...40),
-       nil,
-       ArgumentsNode(43...44)([IntegerNode(43...44)()]),
-       nil,
-       nil,
-       0,
-       "a="
-     )]
-  )
-)
+@ ProgramNode (location: (0...44))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...44))
+    └── body: (length: 4)
+        ├── @ CallNode (location: (0...9))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (0...3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (3...4) = "."
+        │   ├── message_loc: (4...5) = "A"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (8...9))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (8...9))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "A="
+        ├── @ CallNode (location: (11...20))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (11...14))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (11...14) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (14...15) = "."
+        │   ├── message_loc: (15...16) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (19...20))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (19...20))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "a="
+        ├── @ ConstantPathWriteNode (location: (22...32))
+        │   ├── target:
+        │   │   @ ConstantPathNode (location: (22...28))
+        │   │   ├── parent:
+        │   │   │   @ CallNode (location: (22...25))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (22...25) = "foo"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "foo"
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (27...28))
+        │   │   │   └── name: :A
+        │   │   └── delimiter_loc: (25...27) = "::"
+        │   ├── operator_loc: (29...30) = "="
+        │   └── value:
+        │       @ IntegerNode (location: (31...32))
+        │       └── flags: decimal
+        └── @ CallNode (location: (34...44))
+            ├── receiver:
+            │   @ CallNode (location: (34...37))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (34...37) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── call_operator_loc: (37...39) = "::"
+            ├── message_loc: (39...40) = "a"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (43...44))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (43...44))
+            │           └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a="

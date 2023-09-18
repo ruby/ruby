@@ -1,41 +1,49 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [ArrayNode(0...13)(
-       [InterpolatedSymbolNode(3...7)(
-          nil,
-          [EmbeddedStatementsNode(3...7)(
-             (3...5),
-             StatementsNode(5...6)(
-               [CallNode(5...6)(nil, nil, (5...6), nil, nil, nil, nil, 2, "a")]
-             ),
-             (6...7)
-           )],
-          nil
-        ),
-        InterpolatedSymbolNode(8...12)(
-          nil,
-          [EmbeddedStatementsNode(8...12)(
-             (8...10),
-             StatementsNode(10...11)(
-               [CallNode(10...11)(
-                  nil,
-                  nil,
-                  (10...11),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "b"
-                )]
-             ),
-             (11...12)
-           )],
-          nil
-        )],
-       (0...3),
-       (12...13)
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ ArrayNode (location: (0...13))
+            ├── elements: (length: 2)
+            │   ├── @ InterpolatedSymbolNode (location: (3...7))
+            │   │   ├── opening_loc: ∅
+            │   │   ├── parts: (length: 1)
+            │   │   │   └── @ EmbeddedStatementsNode (location: (3...7))
+            │   │   │       ├── opening_loc: (3...5) = "\#{"
+            │   │   │       ├── statements:
+            │   │   │       │   @ StatementsNode (location: (5...6))
+            │   │   │       │   └── body: (length: 1)
+            │   │   │       │       └── @ CallNode (location: (5...6))
+            │   │   │       │           ├── receiver: ∅
+            │   │   │       │           ├── call_operator_loc: ∅
+            │   │   │       │           ├── message_loc: (5...6) = "a"
+            │   │   │       │           ├── opening_loc: ∅
+            │   │   │       │           ├── arguments: ∅
+            │   │   │       │           ├── closing_loc: ∅
+            │   │   │       │           ├── block: ∅
+            │   │   │       │           ├── flags: variable_call
+            │   │   │       │           └── name: "a"
+            │   │   │       └── closing_loc: (6...7) = "}"
+            │   │   └── closing_loc: ∅
+            │   └── @ InterpolatedSymbolNode (location: (8...12))
+            │       ├── opening_loc: ∅
+            │       ├── parts: (length: 1)
+            │       │   └── @ EmbeddedStatementsNode (location: (8...12))
+            │       │       ├── opening_loc: (8...10) = "\#{"
+            │       │       ├── statements:
+            │       │       │   @ StatementsNode (location: (10...11))
+            │       │       │   └── body: (length: 1)
+            │       │       │       └── @ CallNode (location: (10...11))
+            │       │       │           ├── receiver: ∅
+            │       │       │           ├── call_operator_loc: ∅
+            │       │       │           ├── message_loc: (10...11) = "b"
+            │       │       │           ├── opening_loc: ∅
+            │       │       │           ├── arguments: ∅
+            │       │       │           ├── closing_loc: ∅
+            │       │       │           ├── block: ∅
+            │       │       │           ├── flags: variable_call
+            │       │       │           └── name: "b"
+            │       │       └── closing_loc: (11...12) = "}"
+            │       └── closing_loc: ∅
+            ├── opening_loc: (0...3) = "%I["
+            └── closing_loc: (12...13) = "]"

@@ -1,40 +1,61 @@
-ProgramNode(0...41)(
-  [],
-  StatementsNode(0...41)(
-    [IfNode(0...41)(
-       (0...2),
-       CallNode(3...15)(
-         CallNode(7...15)(
-           CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 2, "var"),
-           (10...11),
-           (11...15),
-           nil,
-           nil,
-           nil,
-           nil,
-           0,
-           "nil?"
-         ),
-         nil,
-         (3...6),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "!"
-       ),
-       StatementsNode(21...26)(
-         [StringNode(21...26)((21...22), (22...25), (25...26), "foo")]
-       ),
-       ElseNode(27...41)(
-         (27...31),
-         StatementsNode(32...37)(
-           [StringNode(32...37)((32...33), (33...36), (36...37), "bar")]
-         ),
-         (38...41)
-       ),
-       (38...41)
-     )]
-  )
-)
+@ ProgramNode (location: (0...41))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...41))
+    └── body: (length: 1)
+        └── @ IfNode (location: (0...41))
+            ├── if_keyword_loc: (0...2) = "if"
+            ├── predicate:
+            │   @ CallNode (location: (3...15))
+            │   ├── receiver:
+            │   │   @ CallNode (location: (7...15))
+            │   │   ├── receiver:
+            │   │   │   @ CallNode (location: (7...10))
+            │   │   │   ├── receiver: ∅
+            │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── message_loc: (7...10) = "var"
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── arguments: ∅
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   ├── block: ∅
+            │   │   │   ├── flags: variable_call
+            │   │   │   └── name: "var"
+            │   │   ├── call_operator_loc: (10...11) = "."
+            │   │   ├── message_loc: (11...15) = "nil?"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: "nil?"
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (3...6) = "not"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "!"
+            ├── statements:
+            │   @ StatementsNode (location: (21...26))
+            │   └── body: (length: 1)
+            │       └── @ StringNode (location: (21...26))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (21...22) = "'"
+            │           ├── content_loc: (22...25) = "foo"
+            │           ├── closing_loc: (25...26) = "'"
+            │           └── unescaped: "foo"
+            ├── consequent:
+            │   @ ElseNode (location: (27...41))
+            │   ├── else_keyword_loc: (27...31) = "else"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (32...37))
+            │   │   └── body: (length: 1)
+            │   │       └── @ StringNode (location: (32...37))
+            │   │           ├── flags: ∅
+            │   │           ├── opening_loc: (32...33) = "'"
+            │   │           ├── content_loc: (33...36) = "bar"
+            │   │           ├── closing_loc: (36...37) = "'"
+            │   │           └── unescaped: "bar"
+            │   └── end_keyword_loc: (38...41) = "end"
+            └── end_keyword_loc: (38...41) = "end"

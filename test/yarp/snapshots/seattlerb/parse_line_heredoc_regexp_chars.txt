@@ -1,32 +1,32 @@
-ProgramNode(6...74)(
-  [:string],
-  StatementsNode(6...74)(
-    [LocalVariableWriteNode(6...22)(
-       :string,
-       0,
-       (6...12),
-       InterpolatedStringNode(15...22)(
-         (15...22),
-         [StringNode(23...48)(
-            nil,
-            (23...48),
-            nil,
-            "        very long string\n"
-          )],
-         (48...57)
-       ),
-       (13...14)
-     ),
-     CallNode(63...74)(
-       nil,
-       nil,
-       (63...67),
-       nil,
-       ArgumentsNode(68...74)([LocalVariableReadNode(68...74)(:string, 0)]),
-       nil,
-       nil,
-       0,
-       "puts"
-     )]
-  )
-)
+@ ProgramNode (location: (6...74))
+├── locals: [:string]
+└── statements:
+    @ StatementsNode (location: (6...74))
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (6...22))
+        │   ├── name: :string
+        │   ├── depth: 0
+        │   ├── name_loc: (6...12) = "string"
+        │   ├── value:
+        │   │   @ StringNode (location: (15...22))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (15...22) = "<<-\"^D\""
+        │   │   ├── content_loc: (23...48) = "        very long string\n"
+        │   │   ├── closing_loc: (48...57) = "      ^D\n"
+        │   │   └── unescaped: "        very long string\n"
+        │   └── operator_loc: (13...14) = "="
+        └── @ CallNode (location: (63...74))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (63...67) = "puts"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (68...74))
+            │   └── arguments: (length: 1)
+            │       └── @ LocalVariableReadNode (location: (68...74))
+            │           ├── name: :string
+            │           └── depth: 0
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "puts"

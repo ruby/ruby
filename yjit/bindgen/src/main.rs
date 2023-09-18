@@ -449,6 +449,7 @@ fn main() {
         .allowlist_function("rb_obj_class")
         .allowlist_function("rb_obj_is_proc")
         .allowlist_function("rb_vm_base_ptr")
+        .allowlist_function("rb_ec_stack_check")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

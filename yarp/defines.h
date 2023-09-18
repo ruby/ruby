@@ -36,7 +36,7 @@
 #endif
 
 // Windows versions before 2015 use _snprintf
-#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#if !defined(snprintf) && defined(_MSC_VER) && (_MSC_VER < 1900)
 #   define snprintf _snprintf
 #endif
 

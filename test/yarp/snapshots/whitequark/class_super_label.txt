@@ -1,27 +1,33 @@
-ProgramNode(0...20)(
-  [],
-  StatementsNode(0...20)(
-    [ClassNode(0...20)(
-       [],
-       (0...5),
-       ConstantReadNode(6...9)(),
-       (10...11),
-       CallNode(12...15)(
-         nil,
-         nil,
-         (12...13),
-         nil,
-         ArgumentsNode(13...15)(
-           [SymbolNode(13...15)((13...14), (14...15), nil, "b")]
-         ),
-         nil,
-         nil,
-         0,
-         "a"
-       ),
-       nil,
-       (17...20),
-       "Foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...20))
+    └── body: (length: 1)
+        └── @ ClassNode (location: (0...20))
+            ├── locals: []
+            ├── class_keyword_loc: (0...5) = "class"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (6...9))
+            │   └── name: :Foo
+            ├── inheritance_operator_loc: (10...11) = "<"
+            ├── superclass:
+            │   @ CallNode (location: (12...15))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (12...13) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (13...15))
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ SymbolNode (location: (13...15))
+            │   │           ├── opening_loc: (13...14) = ":"
+            │   │           ├── value_loc: (14...15) = "b"
+            │   │           ├── closing_loc: ∅
+            │   │           └── unescaped: "b"
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "a"
+            ├── body: ∅
+            ├── end_keyword_loc: (17...20) = "end"
+            └── name: :Foo

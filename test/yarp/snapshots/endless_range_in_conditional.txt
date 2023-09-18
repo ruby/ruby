@@ -1,31 +1,46 @@
-ProgramNode(0...39)(
-  [],
-  StatementsNode(0...39)(
-    [IfNode(0...13)(
-       (0...2),
-       FlipFlopNode(3...7)(
-         IntegerNode(3...4)(),
-         IntegerNode(6...7)(),
-         (4...6),
-         0
-       ),
-       nil,
-       nil,
-       (10...13)
-     ),
-     IfNode(14...26)(
-       (14...16),
-       FlipFlopNode(17...20)(nil, IntegerNode(19...20)(), (17...19), 0),
-       nil,
-       nil,
-       (23...26)
-     ),
-     IfNode(27...39)(
-       (27...29),
-       FlipFlopNode(30...33)(IntegerNode(30...31)(), nil, (31...33), 0),
-       nil,
-       nil,
-       (36...39)
-     )]
-  )
-)
+@ ProgramNode (location: (0...39))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...39))
+    └── body: (length: 3)
+        ├── @ IfNode (location: (0...13))
+        │   ├── if_keyword_loc: (0...2) = "if"
+        │   ├── predicate:
+        │   │   @ FlipFlopNode (location: (3...7))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (3...4))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (6...7))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (4...6) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (10...13) = "end"
+        ├── @ IfNode (location: (14...26))
+        │   ├── if_keyword_loc: (14...16) = "if"
+        │   ├── predicate:
+        │   │   @ FlipFlopNode (location: (17...20))
+        │   │   ├── left: ∅
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (19...20))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (17...19) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (23...26) = "end"
+        └── @ IfNode (location: (27...39))
+            ├── if_keyword_loc: (27...29) = "if"
+            ├── predicate:
+            │   @ FlipFlopNode (location: (30...33))
+            │   ├── left:
+            │   │   @ IntegerNode (location: (30...31))
+            │   │   └── flags: decimal
+            │   ├── right: ∅
+            │   ├── operator_loc: (31...33) = ".."
+            │   └── flags: ∅
+            ├── statements: ∅
+            ├── consequent: ∅
+            └── end_keyword_loc: (36...39) = "end"

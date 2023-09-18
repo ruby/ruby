@@ -1,26 +1,31 @@
-ProgramNode(0...19)(
-  [],
-  StatementsNode(0...19)(
-    [LambdaNode(0...19)(
-       [:a, :foo, :bar],
-       (0...2),
-       (16...17),
-       (18...19),
-       BlockParametersNode(2...15)(
-         ParametersNode(3...4)(
-           [RequiredParameterNode(3...4)(:a)],
-           [],
-           [],
-           nil,
-           [],
-           nil,
-           nil
-         ),
-         [(6...9), (11...14)],
-         (2...3),
-         (14...15)
-       ),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...19))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...19))
+    └── body: (length: 1)
+        └── @ LambdaNode (location: (0...19))
+            ├── locals: [:a, :foo, :bar]
+            ├── operator_loc: (0...2) = "->"
+            ├── opening_loc: (16...17) = "{"
+            ├── closing_loc: (18...19) = "}"
+            ├── parameters:
+            │   @ BlockParametersNode (location: (2...15))
+            │   ├── parameters:
+            │   │   @ ParametersNode (location: (3...4))
+            │   │   ├── requireds: (length: 1)
+            │   │   │   └── @ RequiredParameterNode (location: (3...4))
+            │   │   │       └── name: :a
+            │   │   ├── optionals: (length: 0)
+            │   │   ├── rest: ∅
+            │   │   ├── posts: (length: 0)
+            │   │   ├── keywords: (length: 0)
+            │   │   ├── keyword_rest: ∅
+            │   │   └── block: ∅
+            │   ├── locals: (length: 2)
+            │   │   ├── @ BlockLocalVariableNode (location: (6...9))
+            │   │   │   └── name: :foo
+            │   │   └── @ BlockLocalVariableNode (location: (11...14))
+            │   │       └── name: :bar
+            │   ├── opening_loc: (2...3) = "("
+            │   └── closing_loc: (14...15) = ")"
+            └── body: ∅

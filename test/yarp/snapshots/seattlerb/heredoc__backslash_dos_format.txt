@@ -1,16 +1,17 @@
-ProgramNode(0...12)(
-  [:str],
-  StatementsNode(0...12)(
-    [LocalVariableWriteNode(0...12)(
-       :str,
-       0,
-       (0...3),
-       InterpolatedStringNode(6...12)(
-         (6...12),
-         [StringNode(14...30)(nil, (14...30), nil, "beforeafter\r\n")],
-         (30...35)
-       ),
-       (4...5)
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: [:str]
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...12))
+            ├── name: :str
+            ├── depth: 0
+            ├── name_loc: (0...3) = "str"
+            ├── value:
+            │   @ StringNode (location: (6...12))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (6...12) = "<<-XXX"
+            │   ├── content_loc: (14...30) = "before\\\r\nafter\r\n"
+            │   ├── closing_loc: (30...35) = "XXX\r\n"
+            │   └── unescaped: "beforeafter\r\n"
+            └── operator_loc: (4...5) = "="

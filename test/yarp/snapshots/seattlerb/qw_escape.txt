@@ -1,6 +1,11 @@
-ProgramNode(0...7)(
-  [],
-  StatementsNode(0...7)(
-    [StringNode(0...7)((0...3), (3...6), (6...7), "\u0001'")]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...7))
+            ├── flags: ∅
+            ├── opening_loc: (0...3) = "%q("
+            ├── content_loc: (3...6) = "\u0001\\'"
+            ├── closing_loc: (6...7) = ")"
+            └── unescaped: "\u0001'"

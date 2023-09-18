@@ -1,38 +1,65 @@
-ProgramNode(0...29)(
-  [],
-  StatementsNode(0...29)(
-    [CallNode(0...7)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-       (3...4),
-       (4...7),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "fun"
-     ),
-     CallNode(9...19)(
-       CallNode(9...12)(nil, nil, (9...12), nil, nil, nil, nil, 2, "foo"),
-       (12...14),
-       (14...17),
-       (17...18),
-       nil,
-       (18...19),
-       nil,
-       0,
-       "Fun"
-     ),
-     CallNode(21...29)(
-       CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 2, "foo"),
-       (24...26),
-       (26...29),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "fun"
-     )]
-  )
-)
+@ ProgramNode (location: (0...29))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...29))
+    └── body: (length: 3)
+        ├── @ CallNode (location: (0...7))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (0...3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (3...4) = "."
+        │   ├── message_loc: (4...7) = "fun"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "fun"
+        ├── @ CallNode (location: (9...19))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (9...12))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (9...12) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (12...14) = "::"
+        │   ├── message_loc: (14...17) = "Fun"
+        │   ├── opening_loc: (17...18) = "("
+        │   ├── arguments: ∅
+        │   ├── closing_loc: (18...19) = ")"
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "Fun"
+        └── @ CallNode (location: (21...29))
+            ├── receiver:
+            │   @ CallNode (location: (21...24))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (21...24) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── call_operator_loc: (24...26) = "::"
+            ├── message_loc: (26...29) = "fun"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "fun"

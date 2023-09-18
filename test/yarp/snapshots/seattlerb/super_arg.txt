@@ -1,12 +1,15 @@
-ProgramNode(0...8)(
-  [],
-  StatementsNode(0...8)(
-    [SuperNode(0...8)(
-       (0...5),
-       nil,
-       ArgumentsNode(6...8)([IntegerNode(6...8)()]),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...8))
+    └── body: (length: 1)
+        └── @ SuperNode (location: (0...8))
+            ├── keyword_loc: (0...5) = "super"
+            ├── lparen_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (6...8))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (6...8))
+            │           └── flags: decimal
+            ├── rparen_loc: ∅
+            └── block: ∅

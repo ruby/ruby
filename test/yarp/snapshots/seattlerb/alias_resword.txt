@@ -1,10 +1,19 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [AliasNode(0...12)(
-       SymbolNode(6...8)(nil, (6...8), nil, "in"),
-       SymbolNode(9...12)(nil, (9...12), nil, "out"),
-       (0...5)
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ AliasMethodNode (location: (0...12))
+            ├── new_name:
+            │   @ SymbolNode (location: (6...8))
+            │   ├── opening_loc: ∅
+            │   ├── value_loc: (6...8) = "in"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "in"
+            ├── old_name:
+            │   @ SymbolNode (location: (9...12))
+            │   ├── opening_loc: ∅
+            │   ├── value_loc: (9...12) = "out"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "out"
+            └── keyword_loc: (0...5) = "alias"

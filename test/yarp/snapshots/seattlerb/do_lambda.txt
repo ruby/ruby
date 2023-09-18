@@ -1,13 +1,17 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [LambdaNode(0...11)(
-       [],
-       (0...2),
-       (5...7),
-       (8...11),
-       BlockParametersNode(2...4)(nil, [], (2...3), (3...4)),
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ LambdaNode (location: (0...11))
+            ├── locals: []
+            ├── operator_loc: (0...2) = "->"
+            ├── opening_loc: (5...7) = "do"
+            ├── closing_loc: (8...11) = "end"
+            ├── parameters:
+            │   @ BlockParametersNode (location: (2...4))
+            │   ├── parameters: ∅
+            │   ├── locals: (length: 0)
+            │   ├── opening_loc: (2...3) = "("
+            │   └── closing_loc: (3...4) = ")"
+            └── body: ∅

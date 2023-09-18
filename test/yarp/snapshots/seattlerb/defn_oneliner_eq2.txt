@@ -1,37 +1,45 @@
-ProgramNode(0...28)(
-  [],
-  StatementsNode(0...28)(
-    [ClassNode(0...28)(
-       [],
-       (0...5),
-       ConstantReadNode(6...7)(),
-       nil,
-       nil,
-       StatementsNode(10...24)(
-         [DefNode(10...24)(
-            (14...16),
-            nil,
-            ParametersNode(17...18)(
-              [RequiredParameterNode(17...18)(:o)],
-              [],
-              [],
-              nil,
-              [],
-              nil,
-              nil
-            ),
-            StatementsNode(22...24)([IntegerNode(22...24)()]),
-            [:o],
-            (10...13),
-            nil,
-            (16...17),
-            (18...19),
-            (20...21),
-            nil
-          )]
-       ),
-       (25...28),
-       "X"
-     )]
-  )
-)
+@ ProgramNode (location: (0...28))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...28))
+    └── body: (length: 1)
+        └── @ ClassNode (location: (0...28))
+            ├── locals: []
+            ├── class_keyword_loc: (0...5) = "class"
+            ├── constant_path:
+            │   @ ConstantReadNode (location: (6...7))
+            │   └── name: :X
+            ├── inheritance_operator_loc: ∅
+            ├── superclass: ∅
+            ├── body:
+            │   @ StatementsNode (location: (10...24))
+            │   └── body: (length: 1)
+            │       └── @ DefNode (location: (10...24))
+            │           ├── name: :==
+            │           ├── name_loc: (14...16) = "=="
+            │           ├── receiver: ∅
+            │           ├── parameters:
+            │           │   @ ParametersNode (location: (17...18))
+            │           │   ├── requireds: (length: 1)
+            │           │   │   └── @ RequiredParameterNode (location: (17...18))
+            │           │   │       └── name: :o
+            │           │   ├── optionals: (length: 0)
+            │           │   ├── rest: ∅
+            │           │   ├── posts: (length: 0)
+            │           │   ├── keywords: (length: 0)
+            │           │   ├── keyword_rest: ∅
+            │           │   └── block: ∅
+            │           ├── body:
+            │           │   @ StatementsNode (location: (22...24))
+            │           │   └── body: (length: 1)
+            │           │       └── @ IntegerNode (location: (22...24))
+            │           │           └── flags: decimal
+            │           ├── locals: [:o]
+            │           ├── def_keyword_loc: (10...13) = "def"
+            │           ├── operator_loc: ∅
+            │           ├── lparen_loc: (16...17) = "("
+            │           ├── rparen_loc: (18...19) = ")"
+            │           ├── equal_loc: (20...21) = "="
+            │           └── end_keyword_loc: ∅
+            ├── end_keyword_loc: (25...28) = "end"
+            └── name: :X

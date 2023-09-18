@@ -1,23 +1,44 @@
-ProgramNode(0...10)(
-  [:a],
-  StatementsNode(0...10)(
-    [MultiWriteNode(0...10)(
-       [LocalVariableTargetNode(0...1)(:a, 0),
-        CallNode(3...6)(
-          CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 2, "b"),
-          (4...5),
-          (5...6),
-          nil,
-          nil,
-          nil,
-          nil,
-          0,
-          "C="
-        )],
-       (7...8),
-       CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 2, "d"),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ MultiWriteNode (location: (0...10))
+            ├── targets: (length: 2)
+            │   ├── @ LocalVariableTargetNode (location: (0...1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   └── @ CallNode (location: (3...6))
+            │       ├── receiver:
+            │       │   @ CallNode (location: (3...4))
+            │       │   ├── receiver: ∅
+            │       │   ├── call_operator_loc: ∅
+            │       │   ├── message_loc: (3...4) = "b"
+            │       │   ├── opening_loc: ∅
+            │       │   ├── arguments: ∅
+            │       │   ├── closing_loc: ∅
+            │       │   ├── block: ∅
+            │       │   ├── flags: variable_call
+            │       │   └── name: "b"
+            │       ├── call_operator_loc: (4...5) = "."
+            │       ├── message_loc: (5...6) = "C"
+            │       ├── opening_loc: ∅
+            │       ├── arguments: ∅
+            │       ├── closing_loc: ∅
+            │       ├── block: ∅
+            │       ├── flags: ∅
+            │       └── name: "C="
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (7...8) = "="
+            └── value:
+                @ CallNode (location: (9...10))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (9...10) = "d"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: variable_call
+                └── name: "d"

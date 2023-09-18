@@ -1,249 +1,365 @@
-ProgramNode(0...225)(
-  [],
-  StatementsNode(0...225)(
-    [CallNode(0...42)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       ArgumentsNode(2...42)(
-         [SymbolNode(2...6)((2...3), (3...6), nil, "foo"),
-          HashNode(8...42)(
-            (8...9),
-            [AssocNode(9...25)(
-               SymbolNode(9...13)((9...10), (10...11), (11...13), "a"),
-               CallNode(14...25)(
-                 nil,
-                 nil,
-                 (14...18),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(19...25)([], nil, nil, (19...21), (22...25)),
-                 0,
-                 "proc"
-               ),
-               nil
-             ),
-             AssocNode(27...41)(
-               SymbolNode(27...29)(nil, (27...28), (28...29), "b"),
-               CallNode(30...41)(
-                 nil,
-                 nil,
-                 (30...34),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(35...41)([], nil, nil, (35...37), (38...41)),
-                 0,
-                 "proc"
-               ),
-               nil
-             )],
-            (41...42)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     ),
-     CallNode(44...84)(
-       nil,
-       nil,
-       (44...45),
-       nil,
-       ArgumentsNode(46...84)(
-         [SymbolNode(46...50)((46...47), (47...50), nil, "foo"),
-          HashNode(52...84)(
-            (52...53),
-            [AssocSplatNode(53...67)(
-               CallNode(56...67)(
-                 nil,
-                 nil,
-                 (56...60),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(61...67)([], nil, nil, (61...63), (64...67)),
-                 0,
-                 "proc"
-               ),
-               (53...55)
-             ),
-             AssocNode(69...83)(
-               SymbolNode(69...71)(nil, (69...70), (70...71), "b"),
-               CallNode(72...83)(
-                 nil,
-                 nil,
-                 (72...76),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(77...83)([], nil, nil, (77...79), (80...83)),
-                 0,
-                 "proc"
-               ),
-               nil
-             )],
-            (83...84)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     ),
-     CallNode(86...129)(
-       nil,
-       nil,
-       (86...87),
-       nil,
-       ArgumentsNode(88...129)(
-         [SymbolNode(88...92)((88...89), (89...92), nil, "foo"),
-          HashNode(94...129)(
-            (94...95),
-            [AssocNode(95...112)(
-               SymbolNode(95...97)((95...96), (96...97), nil, "a"),
-               CallNode(101...112)(
-                 nil,
-                 nil,
-                 (101...105),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(106...112)([], nil, nil, (106...108), (109...112)),
-                 0,
-                 "proc"
-               ),
-               (98...100)
-             ),
-             AssocNode(114...128)(
-               SymbolNode(114...116)(nil, (114...115), (115...116), "b"),
-               CallNode(117...128)(
-                 nil,
-                 nil,
-                 (117...121),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(122...128)([], nil, nil, (122...124), (125...128)),
-                 0,
-                 "proc"
-               ),
-               nil
-             )],
-            (128...129)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     ),
-     CallNode(131...171)(
-       nil,
-       nil,
-       (131...132),
-       nil,
-       ArgumentsNode(133...171)(
-         [SymbolNode(133...137)((133...134), (134...137), nil, "foo"),
-          HashNode(139...171)(
-            (139...140),
-            [AssocNode(140...154)(
-               SymbolNode(140...142)(nil, (140...141), (141...142), "a"),
-               CallNode(143...154)(
-                 nil,
-                 nil,
-                 (143...147),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(148...154)([], nil, nil, (148...150), (151...154)),
-                 0,
-                 "proc"
-               ),
-               nil
-             ),
-             AssocNode(156...170)(
-               SymbolNode(156...158)(nil, (156...157), (157...158), "b"),
-               CallNode(159...170)(
-                 nil,
-                 nil,
-                 (159...163),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(164...170)([], nil, nil, (164...166), (167...170)),
-                 0,
-                 "proc"
-               ),
-               nil
-             )],
-            (170...171)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     ),
-     CallNode(173...225)(
-       nil,
-       nil,
-       (173...174),
-       nil,
-       ArgumentsNode(175...225)(
-         [SymbolNode(175...179)((175...176), (176...179), nil, "foo"),
-          HashNode(181...225)(
-            (181...182),
-            [AssocNode(182...208)(
-               CallNode(182...193)(
-                 nil,
-                 nil,
-                 (182...186),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(187...193)([], nil, nil, (187...189), (190...193)),
-                 0,
-                 "proc"
-               ),
-               CallNode(197...208)(
-                 nil,
-                 nil,
-                 (197...201),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(202...208)([], nil, nil, (202...204), (205...208)),
-                 0,
-                 "proc"
-               ),
-               (194...196)
-             ),
-             AssocNode(210...224)(
-               SymbolNode(210...212)(nil, (210...211), (211...212), "b"),
-               CallNode(213...224)(
-                 nil,
-                 nil,
-                 (213...217),
-                 nil,
-                 nil,
-                 nil,
-                 BlockNode(218...224)([], nil, nil, (218...220), (221...224)),
-                 0,
-                 "proc"
-               ),
-               nil
-             )],
-            (224...225)
-          )]
-       ),
-       nil,
-       nil,
-       0,
-       "p"
-     )]
-  )
-)
+@ ProgramNode (location: (0...225))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...225))
+    └── body: (length: 5)
+        ├── @ CallNode (location: (0...42))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...1) = "p"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (2...42))
+        │   │   └── arguments: (length: 2)
+        │   │       ├── @ SymbolNode (location: (2...6))
+        │   │       │   ├── opening_loc: (2...3) = ":"
+        │   │       │   ├── value_loc: (3...6) = "foo"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "foo"
+        │   │       └── @ HashNode (location: (8...42))
+        │   │           ├── opening_loc: (8...9) = "{"
+        │   │           ├── elements: (length: 2)
+        │   │           │   ├── @ AssocNode (location: (9...25))
+        │   │           │   │   ├── key:
+        │   │           │   │   │   @ SymbolNode (location: (9...13))
+        │   │           │   │   │   ├── opening_loc: (9...10) = "\""
+        │   │           │   │   │   ├── value_loc: (10...11) = "a"
+        │   │           │   │   │   ├── closing_loc: (11...13) = "\":"
+        │   │           │   │   │   └── unescaped: "a"
+        │   │           │   │   ├── value:
+        │   │           │   │   │   @ CallNode (location: (14...25))
+        │   │           │   │   │   ├── receiver: ∅
+        │   │           │   │   │   ├── call_operator_loc: ∅
+        │   │           │   │   │   ├── message_loc: (14...18) = "proc"
+        │   │           │   │   │   ├── opening_loc: ∅
+        │   │           │   │   │   ├── arguments: ∅
+        │   │           │   │   │   ├── closing_loc: ∅
+        │   │           │   │   │   ├── block:
+        │   │           │   │   │   │   @ BlockNode (location: (19...25))
+        │   │           │   │   │   │   ├── locals: []
+        │   │           │   │   │   │   ├── parameters: ∅
+        │   │           │   │   │   │   ├── body: ∅
+        │   │           │   │   │   │   ├── opening_loc: (19...21) = "do"
+        │   │           │   │   │   │   └── closing_loc: (22...25) = "end"
+        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   └── operator_loc: ∅
+        │   │           │   └── @ AssocNode (location: (27...41))
+        │   │           │       ├── key:
+        │   │           │       │   @ SymbolNode (location: (27...29))
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── value_loc: (27...28) = "b"
+        │   │           │       │   ├── closing_loc: (28...29) = ":"
+        │   │           │       │   └── unescaped: "b"
+        │   │           │       ├── value:
+        │   │           │       │   @ CallNode (location: (30...41))
+        │   │           │       │   ├── receiver: ∅
+        │   │           │       │   ├── call_operator_loc: ∅
+        │   │           │       │   ├── message_loc: (30...34) = "proc"
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── arguments: ∅
+        │   │           │       │   ├── closing_loc: ∅
+        │   │           │       │   ├── block:
+        │   │           │       │   │   @ BlockNode (location: (35...41))
+        │   │           │       │   │   ├── locals: []
+        │   │           │       │   │   ├── parameters: ∅
+        │   │           │       │   │   ├── body: ∅
+        │   │           │       │   │   ├── opening_loc: (35...37) = "do"
+        │   │           │       │   │   └── closing_loc: (38...41) = "end"
+        │   │           │       │   ├── flags: ∅
+        │   │           │       │   └── name: "proc"
+        │   │           │       └── operator_loc: ∅
+        │   │           └── closing_loc: (41...42) = "}"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "p"
+        ├── @ CallNode (location: (44...84))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (44...45) = "p"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (46...84))
+        │   │   └── arguments: (length: 2)
+        │   │       ├── @ SymbolNode (location: (46...50))
+        │   │       │   ├── opening_loc: (46...47) = ":"
+        │   │       │   ├── value_loc: (47...50) = "foo"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "foo"
+        │   │       └── @ HashNode (location: (52...84))
+        │   │           ├── opening_loc: (52...53) = "{"
+        │   │           ├── elements: (length: 2)
+        │   │           │   ├── @ AssocSplatNode (location: (53...67))
+        │   │           │   │   ├── value:
+        │   │           │   │   │   @ CallNode (location: (56...67))
+        │   │           │   │   │   ├── receiver: ∅
+        │   │           │   │   │   ├── call_operator_loc: ∅
+        │   │           │   │   │   ├── message_loc: (56...60) = "proc"
+        │   │           │   │   │   ├── opening_loc: ∅
+        │   │           │   │   │   ├── arguments: ∅
+        │   │           │   │   │   ├── closing_loc: ∅
+        │   │           │   │   │   ├── block:
+        │   │           │   │   │   │   @ BlockNode (location: (61...67))
+        │   │           │   │   │   │   ├── locals: []
+        │   │           │   │   │   │   ├── parameters: ∅
+        │   │           │   │   │   │   ├── body: ∅
+        │   │           │   │   │   │   ├── opening_loc: (61...63) = "do"
+        │   │           │   │   │   │   └── closing_loc: (64...67) = "end"
+        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   └── operator_loc: (53...55) = "**"
+        │   │           │   └── @ AssocNode (location: (69...83))
+        │   │           │       ├── key:
+        │   │           │       │   @ SymbolNode (location: (69...71))
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── value_loc: (69...70) = "b"
+        │   │           │       │   ├── closing_loc: (70...71) = ":"
+        │   │           │       │   └── unescaped: "b"
+        │   │           │       ├── value:
+        │   │           │       │   @ CallNode (location: (72...83))
+        │   │           │       │   ├── receiver: ∅
+        │   │           │       │   ├── call_operator_loc: ∅
+        │   │           │       │   ├── message_loc: (72...76) = "proc"
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── arguments: ∅
+        │   │           │       │   ├── closing_loc: ∅
+        │   │           │       │   ├── block:
+        │   │           │       │   │   @ BlockNode (location: (77...83))
+        │   │           │       │   │   ├── locals: []
+        │   │           │       │   │   ├── parameters: ∅
+        │   │           │       │   │   ├── body: ∅
+        │   │           │       │   │   ├── opening_loc: (77...79) = "do"
+        │   │           │       │   │   └── closing_loc: (80...83) = "end"
+        │   │           │       │   ├── flags: ∅
+        │   │           │       │   └── name: "proc"
+        │   │           │       └── operator_loc: ∅
+        │   │           └── closing_loc: (83...84) = "}"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "p"
+        ├── @ CallNode (location: (86...129))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (86...87) = "p"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (88...129))
+        │   │   └── arguments: (length: 2)
+        │   │       ├── @ SymbolNode (location: (88...92))
+        │   │       │   ├── opening_loc: (88...89) = ":"
+        │   │       │   ├── value_loc: (89...92) = "foo"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "foo"
+        │   │       └── @ HashNode (location: (94...129))
+        │   │           ├── opening_loc: (94...95) = "{"
+        │   │           ├── elements: (length: 2)
+        │   │           │   ├── @ AssocNode (location: (95...112))
+        │   │           │   │   ├── key:
+        │   │           │   │   │   @ SymbolNode (location: (95...97))
+        │   │           │   │   │   ├── opening_loc: (95...96) = ":"
+        │   │           │   │   │   ├── value_loc: (96...97) = "a"
+        │   │           │   │   │   ├── closing_loc: ∅
+        │   │           │   │   │   └── unescaped: "a"
+        │   │           │   │   ├── value:
+        │   │           │   │   │   @ CallNode (location: (101...112))
+        │   │           │   │   │   ├── receiver: ∅
+        │   │           │   │   │   ├── call_operator_loc: ∅
+        │   │           │   │   │   ├── message_loc: (101...105) = "proc"
+        │   │           │   │   │   ├── opening_loc: ∅
+        │   │           │   │   │   ├── arguments: ∅
+        │   │           │   │   │   ├── closing_loc: ∅
+        │   │           │   │   │   ├── block:
+        │   │           │   │   │   │   @ BlockNode (location: (106...112))
+        │   │           │   │   │   │   ├── locals: []
+        │   │           │   │   │   │   ├── parameters: ∅
+        │   │           │   │   │   │   ├── body: ∅
+        │   │           │   │   │   │   ├── opening_loc: (106...108) = "do"
+        │   │           │   │   │   │   └── closing_loc: (109...112) = "end"
+        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   └── operator_loc: (98...100) = "=>"
+        │   │           │   └── @ AssocNode (location: (114...128))
+        │   │           │       ├── key:
+        │   │           │       │   @ SymbolNode (location: (114...116))
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── value_loc: (114...115) = "b"
+        │   │           │       │   ├── closing_loc: (115...116) = ":"
+        │   │           │       │   └── unescaped: "b"
+        │   │           │       ├── value:
+        │   │           │       │   @ CallNode (location: (117...128))
+        │   │           │       │   ├── receiver: ∅
+        │   │           │       │   ├── call_operator_loc: ∅
+        │   │           │       │   ├── message_loc: (117...121) = "proc"
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── arguments: ∅
+        │   │           │       │   ├── closing_loc: ∅
+        │   │           │       │   ├── block:
+        │   │           │       │   │   @ BlockNode (location: (122...128))
+        │   │           │       │   │   ├── locals: []
+        │   │           │       │   │   ├── parameters: ∅
+        │   │           │       │   │   ├── body: ∅
+        │   │           │       │   │   ├── opening_loc: (122...124) = "do"
+        │   │           │       │   │   └── closing_loc: (125...128) = "end"
+        │   │           │       │   ├── flags: ∅
+        │   │           │       │   └── name: "proc"
+        │   │           │       └── operator_loc: ∅
+        │   │           └── closing_loc: (128...129) = "}"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "p"
+        ├── @ CallNode (location: (131...171))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (131...132) = "p"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (133...171))
+        │   │   └── arguments: (length: 2)
+        │   │       ├── @ SymbolNode (location: (133...137))
+        │   │       │   ├── opening_loc: (133...134) = ":"
+        │   │       │   ├── value_loc: (134...137) = "foo"
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   └── unescaped: "foo"
+        │   │       └── @ HashNode (location: (139...171))
+        │   │           ├── opening_loc: (139...140) = "{"
+        │   │           ├── elements: (length: 2)
+        │   │           │   ├── @ AssocNode (location: (140...154))
+        │   │           │   │   ├── key:
+        │   │           │   │   │   @ SymbolNode (location: (140...142))
+        │   │           │   │   │   ├── opening_loc: ∅
+        │   │           │   │   │   ├── value_loc: (140...141) = "a"
+        │   │           │   │   │   ├── closing_loc: (141...142) = ":"
+        │   │           │   │   │   └── unescaped: "a"
+        │   │           │   │   ├── value:
+        │   │           │   │   │   @ CallNode (location: (143...154))
+        │   │           │   │   │   ├── receiver: ∅
+        │   │           │   │   │   ├── call_operator_loc: ∅
+        │   │           │   │   │   ├── message_loc: (143...147) = "proc"
+        │   │           │   │   │   ├── opening_loc: ∅
+        │   │           │   │   │   ├── arguments: ∅
+        │   │           │   │   │   ├── closing_loc: ∅
+        │   │           │   │   │   ├── block:
+        │   │           │   │   │   │   @ BlockNode (location: (148...154))
+        │   │           │   │   │   │   ├── locals: []
+        │   │           │   │   │   │   ├── parameters: ∅
+        │   │           │   │   │   │   ├── body: ∅
+        │   │           │   │   │   │   ├── opening_loc: (148...150) = "do"
+        │   │           │   │   │   │   └── closing_loc: (151...154) = "end"
+        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   └── operator_loc: ∅
+        │   │           │   └── @ AssocNode (location: (156...170))
+        │   │           │       ├── key:
+        │   │           │       │   @ SymbolNode (location: (156...158))
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── value_loc: (156...157) = "b"
+        │   │           │       │   ├── closing_loc: (157...158) = ":"
+        │   │           │       │   └── unescaped: "b"
+        │   │           │       ├── value:
+        │   │           │       │   @ CallNode (location: (159...170))
+        │   │           │       │   ├── receiver: ∅
+        │   │           │       │   ├── call_operator_loc: ∅
+        │   │           │       │   ├── message_loc: (159...163) = "proc"
+        │   │           │       │   ├── opening_loc: ∅
+        │   │           │       │   ├── arguments: ∅
+        │   │           │       │   ├── closing_loc: ∅
+        │   │           │       │   ├── block:
+        │   │           │       │   │   @ BlockNode (location: (164...170))
+        │   │           │       │   │   ├── locals: []
+        │   │           │       │   │   ├── parameters: ∅
+        │   │           │       │   │   ├── body: ∅
+        │   │           │       │   │   ├── opening_loc: (164...166) = "do"
+        │   │           │       │   │   └── closing_loc: (167...170) = "end"
+        │   │           │       │   ├── flags: ∅
+        │   │           │       │   └── name: "proc"
+        │   │           │       └── operator_loc: ∅
+        │   │           └── closing_loc: (170...171) = "}"
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "p"
+        └── @ CallNode (location: (173...225))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (173...174) = "p"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (175...225))
+            │   └── arguments: (length: 2)
+            │       ├── @ SymbolNode (location: (175...179))
+            │       │   ├── opening_loc: (175...176) = ":"
+            │       │   ├── value_loc: (176...179) = "foo"
+            │       │   ├── closing_loc: ∅
+            │       │   └── unescaped: "foo"
+            │       └── @ HashNode (location: (181...225))
+            │           ├── opening_loc: (181...182) = "{"
+            │           ├── elements: (length: 2)
+            │           │   ├── @ AssocNode (location: (182...208))
+            │           │   │   ├── key:
+            │           │   │   │   @ CallNode (location: (182...193))
+            │           │   │   │   ├── receiver: ∅
+            │           │   │   │   ├── call_operator_loc: ∅
+            │           │   │   │   ├── message_loc: (182...186) = "proc"
+            │           │   │   │   ├── opening_loc: ∅
+            │           │   │   │   ├── arguments: ∅
+            │           │   │   │   ├── closing_loc: ∅
+            │           │   │   │   ├── block:
+            │           │   │   │   │   @ BlockNode (location: (187...193))
+            │           │   │   │   │   ├── locals: []
+            │           │   │   │   │   ├── parameters: ∅
+            │           │   │   │   │   ├── body: ∅
+            │           │   │   │   │   ├── opening_loc: (187...189) = "do"
+            │           │   │   │   │   └── closing_loc: (190...193) = "end"
+            │           │   │   │   ├── flags: ∅
+            │           │   │   │   └── name: "proc"
+            │           │   │   ├── value:
+            │           │   │   │   @ CallNode (location: (197...208))
+            │           │   │   │   ├── receiver: ∅
+            │           │   │   │   ├── call_operator_loc: ∅
+            │           │   │   │   ├── message_loc: (197...201) = "proc"
+            │           │   │   │   ├── opening_loc: ∅
+            │           │   │   │   ├── arguments: ∅
+            │           │   │   │   ├── closing_loc: ∅
+            │           │   │   │   ├── block:
+            │           │   │   │   │   @ BlockNode (location: (202...208))
+            │           │   │   │   │   ├── locals: []
+            │           │   │   │   │   ├── parameters: ∅
+            │           │   │   │   │   ├── body: ∅
+            │           │   │   │   │   ├── opening_loc: (202...204) = "do"
+            │           │   │   │   │   └── closing_loc: (205...208) = "end"
+            │           │   │   │   ├── flags: ∅
+            │           │   │   │   └── name: "proc"
+            │           │   │   └── operator_loc: (194...196) = "=>"
+            │           │   └── @ AssocNode (location: (210...224))
+            │           │       ├── key:
+            │           │       │   @ SymbolNode (location: (210...212))
+            │           │       │   ├── opening_loc: ∅
+            │           │       │   ├── value_loc: (210...211) = "b"
+            │           │       │   ├── closing_loc: (211...212) = ":"
+            │           │       │   └── unescaped: "b"
+            │           │       ├── value:
+            │           │       │   @ CallNode (location: (213...224))
+            │           │       │   ├── receiver: ∅
+            │           │       │   ├── call_operator_loc: ∅
+            │           │       │   ├── message_loc: (213...217) = "proc"
+            │           │       │   ├── opening_loc: ∅
+            │           │       │   ├── arguments: ∅
+            │           │       │   ├── closing_loc: ∅
+            │           │       │   ├── block:
+            │           │       │   │   @ BlockNode (location: (218...224))
+            │           │       │   │   ├── locals: []
+            │           │       │   │   ├── parameters: ∅
+            │           │       │   │   ├── body: ∅
+            │           │       │   │   ├── opening_loc: (218...220) = "do"
+            │           │       │   │   └── closing_loc: (221...224) = "end"
+            │           │       │   ├── flags: ∅
+            │           │       │   └── name: "proc"
+            │           │       └── operator_loc: ∅
+            │           └── closing_loc: (224...225) = "}"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "p"

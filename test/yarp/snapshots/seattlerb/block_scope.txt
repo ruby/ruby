@@ -1,22 +1,28 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [CallNode(0...10)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       BlockNode(2...10)(
-         [:b],
-         BlockParametersNode(4...8)(nil, [(6...7)], (4...5), (7...8)),
-         nil,
-         (2...3),
-         (9...10)
-       ),
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...10))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (2...10))
+            │   ├── locals: [:b]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (4...8))
+            │   │   ├── parameters: ∅
+            │   │   ├── locals: (length: 1)
+            │   │   │   └── @ BlockLocalVariableNode (location: (6...7))
+            │   │   │       └── name: :b
+            │   │   ├── opening_loc: (4...5) = "|"
+            │   │   └── closing_loc: (7...8) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (2...3) = "{"
+            │   └── closing_loc: (9...10) = "}"
+            ├── flags: ∅
+            └── name: "a"

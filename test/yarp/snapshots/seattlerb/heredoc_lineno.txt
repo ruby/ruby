@@ -1,28 +1,25 @@
-ProgramNode(0...41)(
-  [:c, :d],
-  StatementsNode(0...41)(
-    [LocalVariableWriteNode(0...11)(
-       :c,
-       0,
-       (0...1),
-       InterpolatedStringNode(4...11)(
-         (4...11),
-         [StringNode(12...30)(
-            nil,
-            (12...30),
-            nil,
-            "line2\n" + "line3\n" + "line4\n"
-          )],
-         (30...34)
-       ),
-       (2...3)
-     ),
-     LocalVariableWriteNode(35...41)(
-       :d,
-       0,
-       (35...36),
-       IntegerNode(39...41)(),
-       (37...38)
-     )]
-  )
-)
+@ ProgramNode (location: (0...41))
+├── locals: [:c, :d]
+└── statements:
+    @ StatementsNode (location: (0...41))
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (0...11))
+        │   ├── name: :c
+        │   ├── depth: 0
+        │   ├── name_loc: (0...1) = "c"
+        │   ├── value:
+        │   │   @ StringNode (location: (4...11))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (4...11) = "<<'CCC'"
+        │   │   ├── content_loc: (12...30) = "line2\nline3\nline4\n"
+        │   │   ├── closing_loc: (30...34) = "CCC\n"
+        │   │   └── unescaped: "line2\nline3\nline4\n"
+        │   └── operator_loc: (2...3) = "="
+        └── @ LocalVariableWriteNode (location: (35...41))
+            ├── name: :d
+            ├── depth: 0
+            ├── name_loc: (35...36) = "d"
+            ├── value:
+            │   @ IntegerNode (location: (39...41))
+            │   └── flags: decimal
+            └── operator_loc: (37...38) = "="

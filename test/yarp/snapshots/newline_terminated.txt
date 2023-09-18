@@ -1,28 +1,107 @@
-ProgramNode(76...212)(
-  [],
-  StatementsNode(76...212)(
-    [StringNode(76...82)((76...78), (78...81), (81...82), "abc"),
-     StringNode(84...90)((84...86), (86...89), (89...90), "abc"),
-     StringNode(92...98)((92...94), (94...97), (97...98), "abc"),
-     StringNode(100...106)((100...102), (102...105), (105...106), "abc"),
-     StringNode(108...114)((108...110), (110...113), (113...114), "abc"),
-     StringNode(116...122)((116...118), (118...121), (121...122), "abc"),
-     StringNode(124...130)((124...126), (126...129), (129...130), "abc"),
-     StringNode(132...139)((132...134), (134...138), (138...139), "\rabc"),
-     StringNode(142...149)((142...144), (144...148), (148...149), "\rabc"),
-     StringNode(151...157)((151...153), (153...156), (156...157), "abc"),
-     StringNode(159...165)((159...161), (161...164), (164...165), "abc"),
-     StringNode(167...173)((167...169), (169...172), (172...173), "abc"),
-     StringNode(175...181)((175...177), (177...180), (180...181), "abc"),
-     StringNode(182...188)((182...184), (184...187), (187...188), "foo"),
-     StringNode(189...196)((189...192), (192...195), (195...196), "foo"),
-     StringNode(197...204)((197...200), (200...203), (203...204), "foo"),
-     RegularExpressionNode(205...212)(
-       (205...208),
-       (208...211),
-       (211...212),
-       "foo",
-       0
-     )]
-  )
-)
+@ ProgramNode (location: (76...212))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (76...212))
+    └── body: (length: 17)
+        ├── @ StringNode (location: (76...82))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (76...78) = "% "
+        │   ├── content_loc: (78...81) = "abc"
+        │   ├── closing_loc: (81...82) = " "
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (84...90))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (84...86) = "%\t"
+        │   ├── content_loc: (86...89) = "abc"
+        │   ├── closing_loc: (89...90) = "\t"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (92...98))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (92...94) = "%\v"
+        │   ├── content_loc: (94...97) = "abc"
+        │   ├── closing_loc: (97...98) = "\v"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (100...106))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (100...102) = "%\r"
+        │   ├── content_loc: (102...105) = "abc"
+        │   ├── closing_loc: (105...106) = "\r"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (108...114))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (108...110) = "%\n"
+        │   ├── content_loc: (110...113) = "abc"
+        │   ├── closing_loc: (113...114) = "\n"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (116...122))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (116...118) = "%\u0000"
+        │   ├── content_loc: (118...121) = "abc"
+        │   ├── closing_loc: (121...122) = "\u0000"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (124...130))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (124...126) = "%\n"
+        │   ├── content_loc: (126...129) = "abc"
+        │   ├── closing_loc: (129...130) = "\n"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (132...139))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (132...134) = "%\n"
+        │   ├── content_loc: (134...138) = "\rabc"
+        │   ├── closing_loc: (138...139) = "\n"
+        │   └── unescaped: "\rabc"
+        ├── @ StringNode (location: (142...149))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (142...144) = "%\n"
+        │   ├── content_loc: (144...148) = "\rabc"
+        │   ├── closing_loc: (148...149) = "\n"
+        │   └── unescaped: "\rabc"
+        ├── @ StringNode (location: (151...157))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (151...153) = "%\n"
+        │   ├── content_loc: (153...156) = "abc"
+        │   ├── closing_loc: (156...157) = "\n"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (159...165))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (159...161) = "%\r"
+        │   ├── content_loc: (161...164) = "abc"
+        │   ├── closing_loc: (164...165) = "\r"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (167...173))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (167...169) = "%\n"
+        │   ├── content_loc: (169...172) = "abc"
+        │   ├── closing_loc: (172...173) = "\n"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (175...181))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (175...177) = "%\n"
+        │   ├── content_loc: (177...180) = "abc"
+        │   ├── closing_loc: (180...181) = "\n"
+        │   └── unescaped: "abc"
+        ├── @ StringNode (location: (182...188))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (182...184) = "%\n"
+        │   ├── content_loc: (184...187) = "foo"
+        │   ├── closing_loc: (187...188) = "\n"
+        │   └── unescaped: "foo"
+        ├── @ StringNode (location: (189...196))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (189...192) = "%q\n"
+        │   ├── content_loc: (192...195) = "foo"
+        │   ├── closing_loc: (195...196) = "\n"
+        │   └── unescaped: "foo"
+        ├── @ StringNode (location: (197...204))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (197...200) = "%Q\n"
+        │   ├── content_loc: (200...203) = "foo"
+        │   ├── closing_loc: (203...204) = "\n"
+        │   └── unescaped: "foo"
+        └── @ RegularExpressionNode (location: (205...212))
+            ├── opening_loc: (205...208) = "%r\n"
+            ├── content_loc: (208...211) = "foo"
+            ├── closing_loc: (211...212) = "\n"
+            ├── unescaped: "foo"
+            └── flags: ∅

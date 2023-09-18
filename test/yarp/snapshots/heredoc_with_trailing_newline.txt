@@ -1,4 +1,11 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)([InterpolatedStringNode(0...6)((0...6), [], (7...10))])
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...6))
+            ├── flags: ∅
+            ├── opening_loc: (0...6) = "<<-END"
+            ├── content_loc: (7...7) = ""
+            ├── closing_loc: (7...10) = "END"
+            └── unescaped: ""

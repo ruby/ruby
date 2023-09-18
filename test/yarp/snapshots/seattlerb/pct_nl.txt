@@ -1,12 +1,17 @@
-ProgramNode(0...7)(
-  [:x],
-  StatementsNode(0...7)(
-    [LocalVariableWriteNode(0...7)(
-       :x,
-       0,
-       (0...1),
-       StringNode(4...7)((4...6), (6...6), (6...7), ""),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...7))
+├── locals: [:x]
+└── statements:
+    @ StatementsNode (location: (0...7))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...7))
+            ├── name: :x
+            ├── depth: 0
+            ├── name_loc: (0...1) = "x"
+            ├── value:
+            │   @ StringNode (location: (4...7))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (4...6) = "%\n"
+            │   ├── content_loc: (6...6) = ""
+            │   ├── closing_loc: (6...7) = "\n"
+            │   └── unescaped: ""
+            └── operator_loc: (2...3) = "="

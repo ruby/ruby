@@ -1,19 +1,24 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [CallNode(0...13)(
-       nil,
-       nil,
-       (0...1),
-       (1...2),
-       ArgumentsNode(2...12)(
-         [StringNode(2...6)((2...3), (3...5), (5...6), "\n"),
-          TrueNode(8...12)()]
-       ),
-       (12...13),
-       nil,
-       0,
-       "a"
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...13))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "a"
+            ├── opening_loc: (1...2) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2...12))
+            │   └── arguments: (length: 2)
+            │       ├── @ StringNode (location: (2...6))
+            │       │   ├── flags: ∅
+            │       │   ├── opening_loc: (2...3) = "\""
+            │       │   ├── content_loc: (3...5) = "\\n"
+            │       │   ├── closing_loc: (5...6) = "\""
+            │       │   └── unescaped: "\n"
+            │       └── @ TrueNode (location: (8...12))
+            ├── closing_loc: (12...13) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "a"

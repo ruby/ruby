@@ -1,9 +1,23 @@
-ProgramNode(0...24)(
-  [],
-  StatementsNode(0...24)(
-    [ImaginaryNode(0...5)(FloatNode(0...4)()),
-     ImaginaryNode(7...13)(RationalNode(7...12)(FloatNode(7...11)())),
-     ImaginaryNode(15...18)(IntegerNode(15...17)()),
-     ImaginaryNode(20...24)(RationalNode(20...23)(IntegerNode(20...22)()))]
-  )
-)
+@ ProgramNode (location: (0...24))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...24))
+    └── body: (length: 4)
+        ├── @ ImaginaryNode (location: (0...5))
+        │   └── numeric:
+        │       @ FloatNode (location: (0...4))
+        ├── @ ImaginaryNode (location: (7...13))
+        │   └── numeric:
+        │       @ RationalNode (location: (7...12))
+        │       └── numeric:
+        │           @ FloatNode (location: (7...11))
+        ├── @ ImaginaryNode (location: (15...18))
+        │   └── numeric:
+        │       @ IntegerNode (location: (15...17))
+        │       └── flags: decimal
+        └── @ ImaginaryNode (location: (20...24))
+            └── numeric:
+                @ RationalNode (location: (20...23))
+                └── numeric:
+                    @ IntegerNode (location: (20...22))
+                    └── flags: decimal

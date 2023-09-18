@@ -14716,7 +14716,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    #path method.
  *
  *  Also available are the options offered in String#encode,
- *  which may control conversion between external internal encoding.
+ *  which may control conversion between external and internal encoding.
  *
  *  == Basic \IO
  *

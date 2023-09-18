@@ -1,83 +1,129 @@
-ProgramNode(0...144)(
-  [],
-  StatementsNode(0...144)(
-    [NextNode(0...4)(nil, (0...4)),
-     ReturnNode(5...11)((5...11), nil),
-     BreakNode(12...17)(nil, (12...17)),
-     RetryNode(18...23)(),
-     RedoNode(24...28)(),
-     ReturnNode(29...37)(
-       (29...35),
-       ArgumentsNode(36...37)([IntegerNode(36...37)()])
-     ),
-     ReturnNode(38...49)(
-       (38...44),
-       ArgumentsNode(45...49)([IntegerNode(45...46)(), IntegerNode(48...49)()])
-     ),
-     ReturnNode(50...69)(
-       (50...56),
-       ArgumentsNode(57...69)(
-         [IfNode(57...69)(
-            nil,
-            TrueNode(57...61)(),
-            StatementsNode(64...65)([IntegerNode(64...65)()]),
-            ElseNode(66...69)(
-              (66...67),
-              StatementsNode(68...69)([IntegerNode(68...69)()]),
-              nil
-            ),
-            nil
-          )]
-       )
-     ),
-     BreakNode(70...88)(
-       ArgumentsNode(76...88)(
-         [IfNode(76...88)(
-            nil,
-            TrueNode(76...80)(),
-            StatementsNode(83...84)([IntegerNode(83...84)()]),
-            ElseNode(85...88)(
-              (85...86),
-              StatementsNode(87...88)([IntegerNode(87...88)()]),
-              nil
-            ),
-            nil
-          )]
-       ),
-       (70...75)
-     ),
-     NextNode(89...106)(
-       ArgumentsNode(94...106)(
-         [IfNode(94...106)(
-            nil,
-            TrueNode(94...98)(),
-            StatementsNode(101...102)([IntegerNode(101...102)()]),
-            ElseNode(103...106)(
-              (103...104),
-              StatementsNode(105...106)([IntegerNode(105...106)()]),
-              nil
-            ),
-            nil
-          )]
-       ),
-       (89...93)
-     ),
-     ReturnNode(107...144)(
-       (107...113),
-       ArgumentsNode(114...144)(
-         [TrueNode(114...118)(),
-          IfNode(120...144)(
-            (120...122),
-            TrueNode(123...127)(),
-            StatementsNode(130...131)([IntegerNode(130...131)()]),
-            ElseNode(132...144)(
-              (132...136),
-              StatementsNode(139...140)([IntegerNode(139...140)()]),
-              (141...144)
-            ),
-            (141...144)
-          )]
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...144))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...144))
+    └── body: (length: 11)
+        ├── @ NextNode (location: (0...4))
+        │   ├── arguments: ∅
+        │   └── keyword_loc: (0...4) = "next"
+        ├── @ ReturnNode (location: (5...11))
+        │   ├── keyword_loc: (5...11) = "return"
+        │   └── arguments: ∅
+        ├── @ BreakNode (location: (12...17))
+        │   ├── arguments: ∅
+        │   └── keyword_loc: (12...17) = "break"
+        ├── @ RetryNode (location: (18...23))
+        ├── @ RedoNode (location: (24...28))
+        ├── @ ReturnNode (location: (29...37))
+        │   ├── keyword_loc: (29...35) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (36...37))
+        │       └── arguments: (length: 1)
+        │           └── @ IntegerNode (location: (36...37))
+        │               └── flags: decimal
+        ├── @ ReturnNode (location: (38...49))
+        │   ├── keyword_loc: (38...44) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (45...49))
+        │       └── arguments: (length: 2)
+        │           ├── @ IntegerNode (location: (45...46))
+        │           │   └── flags: decimal
+        │           └── @ IntegerNode (location: (48...49))
+        │               └── flags: decimal
+        ├── @ ReturnNode (location: (50...69))
+        │   ├── keyword_loc: (50...56) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (57...69))
+        │       └── arguments: (length: 1)
+        │           └── @ IfNode (location: (57...69))
+        │               ├── if_keyword_loc: ∅
+        │               ├── predicate:
+        │               │   @ TrueNode (location: (57...61))
+        │               ├── statements:
+        │               │   @ StatementsNode (location: (64...65))
+        │               │   └── body: (length: 1)
+        │               │       └── @ IntegerNode (location: (64...65))
+        │               │           └── flags: decimal
+        │               ├── consequent:
+        │               │   @ ElseNode (location: (66...69))
+        │               │   ├── else_keyword_loc: (66...67) = ":"
+        │               │   ├── statements:
+        │               │   │   @ StatementsNode (location: (68...69))
+        │               │   │   └── body: (length: 1)
+        │               │   │       └── @ IntegerNode (location: (68...69))
+        │               │   │           └── flags: decimal
+        │               │   └── end_keyword_loc: ∅
+        │               └── end_keyword_loc: ∅
+        ├── @ BreakNode (location: (70...88))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (76...88))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IfNode (location: (76...88))
+        │   │           ├── if_keyword_loc: ∅
+        │   │           ├── predicate:
+        │   │           │   @ TrueNode (location: (76...80))
+        │   │           ├── statements:
+        │   │           │   @ StatementsNode (location: (83...84))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (83...84))
+        │   │           │           └── flags: decimal
+        │   │           ├── consequent:
+        │   │           │   @ ElseNode (location: (85...88))
+        │   │           │   ├── else_keyword_loc: (85...86) = ":"
+        │   │           │   ├── statements:
+        │   │           │   │   @ StatementsNode (location: (87...88))
+        │   │           │   │   └── body: (length: 1)
+        │   │           │   │       └── @ IntegerNode (location: (87...88))
+        │   │           │   │           └── flags: decimal
+        │   │           │   └── end_keyword_loc: ∅
+        │   │           └── end_keyword_loc: ∅
+        │   └── keyword_loc: (70...75) = "break"
+        ├── @ NextNode (location: (89...106))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (94...106))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IfNode (location: (94...106))
+        │   │           ├── if_keyword_loc: ∅
+        │   │           ├── predicate:
+        │   │           │   @ TrueNode (location: (94...98))
+        │   │           ├── statements:
+        │   │           │   @ StatementsNode (location: (101...102))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (101...102))
+        │   │           │           └── flags: decimal
+        │   │           ├── consequent:
+        │   │           │   @ ElseNode (location: (103...106))
+        │   │           │   ├── else_keyword_loc: (103...104) = ":"
+        │   │           │   ├── statements:
+        │   │           │   │   @ StatementsNode (location: (105...106))
+        │   │           │   │   └── body: (length: 1)
+        │   │           │   │       └── @ IntegerNode (location: (105...106))
+        │   │           │   │           └── flags: decimal
+        │   │           │   └── end_keyword_loc: ∅
+        │   │           └── end_keyword_loc: ∅
+        │   └── keyword_loc: (89...93) = "next"
+        └── @ ReturnNode (location: (107...144))
+            ├── keyword_loc: (107...113) = "return"
+            └── arguments:
+                @ ArgumentsNode (location: (114...144))
+                └── arguments: (length: 2)
+                    ├── @ TrueNode (location: (114...118))
+                    └── @ IfNode (location: (120...144))
+                        ├── if_keyword_loc: (120...122) = "if"
+                        ├── predicate:
+                        │   @ TrueNode (location: (123...127))
+                        ├── statements:
+                        │   @ StatementsNode (location: (130...131))
+                        │   └── body: (length: 1)
+                        │       └── @ IntegerNode (location: (130...131))
+                        │           └── flags: decimal
+                        ├── consequent:
+                        │   @ ElseNode (location: (132...144))
+                        │   ├── else_keyword_loc: (132...136) = "else"
+                        │   ├── statements:
+                        │   │   @ StatementsNode (location: (139...140))
+                        │   │   └── body: (length: 1)
+                        │   │       └── @ IntegerNode (location: (139...140))
+                        │   │           └── flags: decimal
+                        │   └── end_keyword_loc: (141...144) = "end"
+                        └── end_keyword_loc: (141...144) = "end"

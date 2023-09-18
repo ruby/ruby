@@ -291,7 +291,6 @@ typedef struct yp_scope {
 // it's considering.
 struct yp_parser {
     yp_lex_state_t lex_state; // the current state of the lexer
-    bool command_start;       // whether or not we're at the beginning of a command
     int enclosure_nesting;    // tracks the current nesting of (), [], and {}
 
     // Used to temporarily track the nesting of enclosures to determine if a {
@@ -338,16 +337,10 @@ struct yp_parser {
     yp_scope_t *current_scope;          // the current local scope
 
     yp_context_node_t *current_context; // the current parsing context
-    bool recovering; // whether or not we're currently recovering from a syntax error
 
     // The encoding functions for the current file is attached to the parser as
     // it's parsing so that it can change with a magic comment.
     yp_encoding_t encoding;
-
-    // Whether or not the encoding has been changed by a magic comment. We use
-    // this to provide a fast path for the lexer instead of going through the
-    // function pointer.
-    bool encoding_changed;
 
     // When the encoding that is being used to parse the source is changed by
     // YARP, we provide the ability here to call out to a user-defined function.
@@ -367,13 +360,6 @@ struct yp_parser {
     // be called whenever a new token is lexed by the parser.
     yp_lex_callback_t *lex_callback;
 
-    // This flag indicates that we are currently parsing a pattern matching
-    // expression and impacts that calculation of newlines.
-    bool pattern_matching_newlines;
-
-    // This flag indicates that we are currently parsing a keyword argument.
-    bool in_keyword_arg;
-
     // This is the path of the file being parsed
     // We use the filepath when constructing SourceFileNodes
     yp_string_t filepath_string;
@@ -384,6 +370,38 @@ struct yp_parser {
 
     // This is the list of newline offsets in the source file.
     yp_newline_list_t newline_list;
+
+    // We want to add a flag to integer nodes that indicates their base. We only
+    // want to parse these once, but we don't have space on the token itself to
+    // communicate this information. So we store it here and pass it through
+    // when we find tokens that we need it for.
+    yp_node_flags_t integer_base;
+
+    // Whether or not we're at the beginning of a command
+    bool command_start;
+
+    // Whether or not we're currently recovering from a syntax error
+    bool recovering;
+
+    // Whether or not the encoding has been changed by a magic comment. We use
+    // this to provide a fast path for the lexer instead of going through the
+    // function pointer.
+    bool encoding_changed;
+
+    // This flag indicates that we are currently parsing a pattern matching
+    // expression and impacts that calculation of newlines.
+    bool pattern_matching_newlines;
+
+    // This flag indicates that we are currently parsing a keyword argument.
+    bool in_keyword_arg;
+
+    // Whether or not the parser has seen a token that has semantic meaning
+    // (i.e., a token that is not a comment or whitespace).
+    bool semantic_token_seen;
+
+    // Whether or not we have found a frozen_string_literal magic comment with
+    // a true value.
+    bool frozen_string_literal;
 };
 
 #endif // YARP_PARSER_H

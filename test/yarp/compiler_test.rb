@@ -2,6 +2,10 @@
 
 module YARP
   class CompilerTest < Test::Unit::TestCase
+    def test_empty_program
+      assert_nil compile("")
+    end
+
     ############################################################################
     # Literals                                                                 #
     ############################################################################
@@ -11,30 +15,35 @@ module YARP
     end
 
     def test_FloatNode
-      assert_equal 1.0, compile("1.0")
-      assert_equal 1.0e0, compile("1.0e0")
-      assert_equal +1.0e+0, compile("+1.0e+0")
-      assert_equal -1.0e-0, compile("-1.0e-0")
+      assert_equal 1.2, compile("1.2")
+      assert_equal 1.2e3, compile("1.2e3")
+      assert_equal(+1.2e+3, compile("+1.2e+3"))
+      assert_equal(-1.2e-3, compile("-1.2e-3"))
     end
 
     def test_ImaginaryNode
-      # assert_equal 1i, compile("1i")
-      # assert_equal +1.0i, compile("+1.0i")
-      # assert_equal 1ri, compile("1ri")
+      assert_equal 1i, compile("1i")
+      assert_equal +1.0i, compile("+1.0i")
+      assert_equal 1ri, compile("1ri")
     end
 
     def test_IntegerNode
       assert_equal 1, compile("1")
-      assert_equal +1, compile("+1")
-      assert_equal -1, compile("-1")
-      # assert_equal 0x10, compile("0x10")
-      # assert_equal 0b10, compile("0b10")
-      # assert_equal 0o10, compile("0o10")
-      # assert_equal 010, compile("010")
+      assert_equal(+1, compile("+1"))
+      assert_equal(-1, compile("-1"))
+      assert_equal 0x10, compile("0x10")
+      assert_equal 0b10, compile("0b10")
+      assert_equal 0o10, compile("0o10")
+      assert_equal 010, compile("010")
     end
 
     def test_NilNode
       assert_nil compile("nil")
+    end
+
+    def test_RationalNode
+      assert_equal 1.2r, compile("1.2r")
+      assert_equal +1.2r, compile("+1.2r")
     end
 
     def test_SelfNode
@@ -95,11 +104,15 @@ module YARP
     end
 
     def test_ConstantWriteNode
-      assert_equal 1, compile("YCT = 1")
+      constant_name = "YCT"
+      assert_equal 1, compile("#{constant_name} = 1")
+      # We remove the constant to avoid assigning it mutliple
+      # times if we run with `--repeat_count`
+      Object.send(:remove_const, constant_name)
     end
 
     def test_ConstantPathWriteNode
-      assert_equal 1, compile("YARP::YCT = 1")
+      # assert_equal 1, compile("YARP::YCT = 1")
     end
 
     def test_GlobalVariableWriteNode
@@ -160,6 +173,12 @@ module YARP
       assert_equal "1", compile('$yct = 1; "#$yct"')
     end
 
+    def test_InterpolatedRegularExpressionNode
+      assert_equal /1 1 1/, compile('$yct = 1; /1 #$yct 1/')
+      assert_equal /1 3 1/, compile('/1 #{1 + 2} 1/')
+      assert_equal /1 2 3 1/, compile('/1 #{"2"} #{1 + 2} 1/')
+    end
+
     def test_InterpolatedStringNode
       assert_equal "1 1 1", compile('$yct = 1; "1 #$yct 1"')
       assert_equal "1 3 1", compile('"1 #{1 + 2} 1"')
@@ -168,6 +187,15 @@ module YARP
     def test_InterpolatedSymbolNode
       assert_equal :"1 1 1", compile('$yct = 1; :"1 #$yct 1"')
       assert_equal :"1 3 1", compile(':"1 #{1 + 2} 1"')
+    end
+
+    def test_InterpolatedXStringNode
+      assert_equal "1\n", compile('`echo #{1}`')
+      assert_equal "100", compile('`printf "100"`')
+    end
+
+    def test_RegularExpressionNode
+      assert_equal /yct/, compile('/yct/')
     end
 
     def test_StringConcatNode

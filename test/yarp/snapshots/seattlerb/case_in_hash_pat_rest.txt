@@ -1,33 +1,52 @@
-ProgramNode(0...35)(
-  [:c, :rest],
-  StatementsNode(0...35)(
-    [CaseNode(0...35)(
-       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
-       [InNode(8...31)(
-          HashPatternNode(11...23)(
-            nil,
-            [AssocNode(11...15)(
-               SymbolNode(11...13)(nil, (11...12), (12...13), "b"),
-               LocalVariableTargetNode(14...15)(:c, 0),
-               nil
-             ),
-             AssocSplatNode(17...23)(
-               LocalVariableTargetNode(19...23)(:rest, 0),
-               (17...19)
-             )],
-            nil,
-            nil,
-            nil
-          ),
-          StatementsNode(29...31)(
-            [SymbolNode(29...31)((29...30), (30...31), nil, "d")]
-          ),
-          (8...10),
-          (24...28)
-        )],
-       nil,
-       (0...4),
-       (32...35)
-     )]
-  )
-)
+@ ProgramNode (location: (0...35))
+├── locals: [:c, :rest]
+└── statements:
+    @ StatementsNode (location: (0...35))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (0...35))
+            ├── predicate:
+            │   @ SymbolNode (location: (5...7))
+            │   ├── opening_loc: (5...6) = ":"
+            │   ├── value_loc: (6...7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (8...31))
+            │       ├── pattern:
+            │       │   @ HashPatternNode (location: (11...23))
+            │       │   ├── constant: ∅
+            │       │   ├── assocs: (length: 2)
+            │       │   │   ├── @ AssocNode (location: (11...15))
+            │       │   │   │   ├── key:
+            │       │   │   │   │   @ SymbolNode (location: (11...13))
+            │       │   │   │   │   ├── opening_loc: ∅
+            │       │   │   │   │   ├── value_loc: (11...12) = "b"
+            │       │   │   │   │   ├── closing_loc: (12...13) = ":"
+            │       │   │   │   │   └── unescaped: "b"
+            │       │   │   │   ├── value:
+            │       │   │   │   │   @ LocalVariableTargetNode (location: (14...15))
+            │       │   │   │   │   ├── name: :c
+            │       │   │   │   │   └── depth: 0
+            │       │   │   │   └── operator_loc: ∅
+            │       │   │   └── @ AssocSplatNode (location: (17...23))
+            │       │   │       ├── value:
+            │       │   │       │   @ LocalVariableTargetNode (location: (19...23))
+            │       │   │       │   ├── name: :rest
+            │       │   │       │   └── depth: 0
+            │       │   │       └── operator_loc: (17...19) = "**"
+            │       │   ├── kwrest: ∅
+            │       │   ├── opening_loc: ∅
+            │       │   └── closing_loc: ∅
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (29...31))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (29...31))
+            │       │           ├── opening_loc: (29...30) = ":"
+            │       │           ├── value_loc: (30...31) = "d"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "d"
+            │       ├── in_loc: (8...10) = "in"
+            │       └── then_loc: (24...28) = "then"
+            ├── consequent: ∅
+            ├── case_keyword_loc: (0...4) = "case"
+            └── end_keyword_loc: (32...35) = "end"

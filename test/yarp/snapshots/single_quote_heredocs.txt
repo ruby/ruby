@@ -1,15 +1,11 @@
-ProgramNode(0...8)(
-  [],
-  StatementsNode(0...8)(
-    [InterpolatedStringNode(0...8)(
-       (0...8),
-       [StringNode(9...44)(
-          nil,
-          (9...44),
-          nil,
-          "    cd L:\\Work\\MG3710IQPro\\Develop\n"
-        )],
-       (44...48)
-     )]
-  )
-)
+@ ProgramNode (location: (0...8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...8))
+    └── body: (length: 1)
+        └── @ StringNode (location: (0...8))
+            ├── flags: ∅
+            ├── opening_loc: (0...8) = "<<-'EOS'"
+            ├── content_loc: (9...44) = "    cd L:\\Work\\MG3710IQPro\\Develop\n"
+            ├── closing_loc: (44...48) = "EOS\n"
+            └── unescaped: "    cd L:\\Work\\MG3710IQPro\\Develop\n"

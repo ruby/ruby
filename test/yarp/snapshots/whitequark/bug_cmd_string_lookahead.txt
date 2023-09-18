@@ -1,18 +1,29 @@
-ProgramNode(0...17)(
-  [],
-  StatementsNode(0...17)(
-    [CallNode(0...17)(
-       nil,
-       nil,
-       (0...4),
-       nil,
-       ArgumentsNode(5...10)(
-         [StringNode(5...10)((5...6), (6...9), (9...10), "foo")]
-       ),
-       nil,
-       BlockNode(11...17)([], nil, nil, (11...13), (14...17)),
-       0,
-       "desc"
-     )]
-  )
-)
+@ ProgramNode (location: (0...17))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...17))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...17))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...4) = "desc"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (5...10))
+            │   └── arguments: (length: 1)
+            │       └── @ StringNode (location: (5...10))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (5...6) = "\""
+            │           ├── content_loc: (6...9) = "foo"
+            │           ├── closing_loc: (9...10) = "\""
+            │           └── unescaped: "foo"
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (11...17))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body: ∅
+            │   ├── opening_loc: (11...13) = "do"
+            │   └── closing_loc: (14...17) = "end"
+            ├── flags: ∅
+            └── name: "desc"

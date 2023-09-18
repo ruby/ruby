@@ -1,18 +1,33 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [CallNode(0...12)(
-       CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 2, "_buf"),
-       nil,
-       (5...7),
-       nil,
-       ArgumentsNode(8...12)(
-         [StringNode(8...12)((8...9), (9...11), (11...12), ":\n")]
-       ),
-       nil,
-       nil,
-       0,
-       "<<"
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...12))
+            ├── receiver:
+            │   @ CallNode (location: (0...4))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...4) = "_buf"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "_buf"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (5...7) = "<<"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (8...12))
+            │   └── arguments: (length: 1)
+            │       └── @ StringNode (location: (8...12))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (8...9) = "'"
+            │           ├── content_loc: (9...11) = ":\n"
+            │           ├── closing_loc: (11...12) = "'"
+            │           └── unescaped: ":\n"
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "<<"

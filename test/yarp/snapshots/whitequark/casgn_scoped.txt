@@ -1,14 +1,19 @@
-ProgramNode(0...13)(
-  [],
-  StatementsNode(0...13)(
-    [ConstantPathWriteNode(0...13)(
-       ConstantPathNode(0...8)(
-         ConstantReadNode(0...3)(),
-         ConstantReadNode(5...8)(),
-         (3...5)
-       ),
-       (9...10),
-       IntegerNode(11...13)()
-     )]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 1)
+        └── @ ConstantPathWriteNode (location: (0...13))
+            ├── target:
+            │   @ ConstantPathNode (location: (0...8))
+            │   ├── parent:
+            │   │   @ ConstantReadNode (location: (0...3))
+            │   │   └── name: :Bar
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (5...8))
+            │   │   └── name: :Foo
+            │   └── delimiter_loc: (3...5) = "::"
+            ├── operator_loc: (9...10) = "="
+            └── value:
+                @ IntegerNode (location: (11...13))
+                └── flags: decimal

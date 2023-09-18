@@ -1,56 +1,65 @@
-ProgramNode(0...20)(
-  [:a],
-  StatementsNode(0...20)(
-    [LocalVariableWriteNode(0...20)(
-       :a,
-       0,
-       (0...1),
-       CallNode(4...20)(
-         nil,
-         nil,
-         (4...7),
-         (7...8),
-         ArgumentsNode(8...19)(
-           [CallNode(8...19)(
-              InterpolatedStringNode(8...14)(
-                (8...14),
-                [StringNode(21...26)(nil, (21...26), nil, "\n"),
-                 EmbeddedStatementsNode(26...32)(
-                   (26...28),
-                   StatementsNode(28...31)(
-                     [CallNode(28...31)(
-                        nil,
-                        nil,
-                        (28...31),
-                        nil,
-                        nil,
-                        nil,
-                        nil,
-                        2,
-                        "bar"
-                      )]
-                   ),
-                   (31...32)
-                 ),
-                 StringNode(32...36)(nil, (32...36), nil, "baz\n")],
-                (36...42)
-              ),
-              (14...15),
-              (15...19),
-              nil,
-              nil,
-              nil,
-              nil,
-              0,
-              "chop"
-            )]
-         ),
-         (19...20),
-         nil,
-         0,
-         "foo"
-       ),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...20))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...20))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...20))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ CallNode (location: (4...20))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (4...7) = "foo"
+            │   ├── opening_loc: (7...8) = "("
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (8...19))
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ CallNode (location: (8...19))
+            │   │           ├── receiver:
+            │   │           │   @ InterpolatedStringNode (location: (8...14))
+            │   │           │   ├── opening_loc: (8...14) = "<<~EOF"
+            │   │           │   ├── parts: (length: 3)
+            │   │           │   │   ├── @ StringNode (location: (21...26))
+            │   │           │   │   │   ├── flags: ∅
+            │   │           │   │   │   ├── opening_loc: ∅
+            │   │           │   │   │   ├── content_loc: (21...26) = "\n    "
+            │   │           │   │   │   ├── closing_loc: ∅
+            │   │           │   │   │   └── unescaped: "\n"
+            │   │           │   │   ├── @ EmbeddedStatementsNode (location: (26...32))
+            │   │           │   │   │   ├── opening_loc: (26...28) = "\#{"
+            │   │           │   │   │   ├── statements:
+            │   │           │   │   │   │   @ StatementsNode (location: (28...31))
+            │   │           │   │   │   │   └── body: (length: 1)
+            │   │           │   │   │   │       └── @ CallNode (location: (28...31))
+            │   │           │   │   │   │           ├── receiver: ∅
+            │   │           │   │   │   │           ├── call_operator_loc: ∅
+            │   │           │   │   │   │           ├── message_loc: (28...31) = "bar"
+            │   │           │   │   │   │           ├── opening_loc: ∅
+            │   │           │   │   │   │           ├── arguments: ∅
+            │   │           │   │   │   │           ├── closing_loc: ∅
+            │   │           │   │   │   │           ├── block: ∅
+            │   │           │   │   │   │           ├── flags: variable_call
+            │   │           │   │   │   │           └── name: "bar"
+            │   │           │   │   │   └── closing_loc: (31...32) = "}"
+            │   │           │   │   └── @ StringNode (location: (32...36))
+            │   │           │   │       ├── flags: ∅
+            │   │           │   │       ├── opening_loc: ∅
+            │   │           │   │       ├── content_loc: (32...36) = "baz\n"
+            │   │           │   │       ├── closing_loc: ∅
+            │   │           │   │       └── unescaped: "baz\n"
+            │   │           │   └── closing_loc: (36...42) = "  EOF\n"
+            │   │           ├── call_operator_loc: (14...15) = "."
+            │   │           ├── message_loc: (15...19) = "chop"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: ∅
+            │   │           └── name: "chop"
+            │   ├── closing_loc: (19...20) = ")"
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: "foo"
+            └── operator_loc: (2...3) = "="

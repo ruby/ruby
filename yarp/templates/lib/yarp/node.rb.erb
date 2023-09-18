@@ -3,7 +3,7 @@ module YARP
   <%= "#{node.comment.split("\n").map { |line| line.empty? ? "#" : "# #{line}" }.join("\n  ")}\n  " if node.comment %>class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>
     # attr_reader <%= field.name %>: <%= field.rbs_class %>
-    attr_reader :<%= field.name %>
+    <%= "private " if field.is_a?(YARP::FlagsField) %>attr_reader :<%= field.name %>
 
     <%- end -%>
     # def initialize: (<%= (node.fields.map { |field| "#{field.name}: #{field.rbs_class}" } + ["location: Location"]).join(", ") %>) -> void
@@ -44,6 +44,16 @@ module YARP
         case field
         when YARP::NodeField, YARP::OptionalNodeField then field.name
         when YARP::NodeListField then "*#{field.name}"
+        end
+      }.compact.join(", ") %>]
+    end
+
+    # def comment_targets: () -> Array[Node | Location]
+    def comment_targets
+      [<%= node.fields.map { |field|
+        case field
+        when YARP::NodeField, YARP::LocationField then field.name
+        when YARP::OptionalNodeField, YARP::NodeListField, YARP::OptionalLocationField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
     end
@@ -100,7 +110,7 @@ module YARP
       <%- case field -%>
       <%- when YARP::NodeListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.list("#{inspector.prefix}<%= preadd %>", <%= field.name %>)}"
-      <%- when YARP::LocationListField, YARP::ConstantListField -%>
+      <%- when YARP::ConstantListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when YARP::NodeField -%>
       inspector << "<%= pointer %><%= field.name %>:\n"
@@ -112,11 +122,12 @@ module YARP
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when YARP::ConstantField, YARP::StringField, YARP::UInt32Field -%>
+      <%- when YARP::ConstantField, YARP::OptionalConstantField, YARP::StringField, YARP::UInt32Field -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when YARP::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
-      inspector << "<%= pointer %><%= field.name %>: #{[<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact.join(", ")}\n"
+      flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact
+      inspector << "<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n"
       <%- when YARP::LocationField, YARP::OptionalLocationField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.location(<%= field.name %>)}\n"
       <%- else -%>

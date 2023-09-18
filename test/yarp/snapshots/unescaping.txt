@@ -1,23 +1,33 @@
-ProgramNode(0...39)(
-  [],
-  StatementsNode(0...39)(
-    [ArrayNode(0...10)(
-       [StringNode(1...9)((1...2), (2...8), (8...9), "\u0003{1}")],
-       (0...1),
-       (9...10)
-     ),
-     RegularExpressionNode(12...20)(
-       (12...13),
-       (13...19),
-       (19...20),
-       "\u0003{1}",
-       0
-     ),
-     StringNode(22...30)((22...23), (23...29), (29...30), "\u0003{1}"),
-     InterpolatedStringNode(32...39)(
-       (32...39),
-       [StringNode(40...50)(nil, (40...50), nil, "\u0003{1}\n")],
-       (50...55)
-     )]
-  )
-)
+@ ProgramNode (location: (0...39))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...39))
+    └── body: (length: 4)
+        ├── @ ArrayNode (location: (0...10))
+        │   ├── elements: (length: 1)
+        │   │   └── @ StringNode (location: (1...9))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (1...2) = "\""
+        │   │       ├── content_loc: (2...8) = "\\c\#{1}"
+        │   │       ├── closing_loc: (8...9) = "\""
+        │   │       └── unescaped: "\u0003{1}"
+        │   ├── opening_loc: (0...1) = "["
+        │   └── closing_loc: (9...10) = "]"
+        ├── @ RegularExpressionNode (location: (12...20))
+        │   ├── opening_loc: (12...13) = "/"
+        │   ├── content_loc: (13...19) = "\\c\#{1}"
+        │   ├── closing_loc: (19...20) = "/"
+        │   ├── unescaped: "\u0003{1}"
+        │   └── flags: ∅
+        ├── @ StringNode (location: (22...30))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (22...23) = "\""
+        │   ├── content_loc: (23...29) = "\\c\#{1}"
+        │   ├── closing_loc: (29...30) = "\""
+        │   └── unescaped: "\u0003{1}"
+        └── @ StringNode (location: (32...39))
+            ├── flags: ∅
+            ├── opening_loc: (32...39) = "<<~HERE"
+            ├── content_loc: (40...50) = "   \\c\#{1}\n"
+            ├── closing_loc: (50...55) = "HERE\n"
+            └── unescaped: "\u0003{1}\n"

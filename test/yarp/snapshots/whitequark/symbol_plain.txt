@@ -1,7 +1,15 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [SymbolNode(0...6)((0...2), (2...5), (5...6), "foo"),
-     SymbolNode(8...12)((8...9), (9...12), nil, "foo")]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 2)
+        ├── @ SymbolNode (location: (0...6))
+        │   ├── opening_loc: (0...2) = ":'"
+        │   ├── value_loc: (2...5) = "foo"
+        │   ├── closing_loc: (5...6) = "'"
+        │   └── unescaped: "foo"
+        └── @ SymbolNode (location: (8...12))
+            ├── opening_loc: (8...9) = ":"
+            ├── value_loc: (9...12) = "foo"
+            ├── closing_loc: ∅
+            └── unescaped: "foo"

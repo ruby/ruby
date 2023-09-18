@@ -1,72 +1,99 @@
-ProgramNode(0...64)(
-  [:x],
-  StatementsNode(0...64)(
-    [RescueModifierNode(0...14)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-       (4...10),
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "bar")
-     ),
-     RescueModifierNode(15...36)(
-       CallNode(15...18)(nil, nil, (15...18), nil, nil, nil, nil, 2, "foo"),
-       (19...25),
-       ReturnNode(26...36)(
-         (26...32),
-         ArgumentsNode(33...36)(
-           [CallNode(33...36)(
-              nil,
-              nil,
-              (33...36),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            )]
-         )
-       )
-     ),
-     LocalVariableWriteNode(37...64)(
-       :x,
-       0,
-       (37...38),
-       ParenthesesNode(41...64)(
-         StatementsNode(42...63)(
-           [RescueModifierNode(42...63)(
-              CallNode(42...45)(
-                nil,
-                nil,
-                (42...45),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "foo"
-              ),
-              (46...52),
-              ReturnNode(53...63)(
-                (53...59),
-                ArgumentsNode(60...63)(
-                  [CallNode(60...63)(
-                     nil,
-                     nil,
-                     (60...63),
-                     nil,
-                     nil,
-                     nil,
-                     nil,
-                     2,
-                     "bar"
-                   )]
-                )
-              )
-            )]
-         ),
-         (41...42),
-         (63...64)
-       ),
-       (39...40)
-     )]
-  )
-)
+@ ProgramNode (location: (0...64))
+├── locals: [:x]
+└── statements:
+    @ StatementsNode (location: (0...64))
+    └── body: (length: 3)
+        ├── @ RescueModifierNode (location: (0...14))
+        │   ├── expression:
+        │   │   @ CallNode (location: (0...3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── keyword_loc: (4...10) = "rescue"
+        │   └── rescue_expression:
+        │       @ CallNode (location: (11...14))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── message_loc: (11...14) = "bar"
+        │       ├── opening_loc: ∅
+        │       ├── arguments: ∅
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       ├── flags: variable_call
+        │       └── name: "bar"
+        ├── @ RescueModifierNode (location: (15...36))
+        │   ├── expression:
+        │   │   @ CallNode (location: (15...18))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (15...18) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── keyword_loc: (19...25) = "rescue"
+        │   └── rescue_expression:
+        │       @ ReturnNode (location: (26...36))
+        │       ├── keyword_loc: (26...32) = "return"
+        │       └── arguments:
+        │           @ ArgumentsNode (location: (33...36))
+        │           └── arguments: (length: 1)
+        │               └── @ CallNode (location: (33...36))
+        │                   ├── receiver: ∅
+        │                   ├── call_operator_loc: ∅
+        │                   ├── message_loc: (33...36) = "bar"
+        │                   ├── opening_loc: ∅
+        │                   ├── arguments: ∅
+        │                   ├── closing_loc: ∅
+        │                   ├── block: ∅
+        │                   ├── flags: variable_call
+        │                   └── name: "bar"
+        └── @ LocalVariableWriteNode (location: (37...64))
+            ├── name: :x
+            ├── depth: 0
+            ├── name_loc: (37...38) = "x"
+            ├── value:
+            │   @ ParenthesesNode (location: (41...64))
+            │   ├── body:
+            │   │   @ StatementsNode (location: (42...63))
+            │   │   └── body: (length: 1)
+            │   │       └── @ RescueModifierNode (location: (42...63))
+            │   │           ├── expression:
+            │   │           │   @ CallNode (location: (42...45))
+            │   │           │   ├── receiver: ∅
+            │   │           │   ├── call_operator_loc: ∅
+            │   │           │   ├── message_loc: (42...45) = "foo"
+            │   │           │   ├── opening_loc: ∅
+            │   │           │   ├── arguments: ∅
+            │   │           │   ├── closing_loc: ∅
+            │   │           │   ├── block: ∅
+            │   │           │   ├── flags: variable_call
+            │   │           │   └── name: "foo"
+            │   │           ├── keyword_loc: (46...52) = "rescue"
+            │   │           └── rescue_expression:
+            │   │               @ ReturnNode (location: (53...63))
+            │   │               ├── keyword_loc: (53...59) = "return"
+            │   │               └── arguments:
+            │   │                   @ ArgumentsNode (location: (60...63))
+            │   │                   └── arguments: (length: 1)
+            │   │                       └── @ CallNode (location: (60...63))
+            │   │                           ├── receiver: ∅
+            │   │                           ├── call_operator_loc: ∅
+            │   │                           ├── message_loc: (60...63) = "bar"
+            │   │                           ├── opening_loc: ∅
+            │   │                           ├── arguments: ∅
+            │   │                           ├── closing_loc: ∅
+            │   │                           ├── block: ∅
+            │   │                           ├── flags: variable_call
+            │   │                           └── name: "bar"
+            │   ├── opening_loc: (41...42) = "("
+            │   └── closing_loc: (63...64) = ")"
+            └── operator_loc: (39...40) = "="

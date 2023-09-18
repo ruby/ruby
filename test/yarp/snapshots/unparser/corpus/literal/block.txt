@@ -1,1274 +1,1380 @@
-ProgramNode(0...737)(
-  [],
-  StatementsNode(0...737)(
-    [CallNode(0...7)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       nil,
-       nil,
-       BlockNode(4...7)([], nil, nil, (4...5), (6...7)),
-       0,
-       "foo"
-     ),
-     CallNode(8...19)(
-       nil,
-       nil,
-       (8...11),
-       nil,
-       nil,
-       nil,
-       BlockNode(12...19)(
-         [:a],
-         BlockParametersNode(14...17)(
-           ParametersNode(15...16)(
-             [RequiredParameterNode(15...16)(:a)],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (14...15),
-           (16...17)
-         ),
-         nil,
-         (12...13),
-         (18...19)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(20...32)(
-       nil,
-       nil,
-       (20...23),
-       nil,
-       nil,
-       nil,
-       BlockNode(24...32)(
-         [:a],
-         BlockParametersNode(26...30)(
-           ParametersNode(27...29)(
-             [RequiredParameterNode(27...28)(:a)],
-             [],
-             [],
-             RestParameterNode(28...29)((28...29), nil),
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (26...27),
-           (29...30)
-         ),
-         nil,
-         (24...25),
-         (31...32)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(33...48)(
-       nil,
-       nil,
-       (33...36),
-       nil,
-       nil,
-       nil,
-       BlockNode(37...48)(
-         [:a, :x],
-         BlockParametersNode(39...46)(
-           ParametersNode(40...42)(
-             [RequiredParameterNode(40...41)(:a)],
-             [],
-             [],
-             RestParameterNode(41...42)((41...42), nil),
-             [],
-             nil,
-             nil
-           ),
-           [(44...45)],
-           (39...40),
-           (45...46)
-         ),
-         nil,
-         (37...38),
-         (47...48)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(49...63)(
-       nil,
-       nil,
-       (49...52),
-       nil,
-       nil,
-       nil,
-       BlockNode(53...63)(
-         [:a, :b],
-         BlockParametersNode(55...61)(
-           ParametersNode(56...60)(
-             [RequiredParameterNode(56...57)(:a),
-              RequiredParameterNode(59...60)(:b)],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (55...56),
-           (60...61)
-         ),
-         nil,
-         (53...54),
-         (62...63)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(64...80)(
-       nil,
-       nil,
-       (64...67),
-       (67...68),
-       ArgumentsNode(68...69)([IntegerNode(68...69)()]),
-       (69...70),
-       BlockNode(71...80)(
-         [],
-         nil,
-         StatementsNode(75...78)([NilNode(75...78)()]),
-         (71...72),
-         (79...80)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(81...102)(
-       nil,
-       nil,
-       (81...84),
-       nil,
-       nil,
-       nil,
-       BlockNode(85...102)(
-         [:a, :b],
-         BlockParametersNode(87...94)(
-           ParametersNode(88...93)(
-             [RequiredParameterNode(88...89)(:a)],
-             [],
-             [],
-             RestParameterNode(91...93)((91...92), (92...93)),
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (87...88),
-           (93...94)
-         ),
-         StatementsNode(97...100)([NilNode(97...100)()]),
-         (85...86),
-         (101...102)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(103...123)(
-       nil,
-       nil,
-       (103...106),
-       nil,
-       nil,
-       nil,
-       BlockNode(107...123)(
-         [:a, :*],
-         BlockParametersNode(109...115)(
-           ParametersNode(110...114)(
-             [RequiredParameterNode(110...111)(:a)],
-             [],
-             [],
-             RestParameterNode(113...114)((113...114), nil),
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (109...110),
-           (114...115)
-         ),
-         StatementsNode(118...121)([NilNode(118...121)()]),
-         (107...108),
-         (122...123)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(124...137)(
-       nil,
-       nil,
-       (124...127),
-       nil,
-       nil,
-       nil,
-       BlockNode(128...137)(
-         [],
-         nil,
-         StatementsNode(132...135)(
-           [CallNode(132...135)(
-              nil,
-              nil,
-              (132...135),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            )]
-         ),
-         (128...129),
-         (136...137)
-       ),
-       0,
-       "foo"
-     ),
-     CallNode(138...165)(
-       CallNode(138...141)(
-         nil,
-         nil,
-         (138...141),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (141...142),
-       (142...145),
-       nil,
-       nil,
-       nil,
-       BlockNode(146...165)(
-         [:a, :b, :c],
-         BlockParametersNode(148...159)(
-           ParametersNode(149...158)(
-             [RequiredDestructuredParameterNode(149...155)(
-                [RequiredParameterNode(150...151)(:a),
-                 RequiredParameterNode(153...154)(:b)],
-                (149...150),
-                (154...155)
-              ),
-              RequiredParameterNode(157...158)(:c)],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (148...149),
-           (158...159)
-         ),
-         StatementsNode(162...163)(
-           [CallNode(162...163)(
-              nil,
-              nil,
-              (162...163),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "d"
-            )]
-         ),
-         (146...147),
-         (164...165)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(166...185)(
-       CallNode(166...169)(
-         nil,
-         nil,
-         (166...169),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (169...170),
-       (170...173),
-       nil,
-       nil,
-       nil,
-       BlockNode(174...185)(
-         [:a, :b],
-         BlockParametersNode(176...183)(
-           ParametersNode(177...179)(
-             [],
-             [],
-             [],
-             RestParameterNode(177...179)((177...178), (178...179)),
-             [],
-             nil,
-             nil
-           ),
-           [(181...182)],
-           (176...177),
-           (182...183)
-         ),
-         nil,
-         (174...175),
-         (184...185)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(186...204)(
-       CallNode(186...189)(
-         nil,
-         nil,
-         (186...189),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (189...190),
-       (190...193),
-       nil,
-       nil,
-       nil,
-       BlockNode(194...204)(
-         [:a, :b],
-         BlockParametersNode(196...202)(
-           ParametersNode(197...198)(
-             [RequiredParameterNode(197...198)(:a)],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [(200...201)],
-           (196...197),
-           (201...202)
-         ),
-         nil,
-         (194...195),
-         (203...204)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(205...225)(
-       CallNode(205...208)(
-         nil,
-         nil,
-         (205...208),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (208...209),
-       (209...212),
-       nil,
-       nil,
-       nil,
-       BlockNode(213...225)(
-         [:a, :b],
-         BlockParametersNode(215...223)(
-           nil,
-           [(218...219), (221...222)],
-           (215...216),
-           (222...223)
-         ),
-         nil,
-         (213...214),
-         (224...225)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(226...245)(
-       CallNode(226...229)(
-         nil,
-         nil,
-         (226...229),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (229...230),
-       (230...233),
-       nil,
-       nil,
-       nil,
-       BlockNode(234...245)(
-         [:*],
-         BlockParametersNode(236...239)(
-           ParametersNode(237...238)(
-             [],
-             [],
-             [],
-             RestParameterNode(237...238)((237...238), nil),
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (236...237),
-           (238...239)
-         ),
-         StatementsNode(242...243)(
-           [CallNode(242...243)(
-              nil,
-              nil,
-              (242...243),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "d"
-            )]
-         ),
-         (234...235),
-         (244...245)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(246...267)(
-       CallNode(246...249)(
-         nil,
-         nil,
-         (246...249),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (249...250),
-       (250...253),
-       nil,
-       nil,
-       nil,
-       BlockNode(254...267)(
-         [],
-         BlockParametersNode(256...261)(
-           ParametersNode(257...260)(
-             [RequiredDestructuredParameterNode(257...260)(
-                [SplatNode(258...259)((258...259), nil)],
-                (257...258),
-                (259...260)
-              )],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (256...257),
-           (260...261)
-         ),
-         StatementsNode(264...265)(
-           [CallNode(264...265)(
-              nil,
-              nil,
-              (264...265),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "d"
-            )]
-         ),
-         (254...255),
-         (266...267)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(268...291)(
-       CallNode(268...271)(
-         nil,
-         nil,
-         (268...271),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (271...272),
-       (272...275),
-       nil,
-       nil,
-       nil,
-       BlockNode(276...291)(
-         [],
-         BlockParametersNode(278...285)(
-           ParametersNode(279...284)(
-             [RequiredDestructuredParameterNode(279...284)(
-                [RequiredDestructuredParameterNode(280...283)(
-                   [SplatNode(281...282)((281...282), nil)],
-                   (280...281),
-                   (282...283)
-                 )],
-                (279...280),
-                (283...284)
-              )],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (278...279),
-           (284...285)
-         ),
-         StatementsNode(288...289)(
-           [CallNode(288...289)(
-              nil,
-              nil,
-              (288...289),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "d"
-            )]
-         ),
-         (276...277),
-         (290...291)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(292...318)(
-       CallNode(292...295)(
-         nil,
-         nil,
-         (292...295),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (295...296),
-       (296...299),
-       nil,
-       nil,
-       nil,
-       BlockNode(300...318)(
-         [:a],
-         BlockParametersNode(302...312)(
-           ParametersNode(303...311)(
-             [RequiredDestructuredParameterNode(303...311)(
-                [RequiredParameterNode(304...305)(:a),
-                 RequiredDestructuredParameterNode(307...310)(
-                   [SplatNode(308...309)((308...309), nil)],
-                   (307...308),
-                   (309...310)
-                 )],
-                (303...304),
-                (310...311)
-              )],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (302...303),
-           (311...312)
-         ),
-         StatementsNode(315...316)(
-           [CallNode(315...316)(
-              nil,
-              nil,
-              (315...316),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "d"
-            )]
-         ),
-         (300...301),
-         (317...318)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(319...343)(
-       CallNode(319...322)(
-         nil,
-         nil,
-         (319...322),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       (322...323),
-       (323...326),
-       nil,
-       nil,
-       nil,
-       BlockNode(327...343)(
-         [:a, :b],
-         BlockParametersNode(329...337)(
-           ParametersNode(330...336)(
-             [RequiredDestructuredParameterNode(330...336)(
-                [RequiredParameterNode(331...332)(:a),
-                 RequiredParameterNode(334...335)(:b)],
-                (330...331),
-                (335...336)
-              )],
-             [],
-             [],
-             nil,
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (329...330),
-           (336...337)
-         ),
-         StatementsNode(340...341)(
-           [CallNode(340...341)(
-              nil,
-              nil,
-              (340...341),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "d"
-            )]
-         ),
-         (327...328),
-         (342...343)
-       ),
-       0,
-       "bar"
-     ),
-     CallNode(344...359)(
-       CallNode(344...355)(
-         CallNode(344...347)(
-           nil,
-           nil,
-           (344...347),
-           nil,
-           nil,
-           nil,
-           nil,
-           2,
-           "foo"
-         ),
-         (347...348),
-         (348...351),
-         nil,
-         nil,
-         nil,
-         BlockNode(352...355)([], nil, nil, (352...353), (354...355)),
-         0,
-         "bar"
-       ),
-       (355...356),
-       (356...359),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "baz"
-     ),
-     CallNode(360...390)(
-       nil,
-       nil,
-       (360...361),
-       nil,
-       nil,
-       nil,
-       BlockNode(362...390)(
-         [:e],
-         nil,
-         BeginNode(365...390)(
-           nil,
-           nil,
-           RescueNode(365...386)(
-             (365...371),
-             [ConstantReadNode(372...381)()],
-             (382...384),
-             LocalVariableTargetNode(385...386)(:e, 0),
-             nil,
-             nil
-           ),
-           nil,
-           nil,
-           (387...390)
-         ),
-         (362...364),
-         (387...390)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(391...435)(
-       nil,
-       nil,
-       (391...392),
-       nil,
-       nil,
-       nil,
-       BlockNode(393...435)(
-         [:bar],
-         nil,
-         BeginNode(398...435)(
-           nil,
-           StatementsNode(398...401)(
-             [CallNode(398...401)(
-                nil,
-                nil,
-                (398...401),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "foo"
-              )]
-           ),
-           RescueNode(402...431)(
-             (402...408),
-             [ConstantReadNode(409...418)()],
-             (419...421),
-             LocalVariableTargetNode(422...425)(:bar, 0),
-             StatementsNode(428...431)(
-               [LocalVariableReadNode(428...431)(:bar, 0)]
-             ),
-             nil
-           ),
-           nil,
-           nil,
-           (432...435)
-         ),
-         (393...395),
-         (432...435)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(436...479)(
-       nil,
-       nil,
-       (436...437),
-       nil,
-       nil,
-       nil,
-       BlockNode(438...479)(
-         [],
-         nil,
-         BeginNode(443...479)(
-           nil,
-           StatementsNode(443...446)(
-             [CallNode(443...446)(
-                nil,
-                nil,
-                (443...446),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           RescueNode(447...475)(
-             (447...453),
-             [ConstantReadNode(454...463)(),
-              SplatNode(465...469)(
-                (465...466),
-                CallNode(466...469)(
-                  nil,
-                  nil,
-                  (466...469),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "bar"
-                )
-              )],
-             nil,
-             nil,
-             StatementsNode(472...475)(
-               [CallNode(472...475)(
-                  nil,
-                  nil,
-                  (472...475),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "baz"
-                )]
-             ),
-             nil
-           ),
-           nil,
-           nil,
-           (476...479)
-         ),
-         (438...440),
-         (476...479)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(480...536)(
-       nil,
-       nil,
-       (480...481),
-       nil,
-       nil,
-       nil,
-       BlockNode(482...536)(
-         [:exception],
-         nil,
-         BeginNode(487...536)(
-           nil,
-           StatementsNode(487...490)(
-             [CallNode(487...490)(
-                nil,
-                nil,
-                (487...490),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           RescueNode(491...532)(
-             (491...497),
-             [ConstantReadNode(498...507)(),
-              SplatNode(509...513)(
-                (509...510),
-                CallNode(510...513)(
-                  nil,
-                  nil,
-                  (510...513),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "bar"
-                )
-              )],
-             (514...516),
-             LocalVariableTargetNode(517...526)(:exception, 0),
-             StatementsNode(529...532)(
-               [CallNode(529...532)(
-                  nil,
-                  nil,
-                  (529...532),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "baz"
-                )]
-             ),
-             nil
-           ),
-           nil,
-           nil,
-           (533...536)
-         ),
-         (482...484),
-         (533...536)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(537...569)(
-       nil,
-       nil,
-       (537...538),
-       nil,
-       nil,
-       nil,
-       BlockNode(539...569)(
-         [],
-         nil,
-         BeginNode(544...569)(
-           nil,
-           StatementsNode(544...547)(
-             [CallNode(544...547)(
-                nil,
-                nil,
-                (544...547),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           RescueNode(548...565)(
-             (548...554),
-             [SplatNode(555...559)(
-                (555...556),
-                CallNode(556...559)(
-                  nil,
-                  nil,
-                  (556...559),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "bar"
-                )
-              )],
-             nil,
-             nil,
-             StatementsNode(562...565)(
-               [CallNode(562...565)(
-                  nil,
-                  nil,
-                  (562...565),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "baz"
-                )]
-             ),
-             nil
-           ),
-           nil,
-           nil,
-           (566...569)
-         ),
-         (539...541),
-         (566...569)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(570...601)(
-       nil,
-       nil,
-       (570...571),
-       nil,
-       nil,
-       nil,
-       BlockNode(572...601)(
-         [],
-         nil,
-         BeginNode(577...601)(
-           nil,
-           StatementsNode(577...580)(
-             [CallNode(577...580)(
-                nil,
-                nil,
-                (577...580),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           RescueNode(581...597)(
-             (581...587),
-             [ConstantReadNode(588...597)()],
-             nil,
-             nil,
-             nil,
-             nil
-           ),
-           nil,
-           nil,
-           (598...601)
-         ),
-         (572...574),
-         (598...601)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(602...634)(
-       nil,
-       nil,
-       (602...603),
-       nil,
-       nil,
-       nil,
-       BlockNode(604...634)(
-         [],
-         nil,
-         BeginNode(609...634)(
-           nil,
-           StatementsNode(609...612)(
-             [CallNode(609...612)(
-                nil,
-                nil,
-                (609...612),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           RescueNode(613...619)((613...619), [], nil, nil, nil, nil),
-           ElseNode(620...634)(
-             (620...624),
-             StatementsNode(627...630)(
-               [CallNode(627...630)(
-                  nil,
-                  nil,
-                  (627...630),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "baz"
-                )]
-             ),
-             (631...634)
-           ),
-           nil,
-           (631...634)
-         ),
-         (604...606),
-         (631...634)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(635...680)(
-       nil,
-       nil,
-       (635...636),
-       nil,
-       nil,
-       nil,
-       BlockNode(637...680)(
-         [:exception],
-         nil,
-         BeginNode(642...680)(
-           nil,
-           StatementsNode(642...645)(
-             [CallNode(642...645)(
-                nil,
-                nil,
-                (642...645),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           RescueNode(646...676)(
-             (646...652),
-             [SplatNode(653...657)(
-                (653...654),
-                CallNode(654...657)(
-                  nil,
-                  nil,
-                  (654...657),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "bar"
-                )
-              )],
-             (658...660),
-             LocalVariableTargetNode(661...670)(:exception, 0),
-             StatementsNode(673...676)(
-               [CallNode(673...676)(
-                  nil,
-                  nil,
-                  (673...676),
-                  nil,
-                  nil,
-                  nil,
-                  nil,
-                  2,
-                  "baz"
-                )]
-             ),
-             nil
-           ),
-           nil,
-           nil,
-           (677...680)
-         ),
-         (637...639),
-         (677...680)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(681...696)(
-       nil,
-       nil,
-       (681...682),
-       nil,
-       nil,
-       nil,
-       BlockNode(683...696)(
-         [],
-         nil,
-         BeginNode(686...696)(
-           nil,
-           nil,
-           nil,
-           nil,
-           EnsureNode(686...696)((686...692), nil, (693...696)),
-           (693...696)
-         ),
-         (683...685),
-         (693...696)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(697...719)(
-       nil,
-       nil,
-       (697...698),
-       nil,
-       nil,
-       nil,
-       BlockNode(699...719)(
-         [],
-         nil,
-         BeginNode(702...719)(
-           nil,
-           nil,
-           RescueNode(702...708)((702...708), [], nil, nil, nil, nil),
-           nil,
-           EnsureNode(709...719)((709...715), nil, (716...719)),
-           (716...719)
-         ),
-         (699...701),
-         (716...719)
-       ),
-       0,
-       "m"
-     ),
-     CallNode(720...737)(
-       nil,
-       nil,
-       (720...723),
-       nil,
-       nil,
-       nil,
-       BlockNode(724...737)(
-         [],
-         nil,
-         StatementsNode(728...735)(
-           [CallNode(728...735)(
-              CallNode(728...730)(
-                nil,
-                nil,
-                (728...730),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "_1"
-              ),
-              nil,
-              (731...732),
-              nil,
-              ArgumentsNode(733...735)(
-                [CallNode(733...735)(
-                   nil,
-                   nil,
-                   (733...735),
-                   nil,
-                   nil,
-                   nil,
-                   nil,
-                   2,
-                   "_2"
-                 )]
-              ),
-              nil,
-              nil,
-              0,
-              "+"
-            )]
-         ),
-         (724...725),
-         (736...737)
-       ),
-       0,
-       "bar"
-     )]
-  )
-)
+@ ProgramNode (location: (0...737))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...737))
+    └── body: (length: 30)
+        ├── @ CallNode (location: (0...7))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (0...3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (4...7))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (4...5) = "{"
+        │   │   └── closing_loc: (6...7) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (8...19))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (8...11) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (12...19))
+        │   │   ├── locals: [:a]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (14...17))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (15...16))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (15...16))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (14...15) = "|"
+        │   │   │   └── closing_loc: (16...17) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (12...13) = "{"
+        │   │   └── closing_loc: (18...19) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (20...32))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (20...23) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (24...32))
+        │   │   ├── locals: [:a]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (26...30))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (27...29))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (27...28))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ RestParameterNode (location: (28...29))
+        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name_loc: ∅
+        │   │   │   │   │   └── operator_loc: (28...29) = ","
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (26...27) = "|"
+        │   │   │   └── closing_loc: (29...30) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (24...25) = "{"
+        │   │   └── closing_loc: (31...32) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (33...48))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (33...36) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (37...48))
+        │   │   ├── locals: [:a, :x]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (39...46))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (40...42))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (40...41))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ RestParameterNode (location: (41...42))
+        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name_loc: ∅
+        │   │   │   │   │   └── operator_loc: (41...42) = ","
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 1)
+        │   │   │   │   └── @ BlockLocalVariableNode (location: (44...45))
+        │   │   │   │       └── name: :x
+        │   │   │   ├── opening_loc: (39...40) = "|"
+        │   │   │   └── closing_loc: (45...46) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (37...38) = "{"
+        │   │   └── closing_loc: (47...48) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (49...63))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (49...52) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (53...63))
+        │   │   ├── locals: [:a, :b]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (55...61))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (56...60))
+        │   │   │   │   ├── requireds: (length: 2)
+        │   │   │   │   │   ├── @ RequiredParameterNode (location: (56...57))
+        │   │   │   │   │   │   └── name: :a
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (59...60))
+        │   │   │   │   │       └── name: :b
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (55...56) = "|"
+        │   │   │   └── closing_loc: (60...61) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (53...54) = "{"
+        │   │   └── closing_loc: (62...63) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (64...80))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (64...67) = "foo"
+        │   ├── opening_loc: (67...68) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (68...69))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (68...69))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: (69...70) = ")"
+        │   ├── block:
+        │   │   @ BlockNode (location: (71...80))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (75...78))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (75...78))
+        │   │   ├── opening_loc: (71...72) = "{"
+        │   │   └── closing_loc: (79...80) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (81...102))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (81...84) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (85...102))
+        │   │   ├── locals: [:a, :b]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (87...94))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (88...93))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (88...89))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ RestParameterNode (location: (91...93))
+        │   │   │   │   │   ├── name: :b
+        │   │   │   │   │   ├── name_loc: (92...93) = "b"
+        │   │   │   │   │   └── operator_loc: (91...92) = "*"
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (87...88) = "|"
+        │   │   │   └── closing_loc: (93...94) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (97...100))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (97...100))
+        │   │   ├── opening_loc: (85...86) = "{"
+        │   │   └── closing_loc: (101...102) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (103...123))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (103...106) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (107...123))
+        │   │   ├── locals: [:a, :*]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (109...115))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (110...114))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (110...111))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ RestParameterNode (location: (113...114))
+        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name_loc: ∅
+        │   │   │   │   │   └── operator_loc: (113...114) = "*"
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (109...110) = "|"
+        │   │   │   └── closing_loc: (114...115) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (118...121))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ NilNode (location: (118...121))
+        │   │   ├── opening_loc: (107...108) = "{"
+        │   │   └── closing_loc: (122...123) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (124...137))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (124...127) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (128...137))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (132...135))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (132...135))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (132...135) = "bar"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "bar"
+        │   │   ├── opening_loc: (128...129) = "{"
+        │   │   └── closing_loc: (136...137) = "}"
+        │   ├── flags: ∅
+        │   └── name: "foo"
+        ├── @ CallNode (location: (138...165))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (138...141))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (138...141) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (141...142) = "."
+        │   ├── message_loc: (142...145) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (146...165))
+        │   │   ├── locals: [:a, :b, :c]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (148...159))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (149...158))
+        │   │   │   │   ├── requireds: (length: 2)
+        │   │   │   │   │   ├── @ RequiredDestructuredParameterNode (location: (149...155))
+        │   │   │   │   │   │   ├── parameters: (length: 2)
+        │   │   │   │   │   │   │   ├── @ RequiredParameterNode (location: (150...151))
+        │   │   │   │   │   │   │   │   └── name: :a
+        │   │   │   │   │   │   │   └── @ RequiredParameterNode (location: (153...154))
+        │   │   │   │   │   │   │       └── name: :b
+        │   │   │   │   │   │   ├── opening_loc: (149...150) = "("
+        │   │   │   │   │   │   └── closing_loc: (154...155) = ")"
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (157...158))
+        │   │   │   │   │       └── name: :c
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (148...149) = "|"
+        │   │   │   └── closing_loc: (158...159) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (162...163))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (162...163))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (162...163) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   ├── opening_loc: (146...147) = "{"
+        │   │   └── closing_loc: (164...165) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (166...185))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (166...169))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (166...169) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (169...170) = "."
+        │   ├── message_loc: (170...173) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (174...185))
+        │   │   ├── locals: [:a, :b]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (176...183))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (177...179))
+        │   │   │   │   ├── requireds: (length: 0)
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ RestParameterNode (location: (177...179))
+        │   │   │   │   │   ├── name: :a
+        │   │   │   │   │   ├── name_loc: (178...179) = "a"
+        │   │   │   │   │   └── operator_loc: (177...178) = "*"
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 1)
+        │   │   │   │   └── @ BlockLocalVariableNode (location: (181...182))
+        │   │   │   │       └── name: :b
+        │   │   │   ├── opening_loc: (176...177) = "|"
+        │   │   │   └── closing_loc: (182...183) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (174...175) = "{"
+        │   │   └── closing_loc: (184...185) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (186...204))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (186...189))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (186...189) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (189...190) = "."
+        │   ├── message_loc: (190...193) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (194...204))
+        │   │   ├── locals: [:a, :b]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (196...202))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (197...198))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredParameterNode (location: (197...198))
+        │   │   │   │   │       └── name: :a
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 1)
+        │   │   │   │   └── @ BlockLocalVariableNode (location: (200...201))
+        │   │   │   │       └── name: :b
+        │   │   │   ├── opening_loc: (196...197) = "|"
+        │   │   │   └── closing_loc: (201...202) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (194...195) = "{"
+        │   │   └── closing_loc: (203...204) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (205...225))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (205...208))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (205...208) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (208...209) = "."
+        │   ├── message_loc: (209...212) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (213...225))
+        │   │   ├── locals: [:a, :b]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (215...223))
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── locals: (length: 2)
+        │   │   │   │   ├── @ BlockLocalVariableNode (location: (218...219))
+        │   │   │   │   │   └── name: :a
+        │   │   │   │   └── @ BlockLocalVariableNode (location: (221...222))
+        │   │   │   │       └── name: :b
+        │   │   │   ├── opening_loc: (215...216) = "|"
+        │   │   │   └── closing_loc: (222...223) = "|"
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (213...214) = "{"
+        │   │   └── closing_loc: (224...225) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (226...245))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (226...229))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (226...229) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (229...230) = "."
+        │   ├── message_loc: (230...233) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (234...245))
+        │   │   ├── locals: [:*]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (236...239))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (237...238))
+        │   │   │   │   ├── requireds: (length: 0)
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ RestParameterNode (location: (237...238))
+        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name_loc: ∅
+        │   │   │   │   │   └── operator_loc: (237...238) = "*"
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (236...237) = "|"
+        │   │   │   └── closing_loc: (238...239) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (242...243))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (242...243))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (242...243) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   ├── opening_loc: (234...235) = "{"
+        │   │   └── closing_loc: (244...245) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (246...267))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (246...249))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (246...249) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (249...250) = "."
+        │   ├── message_loc: (250...253) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (254...267))
+        │   │   ├── locals: []
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (256...261))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (257...260))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (257...260))
+        │   │   │   │   │       ├── parameters: (length: 1)
+        │   │   │   │   │       │   └── @ SplatNode (location: (258...259))
+        │   │   │   │   │       │       ├── operator_loc: (258...259) = "*"
+        │   │   │   │   │       │       └── expression: ∅
+        │   │   │   │   │       ├── opening_loc: (257...258) = "("
+        │   │   │   │   │       └── closing_loc: (259...260) = ")"
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (256...257) = "|"
+        │   │   │   └── closing_loc: (260...261) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (264...265))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (264...265))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (264...265) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   ├── opening_loc: (254...255) = "{"
+        │   │   └── closing_loc: (266...267) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (268...291))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (268...271))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (268...271) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (271...272) = "."
+        │   ├── message_loc: (272...275) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (276...291))
+        │   │   ├── locals: []
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (278...285))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (279...284))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (279...284))
+        │   │   │   │   │       ├── parameters: (length: 1)
+        │   │   │   │   │       │   └── @ RequiredDestructuredParameterNode (location: (280...283))
+        │   │   │   │   │       │       ├── parameters: (length: 1)
+        │   │   │   │   │       │       │   └── @ SplatNode (location: (281...282))
+        │   │   │   │   │       │       │       ├── operator_loc: (281...282) = "*"
+        │   │   │   │   │       │       │       └── expression: ∅
+        │   │   │   │   │       │       ├── opening_loc: (280...281) = "("
+        │   │   │   │   │       │       └── closing_loc: (282...283) = ")"
+        │   │   │   │   │       ├── opening_loc: (279...280) = "("
+        │   │   │   │   │       └── closing_loc: (283...284) = ")"
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (278...279) = "|"
+        │   │   │   └── closing_loc: (284...285) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (288...289))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (288...289))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (288...289) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   ├── opening_loc: (276...277) = "{"
+        │   │   └── closing_loc: (290...291) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (292...318))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (292...295))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (292...295) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (295...296) = "."
+        │   ├── message_loc: (296...299) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (300...318))
+        │   │   ├── locals: [:a]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (302...312))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (303...311))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (303...311))
+        │   │   │   │   │       ├── parameters: (length: 2)
+        │   │   │   │   │       │   ├── @ RequiredParameterNode (location: (304...305))
+        │   │   │   │   │       │   │   └── name: :a
+        │   │   │   │   │       │   └── @ RequiredDestructuredParameterNode (location: (307...310))
+        │   │   │   │   │       │       ├── parameters: (length: 1)
+        │   │   │   │   │       │       │   └── @ SplatNode (location: (308...309))
+        │   │   │   │   │       │       │       ├── operator_loc: (308...309) = "*"
+        │   │   │   │   │       │       │       └── expression: ∅
+        │   │   │   │   │       │       ├── opening_loc: (307...308) = "("
+        │   │   │   │   │       │       └── closing_loc: (309...310) = ")"
+        │   │   │   │   │       ├── opening_loc: (303...304) = "("
+        │   │   │   │   │       └── closing_loc: (310...311) = ")"
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (302...303) = "|"
+        │   │   │   └── closing_loc: (311...312) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (315...316))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (315...316))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (315...316) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   ├── opening_loc: (300...301) = "{"
+        │   │   └── closing_loc: (317...318) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (319...343))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (319...322))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (319...322) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── call_operator_loc: (322...323) = "."
+        │   ├── message_loc: (323...326) = "bar"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (327...343))
+        │   │   ├── locals: [:a, :b]
+        │   │   ├── parameters:
+        │   │   │   @ BlockParametersNode (location: (329...337))
+        │   │   │   ├── parameters:
+        │   │   │   │   @ ParametersNode (location: (330...336))
+        │   │   │   │   ├── requireds: (length: 1)
+        │   │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (330...336))
+        │   │   │   │   │       ├── parameters: (length: 2)
+        │   │   │   │   │       │   ├── @ RequiredParameterNode (location: (331...332))
+        │   │   │   │   │       │   │   └── name: :a
+        │   │   │   │   │       │   └── @ RequiredParameterNode (location: (334...335))
+        │   │   │   │   │       │       └── name: :b
+        │   │   │   │   │       ├── opening_loc: (330...331) = "("
+        │   │   │   │   │       └── closing_loc: (335...336) = ")"
+        │   │   │   │   ├── optionals: (length: 0)
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── posts: (length: 0)
+        │   │   │   │   ├── keywords: (length: 0)
+        │   │   │   │   ├── keyword_rest: ∅
+        │   │   │   │   └── block: ∅
+        │   │   │   ├── locals: (length: 0)
+        │   │   │   ├── opening_loc: (329...330) = "|"
+        │   │   │   └── closing_loc: (336...337) = "|"
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (340...341))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (340...341))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (340...341) = "d"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "d"
+        │   │   ├── opening_loc: (327...328) = "{"
+        │   │   └── closing_loc: (342...343) = "}"
+        │   ├── flags: ∅
+        │   └── name: "bar"
+        ├── @ CallNode (location: (344...359))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (344...355))
+        │   │   ├── receiver:
+        │   │   │   @ CallNode (location: (344...347))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (344...347) = "foo"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "foo"
+        │   │   ├── call_operator_loc: (347...348) = "."
+        │   │   ├── message_loc: (348...351) = "bar"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (352...355))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body: ∅
+        │   │   │   ├── opening_loc: (352...353) = "{"
+        │   │   │   └── closing_loc: (354...355) = "}"
+        │   │   ├── flags: ∅
+        │   │   └── name: "bar"
+        │   ├── call_operator_loc: (355...356) = "."
+        │   ├── message_loc: (356...359) = "baz"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: "baz"
+        ├── @ CallNode (location: (360...390))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (360...361) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (362...390))
+        │   │   ├── locals: [:e]
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (365...390))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (365...386))
+        │   │   │   │   ├── keyword_loc: (365...371) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 1)
+        │   │   │   │   │   └── @ ConstantReadNode (location: (372...381))
+        │   │   │   │   │       └── name: :Exception
+        │   │   │   │   ├── operator_loc: (382...384) = "=>"
+        │   │   │   │   ├── reference:
+        │   │   │   │   │   @ LocalVariableTargetNode (location: (385...386))
+        │   │   │   │   │   ├── name: :e
+        │   │   │   │   │   └── depth: 0
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (387...390) = "end"
+        │   │   ├── opening_loc: (362...364) = "do"
+        │   │   └── closing_loc: (387...390) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (391...435))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (391...392) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (393...435))
+        │   │   ├── locals: [:bar]
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (398...435))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (398...401))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (398...401))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (398...401) = "foo"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "foo"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (402...431))
+        │   │   │   │   ├── keyword_loc: (402...408) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 1)
+        │   │   │   │   │   └── @ ConstantReadNode (location: (409...418))
+        │   │   │   │   │       └── name: :Exception
+        │   │   │   │   ├── operator_loc: (419...421) = "=>"
+        │   │   │   │   ├── reference:
+        │   │   │   │   │   @ LocalVariableTargetNode (location: (422...425))
+        │   │   │   │   │   ├── name: :bar
+        │   │   │   │   │   └── depth: 0
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (428...431))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ LocalVariableReadNode (location: (428...431))
+        │   │   │   │   │           ├── name: :bar
+        │   │   │   │   │           └── depth: 0
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (432...435) = "end"
+        │   │   ├── opening_loc: (393...395) = "do"
+        │   │   └── closing_loc: (432...435) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (436...479))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (436...437) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (438...479))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (443...479))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (443...446))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (443...446))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (443...446) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (447...475))
+        │   │   │   │   ├── keyword_loc: (447...453) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 2)
+        │   │   │   │   │   ├── @ ConstantReadNode (location: (454...463))
+        │   │   │   │   │   │   └── name: :SomeError
+        │   │   │   │   │   └── @ SplatNode (location: (465...469))
+        │   │   │   │   │       ├── operator_loc: (465...466) = "*"
+        │   │   │   │   │       └── expression:
+        │   │   │   │   │           @ CallNode (location: (466...469))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (466...469) = "bar"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "bar"
+        │   │   │   │   ├── operator_loc: ∅
+        │   │   │   │   ├── reference: ∅
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (472...475))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ CallNode (location: (472...475))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (472...475) = "baz"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (476...479) = "end"
+        │   │   ├── opening_loc: (438...440) = "do"
+        │   │   └── closing_loc: (476...479) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (480...536))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (480...481) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (482...536))
+        │   │   ├── locals: [:exception]
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (487...536))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (487...490))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (487...490))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (487...490) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (491...532))
+        │   │   │   │   ├── keyword_loc: (491...497) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 2)
+        │   │   │   │   │   ├── @ ConstantReadNode (location: (498...507))
+        │   │   │   │   │   │   └── name: :SomeError
+        │   │   │   │   │   └── @ SplatNode (location: (509...513))
+        │   │   │   │   │       ├── operator_loc: (509...510) = "*"
+        │   │   │   │   │       └── expression:
+        │   │   │   │   │           @ CallNode (location: (510...513))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (510...513) = "bar"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "bar"
+        │   │   │   │   ├── operator_loc: (514...516) = "=>"
+        │   │   │   │   ├── reference:
+        │   │   │   │   │   @ LocalVariableTargetNode (location: (517...526))
+        │   │   │   │   │   ├── name: :exception
+        │   │   │   │   │   └── depth: 0
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (529...532))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ CallNode (location: (529...532))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (529...532) = "baz"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (533...536) = "end"
+        │   │   ├── opening_loc: (482...484) = "do"
+        │   │   └── closing_loc: (533...536) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (537...569))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (537...538) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (539...569))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (544...569))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (544...547))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (544...547))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (544...547) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (548...565))
+        │   │   │   │   ├── keyword_loc: (548...554) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 1)
+        │   │   │   │   │   └── @ SplatNode (location: (555...559))
+        │   │   │   │   │       ├── operator_loc: (555...556) = "*"
+        │   │   │   │   │       └── expression:
+        │   │   │   │   │           @ CallNode (location: (556...559))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (556...559) = "bar"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "bar"
+        │   │   │   │   ├── operator_loc: ∅
+        │   │   │   │   ├── reference: ∅
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (562...565))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ CallNode (location: (562...565))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (562...565) = "baz"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (566...569) = "end"
+        │   │   ├── opening_loc: (539...541) = "do"
+        │   │   └── closing_loc: (566...569) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (570...601))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (570...571) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (572...601))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (577...601))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (577...580))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (577...580))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (577...580) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (581...597))
+        │   │   │   │   ├── keyword_loc: (581...587) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 1)
+        │   │   │   │   │   └── @ ConstantReadNode (location: (588...597))
+        │   │   │   │   │       └── name: :LoadError
+        │   │   │   │   ├── operator_loc: ∅
+        │   │   │   │   ├── reference: ∅
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (598...601) = "end"
+        │   │   ├── opening_loc: (572...574) = "do"
+        │   │   └── closing_loc: (598...601) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (602...634))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (602...603) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (604...634))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (609...634))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (609...612))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (609...612))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (609...612) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (613...619))
+        │   │   │   │   ├── keyword_loc: (613...619) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 0)
+        │   │   │   │   ├── operator_loc: ∅
+        │   │   │   │   ├── reference: ∅
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause:
+        │   │   │   │   @ ElseNode (location: (620...634))
+        │   │   │   │   ├── else_keyword_loc: (620...624) = "else"
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (627...630))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ CallNode (location: (627...630))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (627...630) = "baz"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   └── end_keyword_loc: (631...634) = "end"
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (631...634) = "end"
+        │   │   ├── opening_loc: (604...606) = "do"
+        │   │   └── closing_loc: (631...634) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (635...680))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (635...636) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (637...680))
+        │   │   ├── locals: [:exception]
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (642...680))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (642...645))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (642...645))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (642...645) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (646...676))
+        │   │   │   │   ├── keyword_loc: (646...652) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 1)
+        │   │   │   │   │   └── @ SplatNode (location: (653...657))
+        │   │   │   │   │       ├── operator_loc: (653...654) = "*"
+        │   │   │   │   │       └── expression:
+        │   │   │   │   │           @ CallNode (location: (654...657))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (654...657) = "bar"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "bar"
+        │   │   │   │   ├── operator_loc: (658...660) = "=>"
+        │   │   │   │   ├── reference:
+        │   │   │   │   │   @ LocalVariableTargetNode (location: (661...670))
+        │   │   │   │   │   ├── name: :exception
+        │   │   │   │   │   └── depth: 0
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (673...676))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ CallNode (location: (673...676))
+        │   │   │   │   │           ├── receiver: ∅
+        │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │           ├── message_loc: (673...676) = "baz"
+        │   │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │   │           ├── arguments: ∅
+        │   │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │   │           ├── block: ∅
+        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause: ∅
+        │   │   │   └── end_keyword_loc: (677...680) = "end"
+        │   │   ├── opening_loc: (637...639) = "do"
+        │   │   └── closing_loc: (677...680) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (681...696))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (681...682) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (683...696))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (686...696))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   ├── rescue_clause: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause:
+        │   │   │   │   @ EnsureNode (location: (686...696))
+        │   │   │   │   ├── ensure_keyword_loc: (686...692) = "ensure"
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── end_keyword_loc: (693...696) = "end"
+        │   │   │   └── end_keyword_loc: (693...696) = "end"
+        │   │   ├── opening_loc: (683...685) = "do"
+        │   │   └── closing_loc: (693...696) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        ├── @ CallNode (location: (697...719))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (697...698) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block:
+        │   │   @ BlockNode (location: (699...719))
+        │   │   ├── locals: []
+        │   │   ├── parameters: ∅
+        │   │   ├── body:
+        │   │   │   @ BeginNode (location: (702...719))
+        │   │   │   ├── begin_keyword_loc: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   ├── rescue_clause:
+        │   │   │   │   @ RescueNode (location: (702...708))
+        │   │   │   │   ├── keyword_loc: (702...708) = "rescue"
+        │   │   │   │   ├── exceptions: (length: 0)
+        │   │   │   │   ├── operator_loc: ∅
+        │   │   │   │   ├── reference: ∅
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── consequent: ∅
+        │   │   │   ├── else_clause: ∅
+        │   │   │   ├── ensure_clause:
+        │   │   │   │   @ EnsureNode (location: (709...719))
+        │   │   │   │   ├── ensure_keyword_loc: (709...715) = "ensure"
+        │   │   │   │   ├── statements: ∅
+        │   │   │   │   └── end_keyword_loc: (716...719) = "end"
+        │   │   │   └── end_keyword_loc: (716...719) = "end"
+        │   │   ├── opening_loc: (699...701) = "do"
+        │   │   └── closing_loc: (716...719) = "end"
+        │   ├── flags: ∅
+        │   └── name: "m"
+        └── @ CallNode (location: (720...737))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (720...723) = "bar"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (724...737))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (728...735))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (728...735))
+            │   │           ├── receiver:
+            │   │           │   @ CallNode (location: (728...730))
+            │   │           │   ├── receiver: ∅
+            │   │           │   ├── call_operator_loc: ∅
+            │   │           │   ├── message_loc: (728...730) = "_1"
+            │   │           │   ├── opening_loc: ∅
+            │   │           │   ├── arguments: ∅
+            │   │           │   ├── closing_loc: ∅
+            │   │           │   ├── block: ∅
+            │   │           │   ├── flags: variable_call
+            │   │           │   └── name: "_1"
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (731...732) = "+"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments:
+            │   │           │   @ ArgumentsNode (location: (733...735))
+            │   │           │   └── arguments: (length: 1)
+            │   │           │       └── @ CallNode (location: (733...735))
+            │   │           │           ├── receiver: ∅
+            │   │           │           ├── call_operator_loc: ∅
+            │   │           │           ├── message_loc: (733...735) = "_2"
+            │   │           │           ├── opening_loc: ∅
+            │   │           │           ├── arguments: ∅
+            │   │           │           ├── closing_loc: ∅
+            │   │           │           ├── block: ∅
+            │   │           │           ├── flags: variable_call
+            │   │           │           └── name: "_2"
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: ∅
+            │   │           └── name: "+"
+            │   ├── opening_loc: (724...725) = "{"
+            │   └── closing_loc: (736...737) = "}"
+            ├── flags: ∅
+            └── name: "bar"

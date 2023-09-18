@@ -1,15 +1,53 @@
-ProgramNode(0...23)(
-  [],
-  StatementsNode(0...23)(
-    [AndNode(0...10)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-       CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 2, "bar"),
-       (4...6)
-     ),
-     AndNode(12...23)(
-       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "foo"),
-       CallNode(20...23)(nil, nil, (20...23), nil, nil, nil, nil, 2, "bar"),
-       (16...19)
-     )]
-  )
-)
+@ ProgramNode (location: (0...23))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...23))
+    └── body: (length: 2)
+        ├── @ AndNode (location: (0...10))
+        │   ├── left:
+        │   │   @ CallNode (location: (0...3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── right:
+        │   │   @ CallNode (location: (7...10))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (7...10) = "bar"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "bar"
+        │   └── operator_loc: (4...6) = "&&"
+        └── @ AndNode (location: (12...23))
+            ├── left:
+            │   @ CallNode (location: (12...15))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (12...15) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── right:
+            │   @ CallNode (location: (20...23))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (20...23) = "bar"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "bar"
+            └── operator_loc: (16...19) = "and"

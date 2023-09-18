@@ -1,142 +1,181 @@
-ProgramNode(0...106)(
-  [],
-  StatementsNode(0...106)(
-    [ReturnNode(0...17)(
-       (0...6),
-       ArgumentsNode(7...17)(
-         [IntegerNode(7...8)(),
-          KeywordHashNode(10...17)(
-            [AssocNode(10...17)(
-               SymbolNode(10...12)((10...11), (11...12), nil, "z"),
-               IntegerNode(16...17)(),
-               (13...15)
-             )]
-          )]
-       )
-     ),
-     ReturnNode(19...45)(
-       (19...25),
-       ArgumentsNode(26...45)(
-         [IntegerNode(26...27)(),
-          KeywordHashNode(29...45)(
-            [AssocNode(29...36)(
-               SymbolNode(29...31)((29...30), (30...31), nil, "z"),
-               IntegerNode(35...36)(),
-               (32...34)
-             ),
-             AssocNode(38...45)(
-               SymbolNode(38...40)((38...39), (39...40), nil, "w"),
-               IntegerNode(44...45)(),
-               (41...43)
-             )]
-          )]
-       )
-     ),
-     ReturnNode(47...61)(
-       (47...53),
-       ArgumentsNode(54...61)(
-         [CallNode(54...61)(
-            nil,
-            nil,
-            (54...55),
-            nil,
-            ArgumentsNode(56...61)(
-              [KeywordHashNode(56...61)(
-                 [AssocNode(56...61)(
-                    SymbolNode(56...58)((56...57), (57...58), nil, "z"),
-                    IntegerNode(60...61)(),
-                    (58...60)
-                  )]
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "y"
-          )]
-       )
-     ),
-     ReturnNode(63...75)(
-       (63...69),
-       ArgumentsNode(70...75)(
-         [CallNode(70...75)(
-            nil,
-            nil,
-            (70...71),
-            nil,
-            ArgumentsNode(72...75)(
-              [KeywordHashNode(72...75)(
-                 [AssocNode(72...75)(
-                    SymbolNode(72...74)(nil, (72...73), (73...74), "z"),
-                    IntegerNode(74...75)(),
-                    nil
-                  )]
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "y"
-          )]
-       )
-     ),
-     ReturnNode(77...90)(
-       (77...83),
-       ArgumentsNode(84...90)(
-         [CallNode(84...90)(
-            nil,
-            nil,
-            (84...85),
-            (85...86),
-            ArgumentsNode(86...89)(
-              [KeywordHashNode(86...89)(
-                 [AssocNode(86...89)(
-                    SymbolNode(86...88)(nil, (86...87), (87...88), "z"),
-                    IntegerNode(88...89)(),
-                    nil
-                  )]
-               )]
-            ),
-            (89...90),
-            nil,
-            0,
-            "y"
-          )]
-       )
-     ),
-     ReturnNode(92...106)(
-       (92...98),
-       ArgumentsNode(99...106)(
-         [CallNode(99...106)(
-            nil,
-            nil,
-            (99...100),
-            (100...101),
-            ArgumentsNode(101...105)(
-              [KeywordHashNode(101...105)(
-                 [AssocNode(101...105)(
-                    CallNode(101...102)(
-                      nil,
-                      nil,
-                      (101...102),
-                      nil,
-                      nil,
-                      nil,
-                      nil,
-                      2,
-                      "z"
-                    ),
-                    IntegerNode(104...105)(),
-                    (102...104)
-                  )]
-               )]
-            ),
-            (105...106),
-            nil,
-            0,
-            "y"
-          )]
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...106))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...106))
+    └── body: (length: 6)
+        ├── @ ReturnNode (location: (0...17))
+        │   ├── keyword_loc: (0...6) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (7...17))
+        │       └── arguments: (length: 2)
+        │           ├── @ IntegerNode (location: (7...8))
+        │           │   └── flags: decimal
+        │           └── @ KeywordHashNode (location: (10...17))
+        │               └── elements: (length: 1)
+        │                   └── @ AssocNode (location: (10...17))
+        │                       ├── key:
+        │                       │   @ SymbolNode (location: (10...12))
+        │                       │   ├── opening_loc: (10...11) = ":"
+        │                       │   ├── value_loc: (11...12) = "z"
+        │                       │   ├── closing_loc: ∅
+        │                       │   └── unescaped: "z"
+        │                       ├── value:
+        │                       │   @ IntegerNode (location: (16...17))
+        │                       │   └── flags: decimal
+        │                       └── operator_loc: (13...15) = "=>"
+        ├── @ ReturnNode (location: (19...45))
+        │   ├── keyword_loc: (19...25) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (26...45))
+        │       └── arguments: (length: 2)
+        │           ├── @ IntegerNode (location: (26...27))
+        │           │   └── flags: decimal
+        │           └── @ KeywordHashNode (location: (29...45))
+        │               └── elements: (length: 2)
+        │                   ├── @ AssocNode (location: (29...36))
+        │                   │   ├── key:
+        │                   │   │   @ SymbolNode (location: (29...31))
+        │                   │   │   ├── opening_loc: (29...30) = ":"
+        │                   │   │   ├── value_loc: (30...31) = "z"
+        │                   │   │   ├── closing_loc: ∅
+        │                   │   │   └── unescaped: "z"
+        │                   │   ├── value:
+        │                   │   │   @ IntegerNode (location: (35...36))
+        │                   │   │   └── flags: decimal
+        │                   │   └── operator_loc: (32...34) = "=>"
+        │                   └── @ AssocNode (location: (38...45))
+        │                       ├── key:
+        │                       │   @ SymbolNode (location: (38...40))
+        │                       │   ├── opening_loc: (38...39) = ":"
+        │                       │   ├── value_loc: (39...40) = "w"
+        │                       │   ├── closing_loc: ∅
+        │                       │   └── unescaped: "w"
+        │                       ├── value:
+        │                       │   @ IntegerNode (location: (44...45))
+        │                       │   └── flags: decimal
+        │                       └── operator_loc: (41...43) = "=>"
+        ├── @ ReturnNode (location: (47...61))
+        │   ├── keyword_loc: (47...53) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (54...61))
+        │       └── arguments: (length: 1)
+        │           └── @ CallNode (location: (54...61))
+        │               ├── receiver: ∅
+        │               ├── call_operator_loc: ∅
+        │               ├── message_loc: (54...55) = "y"
+        │               ├── opening_loc: ∅
+        │               ├── arguments:
+        │               │   @ ArgumentsNode (location: (56...61))
+        │               │   └── arguments: (length: 1)
+        │               │       └── @ KeywordHashNode (location: (56...61))
+        │               │           └── elements: (length: 1)
+        │               │               └── @ AssocNode (location: (56...61))
+        │               │                   ├── key:
+        │               │                   │   @ SymbolNode (location: (56...58))
+        │               │                   │   ├── opening_loc: (56...57) = ":"
+        │               │                   │   ├── value_loc: (57...58) = "z"
+        │               │                   │   ├── closing_loc: ∅
+        │               │                   │   └── unescaped: "z"
+        │               │                   ├── value:
+        │               │                   │   @ IntegerNode (location: (60...61))
+        │               │                   │   └── flags: decimal
+        │               │                   └── operator_loc: (58...60) = "=>"
+        │               ├── closing_loc: ∅
+        │               ├── block: ∅
+        │               ├── flags: ∅
+        │               └── name: "y"
+        ├── @ ReturnNode (location: (63...75))
+        │   ├── keyword_loc: (63...69) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (70...75))
+        │       └── arguments: (length: 1)
+        │           └── @ CallNode (location: (70...75))
+        │               ├── receiver: ∅
+        │               ├── call_operator_loc: ∅
+        │               ├── message_loc: (70...71) = "y"
+        │               ├── opening_loc: ∅
+        │               ├── arguments:
+        │               │   @ ArgumentsNode (location: (72...75))
+        │               │   └── arguments: (length: 1)
+        │               │       └── @ KeywordHashNode (location: (72...75))
+        │               │           └── elements: (length: 1)
+        │               │               └── @ AssocNode (location: (72...75))
+        │               │                   ├── key:
+        │               │                   │   @ SymbolNode (location: (72...74))
+        │               │                   │   ├── opening_loc: ∅
+        │               │                   │   ├── value_loc: (72...73) = "z"
+        │               │                   │   ├── closing_loc: (73...74) = ":"
+        │               │                   │   └── unescaped: "z"
+        │               │                   ├── value:
+        │               │                   │   @ IntegerNode (location: (74...75))
+        │               │                   │   └── flags: decimal
+        │               │                   └── operator_loc: ∅
+        │               ├── closing_loc: ∅
+        │               ├── block: ∅
+        │               ├── flags: ∅
+        │               └── name: "y"
+        ├── @ ReturnNode (location: (77...90))
+        │   ├── keyword_loc: (77...83) = "return"
+        │   └── arguments:
+        │       @ ArgumentsNode (location: (84...90))
+        │       └── arguments: (length: 1)
+        │           └── @ CallNode (location: (84...90))
+        │               ├── receiver: ∅
+        │               ├── call_operator_loc: ∅
+        │               ├── message_loc: (84...85) = "y"
+        │               ├── opening_loc: (85...86) = "("
+        │               ├── arguments:
+        │               │   @ ArgumentsNode (location: (86...89))
+        │               │   └── arguments: (length: 1)
+        │               │       └── @ KeywordHashNode (location: (86...89))
+        │               │           └── elements: (length: 1)
+        │               │               └── @ AssocNode (location: (86...89))
+        │               │                   ├── key:
+        │               │                   │   @ SymbolNode (location: (86...88))
+        │               │                   │   ├── opening_loc: ∅
+        │               │                   │   ├── value_loc: (86...87) = "z"
+        │               │                   │   ├── closing_loc: (87...88) = ":"
+        │               │                   │   └── unescaped: "z"
+        │               │                   ├── value:
+        │               │                   │   @ IntegerNode (location: (88...89))
+        │               │                   │   └── flags: decimal
+        │               │                   └── operator_loc: ∅
+        │               ├── closing_loc: (89...90) = ")"
+        │               ├── block: ∅
+        │               ├── flags: ∅
+        │               └── name: "y"
+        └── @ ReturnNode (location: (92...106))
+            ├── keyword_loc: (92...98) = "return"
+            └── arguments:
+                @ ArgumentsNode (location: (99...106))
+                └── arguments: (length: 1)
+                    └── @ CallNode (location: (99...106))
+                        ├── receiver: ∅
+                        ├── call_operator_loc: ∅
+                        ├── message_loc: (99...100) = "y"
+                        ├── opening_loc: (100...101) = "("
+                        ├── arguments:
+                        │   @ ArgumentsNode (location: (101...105))
+                        │   └── arguments: (length: 1)
+                        │       └── @ KeywordHashNode (location: (101...105))
+                        │           └── elements: (length: 1)
+                        │               └── @ AssocNode (location: (101...105))
+                        │                   ├── key:
+                        │                   │   @ CallNode (location: (101...102))
+                        │                   │   ├── receiver: ∅
+                        │                   │   ├── call_operator_loc: ∅
+                        │                   │   ├── message_loc: (101...102) = "z"
+                        │                   │   ├── opening_loc: ∅
+                        │                   │   ├── arguments: ∅
+                        │                   │   ├── closing_loc: ∅
+                        │                   │   ├── block: ∅
+                        │                   │   ├── flags: variable_call
+                        │                   │   └── name: "z"
+                        │                   ├── value:
+                        │                   │   @ IntegerNode (location: (104...105))
+                        │                   │   └── flags: decimal
+                        │                   └── operator_loc: (102...104) = "=>"
+                        ├── closing_loc: (105...106) = ")"
+                        ├── block: ∅
+                        ├── flags: ∅
+                        └── name: "y"

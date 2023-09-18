@@ -1,16 +1,20 @@
-ProgramNode(0...3)(
-  [],
-  StatementsNode(0...3)(
-    [CallNode(0...3)(
-       SymbolNode(1...3)((1...2), (2...3), nil, "a"),
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "+@"
-     )]
-  )
-)
+@ ProgramNode (location: (0...3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...3))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...3))
+            ├── receiver:
+            │   @ SymbolNode (location: (1...3))
+            │   ├── opening_loc: (1...2) = ":"
+            │   ├── value_loc: (2...3) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "+"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: "+@"

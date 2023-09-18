@@ -1,13 +1,16 @@
-ProgramNode(0...13)(
-  [:var],
-  StatementsNode(0...13)(
-    [LocalVariableWriteNode(0...8)(
-       :var,
-       0,
-       (0...3),
-       IntegerNode(6...8)(),
-       (4...5)
-     ),
-     LocalVariableReadNode(10...13)(:var, 0)]
-  )
-)
+@ ProgramNode (location: (0...13))
+├── locals: [:var]
+└── statements:
+    @ StatementsNode (location: (0...13))
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (0...8))
+        │   ├── name: :var
+        │   ├── depth: 0
+        │   ├── name_loc: (0...3) = "var"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (6...8))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (4...5) = "="
+        └── @ LocalVariableReadNode (location: (10...13))
+            ├── name: :var
+            └── depth: 0

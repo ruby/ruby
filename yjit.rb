@@ -307,6 +307,7 @@ module RubyVM::YJIT
         out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
       out.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
+      out.puts "compile_time_ms:       " + format_number(13, stats[:compile_time_ns] / (1000 * 1000))
       out.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
       out.puts "defer_count:           " + format_number(13, stats[:defer_count])
       out.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])

@@ -1,55 +1,93 @@
-ProgramNode(0...58)(
-  [],
-  StatementsNode(0...58)(
-    [IfNode(0...30)(
-       (0...2),
-       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(12...15)(
-         [CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "bar")]
-       ),
-       ElseNode(17...30)(
-         (17...21),
-         StatementsNode(22...25)(
-           [CallNode(22...25)(
-              nil,
-              nil,
-              (22...25),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "baz"
-            )]
-         ),
-         (27...30)
-       ),
-       (27...30)
-     ),
-     IfNode(32...58)(
-       (32...34),
-       CallNode(35...38)(nil, nil, (35...38), nil, nil, nil, nil, 2, "foo"),
-       StatementsNode(40...43)(
-         [CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 2, "bar")]
-       ),
-       ElseNode(45...58)(
-         (45...49),
-         StatementsNode(50...53)(
-           [CallNode(50...53)(
-              nil,
-              nil,
-              (50...53),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "baz"
-            )]
-         ),
-         (55...58)
-       ),
-       (55...58)
-     )]
-  )
-)
+@ ProgramNode (location: (0...58))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...58))
+    └── body: (length: 2)
+        ├── @ IfNode (location: (0...30))
+        │   ├── if_keyword_loc: (0...2) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (3...6))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (3...6) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (12...15))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (12...15))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (12...15) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (17...30))
+        │   │   ├── else_keyword_loc: (17...21) = "else"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (22...25))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (22...25))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (22...25) = "baz"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: "baz"
+        │   │   └── end_keyword_loc: (27...30) = "end"
+        │   └── end_keyword_loc: (27...30) = "end"
+        └── @ IfNode (location: (32...58))
+            ├── if_keyword_loc: (32...34) = "if"
+            ├── predicate:
+            │   @ CallNode (location: (35...38))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (35...38) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── statements:
+            │   @ StatementsNode (location: (40...43))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (40...43))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (40...43) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: "bar"
+            ├── consequent:
+            │   @ ElseNode (location: (45...58))
+            │   ├── else_keyword_loc: (45...49) = "else"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (50...53))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (50...53))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (50...53) = "baz"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: "baz"
+            │   └── end_keyword_loc: (55...58) = "end"
+            └── end_keyword_loc: (55...58) = "end"

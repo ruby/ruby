@@ -1,61 +1,89 @@
-ProgramNode(0...40)(
-  [:a, :b],
-  StatementsNode(0...40)(
-    [AndNode(0...19)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
-       ParenthesesNode(7...19)(
-         StatementsNode(8...18)(
-           [MultiWriteNode(8...18)(
-              [LocalVariableTargetNode(8...9)(:a, 0),
-               LocalVariableTargetNode(11...12)(:b, 0)],
-              (13...14),
-              CallNode(15...18)(
-                nil,
-                nil,
-                (15...18),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              nil,
-              nil
-            )]
-         ),
-         (7...8),
-         (18...19)
-       ),
-       (4...6)
-     ),
-     OrNode(21...40)(
-       CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 2, "foo"),
-       ParenthesesNode(28...40)(
-         StatementsNode(29...39)(
-           [MultiWriteNode(29...39)(
-              [LocalVariableTargetNode(29...30)(:a, 0),
-               LocalVariableTargetNode(32...33)(:b, 0)],
-              (34...35),
-              CallNode(36...39)(
-                nil,
-                nil,
-                (36...39),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              nil,
-              nil
-            )]
-         ),
-         (28...29),
-         (39...40)
-       ),
-       (25...27)
-     )]
-  )
-)
+@ ProgramNode (location: (0...40))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (0...40))
+    └── body: (length: 2)
+        ├── @ AndNode (location: (0...19))
+        │   ├── left:
+        │   │   @ CallNode (location: (0...3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── right:
+        │   │   @ ParenthesesNode (location: (7...19))
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (8...18))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ MultiWriteNode (location: (8...18))
+        │   │   │           ├── targets: (length: 2)
+        │   │   │           │   ├── @ LocalVariableTargetNode (location: (8...9))
+        │   │   │           │   │   ├── name: :a
+        │   │   │           │   │   └── depth: 0
+        │   │   │           │   └── @ LocalVariableTargetNode (location: (11...12))
+        │   │   │           │       ├── name: :b
+        │   │   │           │       └── depth: 0
+        │   │   │           ├── lparen_loc: ∅
+        │   │   │           ├── rparen_loc: ∅
+        │   │   │           ├── operator_loc: (13...14) = "="
+        │   │   │           └── value:
+        │   │   │               @ CallNode (location: (15...18))
+        │   │   │               ├── receiver: ∅
+        │   │   │               ├── call_operator_loc: ∅
+        │   │   │               ├── message_loc: (15...18) = "bar"
+        │   │   │               ├── opening_loc: ∅
+        │   │   │               ├── arguments: ∅
+        │   │   │               ├── closing_loc: ∅
+        │   │   │               ├── block: ∅
+        │   │   │               ├── flags: variable_call
+        │   │   │               └── name: "bar"
+        │   │   ├── opening_loc: (7...8) = "("
+        │   │   └── closing_loc: (18...19) = ")"
+        │   └── operator_loc: (4...6) = "&&"
+        └── @ OrNode (location: (21...40))
+            ├── left:
+            │   @ CallNode (location: (21...24))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (21...24) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "foo"
+            ├── right:
+            │   @ ParenthesesNode (location: (28...40))
+            │   ├── body:
+            │   │   @ StatementsNode (location: (29...39))
+            │   │   └── body: (length: 1)
+            │   │       └── @ MultiWriteNode (location: (29...39))
+            │   │           ├── targets: (length: 2)
+            │   │           │   ├── @ LocalVariableTargetNode (location: (29...30))
+            │   │           │   │   ├── name: :a
+            │   │           │   │   └── depth: 0
+            │   │           │   └── @ LocalVariableTargetNode (location: (32...33))
+            │   │           │       ├── name: :b
+            │   │           │       └── depth: 0
+            │   │           ├── lparen_loc: ∅
+            │   │           ├── rparen_loc: ∅
+            │   │           ├── operator_loc: (34...35) = "="
+            │   │           └── value:
+            │   │               @ CallNode (location: (36...39))
+            │   │               ├── receiver: ∅
+            │   │               ├── call_operator_loc: ∅
+            │   │               ├── message_loc: (36...39) = "bar"
+            │   │               ├── opening_loc: ∅
+            │   │               ├── arguments: ∅
+            │   │               ├── closing_loc: ∅
+            │   │               ├── block: ∅
+            │   │               ├── flags: variable_call
+            │   │               └── name: "bar"
+            │   ├── opening_loc: (28...29) = "("
+            │   └── closing_loc: (39...40) = ")"
+            └── operator_loc: (25...27) = "||"

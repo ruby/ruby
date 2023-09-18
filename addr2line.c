@@ -1496,7 +1496,7 @@ addr_header_init(obj_info_t *obj, addr_header_t *header) {
 
     header->ptr = p;
 
-    if (!p) return false;
+    if (!p) return true;
 
     header->unit_length = *(uint32_t *)p;
     p += sizeof(uint32_t);
@@ -1539,7 +1539,7 @@ static bool
 rnglists_header_init(obj_info_t *obj, rnglists_header_t *header) {
     const char *p = obj->debug_rnglists.ptr;
 
-    if (!p) return false;
+    if (!p) return true;
 
     header->unit_length = *(uint32_t *)p;
     p += sizeof(uint32_t);

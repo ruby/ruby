@@ -1,13 +1,23 @@
-ProgramNode(0...23)(
-  [],
-  StatementsNode(0...23)(
-    [BeginNode(0...23)(
-       (0...5),
-       nil,
-       RescueNode(6...12)((6...12), [], nil, nil, nil, nil),
-       nil,
-       EnsureNode(13...23)((13...19), nil, (20...23)),
-       (20...23)
-     )]
-  )
-)
+@ ProgramNode (location: (0...23))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...23))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (0...23))
+            ├── begin_keyword_loc: (0...5) = "begin"
+            ├── statements: ∅
+            ├── rescue_clause:
+            │   @ RescueNode (location: (6...12))
+            │   ├── keyword_loc: (6...12) = "rescue"
+            │   ├── exceptions: (length: 0)
+            │   ├── operator_loc: ∅
+            │   ├── reference: ∅
+            │   ├── statements: ∅
+            │   └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause:
+            │   @ EnsureNode (location: (13...23))
+            │   ├── ensure_keyword_loc: (13...19) = "ensure"
+            │   ├── statements: ∅
+            │   └── end_keyword_loc: (20...23) = "end"
+            └── end_keyword_loc: (20...23) = "end"

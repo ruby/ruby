@@ -37,7 +37,7 @@ module YARP
       result = YARP.parse_file(filepath)
       assert_empty result.errors
 
-      result.mark_newlines
+      result.mark_newlines!
       visitor = NewlineVisitor.new(result.source)
 
       result.value.accept(visitor)

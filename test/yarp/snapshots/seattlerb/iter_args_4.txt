@@ -1,35 +1,42 @@
-ProgramNode(0...16)(
-  [],
-  StatementsNode(0...16)(
-    [CallNode(0...16)(
-       nil,
-       nil,
-       (0...1),
-       nil,
-       nil,
-       nil,
-       BlockNode(2...16)(
-         [:a, :b, :c],
-         BlockParametersNode(4...14)(
-           ParametersNode(5...13)(
-             [RequiredParameterNode(5...6)(:a)],
-             [],
-             [RequiredParameterNode(12...13)(:c)],
-             RestParameterNode(8...10)((8...9), (9...10)),
-             [],
-             nil,
-             nil
-           ),
-           [],
-           (4...5),
-           (13...14)
-         ),
-         nil,
-         (2...3),
-         (15...16)
-       ),
-       0,
-       "f"
-     )]
-  )
-)
+@ ProgramNode (location: (0...16))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...16))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...16))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...1) = "f"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (2...16))
+            │   ├── locals: [:a, :b, :c]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (4...14))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (5...13))
+            │   │   │   ├── requireds: (length: 1)
+            │   │   │   │   └── @ RequiredParameterNode (location: (5...6))
+            │   │   │   │       └── name: :a
+            │   │   │   ├── optionals: (length: 0)
+            │   │   │   ├── rest:
+            │   │   │   │   @ RestParameterNode (location: (8...10))
+            │   │   │   │   ├── name: :b
+            │   │   │   │   ├── name_loc: (9...10) = "b"
+            │   │   │   │   └── operator_loc: (8...9) = "*"
+            │   │   │   ├── posts: (length: 1)
+            │   │   │   │   └── @ RequiredParameterNode (location: (12...13))
+            │   │   │   │       └── name: :c
+            │   │   │   ├── keywords: (length: 0)
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (4...5) = "|"
+            │   │   └── closing_loc: (13...14) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (2...3) = "{"
+            │   └── closing_loc: (15...16) = "}"
+            ├── flags: ∅
+            └── name: "f"

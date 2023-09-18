@@ -1,52 +1,71 @@
-ProgramNode(0...66)(
-  [],
-  StatementsNode(0...66)(
-    [CallNode(0...66)(
-       nil,
-       nil,
-       (0...3),
-       nil,
-       nil,
-       nil,
-       BlockNode(4...66)(
-         [],
-         nil,
-         BeginNode(9...66)(
-           nil,
-           StatementsNode(9...15)(
-             [SymbolNode(9...15)((9...10), (10...15), nil, "begin")]
-           ),
-           RescueNode(16...32)(
-             (16...22),
-             [],
-             nil,
-             nil,
-             StatementsNode(25...32)(
-               [SymbolNode(25...32)((25...26), (26...32), nil, "rescue")]
-             ),
-             nil
-           ),
-           ElseNode(33...52)(
-             (33...37),
-             StatementsNode(40...45)(
-               [SymbolNode(40...45)((40...41), (41...45), nil, "else")]
-             ),
-             (46...52)
-           ),
-           EnsureNode(46...66)(
-             (46...52),
-             StatementsNode(55...62)(
-               [SymbolNode(55...62)((55...56), (56...62), nil, "ensure")]
-             ),
-             (63...66)
-           ),
-           (63...66)
-         ),
-         (4...6),
-         (63...66)
-       ),
-       0,
-       "tap"
-     )]
-  )
-)
+@ ProgramNode (location: (0...66))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...66))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...66))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...3) = "tap"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (4...66))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ BeginNode (location: (9...66))
+            │   │   ├── begin_keyword_loc: ∅
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (9...15))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ SymbolNode (location: (9...15))
+            │   │   │           ├── opening_loc: (9...10) = ":"
+            │   │   │           ├── value_loc: (10...15) = "begin"
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           └── unescaped: "begin"
+            │   │   ├── rescue_clause:
+            │   │   │   @ RescueNode (location: (16...32))
+            │   │   │   ├── keyword_loc: (16...22) = "rescue"
+            │   │   │   ├── exceptions: (length: 0)
+            │   │   │   ├── operator_loc: ∅
+            │   │   │   ├── reference: ∅
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (25...32))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ SymbolNode (location: (25...32))
+            │   │   │   │           ├── opening_loc: (25...26) = ":"
+            │   │   │   │           ├── value_loc: (26...32) = "rescue"
+            │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │           └── unescaped: "rescue"
+            │   │   │   └── consequent: ∅
+            │   │   ├── else_clause:
+            │   │   │   @ ElseNode (location: (33...52))
+            │   │   │   ├── else_keyword_loc: (33...37) = "else"
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (40...45))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ SymbolNode (location: (40...45))
+            │   │   │   │           ├── opening_loc: (40...41) = ":"
+            │   │   │   │           ├── value_loc: (41...45) = "else"
+            │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │           └── unescaped: "else"
+            │   │   │   └── end_keyword_loc: (46...52) = "ensure"
+            │   │   ├── ensure_clause:
+            │   │   │   @ EnsureNode (location: (46...66))
+            │   │   │   ├── ensure_keyword_loc: (46...52) = "ensure"
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (55...62))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ SymbolNode (location: (55...62))
+            │   │   │   │           ├── opening_loc: (55...56) = ":"
+            │   │   │   │           ├── value_loc: (56...62) = "ensure"
+            │   │   │   │           ├── closing_loc: ∅
+            │   │   │   │           └── unescaped: "ensure"
+            │   │   │   └── end_keyword_loc: (63...66) = "end"
+            │   │   └── end_keyword_loc: (63...66) = "end"
+            │   ├── opening_loc: (4...6) = "do"
+            │   └── closing_loc: (63...66) = "end"
+            ├── flags: ∅
+            └── name: "tap"

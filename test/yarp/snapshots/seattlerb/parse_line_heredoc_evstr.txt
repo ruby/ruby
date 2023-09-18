@@ -1,18 +1,37 @@
-ProgramNode(0...4)(
-  [],
-  StatementsNode(0...4)(
-    [InterpolatedStringNode(0...4)(
-       (0...4),
-       [StringNode(5...7)(nil, (5...7), nil, "a\n"),
-        EmbeddedStatementsNode(7...11)(
-          (7...9),
-          StatementsNode(9...10)(
-            [CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 2, "b")]
-          ),
-          (10...11)
-        ),
-        StringNode(11...12)(nil, (11...12), nil, "\n")],
-       (12...14)
-     )]
-  )
-)
+@ ProgramNode (location: (0...4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...4))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (0...4))
+            ├── opening_loc: (0...4) = "<<-A"
+            ├── parts: (length: 3)
+            │   ├── @ StringNode (location: (5...7))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (5...7) = "a\n"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "a\n"
+            │   ├── @ EmbeddedStatementsNode (location: (7...11))
+            │   │   ├── opening_loc: (7...9) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (9...10))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ CallNode (location: (9...10))
+            │   │   │           ├── receiver: ∅
+            │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── message_loc: (9...10) = "b"
+            │   │   │           ├── opening_loc: ∅
+            │   │   │           ├── arguments: ∅
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           ├── block: ∅
+            │   │   │           ├── flags: variable_call
+            │   │   │           └── name: "b"
+            │   │   └── closing_loc: (10...11) = "}"
+            │   └── @ StringNode (location: (11...12))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (11...12) = "\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\n"
+            └── closing_loc: (12...14) = "A\n"
