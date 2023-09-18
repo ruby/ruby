@@ -103,6 +103,20 @@ module YARP
       test_yarp_eval("class YARP::CompilerTest; @@yct = 0; @@yct += 1; end")
     end
 
+    def test_ConstantTargetNode
+      # We don't call test_yarp_eval directly in this case becuase we
+      # don't want to assign the constant mutliple times if we run
+      # with `--repeat-count`
+      # Instead, we eval manually here, and remove the constant to
+      constant_names = ["YCT", "YCT2"]
+      source = "#{constant_names.join(",")} = 1"
+      yarp_eval = RubyVM::InstructionSequence.compile_yarp(source).eval
+      assert_equal yarp_eval, 1
+      constant_names.map { |name|
+        Object.send(:remove_const, name)
+      }
+    end
+
     def test_ConstantWriteNode
       # We don't call test_yarp_eval directly in this case becuase we
       # don't want to assign the constant mutliple times if we run

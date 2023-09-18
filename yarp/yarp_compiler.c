@@ -994,6 +994,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           return;
       }
+      case YP_CONSTANT_TARGET_NODE: {
+          yp_constant_target_node_t *constant_write_node = (yp_constant_target_node_t *) node;
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+          ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(yp_constant_id_lookup(compile_context, constant_write_node->name)));
+          return;
+      }
       case YP_CONSTANT_WRITE_NODE: {
           yp_constant_write_node_t *constant_write_node = (yp_constant_write_node_t *) node;
           YP_COMPILE_NOT_POPPED(constant_write_node->value);
