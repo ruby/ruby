@@ -78,7 +78,6 @@ rb_mmtk_update_weak_table(st_table *table,
                           rb_mmtk_hash_on_delete_func on_delete,
                           void *on_delete_arg);
 
-void rb_mmtk_update_global_weak_tables_early(void);
 void rb_mmtk_update_global_weak_tables(void);
 
 // String buffer implementation
