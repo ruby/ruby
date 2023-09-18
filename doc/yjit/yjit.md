@@ -186,7 +186,7 @@ ruby 3.3.0dev (2023-01-31T15:11:10Z master 2a0bf269c9) +YJIT dev [x86_64-darwin2
 
 We have collected a set of benchmarks and implemented a simple benchmarking harness in the [yjit-bench](https://github.com/Shopify/yjit-bench) repository. This benchmarking harness is designed to disable CPU frequency scaling, set process affinity and disable address space randomization so that the variance between benchmarking runs will be as small as possible. Please kindly note that we are at an early stage in this project.
 
-## Performance Tips
+## Code Optimization Tips
 
 This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase. You should ideally start by profiling your application using a tool such as [stackprof](https://github.com/tmm1/stackprof) so that you can determine which methods make up most of the execution time. You can then refactor the specific methods that make up the largest fractions of the execution time. We do not recommend modifying your entire codebase based on the current limitations of YJIT.
 
@@ -266,7 +266,7 @@ of worker processes to estimate the worst case memory overhead.
 
 Running code GC adds overhead, but it could be still faster than recovering from a whole process killed by OOM.
 
-## Speeding Up YJIT
+## Performance Tips for Production Deployments
 
 While YJIT options default to what we think would work well for most workloads,
 they might not necessarily be the best configuration for your application.
