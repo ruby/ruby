@@ -135,6 +135,10 @@ module YARP
       test_yarp_eval("$yct = 0; $yct += 1")
     end
 
+    def test_InstanceVariableTargetNode
+      test_yarp_eval("class YARP::CompilerTest; @yct, @yct1 = 1; end")
+    end
+
     def test_InstanceVariableWriteNode
       test_yarp_eval("class YARP::CompilerTest; @yct = 1; end")
     end
@@ -149,6 +153,10 @@ module YARP
 
     def test_InstanceVariableOperatorWriteNode
       test_yarp_eval("@yct = 0; @yct += 1")
+    end
+
+    def test_LocalVariableTargetNode
+      test_yarp_eval("yct, yct1 = 1")
     end
 
     def test_LocalVariableWriteNode

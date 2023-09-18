@@ -1362,6 +1362,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_INSTANCE_VARIABLE_TARGET_NODE: {
+          yp_instance_variable_target_node_t *write_node = (yp_instance_variable_target_node_t *) node;
+
+          ID ivar_name = yp_constant_id_lookup(compile_context, write_node->name);
+          ADD_INSN2(ret, &dummy_line_node, setinstancevariable,
+                  ID2SYM(ivar_name),
+                  get_ivar_ic_value(iseq, ivar_name));
+          return;
+      }
       case YP_INSTANCE_VARIABLE_WRITE_NODE: {
           yp_instance_variable_write_node_t *write_node = (yp_instance_variable_write_node_t *) node;
           YP_COMPILE_NOT_POPPED(write_node->value);
@@ -1557,6 +1566,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               int index = yp_lookup_local_index(iseq, compile_context, local_read_node->name);
               ADD_GETLOCAL(ret, &dummy_line_node, index, local_read_node->depth);
           }
+          return;
+      }
+      case YP_LOCAL_VARIABLE_TARGET_NODE: {
+          yp_local_variable_target_node_t *local_write_node = (yp_local_variable_target_node_t *) node;
+
+          yp_constant_id_t constant_id = local_write_node->name;
+          int index = yp_lookup_local_index(iseq, compile_context, constant_id);
+
+          ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
           return;
       }
       case YP_LOCAL_VARIABLE_WRITE_NODE: {
