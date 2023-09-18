@@ -545,6 +545,30 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
     switch (YP_NODE_TYPE(node)) {
+      case YP_ALIAS_GLOBAL_VARIABLE_NODE: {
+          yp_alias_global_variable_node_t *alias_node = (yp_alias_global_variable_node_t *) node;
+
+          RUBY_ASSERT(YP_NODE_TYPE_P(alias_node->new_name, YP_GLOBAL_VARIABLE_READ_NODE));
+          RUBY_ASSERT(YP_NODE_TYPE_P(alias_node->old_name, YP_GLOBAL_VARIABLE_READ_NODE));
+
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+          yp_global_variable_read_node_t * new_name = (yp_global_variable_read_node_t *)alias_node->new_name;
+          yp_global_variable_read_node_t * old_name = (yp_global_variable_read_node_t *)alias_node->old_name;
+
+          VALUE new_alias_name = ID2SYM(yp_constant_id_lookup(compile_context, new_name->name));
+          ADD_INSN1(ret, &dummy_line_node, putobject, new_alias_name);
+
+          VALUE old_alias_name = ID2SYM(yp_constant_id_lookup(compile_context, old_name->name));
+          ADD_INSN1(ret, &dummy_line_node, putobject, old_alias_name);
+
+          ADD_SEND(ret, &dummy_line_node, id_core_set_variable_alias, INT2FIX(2));
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+          return;
+      }
       case YP_ALIAS_METHOD_NODE: {
           yp_alias_method_node_t *alias_node = (yp_alias_method_node_t *) node;
 

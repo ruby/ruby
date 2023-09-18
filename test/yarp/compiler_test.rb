@@ -242,6 +242,22 @@ module YARP
       assert_equal (1), compile("(1)")
     end
 
+    def test_alias_globals
+      rd, wr = IO.pipe
+      pid = fork {
+        rd.close
+        $foo = 123
+        code = "alias $bar $foo; $bar"
+        wr.write Marshal.dump(RubyVM::InstructionSequence.compile_yarp(code).eval)
+        wr.close
+      }
+      wr.close
+      Process.waitpid pid
+      assert_equal 123, Marshal.load(rd.read)
+    ensure
+      rd.close
+    end
+
     private
 
     def compile(source)
