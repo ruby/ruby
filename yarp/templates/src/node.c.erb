@@ -106,6 +106,10 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
             // Node lists will add in their own sizes below.
             memsize->memsize -= sizeof(yp_node_list_t) * <%= node.fields.count { |f| f.is_a?(YARP::NodeListField) } %>;
             <%- end -%>
+            <%- if node.fields.any? { |f| f.is_a?(YARP::ConstantListField) } -%>
+            // Constant id lists will add in their own sizes below.
+            memsize->memsize -= sizeof(yp_constant_id_list_t) * <%= node.fields.count { |f| f.is_a?(YARP::ConstantListField) } %>;
+            <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
             <%- when YARP::ConstantField, YARP::OptionalConstantField, YARP::UInt32Field, YARP::FlagsField, YARP::LocationField, YARP::OptionalLocationField -%>
