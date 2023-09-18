@@ -165,7 +165,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB in Ruby 3.2, 128 MiB in Ruby 3.3+)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost) 
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
@@ -186,11 +186,60 @@ ruby 3.3.0dev (2023-01-31T15:11:10Z master 2a0bf269c9) +YJIT dev [x86_64-darwin2
 
 We have collected a set of benchmarks and implemented a simple benchmarking harness in the [yjit-bench](https://github.com/Shopify/yjit-bench) repository. This benchmarking harness is designed to disable CPU frequency scaling, set process affinity and disable address space randomization so that the variance between benchmarking runs will be as small as possible. Please kindly note that we are at an early stage in this project.
 
-### Performance Tips
+## Performance Tips for Production Deployments
+
+While YJIT options default to what we think would work well for most workloads,
+they might not necessarily be the best configuration for your application.
+
+This section covers tips on improving YJIT performance in case YJIT does not
+speed up your application in production.
+
+### Increasing --yjit-exec-mem-size
+
+When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches this value,
+YJIT triggers "code GC" that frees all JIT code and starts recompiling everything.
+Compiling code takes some time, so scheduling code GC too frequently slows down your application.
+Increasing `--yjit-exec-mem-size` may speed up your application if `RubyVM::YJIT.runtime_stats[:code_gc_count]` is not 0 or 1.
+
+### Running workers as long as possible
+
+It's helpful to call the same code as many times as possible before a process restarts.
+If a process is killed too frequently, the time taken for compiling methods may outweigh
+the speedup obtained by compiling them.
+
+You should monitor the number of requests each process has served.
+If you're periodically killing worker processes, e.g. with `unicorn-worker-killer` or `puma_worker_killer`,
+you may want to reduce the killing frequency or increase the limit.
+
+## Saving YJIT Memory Usage
+
+YJIT allocates memory for JIT code and metadata. Enabling YJIT generally results in more memory usage.
+
+This section goes over tips on minimizing YJIT memory usage in case it uses more than your capacity.
+
+### Increasing --yjit-call-threshold
+
+As of Ruby 3.2, `--yjit-call-threshold` defaults to 30. With this default, some applications end up
+compiling methods that are used only during the application boot. Increasing this option may help
+you reduce the size of JIT code and metadata. It's worth trying different values like `--yjit-call-threshold=100`.
+
+Note that increasing the value too much may result in compiling code too late.
+You should monitor how many requests each worker processes before it's restarted. For example,
+if each process only handles 1000 requests, `--yjit-call-threshold=1000` might be too large for your application.
+
+### Decreasing --yjit-exec-mem-size
+
+`--yjit-exec-mem-size` specifies the JIT code size, but YJIT also uses memory for its metadata,
+which often consumes more memory than JIT code. Generally, YJIT adds memory overhead by roughly
+3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.2. You should multiply that by the number
+of worker processes to estimate the worst case memory overhead.
+
+Running code GC adds overhead, but it could be still faster than recovering from a whole process killed by OOM.
+
+## Code Optimization Tips
 
 This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase. You should ideally start by profiling your application using a tool such as [stackprof](https://github.com/tmm1/stackprof) so that you can determine which methods make up most of the execution time. You can then refactor the specific methods that make up the largest fractions of the execution time. We do not recommend modifying your entire codebase based on the current limitations of YJIT.
 
-- Use exceptions for error recovery only, not as part of normal control-flow
 - Avoid redefining basic integer operations (i.e. +, -, <, >, etc.)
 - Avoid redefining the meaning of `nil`, equality, etc.
 - Avoid allocating objects in the hot parts of your code
@@ -198,7 +247,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
   - Avoid classes that wrap objects if you can
   - Avoid methods that just call another method, trivial one liner methods
 - Try to write code so that the same variables always have the same type
-- Use while loops if you can, instead of `integer.times`
+- Use while loops if you can, instead of C methods like `Array#each`
   - This is not idiomatic Ruby, but could help in hot methods
 - CRuby method calls are costly. Avoid things such as methods that only return a value from a hash or return a constant.
 
