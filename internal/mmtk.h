@@ -13,7 +13,6 @@ typedef struct MMTk_Builder MMTk_Builder;
 typedef struct MMTk_Mutator MMTk_Mutator;
 
 struct rb_thread_struct;
-struct st_table_entry;
 typedef struct rb_thread_struct rb_thread_t;
 typedef rb_thread_t* MMTk_VMThread;
 typedef rb_thread_t* MMTk_VMMutatorThread;
@@ -193,7 +192,5 @@ size_t mmtk_get_vo_bit_base(void);
 void mmtk_gc_poll(MMTk_VMMutatorThread tls);
 
 size_t mmtk_get_immix_bump_ptr_offset(void);
-
-size_t mmtk_update_fstring_table_entries(struct st_table_entry *entries, size_t len);
 
 #endif /* MMTK_H */
