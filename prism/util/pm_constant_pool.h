@@ -42,9 +42,9 @@ void pm_constant_id_list_free(pm_constant_id_list_t *list);
 typedef struct {
     unsigned int id: 31;
     bool owned: 1;
+    uint32_t hash;
     const uint8_t *start;
     size_t length;
-    uint32_t hash;
 } pm_constant_t;
 
 typedef struct {
