@@ -1,0 +1,267 @@
+*-*-*.def
+*-*-*.exp
+*-*-*.lib
+*.a
+*.bak
+*.bc
+*.bundle
+*.dSYM
+*.dmyh
+*.dylib
+*.elc
+*.i
+*.ii
+*.inc
+*.log
+*.o
+*.o.tmp
+*.obj
+*.old
+*.orig
+*.pch
+*.pdb
+*.rbinc
+*.rej
+*.s
+*.sav
+*.sl
+*.so
+*.so.*
+*.swp
+*.yarb
+*~
+.*.list
+.*.time
+.DS_Store
+.bundle
+.ccmalloc
+.ext
+.pc
+.ppack
+.svn
+.time
+.ruby-version
+Makefile
+cygruby*.def
+extconf.h
+y.output
+y.tab.c
+*.gcda
+*.gcno
+*.gcov
+*.vscode
+!misc/.vscode
+lcov*.info
+
+# /
+/*-fake.rb
+/*.dll
+/*.exe
+/*.res
+/*.pc
+/*.rc
+/*_prelude.c
+/.downloaded-cache
+/.top-enc.mk
+/build*/
+/COPYING.LIB
+/ChangeLog
+/Doxyfile
+/GNUmakefile
+/README.atheos
+/README.fat-patch
+/README.v6
+/TAGS
+/archive
+/autom4te*.cache
+/automake
+/benchmark/benchmark-driver
+/beos
+/bmlog-*
+/breakpoints.gdb
+/config.cache
+/config.h
+/config.h.in
+/config.status
+/config.status.lineno
+/configure
+/coverage/simplecov
+/coverage/simplecov-html
+/coverage/doclie
+/coverage/.last_run.json
+/coverage/.resultset.json*
+/coverage/assets
+/coverage/index.html
+/doc/capi
+/enc.mk
+/encdb.h
+/exts.mk
+/goruby
+/id.[ch]
+/largefile.h
+/lcov-c-out
+/lcov-rb-out
+/lcov-out
+/lex.c
+/libruby*.*
+/miniprelude.c
+/miniruby
+/newdate.rb
+/newline.c
+/newver.rb
+/parse.c
+/parse.h
+/patches
+/patches-master
+/pitest.rb
+/ppack
+/prelude.c
+/preview
+/probes.dmyh
+/probes.h
+/rbconfig.rb
+/rename2.h
+/repack
+/revision.h
+/revision.tmp
+/ripper.tmp.y
+/riscos
+/rubicon
+/ruby
+/ruby-runner
+/ruby-runner.h
+/ruby-man.rd.gz
+/rubyspec_temp
+/run.gdb
+/sizes.c
+/static-ruby
+/test.rb
+/test-coverage.dat
+/tmp
+/transdb.h
+/uncommon.mk
+/verconf.h
+/verconf.mk
+/web
+/yasmdata.rb
+
+# /bin/
+
+/bin/*.exe
+/bin/*.dll
+/bin/goruby
+/bin/ruby
+
+# /benchmark/
+/benchmark/bm_require.data
+/benchmark/bmx_*.rb
+/benchmark/fasta.output.*
+/benchmark/wc.input
+
+/enc/*.def
+/enc/*.exp
+/enc/*.lib
+/enc/jis/props.h
+/enc/unicode/data
+
+# /coroutine/
+!/coroutine/**/*.s
+
+# /enc/trans/
+/enc/trans/*.c
+/enc/trans/*.def
+/enc/trans/*.exp
+/enc/trans/*.lib
+
+# /exe/
+/exe/goruby
+/exe/ruby
+
+# /ext/
+/ext/extinit.c
+/ext/configure-ext.mk
+/ext/*/exts.mk
+
+# /ext/-test-/cxxanyargs
+/ext/-test-/cxxanyargs/failure*.failed
+
+# /ext/-test-/win32/dln/
+/ext/-test-/win32/dln/dlntest.dll
+/ext/-test-/win32/dln/dlntest.exp
+/ext/-test-/win32/dln/dlntest.lib
+
+# /ext/-test-/gems
+/ext/-test-/gems
+
+# /ext/etc/
+/ext/etc/constdefs.h
+
+# /ext/fiddle/
+/ext/fiddle/libffi-*
+
+# /ext/rbconfig/
+/ext/rbconfig/sizeof/sizes.c
+/ext/rbconfig/sizeof/limits.c
+
+# /ext/ripper/
+/ext/ripper/eventids1.c
+/ext/ripper/eventids1.h
+/ext/ripper/.eventids2-check
+/ext/ripper/eventids2table.c
+/ext/ripper/ripper_init.c
+/ext/ripper/ripper.*
+/ext/ripper/ids1
+/ext/ripper/ids2
+
+# /ext/socket/
+/ext/socket/constants.h
+/ext/socket/constdefs.h
+/ext/socket/constdefs.c
+
+# /gems
+/gems/*.gem
+/gems/src
+/gems/*-*
+
+# /lib/
+/lib/ruby/[1-9]*.*
+/lib/ruby/vendor_ruby
+
+# /misc/
+/misc/**/__pycache__
+
+# for `make test-bundler`
+/.rspec_status
+/tool/bundler/*.lock
+
+# /tool/
+/tool/config.guess
+/tool/config.sub
+
+# /win32/
+/win32/*.ico
+
+# RJIT
+/include/ruby-*/*/rb_rjit_min_header-*.h
+/lib/ruby_vm/rjit/instruction.rb
+/lib/ruby_vm/rjit/instruction.rb
+/rjit_config.h
+/rb_rjit_header.h*
+
+# YJIT
+/yjit-bench
+/yjit_exit_locations.dump
+
+# /wasm/
+/wasm/tests/*.wasm
+
+# YARP
+/lib/yarp/mutation_visitor.rb
+/lib/yarp/node.rb
+/lib/yarp/serialize.rb
+/yarp/api_node.c
+/yarp/ast.h
+/yarp/node.c
+/yarp/prettyprint.c
+/yarp/serialize.c
+/yarp/token_type.c
