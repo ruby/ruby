@@ -42,8 +42,7 @@ module Bundler
 
       # Checks installed dependencies against spec's dependencies to make
       # sure needed dependencies have been installed.
-      def dependencies_installed?(all_specs)
-        installed_specs = all_specs.select(&:installed?).map(&:name)
+      def dependencies_installed?(installed_specs)
         dependencies.all? {|d| installed_specs.include? d.name }
       end
 
@@ -183,8 +182,14 @@ module Bundler
     # previously installed specifications. We continue until all specs
     # are installed.
     def enqueue_specs
-      @specs.select(&:ready_to_enqueue?).each do |spec|
-        if spec.dependencies_installed? @specs
+      installed_specs = {}
+      @specs.each do |spec|
+        next unless spec.installed?
+        installed_specs[spec.name] = true
+      end
+
+      @specs.each do |spec|
+        if spec.ready_to_enqueue? && spec.dependencies_installed?(installed_specs)
           spec.state = :enqueued
           worker_pool.enq spec
         end
