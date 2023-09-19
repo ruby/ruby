@@ -137,6 +137,10 @@ module YARP
       # test_yarp_eval("YARP::YCT = 1")
     end
 
+    def test_GlobalVariableTargetNode
+      test_yarp_eval("$yct, $yct1 = 1")
+    end
+
     def test_GlobalVariableWriteNode
       test_yarp_eval("$yct = 1")
     end

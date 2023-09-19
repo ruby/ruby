@@ -1213,6 +1213,13 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_GLOBAL_VARIABLE_TARGET_NODE: {
+          yp_global_variable_target_node_t *write_node = (yp_global_variable_target_node_t *) node;
+
+          ID ivar_name = yp_constant_id_lookup(compile_context, write_node->name);
+          ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(ivar_name));
+          return;
+      }
       case YP_GLOBAL_VARIABLE_WRITE_NODE: {
           yp_global_variable_write_node_t *write_node = (yp_global_variable_write_node_t *) node;
           YP_COMPILE_NOT_POPPED(write_node->value);
