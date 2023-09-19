@@ -141,23 +141,14 @@ yp_optimizable_range_item_p(yp_node_t *node)
     return (!node || YP_NODE_TYPE_P(node, YP_INTEGER_NODE) || YP_NODE_TYPE_P(node, YP_NIL_NODE));
 }
 
-static bool
-yp_static_node_literal_p(yp_node_t *node)
-{
-    switch (YP_NODE_TYPE(node)) {
-      case YP_FALSE_NODE:
-      case YP_FLOAT_NODE:
-      case YP_IMAGINARY_NODE:
-      case YP_INTEGER_NODE:
-      case YP_NIL_NODE:
-      case YP_RATIONAL_NODE:
-      case YP_STRING_NODE:
-      case YP_SYMBOL_NODE:
-      case YP_TRUE_NODE:
-        return true;
-      default:
-        return false;
-    }
+/**
+ * Certain nodes can be compiled literally, which can lead to further
+ * optimizations. These nodes will all have the YP_NODE_FLAG_STATIC_LITERAL flag
+ * set.
+ */
+static inline bool
+yp_static_node_literal_p(yp_node_t *node) {
+    return node->flags & YP_NODE_FLAG_STATIC_LITERAL;
 }
 
 static inline VALUE
