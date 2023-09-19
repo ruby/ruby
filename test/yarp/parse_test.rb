@@ -46,8 +46,8 @@ module YARP
     end
 
     # To accurately compare against Ripper, we need to make sure that we're
-    # running on Ruby 3.2+.
-    ripper_enabled = RUBY_VERSION >= "3.2.0"
+    # running on CRuby 3.2+.
+    ripper_enabled = RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.2.0"
 
     # The FOCUS environment variable allows you to specify one particular fixture
     # to test, instead of all of them.
@@ -57,9 +57,6 @@ module YARP
     relatives.each do |relative|
       # These fail on TruffleRuby due to a difference in Symbol#inspect: :测试 vs :"测试"
       next if RUBY_ENGINE == "truffleruby" and %w[seattlerb/bug202.txt seattlerb/magic_encoding_comment.txt].include?(relative)
-
-      # These fail on TruffleRuby due to a Ripper difference
-      next if RUBY_ENGINE == "truffleruby" and %w[symbols.txt unparser/corpus/literal/def.txt].include?(relative)
 
       filepath = File.join(base, relative)
       snapshot = File.expand_path(File.join("snapshots", relative), __dir__)
