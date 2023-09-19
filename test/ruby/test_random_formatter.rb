@@ -75,7 +75,7 @@ module Random::Formatter
       assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
     end
 
-    def test_uuid_v7(extra_timestamp_bits)
+    def test_uuid_v7
       t1 = current_uuid7_time
       uuid = @it.uuid_v7
       t3 = current_uuid7_time
