@@ -71,7 +71,7 @@ module YARP
 
     # Returns a string representation of this location.
     def inspect
-      "#<YARP::Location @start_offset=#{@start_offset} @length=#{@length}>"
+      "#<YARP::Location @start_offset=#{@start_offset} @length=#{@length} start_line=#{start_line}>"
     end
 
     # The source code that this location represents.
@@ -117,7 +117,7 @@ module YARP
     end
 
     def pretty_print(q)
-      q.text("(#{start_offset}...#{end_offset})")
+      q.text("(#{start_line},#{start_column})-(#{end_line},#{end_column}))")
     end
 
     def ==(other)
@@ -333,7 +333,7 @@ module YARP
     # for any given node.
     def header(node)
       output = +"@ #{node.class.name.split("::").last} ("
-      output << "location: (#{node.location.start_offset}...#{node.location.end_offset})"
+      output << "location: (#{node.location.start_line},#{node.location.start_column})-(#{node.location.end_line},#{node.location.end_column})"
       output << ", newline: true" if node.newline?
       output << ")\n"
       output
@@ -357,7 +357,7 @@ module YARP
     # Generates a string that represents a location field on a node.
     def location(value)
       if value
-        "(#{value.start_offset}...#{value.end_offset}) = #{value.slice.inspect}"
+        "(#{value.start_line},#{value.start_column})-(#{value.end_line},#{value.end_column}) = #{value.slice.inspect}"
       else
         "∅"
       end

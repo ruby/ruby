@@ -1,27 +1,27 @@
-@ ProgramNode (location: (0...68))
+@ ProgramNode (location: (1,0)-(6,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...68))
+    @ StatementsNode (location: (1,0)-(6,3))
     └── body: (length: 2)
-        ├── @ IfNode (location: (0...33))
-        │   ├── if_keyword_loc: (0...2) = "if"
+        ├── @ IfNode (location: (1,0)-(3,3))
+        │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
         │   ├── predicate:
-        │   │   @ ParenthesesNode (location: (3...23))
+        │   │   @ ParenthesesNode (location: (1,3)-(1,23))
         │   │   ├── body:
-        │   │   │   @ StatementsNode (location: (4...22))
+        │   │   │   @ StatementsNode (location: (1,4)-(1,22))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ FlipFlopNode (location: (4...22))
+        │   │   │       └── @ FlipFlopNode (location: (1,4)-(1,22))
         │   │   │           ├── left:
-        │   │   │           │   @ ParenthesesNode (location: (4...12))
+        │   │   │           │   @ ParenthesesNode (location: (1,4)-(1,12))
         │   │   │           │   ├── body:
-        │   │   │           │   │   @ StatementsNode (location: (5...11))
+        │   │   │           │   │   @ StatementsNode (location: (1,5)-(1,11))
         │   │   │           │   │   └── body: (length: 1)
-        │   │   │           │   │       └── @ CallNode (location: (5...11))
+        │   │   │           │   │       └── @ CallNode (location: (1,5)-(1,11))
         │   │   │           │   │           ├── receiver:
-        │   │   │           │   │           │   @ CallNode (location: (5...6))
+        │   │   │           │   │           │   @ CallNode (location: (1,5)-(1,6))
         │   │   │           │   │           │   ├── receiver: ∅
         │   │   │           │   │           │   ├── call_operator_loc: ∅
-        │   │   │           │   │           │   ├── message_loc: (5...6) = "i"
+        │   │   │           │   │           │   ├── message_loc: (1,5)-(1,6) = "i"
         │   │   │           │   │           │   ├── opening_loc: ∅
         │   │   │           │   │           │   ├── arguments: ∅
         │   │   │           │   │           │   ├── closing_loc: ∅
@@ -29,30 +29,30 @@
         │   │   │           │   │           │   ├── flags: variable_call
         │   │   │           │   │           │   └── name: "i"
         │   │   │           │   │           ├── call_operator_loc: ∅
-        │   │   │           │   │           ├── message_loc: (7...9) = "=="
+        │   │   │           │   │           ├── message_loc: (1,7)-(1,9) = "=="
         │   │   │           │   │           ├── opening_loc: ∅
         │   │   │           │   │           ├── arguments:
-        │   │   │           │   │           │   @ ArgumentsNode (location: (10...11))
+        │   │   │           │   │           │   @ ArgumentsNode (location: (1,10)-(1,11))
         │   │   │           │   │           │   └── arguments: (length: 1)
-        │   │   │           │   │           │       └── @ IntegerNode (location: (10...11))
+        │   │   │           │   │           │       └── @ IntegerNode (location: (1,10)-(1,11))
         │   │   │           │   │           │           └── flags: decimal
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: ∅
         │   │   │           │   │           └── name: "=="
-        │   │   │           │   ├── opening_loc: (4...5) = "("
-        │   │   │           │   └── closing_loc: (11...12) = ")"
+        │   │   │           │   ├── opening_loc: (1,4)-(1,5) = "("
+        │   │   │           │   └── closing_loc: (1,11)-(1,12) = ")"
         │   │   │           ├── right:
-        │   │   │           │   @ ParenthesesNode (location: (14...22))
+        │   │   │           │   @ ParenthesesNode (location: (1,14)-(1,22))
         │   │   │           │   ├── body:
-        │   │   │           │   │   @ StatementsNode (location: (15...21))
+        │   │   │           │   │   @ StatementsNode (location: (1,15)-(1,21))
         │   │   │           │   │   └── body: (length: 1)
-        │   │   │           │   │       └── @ CallNode (location: (15...21))
+        │   │   │           │   │       └── @ CallNode (location: (1,15)-(1,21))
         │   │   │           │   │           ├── receiver:
-        │   │   │           │   │           │   @ CallNode (location: (15...16))
+        │   │   │           │   │           │   @ CallNode (location: (1,15)-(1,16))
         │   │   │           │   │           │   ├── receiver: ∅
         │   │   │           │   │           │   ├── call_operator_loc: ∅
-        │   │   │           │   │           │   ├── message_loc: (15...16) = "i"
+        │   │   │           │   │           │   ├── message_loc: (1,15)-(1,16) = "i"
         │   │   │           │   │           │   ├── opening_loc: ∅
         │   │   │           │   │           │   ├── arguments: ∅
         │   │   │           │   │           │   ├── closing_loc: ∅
@@ -60,30 +60,30 @@
         │   │   │           │   │           │   ├── flags: variable_call
         │   │   │           │   │           │   └── name: "i"
         │   │   │           │   │           ├── call_operator_loc: ∅
-        │   │   │           │   │           ├── message_loc: (17...19) = "=="
+        │   │   │           │   │           ├── message_loc: (1,17)-(1,19) = "=="
         │   │   │           │   │           ├── opening_loc: ∅
         │   │   │           │   │           ├── arguments:
-        │   │   │           │   │           │   @ ArgumentsNode (location: (20...21))
+        │   │   │           │   │           │   @ ArgumentsNode (location: (1,20)-(1,21))
         │   │   │           │   │           │   └── arguments: (length: 1)
-        │   │   │           │   │           │       └── @ IntegerNode (location: (20...21))
+        │   │   │           │   │           │       └── @ IntegerNode (location: (1,20)-(1,21))
         │   │   │           │   │           │           └── flags: decimal
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: ∅
         │   │   │           │   │           └── name: "=="
-        │   │   │           │   ├── opening_loc: (14...15) = "("
-        │   │   │           │   └── closing_loc: (21...22) = ")"
-        │   │   │           ├── operator_loc: (12...14) = ".."
+        │   │   │           │   ├── opening_loc: (1,14)-(1,15) = "("
+        │   │   │           │   └── closing_loc: (1,21)-(1,22) = ")"
+        │   │   │           ├── operator_loc: (1,12)-(1,14) = ".."
         │   │   │           └── flags: ∅
-        │   │   ├── opening_loc: (3...4) = "("
-        │   │   └── closing_loc: (22...23) = ")"
+        │   │   ├── opening_loc: (1,3)-(1,4) = "("
+        │   │   └── closing_loc: (1,22)-(1,23) = ")"
         │   ├── statements:
-        │   │   @ StatementsNode (location: (26...29))
+        │   │   @ StatementsNode (location: (2,2)-(2,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (26...29))
+        │   │       └── @ CallNode (location: (2,2)-(2,5))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (26...29) = "foo"
+        │   │           ├── message_loc: (2,2)-(2,5) = "foo"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -91,26 +91,26 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "foo"
         │   ├── consequent: ∅
-        │   └── end_keyword_loc: (30...33) = "end"
-        └── @ IfNode (location: (34...68))
-            ├── if_keyword_loc: (34...36) = "if"
+        │   └── end_keyword_loc: (3,0)-(3,3) = "end"
+        └── @ IfNode (location: (4,0)-(6,3))
+            ├── if_keyword_loc: (4,0)-(4,2) = "if"
             ├── predicate:
-            │   @ ParenthesesNode (location: (37...58))
+            │   @ ParenthesesNode (location: (4,3)-(4,24))
             │   ├── body:
-            │   │   @ StatementsNode (location: (38...57))
+            │   │   @ StatementsNode (location: (4,4)-(4,23))
             │   │   └── body: (length: 1)
-            │   │       └── @ FlipFlopNode (location: (38...57))
+            │   │       └── @ FlipFlopNode (location: (4,4)-(4,23))
             │   │           ├── left:
-            │   │           │   @ ParenthesesNode (location: (38...46))
+            │   │           │   @ ParenthesesNode (location: (4,4)-(4,12))
             │   │           │   ├── body:
-            │   │           │   │   @ StatementsNode (location: (39...45))
+            │   │           │   │   @ StatementsNode (location: (4,5)-(4,11))
             │   │           │   │   └── body: (length: 1)
-            │   │           │   │       └── @ CallNode (location: (39...45))
+            │   │           │   │       └── @ CallNode (location: (4,5)-(4,11))
             │   │           │   │           ├── receiver:
-            │   │           │   │           │   @ CallNode (location: (39...40))
+            │   │           │   │           │   @ CallNode (location: (4,5)-(4,6))
             │   │           │   │           │   ├── receiver: ∅
             │   │           │   │           │   ├── call_operator_loc: ∅
-            │   │           │   │           │   ├── message_loc: (39...40) = "i"
+            │   │           │   │           │   ├── message_loc: (4,5)-(4,6) = "i"
             │   │           │   │           │   ├── opening_loc: ∅
             │   │           │   │           │   ├── arguments: ∅
             │   │           │   │           │   ├── closing_loc: ∅
@@ -118,30 +118,30 @@
             │   │           │   │           │   ├── flags: variable_call
             │   │           │   │           │   └── name: "i"
             │   │           │   │           ├── call_operator_loc: ∅
-            │   │           │   │           ├── message_loc: (41...43) = "=="
+            │   │           │   │           ├── message_loc: (4,7)-(4,9) = "=="
             │   │           │   │           ├── opening_loc: ∅
             │   │           │   │           ├── arguments:
-            │   │           │   │           │   @ ArgumentsNode (location: (44...45))
+            │   │           │   │           │   @ ArgumentsNode (location: (4,10)-(4,11))
             │   │           │   │           │   └── arguments: (length: 1)
-            │   │           │   │           │       └── @ IntegerNode (location: (44...45))
+            │   │           │   │           │       └── @ IntegerNode (location: (4,10)-(4,11))
             │   │           │   │           │           └── flags: decimal
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
             │   │           │   │           ├── flags: ∅
             │   │           │   │           └── name: "=="
-            │   │           │   ├── opening_loc: (38...39) = "("
-            │   │           │   └── closing_loc: (45...46) = ")"
+            │   │           │   ├── opening_loc: (4,4)-(4,5) = "("
+            │   │           │   └── closing_loc: (4,11)-(4,12) = ")"
             │   │           ├── right:
-            │   │           │   @ ParenthesesNode (location: (49...57))
+            │   │           │   @ ParenthesesNode (location: (4,15)-(4,23))
             │   │           │   ├── body:
-            │   │           │   │   @ StatementsNode (location: (50...56))
+            │   │           │   │   @ StatementsNode (location: (4,16)-(4,22))
             │   │           │   │   └── body: (length: 1)
-            │   │           │   │       └── @ CallNode (location: (50...56))
+            │   │           │   │       └── @ CallNode (location: (4,16)-(4,22))
             │   │           │   │           ├── receiver:
-            │   │           │   │           │   @ CallNode (location: (50...51))
+            │   │           │   │           │   @ CallNode (location: (4,16)-(4,17))
             │   │           │   │           │   ├── receiver: ∅
             │   │           │   │           │   ├── call_operator_loc: ∅
-            │   │           │   │           │   ├── message_loc: (50...51) = "i"
+            │   │           │   │           │   ├── message_loc: (4,16)-(4,17) = "i"
             │   │           │   │           │   ├── opening_loc: ∅
             │   │           │   │           │   ├── arguments: ∅
             │   │           │   │           │   ├── closing_loc: ∅
@@ -149,30 +149,30 @@
             │   │           │   │           │   ├── flags: variable_call
             │   │           │   │           │   └── name: "i"
             │   │           │   │           ├── call_operator_loc: ∅
-            │   │           │   │           ├── message_loc: (52...54) = "=="
+            │   │           │   │           ├── message_loc: (4,18)-(4,20) = "=="
             │   │           │   │           ├── opening_loc: ∅
             │   │           │   │           ├── arguments:
-            │   │           │   │           │   @ ArgumentsNode (location: (55...56))
+            │   │           │   │           │   @ ArgumentsNode (location: (4,21)-(4,22))
             │   │           │   │           │   └── arguments: (length: 1)
-            │   │           │   │           │       └── @ IntegerNode (location: (55...56))
+            │   │           │   │           │       └── @ IntegerNode (location: (4,21)-(4,22))
             │   │           │   │           │           └── flags: decimal
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
             │   │           │   │           ├── flags: ∅
             │   │           │   │           └── name: "=="
-            │   │           │   ├── opening_loc: (49...50) = "("
-            │   │           │   └── closing_loc: (56...57) = ")"
-            │   │           ├── operator_loc: (46...49) = "..."
+            │   │           │   ├── opening_loc: (4,15)-(4,16) = "("
+            │   │           │   └── closing_loc: (4,22)-(4,23) = ")"
+            │   │           ├── operator_loc: (4,12)-(4,15) = "..."
             │   │           └── flags: exclude_end
-            │   ├── opening_loc: (37...38) = "("
-            │   └── closing_loc: (57...58) = ")"
+            │   ├── opening_loc: (4,3)-(4,4) = "("
+            │   └── closing_loc: (4,23)-(4,24) = ")"
             ├── statements:
-            │   @ StatementsNode (location: (61...64))
+            │   @ StatementsNode (location: (5,2)-(5,5))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (61...64))
+            │       └── @ CallNode (location: (5,2)-(5,5))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (61...64) = "foo"
+            │           ├── message_loc: (5,2)-(5,5) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -180,4 +180,4 @@
             │           ├── flags: variable_call
             │           └── name: "foo"
             ├── consequent: ∅
-            └── end_keyword_loc: (65...68) = "end"
+            └── end_keyword_loc: (6,0)-(6,3) = "end"

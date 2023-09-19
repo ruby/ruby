@@ -1,37 +1,37 @@
-@ ProgramNode (location: (0...16))
+@ ProgramNode (location: (1,0)-(1,16))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...16))
+    @ StatementsNode (location: (1,0)-(1,16))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...16))
+        └── @ CallNode (location: (1,0)-(1,16))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "f"
+            ├── message_loc: (1,0)-(1,1) = "f"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (2...16))
+            │   @ ArgumentsNode (location: (1,2)-(1,16))
             │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (2...16))
+            │       └── @ ParenthesesNode (location: (1,2)-(1,16))
             │           ├── body:
-            │           │   @ StatementsNode (location: (3...15))
+            │           │   @ StatementsNode (location: (1,3)-(1,15))
             │           │   └── body: (length: 1)
-            │           │       └── @ RescueModifierNode (location: (3...15))
+            │           │       └── @ RescueModifierNode (location: (1,3)-(1,15))
             │           │           ├── expression:
-            │           │           │   @ CallNode (location: (3...4))
+            │           │           │   @ CallNode (location: (1,3)-(1,4))
             │           │           │   ├── receiver: ∅
             │           │           │   ├── call_operator_loc: ∅
-            │           │           │   ├── message_loc: (3...4) = "g"
+            │           │           │   ├── message_loc: (1,3)-(1,4) = "g"
             │           │           │   ├── opening_loc: ∅
             │           │           │   ├── arguments: ∅
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
             │           │           │   ├── flags: variable_call
             │           │           │   └── name: "g"
-            │           │           ├── keyword_loc: (5...11) = "rescue"
+            │           │           ├── keyword_loc: (1,5)-(1,11) = "rescue"
             │           │           └── rescue_expression:
-            │           │               @ NilNode (location: (12...15))
-            │           ├── opening_loc: (2...3) = "("
-            │           └── closing_loc: (15...16) = ")"
+            │           │               @ NilNode (location: (1,12)-(1,15))
+            │           ├── opening_loc: (1,2)-(1,3) = "("
+            │           └── closing_loc: (1,15)-(1,16) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

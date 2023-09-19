@@ -1,22 +1,22 @@
-@ ProgramNode (location: (0...41))
+@ ProgramNode (location: (1,0)-(5,15))
 ├── locals: [:foo]
 └── statements:
-    @ StatementsNode (location: (0...41))
+    @ StatementsNode (location: (1,0)-(5,15))
     └── body: (length: 3)
-        ├── @ LocalVariableWriteNode (location: (0...10))
+        ├── @ LocalVariableWriteNode (location: (1,0)-(1,10))
         │   ├── name: :foo
         │   ├── depth: 0
-        │   ├── name_loc: (0...3) = "foo"
+        │   ├── name_loc: (1,0)-(1,3) = "foo"
         │   ├── value:
-        │   │   @ ArrayNode (location: (6...10))
+        │   │   @ ArrayNode (location: (1,6)-(1,10))
         │   │   ├── elements: (length: 1)
-        │   │   │   └── @ SplatNode (location: (6...10))
-        │   │   │       ├── operator_loc: (6...7) = "*"
+        │   │   │   └── @ SplatNode (location: (1,6)-(1,10))
+        │   │   │       ├── operator_loc: (1,6)-(1,7) = "*"
         │   │   │       └── expression:
-        │   │   │           @ CallNode (location: (7...10))
+        │   │   │           @ CallNode (location: (1,7)-(1,10))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
-        │   │   │           ├── message_loc: (7...10) = "bar"
+        │   │   │           ├── message_loc: (1,7)-(1,10) = "bar"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
@@ -25,53 +25,53 @@
         │   │   │           └── name: "bar"
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
-        │   └── operator_loc: (4...5) = "="
-        ├── @ LocalVariableWriteNode (location: (12...24))
+        │   └── operator_loc: (1,4)-(1,5) = "="
+        ├── @ LocalVariableWriteNode (location: (3,0)-(3,12))
         │   ├── name: :foo
         │   ├── depth: 0
-        │   ├── name_loc: (12...15) = "foo"
+        │   ├── name_loc: (3,0)-(3,3) = "foo"
         │   ├── value:
-        │   │   @ ArrayNode (location: (18...24))
+        │   │   @ ArrayNode (location: (3,6)-(3,12))
         │   │   ├── elements: (length: 2)
-        │   │   │   ├── @ CallNode (location: (18...21))
+        │   │   │   ├── @ CallNode (location: (3,6)-(3,9))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
-        │   │   │   │   ├── message_loc: (18...21) = "bar"
+        │   │   │   │   ├── message_loc: (3,6)-(3,9) = "bar"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
         │   │   │   │   └── name: "bar"
-        │   │   │   └── @ IntegerNode (location: (23...24))
+        │   │   │   └── @ IntegerNode (location: (3,11)-(3,12))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
-        │   └── operator_loc: (16...17) = "="
-        └── @ LocalVariableWriteNode (location: (26...41))
+        │   └── operator_loc: (3,4)-(3,5) = "="
+        └── @ LocalVariableWriteNode (location: (5,0)-(5,15))
             ├── name: :foo
             ├── depth: 0
-            ├── name_loc: (26...29) = "foo"
+            ├── name_loc: (5,0)-(5,3) = "foo"
             ├── value:
-            │   @ ArrayNode (location: (32...41))
+            │   @ ArrayNode (location: (5,6)-(5,15))
             │   ├── elements: (length: 2)
-            │   │   ├── @ CallNode (location: (32...35))
+            │   │   ├── @ CallNode (location: (5,6)-(5,9))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
-            │   │   │   ├── message_loc: (32...35) = "baz"
+            │   │   │   ├── message_loc: (5,6)-(5,9) = "baz"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
             │   │   │   ├── flags: variable_call
             │   │   │   └── name: "baz"
-            │   │   └── @ SplatNode (location: (37...41))
-            │   │       ├── operator_loc: (37...38) = "*"
+            │   │   └── @ SplatNode (location: (5,11)-(5,15))
+            │   │       ├── operator_loc: (5,11)-(5,12) = "*"
             │   │       └── expression:
-            │   │           @ CallNode (location: (38...41))
+            │   │           @ CallNode (location: (5,12)-(5,15))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (38...41) = "bar"
+            │   │           ├── message_loc: (5,12)-(5,15) = "bar"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
@@ -80,4 +80,4 @@
             │   │           └── name: "bar"
             │   ├── opening_loc: ∅
             │   └── closing_loc: ∅
-            └── operator_loc: (30...31) = "="
+            └── operator_loc: (5,4)-(5,5) = "="

@@ -1,172 +1,172 @@
-@ ProgramNode (location: (0...143))
+@ ProgramNode (location: (1,0)-(19,22))
 ├── locals: [:i, :j, :k]
 └── statements:
-    @ StatementsNode (location: (0...143))
+    @ StatementsNode (location: (1,0)-(19,22))
     └── body: (length: 6)
-        ├── @ ForNode (location: (0...20))
+        ├── @ ForNode (location: (1,0)-(3,3))
         │   ├── index:
-        │   │   @ LocalVariableTargetNode (location: (4...5))
+        │   │   @ LocalVariableTargetNode (location: (1,4)-(1,5))
         │   │   ├── name: :i
         │   │   └── depth: 0
         │   ├── collection:
-        │   │   @ RangeNode (location: (9...14))
+        │   │   @ RangeNode (location: (1,9)-(1,14))
         │   │   ├── left:
-        │   │   │   @ IntegerNode (location: (9...10))
+        │   │   │   @ IntegerNode (location: (1,9)-(1,10))
         │   │   │   └── flags: decimal
         │   │   ├── right:
-        │   │   │   @ IntegerNode (location: (12...14))
+        │   │   │   @ IntegerNode (location: (1,12)-(1,14))
         │   │   │   └── flags: decimal
-        │   │   ├── operator_loc: (10...12) = ".."
+        │   │   ├── operator_loc: (1,10)-(1,12) = ".."
         │   │   └── flags: ∅
         │   ├── statements:
-        │   │   @ StatementsNode (location: (15...16))
+        │   │   @ StatementsNode (location: (2,0)-(2,1))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableReadNode (location: (15...16))
+        │   │       └── @ LocalVariableReadNode (location: (2,0)-(2,1))
         │   │           ├── name: :i
         │   │           └── depth: 0
-        │   ├── for_keyword_loc: (0...3) = "for"
-        │   ├── in_keyword_loc: (6...8) = "in"
+        │   ├── for_keyword_loc: (1,0)-(1,3) = "for"
+        │   ├── in_keyword_loc: (1,6)-(1,8) = "in"
         │   ├── do_keyword_loc: ∅
-        │   └── end_keyword_loc: (17...20) = "end"
-        ├── @ ForNode (location: (22...44))
+        │   └── end_keyword_loc: (3,0)-(3,3) = "end"
+        ├── @ ForNode (location: (5,0)-(5,22))
         │   ├── index:
-        │   │   @ LocalVariableTargetNode (location: (26...27))
+        │   │   @ LocalVariableTargetNode (location: (5,4)-(5,5))
         │   │   ├── name: :i
         │   │   └── depth: 0
         │   ├── collection:
-        │   │   @ RangeNode (location: (31...36))
+        │   │   @ RangeNode (location: (5,9)-(5,14))
         │   │   ├── left:
-        │   │   │   @ IntegerNode (location: (31...32))
+        │   │   │   @ IntegerNode (location: (5,9)-(5,10))
         │   │   │   └── flags: decimal
         │   │   ├── right:
-        │   │   │   @ IntegerNode (location: (34...36))
+        │   │   │   @ IntegerNode (location: (5,12)-(5,14))
         │   │   │   └── flags: decimal
-        │   │   ├── operator_loc: (32...34) = ".."
+        │   │   ├── operator_loc: (5,10)-(5,12) = ".."
         │   │   └── flags: ∅
         │   ├── statements:
-        │   │   @ StatementsNode (location: (38...39))
+        │   │   @ StatementsNode (location: (5,16)-(5,17))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableReadNode (location: (38...39))
+        │   │       └── @ LocalVariableReadNode (location: (5,16)-(5,17))
         │   │           ├── name: :i
         │   │           └── depth: 0
-        │   ├── for_keyword_loc: (22...25) = "for"
-        │   ├── in_keyword_loc: (28...30) = "in"
+        │   ├── for_keyword_loc: (5,0)-(5,3) = "for"
+        │   ├── in_keyword_loc: (5,6)-(5,8) = "in"
         │   ├── do_keyword_loc: ∅
-        │   └── end_keyword_loc: (41...44) = "end"
-        ├── @ ForNode (location: (46...68))
+        │   └── end_keyword_loc: (5,19)-(5,22) = "end"
+        ├── @ ForNode (location: (7,0)-(9,3))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (50...53))
+        │   │   @ MultiTargetNode (location: (7,4)-(7,7))
         │   │   ├── targets: (length: 2)
-        │   │   │   ├── @ LocalVariableTargetNode (location: (50...51))
+        │   │   │   ├── @ LocalVariableTargetNode (location: (7,4)-(7,5))
         │   │   │   │   ├── name: :i
         │   │   │   │   └── depth: 0
-        │   │   │   └── @ LocalVariableTargetNode (location: (52...53))
+        │   │   │   └── @ LocalVariableTargetNode (location: (7,6)-(7,7))
         │   │   │       ├── name: :j
         │   │   │       └── depth: 0
         │   │   ├── lparen_loc: ∅
         │   │   └── rparen_loc: ∅
         │   ├── collection:
-        │   │   @ RangeNode (location: (57...62))
+        │   │   @ RangeNode (location: (7,11)-(7,16))
         │   │   ├── left:
-        │   │   │   @ IntegerNode (location: (57...58))
+        │   │   │   @ IntegerNode (location: (7,11)-(7,12))
         │   │   │   └── flags: decimal
         │   │   ├── right:
-        │   │   │   @ IntegerNode (location: (60...62))
+        │   │   │   @ IntegerNode (location: (7,14)-(7,16))
         │   │   │   └── flags: decimal
-        │   │   ├── operator_loc: (58...60) = ".."
+        │   │   ├── operator_loc: (7,12)-(7,14) = ".."
         │   │   └── flags: ∅
         │   ├── statements:
-        │   │   @ StatementsNode (location: (63...64))
+        │   │   @ StatementsNode (location: (8,0)-(8,1))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableReadNode (location: (63...64))
+        │   │       └── @ LocalVariableReadNode (location: (8,0)-(8,1))
         │   │           ├── name: :i
         │   │           └── depth: 0
-        │   ├── for_keyword_loc: (46...49) = "for"
-        │   ├── in_keyword_loc: (54...56) = "in"
+        │   ├── for_keyword_loc: (7,0)-(7,3) = "for"
+        │   ├── in_keyword_loc: (7,8)-(7,10) = "in"
         │   ├── do_keyword_loc: ∅
-        │   └── end_keyword_loc: (65...68) = "end"
-        ├── @ ForNode (location: (70...94))
+        │   └── end_keyword_loc: (9,0)-(9,3) = "end"
+        ├── @ ForNode (location: (11,0)-(13,3))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (74...79))
+        │   │   @ MultiTargetNode (location: (11,4)-(11,9))
         │   │   ├── targets: (length: 3)
-        │   │   │   ├── @ LocalVariableTargetNode (location: (74...75))
+        │   │   │   ├── @ LocalVariableTargetNode (location: (11,4)-(11,5))
         │   │   │   │   ├── name: :i
         │   │   │   │   └── depth: 0
-        │   │   │   ├── @ LocalVariableTargetNode (location: (76...77))
+        │   │   │   ├── @ LocalVariableTargetNode (location: (11,6)-(11,7))
         │   │   │   │   ├── name: :j
         │   │   │   │   └── depth: 0
-        │   │   │   └── @ LocalVariableTargetNode (location: (78...79))
+        │   │   │   └── @ LocalVariableTargetNode (location: (11,8)-(11,9))
         │   │   │       ├── name: :k
         │   │   │       └── depth: 0
         │   │   ├── lparen_loc: ∅
         │   │   └── rparen_loc: ∅
         │   ├── collection:
-        │   │   @ RangeNode (location: (83...88))
+        │   │   @ RangeNode (location: (11,13)-(11,18))
         │   │   ├── left:
-        │   │   │   @ IntegerNode (location: (83...84))
+        │   │   │   @ IntegerNode (location: (11,13)-(11,14))
         │   │   │   └── flags: decimal
         │   │   ├── right:
-        │   │   │   @ IntegerNode (location: (86...88))
+        │   │   │   @ IntegerNode (location: (11,16)-(11,18))
         │   │   │   └── flags: decimal
-        │   │   ├── operator_loc: (84...86) = ".."
+        │   │   ├── operator_loc: (11,14)-(11,16) = ".."
         │   │   └── flags: ∅
         │   ├── statements:
-        │   │   @ StatementsNode (location: (89...90))
+        │   │   @ StatementsNode (location: (12,0)-(12,1))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableReadNode (location: (89...90))
+        │   │       └── @ LocalVariableReadNode (location: (12,0)-(12,1))
         │   │           ├── name: :i
         │   │           └── depth: 0
-        │   ├── for_keyword_loc: (70...73) = "for"
-        │   ├── in_keyword_loc: (80...82) = "in"
+        │   ├── for_keyword_loc: (11,0)-(11,3) = "for"
+        │   ├── in_keyword_loc: (11,10)-(11,12) = "in"
         │   ├── do_keyword_loc: ∅
-        │   └── end_keyword_loc: (91...94) = "end"
-        ├── @ ForNode (location: (96...119))
+        │   └── end_keyword_loc: (13,0)-(13,3) = "end"
+        ├── @ ForNode (location: (15,0)-(17,3))
         │   ├── index:
-        │   │   @ LocalVariableTargetNode (location: (100...101))
+        │   │   @ LocalVariableTargetNode (location: (15,4)-(15,5))
         │   │   ├── name: :i
         │   │   └── depth: 0
         │   ├── collection:
-        │   │   @ RangeNode (location: (105...110))
+        │   │   @ RangeNode (location: (15,9)-(15,14))
         │   │   ├── left:
-        │   │   │   @ IntegerNode (location: (105...106))
+        │   │   │   @ IntegerNode (location: (15,9)-(15,10))
         │   │   │   └── flags: decimal
         │   │   ├── right:
-        │   │   │   @ IntegerNode (location: (108...110))
+        │   │   │   @ IntegerNode (location: (15,12)-(15,14))
         │   │   │   └── flags: decimal
-        │   │   ├── operator_loc: (106...108) = ".."
+        │   │   ├── operator_loc: (15,10)-(15,12) = ".."
         │   │   └── flags: ∅
         │   ├── statements:
-        │   │   @ StatementsNode (location: (114...115))
+        │   │   @ StatementsNode (location: (16,0)-(16,1))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableReadNode (location: (114...115))
+        │   │       └── @ LocalVariableReadNode (location: (16,0)-(16,1))
         │   │           ├── name: :i
         │   │           └── depth: 0
-        │   ├── for_keyword_loc: (96...99) = "for"
-        │   ├── in_keyword_loc: (102...104) = "in"
-        │   ├── do_keyword_loc: (111...113) = "do"
-        │   └── end_keyword_loc: (116...119) = "end"
-        └── @ ForNode (location: (121...143))
+        │   ├── for_keyword_loc: (15,0)-(15,3) = "for"
+        │   ├── in_keyword_loc: (15,6)-(15,8) = "in"
+        │   ├── do_keyword_loc: (15,15)-(15,17) = "do"
+        │   └── end_keyword_loc: (17,0)-(17,3) = "end"
+        └── @ ForNode (location: (19,0)-(19,22))
             ├── index:
-            │   @ LocalVariableTargetNode (location: (125...126))
+            │   @ LocalVariableTargetNode (location: (19,4)-(19,5))
             │   ├── name: :i
             │   └── depth: 0
             ├── collection:
-            │   @ RangeNode (location: (130...135))
+            │   @ RangeNode (location: (19,9)-(19,14))
             │   ├── left:
-            │   │   @ IntegerNode (location: (130...131))
+            │   │   @ IntegerNode (location: (19,9)-(19,10))
             │   │   └── flags: decimal
             │   ├── right:
-            │   │   @ IntegerNode (location: (133...135))
+            │   │   @ IntegerNode (location: (19,12)-(19,14))
             │   │   └── flags: decimal
-            │   ├── operator_loc: (131...133) = ".."
+            │   ├── operator_loc: (19,10)-(19,12) = ".."
             │   └── flags: ∅
             ├── statements:
-            │   @ StatementsNode (location: (137...138))
+            │   @ StatementsNode (location: (19,16)-(19,17))
             │   └── body: (length: 1)
-            │       └── @ LocalVariableReadNode (location: (137...138))
+            │       └── @ LocalVariableReadNode (location: (19,16)-(19,17))
             │           ├── name: :i
             │           └── depth: 0
-            ├── for_keyword_loc: (121...124) = "for"
-            ├── in_keyword_loc: (127...129) = "in"
+            ├── for_keyword_loc: (19,0)-(19,3) = "for"
+            ├── in_keyword_loc: (19,6)-(19,8) = "in"
             ├── do_keyword_loc: ∅
-            └── end_keyword_loc: (140...143) = "end"
+            └── end_keyword_loc: (19,19)-(19,22) = "end"

@@ -1,21 +1,21 @@
-@ ProgramNode (location: (0...11))
+@ ProgramNode (location: (1,0)-(1,11))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...11))
+    @ StatementsNode (location: (1,0)-(1,11))
     └── body: (length: 1)
-        └── @ ArrayNode (location: (0...11))
+        └── @ ArrayNode (location: (1,0)-(1,11))
             ├── elements: (length: 2)
-            │   ├── @ IntegerNode (location: (1...2))
+            │   ├── @ IntegerNode (location: (1,1)-(1,2))
             │   │   └── flags: decimal
-            │   └── @ KeywordHashNode (location: (4...10))
+            │   └── @ KeywordHashNode (location: (1,4)-(1,10))
             │       └── elements: (length: 1)
-            │           └── @ AssocNode (location: (4...10))
+            │           └── @ AssocNode (location: (1,4)-(1,10))
             │               ├── key:
-            │               │   @ IntegerNode (location: (4...5))
+            │               │   @ IntegerNode (location: (1,4)-(1,5))
             │               │   └── flags: decimal
             │               ├── value:
-            │               │   @ IntegerNode (location: (9...10))
+            │               │   @ IntegerNode (location: (1,9)-(1,10))
             │               │   └── flags: decimal
-            │               └── operator_loc: (6...8) = "=>"
-            ├── opening_loc: (0...1) = "["
-            └── closing_loc: (10...11) = "]"
+            │               └── operator_loc: (1,6)-(1,8) = "=>"
+            ├── opening_loc: (1,0)-(1,1) = "["
+            └── closing_loc: (1,10)-(1,11) = "]"

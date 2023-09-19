@@ -1,14 +1,14 @@
-@ ProgramNode (location: (0...43))
+@ ProgramNode (location: (1,0)-(1,43))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...43))
+    @ StatementsNode (location: (1,0)-(1,43))
     └── body: (length: 1)
-        └── @ CaseNode (location: (0...43))
+        └── @ CaseNode (location: (1,0)-(1,43))
             ├── predicate:
-            │   @ CallNode (location: (5...8))
+            │   @ CallNode (location: (1,5)-(1,8))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (5...8) = "foo"
+            │   ├── message_loc: (1,5)-(1,8) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -16,18 +16,18 @@
             │   ├── flags: variable_call
             │   └── name: "foo"
             ├── conditions: (length: 2)
-            │   ├── @ WhenNode (location: (10...27))
-            │   │   ├── keyword_loc: (10...14) = "when"
+            │   ├── @ WhenNode (location: (1,10)-(1,27))
+            │   │   ├── keyword_loc: (1,10)-(1,14) = "when"
             │   │   ├── conditions: (length: 2)
-            │   │   │   ├── @ IntegerNode (location: (15...16))
+            │   │   │   ├── @ IntegerNode (location: (1,15)-(1,16))
             │   │   │   │   └── flags: decimal
-            │   │   │   └── @ SplatNode (location: (18...22))
-            │   │   │       ├── operator_loc: (18...19) = "*"
+            │   │   │   └── @ SplatNode (location: (1,18)-(1,22))
+            │   │   │       ├── operator_loc: (1,18)-(1,19) = "*"
             │   │   │       └── expression:
-            │   │   │           @ CallNode (location: (19...22))
+            │   │   │           @ CallNode (location: (1,19)-(1,22))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
-            │   │   │           ├── message_loc: (19...22) = "baz"
+            │   │   │           ├── message_loc: (1,19)-(1,22) = "baz"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
@@ -35,28 +35,28 @@
             │   │   │           ├── flags: variable_call
             │   │   │           └── name: "baz"
             │   │   └── statements:
-            │   │       @ StatementsNode (location: (24...27))
+            │   │       @ StatementsNode (location: (1,24)-(1,27))
             │   │       └── body: (length: 1)
-            │   │           └── @ CallNode (location: (24...27))
+            │   │           └── @ CallNode (location: (1,24)-(1,27))
             │   │               ├── receiver: ∅
             │   │               ├── call_operator_loc: ∅
-            │   │               ├── message_loc: (24...27) = "bar"
+            │   │               ├── message_loc: (1,24)-(1,27) = "bar"
             │   │               ├── opening_loc: ∅
             │   │               ├── arguments: ∅
             │   │               ├── closing_loc: ∅
             │   │               ├── block: ∅
             │   │               ├── flags: variable_call
             │   │               └── name: "bar"
-            │   └── @ WhenNode (location: (29...38))
-            │       ├── keyword_loc: (29...33) = "when"
+            │   └── @ WhenNode (location: (1,29)-(1,38))
+            │       ├── keyword_loc: (1,29)-(1,33) = "when"
             │       ├── conditions: (length: 1)
-            │       │   └── @ SplatNode (location: (34...38))
-            │       │       ├── operator_loc: (34...35) = "*"
+            │       │   └── @ SplatNode (location: (1,34)-(1,38))
+            │       │       ├── operator_loc: (1,34)-(1,35) = "*"
             │       │       └── expression:
-            │       │           @ CallNode (location: (35...38))
+            │       │           @ CallNode (location: (1,35)-(1,38))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
-            │       │           ├── message_loc: (35...38) = "foo"
+            │       │           ├── message_loc: (1,35)-(1,38) = "foo"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
@@ -65,5 +65,5 @@
             │       │           └── name: "foo"
             │       └── statements: ∅
             ├── consequent: ∅
-            ├── case_keyword_loc: (0...4) = "case"
-            └── end_keyword_loc: (40...43) = "end"
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (1,40)-(1,43) = "end"

@@ -1,25 +1,25 @@
-@ ProgramNode (location: (0...21))
+@ ProgramNode (location: (1,0)-(1,21))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...21))
+    @ StatementsNode (location: (1,0)-(1,21))
     └── body: (length: 1)
-        └── @ ReturnNode (location: (0...21))
-            ├── keyword_loc: (0...6) = "return"
+        └── @ ReturnNode (location: (1,0)-(1,21))
+            ├── keyword_loc: (1,0)-(1,6) = "return"
             └── arguments:
-                @ ArgumentsNode (location: (7...21))
+                @ ArgumentsNode (location: (1,7)-(1,21))
                 └── arguments: (length: 1)
-                    └── @ CallNode (location: (7...21))
+                    └── @ CallNode (location: (1,7)-(1,21))
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
-                        ├── message_loc: (7...10) = "fun"
+                        ├── message_loc: (1,7)-(1,10) = "fun"
                         ├── opening_loc: ∅
                         ├── arguments:
-                        │   @ ArgumentsNode (location: (11...14))
+                        │   @ ArgumentsNode (location: (1,11)-(1,14))
                         │   └── arguments: (length: 1)
-                        │       └── @ CallNode (location: (11...14))
+                        │       └── @ CallNode (location: (1,11)-(1,14))
                         │           ├── receiver: ∅
                         │           ├── call_operator_loc: ∅
-                        │           ├── message_loc: (11...14) = "foo"
+                        │           ├── message_loc: (1,11)-(1,14) = "foo"
                         │           ├── opening_loc: ∅
                         │           ├── arguments: ∅
                         │           ├── closing_loc: ∅
@@ -28,11 +28,11 @@
                         │           └── name: "foo"
                         ├── closing_loc: ∅
                         ├── block:
-                        │   @ BlockNode (location: (15...21))
+                        │   @ BlockNode (location: (1,15)-(1,21))
                         │   ├── locals: []
                         │   ├── parameters: ∅
                         │   ├── body: ∅
-                        │   ├── opening_loc: (15...17) = "do"
-                        │   └── closing_loc: (18...21) = "end"
+                        │   ├── opening_loc: (1,15)-(1,17) = "do"
+                        │   └── closing_loc: (1,18)-(1,21) = "end"
                         ├── flags: ∅
                         └── name: "fun"

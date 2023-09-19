@@ -1,83 +1,83 @@
-@ ProgramNode (location: (0...51))
+@ ProgramNode (location: (1,0)-(4,17))
 ├── locals: [:a, :foo]
 └── statements:
-    @ StatementsNode (location: (0...51))
+    @ StatementsNode (location: (1,0)-(4,17))
     └── body: (length: 4)
-        ├── @ MatchRequiredNode (location: (0...8))
+        ├── @ MatchRequiredNode (location: (1,0)-(1,8))
         │   ├── value:
-        │   │   @ IntegerNode (location: (0...1))
+        │   │   @ IntegerNode (location: (1,0)-(1,1))
         │   │   └── flags: decimal
         │   ├── pattern:
-        │   │   @ ArrayPatternNode (location: (5...8))
+        │   │   @ ArrayPatternNode (location: (1,5)-(1,8))
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
-        │   │   │   └── @ LocalVariableTargetNode (location: (6...7))
+        │   │   │   └── @ LocalVariableTargetNode (location: (1,6)-(1,7))
         │   │   │       ├── name: :a
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
-        │   │   ├── opening_loc: (5...6) = "["
-        │   │   └── closing_loc: (7...8) = "]"
-        │   └── operator_loc: (2...4) = "=>"
-        ├── @ MatchRequiredNode (location: (9...17))
+        │   │   ├── opening_loc: (1,5)-(1,6) = "["
+        │   │   └── closing_loc: (1,7)-(1,8) = "]"
+        │   └── operator_loc: (1,2)-(1,4) = "=>"
+        ├── @ MatchRequiredNode (location: (2,0)-(2,8))
         │   ├── value:
-        │   │   @ IntegerNode (location: (9...10))
+        │   │   @ IntegerNode (location: (2,0)-(2,1))
         │   │   └── flags: decimal
         │   ├── pattern:
-        │   │   @ ArrayPatternNode (location: (14...17))
+        │   │   @ ArrayPatternNode (location: (2,5)-(2,8))
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
-        │   │   │   @ SplatNode (location: (15...16))
-        │   │   │   ├── operator_loc: (15...16) = "*"
+        │   │   │   @ SplatNode (location: (2,6)-(2,7))
+        │   │   │   ├── operator_loc: (2,6)-(2,7) = "*"
         │   │   │   └── expression: ∅
         │   │   ├── posts: (length: 0)
-        │   │   ├── opening_loc: (14...15) = "["
-        │   │   └── closing_loc: (16...17) = "]"
-        │   └── operator_loc: (11...13) = "=>"
-        ├── @ MatchPredicateNode (location: (18...33))
+        │   │   ├── opening_loc: (2,5)-(2,6) = "["
+        │   │   └── closing_loc: (2,7)-(2,8) = "]"
+        │   └── operator_loc: (2,2)-(2,4) = "=>"
+        ├── @ MatchPredicateNode (location: (3,0)-(3,15))
         │   ├── value:
-        │   │   @ IntegerNode (location: (18...19))
+        │   │   @ IntegerNode (location: (3,0)-(3,1))
         │   │   └── flags: decimal
         │   ├── pattern:
-        │   │   @ FindPatternNode (location: (23...33))
+        │   │   @ FindPatternNode (location: (3,5)-(3,15))
         │   │   ├── constant: ∅
         │   │   ├── left:
-        │   │   │   @ SplatNode (location: (24...25))
-        │   │   │   ├── operator_loc: (24...25) = "*"
+        │   │   │   @ SplatNode (location: (3,6)-(3,7))
+        │   │   │   ├── operator_loc: (3,6)-(3,7) = "*"
         │   │   │   └── expression: ∅
         │   │   ├── requireds: (length: 1)
-        │   │   │   └── @ IntegerNode (location: (27...29))
+        │   │   │   └── @ IntegerNode (location: (3,9)-(3,11))
         │   │   │       └── flags: decimal
         │   │   ├── right:
-        │   │   │   @ SplatNode (location: (31...32))
-        │   │   │   ├── operator_loc: (31...32) = "*"
+        │   │   │   @ SplatNode (location: (3,13)-(3,14))
+        │   │   │   ├── operator_loc: (3,13)-(3,14) = "*"
         │   │   │   └── expression: ∅
-        │   │   ├── opening_loc: (23...24) = "["
-        │   │   └── closing_loc: (32...33) = "]"
-        │   └── operator_loc: (20...22) = "in"
-        └── @ MatchPredicateNode (location: (34...51))
+        │   │   ├── opening_loc: (3,5)-(3,6) = "["
+        │   │   └── closing_loc: (3,14)-(3,15) = "]"
+        │   └── operator_loc: (3,2)-(3,4) = "in"
+        └── @ MatchPredicateNode (location: (4,0)-(4,17))
             ├── value:
-            │   @ IntegerNode (location: (34...35))
+            │   @ IntegerNode (location: (4,0)-(4,1))
             │   └── flags: decimal
             ├── pattern:
-            │   @ FindPatternNode (location: (39...51))
+            │   @ FindPatternNode (location: (4,5)-(4,17))
             │   ├── constant: ∅
             │   ├── left:
-            │   │   @ SplatNode (location: (40...41))
-            │   │   ├── operator_loc: (40...41) = "*"
+            │   │   @ SplatNode (location: (4,6)-(4,7))
+            │   │   ├── operator_loc: (4,6)-(4,7) = "*"
             │   │   └── expression: ∅
             │   ├── requireds: (length: 1)
-            │   │   └── @ LocalVariableTargetNode (location: (43...44))
+            │   │   └── @ LocalVariableTargetNode (location: (4,9)-(4,10))
             │   │       ├── name: :a
             │   │       └── depth: 0
             │   ├── right:
-            │   │   @ SplatNode (location: (46...50))
-            │   │   ├── operator_loc: (46...47) = "*"
+            │   │   @ SplatNode (location: (4,12)-(4,16))
+            │   │   ├── operator_loc: (4,12)-(4,13) = "*"
             │   │   └── expression:
-            │   │       @ LocalVariableTargetNode (location: (47...50))
+            │   │       @ LocalVariableTargetNode (location: (4,13)-(4,16))
             │   │       ├── name: :foo
             │   │       └── depth: 0
-            │   ├── opening_loc: (39...40) = "["
-            │   └── closing_loc: (50...51) = "]"
-            └── operator_loc: (36...38) = "in"
+            │   ├── opening_loc: (4,5)-(4,6) = "["
+            │   └── closing_loc: (4,16)-(4,17) = "]"
+            └── operator_loc: (4,2)-(4,4) = "in"

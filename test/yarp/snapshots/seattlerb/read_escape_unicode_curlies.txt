@@ -1,11 +1,11 @@
-@ ProgramNode (location: (0...9))
+@ ProgramNode (location: (1,0)-(1,9))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...9))
+    @ StatementsNode (location: (1,0)-(1,9))
     └── body: (length: 1)
-        └── @ StringNode (location: (0...9))
+        └── @ StringNode (location: (1,0)-(1,9))
             ├── flags: ∅
-            ├── opening_loc: (0...1) = "?"
-            ├── content_loc: (1...9) = "\\u{00a0}"
+            ├── opening_loc: (1,0)-(1,1) = "?"
+            ├── content_loc: (1,1)-(1,9) = "\\u{00a0}"
             ├── closing_loc: ∅
             └── unescaped: " "

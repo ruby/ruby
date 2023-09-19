@@ -1,18 +1,18 @@
-@ ProgramNode (location: (0...22))
+@ ProgramNode (location: (1,0)-(4,6))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...22))
+    @ StatementsNode (location: (1,0)-(4,6))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...22))
+        └── @ CallNode (location: (1,0)-(4,6))
             ├── receiver:
-            │   @ StringNode (location: (0...5))
+            │   @ StringNode (location: (1,0)-(1,5))
             │   ├── flags: ∅
-            │   ├── opening_loc: (0...5) = "<<END"
-            │   ├── content_loc: (7...12) = "blah\n"
-            │   ├── closing_loc: (12...16) = "END\n"
+            │   ├── opening_loc: (1,0)-(1,5) = "<<END"
+            │   ├── content_loc: (2,0)-(2,0) = "blah\n"
+            │   ├── closing_loc: (3,0)-(3,0) = "END\n"
             │   └── unescaped: "blah\n"
-            ├── call_operator_loc: (16...17) = "."
-            ├── message_loc: (17...22) = "strip"
+            ├── call_operator_loc: (4,0)-(4,1) = "."
+            ├── message_loc: (4,1)-(4,6) = "strip"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅

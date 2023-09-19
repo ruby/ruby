@@ -1,26 +1,26 @@
-@ ProgramNode (location: (0...11))
+@ ProgramNode (location: (1,0)-(1,11))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...11))
+    @ StatementsNode (location: (1,0)-(1,11))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...11))
+        └── @ CallNode (location: (1,0)-(1,11))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "f"
+            ├── message_loc: (1,0)-(1,1) = "f"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block:
-            │   @ BlockNode (location: (2...11))
+            │   @ BlockNode (location: (1,2)-(1,11))
             │   ├── locals: [:a, :b]
             │   ├── parameters:
-            │   │   @ BlockParametersNode (location: (4...9))
+            │   │   @ BlockParametersNode (location: (1,4)-(1,9))
             │   │   ├── parameters:
-            │   │   │   @ ParametersNode (location: (5...8))
+            │   │   │   @ ParametersNode (location: (1,5)-(1,8))
             │   │   │   ├── requireds: (length: 2)
-            │   │   │   │   ├── @ RequiredParameterNode (location: (5...6))
+            │   │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
             │   │   │   │   │   └── name: :a
-            │   │   │   │   └── @ RequiredParameterNode (location: (7...8))
+            │   │   │   │   └── @ RequiredParameterNode (location: (1,7)-(1,8))
             │   │   │   │       └── name: :b
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest: ∅
@@ -29,10 +29,10 @@
             │   │   │   ├── keyword_rest: ∅
             │   │   │   └── block: ∅
             │   │   ├── locals: (length: 0)
-            │   │   ├── opening_loc: (4...5) = "|"
-            │   │   └── closing_loc: (8...9) = "|"
+            │   │   ├── opening_loc: (1,4)-(1,5) = "|"
+            │   │   └── closing_loc: (1,8)-(1,9) = "|"
             │   ├── body: ∅
-            │   ├── opening_loc: (2...3) = "{"
-            │   └── closing_loc: (10...11) = "}"
+            │   ├── opening_loc: (1,2)-(1,3) = "{"
+            │   └── closing_loc: (1,10)-(1,11) = "}"
             ├── flags: ∅
             └── name: "f"

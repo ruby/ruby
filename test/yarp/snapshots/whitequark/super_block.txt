@@ -1,36 +1,36 @@
-@ ProgramNode (location: (0...35))
+@ ProgramNode (location: (1,0)-(3,21))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...35))
+    @ StatementsNode (location: (1,0)-(3,21))
     └── body: (length: 2)
-        ├── @ ForwardingSuperNode (location: (0...12))
+        ├── @ ForwardingSuperNode (location: (1,0)-(1,12))
         │   └── block:
-        │       @ BlockNode (location: (6...12))
+        │       @ BlockNode (location: (1,6)-(1,12))
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
-        │       ├── opening_loc: (6...8) = "do"
-        │       └── closing_loc: (9...12) = "end"
-        └── @ SuperNode (location: (14...35))
-            ├── keyword_loc: (14...19) = "super"
+        │       ├── opening_loc: (1,6)-(1,8) = "do"
+        │       └── closing_loc: (1,9)-(1,12) = "end"
+        └── @ SuperNode (location: (3,0)-(3,21))
+            ├── keyword_loc: (3,0)-(3,5) = "super"
             ├── lparen_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (20...28))
+            │   @ ArgumentsNode (location: (3,6)-(3,14))
             │   └── arguments: (length: 2)
-            │       ├── @ CallNode (location: (20...23))
+            │       ├── @ CallNode (location: (3,6)-(3,9))
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
-            │       │   ├── message_loc: (20...23) = "foo"
+            │       │   ├── message_loc: (3,6)-(3,9) = "foo"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments: ∅
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
             │       │   └── name: "foo"
-            │       └── @ CallNode (location: (25...28))
+            │       └── @ CallNode (location: (3,11)-(3,14))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (25...28) = "bar"
+            │           ├── message_loc: (3,11)-(3,14) = "bar"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -39,9 +39,9 @@
             │           └── name: "bar"
             ├── rparen_loc: ∅
             └── block:
-                @ BlockNode (location: (29...35))
+                @ BlockNode (location: (3,15)-(3,21))
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅
-                ├── opening_loc: (29...31) = "do"
-                └── closing_loc: (32...35) = "end"
+                ├── opening_loc: (3,15)-(3,17) = "do"
+                └── closing_loc: (3,18)-(3,21) = "end"

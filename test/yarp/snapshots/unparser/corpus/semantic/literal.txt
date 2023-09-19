@@ -1,81 +1,81 @@
-@ ProgramNode (location: (0...131))
+@ ProgramNode (location: (1,0)-(14,10))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...131))
+    @ StatementsNode (location: (1,0)-(14,10))
     └── body: (length: 14)
-        ├── @ RationalNode (location: (0...4))
+        ├── @ RationalNode (location: (1,0)-(1,4))
         │   └── numeric:
-        │       @ FloatNode (location: (0...3))
-        ├── @ RationalNode (location: (5...8))
+        │       @ FloatNode (location: (1,0)-(1,3))
+        ├── @ RationalNode (location: (2,0)-(2,3))
         │   └── numeric:
-        │       @ IntegerNode (location: (5...7))
+        │       @ IntegerNode (location: (2,0)-(2,2))
         │       └── flags: decimal
-        ├── @ IntegerNode (location: (9...12))
+        ├── @ IntegerNode (location: (3,0)-(3,3))
         │   └── flags: hexadecimal
-        ├── @ IntegerNode (location: (13...18))
+        ├── @ IntegerNode (location: (4,0)-(4,5))
         │   └── flags: decimal
-        ├── @ FloatNode (location: (19...23))
-        ├── @ FloatNode (location: (24...38))
-        ├── @ FloatNode (location: (39...54))
-        ├── @ StringNode (location: (55...57))
+        ├── @ FloatNode (location: (5,0)-(5,4))
+        ├── @ FloatNode (location: (6,0)-(6,14))
+        ├── @ FloatNode (location: (7,0)-(7,15))
+        ├── @ StringNode (location: (8,0)-(8,2))
         │   ├── flags: ∅
-        │   ├── opening_loc: (55...56) = "?"
-        │   ├── content_loc: (56...57) = "c"
+        │   ├── opening_loc: (8,0)-(8,1) = "?"
+        │   ├── content_loc: (8,1)-(8,2) = "c"
         │   ├── closing_loc: ∅
         │   └── unescaped: "c"
-        ├── @ RegularExpressionNode (location: (58...63))
-        │   ├── opening_loc: (58...61) = "%r("
-        │   ├── content_loc: (61...62) = "/"
-        │   ├── closing_loc: (62...63) = ")"
+        ├── @ RegularExpressionNode (location: (9,0)-(9,5))
+        │   ├── opening_loc: (9,0)-(9,3) = "%r("
+        │   ├── content_loc: (9,3)-(9,4) = "/"
+        │   ├── closing_loc: (9,4)-(9,5) = ")"
         │   ├── unescaped: "/"
         │   └── flags: ∅
-        ├── @ RegularExpressionNode (location: (64...70))
-        │   ├── opening_loc: (64...67) = "%r("
-        │   ├── content_loc: (67...69) = "\\)"
-        │   ├── closing_loc: (69...70) = ")"
+        ├── @ RegularExpressionNode (location: (10,0)-(10,6))
+        │   ├── opening_loc: (10,0)-(10,3) = "%r("
+        │   ├── content_loc: (10,3)-(10,5) = "\\)"
+        │   ├── closing_loc: (10,5)-(10,6) = ")"
         │   ├── unescaped: ")"
         │   └── flags: ∅
-        ├── @ InterpolatedRegularExpressionNode (location: (71...85))
-        │   ├── opening_loc: (71...74) = "%r("
+        ├── @ InterpolatedRegularExpressionNode (location: (11,0)-(11,14))
+        │   ├── opening_loc: (11,0)-(11,3) = "%r("
         │   ├── parts: (length: 2)
-        │   │   ├── @ EmbeddedStatementsNode (location: (74...81))
-        │   │   │   ├── opening_loc: (74...76) = "\#{"
+        │   │   ├── @ EmbeddedStatementsNode (location: (11,3)-(11,10))
+        │   │   │   ├── opening_loc: (11,3)-(11,5) = "\#{"
         │   │   │   ├── statements:
-        │   │   │   │   @ StatementsNode (location: (76...80))
+        │   │   │   │   @ StatementsNode (location: (11,5)-(11,9))
         │   │   │   │   └── body: (length: 1)
-        │   │   │   │       └── @ InstanceVariableReadNode (location: (76...80))
+        │   │   │   │       └── @ InstanceVariableReadNode (location: (11,5)-(11,9))
         │   │   │   │           └── name: :@bar
-        │   │   │   └── closing_loc: (80...81) = "}"
-        │   │   └── @ StringNode (location: (81...84))
+        │   │   │   └── closing_loc: (11,9)-(11,10) = "}"
+        │   │   └── @ StringNode (location: (11,10)-(11,13))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (81...84) = "baz"
+        │   │       ├── content_loc: (11,10)-(11,13) = "baz"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "baz"
-        │   ├── closing_loc: (84...85) = ")"
+        │   ├── closing_loc: (11,13)-(11,14) = ")"
         │   └── flags: ∅
-        ├── @ FloatNode (location: (86...102))
-        ├── @ FloatNode (location: (103...120))
-        └── @ CallNode (location: (121...131))
+        ├── @ FloatNode (location: (12,0)-(12,16))
+        ├── @ FloatNode (location: (13,0)-(13,17))
+        └── @ CallNode (location: (14,0)-(14,10))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (121...122) = "w"
-            ├── opening_loc: (122...123) = "("
+            ├── message_loc: (14,0)-(14,1) = "w"
+            ├── opening_loc: (14,1)-(14,2) = "("
             ├── arguments:
-            │   @ ArgumentsNode (location: (123...130))
+            │   @ ArgumentsNode (location: (14,2)-(14,9))
             │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (123...130))
+            │       └── @ CallNode (location: (14,2)-(14,9))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (123...126) = "foo"
+            │           ├── message_loc: (14,2)-(14,5) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (127...130))
+            │           │   @ ArgumentsNode (location: (14,6)-(14,9))
             │           │   └── arguments: (length: 1)
-            │           │       └── @ CallNode (location: (127...130))
+            │           │       └── @ CallNode (location: (14,6)-(14,9))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (127...130) = "bar"
+            │           │           ├── message_loc: (14,6)-(14,9) = "bar"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
@@ -86,7 +86,7 @@
             │           ├── block: ∅
             │           ├── flags: ∅
             │           └── name: "foo"
-            ├── closing_loc: (130...131) = ")"
+            ├── closing_loc: (14,9)-(14,10) = ")"
             ├── block: ∅
             ├── flags: ∅
             └── name: "w"

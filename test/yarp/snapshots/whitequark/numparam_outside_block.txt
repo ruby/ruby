@@ -1,27 +1,27 @@
-@ ProgramNode (location: (0...83))
+@ ProgramNode (location: (1,0)-(9,17))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...83))
+    @ StatementsNode (location: (1,0)-(9,17))
     └── body: (length: 5)
-        ├── @ CallNode (location: (0...2))
+        ├── @ CallNode (location: (1,0)-(1,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...2) = "_1"
+        │   ├── message_loc: (1,0)-(1,2) = "_1"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
         │   └── name: "_1"
-        ├── @ SingletonClassNode (location: (4...25))
+        ├── @ SingletonClassNode (location: (3,0)-(3,21))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (4...9) = "class"
-        │   ├── operator_loc: (10...12) = "<<"
+        │   ├── class_keyword_loc: (3,0)-(3,5) = "class"
+        │   ├── operator_loc: (3,6)-(3,8) = "<<"
         │   ├── expression:
-        │   │   @ CallNode (location: (13...16))
+        │   │   @ CallNode (location: (3,9)-(3,12))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (13...16) = "foo"
+        │   │   ├── message_loc: (3,9)-(3,12) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -29,55 +29,55 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── body:
-        │   │   @ StatementsNode (location: (18...20))
+        │   │   @ StatementsNode (location: (3,14)-(3,16))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (18...20))
+        │   │       └── @ CallNode (location: (3,14)-(3,16))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (18...20) = "_1"
+        │   │           ├── message_loc: (3,14)-(3,16) = "_1"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "_1"
-        │   └── end_keyword_loc: (22...25) = "end"
-        ├── @ ClassNode (location: (27...43))
+        │   └── end_keyword_loc: (3,18)-(3,21) = "end"
+        ├── @ ClassNode (location: (5,0)-(5,16))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (27...32) = "class"
+        │   ├── class_keyword_loc: (5,0)-(5,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (33...34))
+        │   │   @ ConstantReadNode (location: (5,6)-(5,7))
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (36...38))
+        │   │   @ StatementsNode (location: (5,9)-(5,11))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (36...38))
+        │   │       └── @ CallNode (location: (5,9)-(5,11))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (36...38) = "_1"
+        │   │           ├── message_loc: (5,9)-(5,11) = "_1"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "_1"
-        │   ├── end_keyword_loc: (40...43) = "end"
+        │   ├── end_keyword_loc: (5,13)-(5,16) = "end"
         │   └── name: :A
-        ├── @ DefNode (location: (45...64))
+        ├── @ DefNode (location: (7,0)-(7,19))
         │   ├── name: :m
-        │   ├── name_loc: (54...55) = "m"
+        │   ├── name_loc: (7,9)-(7,10) = "m"
         │   ├── receiver:
-        │   │   @ SelfNode (location: (49...53))
+        │   │   @ SelfNode (location: (7,4)-(7,8))
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (57...59))
+        │   │   @ StatementsNode (location: (7,12)-(7,14))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (57...59))
+        │   │       └── @ CallNode (location: (7,12)-(7,14))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (57...59) = "_1"
+        │   │           ├── message_loc: (7,12)-(7,14) = "_1"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -85,30 +85,30 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "_1"
         │   ├── locals: []
-        │   ├── def_keyword_loc: (45...48) = "def"
-        │   ├── operator_loc: (53...54) = "."
+        │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
+        │   ├── operator_loc: (7,8)-(7,9) = "."
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── equal_loc: ∅
-        │   └── end_keyword_loc: (61...64) = "end"
-        └── @ ModuleNode (location: (66...83))
+        │   └── end_keyword_loc: (7,16)-(7,19) = "end"
+        └── @ ModuleNode (location: (9,0)-(9,17))
             ├── locals: []
-            ├── module_keyword_loc: (66...72) = "module"
+            ├── module_keyword_loc: (9,0)-(9,6) = "module"
             ├── constant_path:
-            │   @ ConstantReadNode (location: (73...74))
+            │   @ ConstantReadNode (location: (9,7)-(9,8))
             │   └── name: :A
             ├── body:
-            │   @ StatementsNode (location: (76...78))
+            │   @ StatementsNode (location: (9,10)-(9,12))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (76...78))
+            │       └── @ CallNode (location: (9,10)-(9,12))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (76...78) = "_1"
+            │           ├── message_loc: (9,10)-(9,12) = "_1"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
             │           └── name: "_1"
-            ├── end_keyword_loc: (80...83) = "end"
+            ├── end_keyword_loc: (9,14)-(9,17) = "end"
             └── name: :A

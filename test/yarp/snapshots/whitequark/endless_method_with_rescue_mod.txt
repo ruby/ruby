@@ -1,52 +1,52 @@
-@ ProgramNode (location: (0...47))
+@ ProgramNode (location: (1,0)-(3,25))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...47))
+    @ StatementsNode (location: (1,0)-(3,25))
     └── body: (length: 2)
-        ├── @ DefNode (location: (0...20))
+        ├── @ DefNode (location: (1,0)-(1,20))
         │   ├── name: :m
-        │   ├── name_loc: (4...5) = "m"
+        │   ├── name_loc: (1,4)-(1,5) = "m"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (10...20))
+        │   │   @ StatementsNode (location: (1,10)-(1,20))
         │   │   └── body: (length: 1)
-        │   │       └── @ RescueModifierNode (location: (10...20))
+        │   │       └── @ RescueModifierNode (location: (1,10)-(1,20))
         │   │           ├── expression:
-        │   │           │   @ IntegerNode (location: (10...11))
+        │   │           │   @ IntegerNode (location: (1,10)-(1,11))
         │   │           │   └── flags: decimal
-        │   │           ├── keyword_loc: (12...18) = "rescue"
+        │   │           ├── keyword_loc: (1,12)-(1,18) = "rescue"
         │   │           └── rescue_expression:
-        │   │               @ IntegerNode (location: (19...20))
+        │   │               @ IntegerNode (location: (1,19)-(1,20))
         │   │               └── flags: decimal
         │   ├── locals: []
-        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
-        │   ├── lparen_loc: (5...6) = "("
-        │   ├── rparen_loc: (6...7) = ")"
-        │   ├── equal_loc: (8...9) = "="
+        │   ├── lparen_loc: (1,5)-(1,6) = "("
+        │   ├── rparen_loc: (1,6)-(1,7) = ")"
+        │   ├── equal_loc: (1,8)-(1,9) = "="
         │   └── end_keyword_loc: ∅
-        └── @ DefNode (location: (22...47))
+        └── @ DefNode (location: (3,0)-(3,25))
             ├── name: :m
-            ├── name_loc: (31...32) = "m"
+            ├── name_loc: (3,9)-(3,10) = "m"
             ├── receiver:
-            │   @ SelfNode (location: (26...30))
+            │   @ SelfNode (location: (3,4)-(3,8))
             ├── parameters: ∅
             ├── body:
-            │   @ StatementsNode (location: (37...47))
+            │   @ StatementsNode (location: (3,15)-(3,25))
             │   └── body: (length: 1)
-            │       └── @ RescueModifierNode (location: (37...47))
+            │       └── @ RescueModifierNode (location: (3,15)-(3,25))
             │           ├── expression:
-            │           │   @ IntegerNode (location: (37...38))
+            │           │   @ IntegerNode (location: (3,15)-(3,16))
             │           │   └── flags: decimal
-            │           ├── keyword_loc: (39...45) = "rescue"
+            │           ├── keyword_loc: (3,17)-(3,23) = "rescue"
             │           └── rescue_expression:
-            │               @ IntegerNode (location: (46...47))
+            │               @ IntegerNode (location: (3,24)-(3,25))
             │               └── flags: decimal
             ├── locals: []
-            ├── def_keyword_loc: (22...25) = "def"
-            ├── operator_loc: (30...31) = "."
-            ├── lparen_loc: (32...33) = "("
-            ├── rparen_loc: (33...34) = ")"
-            ├── equal_loc: (35...36) = "="
+            ├── def_keyword_loc: (3,0)-(3,3) = "def"
+            ├── operator_loc: (3,8)-(3,9) = "."
+            ├── lparen_loc: (3,10)-(3,11) = "("
+            ├── rparen_loc: (3,11)-(3,12) = ")"
+            ├── equal_loc: (3,13)-(3,14) = "="
             └── end_keyword_loc: ∅

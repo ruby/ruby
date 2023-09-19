@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...15))
+@ ProgramNode (location: (1,0)-(3,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...15))
+    @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 1)
-        └── @ BeginNode (location: (0...15))
-            ├── begin_keyword_loc: (0...5) = "begin"
+        └── @ BeginNode (location: (1,0)-(3,3))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements:
-            │   @ StatementsNode (location: (8...11))
+            │   @ StatementsNode (location: (2,2)-(2,5))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (8...11))
+            │       └── @ CallNode (location: (2,2)-(2,5))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (8...11) = "foo"
+            │           ├── message_loc: (2,2)-(2,5) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -21,4 +21,4 @@
             ├── rescue_clause: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅
-            └── end_keyword_loc: (12...15) = "end"
+            └── end_keyword_loc: (3,0)-(3,3) = "end"

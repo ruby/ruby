@@ -1,14 +1,14 @@
-@ ProgramNode (location: (0...23))
+@ ProgramNode (location: (1,0)-(3,11))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...23))
+    @ StatementsNode (location: (1,0)-(3,11))
     └── body: (length: 2)
-        ├── @ AndNode (location: (0...10))
+        ├── @ AndNode (location: (1,0)-(1,10))
         │   ├── left:
-        │   │   @ CallNode (location: (0...3))
+        │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── message_loc: (1,0)-(1,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -16,23 +16,23 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── right:
-        │   │   @ CallNode (location: (7...10))
+        │   │   @ CallNode (location: (1,7)-(1,10))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (7...10) = "bar"
+        │   │   ├── message_loc: (1,7)-(1,10) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "bar"
-        │   └── operator_loc: (4...6) = "&&"
-        └── @ AndNode (location: (12...23))
+        │   └── operator_loc: (1,4)-(1,6) = "&&"
+        └── @ AndNode (location: (3,0)-(3,11))
             ├── left:
-            │   @ CallNode (location: (12...15))
+            │   @ CallNode (location: (3,0)-(3,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (12...15) = "foo"
+            │   ├── message_loc: (3,0)-(3,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -40,14 +40,14 @@
             │   ├── flags: variable_call
             │   └── name: "foo"
             ├── right:
-            │   @ CallNode (location: (20...23))
+            │   @ CallNode (location: (3,8)-(3,11))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (20...23) = "bar"
+            │   ├── message_loc: (3,8)-(3,11) = "bar"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
             │   └── name: "bar"
-            └── operator_loc: (16...19) = "and"
+            └── operator_loc: (3,4)-(3,7) = "and"

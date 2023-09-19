@@ -1,89 +1,89 @@
-@ ProgramNode (location: (0...46))
+@ ProgramNode (location: (1,0)-(7,9))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...46))
+    @ StatementsNode (location: (1,0)-(7,9))
     └── body: (length: 4)
-        ├── @ CallNode (location: (0...11))
+        ├── @ CallNode (location: (1,0)-(1,11))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...1) = "f"
+        │   ├── message_loc: (1,0)-(1,1) = "f"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (2...11))
+        │   │   @ ArgumentsNode (location: (1,2)-(1,11))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ LambdaNode (location: (2...11))
+        │   │       └── @ LambdaNode (location: (1,2)-(1,11))
         │   │           ├── locals: []
-        │   │           ├── operator_loc: (2...4) = "->"
-        │   │           ├── opening_loc: (5...7) = "do"
-        │   │           ├── closing_loc: (8...11) = "end"
+        │   │           ├── operator_loc: (1,2)-(1,4) = "->"
+        │   │           ├── opening_loc: (1,5)-(1,7) = "do"
+        │   │           ├── closing_loc: (1,8)-(1,11) = "end"
         │   │           ├── parameters: ∅
         │   │           └── body: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "f"
-        ├── @ CallNode (location: (13...20))
+        ├── @ CallNode (location: (3,0)-(3,7))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (13...14) = "f"
+        │   ├── message_loc: (3,0)-(3,1) = "f"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (15...20))
+        │   │   @ ArgumentsNode (location: (3,2)-(3,7))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ LambdaNode (location: (15...20))
+        │   │       └── @ LambdaNode (location: (3,2)-(3,7))
         │   │           ├── locals: []
-        │   │           ├── operator_loc: (15...17) = "->"
-        │   │           ├── opening_loc: (18...19) = "{"
-        │   │           ├── closing_loc: (19...20) = "}"
+        │   │           ├── operator_loc: (3,2)-(3,4) = "->"
+        │   │           ├── opening_loc: (3,5)-(3,6) = "{"
+        │   │           ├── closing_loc: (3,6)-(3,7) = "}"
         │   │           ├── parameters: ∅
         │   │           └── body: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "f"
-        ├── @ CallNode (location: (22...35))
+        ├── @ CallNode (location: (5,0)-(5,13))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (22...23) = "f"
+        │   ├── message_loc: (5,0)-(5,1) = "f"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (24...35))
+        │   │   @ ArgumentsNode (location: (5,2)-(5,13))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ LambdaNode (location: (24...35))
+        │   │       └── @ LambdaNode (location: (5,2)-(5,13))
         │   │           ├── locals: []
-        │   │           ├── operator_loc: (24...26) = "->"
-        │   │           ├── opening_loc: (29...31) = "do"
-        │   │           ├── closing_loc: (32...35) = "end"
+        │   │           ├── operator_loc: (5,2)-(5,4) = "->"
+        │   │           ├── opening_loc: (5,7)-(5,9) = "do"
+        │   │           ├── closing_loc: (5,10)-(5,13) = "end"
         │   │           ├── parameters:
-        │   │           │   @ BlockParametersNode (location: (26...28))
+        │   │           │   @ BlockParametersNode (location: (5,4)-(5,6))
         │   │           │   ├── parameters: ∅
         │   │           │   ├── locals: (length: 0)
-        │   │           │   ├── opening_loc: (26...27) = "("
-        │   │           │   └── closing_loc: (27...28) = ")"
+        │   │           │   ├── opening_loc: (5,4)-(5,5) = "("
+        │   │           │   └── closing_loc: (5,5)-(5,6) = ")"
         │   │           └── body: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "f"
-        └── @ CallNode (location: (37...46))
+        └── @ CallNode (location: (7,0)-(7,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (37...38) = "f"
+            ├── message_loc: (7,0)-(7,1) = "f"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (39...46))
+            │   @ ArgumentsNode (location: (7,2)-(7,9))
             │   └── arguments: (length: 1)
-            │       └── @ LambdaNode (location: (39...46))
+            │       └── @ LambdaNode (location: (7,2)-(7,9))
             │           ├── locals: []
-            │           ├── operator_loc: (39...41) = "->"
-            │           ├── opening_loc: (44...45) = "{"
-            │           ├── closing_loc: (45...46) = "}"
+            │           ├── operator_loc: (7,2)-(7,4) = "->"
+            │           ├── opening_loc: (7,7)-(7,8) = "{"
+            │           ├── closing_loc: (7,8)-(7,9) = "}"
             │           ├── parameters:
-            │           │   @ BlockParametersNode (location: (41...43))
+            │           │   @ BlockParametersNode (location: (7,4)-(7,6))
             │           │   ├── parameters: ∅
             │           │   ├── locals: (length: 0)
-            │           │   ├── opening_loc: (41...42) = "("
-            │           │   └── closing_loc: (42...43) = ")"
+            │           │   ├── opening_loc: (7,4)-(7,5) = "("
+            │           │   └── closing_loc: (7,5)-(7,6) = ")"
             │           └── body: ∅
             ├── closing_loc: ∅
             ├── block: ∅

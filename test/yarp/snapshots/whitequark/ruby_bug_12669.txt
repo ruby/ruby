@@ -1,27 +1,27 @@
-@ ProgramNode (location: (0...74))
+@ ProgramNode (location: (1,0)-(7,16))
 ├── locals: [:a, :b]
 └── statements:
-    @ StatementsNode (location: (0...74))
+    @ StatementsNode (location: (1,0)-(7,16))
     └── body: (length: 4)
-        ├── @ LocalVariableOperatorWriteNode (location: (0...18))
-        │   ├── name_loc: (0...1) = "a"
-        │   ├── operator_loc: (2...4) = "+="
+        ├── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,18))
+        │   ├── name_loc: (1,0)-(1,1) = "a"
+        │   ├── operator_loc: (1,2)-(1,4) = "+="
         │   ├── value:
-        │   │   @ LocalVariableOperatorWriteNode (location: (5...18))
-        │   │   ├── name_loc: (5...6) = "b"
-        │   │   ├── operator_loc: (7...9) = "+="
+        │   │   @ LocalVariableOperatorWriteNode (location: (1,5)-(1,18))
+        │   │   ├── name_loc: (1,5)-(1,6) = "b"
+        │   │   ├── operator_loc: (1,7)-(1,9) = "+="
         │   │   ├── value:
-        │   │   │   @ CallNode (location: (10...18))
+        │   │   │   @ CallNode (location: (1,10)-(1,18))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (10...15) = "raise"
+        │   │   │   ├── message_loc: (1,10)-(1,15) = "raise"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
-        │   │   │   │   @ ArgumentsNode (location: (16...18))
+        │   │   │   │   @ ArgumentsNode (location: (1,16)-(1,18))
         │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ SymbolNode (location: (16...18))
-        │   │   │   │           ├── opening_loc: (16...17) = ":"
-        │   │   │   │           ├── value_loc: (17...18) = "x"
+        │   │   │   │       └── @ SymbolNode (location: (1,16)-(1,18))
+        │   │   │   │           ├── opening_loc: (1,16)-(1,17) = ":"
+        │   │   │   │           ├── value_loc: (1,17)-(1,18) = "x"
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
@@ -34,56 +34,56 @@
         │   ├── name: :a
         │   ├── operator: :+
         │   └── depth: 0
-        ├── @ LocalVariableOperatorWriteNode (location: (20...37))
-        │   ├── name_loc: (20...21) = "a"
-        │   ├── operator_loc: (22...24) = "+="
+        ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,17))
+        │   ├── name_loc: (3,0)-(3,1) = "a"
+        │   ├── operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
-        │   │   @ LocalVariableWriteNode (location: (25...37))
+        │   │   @ LocalVariableWriteNode (location: (3,5)-(3,17))
         │   │   ├── name: :b
         │   │   ├── depth: 0
-        │   │   ├── name_loc: (25...26) = "b"
+        │   │   ├── name_loc: (3,5)-(3,6) = "b"
         │   │   ├── value:
-        │   │   │   @ CallNode (location: (29...37))
+        │   │   │   @ CallNode (location: (3,9)-(3,17))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (29...34) = "raise"
+        │   │   │   ├── message_loc: (3,9)-(3,14) = "raise"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
-        │   │   │   │   @ ArgumentsNode (location: (35...37))
+        │   │   │   │   @ ArgumentsNode (location: (3,15)-(3,17))
         │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ SymbolNode (location: (35...37))
-        │   │   │   │           ├── opening_loc: (35...36) = ":"
-        │   │   │   │           ├── value_loc: (36...37) = "x"
+        │   │   │   │       └── @ SymbolNode (location: (3,15)-(3,17))
+        │   │   │   │           ├── opening_loc: (3,15)-(3,16) = ":"
+        │   │   │   │           ├── value_loc: (3,16)-(3,17) = "x"
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
         │   │   │   └── name: "raise"
-        │   │   └── operator_loc: (27...28) = "="
+        │   │   └── operator_loc: (3,7)-(3,8) = "="
         │   ├── name: :a
         │   ├── operator: :+
         │   └── depth: 0
-        ├── @ LocalVariableWriteNode (location: (39...56))
+        ├── @ LocalVariableWriteNode (location: (5,0)-(5,17))
         │   ├── name: :a
         │   ├── depth: 0
-        │   ├── name_loc: (39...40) = "a"
+        │   ├── name_loc: (5,0)-(5,1) = "a"
         │   ├── value:
-        │   │   @ LocalVariableOperatorWriteNode (location: (43...56))
-        │   │   ├── name_loc: (43...44) = "b"
-        │   │   ├── operator_loc: (45...47) = "+="
+        │   │   @ LocalVariableOperatorWriteNode (location: (5,4)-(5,17))
+        │   │   ├── name_loc: (5,4)-(5,5) = "b"
+        │   │   ├── operator_loc: (5,6)-(5,8) = "+="
         │   │   ├── value:
-        │   │   │   @ CallNode (location: (48...56))
+        │   │   │   @ CallNode (location: (5,9)-(5,17))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (48...53) = "raise"
+        │   │   │   ├── message_loc: (5,9)-(5,14) = "raise"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
-        │   │   │   │   @ ArgumentsNode (location: (54...56))
+        │   │   │   │   @ ArgumentsNode (location: (5,15)-(5,17))
         │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ SymbolNode (location: (54...56))
-        │   │   │   │           ├── opening_loc: (54...55) = ":"
-        │   │   │   │           ├── value_loc: (55...56) = "x"
+        │   │   │   │       └── @ SymbolNode (location: (5,15)-(5,17))
+        │   │   │   │           ├── opening_loc: (5,15)-(5,16) = ":"
+        │   │   │   │           ├── value_loc: (5,16)-(5,17) = "x"
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
@@ -93,33 +93,33 @@
         │   │   ├── name: :b
         │   │   ├── operator: :+
         │   │   └── depth: 0
-        │   └── operator_loc: (41...42) = "="
-        └── @ LocalVariableWriteNode (location: (58...74))
+        │   └── operator_loc: (5,2)-(5,3) = "="
+        └── @ LocalVariableWriteNode (location: (7,0)-(7,16))
             ├── name: :a
             ├── depth: 0
-            ├── name_loc: (58...59) = "a"
+            ├── name_loc: (7,0)-(7,1) = "a"
             ├── value:
-            │   @ LocalVariableWriteNode (location: (62...74))
+            │   @ LocalVariableWriteNode (location: (7,4)-(7,16))
             │   ├── name: :b
             │   ├── depth: 0
-            │   ├── name_loc: (62...63) = "b"
+            │   ├── name_loc: (7,4)-(7,5) = "b"
             │   ├── value:
-            │   │   @ CallNode (location: (66...74))
+            │   │   @ CallNode (location: (7,8)-(7,16))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (66...71) = "raise"
+            │   │   ├── message_loc: (7,8)-(7,13) = "raise"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments:
-            │   │   │   @ ArgumentsNode (location: (72...74))
+            │   │   │   @ ArgumentsNode (location: (7,14)-(7,16))
             │   │   │   └── arguments: (length: 1)
-            │   │   │       └── @ SymbolNode (location: (72...74))
-            │   │   │           ├── opening_loc: (72...73) = ":"
-            │   │   │           ├── value_loc: (73...74) = "x"
+            │   │   │       └── @ SymbolNode (location: (7,14)-(7,16))
+            │   │   │           ├── opening_loc: (7,14)-(7,15) = ":"
+            │   │   │           ├── value_loc: (7,15)-(7,16) = "x"
             │   │   │           ├── closing_loc: ∅
             │   │   │           └── unescaped: "x"
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
             │   │   └── name: "raise"
-            │   └── operator_loc: (64...65) = "="
-            └── operator_loc: (60...61) = "="
+            │   └── operator_loc: (7,6)-(7,7) = "="
+            └── operator_loc: (7,2)-(7,3) = "="

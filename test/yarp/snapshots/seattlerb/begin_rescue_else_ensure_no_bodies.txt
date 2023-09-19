@@ -1,27 +1,27 @@
-@ ProgramNode (location: (0...32))
+@ ProgramNode (location: (1,0)-(9,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...32))
+    @ StatementsNode (location: (1,0)-(9,3))
     └── body: (length: 1)
-        └── @ BeginNode (location: (0...32))
-            ├── begin_keyword_loc: (0...5) = "begin"
+        └── @ BeginNode (location: (1,0)-(9,3))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements: ∅
             ├── rescue_clause:
-            │   @ RescueNode (location: (7...13))
-            │   ├── keyword_loc: (7...13) = "rescue"
+            │   @ RescueNode (location: (3,0)-(3,6))
+            │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
             │   ├── exceptions: (length: 0)
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements: ∅
             │   └── consequent: ∅
             ├── else_clause:
-            │   @ ElseNode (location: (15...27))
-            │   ├── else_keyword_loc: (15...19) = "else"
+            │   @ ElseNode (location: (5,0)-(7,6))
+            │   ├── else_keyword_loc: (5,0)-(5,4) = "else"
             │   ├── statements: ∅
-            │   └── end_keyword_loc: (21...27) = "ensure"
+            │   └── end_keyword_loc: (7,0)-(7,6) = "ensure"
             ├── ensure_clause:
-            │   @ EnsureNode (location: (21...32))
-            │   ├── ensure_keyword_loc: (21...27) = "ensure"
+            │   @ EnsureNode (location: (7,0)-(9,3))
+            │   ├── ensure_keyword_loc: (7,0)-(7,6) = "ensure"
             │   ├── statements: ∅
-            │   └── end_keyword_loc: (29...32) = "end"
-            └── end_keyword_loc: (29...32) = "end"
+            │   └── end_keyword_loc: (9,0)-(9,3) = "end"
+            └── end_keyword_loc: (9,0)-(9,3) = "end"

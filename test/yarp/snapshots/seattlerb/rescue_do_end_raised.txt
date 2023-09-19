@@ -1,29 +1,29 @@
-@ ProgramNode (location: (0...35))
+@ ProgramNode (location: (1,0)-(5,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...35))
+    @ StatementsNode (location: (1,0)-(5,3))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...35))
+        └── @ CallNode (location: (1,0)-(5,3))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...3) = "tap"
+            ├── message_loc: (1,0)-(1,3) = "tap"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block:
-            │   @ BlockNode (location: (4...35))
+            │   @ BlockNode (location: (1,4)-(5,3))
             │   ├── locals: []
             │   ├── parameters: ∅
             │   ├── body:
-            │   │   @ BeginNode (location: (9...35))
+            │   │   @ BeginNode (location: (2,2)-(5,3))
             │   │   ├── begin_keyword_loc: ∅
             │   │   ├── statements:
-            │   │   │   @ StatementsNode (location: (9...14))
+            │   │   │   @ StatementsNode (location: (2,2)-(2,7))
             │   │   │   └── body: (length: 1)
-            │   │   │       └── @ CallNode (location: (9...14))
+            │   │   │       └── @ CallNode (location: (2,2)-(2,7))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
-            │   │   │           ├── message_loc: (9...14) = "raise"
+            │   │   │           ├── message_loc: (2,2)-(2,7) = "raise"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
@@ -33,19 +33,19 @@
             │   │   ├── rescue_clause: ∅
             │   │   ├── else_clause: ∅
             │   │   ├── ensure_clause:
-            │   │   │   @ EnsureNode (location: (15...35))
-            │   │   │   ├── ensure_keyword_loc: (15...21) = "ensure"
+            │   │   │   @ EnsureNode (location: (3,0)-(5,3))
+            │   │   │   ├── ensure_keyword_loc: (3,0)-(3,6) = "ensure"
             │   │   │   ├── statements:
-            │   │   │   │   @ StatementsNode (location: (24...31))
+            │   │   │   │   @ StatementsNode (location: (4,2)-(4,9))
             │   │   │   │   └── body: (length: 1)
-            │   │   │   │       └── @ SymbolNode (location: (24...31))
-            │   │   │   │           ├── opening_loc: (24...25) = ":"
-            │   │   │   │           ├── value_loc: (25...31) = "ensure"
+            │   │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
+            │   │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
+            │   │   │   │           ├── value_loc: (4,3)-(4,9) = "ensure"
             │   │   │   │           ├── closing_loc: ∅
             │   │   │   │           └── unescaped: "ensure"
-            │   │   │   └── end_keyword_loc: (32...35) = "end"
-            │   │   └── end_keyword_loc: (32...35) = "end"
-            │   ├── opening_loc: (4...6) = "do"
-            │   └── closing_loc: (32...35) = "end"
+            │   │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
+            │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
+            │   ├── opening_loc: (1,4)-(1,6) = "do"
+            │   └── closing_loc: (5,0)-(5,3) = "end"
             ├── flags: ∅
             └── name: "tap"

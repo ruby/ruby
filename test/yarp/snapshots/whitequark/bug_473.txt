@@ -1,30 +1,30 @@
-@ ProgramNode (location: (0...9))
+@ ProgramNode (location: (1,0)-(1,9))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...9))
+    @ StatementsNode (location: (1,0)-(1,9))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...9))
+        └── @ CallNode (location: (1,0)-(1,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "m"
+            ├── message_loc: (1,0)-(1,1) = "m"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (2...9))
+            │   @ ArgumentsNode (location: (1,2)-(1,9))
             │   └── arguments: (length: 1)
-            │       └── @ InterpolatedStringNode (location: (2...9))
-            │           ├── opening_loc: (2...3) = "\""
+            │       └── @ InterpolatedStringNode (location: (1,2)-(1,9))
+            │           ├── opening_loc: (1,2)-(1,3) = "\""
             │           ├── parts: (length: 1)
-            │           │   └── @ EmbeddedStatementsNode (location: (3...8))
-            │           │       ├── opening_loc: (3...5) = "\#{"
+            │           │   └── @ EmbeddedStatementsNode (location: (1,3)-(1,8))
+            │           │       ├── opening_loc: (1,3)-(1,5) = "\#{"
             │           │       ├── statements:
-            │           │       │   @ StatementsNode (location: (5...7))
+            │           │       │   @ StatementsNode (location: (1,5)-(1,7))
             │           │       │   └── body: (length: 1)
-            │           │       │       └── @ ArrayNode (location: (5...7))
+            │           │       │       └── @ ArrayNode (location: (1,5)-(1,7))
             │           │       │           ├── elements: (length: 0)
-            │           │       │           ├── opening_loc: (5...6) = "["
-            │           │       │           └── closing_loc: (6...7) = "]"
-            │           │       └── closing_loc: (7...8) = "}"
-            │           └── closing_loc: (8...9) = "\""
+            │           │       │           ├── opening_loc: (1,5)-(1,6) = "["
+            │           │       │           └── closing_loc: (1,6)-(1,7) = "]"
+            │           │       └── closing_loc: (1,7)-(1,8) = "}"
+            │           └── closing_loc: (1,8)-(1,9) = "\""
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

@@ -1,366 +1,366 @@
-@ ProgramNode (location: (0...313))
+@ ProgramNode (location: (1,0)-(72,8))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...313))
+    @ StatementsNode (location: (1,0)-(72,8))
     └── body: (length: 16)
-        ├── @ CallNode (location: (0...8))
+        ├── @ CallNode (location: (1,0)-(1,8))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...1) = "p"
+        │   ├── message_loc: (1,0)-(1,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (2...8))
+        │   │   @ ArgumentsNode (location: (1,2)-(1,8))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (2...8))
-        │   │           ├── opening_loc: (2...8) = "<<~\"E\""
+        │   │       └── @ InterpolatedStringNode (location: (1,2)-(1,8))
+        │   │           ├── opening_loc: (1,2)-(1,8) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
-        │   │           │   ├── @ StringNode (location: (9...17))
+        │   │           │   ├── @ StringNode (location: (2,0)-(3,2))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (9...17) = "    x\n  "
+        │   │           │   │   ├── content_loc: (2,0)-(3,2) = "    x\n  "
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  x\n"
-        │   │           │   ├── @ EmbeddedStatementsNode (location: (17...25))
-        │   │           │   │   ├── opening_loc: (17...19) = "\#{"
+        │   │           │   ├── @ EmbeddedStatementsNode (location: (3,2)-(3,10))
+        │   │           │   │   ├── opening_loc: (3,2)-(3,4) = "\#{"
         │   │           │   │   ├── statements:
-        │   │           │   │   │   @ StatementsNode (location: (19...24))
+        │   │           │   │   │   @ StatementsNode (location: (3,4)-(3,9))
         │   │           │   │   │   └── body: (length: 1)
-        │   │           │   │   │       └── @ StringNode (location: (19...24))
+        │   │           │   │   │       └── @ StringNode (location: (3,4)-(3,9))
         │   │           │   │   │           ├── flags: ∅
-        │   │           │   │   │           ├── opening_loc: (19...20) = "\""
-        │   │           │   │   │           ├── content_loc: (20...23) = "  y"
-        │   │           │   │   │           ├── closing_loc: (23...24) = "\""
+        │   │           │   │   │           ├── opening_loc: (3,4)-(3,5) = "\""
+        │   │           │   │   │           ├── content_loc: (3,5)-(3,8) = "  y"
+        │   │           │   │   │           ├── closing_loc: (3,8)-(3,9) = "\""
         │   │           │   │   │           └── unescaped: "  y"
-        │   │           │   │   └── closing_loc: (24...25) = "}"
-        │   │           │   └── @ StringNode (location: (25...26))
+        │   │           │   │   └── closing_loc: (3,9)-(3,10) = "}"
+        │   │           │   └── @ StringNode (location: (3,10)-(3,0))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (25...26) = "\n"
+        │   │           │       ├── content_loc: (3,10)-(3,0) = "\n"
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
-        │   │           └── closing_loc: (26...28) = "E\n"
+        │   │           └── closing_loc: (4,0)-(4,0) = "E\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (29...37))
+        ├── @ CallNode (location: (6,0)-(6,8))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (29...30) = "p"
+        │   ├── message_loc: (6,0)-(6,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (31...37))
+        │   │   @ ArgumentsNode (location: (6,2)-(6,8))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (31...37))
-        │   │           ├── opening_loc: (31...37) = "<<~\"E\""
+        │   │       └── @ InterpolatedStringNode (location: (6,2)-(6,8))
+        │   │           ├── opening_loc: (6,2)-(6,8) = "<<~\"E\""
         │   │           ├── parts: (length: 3)
-        │   │           │   ├── @ StringNode (location: (38...46))
+        │   │           │   ├── @ StringNode (location: (7,0)-(8,2))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (38...46) = "    x\n  "
+        │   │           │   │   ├── content_loc: (7,0)-(8,2) = "    x\n  "
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "  x\n"
-        │   │           │   ├── @ EmbeddedStatementsNode (location: (46...52))
-        │   │           │   │   ├── opening_loc: (46...48) = "\#{"
+        │   │           │   ├── @ EmbeddedStatementsNode (location: (8,2)-(8,8))
+        │   │           │   │   ├── opening_loc: (8,2)-(8,4) = "\#{"
         │   │           │   │   ├── statements:
-        │   │           │   │   │   @ StatementsNode (location: (48...51))
+        │   │           │   │   │   @ StatementsNode (location: (8,4)-(8,7))
         │   │           │   │   │   └── body: (length: 1)
-        │   │           │   │   │       └── @ CallNode (location: (48...51))
+        │   │           │   │   │       └── @ CallNode (location: (8,4)-(8,7))
         │   │           │   │   │           ├── receiver: ∅
         │   │           │   │   │           ├── call_operator_loc: ∅
-        │   │           │   │   │           ├── message_loc: (48...51) = "foo"
+        │   │           │   │   │           ├── message_loc: (8,4)-(8,7) = "foo"
         │   │           │   │   │           ├── opening_loc: ∅
         │   │           │   │   │           ├── arguments: ∅
         │   │           │   │   │           ├── closing_loc: ∅
         │   │           │   │   │           ├── block: ∅
         │   │           │   │   │           ├── flags: variable_call
         │   │           │   │   │           └── name: "foo"
-        │   │           │   │   └── closing_loc: (51...52) = "}"
-        │   │           │   └── @ StringNode (location: (52...53))
+        │   │           │   │   └── closing_loc: (8,7)-(8,8) = "}"
+        │   │           │   └── @ StringNode (location: (8,8)-(8,0))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (52...53) = "\n"
+        │   │           │       ├── content_loc: (8,8)-(8,0) = "\n"
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
-        │   │           └── closing_loc: (53...55) = "E\n"
+        │   │           └── closing_loc: (9,0)-(9,0) = "E\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (56...62))
+        ├── @ CallNode (location: (11,0)-(11,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (56...57) = "p"
+        │   ├── message_loc: (11,0)-(11,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (58...62))
+        │   │   @ ArgumentsNode (location: (11,2)-(11,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (58...62))
+        │   │       └── @ StringNode (location: (11,2)-(11,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (58...62) = "<<~E"
-        │   │           ├── content_loc: (63...76) = "\tx\n        y\n"
-        │   │           ├── closing_loc: (76...78) = "E\n"
+        │   │           ├── opening_loc: (11,2)-(11,6) = "<<~E"
+        │   │           ├── content_loc: (12,0)-(13,0) = "\tx\n        y\n"
+        │   │           ├── closing_loc: (14,0)-(14,0) = "E\n"
         │   │           └── unescaped: "x\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (79...85))
+        ├── @ CallNode (location: (16,0)-(16,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (79...80) = "p"
+        │   ├── message_loc: (16,0)-(16,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (81...85))
+        │   │   @ ArgumentsNode (location: (16,2)-(16,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (81...85))
+        │   │       └── @ StringNode (location: (16,2)-(16,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (81...85) = "<<~E"
-        │   │           ├── content_loc: (86...95) = "\tx\n    y\n"
-        │   │           ├── closing_loc: (95...97) = "E\n"
+        │   │           ├── opening_loc: (16,2)-(16,6) = "<<~E"
+        │   │           ├── content_loc: (17,0)-(18,0) = "\tx\n    y\n"
+        │   │           ├── closing_loc: (19,0)-(19,0) = "E\n"
         │   │           └── unescaped: "\tx\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (98...104))
+        ├── @ CallNode (location: (21,0)-(21,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (98...99) = "p"
+        │   ├── message_loc: (21,0)-(21,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (100...104))
+        │   │   @ ArgumentsNode (location: (21,2)-(21,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (100...104))
+        │   │       └── @ StringNode (location: (21,2)-(21,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (100...104) = "<<~E"
-        │   │           ├── content_loc: (105...122) = "    \tx\n        y\n"
-        │   │           ├── closing_loc: (122...124) = "E\n"
+        │   │           ├── opening_loc: (21,2)-(21,6) = "<<~E"
+        │   │           ├── content_loc: (22,0)-(23,0) = "    \tx\n        y\n"
+        │   │           ├── closing_loc: (24,0)-(24,0) = "E\n"
         │   │           └── unescaped: "x\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (125...131))
+        ├── @ CallNode (location: (26,0)-(26,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (125...126) = "p"
+        │   ├── message_loc: (26,0)-(26,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (127...131))
+        │   │   @ ArgumentsNode (location: (26,2)-(26,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (127...131))
+        │   │       └── @ StringNode (location: (26,2)-(26,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (127...131) = "<<~E"
-        │   │           ├── content_loc: (132...146) = "        \tx\n\ty\n"
-        │   │           ├── closing_loc: (146...148) = "E\n"
+        │   │           ├── opening_loc: (26,2)-(26,6) = "<<~E"
+        │   │           ├── content_loc: (27,0)-(28,0) = "        \tx\n\ty\n"
+        │   │           ├── closing_loc: (29,0)-(29,0) = "E\n"
         │   │           └── unescaped: "\tx\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (149...155))
+        ├── @ CallNode (location: (31,0)-(31,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (149...150) = "p"
+        │   ├── message_loc: (31,0)-(31,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (151...155))
+        │   │   @ ArgumentsNode (location: (31,2)-(31,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (151...155))
+        │   │       └── @ StringNode (location: (31,2)-(31,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (151...155) = "<<~E"
-        │   │           ├── content_loc: (156...168) = "    x\n  \\\ty\n"
-        │   │           ├── closing_loc: (168...170) = "E\n"
+        │   │           ├── opening_loc: (31,2)-(31,6) = "<<~E"
+        │   │           ├── content_loc: (32,0)-(33,0) = "    x\n  \\\ty\n"
+        │   │           ├── closing_loc: (34,0)-(34,0) = "E\n"
         │   │           └── unescaped: "  x\n\ty\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (171...177))
+        ├── @ CallNode (location: (36,0)-(36,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (171...172) = "p"
+        │   ├── message_loc: (36,0)-(36,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (173...177))
+        │   │   @ ArgumentsNode (location: (36,2)-(36,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (173...177))
+        │   │       └── @ StringNode (location: (36,2)-(36,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (173...177) = "<<~E"
-        │   │           ├── content_loc: (178...191) = "    x\n  \\  y\n"
-        │   │           ├── closing_loc: (191...193) = "E\n"
+        │   │           ├── opening_loc: (36,2)-(36,6) = "<<~E"
+        │   │           ├── content_loc: (37,0)-(38,0) = "    x\n  \\  y\n"
+        │   │           ├── closing_loc: (39,0)-(39,0) = "E\n"
         │   │           └── unescaped: "  x\n  y\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (194...200))
+        ├── @ CallNode (location: (41,0)-(41,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (194...195) = "p"
+        │   ├── message_loc: (41,0)-(41,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (196...200))
+        │   │   @ ArgumentsNode (location: (41,2)-(41,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (196...200))
+        │   │       └── @ StringNode (location: (41,2)-(41,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (196...200) = "<<~E"
-        │   │           ├── content_loc: (201...201) = ""
-        │   │           ├── closing_loc: (201...205) = "  E\n"
+        │   │           ├── opening_loc: (41,2)-(41,6) = "<<~E"
+        │   │           ├── content_loc: (42,0)-(41,0) = ""
+        │   │           ├── closing_loc: (42,0)-(42,0) = "  E\n"
         │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (206...212))
+        ├── @ CallNode (location: (44,0)-(44,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (206...207) = "p"
+        │   ├── message_loc: (44,0)-(44,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (208...212))
+        │   │   @ ArgumentsNode (location: (44,2)-(44,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (208...212))
+        │   │       └── @ StringNode (location: (44,2)-(44,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (208...212) = "<<~E"
-        │   │           ├── content_loc: (213...220) = "  x\n\ny\n"
-        │   │           ├── closing_loc: (220...222) = "E\n"
+        │   │           ├── opening_loc: (44,2)-(44,6) = "<<~E"
+        │   │           ├── content_loc: (45,0)-(47,0) = "  x\n\ny\n"
+        │   │           ├── closing_loc: (48,0)-(48,0) = "E\n"
         │   │           └── unescaped: "  x\n\ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (223...229))
+        ├── @ CallNode (location: (50,0)-(50,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (223...224) = "p"
+        │   ├── message_loc: (50,0)-(50,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (225...229))
+        │   │   @ ArgumentsNode (location: (50,2)-(50,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (225...229))
+        │   │       └── @ StringNode (location: (50,2)-(50,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (225...229) = "<<~E"
-        │   │           ├── content_loc: (230...243) = "  x\n    \n  y\n"
-        │   │           ├── closing_loc: (243...245) = "E\n"
+        │   │           ├── opening_loc: (50,2)-(50,6) = "<<~E"
+        │   │           ├── content_loc: (51,0)-(53,0) = "  x\n    \n  y\n"
+        │   │           ├── closing_loc: (54,0)-(54,0) = "E\n"
         │   │           └── unescaped: "x\n  \ny\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (246...252))
+        ├── @ CallNode (location: (56,0)-(56,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (246...247) = "p"
+        │   ├── message_loc: (56,0)-(56,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (248...252))
+        │   │   @ ArgumentsNode (location: (56,2)-(56,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (248...252))
+        │   │       └── @ StringNode (location: (56,2)-(56,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (248...252) = "<<~E"
-        │   │           ├── content_loc: (253...263) = "  x\n    y\n"
-        │   │           ├── closing_loc: (263...265) = "E\n"
+        │   │           ├── opening_loc: (56,2)-(56,6) = "<<~E"
+        │   │           ├── content_loc: (57,0)-(58,0) = "  x\n    y\n"
+        │   │           ├── closing_loc: (59,0)-(59,0) = "E\n"
         │   │           └── unescaped: "x\n  y\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (266...272))
+        ├── @ CallNode (location: (61,0)-(61,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (266...267) = "p"
+        │   ├── message_loc: (61,0)-(61,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (268...272))
+        │   │   @ ArgumentsNode (location: (61,2)-(61,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (268...272))
+        │   │       └── @ StringNode (location: (61,2)-(61,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (268...272) = "<<~E"
-        │   │           ├── content_loc: (273...277) = "  x\n"
-        │   │           ├── closing_loc: (277...279) = "E\n"
+        │   │           ├── opening_loc: (61,2)-(61,6) = "<<~E"
+        │   │           ├── content_loc: (62,0)-(62,0) = "  x\n"
+        │   │           ├── closing_loc: (63,0)-(63,0) = "E\n"
         │   │           └── unescaped: "x\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (280...286))
+        ├── @ CallNode (location: (65,0)-(65,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (280...281) = "p"
+        │   ├── message_loc: (65,0)-(65,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (282...286))
+        │   │   @ ArgumentsNode (location: (65,2)-(65,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (282...286))
+        │   │       └── @ StringNode (location: (65,2)-(65,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (282...286) = "<<~E"
-        │   │           ├── content_loc: (287...292) = "  ð\n"
-        │   │           ├── closing_loc: (292...294) = "E\n"
+        │   │           ├── opening_loc: (65,2)-(65,6) = "<<~E"
+        │   │           ├── content_loc: (66,0)-(66,0) = "  ð\n"
+        │   │           ├── closing_loc: (67,0)-(67,0) = "E\n"
         │   │           └── unescaped: "ð\n"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        ├── @ CallNode (location: (295...301))
+        ├── @ CallNode (location: (69,0)-(69,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (295...296) = "p"
+        │   ├── message_loc: (69,0)-(69,1) = "p"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (297...301))
+        │   │   @ ArgumentsNode (location: (69,2)-(69,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (297...301))
+        │   │       └── @ StringNode (location: (69,2)-(69,6))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (297...301) = "<<~E"
-        │   │           ├── content_loc: (302...302) = ""
-        │   │           ├── closing_loc: (302...304) = "E\n"
+        │   │           ├── opening_loc: (69,2)-(69,6) = "<<~E"
+        │   │           ├── content_loc: (70,0)-(69,0) = ""
+        │   │           ├── closing_loc: (70,0)-(70,0) = "E\n"
         │   │           └── unescaped: ""
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "p"
-        └── @ CallNode (location: (305...313))
+        └── @ CallNode (location: (72,0)-(72,8))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (305...306) = "p"
+            ├── message_loc: (72,0)-(72,1) = "p"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (307...313))
+            │   @ ArgumentsNode (location: (72,2)-(72,8))
             │   └── arguments: (length: 1)
-            │       └── @ InterpolatedXStringNode (location: (307...313))
-            │           ├── opening_loc: (307...313) = "<<~`E`"
+            │       └── @ InterpolatedXStringNode (location: (72,2)-(72,8))
+            │           ├── opening_loc: (72,2)-(72,8) = "<<~`E`"
             │           ├── parts: (length: 3)
-            │           │   ├── @ StringNode (location: (314...322))
+            │           │   ├── @ StringNode (location: (73,0)-(74,2))
             │           │   │   ├── flags: ∅
             │           │   │   ├── opening_loc: ∅
-            │           │   │   ├── content_loc: (314...322) = "    x\n  "
+            │           │   │   ├── content_loc: (73,0)-(74,2) = "    x\n  "
             │           │   │   ├── closing_loc: ∅
             │           │   │   └── unescaped: "  x\n"
-            │           │   ├── @ EmbeddedStatementsNode (location: (322...328))
-            │           │   │   ├── opening_loc: (322...324) = "\#{"
+            │           │   ├── @ EmbeddedStatementsNode (location: (74,2)-(74,8))
+            │           │   │   ├── opening_loc: (74,2)-(74,4) = "\#{"
             │           │   │   ├── statements:
-            │           │   │   │   @ StatementsNode (location: (324...327))
+            │           │   │   │   @ StatementsNode (location: (74,4)-(74,7))
             │           │   │   │   └── body: (length: 1)
-            │           │   │   │       └── @ CallNode (location: (324...327))
+            │           │   │   │       └── @ CallNode (location: (74,4)-(74,7))
             │           │   │   │           ├── receiver: ∅
             │           │   │   │           ├── call_operator_loc: ∅
-            │           │   │   │           ├── message_loc: (324...327) = "foo"
+            │           │   │   │           ├── message_loc: (74,4)-(74,7) = "foo"
             │           │   │   │           ├── opening_loc: ∅
             │           │   │   │           ├── arguments: ∅
             │           │   │   │           ├── closing_loc: ∅
             │           │   │   │           ├── block: ∅
             │           │   │   │           ├── flags: variable_call
             │           │   │   │           └── name: "foo"
-            │           │   │   └── closing_loc: (327...328) = "}"
-            │           │   └── @ StringNode (location: (328...329))
+            │           │   │   └── closing_loc: (74,7)-(74,8) = "}"
+            │           │   └── @ StringNode (location: (74,8)-(74,0))
             │           │       ├── flags: ∅
             │           │       ├── opening_loc: ∅
-            │           │       ├── content_loc: (328...329) = "\n"
+            │           │       ├── content_loc: (74,8)-(74,0) = "\n"
             │           │       ├── closing_loc: ∅
             │           │       └── unescaped: "\n"
-            │           └── closing_loc: (329...331) = "E\n"
+            │           └── closing_loc: (75,0)-(75,0) = "E\n"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

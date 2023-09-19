@@ -1,14 +1,14 @@
-@ ProgramNode (location: (0...51))
+@ ProgramNode (location: (1,0)-(7,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...51))
+    @ StatementsNode (location: (1,0)-(7,3))
     └── body: (length: 2)
-        ├── @ DefNode (location: (0...23))
+        ├── @ DefNode (location: (1,0)-(3,3))
         │   ├── name: :foo
-        │   ├── name_loc: (4...7) = "foo"
+        │   ├── name_loc: (1,4)-(1,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters:
-        │   │   @ ParametersNode (location: (8...9))
+        │   │   @ ParametersNode (location: (1,8)-(1,9))
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -16,41 +16,41 @@
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
-        │   │       @ BlockParameterNode (location: (8...9))
+        │   │       @ BlockParameterNode (location: (1,8)-(1,9))
         │   │       ├── name: nil
         │   │       ├── name_loc: ∅
-        │   │       └── operator_loc: (8...9) = "&"
+        │   │       └── operator_loc: (1,8)-(1,9) = "&"
         │   ├── body:
-        │   │   @ StatementsNode (location: (13...18))
+        │   │   @ StatementsNode (location: (2,2)-(2,7))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (13...18))
+        │   │       └── @ CallNode (location: (2,2)-(2,7))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (13...16) = "bar"
-        │   │           ├── opening_loc: (16...17) = "("
+        │   │           ├── message_loc: (2,2)-(2,5) = "bar"
+        │   │           ├── opening_loc: (2,5)-(2,6) = "("
         │   │           ├── arguments: ∅
-        │   │           ├── closing_loc: (18...19) = ")"
+        │   │           ├── closing_loc: (2,7)-(2,8) = ")"
         │   │           ├── block:
-        │   │           │   @ BlockArgumentNode (location: (17...18))
+        │   │           │   @ BlockArgumentNode (location: (2,6)-(2,7))
         │   │           │   ├── expression: ∅
-        │   │           │   └── operator_loc: (17...18) = "&"
+        │   │           │   └── operator_loc: (2,6)-(2,7) = "&"
         │   │           ├── flags: ∅
         │   │           └── name: "bar"
         │   ├── locals: [:&]
-        │   ├── def_keyword_loc: (0...3) = "def"
+        │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
-        │   ├── lparen_loc: (7...8) = "("
-        │   ├── rparen_loc: (9...10) = ")"
+        │   ├── lparen_loc: (1,7)-(1,8) = "("
+        │   ├── rparen_loc: (1,9)-(1,10) = ")"
         │   ├── equal_loc: ∅
-        │   └── end_keyword_loc: (20...23) = "end"
-        └── @ DefNode (location: (25...51))
+        │   └── end_keyword_loc: (3,0)-(3,3) = "end"
+        └── @ DefNode (location: (5,0)-(7,3))
             ├── name: :foo
-            ├── name_loc: (29...32) = "foo"
+            ├── name_loc: (5,4)-(5,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (33...37))
+            │   @ ParametersNode (location: (5,8)-(5,12))
             │   ├── requireds: (length: 1)
-            │   │   └── @ RequiredParameterNode (location: (33...34))
+            │   │   └── @ RequiredParameterNode (location: (5,8)-(5,9))
             │   │       └── name: :a
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -58,30 +58,30 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block:
-            │       @ BlockParameterNode (location: (36...37))
+            │       @ BlockParameterNode (location: (5,11)-(5,12))
             │       ├── name: nil
             │       ├── name_loc: ∅
-            │       └── operator_loc: (36...37) = "&"
+            │       └── operator_loc: (5,11)-(5,12) = "&"
             ├── body:
-            │   @ StatementsNode (location: (41...46))
+            │   @ StatementsNode (location: (6,2)-(6,7))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (41...46))
+            │       └── @ CallNode (location: (6,2)-(6,7))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (41...44) = "bar"
-            │           ├── opening_loc: (44...45) = "("
+            │           ├── message_loc: (6,2)-(6,5) = "bar"
+            │           ├── opening_loc: (6,5)-(6,6) = "("
             │           ├── arguments: ∅
-            │           ├── closing_loc: (46...47) = ")"
+            │           ├── closing_loc: (6,7)-(6,8) = ")"
             │           ├── block:
-            │           │   @ BlockArgumentNode (location: (45...46))
+            │           │   @ BlockArgumentNode (location: (6,6)-(6,7))
             │           │   ├── expression: ∅
-            │           │   └── operator_loc: (45...46) = "&"
+            │           │   └── operator_loc: (6,6)-(6,7) = "&"
             │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:a, :&]
-            ├── def_keyword_loc: (25...28) = "def"
+            ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (32...33) = "("
-            ├── rparen_loc: (37...38) = ")"
+            ├── lparen_loc: (5,7)-(5,8) = "("
+            ├── rparen_loc: (5,12)-(5,13) = ")"
             ├── equal_loc: ∅
-            └── end_keyword_loc: (48...51) = "end"
+            └── end_keyword_loc: (7,0)-(7,3) = "end"

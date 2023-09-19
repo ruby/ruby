@@ -1,18 +1,18 @@
-@ ProgramNode (location: (0...20))
+@ ProgramNode (location: (1,0)-(1,20))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...20))
+    @ StatementsNode (location: (1,0)-(1,20))
     └── body: (length: 1)
-        └── @ ClassNode (location: (0...20))
+        └── @ ClassNode (location: (1,0)-(1,20))
             ├── locals: []
-            ├── class_keyword_loc: (0...5) = "class"
+            ├── class_keyword_loc: (1,0)-(1,5) = "class"
             ├── constant_path:
-            │   @ ConstantReadNode (location: (6...9))
+            │   @ ConstantReadNode (location: (1,6)-(1,9))
             │   └── name: :Foo
-            ├── inheritance_operator_loc: (10...11) = "<"
+            ├── inheritance_operator_loc: (1,10)-(1,11) = "<"
             ├── superclass:
-            │   @ ConstantReadNode (location: (12...15))
+            │   @ ConstantReadNode (location: (1,12)-(1,15))
             │   └── name: :Bar
             ├── body: ∅
-            ├── end_keyword_loc: (17...20) = "end"
+            ├── end_keyword_loc: (1,17)-(1,20) = "end"
             └── name: :Foo

@@ -1,11 +1,11 @@
-@ ProgramNode (location: (0...4))
+@ ProgramNode (location: (1,0)-(1,4))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...4))
+    @ StatementsNode (location: (1,0)-(1,4))
     └── body: (length: 1)
-        └── @ StringNode (location: (0...4))
+        └── @ StringNode (location: (1,0)-(1,4))
             ├── flags: ∅
-            ├── opening_loc: (0...4) = "<<~A"
-            ├── content_loc: (5...7) = "a\n"
-            ├── closing_loc: (7...9) = "A\n"
+            ├── opening_loc: (1,0)-(1,4) = "<<~A"
+            ├── content_loc: (2,0)-(2,0) = "a\n"
+            ├── closing_loc: (3,0)-(3,0) = "A\n"
             └── unescaped: "a\n"

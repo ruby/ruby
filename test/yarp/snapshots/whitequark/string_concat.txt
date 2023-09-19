@@ -1,29 +1,29 @@
-@ ProgramNode (location: (0...14))
+@ ProgramNode (location: (1,0)-(1,14))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...14))
+    @ StatementsNode (location: (1,0)-(1,14))
     └── body: (length: 1)
-        └── @ StringConcatNode (location: (0...14))
+        └── @ StringConcatNode (location: (1,0)-(1,14))
             ├── left:
-            │   @ InterpolatedStringNode (location: (0...8))
-            │   ├── opening_loc: (0...1) = "\""
+            │   @ InterpolatedStringNode (location: (1,0)-(1,8))
+            │   ├── opening_loc: (1,0)-(1,1) = "\""
             │   ├── parts: (length: 2)
-            │   │   ├── @ StringNode (location: (1...4))
+            │   │   ├── @ StringNode (location: (1,1)-(1,4))
             │   │   │   ├── flags: ∅
             │   │   │   ├── opening_loc: ∅
-            │   │   │   ├── content_loc: (1...4) = "foo"
+            │   │   │   ├── content_loc: (1,1)-(1,4) = "foo"
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── unescaped: "foo"
-            │   │   └── @ EmbeddedVariableNode (location: (4...7))
-            │   │       ├── operator_loc: (4...5) = "#"
+            │   │   └── @ EmbeddedVariableNode (location: (1,4)-(1,7))
+            │   │       ├── operator_loc: (1,4)-(1,5) = "#"
             │   │       └── variable:
-            │   │           @ InstanceVariableReadNode (location: (5...7))
+            │   │           @ InstanceVariableReadNode (location: (1,5)-(1,7))
             │   │           └── name: :@a
-            │   └── closing_loc: (7...8) = "\""
+            │   └── closing_loc: (1,7)-(1,8) = "\""
             └── right:
-                @ StringNode (location: (9...14))
+                @ StringNode (location: (1,9)-(1,14))
                 ├── flags: ∅
-                ├── opening_loc: (9...10) = "\""
-                ├── content_loc: (10...13) = "bar"
-                ├── closing_loc: (13...14) = "\""
+                ├── opening_loc: (1,9)-(1,10) = "\""
+                ├── content_loc: (1,10)-(1,13) = "bar"
+                ├── closing_loc: (1,13)-(1,14) = "\""
                 └── unescaped: "bar"

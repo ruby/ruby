@@ -1,126 +1,126 @@
-@ ProgramNode (location: (0...689))
+@ ProgramNode (location: (1,0)-(92,1))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...689))
+    @ StatementsNode (location: (1,0)-(92,1))
     └── body: (length: 16)
-        ├── @ ArrayNode (location: (0...7))
+        ├── @ ArrayNode (location: (1,0)-(4,1))
         │   ├── elements: (length: 0)
-        │   ├── opening_loc: (0...3) = "%I["
-        │   └── closing_loc: (6...7) = "]"
-        ├── @ ArrayNode (location: (9...26))
+        │   ├── opening_loc: (1,0)-(1,3) = "%I["
+        │   └── closing_loc: (4,0)-(4,1) = "]"
+        ├── @ ArrayNode (location: (6,0)-(9,1))
         │   ├── elements: (length: 2)
-        │   │   ├── @ SymbolNode (location: (13...18))
+        │   │   ├── @ SymbolNode (location: (7,0)-(7,5))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (13...18) = "line2"
+        │   │   │   ├── value_loc: (7,0)-(7,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
-        │   │   └── @ SymbolNode (location: (19...24))
+        │   │   └── @ SymbolNode (location: (8,0)-(8,5))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (19...24) = "line3"
+        │   │       ├── value_loc: (8,0)-(8,5) = "line3"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
-        │   ├── opening_loc: (9...12) = "%I["
-        │   └── closing_loc: (25...26) = "]"
-        ├── @ ArrayNode (location: (28...35))
+        │   ├── opening_loc: (6,0)-(6,3) = "%I["
+        │   └── closing_loc: (9,0)-(9,1) = "]"
+        ├── @ ArrayNode (location: (11,0)-(14,1))
         │   ├── elements: (length: 0)
-        │   ├── opening_loc: (28...31) = "%W["
-        │   └── closing_loc: (34...35) = "]"
-        ├── @ ArrayNode (location: (37...54))
+        │   ├── opening_loc: (11,0)-(11,3) = "%W["
+        │   └── closing_loc: (14,0)-(14,1) = "]"
+        ├── @ ArrayNode (location: (16,0)-(19,1))
         │   ├── elements: (length: 2)
-        │   │   ├── @ StringNode (location: (41...46))
+        │   │   ├── @ StringNode (location: (17,0)-(17,5))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (41...46) = "line2"
+        │   │   │   ├── content_loc: (17,0)-(17,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
-        │   │   └── @ StringNode (location: (47...52))
+        │   │   └── @ StringNode (location: (18,0)-(18,5))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (47...52) = "line3"
+        │   │       ├── content_loc: (18,0)-(18,5) = "line3"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
-        │   ├── opening_loc: (37...40) = "%W["
-        │   └── closing_loc: (53...54) = "]"
-        ├── @ ArrayNode (location: (56...63))
+        │   ├── opening_loc: (16,0)-(16,3) = "%W["
+        │   └── closing_loc: (19,0)-(19,1) = "]"
+        ├── @ ArrayNode (location: (21,0)-(24,1))
         │   ├── elements: (length: 0)
-        │   ├── opening_loc: (56...59) = "%i["
-        │   └── closing_loc: (62...63) = "]"
-        ├── @ ArrayNode (location: (65...82))
+        │   ├── opening_loc: (21,0)-(21,3) = "%i["
+        │   └── closing_loc: (24,0)-(24,1) = "]"
+        ├── @ ArrayNode (location: (26,0)-(29,1))
         │   ├── elements: (length: 2)
-        │   │   ├── @ SymbolNode (location: (69...74))
+        │   │   ├── @ SymbolNode (location: (27,0)-(27,5))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (69...74) = "line2"
+        │   │   │   ├── value_loc: (27,0)-(27,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
-        │   │   └── @ SymbolNode (location: (75...80))
+        │   │   └── @ SymbolNode (location: (28,0)-(28,5))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (75...80) = "line3"
+        │   │       ├── value_loc: (28,0)-(28,5) = "line3"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
-        │   ├── opening_loc: (65...68) = "%i["
-        │   └── closing_loc: (81...82) = "]"
-        ├── @ RegularExpressionNode (location: (84...91))
-        │   ├── opening_loc: (84...87) = "%r["
-        │   ├── content_loc: (87...90) = "\n\n\n"
-        │   ├── closing_loc: (90...91) = "]"
+        │   ├── opening_loc: (26,0)-(26,3) = "%i["
+        │   └── closing_loc: (29,0)-(29,1) = "]"
+        ├── @ RegularExpressionNode (location: (31,0)-(34,1))
+        │   ├── opening_loc: (31,0)-(31,3) = "%r["
+        │   ├── content_loc: (31,3)-(33,0) = "\n\n\n"
+        │   ├── closing_loc: (34,0)-(34,1) = "]"
         │   ├── unescaped: "\n\n\n"
         │   └── flags: ∅
-        ├── @ ArrayNode (location: (93...100))
+        ├── @ ArrayNode (location: (36,0)-(39,1))
         │   ├── elements: (length: 0)
-        │   ├── opening_loc: (93...96) = "%w["
-        │   └── closing_loc: (99...100) = "]"
-        ├── @ ArrayNode (location: (102...119))
+        │   ├── opening_loc: (36,0)-(36,3) = "%w["
+        │   └── closing_loc: (39,0)-(39,1) = "]"
+        ├── @ ArrayNode (location: (41,0)-(44,1))
         │   ├── elements: (length: 2)
-        │   │   ├── @ StringNode (location: (106...111))
+        │   │   ├── @ StringNode (location: (42,0)-(42,5))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (106...111) = "line2"
+        │   │   │   ├── content_loc: (42,0)-(42,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
-        │   │   └── @ StringNode (location: (112...117))
+        │   │   └── @ StringNode (location: (43,0)-(43,5))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (112...117) = "line3"
+        │   │       ├── content_loc: (43,0)-(43,5) = "line3"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
-        │   ├── opening_loc: (102...105) = "%w["
-        │   └── closing_loc: (118...119) = "]"
-        ├── @ ArrayNode (location: (121...139))
+        │   ├── opening_loc: (41,0)-(41,3) = "%w["
+        │   └── closing_loc: (44,0)-(44,1) = "]"
+        ├── @ ArrayNode (location: (46,0)-(49,1))
         │   ├── elements: (length: 2)
-        │   │   ├── @ SymbolNode (location: (123...129))
-        │   │   │   ├── opening_loc: (123...124) = ":"
-        │   │   │   ├── value_loc: (124...129) = "line2"
+        │   │   ├── @ SymbolNode (location: (47,0)-(47,6))
+        │   │   │   ├── opening_loc: (47,0)-(47,1) = ":"
+        │   │   │   ├── value_loc: (47,1)-(47,6) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
-        │   │   └── @ SymbolNode (location: (131...137))
-        │   │       ├── opening_loc: (131...132) = ":"
-        │   │       ├── value_loc: (132...137) = "line3"
+        │   │   └── @ SymbolNode (location: (48,0)-(48,6))
+        │   │       ├── opening_loc: (48,0)-(48,1) = ":"
+        │   │       ├── value_loc: (48,1)-(48,6) = "line3"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
-        │   ├── opening_loc: (121...122) = "["
-        │   └── closing_loc: (138...139) = "]"
-        ├── @ ClassNode (location: (141...269))
+        │   ├── opening_loc: (46,0)-(46,1) = "["
+        │   └── closing_loc: (49,0)-(49,1) = "]"
+        ├── @ ClassNode (location: (51,0)-(56,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (141...146) = "class"
+        │   ├── class_keyword_loc: (51,0)-(51,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (147...148))
+        │   │   @ ConstantReadNode (location: (51,6)-(51,7))
         │   │   └── name: :X
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (168...246))
+        │   │   @ StatementsNode (location: (52,2)-(55,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ DefNode (location: (168...246))
+        │   │       └── @ DefNode (location: (52,2)-(55,5))
         │   │           ├── name: :y
-        │   │           ├── name_loc: (177...178) = "y"
+        │   │           ├── name_loc: (52,11)-(52,12) = "y"
         │   │           ├── receiver:
-        │   │           │   @ SelfNode (location: (172...176))
+        │   │           │   @ SelfNode (location: (52,6)-(52,10))
         │   │           ├── parameters:
-        │   │           │   @ ParametersNode (location: (179...200))
+        │   │           │   @ ParametersNode (location: (52,13)-(53,9))
         │   │           │   ├── requireds: (length: 2)
-        │   │           │   │   ├── @ RequiredParameterNode (location: (179...180))
+        │   │           │   │   ├── @ RequiredParameterNode (location: (52,13)-(52,14))
         │   │           │   │   │   └── name: :a
-        │   │           │   │   └── @ RequiredParameterNode (location: (199...200))
+        │   │           │   │   └── @ RequiredParameterNode (location: (53,8)-(53,9))
         │   │           │   │       └── name: :b
         │   │           │   ├── optionals: (length: 0)
         │   │           │   ├── rest: ∅
@@ -129,20 +129,20 @@
         │   │           │   ├── keyword_rest: ∅
         │   │           │   └── block: ∅
         │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (220...225))
+        │   │           │   @ StatementsNode (location: (54,4)-(54,9))
         │   │           │   └── body: (length: 1)
-        │   │           │       └── @ CallNode (location: (220...225))
+        │   │           │       └── @ CallNode (location: (54,4)-(54,9))
         │   │           │           ├── receiver:
-        │   │           │           │   @ LocalVariableReadNode (location: (220...221))
+        │   │           │           │   @ LocalVariableReadNode (location: (54,4)-(54,5))
         │   │           │           │   ├── name: :a
         │   │           │           │   └── depth: 0
         │   │           │           ├── call_operator_loc: ∅
-        │   │           │           ├── message_loc: (222...223) = "+"
+        │   │           │           ├── message_loc: (54,6)-(54,7) = "+"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
-        │   │           │           │   @ ArgumentsNode (location: (224...225))
+        │   │           │           │   @ ArgumentsNode (location: (54,8)-(54,9))
         │   │           │           │   └── arguments: (length: 1)
-        │   │           │           │       └── @ LocalVariableReadNode (location: (224...225))
+        │   │           │           │       └── @ LocalVariableReadNode (location: (54,8)-(54,9))
         │   │           │           │           ├── name: :b
         │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
@@ -150,68 +150,68 @@
         │   │           │           ├── flags: ∅
         │   │           │           └── name: "+"
         │   │           ├── locals: [:a, :b]
-        │   │           ├── def_keyword_loc: (168...171) = "def"
-        │   │           ├── operator_loc: (176...177) = "."
-        │   │           ├── lparen_loc: (178...179) = "("
-        │   │           ├── rparen_loc: (200...201) = ")"
+        │   │           ├── def_keyword_loc: (52,2)-(52,5) = "def"
+        │   │           ├── operator_loc: (52,10)-(52,11) = "."
+        │   │           ├── lparen_loc: (52,12)-(52,13) = "("
+        │   │           ├── rparen_loc: (53,9)-(53,10) = ")"
         │   │           ├── equal_loc: ∅
-        │   │           └── end_keyword_loc: (243...246) = "end"
-        │   ├── end_keyword_loc: (266...269) = "end"
+        │   │           └── end_keyword_loc: (55,2)-(55,5) = "end"
+        │   ├── end_keyword_loc: (56,0)-(56,3) = "end"
         │   └── name: :X
-        ├── @ ClassNode (location: (293...376))
+        ├── @ ClassNode (location: (59,0)-(63,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (293...298) = "class"
+        │   ├── class_keyword_loc: (59,0)-(59,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (299...300))
+        │   │   @ ConstantReadNode (location: (59,6)-(59,7))
         │   │   └── name: :X
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (315...358))
+        │   │   @ StatementsNode (location: (60,2)-(62,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ ClassNode (location: (315...358))
+        │   │       └── @ ClassNode (location: (60,2)-(62,5))
         │   │           ├── locals: []
-        │   │           ├── class_keyword_loc: (315...320) = "class"
+        │   │           ├── class_keyword_loc: (60,2)-(60,7) = "class"
         │   │           ├── constant_path:
-        │   │           │   @ ConstantReadNode (location: (321...322))
+        │   │           │   @ ConstantReadNode (location: (60,8)-(60,9))
         │   │           │   └── name: :Y
         │   │           ├── inheritance_operator_loc: ∅
         │   │           ├── superclass: ∅
         │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (337...343))
+        │   │           │   @ StatementsNode (location: (61,4)-(61,10))
         │   │           │   └── body: (length: 1)
-        │   │           │       └── @ ConstantWriteNode (location: (337...343))
+        │   │           │       └── @ ConstantWriteNode (location: (61,4)-(61,10))
         │   │           │           ├── name: :Z
-        │   │           │           ├── name_loc: (337...338) = "Z"
+        │   │           │           ├── name_loc: (61,4)-(61,5) = "Z"
         │   │           │           ├── value:
-        │   │           │           │   @ IntegerNode (location: (341...343))
+        │   │           │           │   @ IntegerNode (location: (61,8)-(61,10))
         │   │           │           │   └── flags: decimal
-        │   │           │           └── operator_loc: (339...340) = "="
-        │   │           ├── end_keyword_loc: (355...358) = "end"
+        │   │           │           └── operator_loc: (61,6)-(61,7) = "="
+        │   │           ├── end_keyword_loc: (62,2)-(62,5) = "end"
         │   │           └── name: :Y
-        │   ├── end_keyword_loc: (373...376) = "end"
+        │   ├── end_keyword_loc: (63,0)-(63,3) = "end"
         │   └── name: :X
-        ├── @ ClassNode (location: (395...498))
+        ├── @ ClassNode (location: (66,0)-(71,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (395...400) = "class"
+        │   ├── class_keyword_loc: (66,0)-(66,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (401...402))
+        │   │   @ ConstantReadNode (location: (66,6)-(66,7))
         │   │   └── name: :X
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (417...480))
+        │   │   @ StatementsNode (location: (67,2)-(70,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ DefNode (location: (417...480))
+        │   │       └── @ DefNode (location: (67,2)-(70,5))
         │   │           ├── name: :y
-        │   │           ├── name_loc: (421...422) = "y"
+        │   │           ├── name_loc: (67,6)-(67,7) = "y"
         │   │           ├── receiver: ∅
         │   │           ├── parameters:
-        │   │           │   @ ParametersNode (location: (423...444))
+        │   │           │   @ ParametersNode (location: (67,8)-(68,9))
         │   │           │   ├── requireds: (length: 2)
-        │   │           │   │   ├── @ RequiredParameterNode (location: (423...424))
+        │   │           │   │   ├── @ RequiredParameterNode (location: (67,8)-(67,9))
         │   │           │   │   │   └── name: :a
-        │   │           │   │   └── @ RequiredParameterNode (location: (443...444))
+        │   │           │   │   └── @ RequiredParameterNode (location: (68,8)-(68,9))
         │   │           │   │       └── name: :b
         │   │           │   ├── optionals: (length: 0)
         │   │           │   ├── rest: ∅
@@ -220,20 +220,20 @@
         │   │           │   ├── keyword_rest: ∅
         │   │           │   └── block: ∅
         │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (459...464))
+        │   │           │   @ StatementsNode (location: (69,4)-(69,9))
         │   │           │   └── body: (length: 1)
-        │   │           │       └── @ CallNode (location: (459...464))
+        │   │           │       └── @ CallNode (location: (69,4)-(69,9))
         │   │           │           ├── receiver:
-        │   │           │           │   @ LocalVariableReadNode (location: (459...460))
+        │   │           │           │   @ LocalVariableReadNode (location: (69,4)-(69,5))
         │   │           │           │   ├── name: :a
         │   │           │           │   └── depth: 0
         │   │           │           ├── call_operator_loc: ∅
-        │   │           │           ├── message_loc: (461...462) = "+"
+        │   │           │           ├── message_loc: (69,6)-(69,7) = "+"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
-        │   │           │           │   @ ArgumentsNode (location: (463...464))
+        │   │           │           │   @ ArgumentsNode (location: (69,8)-(69,9))
         │   │           │           │   └── arguments: (length: 1)
-        │   │           │           │       └── @ LocalVariableReadNode (location: (463...464))
+        │   │           │           │       └── @ LocalVariableReadNode (location: (69,8)-(69,9))
         │   │           │           │           ├── name: :b
         │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
@@ -241,92 +241,92 @@
         │   │           │           ├── flags: ∅
         │   │           │           └── name: "+"
         │   │           ├── locals: [:a, :b]
-        │   │           ├── def_keyword_loc: (417...420) = "def"
+        │   │           ├── def_keyword_loc: (67,2)-(67,5) = "def"
         │   │           ├── operator_loc: ∅
-        │   │           ├── lparen_loc: (422...423) = "("
-        │   │           ├── rparen_loc: (444...445) = ")"
+        │   │           ├── lparen_loc: (67,7)-(67,8) = "("
+        │   │           ├── rparen_loc: (68,9)-(68,10) = ")"
         │   │           ├── equal_loc: ∅
-        │   │           └── end_keyword_loc: (477...480) = "end"
-        │   ├── end_keyword_loc: (495...498) = "end"
+        │   │           └── end_keyword_loc: (70,2)-(70,5) = "end"
+        │   ├── end_keyword_loc: (71,0)-(71,3) = "end"
         │   └── name: :X
-        ├── @ ModuleNode (location: (517...565))
+        ├── @ ModuleNode (location: (74,0)-(79,3))
         │   ├── locals: []
-        │   ├── module_keyword_loc: (517...523) = "module"
+        │   ├── module_keyword_loc: (74,0)-(74,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (524...525))
+        │   │   @ ConstantReadNode (location: (74,7)-(74,8))
         │   │   └── name: :X
         │   ├── body:
-        │   │   @ StatementsNode (location: (528...561))
+        │   │   @ StatementsNode (location: (75,2)-(78,3))
         │   │   └── body: (length: 1)
-        │   │       └── @ ConstantWriteNode (location: (528...561))
+        │   │       └── @ ConstantWriteNode (location: (75,2)-(78,3))
         │   │           ├── name: :X
-        │   │           ├── name_loc: (528...529) = "X"
+        │   │           ├── name_loc: (75,2)-(75,3) = "X"
         │   │           ├── value:
-        │   │           │   @ ArrayNode (location: (532...561))
+        │   │           │   @ ArrayNode (location: (75,6)-(78,3))
         │   │           │   ├── elements: (length: 2)
-        │   │           │   │   ├── @ SymbolNode (location: (538...544))
-        │   │           │   │   │   ├── opening_loc: (538...539) = ":"
-        │   │           │   │   │   ├── value_loc: (539...544) = "line3"
+        │   │           │   │   ├── @ SymbolNode (location: (76,4)-(76,10))
+        │   │           │   │   │   ├── opening_loc: (76,4)-(76,5) = ":"
+        │   │           │   │   │   ├── value_loc: (76,5)-(76,10) = "line3"
         │   │           │   │   │   ├── closing_loc: ∅
         │   │           │   │   │   └── unescaped: "line3"
-        │   │           │   │   └── @ SymbolNode (location: (550...556))
-        │   │           │   │       ├── opening_loc: (550...551) = ":"
-        │   │           │   │       ├── value_loc: (551...556) = "line4"
+        │   │           │   │   └── @ SymbolNode (location: (77,4)-(77,10))
+        │   │           │   │       ├── opening_loc: (77,4)-(77,5) = ":"
+        │   │           │   │       ├── value_loc: (77,5)-(77,10) = "line4"
         │   │           │   │       ├── closing_loc: ∅
         │   │           │   │       └── unescaped: "line4"
-        │   │           │   ├── opening_loc: (532...533) = "["
-        │   │           │   └── closing_loc: (560...561) = "]"
-        │   │           └── operator_loc: (530...531) = "="
-        │   ├── end_keyword_loc: (562...565) = "end"
+        │   │           │   ├── opening_loc: (75,6)-(75,7) = "["
+        │   │           │   └── closing_loc: (78,2)-(78,3) = "]"
+        │   │           └── operator_loc: (75,4)-(75,5) = "="
+        │   ├── end_keyword_loc: (79,0)-(79,3) = "end"
         │   └── name: :X
-        ├── @ ModuleNode (location: (568...651))
+        ├── @ ModuleNode (location: (82,0)-(86,3))
         │   ├── locals: []
-        │   ├── module_keyword_loc: (568...574) = "module"
+        │   ├── module_keyword_loc: (82,0)-(82,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (575...576))
+        │   │   @ ConstantReadNode (location: (82,7)-(82,8))
         │   │   └── name: :X
         │   ├── body:
-        │   │   @ StatementsNode (location: (590...633))
+        │   │   @ StatementsNode (location: (83,2)-(85,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ ModuleNode (location: (590...633))
+        │   │       └── @ ModuleNode (location: (83,2)-(85,5))
         │   │           ├── locals: []
-        │   │           ├── module_keyword_loc: (590...596) = "module"
+        │   │           ├── module_keyword_loc: (83,2)-(83,8) = "module"
         │   │           ├── constant_path:
-        │   │           │   @ ConstantReadNode (location: (597...598))
+        │   │           │   @ ConstantReadNode (location: (83,9)-(83,10))
         │   │           │   └── name: :Y
         │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (612...618))
+        │   │           │   @ StatementsNode (location: (84,4)-(84,10))
         │   │           │   └── body: (length: 1)
-        │   │           │       └── @ ConstantWriteNode (location: (612...618))
+        │   │           │       └── @ ConstantWriteNode (location: (84,4)-(84,10))
         │   │           │           ├── name: :Z
-        │   │           │           ├── name_loc: (612...613) = "Z"
+        │   │           │           ├── name_loc: (84,4)-(84,5) = "Z"
         │   │           │           ├── value:
-        │   │           │           │   @ IntegerNode (location: (616...618))
+        │   │           │           │   @ IntegerNode (location: (84,8)-(84,10))
         │   │           │           │   └── flags: decimal
-        │   │           │           └── operator_loc: (614...615) = "="
-        │   │           ├── end_keyword_loc: (630...633) = "end"
+        │   │           │           └── operator_loc: (84,6)-(84,7) = "="
+        │   │           ├── end_keyword_loc: (85,2)-(85,5) = "end"
         │   │           └── name: :Y
-        │   ├── end_keyword_loc: (648...651) = "end"
+        │   ├── end_keyword_loc: (86,0)-(86,3) = "end"
         │   └── name: :X
-        └── @ CallNode (location: (670...689))
+        └── @ CallNode (location: (89,0)-(92,1))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (670...671) = "x"
-            ├── opening_loc: (671...672) = "("
+            ├── message_loc: (89,0)-(89,1) = "x"
+            ├── opening_loc: (89,1)-(89,2) = "("
             ├── arguments:
-            │   @ ArgumentsNode (location: (673...687))
+            │   @ ArgumentsNode (location: (90,0)-(91,6))
             │   └── arguments: (length: 2)
-            │       ├── @ SymbolNode (location: (673...679))
-            │       │   ├── opening_loc: (673...674) = ":"
-            │       │   ├── value_loc: (674...679) = "line2"
+            │       ├── @ SymbolNode (location: (90,0)-(90,6))
+            │       │   ├── opening_loc: (90,0)-(90,1) = ":"
+            │       │   ├── value_loc: (90,1)-(90,6) = "line2"
             │       │   ├── closing_loc: ∅
             │       │   └── unescaped: "line2"
-            │       └── @ SymbolNode (location: (681...687))
-            │           ├── opening_loc: (681...682) = ":"
-            │           ├── value_loc: (682...687) = "line3"
+            │       └── @ SymbolNode (location: (91,0)-(91,6))
+            │           ├── opening_loc: (91,0)-(91,1) = ":"
+            │           ├── value_loc: (91,1)-(91,6) = "line3"
             │           ├── closing_loc: ∅
             │           └── unescaped: "line3"
-            ├── closing_loc: (688...689) = ")"
+            ├── closing_loc: (92,0)-(92,1) = ")"
             ├── block: ∅
             ├── flags: ∅
             └── name: "x"

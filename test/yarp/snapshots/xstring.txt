@@ -1,52 +1,52 @@
-@ ProgramNode (location: (0...40))
+@ ProgramNode (location: (1,0)-(7,5))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...40))
+    @ StatementsNode (location: (1,0)-(7,5))
     └── body: (length: 4)
-        ├── @ XStringNode (location: (0...7))
-        │   ├── opening_loc: (0...3) = "%x["
-        │   ├── content_loc: (3...6) = "foo"
-        │   ├── closing_loc: (6...7) = "]"
+        ├── @ XStringNode (location: (1,0)-(1,7))
+        │   ├── opening_loc: (1,0)-(1,3) = "%x["
+        │   ├── content_loc: (1,3)-(1,6) = "foo"
+        │   ├── closing_loc: (1,6)-(1,7) = "]"
         │   └── unescaped: "foo"
-        ├── @ InterpolatedXStringNode (location: (9...25))
-        │   ├── opening_loc: (9...10) = "`"
+        ├── @ InterpolatedXStringNode (location: (3,0)-(3,16))
+        │   ├── opening_loc: (3,0)-(3,1) = "`"
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (10...14))
+        │   │   ├── @ StringNode (location: (3,1)-(3,5))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (10...14) = "foo "
+        │   │   │   ├── content_loc: (3,1)-(3,5) = "foo "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo "
-        │   │   ├── @ EmbeddedStatementsNode (location: (14...20))
-        │   │   │   ├── opening_loc: (14...16) = "\#{"
+        │   │   ├── @ EmbeddedStatementsNode (location: (3,5)-(3,11))
+        │   │   │   ├── opening_loc: (3,5)-(3,7) = "\#{"
         │   │   │   ├── statements:
-        │   │   │   │   @ StatementsNode (location: (16...19))
+        │   │   │   │   @ StatementsNode (location: (3,7)-(3,10))
         │   │   │   │   └── body: (length: 1)
-        │   │   │   │       └── @ CallNode (location: (16...19))
+        │   │   │   │       └── @ CallNode (location: (3,7)-(3,10))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
-        │   │   │   │           ├── message_loc: (16...19) = "bar"
+        │   │   │   │           ├── message_loc: (3,7)-(3,10) = "bar"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: "bar"
-        │   │   │   └── closing_loc: (19...20) = "}"
-        │   │   └── @ StringNode (location: (20...24))
+        │   │   │   └── closing_loc: (3,10)-(3,11) = "}"
+        │   │   └── @ StringNode (location: (3,11)-(3,15))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (20...24) = " baz"
+        │   │       ├── content_loc: (3,11)-(3,15) = " baz"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " baz"
-        │   └── closing_loc: (24...25) = "`"
-        ├── @ XStringNode (location: (27...33))
-        │   ├── opening_loc: (27...28) = "`"
-        │   ├── content_loc: (28...32) = "f\\oo"
-        │   ├── closing_loc: (32...33) = "`"
+        │   └── closing_loc: (3,15)-(3,16) = "`"
+        ├── @ XStringNode (location: (5,0)-(5,6))
+        │   ├── opening_loc: (5,0)-(5,1) = "`"
+        │   ├── content_loc: (5,1)-(5,5) = "f\\oo"
+        │   ├── closing_loc: (5,5)-(5,6) = "`"
         │   └── unescaped: "foo"
-        └── @ XStringNode (location: (35...40))
-            ├── opening_loc: (35...36) = "`"
-            ├── content_loc: (36...39) = "foo"
-            ├── closing_loc: (39...40) = "`"
+        └── @ XStringNode (location: (7,0)-(7,5))
+            ├── opening_loc: (7,0)-(7,1) = "`"
+            ├── content_loc: (7,1)-(7,4) = "foo"
+            ├── closing_loc: (7,4)-(7,5) = "`"
             └── unescaped: "foo"

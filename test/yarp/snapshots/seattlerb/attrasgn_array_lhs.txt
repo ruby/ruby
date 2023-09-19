@@ -1,34 +1,34 @@
-@ ProgramNode (location: (0...42))
+@ ProgramNode (location: (1,0)-(1,42))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...42))
+    @ StatementsNode (location: (1,0)-(1,42))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...42))
+        └── @ CallNode (location: (1,0)-(1,42))
             ├── receiver:
-            │   @ ArrayNode (location: (0...12))
+            │   @ ArrayNode (location: (1,0)-(1,12))
             │   ├── elements: (length: 4)
-            │   │   ├── @ IntegerNode (location: (1...2))
+            │   │   ├── @ IntegerNode (location: (1,1)-(1,2))
             │   │   │   └── flags: decimal
-            │   │   ├── @ IntegerNode (location: (4...5))
+            │   │   ├── @ IntegerNode (location: (1,4)-(1,5))
             │   │   │   └── flags: decimal
-            │   │   ├── @ IntegerNode (location: (7...8))
+            │   │   ├── @ IntegerNode (location: (1,7)-(1,8))
             │   │   │   └── flags: decimal
-            │   │   └── @ IntegerNode (location: (10...11))
+            │   │   └── @ IntegerNode (location: (1,10)-(1,11))
             │   │       └── flags: decimal
-            │   ├── opening_loc: (0...1) = "["
-            │   └── closing_loc: (11...12) = "]"
+            │   ├── opening_loc: (1,0)-(1,1) = "["
+            │   └── closing_loc: (1,11)-(1,12) = "]"
             ├── call_operator_loc: ∅
-            ├── message_loc: (12...24) = "[from .. to]"
-            ├── opening_loc: (12...13) = "["
+            ├── message_loc: (1,12)-(1,24) = "[from .. to]"
+            ├── opening_loc: (1,12)-(1,13) = "["
             ├── arguments:
-            │   @ ArgumentsNode (location: (13...42))
+            │   @ ArgumentsNode (location: (1,13)-(1,42))
             │   └── arguments: (length: 2)
-            │       ├── @ RangeNode (location: (13...23))
+            │       ├── @ RangeNode (location: (1,13)-(1,23))
             │       │   ├── left:
-            │       │   │   @ CallNode (location: (13...17))
+            │       │   │   @ CallNode (location: (1,13)-(1,17))
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
-            │       │   │   ├── message_loc: (13...17) = "from"
+            │       │   │   ├── message_loc: (1,13)-(1,17) = "from"
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
@@ -36,41 +36,41 @@
             │       │   │   ├── flags: variable_call
             │       │   │   └── name: "from"
             │       │   ├── right:
-            │       │   │   @ CallNode (location: (21...23))
+            │       │   │   @ CallNode (location: (1,21)-(1,23))
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
-            │       │   │   ├── message_loc: (21...23) = "to"
+            │       │   │   ├── message_loc: (1,21)-(1,23) = "to"
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
             │       │   │   ├── block: ∅
             │       │   │   ├── flags: variable_call
             │       │   │   └── name: "to"
-            │       │   ├── operator_loc: (18...20) = ".."
+            │       │   ├── operator_loc: (1,18)-(1,20) = ".."
             │       │   └── flags: ∅
-            │       └── @ ArrayNode (location: (27...42))
+            │       └── @ ArrayNode (location: (1,27)-(1,42))
             │           ├── elements: (length: 3)
-            │           │   ├── @ StringNode (location: (28...31))
+            │           │   ├── @ StringNode (location: (1,28)-(1,31))
             │           │   │   ├── flags: ∅
-            │           │   │   ├── opening_loc: (28...29) = "\""
-            │           │   │   ├── content_loc: (29...30) = "a"
-            │           │   │   ├── closing_loc: (30...31) = "\""
+            │           │   │   ├── opening_loc: (1,28)-(1,29) = "\""
+            │           │   │   ├── content_loc: (1,29)-(1,30) = "a"
+            │           │   │   ├── closing_loc: (1,30)-(1,31) = "\""
             │           │   │   └── unescaped: "a"
-            │           │   ├── @ StringNode (location: (33...36))
+            │           │   ├── @ StringNode (location: (1,33)-(1,36))
             │           │   │   ├── flags: ∅
-            │           │   │   ├── opening_loc: (33...34) = "\""
-            │           │   │   ├── content_loc: (34...35) = "b"
-            │           │   │   ├── closing_loc: (35...36) = "\""
+            │           │   │   ├── opening_loc: (1,33)-(1,34) = "\""
+            │           │   │   ├── content_loc: (1,34)-(1,35) = "b"
+            │           │   │   ├── closing_loc: (1,35)-(1,36) = "\""
             │           │   │   └── unescaped: "b"
-            │           │   └── @ StringNode (location: (38...41))
+            │           │   └── @ StringNode (location: (1,38)-(1,41))
             │           │       ├── flags: ∅
-            │           │       ├── opening_loc: (38...39) = "\""
-            │           │       ├── content_loc: (39...40) = "c"
-            │           │       ├── closing_loc: (40...41) = "\""
+            │           │       ├── opening_loc: (1,38)-(1,39) = "\""
+            │           │       ├── content_loc: (1,39)-(1,40) = "c"
+            │           │       ├── closing_loc: (1,40)-(1,41) = "\""
             │           │       └── unescaped: "c"
-            │           ├── opening_loc: (27...28) = "["
-            │           └── closing_loc: (41...42) = "]"
-            ├── closing_loc: (23...24) = "]"
+            │           ├── opening_loc: (1,27)-(1,28) = "["
+            │           └── closing_loc: (1,41)-(1,42) = "]"
+            ├── closing_loc: (1,23)-(1,24) = "]"
             ├── block: ∅
             ├── flags: ∅
             └── name: "[]="

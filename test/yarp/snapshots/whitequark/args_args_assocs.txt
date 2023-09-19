@@ -1,88 +1,88 @@
-@ ProgramNode (location: (0...45))
+@ ProgramNode (location: (1,0)-(3,24))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...45))
+    @ StatementsNode (location: (1,0)-(3,24))
     └── body: (length: 2)
-        ├── @ CallNode (location: (0...19))
+        ├── @ CallNode (location: (1,0)-(1,19))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...3) = "fun"
-        │   ├── opening_loc: (3...4) = "("
+        │   ├── message_loc: (1,0)-(1,3) = "fun"
+        │   ├── opening_loc: (1,3)-(1,4) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (4...18))
+        │   │   @ ArgumentsNode (location: (1,4)-(1,18))
         │   │   └── arguments: (length: 2)
-        │   │       ├── @ CallNode (location: (4...7))
+        │   │       ├── @ CallNode (location: (1,4)-(1,7))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (4...7) = "foo"
+        │   │       │   ├── message_loc: (1,4)-(1,7) = "foo"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "foo"
-        │   │       └── @ KeywordHashNode (location: (9...18))
+        │   │       └── @ KeywordHashNode (location: (1,9)-(1,18))
         │   │           └── elements: (length: 1)
-        │   │               └── @ AssocNode (location: (9...18))
+        │   │               └── @ AssocNode (location: (1,9)-(1,18))
         │   │                   ├── key:
-        │   │                   │   @ SymbolNode (location: (9...13))
-        │   │                   │   ├── opening_loc: (9...10) = ":"
-        │   │                   │   ├── value_loc: (10...13) = "foo"
+        │   │                   │   @ SymbolNode (location: (1,9)-(1,13))
+        │   │                   │   ├── opening_loc: (1,9)-(1,10) = ":"
+        │   │                   │   ├── value_loc: (1,10)-(1,13) = "foo"
         │   │                   │   ├── closing_loc: ∅
         │   │                   │   └── unescaped: "foo"
         │   │                   ├── value:
-        │   │                   │   @ IntegerNode (location: (17...18))
+        │   │                   │   @ IntegerNode (location: (1,17)-(1,18))
         │   │                   │   └── flags: decimal
-        │   │                   └── operator_loc: (14...16) = "=>"
-        │   ├── closing_loc: (18...19) = ")"
+        │   │                   └── operator_loc: (1,14)-(1,16) = "=>"
+        │   ├── closing_loc: (1,18)-(1,19) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "fun"
-        └── @ CallNode (location: (21...45))
+        └── @ CallNode (location: (3,0)-(3,24))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (21...24) = "fun"
-            ├── opening_loc: (24...25) = "("
+            ├── message_loc: (3,0)-(3,3) = "fun"
+            ├── opening_loc: (3,3)-(3,4) = "("
             ├── arguments:
-            │   @ ArgumentsNode (location: (25...39))
+            │   @ ArgumentsNode (location: (3,4)-(3,18))
             │   └── arguments: (length: 2)
-            │       ├── @ CallNode (location: (25...28))
+            │       ├── @ CallNode (location: (3,4)-(3,7))
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
-            │       │   ├── message_loc: (25...28) = "foo"
+            │       │   ├── message_loc: (3,4)-(3,7) = "foo"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments: ∅
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
             │       │   └── name: "foo"
-            │       └── @ KeywordHashNode (location: (30...39))
+            │       └── @ KeywordHashNode (location: (3,9)-(3,18))
             │           └── elements: (length: 1)
-            │               └── @ AssocNode (location: (30...39))
+            │               └── @ AssocNode (location: (3,9)-(3,18))
             │                   ├── key:
-            │                   │   @ SymbolNode (location: (30...34))
-            │                   │   ├── opening_loc: (30...31) = ":"
-            │                   │   ├── value_loc: (31...34) = "foo"
+            │                   │   @ SymbolNode (location: (3,9)-(3,13))
+            │                   │   ├── opening_loc: (3,9)-(3,10) = ":"
+            │                   │   ├── value_loc: (3,10)-(3,13) = "foo"
             │                   │   ├── closing_loc: ∅
             │                   │   └── unescaped: "foo"
             │                   ├── value:
-            │                   │   @ IntegerNode (location: (38...39))
+            │                   │   @ IntegerNode (location: (3,17)-(3,18))
             │                   │   └── flags: decimal
-            │                   └── operator_loc: (35...37) = "=>"
-            ├── closing_loc: (45...46) = ")"
+            │                   └── operator_loc: (3,14)-(3,16) = "=>"
+            ├── closing_loc: (3,24)-(3,25) = ")"
             ├── block:
-            │   @ BlockArgumentNode (location: (41...45))
+            │   @ BlockArgumentNode (location: (3,20)-(3,24))
             │   ├── expression:
-            │   │   @ CallNode (location: (42...45))
+            │   │   @ CallNode (location: (3,21)-(3,24))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (42...45) = "baz"
+            │   │   ├── message_loc: (3,21)-(3,24) = "baz"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
             │   │   └── name: "baz"
-            │   └── operator_loc: (41...42) = "&"
+            │   └── operator_loc: (3,20)-(3,21) = "&"
             ├── flags: ∅
             └── name: "fun"

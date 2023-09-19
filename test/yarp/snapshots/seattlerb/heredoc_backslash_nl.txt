@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...49))
+@ ProgramNode (location: (1,0)-(5,7))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...49))
+    @ StatementsNode (location: (1,0)-(5,7))
     └── body: (length: 2)
-        ├── @ StringNode (location: (0...40))
+        ├── @ StringNode (location: (1,0)-(3,1))
         │   ├── flags: ∅
-        │   ├── opening_loc: (0...1) = "\""
-        │   ├── content_loc: (1...39) = "  why would someone do this? \\\n  blah\n"
-        │   ├── closing_loc: (39...40) = "\""
+        │   ├── opening_loc: (1,0)-(1,1) = "\""
+        │   ├── content_loc: (1,1)-(2,0) = "  why would someone do this? \\\n  blah\n"
+        │   ├── closing_loc: (3,0)-(3,1) = "\""
         │   └── unescaped: "  why would someone do this?   blah\n"
-        └── @ StringNode (location: (42...49))
+        └── @ StringNode (location: (5,0)-(5,7))
             ├── flags: ∅
-            ├── opening_loc: (42...49) = "<<-DESC"
-            ├── content_loc: (50...88) = "  why would someone do this? \\\n  blah\n"
-            ├── closing_loc: (88...93) = "DESC\n"
+            ├── opening_loc: (5,0)-(5,7) = "<<-DESC"
+            ├── content_loc: (6,0)-(7,0) = "  why would someone do this? \\\n  blah\n"
+            ├── closing_loc: (8,0)-(8,0) = "DESC\n"
             └── unescaped: "  why would someone do this?   blah\n"

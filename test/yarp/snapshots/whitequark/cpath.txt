@@ -1,33 +1,33 @@
-@ ProgramNode (location: (0...39))
+@ ProgramNode (location: (1,0)-(3,20))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...39))
+    @ StatementsNode (location: (1,0)-(3,20))
     └── body: (length: 2)
-        ├── @ ModuleNode (location: (0...17))
+        ├── @ ModuleNode (location: (1,0)-(1,17))
         │   ├── locals: []
-        │   ├── module_keyword_loc: (0...6) = "module"
+        │   ├── module_keyword_loc: (1,0)-(1,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantPathNode (location: (7...12))
+        │   │   @ ConstantPathNode (location: (1,7)-(1,12))
         │   │   ├── parent: ∅
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (9...12))
+        │   │   │   @ ConstantReadNode (location: (1,9)-(1,12))
         │   │   │   └── name: :Foo
-        │   │   └── delimiter_loc: (7...9) = "::"
+        │   │   └── delimiter_loc: (1,7)-(1,9) = "::"
         │   ├── body: ∅
-        │   ├── end_keyword_loc: (14...17) = "end"
+        │   ├── end_keyword_loc: (1,14)-(1,17) = "end"
         │   └── name: :Foo
-        └── @ ModuleNode (location: (19...39))
+        └── @ ModuleNode (location: (3,0)-(3,20))
             ├── locals: []
-            ├── module_keyword_loc: (19...25) = "module"
+            ├── module_keyword_loc: (3,0)-(3,6) = "module"
             ├── constant_path:
-            │   @ ConstantPathNode (location: (26...34))
+            │   @ ConstantPathNode (location: (3,7)-(3,15))
             │   ├── parent:
-            │   │   @ ConstantReadNode (location: (26...29))
+            │   │   @ ConstantReadNode (location: (3,7)-(3,10))
             │   │   └── name: :Bar
             │   ├── child:
-            │   │   @ ConstantReadNode (location: (31...34))
+            │   │   @ ConstantReadNode (location: (3,12)-(3,15))
             │   │   └── name: :Foo
-            │   └── delimiter_loc: (29...31) = "::"
+            │   └── delimiter_loc: (3,10)-(3,12) = "::"
             ├── body: ∅
-            ├── end_keyword_loc: (36...39) = "end"
+            ├── end_keyword_loc: (3,17)-(3,20) = "end"
             └── name: :Foo

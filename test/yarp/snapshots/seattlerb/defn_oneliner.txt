@@ -1,16 +1,16 @@
-@ ProgramNode (location: (0...27))
+@ ProgramNode (location: (1,0)-(1,27))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...27))
+    @ StatementsNode (location: (1,0)-(1,27))
     └── body: (length: 1)
-        └── @ DefNode (location: (0...27))
+        └── @ DefNode (location: (1,0)-(1,27))
             ├── name: :exec
-            ├── name_loc: (4...8) = "exec"
+            ├── name_loc: (1,4)-(1,8) = "exec"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (9...12))
+            │   @ ParametersNode (location: (1,9)-(1,12))
             │   ├── requireds: (length: 1)
-            │   │   └── @ RequiredParameterNode (location: (9...12))
+            │   │   └── @ RequiredParameterNode (location: (1,9)-(1,12))
             │   │       └── name: :cmd
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -19,27 +19,27 @@
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body:
-            │   @ StatementsNode (location: (16...27))
+            │   @ StatementsNode (location: (1,16)-(1,27))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (16...27))
+            │       └── @ CallNode (location: (1,16)-(1,27))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (16...22) = "system"
-            │           ├── opening_loc: (22...23) = "("
+            │           ├── message_loc: (1,16)-(1,22) = "system"
+            │           ├── opening_loc: (1,22)-(1,23) = "("
             │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (23...26))
+            │           │   @ ArgumentsNode (location: (1,23)-(1,26))
             │           │   └── arguments: (length: 1)
-            │           │       └── @ LocalVariableReadNode (location: (23...26))
+            │           │       └── @ LocalVariableReadNode (location: (1,23)-(1,26))
             │           │           ├── name: :cmd
             │           │           └── depth: 0
-            │           ├── closing_loc: (26...27) = ")"
+            │           ├── closing_loc: (1,26)-(1,27) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅
             │           └── name: "system"
             ├── locals: [:cmd]
-            ├── def_keyword_loc: (0...3) = "def"
+            ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (8...9) = "("
-            ├── rparen_loc: (12...13) = ")"
-            ├── equal_loc: (14...15) = "="
+            ├── lparen_loc: (1,8)-(1,9) = "("
+            ├── rparen_loc: (1,12)-(1,13) = ")"
+            ├── equal_loc: (1,14)-(1,15) = "="
             └── end_keyword_loc: ∅

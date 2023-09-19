@@ -1,61 +1,61 @@
-@ ProgramNode (location: (0...233))
+@ ProgramNode (location: (1,0)-(24,10))
 ├── locals: [:a, :h]
 └── statements:
-    @ StatementsNode (location: (0...233))
+    @ StatementsNode (location: (1,0)-(24,10))
     └── body: (length: 24)
-        ├── @ LocalVariableOperatorWriteNode (location: (0...6))
-        │   ├── name_loc: (0...1) = "a"
-        │   ├── operator_loc: (2...4) = "+="
+        ├── @ LocalVariableOperatorWriteNode (location: (1,0)-(1,6))
+        │   ├── name_loc: (1,0)-(1,1) = "a"
+        │   ├── operator_loc: (1,2)-(1,4) = "+="
         │   ├── value:
-        │   │   @ IntegerNode (location: (5...6))
+        │   │   @ IntegerNode (location: (1,5)-(1,6))
         │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :+
         │   └── depth: 0
-        ├── @ LocalVariableOperatorWriteNode (location: (7...13))
-        │   ├── name_loc: (7...8) = "a"
-        │   ├── operator_loc: (9...11) = "-="
+        ├── @ LocalVariableOperatorWriteNode (location: (2,0)-(2,6))
+        │   ├── name_loc: (2,0)-(2,1) = "a"
+        │   ├── operator_loc: (2,2)-(2,4) = "-="
         │   ├── value:
-        │   │   @ IntegerNode (location: (12...13))
+        │   │   @ IntegerNode (location: (2,5)-(2,6))
         │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :-
         │   └── depth: 0
-        ├── @ LocalVariableOperatorWriteNode (location: (14...21))
-        │   ├── name_loc: (14...15) = "a"
-        │   ├── operator_loc: (16...19) = "**="
+        ├── @ LocalVariableOperatorWriteNode (location: (3,0)-(3,7))
+        │   ├── name_loc: (3,0)-(3,1) = "a"
+        │   ├── operator_loc: (3,2)-(3,5) = "**="
         │   ├── value:
-        │   │   @ IntegerNode (location: (20...21))
+        │   │   @ IntegerNode (location: (3,6)-(3,7))
         │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :**
         │   └── depth: 0
-        ├── @ LocalVariableOperatorWriteNode (location: (22...28))
-        │   ├── name_loc: (22...23) = "a"
-        │   ├── operator_loc: (24...26) = "*="
+        ├── @ LocalVariableOperatorWriteNode (location: (4,0)-(4,6))
+        │   ├── name_loc: (4,0)-(4,1) = "a"
+        │   ├── operator_loc: (4,2)-(4,4) = "*="
         │   ├── value:
-        │   │   @ IntegerNode (location: (27...28))
+        │   │   @ IntegerNode (location: (4,5)-(4,6))
         │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :*
         │   └── depth: 0
-        ├── @ LocalVariableOperatorWriteNode (location: (29...35))
-        │   ├── name_loc: (29...30) = "a"
-        │   ├── operator_loc: (31...33) = "/="
+        ├── @ LocalVariableOperatorWriteNode (location: (5,0)-(5,6))
+        │   ├── name_loc: (5,0)-(5,1) = "a"
+        │   ├── operator_loc: (5,2)-(5,4) = "/="
         │   ├── value:
-        │   │   @ IntegerNode (location: (34...35))
+        │   │   @ IntegerNode (location: (5,5)-(5,6))
         │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :/
         │   └── depth: 0
-        ├── @ LocalVariableAndWriteNode (location: (36...43))
-        │   ├── name_loc: (36...37) = "a"
-        │   ├── operator_loc: (38...41) = "&&="
+        ├── @ LocalVariableAndWriteNode (location: (6,0)-(6,7))
+        │   ├── name_loc: (6,0)-(6,1) = "a"
+        │   ├── operator_loc: (6,2)-(6,5) = "&&="
         │   ├── value:
-        │   │   @ CallNode (location: (42...43))
+        │   │   @ CallNode (location: (6,6)-(6,7))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (42...43) = "b"
+        │   │   ├── message_loc: (6,6)-(6,7) = "b"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -64,93 +64,93 @@
         │   │   └── name: "b"
         │   ├── name: :a
         │   └── depth: 0
-        ├── @ LocalVariableOrWriteNode (location: (44...51))
-        │   ├── name_loc: (44...45) = "a"
-        │   ├── operator_loc: (46...49) = "||="
+        ├── @ LocalVariableOrWriteNode (location: (7,0)-(7,7))
+        │   ├── name_loc: (7,0)-(7,1) = "a"
+        │   ├── operator_loc: (7,2)-(7,5) = "||="
         │   ├── value:
-        │   │   @ IntegerNode (location: (50...51))
+        │   │   @ IntegerNode (location: (7,6)-(7,7))
         │   │   └── flags: decimal
         │   ├── name: :a
         │   └── depth: 0
-        ├── @ CallNode (location: (52...65))
+        ├── @ CallNode (location: (8,0)-(8,13))
         │   ├── receiver:
-        │   │   @ ParenthesesNode (location: (52...61))
+        │   │   @ ParenthesesNode (location: (8,0)-(8,9))
         │   │   ├── body:
-        │   │   │   @ StatementsNode (location: (53...60))
+        │   │   │   @ StatementsNode (location: (8,1)-(8,8))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ LocalVariableOrWriteNode (location: (53...60))
-        │   │   │           ├── name_loc: (53...54) = "a"
-        │   │   │           ├── operator_loc: (55...58) = "||="
+        │   │   │       └── @ LocalVariableOrWriteNode (location: (8,1)-(8,8))
+        │   │   │           ├── name_loc: (8,1)-(8,2) = "a"
+        │   │   │           ├── operator_loc: (8,3)-(8,6) = "||="
         │   │   │           ├── value:
-        │   │   │           │   @ IntegerNode (location: (59...60))
+        │   │   │           │   @ IntegerNode (location: (8,7)-(8,8))
         │   │   │           │   └── flags: decimal
         │   │   │           ├── name: :a
         │   │   │           └── depth: 0
-        │   │   ├── opening_loc: (52...53) = "("
-        │   │   └── closing_loc: (60...61) = ")"
-        │   ├── call_operator_loc: (61...62) = "."
-        │   ├── message_loc: (62...65) = "bar"
+        │   │   ├── opening_loc: (8,0)-(8,1) = "("
+        │   │   └── closing_loc: (8,8)-(8,9) = ")"
+        │   ├── call_operator_loc: (8,9)-(8,10) = "."
+        │   ├── message_loc: (8,10)-(8,13) = "bar"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "bar"
-        ├── @ CallNode (location: (66...83))
+        ├── @ CallNode (location: (9,0)-(9,17))
         │   ├── receiver:
-        │   │   @ ParenthesesNode (location: (66...76))
+        │   │   @ ParenthesesNode (location: (9,0)-(9,10))
         │   │   ├── body:
-        │   │   │   @ StatementsNode (location: (67...75))
+        │   │   │   @ StatementsNode (location: (9,1)-(9,9))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ LocalVariableOrWriteNode (location: (67...75))
-        │   │   │           ├── name_loc: (67...68) = "h"
-        │   │   │           ├── operator_loc: (69...72) = "||="
+        │   │   │       └── @ LocalVariableOrWriteNode (location: (9,1)-(9,9))
+        │   │   │           ├── name_loc: (9,1)-(9,2) = "h"
+        │   │   │           ├── operator_loc: (9,3)-(9,6) = "||="
         │   │   │           ├── value:
-        │   │   │           │   @ HashNode (location: (73...75))
-        │   │   │           │   ├── opening_loc: (73...74) = "{"
+        │   │   │           │   @ HashNode (location: (9,7)-(9,9))
+        │   │   │           │   ├── opening_loc: (9,7)-(9,8) = "{"
         │   │   │           │   ├── elements: (length: 0)
-        │   │   │           │   └── closing_loc: (74...75) = "}"
+        │   │   │           │   └── closing_loc: (9,8)-(9,9) = "}"
         │   │   │           ├── name: :h
         │   │   │           └── depth: 0
-        │   │   ├── opening_loc: (66...67) = "("
-        │   │   └── closing_loc: (75...76) = ")"
+        │   │   ├── opening_loc: (9,0)-(9,1) = "("
+        │   │   └── closing_loc: (9,9)-(9,10) = ")"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (76...79) = "[k]"
-        │   ├── opening_loc: (76...77) = "["
+        │   ├── message_loc: (9,10)-(9,13) = "[k]"
+        │   ├── opening_loc: (9,10)-(9,11) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (77...83))
+        │   │   @ ArgumentsNode (location: (9,11)-(9,17))
         │   │   └── arguments: (length: 2)
-        │   │       ├── @ CallNode (location: (77...78))
+        │   │       ├── @ CallNode (location: (9,11)-(9,12))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (77...78) = "k"
+        │   │       │   ├── message_loc: (9,11)-(9,12) = "k"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "k"
-        │   │       └── @ CallNode (location: (82...83))
+        │   │       └── @ CallNode (location: (9,16)-(9,17))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (82...83) = "v"
+        │   │           ├── message_loc: (9,16)-(9,17) = "v"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "v"
-        │   ├── closing_loc: (78...79) = "]"
+        │   ├── closing_loc: (9,12)-(9,13) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]="
-        ├── @ CallOperatorWriteNode (location: (84...92))
+        ├── @ CallOperatorWriteNode (location: (10,0)-(10,8))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (84...85))
+        │   │   @ LocalVariableReadNode (location: (10,0)-(10,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (85...86) = "."
-        │   ├── message_loc: (86...87) = "b"
+        │   ├── call_operator_loc: (10,1)-(10,2) = "."
+        │   ├── message_loc: (10,2)-(10,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -158,17 +158,17 @@
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :+
-        │   ├── operator_loc: (88...90) = "+="
+        │   ├── operator_loc: (10,4)-(10,6) = "+="
         │   └── value:
-        │       @ IntegerNode (location: (91...92))
+        │       @ IntegerNode (location: (10,7)-(10,8))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (93...101))
+        ├── @ CallOperatorWriteNode (location: (11,0)-(11,8))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (93...94))
+        │   │   @ LocalVariableReadNode (location: (11,0)-(11,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (94...95) = "."
-        │   ├── message_loc: (95...96) = "b"
+        │   ├── call_operator_loc: (11,1)-(11,2) = "."
+        │   ├── message_loc: (11,2)-(11,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -176,17 +176,17 @@
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :-
-        │   ├── operator_loc: (97...99) = "-="
+        │   ├── operator_loc: (11,4)-(11,6) = "-="
         │   └── value:
-        │       @ IntegerNode (location: (100...101))
+        │       @ IntegerNode (location: (11,7)-(11,8))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (102...111))
+        ├── @ CallOperatorWriteNode (location: (12,0)-(12,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (102...103))
+        │   │   @ LocalVariableReadNode (location: (12,0)-(12,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (103...104) = "."
-        │   ├── message_loc: (104...105) = "b"
+        │   ├── call_operator_loc: (12,1)-(12,2) = "."
+        │   ├── message_loc: (12,2)-(12,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -194,17 +194,17 @@
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :**
-        │   ├── operator_loc: (106...109) = "**="
+        │   ├── operator_loc: (12,4)-(12,7) = "**="
         │   └── value:
-        │       @ IntegerNode (location: (110...111))
+        │       @ IntegerNode (location: (12,8)-(12,9))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (112...120))
+        ├── @ CallOperatorWriteNode (location: (13,0)-(13,8))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (112...113))
+        │   │   @ LocalVariableReadNode (location: (13,0)-(13,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (113...114) = "."
-        │   ├── message_loc: (114...115) = "b"
+        │   ├── call_operator_loc: (13,1)-(13,2) = "."
+        │   ├── message_loc: (13,2)-(13,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -212,17 +212,17 @@
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :*
-        │   ├── operator_loc: (116...118) = "*="
+        │   ├── operator_loc: (13,4)-(13,6) = "*="
         │   └── value:
-        │       @ IntegerNode (location: (119...120))
+        │       @ IntegerNode (location: (13,7)-(13,8))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (121...129))
+        ├── @ CallOperatorWriteNode (location: (14,0)-(14,8))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (121...122))
+        │   │   @ LocalVariableReadNode (location: (14,0)-(14,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (122...123) = "."
-        │   ├── message_loc: (123...124) = "b"
+        │   ├── call_operator_loc: (14,1)-(14,2) = "."
+        │   ├── message_loc: (14,2)-(14,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -230,282 +230,282 @@
         │   ├── read_name: "b"
         │   ├── write_name: "b="
         │   ├── operator: :/
-        │   ├── operator_loc: (125...127) = "/="
+        │   ├── operator_loc: (14,4)-(14,6) = "/="
         │   └── value:
-        │       @ IntegerNode (location: (128...129))
+        │       @ IntegerNode (location: (14,7)-(14,8))
         │       └── flags: decimal
-        ├── @ CallAndWriteNode (location: (130...139))
+        ├── @ CallAndWriteNode (location: (15,0)-(15,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (130...131))
+        │   │   @ LocalVariableReadNode (location: (15,0)-(15,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (131...132) = "."
-        │   ├── message_loc: (132...133) = "b"
+        │   ├── call_operator_loc: (15,1)-(15,2) = "."
+        │   ├── message_loc: (15,2)-(15,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
-        │   ├── operator_loc: (134...137) = "&&="
+        │   ├── operator_loc: (15,4)-(15,7) = "&&="
         │   └── value:
-        │       @ CallNode (location: (138...139))
+        │       @ CallNode (location: (15,8)-(15,9))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (138...139) = "b"
+        │       ├── message_loc: (15,8)-(15,9) = "b"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "b"
-        ├── @ CallOrWriteNode (location: (140...149))
+        ├── @ CallOrWriteNode (location: (16,0)-(16,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (140...141))
+        │   │   @ LocalVariableReadNode (location: (16,0)-(16,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
-        │   ├── call_operator_loc: (141...142) = "."
-        │   ├── message_loc: (142...143) = "b"
+        │   ├── call_operator_loc: (16,1)-(16,2) = "."
+        │   ├── message_loc: (16,2)-(16,3) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: "b"
         │   ├── write_name: "b="
-        │   ├── operator_loc: (144...147) = "||="
+        │   ├── operator_loc: (16,4)-(16,7) = "||="
         │   └── value:
-        │       @ IntegerNode (location: (148...149))
+        │       @ IntegerNode (location: (16,8)-(16,9))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (150...159))
+        ├── @ CallOperatorWriteNode (location: (17,0)-(17,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (150...151))
+        │   │   @ LocalVariableReadNode (location: (17,0)-(17,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (151...154) = "[b]"
-        │   ├── opening_loc: (151...152) = "["
+        │   ├── message_loc: (17,1)-(17,4) = "[b]"
+        │   ├── opening_loc: (17,1)-(17,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (152...153))
+        │   │   @ ArgumentsNode (location: (17,2)-(17,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (152...153))
+        │   │       └── @ CallNode (location: (17,2)-(17,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (152...153) = "b"
+        │   │           ├── message_loc: (17,2)-(17,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (153...154) = "]"
+        │   ├── closing_loc: (17,3)-(17,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :+
-        │   ├── operator_loc: (155...157) = "+="
+        │   ├── operator_loc: (17,5)-(17,7) = "+="
         │   └── value:
-        │       @ IntegerNode (location: (158...159))
+        │       @ IntegerNode (location: (17,8)-(17,9))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (160...169))
+        ├── @ CallOperatorWriteNode (location: (18,0)-(18,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (160...161))
+        │   │   @ LocalVariableReadNode (location: (18,0)-(18,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (161...164) = "[b]"
-        │   ├── opening_loc: (161...162) = "["
+        │   ├── message_loc: (18,1)-(18,4) = "[b]"
+        │   ├── opening_loc: (18,1)-(18,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (162...163))
+        │   │   @ ArgumentsNode (location: (18,2)-(18,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (162...163))
+        │   │       └── @ CallNode (location: (18,2)-(18,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (162...163) = "b"
+        │   │           ├── message_loc: (18,2)-(18,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (163...164) = "]"
+        │   ├── closing_loc: (18,3)-(18,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :-
-        │   ├── operator_loc: (165...167) = "-="
+        │   ├── operator_loc: (18,5)-(18,7) = "-="
         │   └── value:
-        │       @ IntegerNode (location: (168...169))
+        │       @ IntegerNode (location: (18,8)-(18,9))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (170...180))
+        ├── @ CallOperatorWriteNode (location: (19,0)-(19,10))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (170...171))
+        │   │   @ LocalVariableReadNode (location: (19,0)-(19,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (171...174) = "[b]"
-        │   ├── opening_loc: (171...172) = "["
+        │   ├── message_loc: (19,1)-(19,4) = "[b]"
+        │   ├── opening_loc: (19,1)-(19,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (172...173))
+        │   │   @ ArgumentsNode (location: (19,2)-(19,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (172...173))
+        │   │       └── @ CallNode (location: (19,2)-(19,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (172...173) = "b"
+        │   │           ├── message_loc: (19,2)-(19,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (173...174) = "]"
+        │   ├── closing_loc: (19,3)-(19,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :**
-        │   ├── operator_loc: (175...178) = "**="
+        │   ├── operator_loc: (19,5)-(19,8) = "**="
         │   └── value:
-        │       @ IntegerNode (location: (179...180))
+        │       @ IntegerNode (location: (19,9)-(19,10))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (181...190))
+        ├── @ CallOperatorWriteNode (location: (20,0)-(20,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (181...182))
+        │   │   @ LocalVariableReadNode (location: (20,0)-(20,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (182...185) = "[b]"
-        │   ├── opening_loc: (182...183) = "["
+        │   ├── message_loc: (20,1)-(20,4) = "[b]"
+        │   ├── opening_loc: (20,1)-(20,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (183...184))
+        │   │   @ ArgumentsNode (location: (20,2)-(20,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (183...184))
+        │   │       └── @ CallNode (location: (20,2)-(20,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (183...184) = "b"
+        │   │           ├── message_loc: (20,2)-(20,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (184...185) = "]"
+        │   ├── closing_loc: (20,3)-(20,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :*
-        │   ├── operator_loc: (186...188) = "*="
+        │   ├── operator_loc: (20,5)-(20,7) = "*="
         │   └── value:
-        │       @ IntegerNode (location: (189...190))
+        │       @ IntegerNode (location: (20,8)-(20,9))
         │       └── flags: decimal
-        ├── @ CallOperatorWriteNode (location: (191...200))
+        ├── @ CallOperatorWriteNode (location: (21,0)-(21,9))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (191...192))
+        │   │   @ LocalVariableReadNode (location: (21,0)-(21,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (192...195) = "[b]"
-        │   ├── opening_loc: (192...193) = "["
+        │   ├── message_loc: (21,1)-(21,4) = "[b]"
+        │   ├── opening_loc: (21,1)-(21,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (193...194))
+        │   │   @ ArgumentsNode (location: (21,2)-(21,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (193...194))
+        │   │       └── @ CallNode (location: (21,2)-(21,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (193...194) = "b"
+        │   │           ├── message_loc: (21,2)-(21,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (194...195) = "]"
+        │   ├── closing_loc: (21,3)-(21,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
         │   ├── operator: :/
-        │   ├── operator_loc: (196...198) = "/="
+        │   ├── operator_loc: (21,5)-(21,7) = "/="
         │   └── value:
-        │       @ IntegerNode (location: (199...200))
+        │       @ IntegerNode (location: (21,8)-(21,9))
         │       └── flags: decimal
-        ├── @ CallAndWriteNode (location: (201...211))
+        ├── @ CallAndWriteNode (location: (22,0)-(22,10))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (201...202))
+        │   │   @ LocalVariableReadNode (location: (22,0)-(22,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (202...205) = "[b]"
-        │   ├── opening_loc: (202...203) = "["
+        │   ├── message_loc: (22,1)-(22,4) = "[b]"
+        │   ├── opening_loc: (22,1)-(22,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (203...204))
+        │   │   @ ArgumentsNode (location: (22,2)-(22,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (203...204))
+        │   │       └── @ CallNode (location: (22,2)-(22,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (203...204) = "b"
+        │   │           ├── message_loc: (22,2)-(22,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (204...205) = "]"
+        │   ├── closing_loc: (22,3)-(22,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
-        │   ├── operator_loc: (206...209) = "&&="
+        │   ├── operator_loc: (22,5)-(22,8) = "&&="
         │   └── value:
-        │       @ CallNode (location: (210...211))
+        │       @ CallNode (location: (22,9)-(22,10))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (210...211) = "b"
+        │       ├── message_loc: (22,9)-(22,10) = "b"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "b"
-        ├── @ CallOrWriteNode (location: (212...222))
+        ├── @ CallOrWriteNode (location: (23,0)-(23,10))
         │   ├── receiver:
-        │   │   @ LocalVariableReadNode (location: (212...213))
+        │   │   @ LocalVariableReadNode (location: (23,0)-(23,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (213...216) = "[b]"
-        │   ├── opening_loc: (213...214) = "["
+        │   ├── message_loc: (23,1)-(23,4) = "[b]"
+        │   ├── opening_loc: (23,1)-(23,2) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (214...215))
+        │   │   @ ArgumentsNode (location: (23,2)-(23,3))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (214...215))
+        │   │       └── @ CallNode (location: (23,2)-(23,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (214...215) = "b"
+        │   │           ├── message_loc: (23,2)-(23,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "b"
-        │   ├── closing_loc: (215...216) = "]"
+        │   ├── closing_loc: (23,3)-(23,4) = "]"
         │   ├── flags: ∅
         │   ├── read_name: "[]"
         │   ├── write_name: "[]="
-        │   ├── operator_loc: (217...220) = "||="
+        │   ├── operator_loc: (23,5)-(23,8) = "||="
         │   └── value:
-        │       @ IntegerNode (location: (221...222))
+        │       @ IntegerNode (location: (23,9)-(23,10))
         │       └── flags: decimal
-        └── @ CallOperatorWriteNode (location: (223...233))
+        └── @ CallOperatorWriteNode (location: (24,0)-(24,10))
             ├── receiver:
-            │   @ CallNode (location: (223...226))
+            │   @ CallNode (location: (24,0)-(24,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (223...226) = "foo"
+            │   ├── message_loc: (24,0)-(24,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
             │   └── name: "foo"
-            ├── call_operator_loc: (226...227) = "."
-            ├── message_loc: (227...228) = "A"
+            ├── call_operator_loc: (24,3)-(24,4) = "."
+            ├── message_loc: (24,4)-(24,5) = "A"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
@@ -513,7 +513,7 @@
             ├── read_name: "A"
             ├── write_name: "A="
             ├── operator: :+
-            ├── operator_loc: (229...231) = "+="
+            ├── operator_loc: (24,6)-(24,8) = "+="
             └── value:
-                @ IntegerNode (location: (232...233))
+                @ IntegerNode (location: (24,9)-(24,10))
                 └── flags: decimal

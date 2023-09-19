@@ -1,22 +1,22 @@
-@ ProgramNode (location: (0...64))
+@ ProgramNode (location: (1,0)-(7,15))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...64))
+    @ StatementsNode (location: (1,0)-(7,15))
     └── body: (length: 4)
-        ├── @ CallOperatorWriteNode (location: (0...14))
+        ├── @ CallOperatorWriteNode (location: (1,0)-(1,14))
         │   ├── receiver:
-        │   │   @ CallNode (location: (0...3))
+        │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (0...3) = "foo"
+        │   │   ├── message_loc: (1,0)-(1,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
-        │   ├── call_operator_loc: (3...4) = "."
-        │   ├── message_loc: (4...5) = "A"
+        │   ├── call_operator_loc: (1,3)-(1,4) = "."
+        │   ├── message_loc: (1,4)-(1,5) = "A"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -24,20 +24,20 @@
         │   ├── read_name: "A"
         │   ├── write_name: "A="
         │   ├── operator: :+
-        │   ├── operator_loc: (6...8) = "+="
+        │   ├── operator_loc: (1,6)-(1,8) = "+="
         │   └── value:
-        │       @ CallNode (location: (9...14))
+        │       @ CallNode (location: (1,9)-(1,14))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (9...10) = "m"
+        │       ├── message_loc: (1,9)-(1,10) = "m"
         │       ├── opening_loc: ∅
         │       ├── arguments:
-        │       │   @ ArgumentsNode (location: (11...14))
+        │       │   @ ArgumentsNode (location: (1,11)-(1,14))
         │       │   └── arguments: (length: 1)
-        │       │       └── @ CallNode (location: (11...14))
+        │       │       └── @ CallNode (location: (1,11)-(1,14))
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
-        │       │           ├── message_loc: (11...14) = "foo"
+        │       │           ├── message_loc: (1,11)-(1,14) = "foo"
         │       │           ├── opening_loc: ∅
         │       │           ├── arguments: ∅
         │       │           ├── closing_loc: ∅
@@ -48,20 +48,20 @@
         │       ├── block: ∅
         │       ├── flags: ∅
         │       └── name: "m"
-        ├── @ CallOperatorWriteNode (location: (16...30))
+        ├── @ CallOperatorWriteNode (location: (3,0)-(3,14))
         │   ├── receiver:
-        │   │   @ CallNode (location: (16...19))
+        │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (16...19) = "foo"
+        │   │   ├── message_loc: (3,0)-(3,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
-        │   ├── call_operator_loc: (19...20) = "."
-        │   ├── message_loc: (20...21) = "a"
+        │   ├── call_operator_loc: (3,3)-(3,4) = "."
+        │   ├── message_loc: (3,4)-(3,5) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
@@ -69,20 +69,20 @@
         │   ├── read_name: "a"
         │   ├── write_name: "a="
         │   ├── operator: :+
-        │   ├── operator_loc: (22...24) = "+="
+        │   ├── operator_loc: (3,6)-(3,8) = "+="
         │   └── value:
-        │       @ CallNode (location: (25...30))
+        │       @ CallNode (location: (3,9)-(3,14))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (25...26) = "m"
+        │       ├── message_loc: (3,9)-(3,10) = "m"
         │       ├── opening_loc: ∅
         │       ├── arguments:
-        │       │   @ ArgumentsNode (location: (27...30))
+        │       │   @ ArgumentsNode (location: (3,11)-(3,14))
         │       │   └── arguments: (length: 1)
-        │       │       └── @ CallNode (location: (27...30))
+        │       │       └── @ CallNode (location: (3,11)-(3,14))
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
-        │       │           ├── message_loc: (27...30) = "foo"
+        │       │           ├── message_loc: (3,11)-(3,14) = "foo"
         │       │           ├── opening_loc: ∅
         │       │           ├── arguments: ∅
         │       │           ├── closing_loc: ∅
@@ -93,14 +93,14 @@
         │       ├── block: ∅
         │       ├── flags: ∅
         │       └── name: "m"
-        ├── @ ConstantPathOperatorWriteNode (location: (32...47))
+        ├── @ ConstantPathOperatorWriteNode (location: (5,0)-(5,15))
         │   ├── target:
-        │   │   @ ConstantPathNode (location: (32...38))
+        │   │   @ ConstantPathNode (location: (5,0)-(5,6))
         │   │   ├── parent:
-        │   │   │   @ CallNode (location: (32...35))
+        │   │   │   @ CallNode (location: (5,0)-(5,3))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (32...35) = "foo"
+        │   │   │   ├── message_loc: (5,0)-(5,3) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
@@ -108,23 +108,23 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "foo"
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (37...38))
+        │   │   │   @ ConstantReadNode (location: (5,5)-(5,6))
         │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (35...37) = "::"
-        │   ├── operator_loc: (39...41) = "+="
+        │   │   └── delimiter_loc: (5,3)-(5,5) = "::"
+        │   ├── operator_loc: (5,7)-(5,9) = "+="
         │   ├── value:
-        │   │   @ CallNode (location: (42...47))
+        │   │   @ CallNode (location: (5,10)-(5,15))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (42...43) = "m"
+        │   │   ├── message_loc: (5,10)-(5,11) = "m"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments:
-        │   │   │   @ ArgumentsNode (location: (44...47))
+        │   │   │   @ ArgumentsNode (location: (5,12)-(5,15))
         │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ CallNode (location: (44...47))
+        │   │   │       └── @ CallNode (location: (5,12)-(5,15))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
-        │   │   │           ├── message_loc: (44...47) = "foo"
+        │   │   │           ├── message_loc: (5,12)-(5,15) = "foo"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
@@ -136,20 +136,20 @@
         │   │   ├── flags: ∅
         │   │   └── name: "m"
         │   └── operator: :+
-        └── @ CallOperatorWriteNode (location: (49...64))
+        └── @ CallOperatorWriteNode (location: (7,0)-(7,15))
             ├── receiver:
-            │   @ CallNode (location: (49...52))
+            │   @ CallNode (location: (7,0)-(7,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (49...52) = "foo"
+            │   ├── message_loc: (7,0)-(7,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
             │   └── name: "foo"
-            ├── call_operator_loc: (52...54) = "::"
-            ├── message_loc: (54...55) = "a"
+            ├── call_operator_loc: (7,3)-(7,5) = "::"
+            ├── message_loc: (7,5)-(7,6) = "a"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
@@ -157,20 +157,20 @@
             ├── read_name: "a"
             ├── write_name: "a="
             ├── operator: :+
-            ├── operator_loc: (56...58) = "+="
+            ├── operator_loc: (7,7)-(7,9) = "+="
             └── value:
-                @ CallNode (location: (59...64))
+                @ CallNode (location: (7,10)-(7,15))
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
-                ├── message_loc: (59...60) = "m"
+                ├── message_loc: (7,10)-(7,11) = "m"
                 ├── opening_loc: ∅
                 ├── arguments:
-                │   @ ArgumentsNode (location: (61...64))
+                │   @ ArgumentsNode (location: (7,12)-(7,15))
                 │   └── arguments: (length: 1)
-                │       └── @ CallNode (location: (61...64))
+                │       └── @ CallNode (location: (7,12)-(7,15))
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
-                │           ├── message_loc: (61...64) = "foo"
+                │           ├── message_loc: (7,12)-(7,15) = "foo"
                 │           ├── opening_loc: ∅
                 │           ├── arguments: ∅
                 │           ├── closing_loc: ∅

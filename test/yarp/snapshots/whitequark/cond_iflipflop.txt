@@ -1,20 +1,20 @@
-@ ProgramNode (location: (0...29))
+@ ProgramNode (location: (1,0)-(3,16))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...29))
+    @ StatementsNode (location: (1,0)-(3,16))
     └── body: (length: 2)
-        ├── @ CallNode (location: (0...11))
+        ├── @ CallNode (location: (1,0)-(1,11))
         │   ├── receiver:
-        │   │   @ ParenthesesNode (location: (1...11))
+        │   │   @ ParenthesesNode (location: (1,1)-(1,11))
         │   │   ├── body:
-        │   │   │   @ StatementsNode (location: (2...10))
+        │   │   │   @ StatementsNode (location: (1,2)-(1,10))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ FlipFlopNode (location: (2...10))
+        │   │   │       └── @ FlipFlopNode (location: (1,2)-(1,10))
         │   │   │           ├── left:
-        │   │   │           │   @ CallNode (location: (2...5))
+        │   │   │           │   @ CallNode (location: (1,2)-(1,5))
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
-        │   │   │           │   ├── message_loc: (2...5) = "foo"
+        │   │   │           │   ├── message_loc: (1,2)-(1,5) = "foo"
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
@@ -22,37 +22,37 @@
         │   │   │           │   ├── flags: variable_call
         │   │   │           │   └── name: "foo"
         │   │   │           ├── right:
-        │   │   │           │   @ CallNode (location: (7...10))
+        │   │   │           │   @ CallNode (location: (1,7)-(1,10))
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
-        │   │   │           │   ├── message_loc: (7...10) = "bar"
+        │   │   │           │   ├── message_loc: (1,7)-(1,10) = "bar"
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
         │   │   │           │   ├── flags: variable_call
         │   │   │           │   └── name: "bar"
-        │   │   │           ├── operator_loc: (5...7) = ".."
+        │   │   │           ├── operator_loc: (1,5)-(1,7) = ".."
         │   │   │           └── flags: ∅
-        │   │   ├── opening_loc: (1...2) = "("
-        │   │   └── closing_loc: (10...11) = ")"
+        │   │   ├── opening_loc: (1,1)-(1,2) = "("
+        │   │   └── closing_loc: (1,10)-(1,11) = ")"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...1) = "!"
+        │   ├── message_loc: (1,0)-(1,1) = "!"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "!"
-        └── @ IfNode (location: (13...29))
-            ├── if_keyword_loc: (13...15) = "if"
+        └── @ IfNode (location: (3,0)-(3,16))
+            ├── if_keyword_loc: (3,0)-(3,2) = "if"
             ├── predicate:
-            │   @ FlipFlopNode (location: (16...24))
+            │   @ FlipFlopNode (location: (3,3)-(3,11))
             │   ├── left:
-            │   │   @ CallNode (location: (16...19))
+            │   │   @ CallNode (location: (3,3)-(3,6))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (16...19) = "foo"
+            │   │   ├── message_loc: (3,3)-(3,6) = "foo"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
@@ -60,18 +60,18 @@
             │   │   ├── flags: variable_call
             │   │   └── name: "foo"
             │   ├── right:
-            │   │   @ CallNode (location: (21...24))
+            │   │   @ CallNode (location: (3,8)-(3,11))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (21...24) = "bar"
+            │   │   ├── message_loc: (3,8)-(3,11) = "bar"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
             │   │   └── name: "bar"
-            │   ├── operator_loc: (19...21) = ".."
+            │   ├── operator_loc: (3,6)-(3,8) = ".."
             │   └── flags: ∅
             ├── statements: ∅
             ├── consequent: ∅
-            └── end_keyword_loc: (26...29) = "end"
+            └── end_keyword_loc: (3,13)-(3,16) = "end"

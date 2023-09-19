@@ -1,24 +1,24 @@
-@ ProgramNode (location: (0...26))
+@ ProgramNode (location: (1,0)-(1,26))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...26))
+    @ StatementsNode (location: (1,0)-(1,26))
     └── body: (length: 1)
-        └── @ BreakNode (location: (0...26))
+        └── @ BreakNode (location: (1,0)-(1,26))
             ├── arguments:
-            │   @ ArgumentsNode (location: (6...26))
+            │   @ ArgumentsNode (location: (1,6)-(1,26))
             │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (6...26))
+            │       └── @ CallNode (location: (1,6)-(1,26))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (6...9) = "foo"
+            │           ├── message_loc: (1,6)-(1,9) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (10...13))
+            │           │   @ ArgumentsNode (location: (1,10)-(1,13))
             │           │   └── arguments: (length: 1)
-            │           │       └── @ CallNode (location: (10...13))
+            │           │       └── @ CallNode (location: (1,10)-(1,13))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (10...13) = "arg"
+            │           │           ├── message_loc: (1,10)-(1,13) = "arg"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
@@ -27,14 +27,14 @@
             │           │           └── name: "arg"
             │           ├── closing_loc: ∅
             │           ├── block:
-            │           │   @ BlockNode (location: (14...26))
+            │           │   @ BlockNode (location: (1,14)-(1,26))
             │           │   ├── locals: [:bar]
             │           │   ├── parameters:
-            │           │   │   @ BlockParametersNode (location: (17...22))
+            │           │   │   @ BlockParametersNode (location: (1,17)-(1,22))
             │           │   │   ├── parameters:
-            │           │   │   │   @ ParametersNode (location: (18...21))
+            │           │   │   │   @ ParametersNode (location: (1,18)-(1,21))
             │           │   │   │   ├── requireds: (length: 1)
-            │           │   │   │   │   └── @ RequiredParameterNode (location: (18...21))
+            │           │   │   │   │   └── @ RequiredParameterNode (location: (1,18)-(1,21))
             │           │   │   │   │       └── name: :bar
             │           │   │   │   ├── optionals: (length: 0)
             │           │   │   │   ├── rest: ∅
@@ -43,11 +43,11 @@
             │           │   │   │   ├── keyword_rest: ∅
             │           │   │   │   └── block: ∅
             │           │   │   ├── locals: (length: 0)
-            │           │   │   ├── opening_loc: (17...18) = "|"
-            │           │   │   └── closing_loc: (21...22) = "|"
+            │           │   │   ├── opening_loc: (1,17)-(1,18) = "|"
+            │           │   │   └── closing_loc: (1,21)-(1,22) = "|"
             │           │   ├── body: ∅
-            │           │   ├── opening_loc: (14...16) = "do"
-            │           │   └── closing_loc: (23...26) = "end"
+            │           │   ├── opening_loc: (1,14)-(1,16) = "do"
+            │           │   └── closing_loc: (1,23)-(1,26) = "end"
             │           ├── flags: ∅
             │           └── name: "foo"
-            └── keyword_loc: (0...5) = "break"
+            └── keyword_loc: (1,0)-(1,5) = "break"

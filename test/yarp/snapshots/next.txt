@@ -1,123 +1,123 @@
-@ ProgramNode (location: (0...118))
+@ ProgramNode (location: (1,0)-(24,7))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...118))
+    @ StatementsNode (location: (1,0)-(24,7))
     └── body: (length: 11)
-        ├── @ NextNode (location: (0...4))
+        ├── @ NextNode (location: (1,0)-(1,4))
         │   ├── arguments: ∅
-        │   └── keyword_loc: (0...4) = "next"
-        ├── @ NextNode (location: (6...24))
+        │   └── keyword_loc: (1,0)-(1,4) = "next"
+        ├── @ NextNode (location: (3,0)-(3,18))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (11...24))
+        │   │   @ ArgumentsNode (location: (3,5)-(3,18))
         │   │   └── arguments: (length: 3)
-        │   │       ├── @ ParenthesesNode (location: (11...14))
+        │   │       ├── @ ParenthesesNode (location: (3,5)-(3,8))
         │   │       │   ├── body:
-        │   │       │   │   @ StatementsNode (location: (12...13))
+        │   │       │   │   @ StatementsNode (location: (3,6)-(3,7))
         │   │       │   │   └── body: (length: 1)
-        │   │       │   │       └── @ IntegerNode (location: (12...13))
+        │   │       │   │       └── @ IntegerNode (location: (3,6)-(3,7))
         │   │       │   │           └── flags: decimal
-        │   │       │   ├── opening_loc: (11...12) = "("
-        │   │       │   └── closing_loc: (13...14) = ")"
-        │   │       ├── @ ParenthesesNode (location: (16...19))
+        │   │       │   ├── opening_loc: (3,5)-(3,6) = "("
+        │   │       │   └── closing_loc: (3,7)-(3,8) = ")"
+        │   │       ├── @ ParenthesesNode (location: (3,10)-(3,13))
         │   │       │   ├── body:
-        │   │       │   │   @ StatementsNode (location: (17...18))
+        │   │       │   │   @ StatementsNode (location: (3,11)-(3,12))
         │   │       │   │   └── body: (length: 1)
-        │   │       │   │       └── @ IntegerNode (location: (17...18))
+        │   │       │   │       └── @ IntegerNode (location: (3,11)-(3,12))
         │   │       │   │           └── flags: decimal
-        │   │       │   ├── opening_loc: (16...17) = "("
-        │   │       │   └── closing_loc: (18...19) = ")"
-        │   │       └── @ ParenthesesNode (location: (21...24))
+        │   │       │   ├── opening_loc: (3,10)-(3,11) = "("
+        │   │       │   └── closing_loc: (3,12)-(3,13) = ")"
+        │   │       └── @ ParenthesesNode (location: (3,15)-(3,18))
         │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (22...23))
+        │   │           │   @ StatementsNode (location: (3,16)-(3,17))
         │   │           │   └── body: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (22...23))
+        │   │           │       └── @ IntegerNode (location: (3,16)-(3,17))
         │   │           │           └── flags: decimal
-        │   │           ├── opening_loc: (21...22) = "("
-        │   │           └── closing_loc: (23...24) = ")"
-        │   └── keyword_loc: (6...10) = "next"
-        ├── @ NextNode (location: (26...32))
+        │   │           ├── opening_loc: (3,15)-(3,16) = "("
+        │   │           └── closing_loc: (3,17)-(3,18) = ")"
+        │   └── keyword_loc: (3,0)-(3,4) = "next"
+        ├── @ NextNode (location: (5,0)-(5,6))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (31...32))
+        │   │   @ ArgumentsNode (location: (5,5)-(5,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (31...32))
+        │   │       └── @ IntegerNode (location: (5,5)-(5,6))
         │   │           └── flags: decimal
-        │   └── keyword_loc: (26...30) = "next"
-        ├── @ NextNode (location: (34...46))
+        │   └── keyword_loc: (5,0)-(5,4) = "next"
+        ├── @ NextNode (location: (7,0)-(8,1))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (39...46))
+        │   │   @ ArgumentsNode (location: (7,5)-(8,1))
         │   │   └── arguments: (length: 3)
-        │   │       ├── @ IntegerNode (location: (39...40))
+        │   │       ├── @ IntegerNode (location: (7,5)-(7,6))
         │   │       │   └── flags: decimal
-        │   │       ├── @ IntegerNode (location: (42...43))
+        │   │       ├── @ IntegerNode (location: (7,8)-(7,9))
         │   │       │   └── flags: decimal
-        │   │       └── @ IntegerNode (location: (45...46))
+        │   │       └── @ IntegerNode (location: (8,0)-(8,1))
         │   │           └── flags: decimal
-        │   └── keyword_loc: (34...38) = "next"
-        ├── @ NextNode (location: (48...60))
+        │   └── keyword_loc: (7,0)-(7,4) = "next"
+        ├── @ NextNode (location: (10,0)-(10,12))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (53...60))
+        │   │   @ ArgumentsNode (location: (10,5)-(10,12))
         │   │   └── arguments: (length: 3)
-        │   │       ├── @ IntegerNode (location: (53...54))
+        │   │       ├── @ IntegerNode (location: (10,5)-(10,6))
         │   │       │   └── flags: decimal
-        │   │       ├── @ IntegerNode (location: (56...57))
+        │   │       ├── @ IntegerNode (location: (10,8)-(10,9))
         │   │       │   └── flags: decimal
-        │   │       └── @ IntegerNode (location: (59...60))
+        │   │       └── @ IntegerNode (location: (10,11)-(10,12))
         │   │           └── flags: decimal
-        │   └── keyword_loc: (48...52) = "next"
-        ├── @ NextNode (location: (62...76))
+        │   └── keyword_loc: (10,0)-(10,4) = "next"
+        ├── @ NextNode (location: (12,0)-(12,14))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (67...76))
+        │   │   @ ArgumentsNode (location: (12,5)-(12,14))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ArrayNode (location: (67...76))
+        │   │       └── @ ArrayNode (location: (12,5)-(12,14))
         │   │           ├── elements: (length: 3)
-        │   │           │   ├── @ IntegerNode (location: (68...69))
+        │   │           │   ├── @ IntegerNode (location: (12,6)-(12,7))
         │   │           │   │   └── flags: decimal
-        │   │           │   ├── @ IntegerNode (location: (71...72))
+        │   │           │   ├── @ IntegerNode (location: (12,9)-(12,10))
         │   │           │   │   └── flags: decimal
-        │   │           │   └── @ IntegerNode (location: (74...75))
+        │   │           │   └── @ IntegerNode (location: (12,12)-(12,13))
         │   │           │       └── flags: decimal
-        │   │           ├── opening_loc: (67...68) = "["
-        │   │           └── closing_loc: (75...76) = "]"
-        │   └── keyword_loc: (62...66) = "next"
-        ├── @ NextNode (location: (78...93))
+        │   │           ├── opening_loc: (12,5)-(12,6) = "["
+        │   │           └── closing_loc: (12,13)-(12,14) = "]"
+        │   └── keyword_loc: (12,0)-(12,4) = "next"
+        ├── @ NextNode (location: (14,0)-(17,1))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (82...93))
+        │   │   @ ArgumentsNode (location: (14,4)-(17,1))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (82...93))
+        │   │       └── @ ParenthesesNode (location: (14,4)-(17,1))
         │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (86...91))
+        │   │           │   @ StatementsNode (location: (15,2)-(16,3))
         │   │           │   └── body: (length: 2)
-        │   │           │       ├── @ IntegerNode (location: (86...87))
+        │   │           │       ├── @ IntegerNode (location: (15,2)-(15,3))
         │   │           │       │   └── flags: decimal
-        │   │           │       └── @ IntegerNode (location: (90...91))
+        │   │           │       └── @ IntegerNode (location: (16,2)-(16,3))
         │   │           │           └── flags: decimal
-        │   │           ├── opening_loc: (82...83) = "("
-        │   │           └── closing_loc: (92...93) = ")"
-        │   └── keyword_loc: (78...82) = "next"
-        ├── @ NextNode (location: (95...99))
+        │   │           ├── opening_loc: (14,4)-(14,5) = "("
+        │   │           └── closing_loc: (17,0)-(17,1) = ")"
+        │   └── keyword_loc: (14,0)-(14,4) = "next"
+        ├── @ NextNode (location: (19,0)-(19,4))
         │   ├── arguments: ∅
-        │   └── keyword_loc: (95...99) = "next"
-        ├── @ IntegerNode (location: (100...101))
+        │   └── keyword_loc: (19,0)-(19,4) = "next"
+        ├── @ IntegerNode (location: (20,0)-(20,1))
         │   └── flags: decimal
-        ├── @ NextNode (location: (103...109))
+        ├── @ NextNode (location: (22,0)-(22,6))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (107...109))
+        │   │   @ ArgumentsNode (location: (22,4)-(22,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (107...109))
+        │   │       └── @ ParenthesesNode (location: (22,4)-(22,6))
         │   │           ├── body: ∅
-        │   │           ├── opening_loc: (107...108) = "("
-        │   │           └── closing_loc: (108...109) = ")"
-        │   └── keyword_loc: (103...107) = "next"
-        └── @ NextNode (location: (111...118))
+        │   │           ├── opening_loc: (22,4)-(22,5) = "("
+        │   │           └── closing_loc: (22,5)-(22,6) = ")"
+        │   └── keyword_loc: (22,0)-(22,4) = "next"
+        └── @ NextNode (location: (24,0)-(24,7))
             ├── arguments:
-            │   @ ArgumentsNode (location: (115...118))
+            │   @ ArgumentsNode (location: (24,4)-(24,7))
             │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (115...118))
+            │       └── @ ParenthesesNode (location: (24,4)-(24,7))
             │           ├── body:
-            │           │   @ StatementsNode (location: (116...117))
+            │           │   @ StatementsNode (location: (24,5)-(24,6))
             │           │   └── body: (length: 1)
-            │           │       └── @ IntegerNode (location: (116...117))
+            │           │       └── @ IntegerNode (location: (24,5)-(24,6))
             │           │           └── flags: decimal
-            │           ├── opening_loc: (115...116) = "("
-            │           └── closing_loc: (117...118) = ")"
-            └── keyword_loc: (111...115) = "next"
+            │           ├── opening_loc: (24,4)-(24,5) = "("
+            │           └── closing_loc: (24,6)-(24,7) = ")"
+            └── keyword_loc: (24,0)-(24,4) = "next"

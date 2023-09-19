@@ -1,51 +1,51 @@
-@ ProgramNode (location: (0...22))
+@ ProgramNode (location: (1,0)-(3,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...22))
+    @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...22))
+        └── @ CallNode (location: (1,0)-(3,3))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "a"
+            ├── message_loc: (1,0)-(1,1) = "a"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (2...22))
+            │   @ ArgumentsNode (location: (1,2)-(3,3))
             │   └── arguments: (length: 1)
-            │       └── @ BeginNode (location: (2...22))
-            │           ├── begin_keyword_loc: (2...7) = "begin"
+            │       └── @ BeginNode (location: (1,2)-(3,3))
+            │           ├── begin_keyword_loc: (1,2)-(1,7) = "begin"
             │           ├── statements:
-            │           │   @ StatementsNode (location: (8...18))
+            │           │   @ StatementsNode (location: (2,0)-(2,10))
             │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (8...18))
+            │           │       └── @ CallNode (location: (2,0)-(2,10))
             │           │           ├── receiver:
-            │           │           │   @ CallNode (location: (8...9))
+            │           │           │   @ CallNode (location: (2,0)-(2,1))
             │           │           │   ├── receiver: ∅
             │           │           │   ├── call_operator_loc: ∅
-            │           │           │   ├── message_loc: (8...9) = "b"
+            │           │           │   ├── message_loc: (2,0)-(2,1) = "b"
             │           │           │   ├── opening_loc: ∅
             │           │           │   ├── arguments: ∅
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
             │           │           │   ├── flags: variable_call
             │           │           │   └── name: "b"
-            │           │           ├── call_operator_loc: (9...10) = "."
-            │           │           ├── message_loc: (10...11) = "c"
+            │           │           ├── call_operator_loc: (2,1)-(2,2) = "."
+            │           │           ├── message_loc: (2,2)-(2,3) = "c"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
             │           │           ├── block:
-            │           │           │   @ BlockNode (location: (12...18))
+            │           │           │   @ BlockNode (location: (2,4)-(2,10))
             │           │           │   ├── locals: []
             │           │           │   ├── parameters: ∅
             │           │           │   ├── body: ∅
-            │           │           │   ├── opening_loc: (12...14) = "do"
-            │           │           │   └── closing_loc: (15...18) = "end"
+            │           │           │   ├── opening_loc: (2,4)-(2,6) = "do"
+            │           │           │   └── closing_loc: (2,7)-(2,10) = "end"
             │           │           ├── flags: ∅
             │           │           └── name: "c"
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅
-            │           └── end_keyword_loc: (19...22) = "end"
+            │           └── end_keyword_loc: (3,0)-(3,3) = "end"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

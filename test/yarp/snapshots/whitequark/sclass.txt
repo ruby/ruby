@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...22))
+@ ProgramNode (location: (1,0)-(1,22))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...22))
+    @ StatementsNode (location: (1,0)-(1,22))
     └── body: (length: 1)
-        └── @ SingletonClassNode (location: (0...22))
+        └── @ SingletonClassNode (location: (1,0)-(1,22))
             ├── locals: []
-            ├── class_keyword_loc: (0...5) = "class"
-            ├── operator_loc: (6...8) = "<<"
+            ├── class_keyword_loc: (1,0)-(1,5) = "class"
+            ├── operator_loc: (1,6)-(1,8) = "<<"
             ├── expression:
-            │   @ CallNode (location: (9...12))
+            │   @ CallNode (location: (1,9)-(1,12))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (9...12) = "foo"
+            │   ├── message_loc: (1,9)-(1,12) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -19,7 +19,7 @@
             │   ├── flags: variable_call
             │   └── name: "foo"
             ├── body:
-            │   @ StatementsNode (location: (14...17))
+            │   @ StatementsNode (location: (1,14)-(1,17))
             │   └── body: (length: 1)
-            │       └── @ NilNode (location: (14...17))
-            └── end_keyword_loc: (19...22) = "end"
+            │       └── @ NilNode (location: (1,14)-(1,17))
+            └── end_keyword_loc: (1,19)-(1,22) = "end"

@@ -1,26 +1,26 @@
-@ ProgramNode (location: (0...24))
+@ ProgramNode (location: (1,0)-(2,14))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...24))
+    @ StatementsNode (location: (1,0)-(2,14))
     └── body: (length: 2)
-        ├── @ UndefNode (location: (0...9))
+        ├── @ UndefNode (location: (1,0)-(1,9))
         │   ├── names: (length: 1)
-        │   │   └── @ SymbolNode (location: (6...9))
+        │   │   └── @ SymbolNode (location: (1,6)-(1,9))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (6...9) = "foo"
+        │   │       ├── value_loc: (1,6)-(1,9) = "foo"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "foo"
-        │   └── keyword_loc: (0...5) = "undef"
-        └── @ UndefNode (location: (10...24))
+        │   └── keyword_loc: (1,0)-(1,5) = "undef"
+        └── @ UndefNode (location: (2,0)-(2,14))
             ├── names: (length: 2)
-            │   ├── @ SymbolNode (location: (16...19))
+            │   ├── @ SymbolNode (location: (2,6)-(2,9))
             │   │   ├── opening_loc: ∅
-            │   │   ├── value_loc: (16...19) = "foo"
+            │   │   ├── value_loc: (2,6)-(2,9) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
-            │   └── @ SymbolNode (location: (21...24))
+            │   └── @ SymbolNode (location: (2,11)-(2,14))
             │       ├── opening_loc: ∅
-            │       ├── value_loc: (21...24) = "bar"
+            │       ├── value_loc: (2,11)-(2,14) = "bar"
             │       ├── closing_loc: ∅
             │       └── unescaped: "bar"
-            └── keyword_loc: (10...15) = "undef"
+            └── keyword_loc: (2,0)-(2,5) = "undef"

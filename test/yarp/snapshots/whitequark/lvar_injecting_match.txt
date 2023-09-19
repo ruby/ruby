@@ -1,35 +1,35 @@
-@ ProgramNode (location: (0...31))
+@ ProgramNode (location: (1,0)-(1,31))
 ├── locals: [:match]
 └── statements:
-    @ StatementsNode (location: (0...31))
+    @ StatementsNode (location: (1,0)-(1,31))
     └── body: (length: 2)
-        ├── @ MatchWriteNode (location: (0...24))
+        ├── @ MatchWriteNode (location: (1,0)-(1,24))
         │   ├── call:
-        │   │   @ CallNode (location: (0...24))
+        │   │   @ CallNode (location: (1,0)-(1,24))
         │   │   ├── receiver:
-        │   │   │   @ RegularExpressionNode (location: (0...15))
-        │   │   │   ├── opening_loc: (0...1) = "/"
-        │   │   │   ├── content_loc: (1...14) = "(?<match>bar)"
-        │   │   │   ├── closing_loc: (14...15) = "/"
+        │   │   │   @ RegularExpressionNode (location: (1,0)-(1,15))
+        │   │   │   ├── opening_loc: (1,0)-(1,1) = "/"
+        │   │   │   ├── content_loc: (1,1)-(1,14) = "(?<match>bar)"
+        │   │   │   ├── closing_loc: (1,14)-(1,15) = "/"
         │   │   │   ├── unescaped: "(?<match>bar)"
         │   │   │   └── flags: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (16...18) = "=~"
+        │   │   ├── message_loc: (1,16)-(1,18) = "=~"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments:
-        │   │   │   @ ArgumentsNode (location: (19...24))
+        │   │   │   @ ArgumentsNode (location: (1,19)-(1,24))
         │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ StringNode (location: (19...24))
+        │   │   │       └── @ StringNode (location: (1,19)-(1,24))
         │   │   │           ├── flags: ∅
-        │   │   │           ├── opening_loc: (19...20) = "'"
-        │   │   │           ├── content_loc: (20...23) = "bar"
-        │   │   │           ├── closing_loc: (23...24) = "'"
+        │   │   │           ├── opening_loc: (1,19)-(1,20) = "'"
+        │   │   │           ├── content_loc: (1,20)-(1,23) = "bar"
+        │   │   │           ├── closing_loc: (1,23)-(1,24) = "'"
         │   │   │           └── unescaped: "bar"
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
         │   │   └── name: "=~"
         │   └── locals: [:match]
-        └── @ LocalVariableReadNode (location: (26...31))
+        └── @ LocalVariableReadNode (location: (1,26)-(1,31))
             ├── name: :match
             └── depth: 0

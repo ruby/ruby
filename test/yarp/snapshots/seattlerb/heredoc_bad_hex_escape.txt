@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...9))
+@ ProgramNode (location: (1,0)-(1,9))
 ├── locals: [:s]
 └── statements:
-    @ StatementsNode (location: (0...9))
+    @ StatementsNode (location: (1,0)-(1,9))
     └── body: (length: 1)
-        └── @ LocalVariableWriteNode (location: (0...9))
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,9))
             ├── name: :s
             ├── depth: 0
-            ├── name_loc: (0...1) = "s"
+            ├── name_loc: (1,0)-(1,1) = "s"
             ├── value:
-            │   @ StringNode (location: (4...9))
+            │   @ StringNode (location: (1,4)-(1,9))
             │   ├── flags: ∅
-            │   ├── opening_loc: (4...9) = "<<eos"
-            │   ├── content_loc: (10...17) = "a\\xE9b\n"
-            │   ├── closing_loc: (17...21) = "eos\n"
+            │   ├── opening_loc: (1,4)-(1,9) = "<<eos"
+            │   ├── content_loc: (2,0)-(2,0) = "a\\xE9b\n"
+            │   ├── closing_loc: (3,0)-(3,0) = "eos\n"
             │   └── unescaped: "a\xE9b\n"
-            └── operator_loc: (2...3) = "="
+            └── operator_loc: (1,2)-(1,3) = "="

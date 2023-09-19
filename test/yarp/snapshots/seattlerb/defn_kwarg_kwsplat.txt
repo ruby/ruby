@@ -1,36 +1,36 @@
-@ ProgramNode (location: (0...20))
+@ ProgramNode (location: (1,0)-(1,20))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...20))
+    @ StatementsNode (location: (1,0)-(1,20))
     └── body: (length: 1)
-        └── @ DefNode (location: (0...20))
+        └── @ DefNode (location: (1,0)-(1,20))
             ├── name: :a
-            ├── name_loc: (4...5) = "a"
+            ├── name_loc: (1,4)-(1,5) = "a"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (6...15))
+            │   @ ParametersNode (location: (1,6)-(1,15))
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
-            │   │   └── @ KeywordParameterNode (location: (6...10))
+            │   │   └── @ KeywordParameterNode (location: (1,6)-(1,10))
             │   │       ├── name: :b
-            │   │       ├── name_loc: (6...8) = "b:"
+            │   │       ├── name_loc: (1,6)-(1,8) = "b:"
             │   │       └── value:
-            │   │           @ IntegerNode (location: (9...10))
+            │   │           @ IntegerNode (location: (1,9)-(1,10))
             │   │           └── flags: decimal
             │   ├── keyword_rest:
-            │   │   @ KeywordRestParameterNode (location: (12...15))
+            │   │   @ KeywordRestParameterNode (location: (1,12)-(1,15))
             │   │   ├── name: :c
-            │   │   ├── name_loc: (14...15) = "c"
-            │   │   └── operator_loc: (12...14) = "**"
+            │   │   ├── name_loc: (1,14)-(1,15) = "c"
+            │   │   └── operator_loc: (1,12)-(1,14) = "**"
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:b, :c]
-            ├── def_keyword_loc: (0...3) = "def"
+            ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (5...6) = "("
-            ├── rparen_loc: (15...16) = ")"
+            ├── lparen_loc: (1,5)-(1,6) = "("
+            ├── rparen_loc: (1,15)-(1,16) = ")"
             ├── equal_loc: ∅
-            └── end_keyword_loc: (17...20) = "end"
+            └── end_keyword_loc: (1,17)-(1,20) = "end"

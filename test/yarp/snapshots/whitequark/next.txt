@@ -1,53 +1,53 @@
-@ ProgramNode (location: (0...33))
+@ ProgramNode (location: (1,0)-(7,9))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...33))
+    @ StatementsNode (location: (1,0)-(7,9))
     └── body: (length: 4)
-        ├── @ NextNode (location: (0...4))
+        ├── @ NextNode (location: (1,0)-(1,4))
         │   ├── arguments: ∅
-        │   └── keyword_loc: (0...4) = "next"
-        ├── @ NextNode (location: (6...14))
+        │   └── keyword_loc: (1,0)-(1,4) = "next"
+        ├── @ NextNode (location: (3,0)-(3,8))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (11...14))
+        │   │   @ ArgumentsNode (location: (3,5)-(3,8))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (11...14))
+        │   │       └── @ CallNode (location: (3,5)-(3,8))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (11...14) = "foo"
+        │   │           ├── message_loc: (3,5)-(3,8) = "foo"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "foo"
-        │   └── keyword_loc: (6...10) = "next"
-        ├── @ NextNode (location: (16...22))
+        │   └── keyword_loc: (3,0)-(3,4) = "next"
+        ├── @ NextNode (location: (5,0)-(5,6))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (20...22))
+        │   │   @ ArgumentsNode (location: (5,4)-(5,6))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (20...22))
+        │   │       └── @ ParenthesesNode (location: (5,4)-(5,6))
         │   │           ├── body: ∅
-        │   │           ├── opening_loc: (20...21) = "("
-        │   │           └── closing_loc: (21...22) = ")"
-        │   └── keyword_loc: (16...20) = "next"
-        └── @ NextNode (location: (24...33))
+        │   │           ├── opening_loc: (5,4)-(5,5) = "("
+        │   │           └── closing_loc: (5,5)-(5,6) = ")"
+        │   └── keyword_loc: (5,0)-(5,4) = "next"
+        └── @ NextNode (location: (7,0)-(7,9))
             ├── arguments:
-            │   @ ArgumentsNode (location: (28...33))
+            │   @ ArgumentsNode (location: (7,4)-(7,9))
             │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (28...33))
+            │       └── @ ParenthesesNode (location: (7,4)-(7,9))
             │           ├── body:
-            │           │   @ StatementsNode (location: (29...32))
+            │           │   @ StatementsNode (location: (7,5)-(7,8))
             │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (29...32))
+            │           │       └── @ CallNode (location: (7,5)-(7,8))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (29...32) = "foo"
+            │           │           ├── message_loc: (7,5)-(7,8) = "foo"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
             │           │           └── name: "foo"
-            │           ├── opening_loc: (28...29) = "("
-            │           └── closing_loc: (32...33) = ")"
-            └── keyword_loc: (24...28) = "next"
+            │           ├── opening_loc: (7,4)-(7,5) = "("
+            │           └── closing_loc: (7,8)-(7,9) = ")"
+            └── keyword_loc: (7,0)-(7,4) = "next"

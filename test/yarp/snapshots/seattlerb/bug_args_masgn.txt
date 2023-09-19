@@ -1,32 +1,32 @@
-@ ProgramNode (location: (0...17))
+@ ProgramNode (location: (1,0)-(1,17))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...17))
+    @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...17))
+        └── @ CallNode (location: (1,0)-(1,17))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "f"
+            ├── message_loc: (1,0)-(1,1) = "f"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block:
-            │   @ BlockNode (location: (2...17))
+            │   @ BlockNode (location: (1,2)-(1,17))
             │   ├── locals: [:a, :b, :c]
             │   ├── parameters:
-            │   │   @ BlockParametersNode (location: (4...15))
+            │   │   @ BlockParametersNode (location: (1,4)-(1,15))
             │   │   ├── parameters:
-            │   │   │   @ ParametersNode (location: (5...14))
+            │   │   │   @ ParametersNode (location: (1,5)-(1,14))
             │   │   │   ├── requireds: (length: 2)
-            │   │   │   │   ├── @ RequiredDestructuredParameterNode (location: (5...11))
+            │   │   │   │   ├── @ RequiredDestructuredParameterNode (location: (1,5)-(1,11))
             │   │   │   │   │   ├── parameters: (length: 2)
-            │   │   │   │   │   │   ├── @ RequiredParameterNode (location: (6...7))
+            │   │   │   │   │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
             │   │   │   │   │   │   │   └── name: :a
-            │   │   │   │   │   │   └── @ RequiredParameterNode (location: (9...10))
+            │   │   │   │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
             │   │   │   │   │   │       └── name: :b
-            │   │   │   │   │   ├── opening_loc: (5...6) = "("
-            │   │   │   │   │   └── closing_loc: (10...11) = ")"
-            │   │   │   │   └── @ RequiredParameterNode (location: (13...14))
+            │   │   │   │   │   ├── opening_loc: (1,5)-(1,6) = "("
+            │   │   │   │   │   └── closing_loc: (1,10)-(1,11) = ")"
+            │   │   │   │   └── @ RequiredParameterNode (location: (1,13)-(1,14))
             │   │   │   │       └── name: :c
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest: ∅
@@ -35,10 +35,10 @@
             │   │   │   ├── keyword_rest: ∅
             │   │   │   └── block: ∅
             │   │   ├── locals: (length: 0)
-            │   │   ├── opening_loc: (4...5) = "|"
-            │   │   └── closing_loc: (14...15) = "|"
+            │   │   ├── opening_loc: (1,4)-(1,5) = "|"
+            │   │   └── closing_loc: (1,14)-(1,15) = "|"
             │   ├── body: ∅
-            │   ├── opening_loc: (2...3) = "{"
-            │   └── closing_loc: (16...17) = "}"
+            │   ├── opening_loc: (1,2)-(1,3) = "{"
+            │   └── closing_loc: (1,16)-(1,17) = "}"
             ├── flags: ∅
             └── name: "f"

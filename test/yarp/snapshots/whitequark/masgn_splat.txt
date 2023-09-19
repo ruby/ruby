@@ -1,126 +1,126 @@
-@ ProgramNode (location: (0...139))
+@ ProgramNode (location: (1,0)-(19,16))
 ├── locals: [:c, :d, :b, :a]
 └── statements:
-    @ StatementsNode (location: (0...139))
+    @ StatementsNode (location: (1,0)-(19,16))
     └── body: (length: 10)
-        ├── @ MultiWriteNode (location: (0...7))
+        ├── @ MultiWriteNode (location: (1,0)-(1,7))
         │   ├── targets: (length: 1)
-        │   │   └── @ SplatNode (location: (0...1))
-        │   │       ├── operator_loc: (0...1) = "*"
+        │   │   └── @ SplatNode (location: (1,0)-(1,1))
+        │   │       ├── operator_loc: (1,0)-(1,1) = "*"
         │   │       └── expression: ∅
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (2...3) = "="
+        │   ├── operator_loc: (1,2)-(1,3) = "="
         │   └── value:
-        │       @ CallNode (location: (4...7))
+        │       @ CallNode (location: (1,4)-(1,7))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (4...7) = "bar"
+        │       ├── message_loc: (1,4)-(1,7) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (9...22))
+        ├── @ MultiWriteNode (location: (3,0)-(3,13))
         │   ├── targets: (length: 3)
-        │   │   ├── @ MultiTargetNode (location: (9...10))
+        │   │   ├── @ MultiTargetNode (location: (3,0)-(3,1))
         │   │   │   ├── targets: (length: 1)
-        │   │   │   │   └── @ SplatNode (location: (9...10))
-        │   │   │   │       ├── operator_loc: (9...10) = "*"
+        │   │   │   │   └── @ SplatNode (location: (3,0)-(3,1))
+        │   │   │   │       ├── operator_loc: (3,0)-(3,1) = "*"
         │   │   │   │       └── expression: ∅
         │   │   │   ├── lparen_loc: ∅
         │   │   │   └── rparen_loc: ∅
-        │   │   ├── @ LocalVariableTargetNode (location: (12...13))
+        │   │   ├── @ LocalVariableTargetNode (location: (3,3)-(3,4))
         │   │   │   ├── name: :c
         │   │   │   └── depth: 0
-        │   │   └── @ LocalVariableTargetNode (location: (15...16))
+        │   │   └── @ LocalVariableTargetNode (location: (3,6)-(3,7))
         │   │       ├── name: :d
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (17...18) = "="
+        │   ├── operator_loc: (3,8)-(3,9) = "="
         │   └── value:
-        │       @ CallNode (location: (19...22))
+        │       @ CallNode (location: (3,10)-(3,13))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (19...22) = "bar"
+        │       ├── message_loc: (3,10)-(3,13) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (24...32))
+        ├── @ MultiWriteNode (location: (5,0)-(5,8))
         │   ├── targets: (length: 1)
-        │   │   └── @ SplatNode (location: (24...26))
-        │   │       ├── operator_loc: (24...25) = "*"
+        │   │   └── @ SplatNode (location: (5,0)-(5,2))
+        │   │       ├── operator_loc: (5,0)-(5,1) = "*"
         │   │       └── expression:
-        │   │           @ LocalVariableTargetNode (location: (25...26))
+        │   │           @ LocalVariableTargetNode (location: (5,1)-(5,2))
         │   │           ├── name: :b
         │   │           └── depth: 0
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (27...28) = "="
+        │   ├── operator_loc: (5,3)-(5,4) = "="
         │   └── value:
-        │       @ CallNode (location: (29...32))
+        │       @ CallNode (location: (5,5)-(5,8))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (29...32) = "bar"
+        │       ├── message_loc: (5,5)-(5,8) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (34...45))
+        ├── @ MultiWriteNode (location: (7,0)-(7,11))
         │   ├── targets: (length: 2)
-        │   │   ├── @ MultiTargetNode (location: (34...36))
+        │   │   ├── @ MultiTargetNode (location: (7,0)-(7,2))
         │   │   │   ├── targets: (length: 1)
-        │   │   │   │   └── @ SplatNode (location: (34...36))
-        │   │   │   │       ├── operator_loc: (34...35) = "*"
+        │   │   │   │   └── @ SplatNode (location: (7,0)-(7,2))
+        │   │   │   │       ├── operator_loc: (7,0)-(7,1) = "*"
         │   │   │   │       └── expression:
-        │   │   │   │           @ LocalVariableTargetNode (location: (35...36))
+        │   │   │   │           @ LocalVariableTargetNode (location: (7,1)-(7,2))
         │   │   │   │           ├── name: :b
         │   │   │   │           └── depth: 0
         │   │   │   ├── lparen_loc: ∅
         │   │   │   └── rparen_loc: ∅
-        │   │   └── @ LocalVariableTargetNode (location: (38...39))
+        │   │   └── @ LocalVariableTargetNode (location: (7,4)-(7,5))
         │   │       ├── name: :c
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (40...41) = "="
+        │   ├── operator_loc: (7,6)-(7,7) = "="
         │   └── value:
-        │       @ CallNode (location: (42...45))
+        │       @ CallNode (location: (7,8)-(7,11))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (42...45) = "bar"
+        │       ├── message_loc: (7,8)-(7,11) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (47...65))
+        ├── @ MultiWriteNode (location: (9,0)-(9,18))
         │   ├── targets: (length: 2)
-        │   │   ├── @ InstanceVariableTargetNode (location: (47...51))
+        │   │   ├── @ InstanceVariableTargetNode (location: (9,0)-(9,4))
         │   │   │   └── name: :@foo
-        │   │   └── @ ClassVariableTargetNode (location: (53...58))
+        │   │   └── @ ClassVariableTargetNode (location: (9,6)-(9,11))
         │   │       └── name: :@@bar
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (59...60) = "="
+        │   ├── operator_loc: (9,12)-(9,13) = "="
         │   └── value:
-        │       @ ArrayNode (location: (61...65))
+        │       @ ArrayNode (location: (9,14)-(9,18))
         │       ├── elements: (length: 1)
-        │       │   └── @ SplatNode (location: (61...65))
-        │       │       ├── operator_loc: (61...62) = "*"
+        │       │   └── @ SplatNode (location: (9,14)-(9,18))
+        │       │       ├── operator_loc: (9,14)-(9,15) = "*"
         │       │       └── expression:
-        │       │           @ CallNode (location: (62...65))
+        │       │           @ CallNode (location: (9,15)-(9,18))
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
-        │       │           ├── message_loc: (62...65) = "foo"
+        │       │           ├── message_loc: (9,15)-(9,18) = "foo"
         │       │           ├── opening_loc: ∅
         │       │           ├── arguments: ∅
         │       │           ├── closing_loc: ∅
@@ -129,137 +129,137 @@
         │       │           └── name: "foo"
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
-        ├── @ MultiWriteNode (location: (67...77))
+        ├── @ MultiWriteNode (location: (11,0)-(11,10))
         │   ├── targets: (length: 2)
-        │   │   ├── @ LocalVariableTargetNode (location: (67...68))
+        │   │   ├── @ LocalVariableTargetNode (location: (11,0)-(11,1))
         │   │   │   ├── name: :a
         │   │   │   └── depth: 0
-        │   │   └── @ SplatNode (location: (70...71))
-        │   │       ├── operator_loc: (70...71) = "*"
+        │   │   └── @ SplatNode (location: (11,3)-(11,4))
+        │   │       ├── operator_loc: (11,3)-(11,4) = "*"
         │   │       └── expression: ∅
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (72...73) = "="
+        │   ├── operator_loc: (11,5)-(11,6) = "="
         │   └── value:
-        │       @ CallNode (location: (74...77))
+        │       @ CallNode (location: (11,7)-(11,10))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (74...77) = "bar"
+        │       ├── message_loc: (11,7)-(11,10) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (79...92))
+        ├── @ MultiWriteNode (location: (13,0)-(13,13))
         │   ├── targets: (length: 3)
-        │   │   ├── @ LocalVariableTargetNode (location: (79...80))
+        │   │   ├── @ LocalVariableTargetNode (location: (13,0)-(13,1))
         │   │   │   ├── name: :a
         │   │   │   └── depth: 0
-        │   │   ├── @ SplatNode (location: (82...83))
-        │   │   │   ├── operator_loc: (82...83) = "*"
+        │   │   ├── @ SplatNode (location: (13,3)-(13,4))
+        │   │   │   ├── operator_loc: (13,3)-(13,4) = "*"
         │   │   │   └── expression: ∅
-        │   │   └── @ LocalVariableTargetNode (location: (85...86))
+        │   │   └── @ LocalVariableTargetNode (location: (13,6)-(13,7))
         │   │       ├── name: :c
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (87...88) = "="
+        │   ├── operator_loc: (13,8)-(13,9) = "="
         │   └── value:
-        │       @ CallNode (location: (89...92))
+        │       @ CallNode (location: (13,10)-(13,13))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (89...92) = "bar"
+        │       ├── message_loc: (13,10)-(13,13) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (94...105))
+        ├── @ MultiWriteNode (location: (15,0)-(15,11))
         │   ├── targets: (length: 2)
-        │   │   ├── @ LocalVariableTargetNode (location: (94...95))
+        │   │   ├── @ LocalVariableTargetNode (location: (15,0)-(15,1))
         │   │   │   ├── name: :a
         │   │   │   └── depth: 0
-        │   │   └── @ SplatNode (location: (97...99))
-        │   │       ├── operator_loc: (97...98) = "*"
+        │   │   └── @ SplatNode (location: (15,3)-(15,5))
+        │   │       ├── operator_loc: (15,3)-(15,4) = "*"
         │   │       └── expression:
-        │   │           @ LocalVariableTargetNode (location: (98...99))
+        │   │           @ LocalVariableTargetNode (location: (15,4)-(15,5))
         │   │           ├── name: :b
         │   │           └── depth: 0
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (100...101) = "="
+        │   ├── operator_loc: (15,6)-(15,7) = "="
         │   └── value:
-        │       @ CallNode (location: (102...105))
+        │       @ CallNode (location: (15,8)-(15,11))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (102...105) = "bar"
+        │       ├── message_loc: (15,8)-(15,11) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        ├── @ MultiWriteNode (location: (107...121))
+        ├── @ MultiWriteNode (location: (17,0)-(17,14))
         │   ├── targets: (length: 3)
-        │   │   ├── @ LocalVariableTargetNode (location: (107...108))
+        │   │   ├── @ LocalVariableTargetNode (location: (17,0)-(17,1))
         │   │   │   ├── name: :a
         │   │   │   └── depth: 0
-        │   │   ├── @ SplatNode (location: (110...112))
-        │   │   │   ├── operator_loc: (110...111) = "*"
+        │   │   ├── @ SplatNode (location: (17,3)-(17,5))
+        │   │   │   ├── operator_loc: (17,3)-(17,4) = "*"
         │   │   │   └── expression:
-        │   │   │       @ LocalVariableTargetNode (location: (111...112))
+        │   │   │       @ LocalVariableTargetNode (location: (17,4)-(17,5))
         │   │   │       ├── name: :b
         │   │   │       └── depth: 0
-        │   │   └── @ LocalVariableTargetNode (location: (114...115))
+        │   │   └── @ LocalVariableTargetNode (location: (17,7)-(17,8))
         │   │       ├── name: :c
         │   │       └── depth: 0
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (116...117) = "="
+        │   ├── operator_loc: (17,9)-(17,10) = "="
         │   └── value:
-        │       @ CallNode (location: (118...121))
+        │       @ CallNode (location: (17,11)-(17,14))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
-        │       ├── message_loc: (118...121) = "bar"
+        │       ├── message_loc: (17,11)-(17,14) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
         │       └── name: "bar"
-        └── @ MultiWriteNode (location: (123...139))
+        └── @ MultiWriteNode (location: (19,0)-(19,16))
             ├── targets: (length: 2)
-            │   ├── @ LocalVariableTargetNode (location: (123...124))
+            │   ├── @ LocalVariableTargetNode (location: (19,0)-(19,1))
             │   │   ├── name: :a
             │   │   └── depth: 0
-            │   └── @ LocalVariableTargetNode (location: (126...127))
+            │   └── @ LocalVariableTargetNode (location: (19,3)-(19,4))
             │       ├── name: :b
             │       └── depth: 0
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
-            ├── operator_loc: (128...129) = "="
+            ├── operator_loc: (19,5)-(19,6) = "="
             └── value:
-                @ ArrayNode (location: (130...139))
+                @ ArrayNode (location: (19,7)-(19,16))
                 ├── elements: (length: 2)
-                │   ├── @ SplatNode (location: (130...134))
-                │   │   ├── operator_loc: (130...131) = "*"
+                │   ├── @ SplatNode (location: (19,7)-(19,11))
+                │   │   ├── operator_loc: (19,7)-(19,8) = "*"
                 │   │   └── expression:
-                │   │       @ CallNode (location: (131...134))
+                │   │       @ CallNode (location: (19,8)-(19,11))
                 │   │       ├── receiver: ∅
                 │   │       ├── call_operator_loc: ∅
-                │   │       ├── message_loc: (131...134) = "foo"
+                │   │       ├── message_loc: (19,8)-(19,11) = "foo"
                 │   │       ├── opening_loc: ∅
                 │   │       ├── arguments: ∅
                 │   │       ├── closing_loc: ∅
                 │   │       ├── block: ∅
                 │   │       ├── flags: variable_call
                 │   │       └── name: "foo"
-                │   └── @ CallNode (location: (136...139))
+                │   └── @ CallNode (location: (19,13)-(19,16))
                 │       ├── receiver: ∅
                 │       ├── call_operator_loc: ∅
-                │       ├── message_loc: (136...139) = "bar"
+                │       ├── message_loc: (19,13)-(19,16) = "bar"
                 │       ├── opening_loc: ∅
                 │       ├── arguments: ∅
                 │       ├── closing_loc: ∅

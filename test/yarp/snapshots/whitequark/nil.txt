@@ -1,6 +1,6 @@
-@ ProgramNode (location: (0...3))
+@ ProgramNode (location: (1,0)-(1,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...3))
+    @ StatementsNode (location: (1,0)-(1,3))
     └── body: (length: 1)
-        └── @ NilNode (location: (0...3))
+        └── @ NilNode (location: (1,0)-(1,3))

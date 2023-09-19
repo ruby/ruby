@@ -1,14 +1,14 @@
-@ ProgramNode (location: (0...23))
+@ ProgramNode (location: (1,0)-(1,23))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...23))
+    @ StatementsNode (location: (1,0)-(1,23))
     └── body: (length: 1)
-        └── @ DefNode (location: (0...23))
+        └── @ DefNode (location: (1,0)-(1,23))
             ├── name: :foo
-            ├── name_loc: (4...7) = "foo"
+            ├── name_loc: (1,4)-(1,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (8...9))
+            │   @ ParametersNode (location: (1,8)-(1,9))
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -16,30 +16,30 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block:
-            │       @ BlockParameterNode (location: (8...9))
+            │       @ BlockParameterNode (location: (1,8)-(1,9))
             │       ├── name: nil
             │       ├── name_loc: ∅
-            │       └── operator_loc: (8...9) = "&"
+            │       └── operator_loc: (1,8)-(1,9) = "&"
             ├── body:
-            │   @ StatementsNode (location: (12...17))
+            │   @ StatementsNode (location: (1,12)-(1,17))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (12...17))
+            │       └── @ CallNode (location: (1,12)-(1,17))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (12...15) = "bar"
-            │           ├── opening_loc: (15...16) = "("
+            │           ├── message_loc: (1,12)-(1,15) = "bar"
+            │           ├── opening_loc: (1,15)-(1,16) = "("
             │           ├── arguments: ∅
-            │           ├── closing_loc: (17...18) = ")"
+            │           ├── closing_loc: (1,17)-(1,18) = ")"
             │           ├── block:
-            │           │   @ BlockArgumentNode (location: (16...17))
+            │           │   @ BlockArgumentNode (location: (1,16)-(1,17))
             │           │   ├── expression: ∅
-            │           │   └── operator_loc: (16...17) = "&"
+            │           │   └── operator_loc: (1,16)-(1,17) = "&"
             │           ├── flags: ∅
             │           └── name: "bar"
             ├── locals: [:&]
-            ├── def_keyword_loc: (0...3) = "def"
+            ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (7...8) = "("
-            ├── rparen_loc: (9...10) = ")"
+            ├── lparen_loc: (1,7)-(1,8) = "("
+            ├── rparen_loc: (1,9)-(1,10) = ")"
             ├── equal_loc: ∅
-            └── end_keyword_loc: (20...23) = "end"
+            └── end_keyword_loc: (1,20)-(1,23) = "end"

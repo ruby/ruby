@@ -1,16 +1,16 @@
-@ ProgramNode (location: (6...34))
+@ ProgramNode (location: (1,6)-(3,9))
 ├── locals: [:foo]
 └── statements:
-    @ StatementsNode (location: (6...34))
+    @ StatementsNode (location: (1,6)-(3,9))
     └── body: (length: 2)
-        ├── @ LocalVariableOperatorWriteNode (location: (6...24))
-        │   ├── name_loc: (6...9) = "foo"
-        │   ├── operator_loc: (10...12) = "+="
+        ├── @ LocalVariableOperatorWriteNode (location: (1,6)-(2,11))
+        │   ├── name_loc: (1,6)-(1,9) = "foo"
+        │   ├── operator_loc: (1,10)-(1,12) = "+="
         │   ├── value:
-        │   │   @ CallNode (location: (21...24))
+        │   │   @ CallNode (location: (2,8)-(2,11))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (21...24) = "bar"
+        │   │   ├── message_loc: (2,8)-(2,11) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -20,10 +20,10 @@
         │   ├── name: :foo
         │   ├── operator: :+
         │   └── depth: 0
-        └── @ CallNode (location: (31...34))
+        └── @ CallNode (location: (3,6)-(3,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (31...34) = "baz"
+            ├── message_loc: (3,6)-(3,9) = "baz"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅

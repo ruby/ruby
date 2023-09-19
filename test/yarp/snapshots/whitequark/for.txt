@@ -1,18 +1,18 @@
-@ ProgramNode (location: (0...48))
+@ ProgramNode (location: (1,0)-(3,22))
 ├── locals: [:a]
 └── statements:
-    @ StatementsNode (location: (0...48))
+    @ StatementsNode (location: (1,0)-(3,22))
     └── body: (length: 2)
-        ├── @ ForNode (location: (0...24))
+        ├── @ ForNode (location: (1,0)-(1,24))
         │   ├── index:
-        │   │   @ LocalVariableTargetNode (location: (4...5))
+        │   │   @ LocalVariableTargetNode (location: (1,4)-(1,5))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── collection:
-        │   │   @ CallNode (location: (9...12))
+        │   │   @ CallNode (location: (1,9)-(1,12))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (9...12) = "foo"
+        │   │   ├── message_loc: (1,9)-(1,12) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -20,37 +20,37 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── statements:
-        │   │   @ StatementsNode (location: (16...19))
+        │   │   @ StatementsNode (location: (1,16)-(1,19))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (16...19))
+        │   │       └── @ CallNode (location: (1,16)-(1,19))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (16...17) = "p"
+        │   │           ├── message_loc: (1,16)-(1,17) = "p"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (18...19))
+        │   │           │   @ ArgumentsNode (location: (1,18)-(1,19))
         │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ LocalVariableReadNode (location: (18...19))
+        │   │           │       └── @ LocalVariableReadNode (location: (1,18)-(1,19))
         │   │           │           ├── name: :a
         │   │           │           └── depth: 0
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: "p"
-        │   ├── for_keyword_loc: (0...3) = "for"
-        │   ├── in_keyword_loc: (6...8) = "in"
-        │   ├── do_keyword_loc: (13...15) = "do"
-        │   └── end_keyword_loc: (21...24) = "end"
-        └── @ ForNode (location: (26...48))
+        │   ├── for_keyword_loc: (1,0)-(1,3) = "for"
+        │   ├── in_keyword_loc: (1,6)-(1,8) = "in"
+        │   ├── do_keyword_loc: (1,13)-(1,15) = "do"
+        │   └── end_keyword_loc: (1,21)-(1,24) = "end"
+        └── @ ForNode (location: (3,0)-(3,22))
             ├── index:
-            │   @ LocalVariableTargetNode (location: (30...31))
+            │   @ LocalVariableTargetNode (location: (3,4)-(3,5))
             │   ├── name: :a
             │   └── depth: 0
             ├── collection:
-            │   @ CallNode (location: (35...38))
+            │   @ CallNode (location: (3,9)-(3,12))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (35...38) = "foo"
+            │   ├── message_loc: (3,9)-(3,12) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -58,24 +58,24 @@
             │   ├── flags: variable_call
             │   └── name: "foo"
             ├── statements:
-            │   @ StatementsNode (location: (40...43))
+            │   @ StatementsNode (location: (3,14)-(3,17))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (40...43))
+            │       └── @ CallNode (location: (3,14)-(3,17))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (40...41) = "p"
+            │           ├── message_loc: (3,14)-(3,15) = "p"
             │           ├── opening_loc: ∅
             │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (42...43))
+            │           │   @ ArgumentsNode (location: (3,16)-(3,17))
             │           │   └── arguments: (length: 1)
-            │           │       └── @ LocalVariableReadNode (location: (42...43))
+            │           │       └── @ LocalVariableReadNode (location: (3,16)-(3,17))
             │           │           ├── name: :a
             │           │           └── depth: 0
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
             │           └── name: "p"
-            ├── for_keyword_loc: (26...29) = "for"
-            ├── in_keyword_loc: (32...34) = "in"
+            ├── for_keyword_loc: (3,0)-(3,3) = "for"
+            ├── in_keyword_loc: (3,6)-(3,8) = "in"
             ├── do_keyword_loc: ∅
-            └── end_keyword_loc: (45...48) = "end"
+            └── end_keyword_loc: (3,19)-(3,22) = "end"

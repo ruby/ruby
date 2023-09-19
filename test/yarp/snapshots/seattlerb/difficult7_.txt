@@ -1,40 +1,40 @@
-@ ProgramNode (location: (6...66))
+@ ProgramNode (location: (1,6)-(4,7))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (6...66))
+    @ StatementsNode (location: (1,6)-(4,7))
     └── body: (length: 1)
-        └── @ HashNode (location: (6...66))
-            ├── opening_loc: (6...7) = "{"
+        └── @ HashNode (location: (1,6)-(4,7))
+            ├── opening_loc: (1,6)-(1,7) = "{"
             ├── elements: (length: 2)
-            │   ├── @ AssocNode (location: (16...41))
+            │   ├── @ AssocNode (location: (2,8)-(2,33))
             │   │   ├── key:
-            │   │   │   @ SymbolNode (location: (16...18))
+            │   │   │   @ SymbolNode (location: (2,8)-(2,10))
             │   │   │   ├── opening_loc: ∅
-            │   │   │   ├── value_loc: (16...17) = "a"
-            │   │   │   ├── closing_loc: (17...18) = ":"
+            │   │   │   ├── value_loc: (2,8)-(2,9) = "a"
+            │   │   │   ├── closing_loc: (2,9)-(2,10) = ":"
             │   │   │   └── unescaped: "a"
             │   │   ├── value:
-            │   │   │   @ CallNode (location: (19...41))
+            │   │   │   @ CallNode (location: (2,11)-(2,33))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
-            │   │   │   ├── message_loc: (19...25) = "lambda"
+            │   │   │   ├── message_loc: (2,11)-(2,17) = "lambda"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block:
-            │   │   │   │   @ BlockNode (location: (26...41))
+            │   │   │   │   @ BlockNode (location: (2,18)-(2,33))
             │   │   │   │   ├── locals: []
             │   │   │   │   ├── parameters: ∅
             │   │   │   │   ├── body:
-            │   │   │   │   │   @ StatementsNode (location: (28...39))
+            │   │   │   │   │   @ StatementsNode (location: (2,20)-(2,31))
             │   │   │   │   │   └── body: (length: 1)
-            │   │   │   │   │       └── @ IfNode (location: (28...39))
+            │   │   │   │   │       └── @ IfNode (location: (2,20)-(2,31))
             │   │   │   │   │           ├── if_keyword_loc: ∅
             │   │   │   │   │           ├── predicate:
-            │   │   │   │   │           │   @ CallNode (location: (28...29))
+            │   │   │   │   │           │   @ CallNode (location: (2,20)-(2,21))
             │   │   │   │   │           │   ├── receiver: ∅
             │   │   │   │   │           │   ├── call_operator_loc: ∅
-            │   │   │   │   │           │   ├── message_loc: (28...29) = "b"
+            │   │   │   │   │           │   ├── message_loc: (2,20)-(2,21) = "b"
             │   │   │   │   │           │   ├── opening_loc: ∅
             │   │   │   │   │           │   ├── arguments: ∅
             │   │   │   │   │           │   ├── closing_loc: ∅
@@ -42,28 +42,28 @@
             │   │   │   │   │           │   ├── flags: variable_call
             │   │   │   │   │           │   └── name: "b"
             │   │   │   │   │           ├── statements:
-            │   │   │   │   │           │   @ StatementsNode (location: (32...35))
+            │   │   │   │   │           │   @ StatementsNode (location: (2,24)-(2,27))
             │   │   │   │   │           │   └── body: (length: 1)
-            │   │   │   │   │           │       └── @ CallNode (location: (32...35))
+            │   │   │   │   │           │       └── @ CallNode (location: (2,24)-(2,27))
             │   │   │   │   │           │           ├── receiver: ∅
             │   │   │   │   │           │           ├── call_operator_loc: ∅
-            │   │   │   │   │           │           ├── message_loc: (32...33) = "c"
-            │   │   │   │   │           │           ├── opening_loc: (33...34) = "("
+            │   │   │   │   │           │           ├── message_loc: (2,24)-(2,25) = "c"
+            │   │   │   │   │           │           ├── opening_loc: (2,25)-(2,26) = "("
             │   │   │   │   │           │           ├── arguments: ∅
-            │   │   │   │   │           │           ├── closing_loc: (34...35) = ")"
+            │   │   │   │   │           │           ├── closing_loc: (2,26)-(2,27) = ")"
             │   │   │   │   │           │           ├── block: ∅
             │   │   │   │   │           │           ├── flags: ∅
             │   │   │   │   │           │           └── name: "c"
             │   │   │   │   │           ├── consequent:
-            │   │   │   │   │           │   @ ElseNode (location: (36...39))
-            │   │   │   │   │           │   ├── else_keyword_loc: (36...37) = ":"
+            │   │   │   │   │           │   @ ElseNode (location: (2,28)-(2,31))
+            │   │   │   │   │           │   ├── else_keyword_loc: (2,28)-(2,29) = ":"
             │   │   │   │   │           │   ├── statements:
-            │   │   │   │   │           │   │   @ StatementsNode (location: (38...39))
+            │   │   │   │   │           │   │   @ StatementsNode (location: (2,30)-(2,31))
             │   │   │   │   │           │   │   └── body: (length: 1)
-            │   │   │   │   │           │   │       └── @ CallNode (location: (38...39))
+            │   │   │   │   │           │   │       └── @ CallNode (location: (2,30)-(2,31))
             │   │   │   │   │           │   │           ├── receiver: ∅
             │   │   │   │   │           │   │           ├── call_operator_loc: ∅
-            │   │   │   │   │           │   │           ├── message_loc: (38...39) = "d"
+            │   │   │   │   │           │   │           ├── message_loc: (2,30)-(2,31) = "d"
             │   │   │   │   │           │   │           ├── opening_loc: ∅
             │   │   │   │   │           │   │           ├── arguments: ∅
             │   │   │   │   │           │   │           ├── closing_loc: ∅
@@ -72,19 +72,19 @@
             │   │   │   │   │           │   │           └── name: "d"
             │   │   │   │   │           │   └── end_keyword_loc: ∅
             │   │   │   │   │           └── end_keyword_loc: ∅
-            │   │   │   │   ├── opening_loc: (26...27) = "{"
-            │   │   │   │   └── closing_loc: (40...41) = "}"
+            │   │   │   │   ├── opening_loc: (2,18)-(2,19) = "{"
+            │   │   │   │   └── closing_loc: (2,32)-(2,33) = "}"
             │   │   │   ├── flags: ∅
             │   │   │   └── name: "lambda"
             │   │   └── operator_loc: ∅
-            │   └── @ AssocNode (location: (51...57))
+            │   └── @ AssocNode (location: (3,8)-(3,14))
             │       ├── key:
-            │       │   @ SymbolNode (location: (51...53))
+            │       │   @ SymbolNode (location: (3,8)-(3,10))
             │       │   ├── opening_loc: ∅
-            │       │   ├── value_loc: (51...52) = "e"
-            │       │   ├── closing_loc: (52...53) = ":"
+            │       │   ├── value_loc: (3,8)-(3,9) = "e"
+            │       │   ├── closing_loc: (3,9)-(3,10) = ":"
             │       │   └── unescaped: "e"
             │       ├── value:
-            │       │   @ NilNode (location: (54...57))
+            │       │   @ NilNode (location: (3,11)-(3,14))
             │       └── operator_loc: ∅
-            └── closing_loc: (65...66) = "}"
+            └── closing_loc: (4,6)-(4,7) = "}"

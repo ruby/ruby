@@ -1,16 +1,16 @@
-@ ProgramNode (location: (0...13))
+@ ProgramNode (location: (1,0)-(1,13))
 ├── locals: [:var]
 └── statements:
-    @ StatementsNode (location: (0...13))
+    @ StatementsNode (location: (1,0)-(1,13))
     └── body: (length: 2)
-        ├── @ LocalVariableWriteNode (location: (0...8))
+        ├── @ LocalVariableWriteNode (location: (1,0)-(1,8))
         │   ├── name: :var
         │   ├── depth: 0
-        │   ├── name_loc: (0...3) = "var"
+        │   ├── name_loc: (1,0)-(1,3) = "var"
         │   ├── value:
-        │   │   @ IntegerNode (location: (6...8))
+        │   │   @ IntegerNode (location: (1,6)-(1,8))
         │   │   └── flags: decimal
-        │   └── operator_loc: (4...5) = "="
-        └── @ LocalVariableReadNode (location: (10...13))
+        │   └── operator_loc: (1,4)-(1,5) = "="
+        └── @ LocalVariableReadNode (location: (1,10)-(1,13))
             ├── name: :var
             └── depth: 0

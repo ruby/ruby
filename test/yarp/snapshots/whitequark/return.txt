@@ -1,53 +1,53 @@
-@ ProgramNode (location: (0...41))
+@ ProgramNode (location: (1,0)-(7,11))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...41))
+    @ StatementsNode (location: (1,0)-(7,11))
     └── body: (length: 4)
-        ├── @ ReturnNode (location: (0...6))
-        │   ├── keyword_loc: (0...6) = "return"
+        ├── @ ReturnNode (location: (1,0)-(1,6))
+        │   ├── keyword_loc: (1,0)-(1,6) = "return"
         │   └── arguments: ∅
-        ├── @ ReturnNode (location: (8...18))
-        │   ├── keyword_loc: (8...14) = "return"
+        ├── @ ReturnNode (location: (3,0)-(3,10))
+        │   ├── keyword_loc: (3,0)-(3,6) = "return"
         │   └── arguments:
-        │       @ ArgumentsNode (location: (15...18))
+        │       @ ArgumentsNode (location: (3,7)-(3,10))
         │       └── arguments: (length: 1)
-        │           └── @ CallNode (location: (15...18))
+        │           └── @ CallNode (location: (3,7)-(3,10))
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
-        │               ├── message_loc: (15...18) = "foo"
+        │               ├── message_loc: (3,7)-(3,10) = "foo"
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: variable_call
         │               └── name: "foo"
-        ├── @ ReturnNode (location: (20...28))
-        │   ├── keyword_loc: (20...26) = "return"
+        ├── @ ReturnNode (location: (5,0)-(5,8))
+        │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
-        │       @ ArgumentsNode (location: (26...28))
+        │       @ ArgumentsNode (location: (5,6)-(5,8))
         │       └── arguments: (length: 1)
-        │           └── @ ParenthesesNode (location: (26...28))
+        │           └── @ ParenthesesNode (location: (5,6)-(5,8))
         │               ├── body: ∅
-        │               ├── opening_loc: (26...27) = "("
-        │               └── closing_loc: (27...28) = ")"
-        └── @ ReturnNode (location: (30...41))
-            ├── keyword_loc: (30...36) = "return"
+        │               ├── opening_loc: (5,6)-(5,7) = "("
+        │               └── closing_loc: (5,7)-(5,8) = ")"
+        └── @ ReturnNode (location: (7,0)-(7,11))
+            ├── keyword_loc: (7,0)-(7,6) = "return"
             └── arguments:
-                @ ArgumentsNode (location: (36...41))
+                @ ArgumentsNode (location: (7,6)-(7,11))
                 └── arguments: (length: 1)
-                    └── @ ParenthesesNode (location: (36...41))
+                    └── @ ParenthesesNode (location: (7,6)-(7,11))
                         ├── body:
-                        │   @ StatementsNode (location: (37...40))
+                        │   @ StatementsNode (location: (7,7)-(7,10))
                         │   └── body: (length: 1)
-                        │       └── @ CallNode (location: (37...40))
+                        │       └── @ CallNode (location: (7,7)-(7,10))
                         │           ├── receiver: ∅
                         │           ├── call_operator_loc: ∅
-                        │           ├── message_loc: (37...40) = "foo"
+                        │           ├── message_loc: (7,7)-(7,10) = "foo"
                         │           ├── opening_loc: ∅
                         │           ├── arguments: ∅
                         │           ├── closing_loc: ∅
                         │           ├── block: ∅
                         │           ├── flags: variable_call
                         │           └── name: "foo"
-                        ├── opening_loc: (36...37) = "("
-                        └── closing_loc: (40...41) = ")"
+                        ├── opening_loc: (7,6)-(7,7) = "("
+                        └── closing_loc: (7,10)-(7,11) = ")"

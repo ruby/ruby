@@ -1,26 +1,26 @@
-@ ProgramNode (location: (0...18))
+@ ProgramNode (location: (1,0)-(1,18))
 ├── locals: [:a]
 └── statements:
-    @ StatementsNode (location: (0...18))
+    @ StatementsNode (location: (1,0)-(1,18))
     └── body: (length: 1)
-        └── @ LocalVariableOrWriteNode (location: (0...18))
-            ├── name_loc: (0...1) = "a"
-            ├── operator_loc: (2...5) = "||="
+        └── @ LocalVariableOrWriteNode (location: (1,0)-(1,18))
+            ├── name_loc: (1,0)-(1,1) = "a"
+            ├── operator_loc: (1,2)-(1,5) = "||="
             ├── value:
-            │   @ RescueModifierNode (location: (6...18))
+            │   @ RescueModifierNode (location: (1,6)-(1,18))
             │   ├── expression:
-            │   │   @ CallNode (location: (6...7))
+            │   │   @ CallNode (location: (1,6)-(1,7))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (6...7) = "b"
+            │   │   ├── message_loc: (1,6)-(1,7) = "b"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
             │   │   └── name: "b"
-            │   ├── keyword_loc: (8...14) = "rescue"
+            │   ├── keyword_loc: (1,8)-(1,14) = "rescue"
             │   └── rescue_expression:
-            │       @ NilNode (location: (15...18))
+            │       @ NilNode (location: (1,15)-(1,18))
             ├── name: :a
             └── depth: 0

@@ -1,38 +1,38 @@
-@ ProgramNode (location: (0...19))
+@ ProgramNode (location: (1,0)-(1,19))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...19))
+    @ StatementsNode (location: (1,0)-(1,19))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...19))
+        └── @ CallNode (location: (1,0)-(1,19))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "a"
+            ├── message_loc: (1,0)-(1,1) = "a"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (2...10))
+            │   @ ArgumentsNode (location: (1,2)-(1,10))
             │   └── arguments: (length: 1)
-            │       └── @ LambdaNode (location: (2...10))
+            │       └── @ LambdaNode (location: (1,2)-(1,10))
             │           ├── locals: []
-            │           ├── operator_loc: (2...4) = "->"
-            │           ├── opening_loc: (5...6) = "{"
-            │           ├── closing_loc: (9...10) = "}"
+            │           ├── operator_loc: (1,2)-(1,4) = "->"
+            │           ├── opening_loc: (1,5)-(1,6) = "{"
+            │           ├── closing_loc: (1,9)-(1,10) = "}"
             │           ├── parameters: ∅
             │           └── body:
-            │               @ StatementsNode (location: (7...8))
+            │               @ StatementsNode (location: (1,7)-(1,8))
             │               └── body: (length: 1)
-            │                   └── @ IntegerNode (location: (7...8))
+            │                   └── @ IntegerNode (location: (1,7)-(1,8))
             │                       └── flags: decimal
             ├── closing_loc: ∅
             ├── block:
-            │   @ BlockNode (location: (11...19))
+            │   @ BlockNode (location: (1,11)-(1,19))
             │   ├── locals: []
             │   ├── parameters: ∅
             │   ├── body:
-            │   │   @ StatementsNode (location: (14...15))
+            │   │   @ StatementsNode (location: (1,14)-(1,15))
             │   │   └── body: (length: 1)
-            │   │       └── @ IntegerNode (location: (14...15))
+            │   │       └── @ IntegerNode (location: (1,14)-(1,15))
             │   │           └── flags: decimal
-            │   ├── opening_loc: (11...13) = "do"
-            │   └── closing_loc: (16...19) = "end"
+            │   ├── opening_loc: (1,11)-(1,13) = "do"
+            │   └── closing_loc: (1,16)-(1,19) = "end"
             ├── flags: ∅
             └── name: "a"

@@ -1,22 +1,22 @@
-@ ProgramNode (location: (0...12))
+@ ProgramNode (location: (1,0)-(1,12))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...12))
+    @ StatementsNode (location: (1,0)-(1,12))
     └── body: (length: 1)
-        └── @ IfNode (location: (0...12))
-            ├── if_keyword_loc: (0...2) = "if"
+        └── @ IfNode (location: (1,0)-(1,12))
+            ├── if_keyword_loc: (1,0)-(1,2) = "if"
             ├── predicate:
-            │   @ CallNode (location: (3...7))
+            │   @ CallNode (location: (1,3)-(1,7))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (3...4) = "f"
+            │   ├── message_loc: (1,3)-(1,4) = "f"
             │   ├── opening_loc: ∅
             │   ├── arguments:
-            │   │   @ ArgumentsNode (location: (5...7))
+            │   │   @ ArgumentsNode (location: (1,5)-(1,7))
             │   │   └── arguments: (length: 1)
-            │   │       └── @ SymbolNode (location: (5...7))
-            │   │           ├── opening_loc: (5...6) = ":"
-            │   │           ├── value_loc: (6...7) = "x"
+            │   │       └── @ SymbolNode (location: (1,5)-(1,7))
+            │   │           ├── opening_loc: (1,5)-(1,6) = ":"
+            │   │           ├── value_loc: (1,6)-(1,7) = "x"
             │   │           ├── closing_loc: ∅
             │   │           └── unescaped: "x"
             │   ├── closing_loc: ∅
@@ -25,4 +25,4 @@
             │   └── name: "f"
             ├── statements: ∅
             ├── consequent: ∅
-            └── end_keyword_loc: (9...12) = "end"
+            └── end_keyword_loc: (1,9)-(1,12) = "end"

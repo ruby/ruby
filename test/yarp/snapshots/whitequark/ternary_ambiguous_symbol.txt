@@ -1,48 +1,48 @@
-@ ProgramNode (location: (0...13))
+@ ProgramNode (location: (1,0)-(1,13))
 ├── locals: [:t]
 └── statements:
-    @ StatementsNode (location: (0...13))
+    @ StatementsNode (location: (1,0)-(1,13))
     └── body: (length: 2)
-        ├── @ LocalVariableWriteNode (location: (0...3))
+        ├── @ LocalVariableWriteNode (location: (1,0)-(1,3))
         │   ├── name: :t
         │   ├── depth: 0
-        │   ├── name_loc: (0...1) = "t"
+        │   ├── name_loc: (1,0)-(1,1) = "t"
         │   ├── value:
-        │   │   @ IntegerNode (location: (2...3))
+        │   │   @ IntegerNode (location: (1,2)-(1,3))
         │   │   └── flags: decimal
-        │   └── operator_loc: (1...2) = "="
-        └── @ IfNode (location: (4...13))
+        │   └── operator_loc: (1,1)-(1,2) = "="
+        └── @ IfNode (location: (1,4)-(1,13))
             ├── if_keyword_loc: ∅
             ├── predicate:
-            │   @ ParenthesesNode (location: (4...9))
+            │   @ ParenthesesNode (location: (1,4)-(1,9))
             │   ├── body:
-            │   │   @ StatementsNode (location: (5...8))
+            │   │   @ StatementsNode (location: (1,5)-(1,8))
             │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (5...8))
+            │   │       └── @ CallNode (location: (1,5)-(1,8))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (5...8) = "foo"
+            │   │           ├── message_loc: (1,5)-(1,8) = "foo"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
             │   │           └── name: "foo"
-            │   ├── opening_loc: (4...5) = "("
-            │   └── closing_loc: (8...9) = ")"
+            │   ├── opening_loc: (1,4)-(1,5) = "("
+            │   └── closing_loc: (1,8)-(1,9) = ")"
             ├── statements:
-            │   @ StatementsNode (location: (10...11))
+            │   @ StatementsNode (location: (1,10)-(1,11))
             │   └── body: (length: 1)
-            │       └── @ LocalVariableReadNode (location: (10...11))
+            │       └── @ LocalVariableReadNode (location: (1,10)-(1,11))
             │           ├── name: :t
             │           └── depth: 0
             ├── consequent:
-            │   @ ElseNode (location: (11...13))
-            │   ├── else_keyword_loc: (11...12) = ":"
+            │   @ ElseNode (location: (1,11)-(1,13))
+            │   ├── else_keyword_loc: (1,11)-(1,12) = ":"
             │   ├── statements:
-            │   │   @ StatementsNode (location: (12...13))
+            │   │   @ StatementsNode (location: (1,12)-(1,13))
             │   │   └── body: (length: 1)
-            │   │       └── @ ConstantReadNode (location: (12...13))
+            │   │       └── @ ConstantReadNode (location: (1,12)-(1,13))
             │   │           └── name: :T
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

@@ -1,36 +1,36 @@
-@ ProgramNode (location: (0...14))
+@ ProgramNode (location: (1,0)-(1,14))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...14))
+    @ StatementsNode (location: (1,0)-(1,14))
     └── body: (length: 1)
-        └── @ InterpolatedStringNode (location: (0...14))
-            ├── opening_loc: (0...1) = "\""
+        └── @ InterpolatedStringNode (location: (1,0)-(1,14))
+            ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 5)
-            │   ├── @ EmbeddedVariableNode (location: (1...4))
-            │   │   ├── operator_loc: (1...2) = "#"
+            │   ├── @ EmbeddedVariableNode (location: (1,1)-(1,4))
+            │   │   ├── operator_loc: (1,1)-(1,2) = "#"
             │   │   └── variable:
-            │   │       @ InstanceVariableReadNode (location: (2...4))
+            │   │       @ InstanceVariableReadNode (location: (1,2)-(1,4))
             │   │       └── name: :@a
-            │   ├── @ StringNode (location: (4...5))
+            │   ├── @ StringNode (location: (1,4)-(1,5))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
-            │   │   ├── content_loc: (4...5) = " "
+            │   │   ├── content_loc: (1,4)-(1,5) = " "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: " "
-            │   ├── @ EmbeddedVariableNode (location: (5...9))
-            │   │   ├── operator_loc: (5...6) = "#"
+            │   ├── @ EmbeddedVariableNode (location: (1,5)-(1,9))
+            │   │   ├── operator_loc: (1,5)-(1,6) = "#"
             │   │   └── variable:
-            │   │       @ ClassVariableReadNode (location: (6...9))
+            │   │       @ ClassVariableReadNode (location: (1,6)-(1,9))
             │   │       └── name: :@@a
-            │   ├── @ StringNode (location: (9...10))
+            │   ├── @ StringNode (location: (1,9)-(1,10))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
-            │   │   ├── content_loc: (9...10) = " "
+            │   │   ├── content_loc: (1,9)-(1,10) = " "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: " "
-            │   └── @ EmbeddedVariableNode (location: (10...13))
-            │       ├── operator_loc: (10...11) = "#"
+            │   └── @ EmbeddedVariableNode (location: (1,10)-(1,13))
+            │       ├── operator_loc: (1,10)-(1,11) = "#"
             │       └── variable:
-            │           @ GlobalVariableReadNode (location: (11...13))
+            │           @ GlobalVariableReadNode (location: (1,11)-(1,13))
             │           └── name: :$a
-            └── closing_loc: (13...14) = "\""
+            └── closing_loc: (1,13)-(1,14) = "\""

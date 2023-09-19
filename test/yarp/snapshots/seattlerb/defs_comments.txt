@@ -1,19 +1,19 @@
-@ ProgramNode (location: (19...36))
+@ ProgramNode (location: (4,0)-(5,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (19...36))
+    @ StatementsNode (location: (4,0)-(5,3))
     └── body: (length: 1)
-        └── @ DefNode (location: (19...36))
+        └── @ DefNode (location: (4,0)-(5,3))
             ├── name: :blah
-            ├── name_loc: (28...32) = "blah"
+            ├── name_loc: (4,9)-(4,13) = "blah"
             ├── receiver:
-            │   @ SelfNode (location: (23...27))
+            │   @ SelfNode (location: (4,4)-(4,8))
             ├── parameters: ∅
             ├── body: ∅
             ├── locals: []
-            ├── def_keyword_loc: (19...22) = "def"
-            ├── operator_loc: (27...28) = "."
+            ├── def_keyword_loc: (4,0)-(4,3) = "def"
+            ├── operator_loc: (4,8)-(4,9) = "."
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── equal_loc: ∅
-            └── end_keyword_loc: (33...36) = "end"
+            └── end_keyword_loc: (5,0)-(5,3) = "end"

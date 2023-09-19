@@ -1,49 +1,49 @@
-@ ProgramNode (location: (0...49))
+@ ProgramNode (location: (1,0)-(3,34))
 ├── locals: [:a]
 └── statements:
-    @ StatementsNode (location: (0...49))
+    @ StatementsNode (location: (1,0)-(3,34))
     └── body: (length: 3)
-        ├── @ LocalVariableWriteNode (location: (0...5))
+        ├── @ LocalVariableWriteNode (location: (1,0)-(1,5))
         │   ├── name: :a
         │   ├── depth: 0
-        │   ├── name_loc: (0...1) = "a"
+        │   ├── name_loc: (1,0)-(1,1) = "a"
         │   ├── value:
-        │   │   @ IntegerNode (location: (4...5))
+        │   │   @ IntegerNode (location: (1,4)-(1,5))
         │   │   └── flags: decimal
-        │   └── operator_loc: (2...3) = "="
-        ├── @ CallNode (location: (7...13))
+        │   └── operator_loc: (1,2)-(1,3) = "="
+        ├── @ CallNode (location: (1,7)-(1,13))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (7...8) = "a"
+        │   ├── message_loc: (1,7)-(1,8) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (9...13))
+        │   │   @ ArgumentsNode (location: (1,9)-(1,13))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ KeywordHashNode (location: (9...13))
+        │   │       └── @ KeywordHashNode (location: (1,9)-(1,13))
         │   │           └── elements: (length: 1)
-        │   │               └── @ AssocNode (location: (9...13))
+        │   │               └── @ AssocNode (location: (1,9)-(1,13))
         │   │                   ├── key:
-        │   │                   │   @ SymbolNode (location: (9...11))
+        │   │                   │   @ SymbolNode (location: (1,9)-(1,11))
         │   │                   │   ├── opening_loc: ∅
-        │   │                   │   ├── value_loc: (9...10) = "b"
-        │   │                   │   ├── closing_loc: (10...11) = ":"
+        │   │                   │   ├── value_loc: (1,9)-(1,10) = "b"
+        │   │                   │   ├── closing_loc: (1,10)-(1,11) = ":"
         │   │                   │   └── unescaped: "b"
         │   │                   ├── value:
-        │   │                   │   @ IntegerNode (location: (12...13))
+        │   │                   │   @ IntegerNode (location: (1,12)-(1,13))
         │   │                   │   └── flags: decimal
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "a"
-        └── @ DefNode (location: (15...49))
+        └── @ DefNode (location: (3,0)-(3,34))
             ├── name: :foo
-            ├── name_loc: (19...22) = "foo"
+            ├── name_loc: (3,4)-(3,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (23...28))
+            │   @ ParametersNode (location: (3,8)-(3,13))
             │   ├── requireds: (length: 1)
-            │   │   └── @ RequiredParameterNode (location: (23...28))
+            │   │   └── @ RequiredParameterNode (location: (3,8)-(3,13))
             │   │       └── name: :raise
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -52,38 +52,38 @@
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body:
-            │   @ StatementsNode (location: (30...44))
+            │   @ StatementsNode (location: (3,15)-(3,29))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (30...44))
+            │       └── @ CallNode (location: (3,15)-(3,29))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (30...35) = "raise"
+            │           ├── message_loc: (3,15)-(3,20) = "raise"
             │           ├── opening_loc: ∅
             │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (36...44))
+            │           │   @ ArgumentsNode (location: (3,21)-(3,29))
             │           │   └── arguments: (length: 2)
-            │           │       ├── @ ConstantPathNode (location: (36...40))
+            │           │       ├── @ ConstantPathNode (location: (3,21)-(3,25))
             │           │       │   ├── parent:
-            │           │       │   │   @ ConstantReadNode (location: (36...37))
+            │           │       │   │   @ ConstantReadNode (location: (3,21)-(3,22))
             │           │       │   │   └── name: :A
             │           │       │   ├── child:
-            │           │       │   │   @ ConstantReadNode (location: (39...40))
+            │           │       │   │   @ ConstantReadNode (location: (3,24)-(3,25))
             │           │       │   │   └── name: :B
-            │           │       │   └── delimiter_loc: (37...39) = "::"
-            │           │       └── @ StringNode (location: (42...44))
+            │           │       │   └── delimiter_loc: (3,22)-(3,24) = "::"
+            │           │       └── @ StringNode (location: (3,27)-(3,29))
             │           │           ├── flags: ∅
-            │           │           ├── opening_loc: (42...43) = "'"
-            │           │           ├── content_loc: (43...43) = ""
-            │           │           ├── closing_loc: (43...44) = "'"
+            │           │           ├── opening_loc: (3,27)-(3,28) = "'"
+            │           │           ├── content_loc: (3,28)-(3,28) = ""
+            │           │           ├── closing_loc: (3,28)-(3,29) = "'"
             │           │           └── unescaped: ""
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
             │           └── name: "raise"
             ├── locals: [:raise]
-            ├── def_keyword_loc: (15...18) = "def"
+            ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── equal_loc: ∅
-            └── end_keyword_loc: (46...49) = "end"
+            └── end_keyword_loc: (3,31)-(3,34) = "end"

@@ -1,34 +1,34 @@
-@ ProgramNode (location: (0...19))
+@ ProgramNode (location: (1,0)-(1,19))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...19))
+    @ StatementsNode (location: (1,0)-(1,19))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...19))
+        └── @ CallNode (location: (1,0)-(1,19))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...3) = "foo"
-            ├── opening_loc: (3...4) = "("
+            ├── message_loc: (1,0)-(1,3) = "foo"
+            ├── opening_loc: (1,3)-(1,4) = "("
             ├── arguments:
-            │   @ ArgumentsNode (location: (4...18))
+            │   @ ArgumentsNode (location: (1,4)-(1,18))
             │   └── arguments: (length: 2)
-            │       ├── @ SymbolNode (location: (4...8))
-            │       │   ├── opening_loc: (4...5) = ":"
-            │       │   ├── value_loc: (5...8) = "bar"
+            │       ├── @ SymbolNode (location: (1,4)-(1,8))
+            │       │   ├── opening_loc: (1,4)-(1,5) = ":"
+            │       │   ├── value_loc: (1,5)-(1,8) = "bar"
             │       │   ├── closing_loc: ∅
             │       │   └── unescaped: "bar"
-            │       └── @ KeywordHashNode (location: (10...18))
+            │       └── @ KeywordHashNode (location: (1,10)-(1,18))
             │           └── elements: (length: 1)
-            │               └── @ AssocNode (location: (10...18))
+            │               └── @ AssocNode (location: (1,10)-(1,18))
             │                   ├── key:
-            │                   │   @ SymbolNode (location: (10...14))
+            │                   │   @ SymbolNode (location: (1,10)-(1,14))
             │                   │   ├── opening_loc: ∅
-            │                   │   ├── value_loc: (10...13) = "baz"
-            │                   │   ├── closing_loc: (13...14) = ":"
+            │                   │   ├── value_loc: (1,10)-(1,13) = "baz"
+            │                   │   ├── closing_loc: (1,13)-(1,14) = ":"
             │                   │   └── unescaped: "baz"
             │                   ├── value:
-            │                   │   @ NilNode (location: (15...18))
+            │                   │   @ NilNode (location: (1,15)-(1,18))
             │                   └── operator_loc: ∅
-            ├── closing_loc: (18...19) = ")"
+            ├── closing_loc: (1,18)-(1,19) = ")"
             ├── block: ∅
             ├── flags: ∅
             └── name: "foo"

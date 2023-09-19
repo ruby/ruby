@@ -1,53 +1,53 @@
-@ ProgramNode (location: (0...37))
+@ ProgramNode (location: (1,0)-(7,10))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...37))
+    @ StatementsNode (location: (1,0)-(7,10))
     └── body: (length: 4)
-        ├── @ BreakNode (location: (0...5))
+        ├── @ BreakNode (location: (1,0)-(1,5))
         │   ├── arguments: ∅
-        │   └── keyword_loc: (0...5) = "break"
-        ├── @ BreakNode (location: (7...16))
+        │   └── keyword_loc: (1,0)-(1,5) = "break"
+        ├── @ BreakNode (location: (3,0)-(3,9))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (13...16))
+        │   │   @ ArgumentsNode (location: (3,6)-(3,9))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (13...16))
+        │   │       └── @ CallNode (location: (3,6)-(3,9))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (13...16) = "foo"
+        │   │           ├── message_loc: (3,6)-(3,9) = "foo"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "foo"
-        │   └── keyword_loc: (7...12) = "break"
-        ├── @ BreakNode (location: (18...25))
+        │   └── keyword_loc: (3,0)-(3,5) = "break"
+        ├── @ BreakNode (location: (5,0)-(5,7))
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (23...25))
+        │   │   @ ArgumentsNode (location: (5,5)-(5,7))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ParenthesesNode (location: (23...25))
+        │   │       └── @ ParenthesesNode (location: (5,5)-(5,7))
         │   │           ├── body: ∅
-        │   │           ├── opening_loc: (23...24) = "("
-        │   │           └── closing_loc: (24...25) = ")"
-        │   └── keyword_loc: (18...23) = "break"
-        └── @ BreakNode (location: (27...37))
+        │   │           ├── opening_loc: (5,5)-(5,6) = "("
+        │   │           └── closing_loc: (5,6)-(5,7) = ")"
+        │   └── keyword_loc: (5,0)-(5,5) = "break"
+        └── @ BreakNode (location: (7,0)-(7,10))
             ├── arguments:
-            │   @ ArgumentsNode (location: (32...37))
+            │   @ ArgumentsNode (location: (7,5)-(7,10))
             │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (32...37))
+            │       └── @ ParenthesesNode (location: (7,5)-(7,10))
             │           ├── body:
-            │           │   @ StatementsNode (location: (33...36))
+            │           │   @ StatementsNode (location: (7,6)-(7,9))
             │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (33...36))
+            │           │       └── @ CallNode (location: (7,6)-(7,9))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (33...36) = "foo"
+            │           │           ├── message_loc: (7,6)-(7,9) = "foo"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
             │           │           └── name: "foo"
-            │           ├── opening_loc: (32...33) = "("
-            │           └── closing_loc: (36...37) = ")"
-            └── keyword_loc: (27...32) = "break"
+            │           ├── opening_loc: (7,5)-(7,6) = "("
+            │           └── closing_loc: (7,9)-(7,10) = ")"
+            └── keyword_loc: (7,0)-(7,5) = "break"

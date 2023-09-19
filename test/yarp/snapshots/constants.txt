@@ -1,36 +1,36 @@
-@ ProgramNode (location: (0...792))
+@ ProgramNode (location: (1,0)-(184,10))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...792))
+    @ StatementsNode (location: (1,0)-(184,10))
     └── body: (length: 90)
-        ├── @ ConstantPathNode (location: (0...4))
+        ├── @ ConstantPathNode (location: (1,0)-(1,4))
         │   ├── parent:
-        │   │   @ ConstantReadNode (location: (0...1))
+        │   │   @ ConstantReadNode (location: (1,0)-(1,1))
         │   │   └── name: :A
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (3...4))
+        │   │   @ ConstantReadNode (location: (1,3)-(1,4))
         │   │   └── name: :B
-        │   └── delimiter_loc: (1...3) = "::"
-        ├── @ ConstantPathNode (location: (6...13))
+        │   └── delimiter_loc: (1,1)-(1,3) = "::"
+        ├── @ ConstantPathNode (location: (3,0)-(3,7))
         │   ├── parent:
-        │   │   @ ConstantPathNode (location: (6...10))
+        │   │   @ ConstantPathNode (location: (3,0)-(3,4))
         │   │   ├── parent:
-        │   │   │   @ ConstantReadNode (location: (6...7))
+        │   │   │   @ ConstantReadNode (location: (3,0)-(3,1))
         │   │   │   └── name: :A
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (9...10))
+        │   │   │   @ ConstantReadNode (location: (3,3)-(3,4))
         │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (7...9) = "::"
+        │   │   └── delimiter_loc: (3,1)-(3,3) = "::"
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (12...13))
+        │   │   @ ConstantReadNode (location: (3,6)-(3,7))
         │   │   └── name: :C
-        │   └── delimiter_loc: (10...12) = "::"
-        ├── @ ConstantPathNode (location: (15...19))
+        │   └── delimiter_loc: (3,4)-(3,6) = "::"
+        ├── @ ConstantPathNode (location: (5,0)-(5,4))
         │   ├── parent:
-        │   │   @ CallNode (location: (15...16))
+        │   │   @ CallNode (location: (5,0)-(5,1))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (15...16) = "a"
+        │   │   ├── message_loc: (5,0)-(5,1) = "a"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -38,61 +38,61 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "a"
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (18...19))
+        │   │   @ ConstantReadNode (location: (5,3)-(5,4))
         │   │   └── name: :B
-        │   └── delimiter_loc: (16...18) = "::"
-        ├── @ ConstantPathWriteNode (location: (21...29))
+        │   └── delimiter_loc: (5,1)-(5,3) = "::"
+        ├── @ ConstantPathWriteNode (location: (7,0)-(7,8))
         │   ├── target:
-        │   │   @ ConstantPathNode (location: (21...25))
+        │   │   @ ConstantPathNode (location: (7,0)-(7,4))
         │   │   ├── parent:
-        │   │   │   @ ConstantReadNode (location: (21...22))
+        │   │   │   @ ConstantReadNode (location: (7,0)-(7,1))
         │   │   │   └── name: :A
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (24...25))
+        │   │   │   @ ConstantReadNode (location: (7,3)-(7,4))
         │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (22...24) = "::"
-        │   ├── operator_loc: (26...27) = "="
+        │   │   └── delimiter_loc: (7,1)-(7,3) = "::"
+        │   ├── operator_loc: (7,5)-(7,6) = "="
         │   └── value:
-        │       @ IntegerNode (location: (28...29))
+        │       @ IntegerNode (location: (7,7)-(7,8))
         │       └── flags: decimal
-        ├── @ ConstantWriteNode (location: (31...36))
+        ├── @ ConstantWriteNode (location: (9,0)-(9,5))
         │   ├── name: :A
-        │   ├── name_loc: (31...32) = "A"
+        │   ├── name_loc: (9,0)-(9,1) = "A"
         │   ├── value:
-        │   │   @ IntegerNode (location: (35...36))
+        │   │   @ IntegerNode (location: (9,4)-(9,5))
         │   │   └── flags: decimal
-        │   └── operator_loc: (33...34) = "="
-        ├── @ ConstantReadNode (location: (38...41))
+        │   └── operator_loc: (9,2)-(9,3) = "="
+        ├── @ ConstantReadNode (location: (11,0)-(11,3))
         │   └── name: :ABC
-        ├── @ CallNode (location: (43...48))
+        ├── @ CallNode (location: (13,0)-(13,5))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (43...46) = "Foo"
+        │   ├── message_loc: (13,0)-(13,3) = "Foo"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (47...48))
+        │   │   @ ArgumentsNode (location: (13,4)-(13,5))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (47...48))
+        │   │       └── @ IntegerNode (location: (13,4)-(13,5))
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "Foo"
-        ├── @ CallNode (location: (50...58))
+        ├── @ CallNode (location: (15,0)-(15,8))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (50...53) = "Foo"
+        │   ├── message_loc: (15,0)-(15,3) = "Foo"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (54...58))
+        │   │   @ ArgumentsNode (location: (15,4)-(15,8))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ SplatNode (location: (54...58))
-        │   │           ├── operator_loc: (54...55) = "*"
+        │   │       └── @ SplatNode (location: (15,4)-(15,8))
+        │   │           ├── operator_loc: (15,4)-(15,5) = "*"
         │   │           └── expression:
-        │   │               @ CallNode (location: (55...58))
+        │   │               @ CallNode (location: (15,5)-(15,8))
         │   │               ├── receiver: ∅
         │   │               ├── call_operator_loc: ∅
-        │   │               ├── message_loc: (55...58) = "bar"
+        │   │               ├── message_loc: (15,5)-(15,8) = "bar"
         │   │               ├── opening_loc: ∅
         │   │               ├── arguments: ∅
         │   │               ├── closing_loc: ∅
@@ -103,73 +103,73 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "Foo"
-        ├── @ CallNode (location: (60...69))
+        ├── @ CallNode (location: (17,0)-(17,9))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (60...63) = "Foo"
+        │   ├── message_loc: (17,0)-(17,3) = "Foo"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (64...69))
+        │   │   @ ArgumentsNode (location: (17,4)-(17,9))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ KeywordHashNode (location: (64...69))
+        │   │       └── @ KeywordHashNode (location: (17,4)-(17,9))
         │   │           └── elements: (length: 1)
-        │   │               └── @ AssocSplatNode (location: (64...69))
+        │   │               └── @ AssocSplatNode (location: (17,4)-(17,9))
         │   │                   ├── value:
-        │   │                   │   @ CallNode (location: (66...69))
+        │   │                   │   @ CallNode (location: (17,6)-(17,9))
         │   │                   │   ├── receiver: ∅
         │   │                   │   ├── call_operator_loc: ∅
-        │   │                   │   ├── message_loc: (66...69) = "bar"
+        │   │                   │   ├── message_loc: (17,6)-(17,9) = "bar"
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── arguments: ∅
         │   │                   │   ├── closing_loc: ∅
         │   │                   │   ├── block: ∅
         │   │                   │   ├── flags: variable_call
         │   │                   │   └── name: "bar"
-        │   │                   └── operator_loc: (64...66) = "**"
+        │   │                   └── operator_loc: (17,4)-(17,6) = "**"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "Foo"
-        ├── @ CallNode (location: (71...79))
+        ├── @ CallNode (location: (19,0)-(19,8))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (71...74) = "Foo"
+        │   ├── message_loc: (19,0)-(19,3) = "Foo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block:
-        │   │   @ BlockArgumentNode (location: (75...79))
+        │   │   @ BlockArgumentNode (location: (19,4)-(19,8))
         │   │   ├── expression:
-        │   │   │   @ CallNode (location: (76...79))
+        │   │   │   @ CallNode (location: (19,5)-(19,8))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (76...79) = "bar"
+        │   │   │   ├── message_loc: (19,5)-(19,8) = "bar"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "bar"
-        │   │   └── operator_loc: (75...76) = "&"
+        │   │   └── operator_loc: (19,4)-(19,5) = "&"
         │   ├── flags: ∅
         │   └── name: "Foo"
-        ├── @ CallNode (location: (81...94))
+        ├── @ CallNode (location: (21,0)-(21,13))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (81...84))
+        │   │   @ ConstantReadNode (location: (21,0)-(21,3))
         │   │   └── name: :Foo
-        │   ├── call_operator_loc: (84...86) = "::"
-        │   ├── message_loc: (86...89) = "Bar"
+        │   ├── call_operator_loc: (21,3)-(21,5) = "::"
+        │   ├── message_loc: (21,5)-(21,8) = "Bar"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (90...94))
+        │   │   @ ArgumentsNode (location: (21,9)-(21,13))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ SplatNode (location: (90...94))
-        │   │           ├── operator_loc: (90...91) = "*"
+        │   │       └── @ SplatNode (location: (21,9)-(21,13))
+        │   │           ├── operator_loc: (21,9)-(21,10) = "*"
         │   │           └── expression:
-        │   │               @ CallNode (location: (91...94))
+        │   │               @ CallNode (location: (21,10)-(21,13))
         │   │               ├── receiver: ∅
         │   │               ├── call_operator_loc: ∅
-        │   │               ├── message_loc: (91...94) = "baz"
+        │   │               ├── message_loc: (21,10)-(21,13) = "baz"
         │   │               ├── opening_loc: ∅
         │   │               ├── arguments: ∅
         │   │               ├── closing_loc: ∅
@@ -180,840 +180,840 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "Bar"
-        ├── @ CallNode (location: (96...110))
+        ├── @ CallNode (location: (23,0)-(23,14))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (96...99))
+        │   │   @ ConstantReadNode (location: (23,0)-(23,3))
         │   │   └── name: :Foo
-        │   ├── call_operator_loc: (99...101) = "::"
-        │   ├── message_loc: (101...104) = "Bar"
+        │   ├── call_operator_loc: (23,3)-(23,5) = "::"
+        │   ├── message_loc: (23,5)-(23,8) = "Bar"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (105...110))
+        │   │   @ ArgumentsNode (location: (23,9)-(23,14))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ KeywordHashNode (location: (105...110))
+        │   │       └── @ KeywordHashNode (location: (23,9)-(23,14))
         │   │           └── elements: (length: 1)
-        │   │               └── @ AssocSplatNode (location: (105...110))
+        │   │               └── @ AssocSplatNode (location: (23,9)-(23,14))
         │   │                   ├── value:
-        │   │                   │   @ CallNode (location: (107...110))
+        │   │                   │   @ CallNode (location: (23,11)-(23,14))
         │   │                   │   ├── receiver: ∅
         │   │                   │   ├── call_operator_loc: ∅
-        │   │                   │   ├── message_loc: (107...110) = "baz"
+        │   │                   │   ├── message_loc: (23,11)-(23,14) = "baz"
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── arguments: ∅
         │   │                   │   ├── closing_loc: ∅
         │   │                   │   ├── block: ∅
         │   │                   │   ├── flags: variable_call
         │   │                   │   └── name: "baz"
-        │   │                   └── operator_loc: (105...107) = "**"
+        │   │                   └── operator_loc: (23,9)-(23,11) = "**"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "Bar"
-        ├── @ CallNode (location: (112...125))
+        ├── @ CallNode (location: (25,0)-(25,13))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (112...115))
+        │   │   @ ConstantReadNode (location: (25,0)-(25,3))
         │   │   └── name: :Foo
-        │   ├── call_operator_loc: (115...117) = "::"
-        │   ├── message_loc: (117...120) = "Bar"
+        │   ├── call_operator_loc: (25,3)-(25,5) = "::"
+        │   ├── message_loc: (25,5)-(25,8) = "Bar"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block:
-        │   │   @ BlockArgumentNode (location: (121...125))
+        │   │   @ BlockArgumentNode (location: (25,9)-(25,13))
         │   │   ├── expression:
-        │   │   │   @ CallNode (location: (122...125))
+        │   │   │   @ CallNode (location: (25,10)-(25,13))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (122...125) = "baz"
+        │   │   │   ├── message_loc: (25,10)-(25,13) = "baz"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "baz"
-        │   │   └── operator_loc: (121...122) = "&"
+        │   │   └── operator_loc: (25,9)-(25,10) = "&"
         │   ├── flags: ∅
         │   └── name: "Bar"
-        ├── @ CallNode (location: (127...135))
+        ├── @ CallNode (location: (27,0)-(27,8))
         │   ├── receiver:
-        │   │   @ ConstantPathNode (location: (127...130))
+        │   │   @ ConstantPathNode (location: (27,0)-(27,3))
         │   │   ├── parent: ∅
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (129...130))
+        │   │   │   @ ConstantReadNode (location: (27,2)-(27,3))
         │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (127...129) = "::"
-        │   ├── call_operator_loc: (130...132) = "::"
-        │   ├── message_loc: (132...135) = "foo"
+        │   │   └── delimiter_loc: (27,0)-(27,2) = "::"
+        │   ├── call_operator_loc: (27,3)-(27,5) = "::"
+        │   ├── message_loc: (27,5)-(27,8) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "foo"
-        ├── @ ConstantPathWriteNode (location: (137...144))
+        ├── @ ConstantPathWriteNode (location: (29,0)-(29,7))
         │   ├── target:
-        │   │   @ ConstantPathNode (location: (137...140))
+        │   │   @ ConstantPathNode (location: (29,0)-(29,3))
         │   │   ├── parent: ∅
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (139...140))
+        │   │   │   @ ConstantReadNode (location: (29,2)-(29,3))
         │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (137...139) = "::"
-        │   ├── operator_loc: (141...142) = "="
+        │   │   └── delimiter_loc: (29,0)-(29,2) = "::"
+        │   ├── operator_loc: (29,4)-(29,5) = "="
         │   └── value:
-        │       @ IntegerNode (location: (143...144))
+        │       @ IntegerNode (location: (29,6)-(29,7))
         │       └── flags: decimal
-        ├── @ ConstantPathWriteNode (location: (146...156))
+        ├── @ ConstantPathWriteNode (location: (31,0)-(31,10))
         │   ├── target:
-        │   │   @ ConstantPathNode (location: (146...152))
+        │   │   @ ConstantPathNode (location: (31,0)-(31,6))
         │   │   ├── parent:
-        │   │   │   @ ConstantPathNode (location: (146...149))
+        │   │   │   @ ConstantPathNode (location: (31,0)-(31,3))
         │   │   │   ├── parent: ∅
         │   │   │   ├── child:
-        │   │   │   │   @ ConstantReadNode (location: (148...149))
+        │   │   │   │   @ ConstantReadNode (location: (31,2)-(31,3))
         │   │   │   │   └── name: :A
-        │   │   │   └── delimiter_loc: (146...148) = "::"
+        │   │   │   └── delimiter_loc: (31,0)-(31,2) = "::"
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (151...152))
+        │   │   │   @ ConstantReadNode (location: (31,5)-(31,6))
         │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (149...151) = "::"
-        │   ├── operator_loc: (153...154) = "="
+        │   │   └── delimiter_loc: (31,3)-(31,5) = "::"
+        │   ├── operator_loc: (31,7)-(31,8) = "="
         │   └── value:
-        │       @ IntegerNode (location: (155...156))
+        │       @ IntegerNode (location: (31,9)-(31,10))
         │       └── flags: decimal
-        ├── @ ConstantPathNode (location: (158...164))
+        ├── @ ConstantPathNode (location: (33,0)-(33,6))
         │   ├── parent:
-        │   │   @ ConstantPathNode (location: (158...161))
+        │   │   @ ConstantPathNode (location: (33,0)-(33,3))
         │   │   ├── parent: ∅
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (160...161))
+        │   │   │   @ ConstantReadNode (location: (33,2)-(33,3))
         │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (158...160) = "::"
+        │   │   └── delimiter_loc: (33,0)-(33,2) = "::"
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (163...164))
+        │   │   @ ConstantReadNode (location: (33,5)-(33,6))
         │   │   └── name: :B
-        │   └── delimiter_loc: (161...163) = "::"
-        ├── @ ConstantPathNode (location: (166...169))
+        │   └── delimiter_loc: (33,3)-(33,5) = "::"
+        ├── @ ConstantPathNode (location: (35,0)-(35,3))
         │   ├── parent: ∅
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (168...169))
+        │   │   @ ConstantReadNode (location: (35,2)-(35,3))
         │   │   └── name: :A
-        │   └── delimiter_loc: (166...168) = "::"
-        ├── @ CallNode (location: (171...179))
+        │   └── delimiter_loc: (35,0)-(35,2) = "::"
+        ├── @ CallNode (location: (37,0)-(37,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (171...172))
+        │   │   @ ConstantReadNode (location: (37,0)-(37,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (172...174) = "::"
-        │   ├── message_loc: (174...179) = "false"
+        │   ├── call_operator_loc: (37,1)-(37,3) = "::"
+        │   ├── message_loc: (37,3)-(37,8) = "false"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "false"
-        ├── @ CallNode (location: (181...191))
+        ├── @ CallNode (location: (39,0)-(39,10))
         │   ├── receiver:
-        │   │   @ ConstantPathNode (location: (181...185))
+        │   │   @ ConstantPathNode (location: (39,0)-(39,4))
         │   │   ├── parent:
-        │   │   │   @ ConstantReadNode (location: (181...182))
+        │   │   │   @ ConstantReadNode (location: (39,0)-(39,1))
         │   │   │   └── name: :A
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (184...185))
+        │   │   │   @ ConstantReadNode (location: (39,3)-(39,4))
         │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (182...184) = "::"
-        │   ├── call_operator_loc: (185...187) = "::"
-        │   ├── message_loc: (187...191) = "true"
+        │   │   └── delimiter_loc: (39,1)-(39,3) = "::"
+        │   ├── call_operator_loc: (39,4)-(39,6) = "::"
+        │   ├── message_loc: (39,6)-(39,10) = "true"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "true"
-        ├── @ CallNode (location: (193...197))
+        ├── @ CallNode (location: (41,0)-(41,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (193...194))
+        │   │   @ ConstantReadNode (location: (41,0)-(41,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (194...196) = "::"
-        │   ├── message_loc: (196...197) = "&"
+        │   ├── call_operator_loc: (41,1)-(41,3) = "::"
+        │   ├── message_loc: (41,3)-(41,4) = "&"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "&"
-        ├── @ CallNode (location: (199...203))
+        ├── @ CallNode (location: (43,0)-(43,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (199...200))
+        │   │   @ ConstantReadNode (location: (43,0)-(43,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (200...202) = "::"
-        │   ├── message_loc: (202...203) = "`"
+        │   ├── call_operator_loc: (43,1)-(43,3) = "::"
+        │   ├── message_loc: (43,3)-(43,4) = "`"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "`"
-        ├── @ CallNode (location: (205...209))
+        ├── @ CallNode (location: (45,0)-(45,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (205...206))
+        │   │   @ ConstantReadNode (location: (45,0)-(45,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (206...208) = "::"
-        │   ├── message_loc: (208...209) = "!"
+        │   ├── call_operator_loc: (45,1)-(45,3) = "::"
+        │   ├── message_loc: (45,3)-(45,4) = "!"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "!"
-        ├── @ CallNode (location: (211...216))
+        ├── @ CallNode (location: (47,0)-(47,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (211...212))
+        │   │   @ ConstantReadNode (location: (47,0)-(47,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (212...214) = "::"
-        │   ├── message_loc: (214...216) = "!="
+        │   ├── call_operator_loc: (47,1)-(47,3) = "::"
+        │   ├── message_loc: (47,3)-(47,5) = "!="
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "!="
-        ├── @ CallNode (location: (218...222))
+        ├── @ CallNode (location: (49,0)-(49,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (218...219))
+        │   │   @ ConstantReadNode (location: (49,0)-(49,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (219...221) = "::"
-        │   ├── message_loc: (221...222) = "^"
+        │   ├── call_operator_loc: (49,1)-(49,3) = "::"
+        │   ├── message_loc: (49,3)-(49,4) = "^"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "^"
-        ├── @ CallNode (location: (224...229))
+        ├── @ CallNode (location: (51,0)-(51,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (224...225))
+        │   │   @ ConstantReadNode (location: (51,0)-(51,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (225...227) = "::"
-        │   ├── message_loc: (227...229) = "=="
+        │   ├── call_operator_loc: (51,1)-(51,3) = "::"
+        │   ├── message_loc: (51,3)-(51,5) = "=="
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "=="
-        ├── @ CallNode (location: (231...237))
+        ├── @ CallNode (location: (53,0)-(53,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (231...232))
+        │   │   @ ConstantReadNode (location: (53,0)-(53,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (232...234) = "::"
-        │   ├── message_loc: (234...237) = "==="
+        │   ├── call_operator_loc: (53,1)-(53,3) = "::"
+        │   ├── message_loc: (53,3)-(53,6) = "==="
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "==="
-        ├── @ CallNode (location: (239...244))
+        ├── @ CallNode (location: (55,0)-(55,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (239...240))
+        │   │   @ ConstantReadNode (location: (55,0)-(55,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (240...242) = "::"
-        │   ├── message_loc: (242...244) = "=~"
+        │   ├── call_operator_loc: (55,1)-(55,3) = "::"
+        │   ├── message_loc: (55,3)-(55,5) = "=~"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "=~"
-        ├── @ CallNode (location: (246...250))
+        ├── @ CallNode (location: (57,0)-(57,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (246...247))
+        │   │   @ ConstantReadNode (location: (57,0)-(57,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (247...249) = "::"
-        │   ├── message_loc: (249...250) = ">"
+        │   ├── call_operator_loc: (57,1)-(57,3) = "::"
+        │   ├── message_loc: (57,3)-(57,4) = ">"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: ">"
-        ├── @ CallNode (location: (252...257))
+        ├── @ CallNode (location: (59,0)-(59,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (252...253))
+        │   │   @ ConstantReadNode (location: (59,0)-(59,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (253...255) = "::"
-        │   ├── message_loc: (255...257) = ">="
+        │   ├── call_operator_loc: (59,1)-(59,3) = "::"
+        │   ├── message_loc: (59,3)-(59,5) = ">="
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: ">="
-        ├── @ CallNode (location: (259...264))
+        ├── @ CallNode (location: (61,0)-(61,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (259...260))
+        │   │   @ ConstantReadNode (location: (61,0)-(61,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (260...262) = "::"
-        │   ├── message_loc: (262...264) = ">>"
+        │   ├── call_operator_loc: (61,1)-(61,3) = "::"
+        │   ├── message_loc: (61,3)-(61,5) = ">>"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: ">>"
-        ├── @ CallNode (location: (266...271))
+        ├── @ CallNode (location: (63,0)-(63,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (266...267))
+        │   │   @ ConstantReadNode (location: (63,0)-(63,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (267...269) = "::"
-        │   ├── message_loc: (269...271) = "<<"
+        │   ├── call_operator_loc: (63,1)-(63,3) = "::"
+        │   ├── message_loc: (63,3)-(63,5) = "<<"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "<<"
-        ├── @ ConstantPathNode (location: (273...281))
+        ├── @ ConstantPathNode (location: (65,0)-(67,1))
         │   ├── parent:
-        │   │   @ ConstantReadNode (location: (273...274))
+        │   │   @ ConstantReadNode (location: (65,0)-(65,1))
         │   │   └── name: :A
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (280...281))
+        │   │   @ ConstantReadNode (location: (67,0)-(67,1))
         │   │   └── name: :C
-        │   └── delimiter_loc: (274...276) = "::"
-        ├── @ CallNode (location: (283...291))
+        │   └── delimiter_loc: (65,1)-(65,3) = "::"
+        ├── @ CallNode (location: (69,0)-(69,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (283...284))
+        │   │   @ ConstantReadNode (location: (69,0)-(69,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (284...286) = "::"
-        │   ├── message_loc: (286...291) = "alias"
+        │   ├── call_operator_loc: (69,1)-(69,3) = "::"
+        │   ├── message_loc: (69,3)-(69,8) = "alias"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "alias"
-        ├── @ CallNode (location: (293...299))
+        ├── @ CallNode (location: (71,0)-(71,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (293...294))
+        │   │   @ ConstantReadNode (location: (71,0)-(71,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (294...296) = "::"
-        │   ├── message_loc: (296...299) = "and"
+        │   ├── call_operator_loc: (71,1)-(71,3) = "::"
+        │   ├── message_loc: (71,3)-(71,6) = "and"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "and"
-        ├── @ CallNode (location: (301...309))
+        ├── @ CallNode (location: (73,0)-(73,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (301...302))
+        │   │   @ ConstantReadNode (location: (73,0)-(73,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (302...304) = "::"
-        │   ├── message_loc: (304...309) = "begin"
+        │   ├── call_operator_loc: (73,1)-(73,3) = "::"
+        │   ├── message_loc: (73,3)-(73,8) = "begin"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "begin"
-        ├── @ ConstantPathNode (location: (311...319))
+        ├── @ ConstantPathNode (location: (75,0)-(75,8))
         │   ├── parent:
-        │   │   @ ConstantReadNode (location: (311...312))
+        │   │   @ ConstantReadNode (location: (75,0)-(75,1))
         │   │   └── name: :A
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (314...319))
+        │   │   @ ConstantReadNode (location: (75,3)-(75,8))
         │   │   └── name: :BEGIN
-        │   └── delimiter_loc: (312...314) = "::"
-        ├── @ CallNode (location: (321...329))
+        │   └── delimiter_loc: (75,1)-(75,3) = "::"
+        ├── @ CallNode (location: (77,0)-(77,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (321...322))
+        │   │   @ ConstantReadNode (location: (77,0)-(77,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (322...324) = "::"
-        │   ├── message_loc: (324...329) = "break"
+        │   ├── call_operator_loc: (77,1)-(77,3) = "::"
+        │   ├── message_loc: (77,3)-(77,8) = "break"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "break"
-        ├── @ CallNode (location: (331...339))
+        ├── @ CallNode (location: (79,0)-(79,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (331...332))
+        │   │   @ ConstantReadNode (location: (79,0)-(79,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (332...334) = "::"
-        │   ├── message_loc: (334...339) = "class"
+        │   ├── call_operator_loc: (79,1)-(79,3) = "::"
+        │   ├── message_loc: (79,3)-(79,8) = "class"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "class"
-        ├── @ CallNode (location: (341...347))
+        ├── @ CallNode (location: (81,0)-(81,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (341...342))
+        │   │   @ ConstantReadNode (location: (81,0)-(81,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (342...344) = "::"
-        │   ├── message_loc: (344...347) = "def"
+        │   ├── call_operator_loc: (81,1)-(81,3) = "::"
+        │   ├── message_loc: (81,3)-(81,6) = "def"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "def"
-        ├── @ CallNode (location: (349...359))
+        ├── @ CallNode (location: (83,0)-(83,10))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (349...350))
+        │   │   @ ConstantReadNode (location: (83,0)-(83,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (350...352) = "::"
-        │   ├── message_loc: (352...359) = "defined"
+        │   ├── call_operator_loc: (83,1)-(83,3) = "::"
+        │   ├── message_loc: (83,3)-(83,10) = "defined"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "defined"
-        ├── @ CallNode (location: (361...366))
+        ├── @ CallNode (location: (85,0)-(85,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (361...362))
+        │   │   @ ConstantReadNode (location: (85,0)-(85,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (362...364) = "::"
-        │   ├── message_loc: (364...366) = "do"
+        │   ├── call_operator_loc: (85,1)-(85,3) = "::"
+        │   ├── message_loc: (85,3)-(85,5) = "do"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "do"
-        ├── @ CallNode (location: (368...375))
+        ├── @ CallNode (location: (87,0)-(87,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (368...369))
+        │   │   @ ConstantReadNode (location: (87,0)-(87,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (369...371) = "::"
-        │   ├── message_loc: (371...375) = "else"
+        │   ├── call_operator_loc: (87,1)-(87,3) = "::"
+        │   ├── message_loc: (87,3)-(87,7) = "else"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "else"
-        ├── @ CallNode (location: (377...385))
+        ├── @ CallNode (location: (89,0)-(89,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (377...378))
+        │   │   @ ConstantReadNode (location: (89,0)-(89,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (378...380) = "::"
-        │   ├── message_loc: (380...385) = "elsif"
+        │   ├── call_operator_loc: (89,1)-(89,3) = "::"
+        │   ├── message_loc: (89,3)-(89,8) = "elsif"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "elsif"
-        ├── @ CallNode (location: (387...393))
+        ├── @ CallNode (location: (91,0)-(91,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (387...388))
+        │   │   @ ConstantReadNode (location: (91,0)-(91,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (388...390) = "::"
-        │   ├── message_loc: (390...393) = "end"
+        │   ├── call_operator_loc: (91,1)-(91,3) = "::"
+        │   ├── message_loc: (91,3)-(91,6) = "end"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "end"
-        ├── @ ConstantPathNode (location: (395...401))
+        ├── @ ConstantPathNode (location: (93,0)-(93,6))
         │   ├── parent:
-        │   │   @ ConstantReadNode (location: (395...396))
+        │   │   @ ConstantReadNode (location: (93,0)-(93,1))
         │   │   └── name: :A
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (398...401))
+        │   │   @ ConstantReadNode (location: (93,3)-(93,6))
         │   │   └── name: :END
-        │   └── delimiter_loc: (396...398) = "::"
-        ├── @ CallNode (location: (403...412))
+        │   └── delimiter_loc: (93,1)-(93,3) = "::"
+        ├── @ CallNode (location: (95,0)-(95,9))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (403...404))
+        │   │   @ ConstantReadNode (location: (95,0)-(95,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (404...406) = "::"
-        │   ├── message_loc: (406...412) = "ensure"
+        │   ├── call_operator_loc: (95,1)-(95,3) = "::"
+        │   ├── message_loc: (95,3)-(95,9) = "ensure"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "ensure"
-        ├── @ CallNode (location: (414...422))
+        ├── @ CallNode (location: (97,0)-(97,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (414...415))
+        │   │   @ ConstantReadNode (location: (97,0)-(97,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (415...417) = "::"
-        │   ├── message_loc: (417...422) = "false"
+        │   ├── call_operator_loc: (97,1)-(97,3) = "::"
+        │   ├── message_loc: (97,3)-(97,8) = "false"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "false"
-        ├── @ CallNode (location: (424...430))
+        ├── @ CallNode (location: (99,0)-(99,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (424...425))
+        │   │   @ ConstantReadNode (location: (99,0)-(99,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (425...427) = "::"
-        │   ├── message_loc: (427...430) = "for"
+        │   ├── call_operator_loc: (99,1)-(99,3) = "::"
+        │   ├── message_loc: (99,3)-(99,6) = "for"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "for"
-        ├── @ CallNode (location: (432...437))
+        ├── @ CallNode (location: (101,0)-(101,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (432...433))
+        │   │   @ ConstantReadNode (location: (101,0)-(101,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (433...435) = "::"
-        │   ├── message_loc: (435...437) = "if"
+        │   ├── call_operator_loc: (101,1)-(101,3) = "::"
+        │   ├── message_loc: (101,3)-(101,5) = "if"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "if"
-        ├── @ CallNode (location: (439...444))
+        ├── @ CallNode (location: (103,0)-(103,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (439...440))
+        │   │   @ ConstantReadNode (location: (103,0)-(103,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (440...442) = "::"
-        │   ├── message_loc: (442...444) = "in"
+        │   ├── call_operator_loc: (103,1)-(103,3) = "::"
+        │   ├── message_loc: (103,3)-(103,5) = "in"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "in"
-        ├── @ CallNode (location: (446...453))
+        ├── @ CallNode (location: (105,0)-(105,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (446...447))
+        │   │   @ ConstantReadNode (location: (105,0)-(105,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (447...449) = "::"
-        │   ├── message_loc: (449...453) = "next"
+        │   ├── call_operator_loc: (105,1)-(105,3) = "::"
+        │   ├── message_loc: (105,3)-(105,7) = "next"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "next"
-        ├── @ CallNode (location: (455...461))
+        ├── @ CallNode (location: (107,0)-(107,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (455...456))
+        │   │   @ ConstantReadNode (location: (107,0)-(107,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (456...458) = "::"
-        │   ├── message_loc: (458...461) = "nil"
+        │   ├── call_operator_loc: (107,1)-(107,3) = "::"
+        │   ├── message_loc: (107,3)-(107,6) = "nil"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "nil"
-        ├── @ CallNode (location: (463...469))
+        ├── @ CallNode (location: (109,0)-(109,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (463...464))
+        │   │   @ ConstantReadNode (location: (109,0)-(109,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (464...466) = "::"
-        │   ├── message_loc: (466...469) = "not"
+        │   ├── call_operator_loc: (109,1)-(109,3) = "::"
+        │   ├── message_loc: (109,3)-(109,6) = "not"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "not"
-        ├── @ CallNode (location: (471...476))
+        ├── @ CallNode (location: (111,0)-(111,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (471...472))
+        │   │   @ ConstantReadNode (location: (111,0)-(111,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (472...474) = "::"
-        │   ├── message_loc: (474...476) = "or"
+        │   ├── call_operator_loc: (111,1)-(111,3) = "::"
+        │   ├── message_loc: (111,3)-(111,5) = "or"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "or"
-        ├── @ CallNode (location: (478...485))
+        ├── @ CallNode (location: (113,0)-(113,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (478...479))
+        │   │   @ ConstantReadNode (location: (113,0)-(113,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (479...481) = "::"
-        │   ├── message_loc: (481...485) = "redo"
+        │   ├── call_operator_loc: (113,1)-(113,3) = "::"
+        │   ├── message_loc: (113,3)-(113,7) = "redo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "redo"
-        ├── @ CallNode (location: (487...496))
+        ├── @ CallNode (location: (115,0)-(115,9))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (487...488))
+        │   │   @ ConstantReadNode (location: (115,0)-(115,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (488...490) = "::"
-        │   ├── message_loc: (490...496) = "rescue"
+        │   ├── call_operator_loc: (115,1)-(115,3) = "::"
+        │   ├── message_loc: (115,3)-(115,9) = "rescue"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "rescue"
-        ├── @ CallNode (location: (498...506))
+        ├── @ CallNode (location: (117,0)-(117,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (498...499))
+        │   │   @ ConstantReadNode (location: (117,0)-(117,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (499...501) = "::"
-        │   ├── message_loc: (501...506) = "retry"
+        │   ├── call_operator_loc: (117,1)-(117,3) = "::"
+        │   ├── message_loc: (117,3)-(117,8) = "retry"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "retry"
-        ├── @ CallNode (location: (508...517))
+        ├── @ CallNode (location: (119,0)-(119,9))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (508...509))
+        │   │   @ ConstantReadNode (location: (119,0)-(119,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (509...511) = "::"
-        │   ├── message_loc: (511...517) = "return"
+        │   ├── call_operator_loc: (119,1)-(119,3) = "::"
+        │   ├── message_loc: (119,3)-(119,9) = "return"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "return"
-        ├── @ CallNode (location: (519...526))
+        ├── @ CallNode (location: (121,0)-(121,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (519...520))
+        │   │   @ ConstantReadNode (location: (121,0)-(121,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (520...522) = "::"
-        │   ├── message_loc: (522...526) = "self"
+        │   ├── call_operator_loc: (121,1)-(121,3) = "::"
+        │   ├── message_loc: (121,3)-(121,7) = "self"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "self"
-        ├── @ CallNode (location: (528...536))
+        ├── @ CallNode (location: (123,0)-(123,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (528...529))
+        │   │   @ ConstantReadNode (location: (123,0)-(123,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (529...531) = "::"
-        │   ├── message_loc: (531...536) = "super"
+        │   ├── call_operator_loc: (123,1)-(123,3) = "::"
+        │   ├── message_loc: (123,3)-(123,8) = "super"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "super"
-        ├── @ CallNode (location: (538...545))
+        ├── @ CallNode (location: (125,0)-(125,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (538...539))
+        │   │   @ ConstantReadNode (location: (125,0)-(125,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (539...541) = "::"
-        │   ├── message_loc: (541...545) = "then"
+        │   ├── call_operator_loc: (125,1)-(125,3) = "::"
+        │   ├── message_loc: (125,3)-(125,7) = "then"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "then"
-        ├── @ CallNode (location: (547...554))
+        ├── @ CallNode (location: (127,0)-(127,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (547...548))
+        │   │   @ ConstantReadNode (location: (127,0)-(127,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (548...550) = "::"
-        │   ├── message_loc: (550...554) = "true"
+        │   ├── call_operator_loc: (127,1)-(127,3) = "::"
+        │   ├── message_loc: (127,3)-(127,7) = "true"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "true"
-        ├── @ CallNode (location: (556...564))
+        ├── @ CallNode (location: (129,0)-(129,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (556...557))
+        │   │   @ ConstantReadNode (location: (129,0)-(129,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (557...559) = "::"
-        │   ├── message_loc: (559...564) = "undef"
+        │   ├── call_operator_loc: (129,1)-(129,3) = "::"
+        │   ├── message_loc: (129,3)-(129,8) = "undef"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "undef"
-        ├── @ CallNode (location: (566...575))
+        ├── @ CallNode (location: (131,0)-(131,9))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (566...567))
+        │   │   @ ConstantReadNode (location: (131,0)-(131,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (567...569) = "::"
-        │   ├── message_loc: (569...575) = "unless"
+        │   ├── call_operator_loc: (131,1)-(131,3) = "::"
+        │   ├── message_loc: (131,3)-(131,9) = "unless"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "unless"
-        ├── @ CallNode (location: (577...585))
+        ├── @ CallNode (location: (133,0)-(133,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (577...578))
+        │   │   @ ConstantReadNode (location: (133,0)-(133,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (578...580) = "::"
-        │   ├── message_loc: (580...585) = "until"
+        │   ├── call_operator_loc: (133,1)-(133,3) = "::"
+        │   ├── message_loc: (133,3)-(133,8) = "until"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "until"
-        ├── @ CallNode (location: (587...594))
+        ├── @ CallNode (location: (135,0)-(135,7))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (587...588))
+        │   │   @ ConstantReadNode (location: (135,0)-(135,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (588...590) = "::"
-        │   ├── message_loc: (590...594) = "when"
+        │   ├── call_operator_loc: (135,1)-(135,3) = "::"
+        │   ├── message_loc: (135,3)-(135,7) = "when"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "when"
-        ├── @ CallNode (location: (596...604))
+        ├── @ CallNode (location: (137,0)-(137,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (596...597))
+        │   │   @ ConstantReadNode (location: (137,0)-(137,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (597...599) = "::"
-        │   ├── message_loc: (599...604) = "while"
+        │   ├── call_operator_loc: (137,1)-(137,3) = "::"
+        │   ├── message_loc: (137,3)-(137,8) = "while"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "while"
-        ├── @ CallNode (location: (606...614))
+        ├── @ CallNode (location: (139,0)-(139,8))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (606...607))
+        │   │   @ ConstantReadNode (location: (139,0)-(139,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (607...609) = "::"
-        │   ├── message_loc: (609...614) = "yield"
+        │   ├── call_operator_loc: (139,1)-(139,3) = "::"
+        │   ├── message_loc: (139,3)-(139,8) = "yield"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "yield"
-        ├── @ CallNode (location: (616...631))
+        ├── @ CallNode (location: (141,0)-(141,15))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (616...617))
+        │   │   @ ConstantReadNode (location: (141,0)-(141,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (617...619) = "::"
-        │   ├── message_loc: (619...631) = "__ENCODING__"
+        │   ├── call_operator_loc: (141,1)-(141,3) = "::"
+        │   ├── message_loc: (141,3)-(141,15) = "__ENCODING__"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "__ENCODING__"
-        ├── @ CallNode (location: (633...644))
+        ├── @ CallNode (location: (143,0)-(143,11))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (633...634))
+        │   │   @ ConstantReadNode (location: (143,0)-(143,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (634...636) = "::"
-        │   ├── message_loc: (636...644) = "__FILE__"
+        │   ├── call_operator_loc: (143,1)-(143,3) = "::"
+        │   ├── message_loc: (143,3)-(143,11) = "__FILE__"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "__FILE__"
-        ├── @ CallNode (location: (646...657))
+        ├── @ CallNode (location: (145,0)-(145,11))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (646...647))
+        │   │   @ ConstantReadNode (location: (145,0)-(145,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (647...649) = "::"
-        │   ├── message_loc: (649...657) = "__LINE__"
+        │   ├── call_operator_loc: (145,1)-(145,3) = "::"
+        │   ├── message_loc: (145,3)-(145,11) = "__LINE__"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "__LINE__"
-        ├── @ CallNode (location: (659...663))
+        ├── @ CallNode (location: (147,0)-(147,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (659...660))
+        │   │   @ ConstantReadNode (location: (147,0)-(147,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (660...662) = "::"
-        │   ├── message_loc: (662...663) = "<"
+        │   ├── call_operator_loc: (147,1)-(147,3) = "::"
+        │   ├── message_loc: (147,3)-(147,4) = "<"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "<"
-        ├── @ CallNode (location: (665...671))
+        ├── @ CallNode (location: (149,0)-(149,6))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (665...666))
+        │   │   @ ConstantReadNode (location: (149,0)-(149,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (666...668) = "::"
-        │   ├── message_loc: (668...671) = "<=>"
+        │   ├── call_operator_loc: (149,1)-(149,3) = "::"
+        │   ├── message_loc: (149,3)-(149,6) = "<=>"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "<=>"
-        ├── @ CallNode (location: (673...678))
+        ├── @ CallNode (location: (151,0)-(151,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (673...674))
+        │   │   @ ConstantReadNode (location: (151,0)-(151,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (674...676) = "::"
-        │   ├── message_loc: (676...678) = "<<"
+        │   ├── call_operator_loc: (151,1)-(151,3) = "::"
+        │   ├── message_loc: (151,3)-(151,5) = "<<"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "<<"
-        ├── @ CallNode (location: (680...684))
+        ├── @ CallNode (location: (153,0)-(153,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (680...681))
+        │   │   @ ConstantReadNode (location: (153,0)-(153,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (681...683) = "::"
-        │   ├── message_loc: (683...684) = "-"
+        │   ├── call_operator_loc: (153,1)-(153,3) = "::"
+        │   ├── message_loc: (153,3)-(153,4) = "-"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "-"
-        ├── @ CallNode (location: (686...690))
+        ├── @ CallNode (location: (155,0)-(155,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (686...687))
+        │   │   @ ConstantReadNode (location: (155,0)-(155,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (687...689) = "::"
-        │   ├── message_loc: (689...690) = "%"
+        │   ├── call_operator_loc: (155,1)-(155,3) = "::"
+        │   ├── message_loc: (155,3)-(155,4) = "%"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "%"
-        ├── @ CallNode (location: (692...697))
+        ├── @ CallNode (location: (157,0)-(157,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (692...693))
+        │   │   @ ConstantReadNode (location: (157,0)-(157,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (693...695) = "::"
-        │   ├── message_loc: (695...696) = "%"
+        │   ├── call_operator_loc: (157,1)-(157,3) = "::"
+        │   ├── message_loc: (157,3)-(157,4) = "%"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (696...697))
+        │   │   @ ArgumentsNode (location: (157,4)-(157,5))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (696...697))
+        │   │       └── @ CallNode (location: (157,4)-(157,5))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (696...697) = "i"
+        │   │           ├── message_loc: (157,4)-(157,5) = "i"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -1024,20 +1024,20 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "%"
-        ├── @ CallNode (location: (699...704))
+        ├── @ CallNode (location: (159,0)-(159,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (699...700))
+        │   │   @ ConstantReadNode (location: (159,0)-(159,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (700...702) = "::"
-        │   ├── message_loc: (702...703) = "%"
+        │   ├── call_operator_loc: (159,1)-(159,3) = "::"
+        │   ├── message_loc: (159,3)-(159,4) = "%"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (703...704))
+        │   │   @ ArgumentsNode (location: (159,4)-(159,5))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (703...704))
+        │   │       └── @ CallNode (location: (159,4)-(159,5))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (703...704) = "w"
+        │   │           ├── message_loc: (159,4)-(159,5) = "w"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -1048,20 +1048,20 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "%"
-        ├── @ CallNode (location: (706...711))
+        ├── @ CallNode (location: (161,0)-(161,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (706...707))
+        │   │   @ ConstantReadNode (location: (161,0)-(161,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (707...709) = "::"
-        │   ├── message_loc: (709...710) = "%"
+        │   ├── call_operator_loc: (161,1)-(161,3) = "::"
+        │   ├── message_loc: (161,3)-(161,4) = "%"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (710...711))
+        │   │   @ ArgumentsNode (location: (161,4)-(161,5))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (710...711))
+        │   │       └── @ CallNode (location: (161,4)-(161,5))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (710...711) = "x"
+        │   │           ├── message_loc: (161,4)-(161,5) = "x"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -1072,118 +1072,118 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "%"
-        ├── @ CallNode (location: (713...718))
+        ├── @ CallNode (location: (163,0)-(163,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (713...714))
+        │   │   @ ConstantReadNode (location: (163,0)-(163,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (714...716) = "::"
-        │   ├── message_loc: (716...717) = "%"
+        │   ├── call_operator_loc: (163,1)-(163,3) = "::"
+        │   ├── message_loc: (163,3)-(163,4) = "%"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (717...718))
+        │   │   @ ArgumentsNode (location: (163,4)-(163,5))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ConstantReadNode (location: (717...718))
+        │   │       └── @ ConstantReadNode (location: (163,4)-(163,5))
         │   │           └── name: :I
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "%"
-        ├── @ CallNode (location: (720...725))
+        ├── @ CallNode (location: (165,0)-(165,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (720...721))
+        │   │   @ ConstantReadNode (location: (165,0)-(165,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (721...723) = "::"
-        │   ├── message_loc: (723...724) = "%"
+        │   ├── call_operator_loc: (165,1)-(165,3) = "::"
+        │   ├── message_loc: (165,3)-(165,4) = "%"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (724...725))
+        │   │   @ ArgumentsNode (location: (165,4)-(165,5))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ ConstantReadNode (location: (724...725))
+        │   │       └── @ ConstantReadNode (location: (165,4)-(165,5))
         │   │           └── name: :W
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "%"
-        ├── @ CallNode (location: (727...731))
+        ├── @ CallNode (location: (167,0)-(167,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (727...728))
+        │   │   @ ConstantReadNode (location: (167,0)-(167,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (728...730) = "::"
-        │   ├── message_loc: (730...731) = "|"
+        │   ├── call_operator_loc: (167,1)-(167,3) = "::"
+        │   ├── message_loc: (167,3)-(167,4) = "|"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "|"
-        ├── @ CallNode (location: (733...737))
+        ├── @ CallNode (location: (169,0)-(169,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (733...734))
+        │   │   @ ConstantReadNode (location: (169,0)-(169,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (734...736) = "::"
-        │   ├── message_loc: (736...737) = "+"
+        │   ├── call_operator_loc: (169,1)-(169,3) = "::"
+        │   ├── message_loc: (169,3)-(169,4) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "+"
-        ├── @ CallNode (location: (739...743))
+        ├── @ CallNode (location: (171,0)-(171,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (739...740))
+        │   │   @ ConstantReadNode (location: (171,0)-(171,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (740...742) = "::"
-        │   ├── message_loc: (742...743) = "/"
+        │   ├── call_operator_loc: (171,1)-(171,3) = "::"
+        │   ├── message_loc: (171,3)-(171,4) = "/"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "/"
-        ├── @ CallNode (location: (745...749))
+        ├── @ CallNode (location: (173,0)-(173,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (745...746))
+        │   │   @ ConstantReadNode (location: (173,0)-(173,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (746...748) = "::"
-        │   ├── message_loc: (748...749) = "*"
+        │   ├── call_operator_loc: (173,1)-(173,3) = "::"
+        │   ├── message_loc: (173,3)-(173,4) = "*"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "*"
-        ├── @ CallNode (location: (751...756))
+        ├── @ CallNode (location: (175,0)-(175,5))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (751...752))
+        │   │   @ ConstantReadNode (location: (175,0)-(175,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (752...754) = "::"
-        │   ├── message_loc: (754...756) = "**"
+        │   ├── call_operator_loc: (175,1)-(175,3) = "::"
+        │   ├── message_loc: (175,3)-(175,5) = "**"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "**"
-        ├── @ CallNode (location: (758...762))
+        ├── @ CallNode (location: (177,0)-(177,4))
         │   ├── receiver:
-        │   │   @ ConstantReadNode (location: (758...759))
+        │   │   @ ConstantReadNode (location: (177,0)-(177,1))
         │   │   └── name: :A
-        │   ├── call_operator_loc: (759...761) = "::"
-        │   ├── message_loc: (761...762) = "~"
+        │   ├── call_operator_loc: (177,1)-(177,3) = "::"
+        │   ├── message_loc: (177,3)-(177,4) = "~"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "~"
-        ├── @ ConstantPathNode (location: (764...772))
+        ├── @ ConstantPathNode (location: (179,0)-(180,1))
         │   ├── parent:
-        │   │   @ CallNode (location: (764...768))
+        │   │   @ CallNode (location: (179,0)-(179,4))
         │   │   ├── receiver:
-        │   │   │   @ ConstantReadNode (location: (764...765))
+        │   │   │   @ ConstantReadNode (location: (179,0)-(179,1))
         │   │   │   └── name: :A
-        │   │   ├── call_operator_loc: (765...767) = "::"
-        │   │   ├── message_loc: (767...768) = "_"
+        │   │   ├── call_operator_loc: (179,1)-(179,3) = "::"
+        │   │   ├── message_loc: (179,3)-(179,4) = "_"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -1191,17 +1191,17 @@
         │   │   ├── flags: ∅
         │   │   └── name: "_"
         │   ├── child:
-        │   │   @ ConstantReadNode (location: (771...772))
+        │   │   @ ConstantReadNode (location: (180,0)-(180,1))
         │   │   └── name: :C
-        │   └── delimiter_loc: (768...770) = "::"
-        └── @ RangeNode (location: (774...792))
+        │   └── delimiter_loc: (179,4)-(179,6) = "::"
+        └── @ RangeNode (location: (182,0)-(184,10))
             ├── left:
-            │   @ CallNode (location: (774...778))
+            │   @ CallNode (location: (182,0)-(182,4))
             │   ├── receiver:
-            │   │   @ ConstantReadNode (location: (774...775))
+            │   │   @ ConstantReadNode (location: (182,0)-(182,1))
             │   │   └── name: :A
-            │   ├── call_operator_loc: (775...777) = "::"
-            │   ├── message_loc: (777...778) = "_"
+            │   ├── call_operator_loc: (182,1)-(182,3) = "::"
+            │   ├── message_loc: (182,3)-(182,4) = "_"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -1209,17 +1209,17 @@
             │   ├── flags: ∅
             │   └── name: "_"
             ├── right:
-            │   @ CallNode (location: (782...792))
+            │   @ CallNode (location: (184,0)-(184,10))
             │   ├── receiver:
-            │   │   @ ConstantReadNode (location: (782...783))
+            │   │   @ ConstantReadNode (location: (184,0)-(184,1))
             │   │   └── name: :A
-            │   ├── call_operator_loc: (783...785) = "::"
-            │   ├── message_loc: (785...792) = "__END__"
+            │   ├── call_operator_loc: (184,1)-(184,3) = "::"
+            │   ├── message_loc: (184,3)-(184,10) = "__END__"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
             │   └── name: "__END__"
-            ├── operator_loc: (778...780) = ".."
+            ├── operator_loc: (182,4)-(182,6) = ".."
             └── flags: ∅

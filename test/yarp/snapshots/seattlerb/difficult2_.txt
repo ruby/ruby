@@ -1,63 +1,63 @@
-@ ProgramNode (location: (0...20))
+@ ProgramNode (location: (1,0)-(2,6))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...20))
+    @ StatementsNode (location: (1,0)-(2,6))
     └── body: (length: 2)
-        ├── @ IfNode (location: (0...13))
+        ├── @ IfNode (location: (1,0)-(1,13))
         │   ├── if_keyword_loc: ∅
         │   ├── predicate:
-        │   │   @ IntegerNode (location: (0...1))
+        │   │   @ IntegerNode (location: (1,0)-(1,1))
         │   │   └── flags: decimal
         │   ├── statements:
-        │   │   @ StatementsNode (location: (4...9))
+        │   │   @ StatementsNode (location: (1,4)-(1,9))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (4...9))
+        │   │       └── @ CallNode (location: (1,4)-(1,9))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (4...5) = "b"
-        │   │           ├── opening_loc: (5...6) = "("
+        │   │           ├── message_loc: (1,4)-(1,5) = "b"
+        │   │           ├── opening_loc: (1,5)-(1,6) = "("
         │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (6...8))
+        │   │           │   @ ArgumentsNode (location: (1,6)-(1,8))
         │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (6...8))
+        │   │           │       └── @ StringNode (location: (1,6)-(1,8))
         │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (6...7) = "'"
-        │   │           │           ├── content_loc: (7...7) = ""
-        │   │           │           ├── closing_loc: (7...8) = "'"
+        │   │           │           ├── opening_loc: (1,6)-(1,7) = "'"
+        │   │           │           ├── content_loc: (1,7)-(1,7) = ""
+        │   │           │           ├── closing_loc: (1,7)-(1,8) = "'"
         │   │           │           └── unescaped: ""
-        │   │           ├── closing_loc: (8...9) = ")"
+        │   │           ├── closing_loc: (1,8)-(1,9) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: "b"
         │   ├── consequent:
-        │   │   @ ElseNode (location: (10...13))
-        │   │   ├── else_keyword_loc: (10...11) = ":"
+        │   │   @ ElseNode (location: (1,10)-(1,13))
+        │   │   ├── else_keyword_loc: (1,10)-(1,11) = ":"
         │   │   ├── statements:
-        │   │   │   @ StatementsNode (location: (12...13))
+        │   │   │   @ StatementsNode (location: (1,12)-(1,13))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ IntegerNode (location: (12...13))
+        │   │   │       └── @ IntegerNode (location: (1,12)-(1,13))
         │   │   │           └── flags: decimal
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
-        └── @ CallNode (location: (14...20))
+        └── @ CallNode (location: (2,0)-(2,6))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (14...15) = "a"
+            ├── message_loc: (2,0)-(2,1) = "a"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (16...20))
+            │   @ ArgumentsNode (location: (2,2)-(2,6))
             │   └── arguments: (length: 1)
-            │       └── @ KeywordHashNode (location: (16...20))
+            │       └── @ KeywordHashNode (location: (2,2)-(2,6))
             │           └── elements: (length: 1)
-            │               └── @ AssocNode (location: (16...20))
+            │               └── @ AssocNode (location: (2,2)-(2,6))
             │                   ├── key:
-            │                   │   @ SymbolNode (location: (16...18))
+            │                   │   @ SymbolNode (location: (2,2)-(2,4))
             │                   │   ├── opening_loc: ∅
-            │                   │   ├── value_loc: (16...17) = "d"
-            │                   │   ├── closing_loc: (17...18) = ":"
+            │                   │   ├── value_loc: (2,2)-(2,3) = "d"
+            │                   │   ├── closing_loc: (2,3)-(2,4) = ":"
             │                   │   └── unescaped: "d"
             │                   ├── value:
-            │                   │   @ IntegerNode (location: (19...20))
+            │                   │   @ IntegerNode (location: (2,5)-(2,6))
             │                   │   └── flags: decimal
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅

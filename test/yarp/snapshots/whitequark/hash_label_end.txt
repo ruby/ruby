@@ -1,23 +1,23 @@
-@ ProgramNode (location: (0...50))
+@ ProgramNode (location: (1,0)-(5,22))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...50))
+    @ StatementsNode (location: (1,0)-(5,22))
     └── body: (length: 3)
-        ├── @ CallNode (location: (0...12))
+        ├── @ CallNode (location: (1,0)-(1,12))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...1) = "f"
-        │   ├── opening_loc: (1...2) = "("
+        │   ├── message_loc: (1,0)-(1,1) = "f"
+        │   ├── opening_loc: (1,1)-(1,2) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (2...11))
+        │   │   @ ArgumentsNode (location: (1,2)-(1,11))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ IfNode (location: (2...11))
+        │   │       └── @ IfNode (location: (1,2)-(1,11))
         │   │           ├── if_keyword_loc: ∅
         │   │           ├── predicate:
-        │   │           │   @ CallNode (location: (2...3))
+        │   │           │   @ CallNode (location: (1,2)-(1,3))
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (2...3) = "a"
+        │   │           │   ├── message_loc: (1,2)-(1,3) = "a"
         │   │           │   ├── opening_loc: ∅
         │   │           │   ├── arguments: ∅
         │   │           │   ├── closing_loc: ∅
@@ -25,68 +25,68 @@
         │   │           │   ├── flags: variable_call
         │   │           │   └── name: "a"
         │   │           ├── statements:
-        │   │           │   @ StatementsNode (location: (6...9))
+        │   │           │   @ StatementsNode (location: (1,6)-(1,9))
         │   │           │   └── body: (length: 1)
-        │   │           │       └── @ StringNode (location: (6...9))
+        │   │           │       └── @ StringNode (location: (1,6)-(1,9))
         │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (6...7) = "\""
-        │   │           │           ├── content_loc: (7...8) = "a"
-        │   │           │           ├── closing_loc: (8...9) = "\""
+        │   │           │           ├── opening_loc: (1,6)-(1,7) = "\""
+        │   │           │           ├── content_loc: (1,7)-(1,8) = "a"
+        │   │           │           ├── closing_loc: (1,8)-(1,9) = "\""
         │   │           │           └── unescaped: "a"
         │   │           ├── consequent:
-        │   │           │   @ ElseNode (location: (9...11))
-        │   │           │   ├── else_keyword_loc: (9...10) = ":"
+        │   │           │   @ ElseNode (location: (1,9)-(1,11))
+        │   │           │   ├── else_keyword_loc: (1,9)-(1,10) = ":"
         │   │           │   ├── statements:
-        │   │           │   │   @ StatementsNode (location: (10...11))
+        │   │           │   │   @ StatementsNode (location: (1,10)-(1,11))
         │   │           │   │   └── body: (length: 1)
-        │   │           │   │       └── @ IntegerNode (location: (10...11))
+        │   │           │   │       └── @ IntegerNode (location: (1,10)-(1,11))
         │   │           │   │           └── flags: decimal
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
-        │   ├── closing_loc: (11...12) = ")"
+        │   ├── closing_loc: (1,11)-(1,12) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "f"
-        ├── @ HashNode (location: (14...26))
-        │   ├── opening_loc: (14...15) = "{"
+        ├── @ HashNode (location: (3,0)-(3,12))
+        │   ├── opening_loc: (3,0)-(3,1) = "{"
         │   ├── elements: (length: 1)
-        │   │   └── @ AssocNode (location: (16...24))
+        │   │   └── @ AssocNode (location: (3,2)-(3,10))
         │   │       ├── key:
-        │   │       │   @ SymbolNode (location: (16...22))
-        │   │       │   ├── opening_loc: (16...17) = "'"
-        │   │       │   ├── value_loc: (17...20) = "foo"
-        │   │       │   ├── closing_loc: (20...22) = "':"
+        │   │       │   @ SymbolNode (location: (3,2)-(3,8))
+        │   │       │   ├── opening_loc: (3,2)-(3,3) = "'"
+        │   │       │   ├── value_loc: (3,3)-(3,6) = "foo"
+        │   │       │   ├── closing_loc: (3,6)-(3,8) = "':"
         │   │       │   └── unescaped: "foo"
         │   │       ├── value:
-        │   │       │   @ IntegerNode (location: (23...24))
+        │   │       │   @ IntegerNode (location: (3,9)-(3,10))
         │   │       │   └── flags: decimal
         │   │       └── operator_loc: ∅
-        │   └── closing_loc: (25...26) = "}"
-        └── @ HashNode (location: (28...50))
-            ├── opening_loc: (28...29) = "{"
+        │   └── closing_loc: (3,11)-(3,12) = "}"
+        └── @ HashNode (location: (5,0)-(5,22))
+            ├── opening_loc: (5,0)-(5,1) = "{"
             ├── elements: (length: 2)
-            │   ├── @ AssocNode (location: (30...38))
+            │   ├── @ AssocNode (location: (5,2)-(5,10))
             │   │   ├── key:
-            │   │   │   @ SymbolNode (location: (30...36))
-            │   │   │   ├── opening_loc: (30...31) = "'"
-            │   │   │   ├── value_loc: (31...34) = "foo"
-            │   │   │   ├── closing_loc: (34...36) = "':"
+            │   │   │   @ SymbolNode (location: (5,2)-(5,8))
+            │   │   │   ├── opening_loc: (5,2)-(5,3) = "'"
+            │   │   │   ├── value_loc: (5,3)-(5,6) = "foo"
+            │   │   │   ├── closing_loc: (5,6)-(5,8) = "':"
             │   │   │   └── unescaped: "foo"
             │   │   ├── value:
-            │   │   │   @ IntegerNode (location: (37...38))
+            │   │   │   @ IntegerNode (location: (5,9)-(5,10))
             │   │   │   └── flags: decimal
             │   │   └── operator_loc: ∅
-            │   └── @ AssocNode (location: (40...49))
+            │   └── @ AssocNode (location: (5,12)-(5,21))
             │       ├── key:
-            │       │   @ SymbolNode (location: (40...46))
-            │       │   ├── opening_loc: (40...41) = "'"
-            │       │   ├── value_loc: (41...44) = "bar"
-            │       │   ├── closing_loc: (44...46) = "':"
+            │       │   @ SymbolNode (location: (5,12)-(5,18))
+            │       │   ├── opening_loc: (5,12)-(5,13) = "'"
+            │       │   ├── value_loc: (5,13)-(5,16) = "bar"
+            │       │   ├── closing_loc: (5,16)-(5,18) = "':"
             │       │   └── unescaped: "bar"
             │       ├── value:
-            │       │   @ HashNode (location: (47...49))
-            │       │   ├── opening_loc: (47...48) = "{"
+            │       │   @ HashNode (location: (5,19)-(5,21))
+            │       │   ├── opening_loc: (5,19)-(5,20) = "{"
             │       │   ├── elements: (length: 0)
-            │       │   └── closing_loc: (48...49) = "}"
+            │       │   └── closing_loc: (5,20)-(5,21) = "}"
             │       └── operator_loc: ∅
-            └── closing_loc: (49...50) = "}"
+            └── closing_loc: (5,21)-(5,22) = "}"

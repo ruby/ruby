@@ -1,32 +1,32 @@
-@ ProgramNode (location: (0...11))
+@ ProgramNode (location: (1,0)-(1,11))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...11))
+    @ StatementsNode (location: (1,0)-(1,11))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...11))
+        └── @ CallNode (location: (1,0)-(1,11))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...3) = "fun"
+            ├── message_loc: (1,0)-(1,3) = "fun"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (4...11))
+            │   @ ArgumentsNode (location: (1,4)-(1,11))
             │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (4...11))
+            │       └── @ ParenthesesNode (location: (1,4)-(1,11))
             │           ├── body:
-            │           │   @ StatementsNode (location: (5...10))
+            │           │   @ StatementsNode (location: (1,5)-(1,10))
             │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (5...10))
+            │           │       └── @ CallNode (location: (1,5)-(1,10))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (5...6) = "f"
+            │           │           ├── message_loc: (1,5)-(1,6) = "f"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments:
-            │           │           │   @ ArgumentsNode (location: (7...10))
+            │           │           │   @ ArgumentsNode (location: (1,7)-(1,10))
             │           │           │   └── arguments: (length: 1)
-            │           │           │       └── @ CallNode (location: (7...10))
+            │           │           │       └── @ CallNode (location: (1,7)-(1,10))
             │           │           │           ├── receiver: ∅
             │           │           │           ├── call_operator_loc: ∅
-            │           │           │           ├── message_loc: (7...10) = "bar"
+            │           │           │           ├── message_loc: (1,7)-(1,10) = "bar"
             │           │           │           ├── opening_loc: ∅
             │           │           │           ├── arguments: ∅
             │           │           │           ├── closing_loc: ∅
@@ -37,8 +37,8 @@
             │           │           ├── block: ∅
             │           │           ├── flags: ∅
             │           │           └── name: "f"
-            │           ├── opening_loc: (4...5) = "("
-            │           └── closing_loc: (10...11) = ")"
+            │           ├── opening_loc: (1,4)-(1,5) = "("
+            │           └── closing_loc: (1,10)-(1,11) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

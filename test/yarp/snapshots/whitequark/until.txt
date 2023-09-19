@@ -1,16 +1,16 @@
-@ ProgramNode (location: (0...42))
+@ ProgramNode (location: (1,0)-(3,19))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...42))
+    @ StatementsNode (location: (1,0)-(3,19))
     └── body: (length: 2)
-        ├── @ UntilNode (location: (0...21))
-        │   ├── keyword_loc: (0...5) = "until"
-        │   ├── closing_loc: (18...21) = "end"
+        ├── @ UntilNode (location: (1,0)-(1,21))
+        │   ├── keyword_loc: (1,0)-(1,5) = "until"
+        │   ├── closing_loc: (1,18)-(1,21) = "end"
         │   ├── predicate:
-        │   │   @ CallNode (location: (6...9))
+        │   │   @ CallNode (location: (1,6)-(1,9))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (6...9) = "foo"
+        │   │   ├── message_loc: (1,6)-(1,9) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -18,12 +18,12 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── statements:
-        │   │   @ StatementsNode (location: (13...17))
+        │   │   @ StatementsNode (location: (1,13)-(1,17))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (13...17))
+        │   │       └── @ CallNode (location: (1,13)-(1,17))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (13...17) = "meth"
+        │   │           ├── message_loc: (1,13)-(1,17) = "meth"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -31,14 +31,14 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "meth"
         │   └── flags: ∅
-        └── @ UntilNode (location: (23...42))
-            ├── keyword_loc: (23...28) = "until"
-            ├── closing_loc: (39...42) = "end"
+        └── @ UntilNode (location: (3,0)-(3,19))
+            ├── keyword_loc: (3,0)-(3,5) = "until"
+            ├── closing_loc: (3,16)-(3,19) = "end"
             ├── predicate:
-            │   @ CallNode (location: (29...32))
+            │   @ CallNode (location: (3,6)-(3,9))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (29...32) = "foo"
+            │   ├── message_loc: (3,6)-(3,9) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -46,12 +46,12 @@
             │   ├── flags: variable_call
             │   └── name: "foo"
             ├── statements:
-            │   @ StatementsNode (location: (34...38))
+            │   @ StatementsNode (location: (3,11)-(3,15))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (34...38))
+            │       └── @ CallNode (location: (3,11)-(3,15))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (34...38) = "meth"
+            │           ├── message_loc: (3,11)-(3,15) = "meth"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅

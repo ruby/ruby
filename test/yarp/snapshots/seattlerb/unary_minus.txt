@@ -1,14 +1,14 @@
-@ ProgramNode (location: (0...2))
+@ ProgramNode (location: (1,0)-(1,2))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...2))
+    @ StatementsNode (location: (1,0)-(1,2))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...2))
+        └── @ CallNode (location: (1,0)-(1,2))
             ├── receiver:
-            │   @ CallNode (location: (1...2))
+            │   @ CallNode (location: (1,1)-(1,2))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (1...2) = "a"
+            │   ├── message_loc: (1,1)-(1,2) = "a"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -16,7 +16,7 @@
             │   ├── flags: variable_call
             │   └── name: "a"
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "-"
+            ├── message_loc: (1,0)-(1,1) = "-"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅

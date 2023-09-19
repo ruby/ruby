@@ -1,34 +1,34 @@
-@ ProgramNode (location: (0...19))
+@ ProgramNode (location: (1,0)-(1,19))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...19))
+    @ StatementsNode (location: (1,0)-(1,19))
     └── body: (length: 1)
-        └── @ DefNode (location: (0...19))
+        └── @ DefNode (location: (1,0)-(1,19))
             ├── name: :f
-            ├── name_loc: (4...5) = "f"
+            ├── name_loc: (1,4)-(1,5) = "f"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (6...14))
+            │   @ ParametersNode (location: (1,6)-(1,14))
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 1)
-            │   │   └── @ OptionalParameterNode (location: (6...11))
+            │   │   └── @ OptionalParameterNode (location: (1,6)-(1,11))
             │   │       ├── name: :a
-            │   │       ├── name_loc: (6...7) = "a"
-            │   │       ├── operator_loc: (7...8) = "="
+            │   │       ├── name_loc: (1,6)-(1,7) = "a"
+            │   │       ├── operator_loc: (1,7)-(1,8) = "="
             │   │       └── value:
-            │   │           @ NilNode (location: (8...11))
+            │   │           @ NilNode (location: (1,8)-(1,11))
             │   ├── rest: ∅
             │   ├── posts: (length: 1)
-            │   │   └── @ RequiredParameterNode (location: (13...14))
+            │   │   └── @ RequiredParameterNode (location: (1,13)-(1,14))
             │   │       └── name: :b
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:a, :b]
-            ├── def_keyword_loc: (0...3) = "def"
+            ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (5...6) = "("
-            ├── rparen_loc: (14...15) = ")"
+            ├── lparen_loc: (1,5)-(1,6) = "("
+            ├── rparen_loc: (1,14)-(1,15) = ")"
             ├── equal_loc: ∅
-            └── end_keyword_loc: (16...19) = "end"
+            └── end_keyword_loc: (1,16)-(1,19) = "end"

@@ -1,22 +1,22 @@
-@ ProgramNode (location: (0...52))
+@ ProgramNode (location: (1,0)-(11,8))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...52))
+    @ StatementsNode (location: (1,0)-(11,8))
     └── body: (length: 3)
-        ├── @ StringNode (location: (0...8))
+        ├── @ StringNode (location: (1,0)-(1,8))
         │   ├── flags: ∅
-        │   ├── opening_loc: (0...8) = "<<'HERE'"
-        │   ├── content_loc: (9...17) = "foo\nbar\n"
-        │   ├── closing_loc: (17...22) = "HERE\n"
+        │   ├── opening_loc: (1,0)-(1,8) = "<<'HERE'"
+        │   ├── content_loc: (2,0)-(3,0) = "foo\nbar\n"
+        │   ├── closing_loc: (4,0)-(4,0) = "HERE\n"
         │   └── unescaped: "foo\nbar\n"
-        ├── @ StringNode (location: (23...29))
+        ├── @ StringNode (location: (6,0)-(6,6))
         │   ├── flags: ∅
-        │   ├── opening_loc: (23...29) = "<<HERE"
-        │   ├── content_loc: (30...38) = "foo\nbar\n"
-        │   ├── closing_loc: (38...43) = "HERE\n"
+        │   ├── opening_loc: (6,0)-(6,6) = "<<HERE"
+        │   ├── content_loc: (7,0)-(8,0) = "foo\nbar\n"
+        │   ├── closing_loc: (9,0)-(9,0) = "HERE\n"
         │   └── unescaped: "foo\nbar\n"
-        └── @ XStringNode (location: (44...52))
-            ├── opening_loc: (44...52) = "<<`HERE`"
-            ├── content_loc: (53...61) = "foo\nbar\n"
-            ├── closing_loc: (61...66) = "HERE\n"
+        └── @ XStringNode (location: (11,0)-(11,8))
+            ├── opening_loc: (11,0)-(11,8) = "<<`HERE`"
+            ├── content_loc: (12,0)-(13,0) = "foo\nbar\n"
+            ├── closing_loc: (14,0)-(14,0) = "HERE\n"
             └── unescaped: "foo\nbar\n"

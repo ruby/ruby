@@ -1,10 +1,10 @@
-@ ProgramNode (location: (0...17))
+@ ProgramNode (location: (1,0)-(1,17))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...17))
+    @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
-        └── @ SymbolNode (location: (0...17))
-            ├── opening_loc: (0...2) = ":\""
-            ├── value_loc: (2...16) = "Variet\\303\\240"
-            ├── closing_loc: (16...17) = "\""
+        └── @ SymbolNode (location: (1,0)-(1,17))
+            ├── opening_loc: (1,0)-(1,2) = ":\""
+            ├── value_loc: (1,2)-(1,16) = "Variet\\303\\240"
+            ├── closing_loc: (1,16)-(1,17) = "\""
             └── unescaped: "Varietà"

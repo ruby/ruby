@@ -1,105 +1,105 @@
-@ ProgramNode (location: (0...116))
+@ ProgramNode (location: (1,0)-(17,14))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...116))
+    @ StatementsNode (location: (1,0)-(17,14))
     └── body: (length: 9)
-        ├── @ UndefNode (location: (0...7))
+        ├── @ UndefNode (location: (1,0)-(1,7))
         │   ├── names: (length: 1)
-        │   │   └── @ SymbolNode (location: (6...7))
+        │   │   └── @ SymbolNode (location: (1,6)-(1,7))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (6...7) = "a"
+        │   │       ├── value_loc: (1,6)-(1,7) = "a"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a"
-        │   └── keyword_loc: (0...5) = "undef"
-        ├── @ UndefNode (location: (9...19))
+        │   └── keyword_loc: (1,0)-(1,5) = "undef"
+        ├── @ UndefNode (location: (3,0)-(3,10))
         │   ├── names: (length: 2)
-        │   │   ├── @ SymbolNode (location: (15...16))
+        │   │   ├── @ SymbolNode (location: (3,6)-(3,7))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (15...16) = "a"
+        │   │   │   ├── value_loc: (3,6)-(3,7) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
-        │   │   └── @ SymbolNode (location: (18...19))
+        │   │   └── @ SymbolNode (location: (3,9)-(3,10))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (18...19) = "b"
+        │   │       ├── value_loc: (3,9)-(3,10) = "b"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b"
-        │   └── keyword_loc: (9...14) = "undef"
-        ├── @ UndefNode (location: (21...29))
+        │   └── keyword_loc: (3,0)-(3,5) = "undef"
+        ├── @ UndefNode (location: (5,0)-(5,8))
         │   ├── names: (length: 1)
-        │   │   └── @ SymbolNode (location: (27...29))
+        │   │   └── @ SymbolNode (location: (5,6)-(5,8))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (27...29) = "if"
+        │   │       ├── value_loc: (5,6)-(5,8) = "if"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "if"
-        │   └── keyword_loc: (21...26) = "undef"
-        ├── @ UndefNode (location: (31...40))
+        │   └── keyword_loc: (5,0)-(5,5) = "undef"
+        ├── @ UndefNode (location: (7,0)-(7,9))
         │   ├── names: (length: 1)
-        │   │   └── @ SymbolNode (location: (37...40))
+        │   │   └── @ SymbolNode (location: (7,6)-(7,9))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (37...40) = "<=>"
+        │   │       ├── value_loc: (7,6)-(7,9) = "<=>"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "<=>"
-        │   └── keyword_loc: (31...36) = "undef"
-        ├── @ UndefNode (location: (42...50))
+        │   └── keyword_loc: (7,0)-(7,5) = "undef"
+        ├── @ UndefNode (location: (9,0)-(9,8))
         │   ├── names: (length: 1)
-        │   │   └── @ SymbolNode (location: (48...50))
-        │   │       ├── opening_loc: (48...49) = ":"
-        │   │       ├── value_loc: (49...50) = "a"
+        │   │   └── @ SymbolNode (location: (9,6)-(9,8))
+        │   │       ├── opening_loc: (9,6)-(9,7) = ":"
+        │   │       ├── value_loc: (9,7)-(9,8) = "a"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a"
-        │   └── keyword_loc: (42...47) = "undef"
-        ├── @ UndefNode (location: (52...68))
+        │   └── keyword_loc: (9,0)-(9,5) = "undef"
+        ├── @ UndefNode (location: (11,0)-(11,16))
         │   ├── names: (length: 3)
-        │   │   ├── @ SymbolNode (location: (58...60))
-        │   │   │   ├── opening_loc: (58...59) = ":"
-        │   │   │   ├── value_loc: (59...60) = "a"
+        │   │   ├── @ SymbolNode (location: (11,6)-(11,8))
+        │   │   │   ├── opening_loc: (11,6)-(11,7) = ":"
+        │   │   │   ├── value_loc: (11,7)-(11,8) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
-        │   │   ├── @ SymbolNode (location: (62...64))
-        │   │   │   ├── opening_loc: (62...63) = ":"
-        │   │   │   ├── value_loc: (63...64) = "b"
+        │   │   ├── @ SymbolNode (location: (11,10)-(11,12))
+        │   │   │   ├── opening_loc: (11,10)-(11,11) = ":"
+        │   │   │   ├── value_loc: (11,11)-(11,12) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
-        │   │   └── @ SymbolNode (location: (66...68))
-        │   │       ├── opening_loc: (66...67) = ":"
-        │   │       ├── value_loc: (67...68) = "c"
+        │   │   └── @ SymbolNode (location: (11,14)-(11,16))
+        │   │       ├── opening_loc: (11,14)-(11,15) = ":"
+        │   │       ├── value_loc: (11,15)-(11,16) = "c"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "c"
-        │   └── keyword_loc: (52...57) = "undef"
-        ├── @ UndefNode (location: (70...82))
+        │   └── keyword_loc: (11,0)-(11,5) = "undef"
+        ├── @ UndefNode (location: (13,0)-(13,12))
         │   ├── names: (length: 1)
-        │   │   └── @ SymbolNode (location: (76...82))
-        │   │       ├── opening_loc: (76...78) = ":'"
-        │   │       ├── value_loc: (78...81) = "abc"
-        │   │       ├── closing_loc: (81...82) = "'"
+        │   │   └── @ SymbolNode (location: (13,6)-(13,12))
+        │   │       ├── opening_loc: (13,6)-(13,8) = ":'"
+        │   │       ├── value_loc: (13,8)-(13,11) = "abc"
+        │   │       ├── closing_loc: (13,11)-(13,12) = "'"
         │   │       └── unescaped: "abc"
-        │   └── keyword_loc: (70...75) = "undef"
-        ├── @ UndefNode (location: (84...100))
+        │   └── keyword_loc: (13,0)-(13,5) = "undef"
+        ├── @ UndefNode (location: (15,0)-(15,16))
         │   ├── names: (length: 1)
-        │   │   └── @ InterpolatedSymbolNode (location: (90...100))
-        │   │       ├── opening_loc: (90...92) = ":\""
+        │   │   └── @ InterpolatedSymbolNode (location: (15,6)-(15,16))
+        │   │       ├── opening_loc: (15,6)-(15,8) = ":\""
         │   │       ├── parts: (length: 2)
-        │   │       │   ├── @ StringNode (location: (92...95))
+        │   │       │   ├── @ StringNode (location: (15,8)-(15,11))
         │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── opening_loc: ∅
-        │   │       │   │   ├── content_loc: (92...95) = "abc"
+        │   │       │   │   ├── content_loc: (15,8)-(15,11) = "abc"
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   └── unescaped: "abc"
-        │   │       │   └── @ EmbeddedStatementsNode (location: (95...99))
-        │   │       │       ├── opening_loc: (95...97) = "\#{"
+        │   │       │   └── @ EmbeddedStatementsNode (location: (15,11)-(15,15))
+        │   │       │       ├── opening_loc: (15,11)-(15,13) = "\#{"
         │   │       │       ├── statements:
-        │   │       │       │   @ StatementsNode (location: (97...98))
+        │   │       │       │   @ StatementsNode (location: (15,13)-(15,14))
         │   │       │       │   └── body: (length: 1)
-        │   │       │       │       └── @ IntegerNode (location: (97...98))
+        │   │       │       │       └── @ IntegerNode (location: (15,13)-(15,14))
         │   │       │       │           └── flags: decimal
-        │   │       │       └── closing_loc: (98...99) = "}"
-        │   │       └── closing_loc: (99...100) = "\""
-        │   └── keyword_loc: (84...89) = "undef"
-        └── @ UndefNode (location: (102...116))
+        │   │       │       └── closing_loc: (15,14)-(15,15) = "}"
+        │   │       └── closing_loc: (15,15)-(15,16) = "\""
+        │   └── keyword_loc: (15,0)-(15,5) = "undef"
+        └── @ UndefNode (location: (17,0)-(17,14))
             ├── names: (length: 1)
-            │   └── @ SymbolNode (location: (108...116))
+            │   └── @ SymbolNode (location: (17,6)-(17,14))
             │       ├── opening_loc: ∅
-            │       ├── value_loc: (108...116) = "Constant"
+            │       ├── value_loc: (17,6)-(17,14) = "Constant"
             │       ├── closing_loc: ∅
             │       └── unescaped: "Constant"
-            └── keyword_loc: (102...107) = "undef"
+            └── keyword_loc: (17,0)-(17,5) = "undef"

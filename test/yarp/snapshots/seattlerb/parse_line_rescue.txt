@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...35))
+@ ProgramNode (location: (1,0)-(7,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...35))
+    @ StatementsNode (location: (1,0)-(7,3))
     └── body: (length: 1)
-        └── @ BeginNode (location: (0...35))
-            ├── begin_keyword_loc: (0...5) = "begin"
+        └── @ BeginNode (location: (1,0)-(7,3))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements:
-            │   @ StatementsNode (location: (8...9))
+            │   @ StatementsNode (location: (2,2)-(2,3))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (8...9))
+            │       └── @ CallNode (location: (2,2)-(2,3))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (8...9) = "a"
+            │           ├── message_loc: (2,2)-(2,3) = "a"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -19,18 +19,18 @@
             │           ├── flags: variable_call
             │           └── name: "a"
             ├── rescue_clause:
-            │   @ RescueNode (location: (10...31))
-            │   ├── keyword_loc: (10...16) = "rescue"
+            │   @ RescueNode (location: (3,0)-(6,3))
+            │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
             │   ├── exceptions: (length: 0)
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements:
-            │   │   @ StatementsNode (location: (19...20))
+            │   │   @ StatementsNode (location: (4,2)-(4,3))
             │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (19...20))
+            │   │       └── @ CallNode (location: (4,2)-(4,3))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (19...20) = "b"
+            │   │           ├── message_loc: (4,2)-(4,3) = "b"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
@@ -38,18 +38,18 @@
             │   │           ├── flags: variable_call
             │   │           └── name: "b"
             │   └── consequent:
-            │       @ RescueNode (location: (21...31))
-            │       ├── keyword_loc: (21...27) = "rescue"
+            │       @ RescueNode (location: (5,0)-(6,3))
+            │       ├── keyword_loc: (5,0)-(5,6) = "rescue"
             │       ├── exceptions: (length: 0)
             │       ├── operator_loc: ∅
             │       ├── reference: ∅
             │       ├── statements:
-            │       │   @ StatementsNode (location: (30...31))
+            │       │   @ StatementsNode (location: (6,2)-(6,3))
             │       │   └── body: (length: 1)
-            │       │       └── @ CallNode (location: (30...31))
+            │       │       └── @ CallNode (location: (6,2)-(6,3))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
-            │       │           ├── message_loc: (30...31) = "c"
+            │       │           ├── message_loc: (6,2)-(6,3) = "c"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
@@ -59,4 +59,4 @@
             │       └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅
-            └── end_keyword_loc: (32...35) = "end"
+            └── end_keyword_loc: (7,0)-(7,3) = "end"

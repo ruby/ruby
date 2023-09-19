@@ -1,31 +1,31 @@
-@ ProgramNode (location: (0...511))
+@ ProgramNode (location: (1,0)-(82,7))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...511))
+    @ StatementsNode (location: (1,0)-(82,7))
     └── body: (length: 30)
-        ├── @ ArrayNode (location: (0...4))
+        ├── @ ArrayNode (location: (1,0)-(1,4))
         │   ├── elements: (length: 1)
-        │   │   └── @ SplatNode (location: (1...3))
-        │   │       ├── operator_loc: (1...2) = "*"
+        │   │   └── @ SplatNode (location: (1,1)-(1,3))
+        │   │       ├── operator_loc: (1,1)-(1,2) = "*"
         │   │       └── expression:
-        │   │           @ CallNode (location: (2...3))
+        │   │           @ CallNode (location: (1,2)-(1,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (2...3) = "a"
+        │   │           ├── message_loc: (1,2)-(1,3) = "a"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "a"
-        │   ├── opening_loc: (0...1) = "["
-        │   └── closing_loc: (3...4) = "]"
-        ├── @ CallNode (location: (6...29))
+        │   ├── opening_loc: (1,0)-(1,1) = "["
+        │   └── closing_loc: (1,3)-(1,4) = "]"
+        ├── @ CallNode (location: (3,0)-(3,23))
         │   ├── receiver:
-        │   │   @ CallNode (location: (6...9))
+        │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (6...9) = "foo"
+        │   │   ├── message_loc: (3,0)-(3,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -33,136 +33,136 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (9...19) = "[bar, baz]"
-        │   ├── opening_loc: (9...10) = "["
+        │   ├── message_loc: (3,3)-(3,13) = "[bar, baz]"
+        │   ├── opening_loc: (3,3)-(3,4) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (10...29))
+        │   │   @ ArgumentsNode (location: (3,4)-(3,23))
         │   │   └── arguments: (length: 3)
-        │   │       ├── @ CallNode (location: (10...13))
+        │   │       ├── @ CallNode (location: (3,4)-(3,7))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (10...13) = "bar"
+        │   │       │   ├── message_loc: (3,4)-(3,7) = "bar"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "bar"
-        │   │       ├── @ CallNode (location: (15...18))
+        │   │       ├── @ CallNode (location: (3,9)-(3,12))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (15...18) = "baz"
+        │   │       │   ├── message_loc: (3,9)-(3,12) = "baz"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "baz"
-        │   │       └── @ ArrayNode (location: (22...29))
+        │   │       └── @ ArrayNode (location: (3,16)-(3,23))
         │   │           ├── elements: (length: 3)
-        │   │           │   ├── @ IntegerNode (location: (22...23))
+        │   │           │   ├── @ IntegerNode (location: (3,16)-(3,17))
         │   │           │   │   └── flags: decimal
-        │   │           │   ├── @ IntegerNode (location: (25...26))
+        │   │           │   ├── @ IntegerNode (location: (3,19)-(3,20))
         │   │           │   │   └── flags: decimal
-        │   │           │   └── @ IntegerNode (location: (28...29))
+        │   │           │   └── @ IntegerNode (location: (3,22)-(3,23))
         │   │           │       └── flags: decimal
         │   │           ├── opening_loc: ∅
         │   │           └── closing_loc: ∅
-        │   ├── closing_loc: (18...19) = "]"
+        │   ├── closing_loc: (3,12)-(3,13) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]="
-        ├── @ ArrayNode (location: (31...44))
+        ├── @ ArrayNode (location: (5,0)-(5,13))
         │   ├── elements: (length: 1)
-        │   │   └── @ KeywordHashNode (location: (32...43))
+        │   │   └── @ KeywordHashNode (location: (5,1)-(5,12))
         │   │       └── elements: (length: 1)
-        │   │           └── @ AssocNode (location: (32...43))
+        │   │           └── @ AssocNode (location: (5,1)-(5,12))
         │   │               ├── key:
-        │   │               │   @ SymbolNode (location: (32...34))
+        │   │               │   @ SymbolNode (location: (5,1)-(5,3))
         │   │               │   ├── opening_loc: ∅
-        │   │               │   ├── value_loc: (32...33) = "a"
-        │   │               │   ├── closing_loc: (33...34) = ":"
+        │   │               │   ├── value_loc: (5,1)-(5,2) = "a"
+        │   │               │   ├── closing_loc: (5,2)-(5,3) = ":"
         │   │               │   └── unescaped: "a"
         │   │               ├── value:
-        │   │               │   @ ArrayNode (location: (35...43))
+        │   │               │   @ ArrayNode (location: (5,4)-(5,12))
         │   │               │   ├── elements: (length: 2)
-        │   │               │   │   ├── @ SymbolNode (location: (36...38))
-        │   │               │   │   │   ├── opening_loc: (36...37) = ":"
-        │   │               │   │   │   ├── value_loc: (37...38) = "b"
+        │   │               │   │   ├── @ SymbolNode (location: (5,5)-(5,7))
+        │   │               │   │   │   ├── opening_loc: (5,5)-(5,6) = ":"
+        │   │               │   │   │   ├── value_loc: (5,6)-(5,7) = "b"
         │   │               │   │   │   ├── closing_loc: ∅
         │   │               │   │   │   └── unescaped: "b"
-        │   │               │   │   └── @ SymbolNode (location: (40...42))
-        │   │               │   │       ├── opening_loc: (40...41) = ":"
-        │   │               │   │       ├── value_loc: (41...42) = "c"
+        │   │               │   │   └── @ SymbolNode (location: (5,9)-(5,11))
+        │   │               │   │       ├── opening_loc: (5,9)-(5,10) = ":"
+        │   │               │   │       ├── value_loc: (5,10)-(5,11) = "c"
         │   │               │   │       ├── closing_loc: ∅
         │   │               │   │       └── unescaped: "c"
-        │   │               │   ├── opening_loc: (35...36) = "["
-        │   │               │   └── closing_loc: (42...43) = "]"
+        │   │               │   ├── opening_loc: (5,4)-(5,5) = "["
+        │   │               │   └── closing_loc: (5,11)-(5,12) = "]"
         │   │               └── operator_loc: ∅
-        │   ├── opening_loc: (31...32) = "["
-        │   └── closing_loc: (43...44) = "]"
-        ├── @ ArrayNode (location: (48...71))
+        │   ├── opening_loc: (5,0)-(5,1) = "["
+        │   └── closing_loc: (5,12)-(5,13) = "]"
+        ├── @ ArrayNode (location: (9,0)-(15,1))
         │   ├── elements: (length: 5)
-        │   │   ├── @ SymbolNode (location: (49...51))
-        │   │   │   ├── opening_loc: (49...50) = ":"
-        │   │   │   ├── value_loc: (50...51) = "a"
+        │   │   ├── @ SymbolNode (location: (9,1)-(9,3))
+        │   │   │   ├── opening_loc: (9,1)-(9,2) = ":"
+        │   │   │   ├── value_loc: (9,2)-(9,3) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
-        │   │   ├── @ SymbolNode (location: (53...55))
-        │   │   │   ├── opening_loc: (53...54) = ":"
-        │   │   │   ├── value_loc: (54...55) = "b"
+        │   │   ├── @ SymbolNode (location: (9,5)-(9,7))
+        │   │   │   ├── opening_loc: (9,5)-(9,6) = ":"
+        │   │   │   ├── value_loc: (9,6)-(9,7) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
-        │   │   ├── @ SymbolNode (location: (57...59))
-        │   │   │   ├── opening_loc: (57...58) = ":"
-        │   │   │   ├── value_loc: (58...59) = "c"
+        │   │   ├── @ SymbolNode (location: (10,0)-(10,2))
+        │   │   │   ├── opening_loc: (10,0)-(10,1) = ":"
+        │   │   │   ├── value_loc: (10,1)-(10,2) = "c"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "c"
-        │   │   ├── @ IntegerNode (location: (60...61))
+        │   │   ├── @ IntegerNode (location: (10,3)-(10,4))
         │   │   │   └── flags: decimal
-        │   │   └── @ SymbolNode (location: (66...68))
-        │   │       ├── opening_loc: (66...67) = ":"
-        │   │       ├── value_loc: (67...68) = "d"
+        │   │   └── @ SymbolNode (location: (14,0)-(14,2))
+        │   │       ├── opening_loc: (14,0)-(14,1) = ":"
+        │   │       ├── value_loc: (14,1)-(14,2) = "d"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "d"
-        │   ├── opening_loc: (48...49) = "["
-        │   └── closing_loc: (70...71) = "]"
-        ├── @ ArrayNode (location: (74...98))
+        │   ├── opening_loc: (9,0)-(9,1) = "["
+        │   └── closing_loc: (15,0)-(15,1) = "]"
+        ├── @ ArrayNode (location: (18,0)-(26,1))
         │   ├── elements: (length: 5)
-        │   │   ├── @ SymbolNode (location: (75...77))
-        │   │   │   ├── opening_loc: (75...76) = ":"
-        │   │   │   ├── value_loc: (76...77) = "a"
+        │   │   ├── @ SymbolNode (location: (18,1)-(18,3))
+        │   │   │   ├── opening_loc: (18,1)-(18,2) = ":"
+        │   │   │   ├── value_loc: (18,2)-(18,3) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
-        │   │   ├── @ SymbolNode (location: (79...81))
-        │   │   │   ├── opening_loc: (79...80) = ":"
-        │   │   │   ├── value_loc: (80...81) = "b"
+        │   │   ├── @ SymbolNode (location: (18,5)-(18,7))
+        │   │   │   ├── opening_loc: (18,5)-(18,6) = ":"
+        │   │   │   ├── value_loc: (18,6)-(18,7) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
-        │   │   ├── @ SymbolNode (location: (83...85))
-        │   │   │   ├── opening_loc: (83...84) = ":"
-        │   │   │   ├── value_loc: (84...85) = "c"
+        │   │   ├── @ SymbolNode (location: (19,0)-(19,2))
+        │   │   │   ├── opening_loc: (19,0)-(19,1) = ":"
+        │   │   │   ├── value_loc: (19,1)-(19,2) = "c"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "c"
-        │   │   ├── @ IntegerNode (location: (86...87))
+        │   │   ├── @ IntegerNode (location: (19,3)-(19,4))
         │   │   │   └── flags: decimal
-        │   │   └── @ SymbolNode (location: (92...94))
-        │   │       ├── opening_loc: (92...93) = ":"
-        │   │       ├── value_loc: (93...94) = "d"
+        │   │   └── @ SymbolNode (location: (23,0)-(23,2))
+        │   │       ├── opening_loc: (23,0)-(23,1) = ":"
+        │   │       ├── value_loc: (23,1)-(23,2) = "d"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "d"
-        │   ├── opening_loc: (74...75) = "["
-        │   └── closing_loc: (97...98) = "]"
-        ├── @ ArrayNode (location: (100...112))
+        │   ├── opening_loc: (18,0)-(18,1) = "["
+        │   └── closing_loc: (26,0)-(26,1) = "]"
+        ├── @ ArrayNode (location: (28,0)-(28,12))
         │   ├── elements: (length: 1)
-        │   │   └── @ KeywordHashNode (location: (101...111))
+        │   │   └── @ KeywordHashNode (location: (28,1)-(28,11))
         │   │       └── elements: (length: 1)
-        │   │           └── @ AssocNode (location: (101...111))
+        │   │           └── @ AssocNode (location: (28,1)-(28,11))
         │   │               ├── key:
-        │   │               │   @ CallNode (location: (101...104))
+        │   │               │   @ CallNode (location: (28,1)-(28,4))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (101...104) = "foo"
+        │   │               │   ├── message_loc: (28,1)-(28,4) = "foo"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
@@ -170,27 +170,27 @@
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "foo"
         │   │               ├── value:
-        │   │               │   @ CallNode (location: (108...111))
+        │   │               │   @ CallNode (location: (28,8)-(28,11))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (108...111) = "bar"
+        │   │               │   ├── message_loc: (28,8)-(28,11) = "bar"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
         │   │               │   ├── block: ∅
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "bar"
-        │   │               └── operator_loc: (105...107) = "=>"
-        │   ├── opening_loc: (100...101) = "["
-        │   └── closing_loc: (111...112) = "]"
-        ├── @ CallNode (location: (114...133))
+        │   │               └── operator_loc: (28,5)-(28,7) = "=>"
+        │   ├── opening_loc: (28,0)-(28,1) = "["
+        │   └── closing_loc: (28,11)-(28,12) = "]"
+        ├── @ CallNode (location: (30,0)-(30,19))
         │   ├── receiver:
-        │   │   @ CallNode (location: (114...122))
+        │   │   @ CallNode (location: (30,0)-(30,8))
         │   │   ├── receiver:
-        │   │   │   @ CallNode (location: (114...117))
+        │   │   │   @ CallNode (location: (30,0)-(30,3))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (114...117) = "foo"
+        │   │   │   ├── message_loc: (30,0)-(30,3) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
@@ -198,63 +198,63 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "foo"
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (117...122) = "[bar]"
-        │   │   ├── opening_loc: (117...118) = "["
+        │   │   ├── message_loc: (30,3)-(30,8) = "[bar]"
+        │   │   ├── opening_loc: (30,3)-(30,4) = "["
         │   │   ├── arguments:
-        │   │   │   @ ArgumentsNode (location: (118...121))
+        │   │   │   @ ArgumentsNode (location: (30,4)-(30,7))
         │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ CallNode (location: (118...121))
+        │   │   │       └── @ CallNode (location: (30,4)-(30,7))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
-        │   │   │           ├── message_loc: (118...121) = "bar"
+        │   │   │           ├── message_loc: (30,4)-(30,7) = "bar"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
         │   │   │           └── name: "bar"
-        │   │   ├── closing_loc: (121...122) = "]"
+        │   │   ├── closing_loc: (30,7)-(30,8) = "]"
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
         │   │   └── name: "[]"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (122...127) = "[baz]"
-        │   ├── opening_loc: (122...123) = "["
+        │   ├── message_loc: (30,8)-(30,13) = "[baz]"
+        │   ├── opening_loc: (30,8)-(30,9) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (123...133))
+        │   │   @ ArgumentsNode (location: (30,9)-(30,19))
         │   │   └── arguments: (length: 2)
-        │   │       ├── @ CallNode (location: (123...126))
+        │   │       ├── @ CallNode (location: (30,9)-(30,12))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (123...126) = "baz"
+        │   │       │   ├── message_loc: (30,9)-(30,12) = "baz"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "baz"
-        │   │       └── @ CallNode (location: (130...133))
+        │   │       └── @ CallNode (location: (30,16)-(30,19))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (130...133) = "qux"
+        │   │           ├── message_loc: (30,16)-(30,19) = "qux"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "qux"
-        │   ├── closing_loc: (126...127) = "]"
+        │   ├── closing_loc: (30,12)-(30,13) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]="
-        ├── @ CallNode (location: (135...148))
+        ├── @ CallNode (location: (32,0)-(32,13))
         │   ├── receiver:
-        │   │   @ CallNode (location: (135...143))
+        │   │   @ CallNode (location: (32,0)-(32,8))
         │   │   ├── receiver:
-        │   │   │   @ CallNode (location: (135...138))
+        │   │   │   @ CallNode (location: (32,0)-(32,3))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (135...138) = "foo"
+        │   │   │   ├── message_loc: (32,0)-(32,3) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
@@ -262,55 +262,55 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "foo"
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (138...143) = "[bar]"
-        │   │   ├── opening_loc: (138...139) = "["
+        │   │   ├── message_loc: (32,3)-(32,8) = "[bar]"
+        │   │   ├── opening_loc: (32,3)-(32,4) = "["
         │   │   ├── arguments:
-        │   │   │   @ ArgumentsNode (location: (139...142))
+        │   │   │   @ ArgumentsNode (location: (32,4)-(32,7))
         │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ CallNode (location: (139...142))
+        │   │   │       └── @ CallNode (location: (32,4)-(32,7))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
-        │   │   │           ├── message_loc: (139...142) = "bar"
+        │   │   │           ├── message_loc: (32,4)-(32,7) = "bar"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
         │   │   │           └── name: "bar"
-        │   │   ├── closing_loc: (142...143) = "]"
+        │   │   ├── closing_loc: (32,7)-(32,8) = "]"
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
         │   │   └── name: "[]"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (143...148) = "[baz]"
-        │   ├── opening_loc: (143...144) = "["
+        │   ├── message_loc: (32,8)-(32,13) = "[baz]"
+        │   ├── opening_loc: (32,8)-(32,9) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (144...147))
+        │   │   @ ArgumentsNode (location: (32,9)-(32,12))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (144...147))
+        │   │       └── @ CallNode (location: (32,9)-(32,12))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (144...147) = "baz"
+        │   │           ├── message_loc: (32,9)-(32,12) = "baz"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "baz"
-        │   ├── closing_loc: (147...148) = "]"
+        │   ├── closing_loc: (32,12)-(32,13) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]"
-        ├── @ ArrayNode (location: (150...153))
+        ├── @ ArrayNode (location: (34,0)-(35,1))
         │   ├── elements: (length: 0)
-        │   ├── opening_loc: (150...151) = "["
-        │   └── closing_loc: (152...153) = "]"
-        ├── @ CallNode (location: (155...168))
+        │   ├── opening_loc: (34,0)-(34,1) = "["
+        │   └── closing_loc: (35,0)-(35,1) = "]"
+        ├── @ CallNode (location: (37,0)-(37,13))
         │   ├── receiver:
-        │   │   @ CallNode (location: (155...158))
+        │   │   @ CallNode (location: (37,0)-(37,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (155...158) = "foo"
+        │   │   ├── message_loc: (37,0)-(37,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -318,41 +318,41 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (158...168) = "[bar, baz]"
-        │   ├── opening_loc: (158...159) = "["
+        │   ├── message_loc: (37,3)-(37,13) = "[bar, baz]"
+        │   ├── opening_loc: (37,3)-(37,4) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (159...167))
+        │   │   @ ArgumentsNode (location: (37,4)-(37,12))
         │   │   └── arguments: (length: 2)
-        │   │       ├── @ CallNode (location: (159...162))
+        │   │       ├── @ CallNode (location: (37,4)-(37,7))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (159...162) = "bar"
+        │   │       │   ├── message_loc: (37,4)-(37,7) = "bar"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "bar"
-        │   │       └── @ CallNode (location: (164...167))
+        │   │       └── @ CallNode (location: (37,9)-(37,12))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (164...167) = "baz"
+        │   │           ├── message_loc: (37,9)-(37,12) = "baz"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "baz"
-        │   ├── closing_loc: (167...168) = "]"
+        │   ├── closing_loc: (37,12)-(37,13) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]"
-        ├── @ CallNode (location: (170...189))
+        ├── @ CallNode (location: (39,0)-(39,19))
         │   ├── receiver:
-        │   │   @ CallNode (location: (170...173))
+        │   │   @ CallNode (location: (39,0)-(39,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (170...173) = "foo"
+        │   │   ├── message_loc: (39,0)-(39,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -360,53 +360,53 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (173...183) = "[bar, baz]"
-        │   ├── opening_loc: (173...174) = "["
+        │   ├── message_loc: (39,3)-(39,13) = "[bar, baz]"
+        │   ├── opening_loc: (39,3)-(39,4) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (174...189))
+        │   │   @ ArgumentsNode (location: (39,4)-(39,19))
         │   │   └── arguments: (length: 3)
-        │   │       ├── @ CallNode (location: (174...177))
+        │   │       ├── @ CallNode (location: (39,4)-(39,7))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (174...177) = "bar"
+        │   │       │   ├── message_loc: (39,4)-(39,7) = "bar"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "bar"
-        │   │       ├── @ CallNode (location: (179...182))
+        │   │       ├── @ CallNode (location: (39,9)-(39,12))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (179...182) = "baz"
+        │   │       │   ├── message_loc: (39,9)-(39,12) = "baz"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "baz"
-        │   │       └── @ CallNode (location: (186...189))
+        │   │       └── @ CallNode (location: (39,16)-(39,19))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (186...189) = "qux"
+        │   │           ├── message_loc: (39,16)-(39,19) = "qux"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "qux"
-        │   ├── closing_loc: (182...183) = "]"
+        │   ├── closing_loc: (39,12)-(39,13) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]="
-        ├── @ MultiWriteNode (location: (191...212))
+        ├── @ MultiWriteNode (location: (41,0)-(41,21))
         │   ├── targets: (length: 2)
-        │   │   ├── @ CallNode (location: (191...197))
+        │   │   ├── @ CallNode (location: (41,0)-(41,6))
         │   │   │   ├── receiver:
-        │   │   │   │   @ CallNode (location: (191...194))
+        │   │   │   │   @ CallNode (location: (41,0)-(41,3))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
-        │   │   │   │   ├── message_loc: (191...194) = "foo"
+        │   │   │   │   ├── message_loc: (41,0)-(41,3) = "foo"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
@@ -414,23 +414,23 @@
         │   │   │   │   ├── flags: variable_call
         │   │   │   │   └── name: "foo"
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (194...197) = "[0]"
-        │   │   │   ├── opening_loc: (194...195) = "["
+        │   │   │   ├── message_loc: (41,3)-(41,6) = "[0]"
+        │   │   │   ├── opening_loc: (41,3)-(41,4) = "["
         │   │   │   ├── arguments:
-        │   │   │   │   @ ArgumentsNode (location: (195...196))
+        │   │   │   │   @ ArgumentsNode (location: (41,4)-(41,5))
         │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ IntegerNode (location: (195...196))
+        │   │   │   │       └── @ IntegerNode (location: (41,4)-(41,5))
         │   │   │   │           └── flags: decimal
-        │   │   │   ├── closing_loc: (196...197) = "]"
+        │   │   │   ├── closing_loc: (41,5)-(41,6) = "]"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
         │   │   │   └── name: "[]="
-        │   │   └── @ CallNode (location: (199...205))
+        │   │   └── @ CallNode (location: (41,8)-(41,14))
         │   │       ├── receiver:
-        │   │       │   @ CallNode (location: (199...202))
+        │   │       │   @ CallNode (location: (41,8)-(41,11))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (199...202) = "bar"
+        │   │       │   ├── message_loc: (41,8)-(41,11) = "bar"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
@@ -438,35 +438,35 @@
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "bar"
         │   │       ├── call_operator_loc: ∅
-        │   │       ├── message_loc: (202...205) = "[0]"
-        │   │       ├── opening_loc: (202...203) = "["
+        │   │       ├── message_loc: (41,11)-(41,14) = "[0]"
+        │   │       ├── opening_loc: (41,11)-(41,12) = "["
         │   │       ├── arguments:
-        │   │       │   @ ArgumentsNode (location: (203...204))
+        │   │       │   @ ArgumentsNode (location: (41,12)-(41,13))
         │   │       │   └── arguments: (length: 1)
-        │   │       │       └── @ IntegerNode (location: (203...204))
+        │   │       │       └── @ IntegerNode (location: (41,12)-(41,13))
         │   │       │           └── flags: decimal
-        │   │       ├── closing_loc: (204...205) = "]"
+        │   │       ├── closing_loc: (41,13)-(41,14) = "]"
         │   │       ├── block: ∅
         │   │       ├── flags: ∅
         │   │       └── name: "[]="
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
-        │   ├── operator_loc: (206...207) = "="
+        │   ├── operator_loc: (41,15)-(41,16) = "="
         │   └── value:
-        │       @ ArrayNode (location: (208...212))
+        │       @ ArrayNode (location: (41,17)-(41,21))
         │       ├── elements: (length: 2)
-        │       │   ├── @ IntegerNode (location: (208...209))
+        │       │   ├── @ IntegerNode (location: (41,17)-(41,18))
         │       │   │   └── flags: decimal
-        │       │   └── @ IntegerNode (location: (211...212))
+        │       │   └── @ IntegerNode (location: (41,20)-(41,21))
         │       │       └── flags: decimal
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
-        ├── @ CallNode (location: (214...233))
+        ├── @ CallNode (location: (43,0)-(43,19))
         │   ├── receiver:
-        │   │   @ CallNode (location: (214...217))
+        │   │   @ CallNode (location: (43,0)-(43,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (214...217) = "foo"
+        │   │   ├── message_loc: (43,0)-(43,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -474,17 +474,17 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (217...233) = "[bar[baz] = qux]"
-        │   ├── opening_loc: (217...218) = "["
+        │   ├── message_loc: (43,3)-(43,19) = "[bar[baz] = qux]"
+        │   ├── opening_loc: (43,3)-(43,4) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (218...232))
+        │   │   @ ArgumentsNode (location: (43,4)-(43,18))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (218...232))
+        │   │       └── @ CallNode (location: (43,4)-(43,18))
         │   │           ├── receiver:
-        │   │           │   @ CallNode (location: (218...221))
+        │   │           │   @ CallNode (location: (43,4)-(43,7))
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
-        │   │           │   ├── message_loc: (218...221) = "bar"
+        │   │           │   ├── message_loc: (43,4)-(43,7) = "bar"
         │   │           │   ├── opening_loc: ∅
         │   │           │   ├── arguments: ∅
         │   │           │   ├── closing_loc: ∅
@@ -492,45 +492,45 @@
         │   │           │   ├── flags: variable_call
         │   │           │   └── name: "bar"
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (221...226) = "[baz]"
-        │   │           ├── opening_loc: (221...222) = "["
+        │   │           ├── message_loc: (43,7)-(43,12) = "[baz]"
+        │   │           ├── opening_loc: (43,7)-(43,8) = "["
         │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (222...232))
+        │   │           │   @ ArgumentsNode (location: (43,8)-(43,18))
         │   │           │   └── arguments: (length: 2)
-        │   │           │       ├── @ CallNode (location: (222...225))
+        │   │           │       ├── @ CallNode (location: (43,8)-(43,11))
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
-        │   │           │       │   ├── message_loc: (222...225) = "baz"
+        │   │           │       │   ├── message_loc: (43,8)-(43,11) = "baz"
         │   │           │       │   ├── opening_loc: ∅
         │   │           │       │   ├── arguments: ∅
         │   │           │       │   ├── closing_loc: ∅
         │   │           │       │   ├── block: ∅
         │   │           │       │   ├── flags: variable_call
         │   │           │       │   └── name: "baz"
-        │   │           │       └── @ CallNode (location: (229...232))
+        │   │           │       └── @ CallNode (location: (43,15)-(43,18))
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
-        │   │           │           ├── message_loc: (229...232) = "qux"
+        │   │           │           ├── message_loc: (43,15)-(43,18) = "qux"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: variable_call
         │   │           │           └── name: "qux"
-        │   │           ├── closing_loc: (225...226) = "]"
+        │   │           ├── closing_loc: (43,11)-(43,12) = "]"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: "[]="
-        │   ├── closing_loc: (232...233) = "]"
+        │   ├── closing_loc: (43,18)-(43,19) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]"
-        ├── @ CallNode (location: (235...243))
+        ├── @ CallNode (location: (45,0)-(45,8))
         │   ├── receiver:
-        │   │   @ CallNode (location: (235...238))
+        │   │   @ CallNode (location: (45,0)-(45,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (235...238) = "foo"
+        │   │   ├── message_loc: (45,0)-(45,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -538,31 +538,31 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (238...243) = "[bar]"
-        │   ├── opening_loc: (238...239) = "["
+        │   ├── message_loc: (45,3)-(45,8) = "[bar]"
+        │   ├── opening_loc: (45,3)-(45,4) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (239...242))
+        │   │   @ ArgumentsNode (location: (45,4)-(45,7))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (239...242))
+        │   │       └── @ CallNode (location: (45,4)-(45,7))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (239...242) = "bar"
+        │   │           ├── message_loc: (45,4)-(45,7) = "bar"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "bar"
-        │   ├── closing_loc: (242...243) = "]"
+        │   ├── closing_loc: (45,7)-(45,8) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]"
-        ├── @ CallNode (location: (245...259))
+        ├── @ CallNode (location: (47,0)-(47,14))
         │   ├── receiver:
-        │   │   @ CallNode (location: (245...248))
+        │   │   @ CallNode (location: (47,0)-(47,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (245...248) = "foo"
+        │   │   ├── message_loc: (47,0)-(47,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -570,139 +570,139 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (248...253) = "[bar]"
-        │   ├── opening_loc: (248...249) = "["
+        │   ├── message_loc: (47,3)-(47,8) = "[bar]"
+        │   ├── opening_loc: (47,3)-(47,4) = "["
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (249...259))
+        │   │   @ ArgumentsNode (location: (47,4)-(47,14))
         │   │   └── arguments: (length: 2)
-        │   │       ├── @ CallNode (location: (249...252))
+        │   │       ├── @ CallNode (location: (47,4)-(47,7))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
-        │   │       │   ├── message_loc: (249...252) = "bar"
+        │   │       │   ├── message_loc: (47,4)-(47,7) = "bar"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
         │   │       │   └── name: "bar"
-        │   │       └── @ CallNode (location: (256...259))
+        │   │       └── @ CallNode (location: (47,11)-(47,14))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (256...259) = "baz"
+        │   │           ├── message_loc: (47,11)-(47,14) = "baz"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
         │   │           └── name: "baz"
-        │   ├── closing_loc: (252...253) = "]"
+        │   ├── closing_loc: (47,7)-(47,8) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "[]="
-        ├── @ ArrayNode (location: (261...267))
+        ├── @ ArrayNode (location: (49,0)-(49,6))
         │   ├── elements: (length: 1)
-        │   │   └── @ KeywordHashNode (location: (262...266))
+        │   │   └── @ KeywordHashNode (location: (49,1)-(49,5))
         │   │       └── elements: (length: 1)
-        │   │           └── @ AssocSplatNode (location: (262...266))
+        │   │           └── @ AssocSplatNode (location: (49,1)-(49,5))
         │   │               ├── value:
-        │   │               │   @ HashNode (location: (264...266))
-        │   │               │   ├── opening_loc: (264...265) = "{"
+        │   │               │   @ HashNode (location: (49,3)-(49,5))
+        │   │               │   ├── opening_loc: (49,3)-(49,4) = "{"
         │   │               │   ├── elements: (length: 0)
-        │   │               │   └── closing_loc: (265...266) = "}"
-        │   │               └── operator_loc: (262...264) = "**"
-        │   ├── opening_loc: (261...262) = "["
-        │   └── closing_loc: (266...267) = "]"
-        ├── @ ArrayNode (location: (269...275))
+        │   │               │   └── closing_loc: (49,4)-(49,5) = "}"
+        │   │               └── operator_loc: (49,1)-(49,3) = "**"
+        │   ├── opening_loc: (49,0)-(49,1) = "["
+        │   └── closing_loc: (49,5)-(49,6) = "]"
+        ├── @ ArrayNode (location: (51,0)-(51,6))
         │   ├── elements: (length: 1)
-        │   │   └── @ KeywordHashNode (location: (270...274))
+        │   │   └── @ KeywordHashNode (location: (51,1)-(51,5))
         │   │       └── elements: (length: 1)
-        │   │           └── @ AssocSplatNode (location: (270...274))
+        │   │           └── @ AssocSplatNode (location: (51,1)-(51,5))
         │   │               ├── value:
-        │   │               │   @ CallNode (location: (272...274))
+        │   │               │   @ CallNode (location: (51,3)-(51,5))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (272...274) = "kw"
+        │   │               │   ├── message_loc: (51,3)-(51,5) = "kw"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
         │   │               │   ├── block: ∅
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "kw"
-        │   │               └── operator_loc: (270...272) = "**"
-        │   ├── opening_loc: (269...270) = "["
-        │   └── closing_loc: (274...275) = "]"
-        ├── @ ArrayNode (location: (277...286))
+        │   │               └── operator_loc: (51,1)-(51,3) = "**"
+        │   ├── opening_loc: (51,0)-(51,1) = "["
+        │   └── closing_loc: (51,5)-(51,6) = "]"
+        ├── @ ArrayNode (location: (53,0)-(53,9))
         │   ├── elements: (length: 2)
-        │   │   ├── @ IntegerNode (location: (278...279))
+        │   │   ├── @ IntegerNode (location: (53,1)-(53,2))
         │   │   │   └── flags: decimal
-        │   │   └── @ KeywordHashNode (location: (281...285))
+        │   │   └── @ KeywordHashNode (location: (53,4)-(53,8))
         │   │       └── elements: (length: 1)
-        │   │           └── @ AssocSplatNode (location: (281...285))
+        │   │           └── @ AssocSplatNode (location: (53,4)-(53,8))
         │   │               ├── value:
-        │   │               │   @ CallNode (location: (283...285))
+        │   │               │   @ CallNode (location: (53,6)-(53,8))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (283...285) = "kw"
+        │   │               │   ├── message_loc: (53,6)-(53,8) = "kw"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
         │   │               │   ├── block: ∅
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "kw"
-        │   │               └── operator_loc: (281...283) = "**"
-        │   ├── opening_loc: (277...278) = "["
-        │   └── closing_loc: (285...286) = "]"
-        ├── @ ArrayNode (location: (288...309))
+        │   │               └── operator_loc: (53,4)-(53,6) = "**"
+        │   ├── opening_loc: (53,0)-(53,1) = "["
+        │   └── closing_loc: (53,8)-(53,9) = "]"
+        ├── @ ArrayNode (location: (55,0)-(55,21))
         │   ├── elements: (length: 2)
-        │   │   ├── @ IntegerNode (location: (289...290))
+        │   │   ├── @ IntegerNode (location: (55,1)-(55,2))
         │   │   │   └── flags: decimal
-        │   │   └── @ KeywordHashNode (location: (292...308))
+        │   │   └── @ KeywordHashNode (location: (55,4)-(55,20))
         │   │       └── elements: (length: 3)
-        │   │           ├── @ AssocSplatNode (location: (292...296))
+        │   │           ├── @ AssocSplatNode (location: (55,4)-(55,8))
         │   │           │   ├── value:
-        │   │           │   │   @ CallNode (location: (294...296))
+        │   │           │   │   @ CallNode (location: (55,6)-(55,8))
         │   │           │   │   ├── receiver: ∅
         │   │           │   │   ├── call_operator_loc: ∅
-        │   │           │   │   ├── message_loc: (294...296) = "kw"
+        │   │           │   │   ├── message_loc: (55,6)-(55,8) = "kw"
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── arguments: ∅
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   ├── block: ∅
         │   │           │   │   ├── flags: variable_call
         │   │           │   │   └── name: "kw"
-        │   │           │   └── operator_loc: (292...294) = "**"
-        │   │           ├── @ AssocSplatNode (location: (298...302))
+        │   │           │   └── operator_loc: (55,4)-(55,6) = "**"
+        │   │           ├── @ AssocSplatNode (location: (55,10)-(55,14))
         │   │           │   ├── value:
-        │   │           │   │   @ HashNode (location: (300...302))
-        │   │           │   │   ├── opening_loc: (300...301) = "{"
+        │   │           │   │   @ HashNode (location: (55,12)-(55,14))
+        │   │           │   │   ├── opening_loc: (55,12)-(55,13) = "{"
         │   │           │   │   ├── elements: (length: 0)
-        │   │           │   │   └── closing_loc: (301...302) = "}"
-        │   │           │   └── operator_loc: (298...300) = "**"
-        │   │           └── @ AssocSplatNode (location: (304...308))
+        │   │           │   │   └── closing_loc: (55,13)-(55,14) = "}"
+        │   │           │   └── operator_loc: (55,10)-(55,12) = "**"
+        │   │           └── @ AssocSplatNode (location: (55,16)-(55,20))
         │   │               ├── value:
-        │   │               │   @ CallNode (location: (306...308))
+        │   │               │   @ CallNode (location: (55,18)-(55,20))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (306...308) = "kw"
+        │   │               │   ├── message_loc: (55,18)-(55,20) = "kw"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
         │   │               │   ├── block: ∅
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "kw"
-        │   │               └── operator_loc: (304...306) = "**"
-        │   ├── opening_loc: (288...289) = "["
-        │   └── closing_loc: (308...309) = "]"
-        ├── @ ArrayNode (location: (311...328))
+        │   │               └── operator_loc: (55,16)-(55,18) = "**"
+        │   ├── opening_loc: (55,0)-(55,1) = "["
+        │   └── closing_loc: (55,20)-(55,21) = "]"
+        ├── @ ArrayNode (location: (57,0)-(59,1))
         │   ├── elements: (length: 1)
-        │   │   └── @ KeywordHashNode (location: (315...325))
+        │   │   └── @ KeywordHashNode (location: (58,2)-(58,12))
         │   │       └── elements: (length: 1)
-        │   │           └── @ AssocNode (location: (315...325))
+        │   │           └── @ AssocNode (location: (58,2)-(58,12))
         │   │               ├── key:
-        │   │               │   @ CallNode (location: (315...318))
+        │   │               │   @ CallNode (location: (58,2)-(58,5))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (315...318) = "foo"
+        │   │               │   ├── message_loc: (58,2)-(58,5) = "foo"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
@@ -710,164 +710,164 @@
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "foo"
         │   │               ├── value:
-        │   │               │   @ CallNode (location: (322...325))
+        │   │               │   @ CallNode (location: (58,9)-(58,12))
         │   │               │   ├── receiver: ∅
         │   │               │   ├── call_operator_loc: ∅
-        │   │               │   ├── message_loc: (322...325) = "bar"
+        │   │               │   ├── message_loc: (58,9)-(58,12) = "bar"
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── arguments: ∅
         │   │               │   ├── closing_loc: ∅
         │   │               │   ├── block: ∅
         │   │               │   ├── flags: variable_call
         │   │               │   └── name: "bar"
-        │   │               └── operator_loc: (319...321) = "=>"
-        │   ├── opening_loc: (311...312) = "["
-        │   └── closing_loc: (327...328) = "]"
-        ├── @ ArrayNode (location: (331...348))
+        │   │               └── operator_loc: (58,6)-(58,8) = "=>"
+        │   ├── opening_loc: (57,0)-(57,1) = "["
+        │   └── closing_loc: (59,0)-(59,1) = "]"
+        ├── @ ArrayNode (location: (62,0)-(62,17))
         │   ├── elements: (length: 3)
-        │   │   ├── @ SymbolNode (location: (334...337))
+        │   │   ├── @ SymbolNode (location: (62,3)-(62,6))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (334...337) = "one"
+        │   │   │   ├── value_loc: (62,3)-(62,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
-        │   │   ├── @ SymbolNode (location: (338...341))
+        │   │   ├── @ SymbolNode (location: (62,7)-(62,10))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (338...341) = "two"
+        │   │   │   ├── value_loc: (62,7)-(62,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
-        │   │   └── @ SymbolNode (location: (342...347))
+        │   │   └── @ SymbolNode (location: (62,11)-(62,16))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (342...347) = "three"
+        │   │       ├── value_loc: (62,11)-(62,16) = "three"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
-        │   ├── opening_loc: (331...334) = "%i#"
-        │   └── closing_loc: (347...348) = "#"
-        ├── @ ArrayNode (location: (350...367))
+        │   ├── opening_loc: (62,0)-(62,3) = "%i#"
+        │   └── closing_loc: (62,16)-(62,17) = "#"
+        ├── @ ArrayNode (location: (64,0)-(64,17))
         │   ├── elements: (length: 3)
-        │   │   ├── @ StringNode (location: (353...356))
+        │   │   ├── @ StringNode (location: (64,3)-(64,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (353...356) = "one"
+        │   │   │   ├── content_loc: (64,3)-(64,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
-        │   │   ├── @ StringNode (location: (357...360))
+        │   │   ├── @ StringNode (location: (64,7)-(64,10))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (357...360) = "two"
+        │   │   │   ├── content_loc: (64,7)-(64,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
-        │   │   └── @ StringNode (location: (361...366))
+        │   │   └── @ StringNode (location: (64,11)-(64,16))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (361...366) = "three"
+        │   │       ├── content_loc: (64,11)-(64,16) = "three"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
-        │   ├── opening_loc: (350...353) = "%w#"
-        │   └── closing_loc: (366...367) = "#"
-        ├── @ XStringNode (location: (369...386))
-        │   ├── opening_loc: (369...372) = "%x#"
-        │   ├── content_loc: (372...385) = "one two three"
-        │   ├── closing_loc: (385...386) = "#"
+        │   ├── opening_loc: (64,0)-(64,3) = "%w#"
+        │   └── closing_loc: (64,16)-(64,17) = "#"
+        ├── @ XStringNode (location: (66,0)-(66,17))
+        │   ├── opening_loc: (66,0)-(66,3) = "%x#"
+        │   ├── content_loc: (66,3)-(66,16) = "one two three"
+        │   ├── closing_loc: (66,16)-(66,17) = "#"
         │   └── unescaped: "one two three"
-        ├── @ ArrayNode (location: (389...406))
+        ├── @ ArrayNode (location: (69,0)-(69,17))
         │   ├── elements: (length: 3)
-        │   │   ├── @ SymbolNode (location: (392...395))
+        │   │   ├── @ SymbolNode (location: (69,3)-(69,6))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (392...395) = "one"
+        │   │   │   ├── value_loc: (69,3)-(69,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
-        │   │   ├── @ SymbolNode (location: (396...399))
+        │   │   ├── @ SymbolNode (location: (69,7)-(69,10))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (396...399) = "two"
+        │   │   │   ├── value_loc: (69,7)-(69,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
-        │   │   └── @ SymbolNode (location: (400...405))
+        │   │   └── @ SymbolNode (location: (69,11)-(69,16))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (400...405) = "three"
+        │   │       ├── value_loc: (69,11)-(69,16) = "three"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
-        │   ├── opening_loc: (389...392) = "%i@"
-        │   └── closing_loc: (405...406) = "@"
-        ├── @ ArrayNode (location: (408...425))
+        │   ├── opening_loc: (69,0)-(69,3) = "%i@"
+        │   └── closing_loc: (69,16)-(69,17) = "@"
+        ├── @ ArrayNode (location: (71,0)-(71,17))
         │   ├── elements: (length: 3)
-        │   │   ├── @ StringNode (location: (411...414))
+        │   │   ├── @ StringNode (location: (71,3)-(71,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (411...414) = "one"
+        │   │   │   ├── content_loc: (71,3)-(71,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
-        │   │   ├── @ StringNode (location: (415...418))
+        │   │   ├── @ StringNode (location: (71,7)-(71,10))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (415...418) = "two"
+        │   │   │   ├── content_loc: (71,7)-(71,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
-        │   │   └── @ StringNode (location: (419...424))
+        │   │   └── @ StringNode (location: (71,11)-(71,16))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (419...424) = "three"
+        │   │       ├── content_loc: (71,11)-(71,16) = "three"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
-        │   ├── opening_loc: (408...411) = "%w@"
-        │   └── closing_loc: (424...425) = "@"
-        ├── @ XStringNode (location: (427...444))
-        │   ├── opening_loc: (427...430) = "%x@"
-        │   ├── content_loc: (430...443) = "one two three"
-        │   ├── closing_loc: (443...444) = "@"
+        │   ├── opening_loc: (71,0)-(71,3) = "%w@"
+        │   └── closing_loc: (71,16)-(71,17) = "@"
+        ├── @ XStringNode (location: (73,0)-(73,17))
+        │   ├── opening_loc: (73,0)-(73,3) = "%x@"
+        │   ├── content_loc: (73,3)-(73,16) = "one two three"
+        │   ├── closing_loc: (73,16)-(73,17) = "@"
         │   └── unescaped: "one two three"
-        ├── @ ArrayNode (location: (447...464))
+        ├── @ ArrayNode (location: (76,0)-(76,17))
         │   ├── elements: (length: 3)
-        │   │   ├── @ SymbolNode (location: (450...453))
+        │   │   ├── @ SymbolNode (location: (76,3)-(76,6))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (450...453) = "one"
+        │   │   │   ├── value_loc: (76,3)-(76,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
-        │   │   ├── @ SymbolNode (location: (454...457))
+        │   │   ├── @ SymbolNode (location: (76,7)-(76,10))
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── value_loc: (454...457) = "two"
+        │   │   │   ├── value_loc: (76,7)-(76,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
-        │   │   └── @ SymbolNode (location: (458...463))
+        │   │   └── @ SymbolNode (location: (76,11)-(76,16))
         │   │       ├── opening_loc: ∅
-        │   │       ├── value_loc: (458...463) = "three"
+        │   │       ├── value_loc: (76,11)-(76,16) = "three"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
-        │   ├── opening_loc: (447...450) = "%i{"
-        │   └── closing_loc: (463...464) = "}"
-        ├── @ ArrayNode (location: (466...483))
+        │   ├── opening_loc: (76,0)-(76,3) = "%i{"
+        │   └── closing_loc: (76,16)-(76,17) = "}"
+        ├── @ ArrayNode (location: (78,0)-(78,17))
         │   ├── elements: (length: 3)
-        │   │   ├── @ StringNode (location: (469...472))
+        │   │   ├── @ StringNode (location: (78,3)-(78,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (469...472) = "one"
+        │   │   │   ├── content_loc: (78,3)-(78,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
-        │   │   ├── @ StringNode (location: (473...476))
+        │   │   ├── @ StringNode (location: (78,7)-(78,10))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (473...476) = "two"
+        │   │   │   ├── content_loc: (78,7)-(78,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
-        │   │   └── @ StringNode (location: (477...482))
+        │   │   └── @ StringNode (location: (78,11)-(78,16))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (477...482) = "three"
+        │   │       ├── content_loc: (78,11)-(78,16) = "three"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
-        │   ├── opening_loc: (466...469) = "%w{"
-        │   └── closing_loc: (482...483) = "}"
-        ├── @ XStringNode (location: (485...502))
-        │   ├── opening_loc: (485...488) = "%x{"
-        │   ├── content_loc: (488...501) = "one two three"
-        │   ├── closing_loc: (501...502) = "}"
+        │   ├── opening_loc: (78,0)-(78,3) = "%w{"
+        │   └── closing_loc: (78,16)-(78,17) = "}"
+        ├── @ XStringNode (location: (80,0)-(80,17))
+        │   ├── opening_loc: (80,0)-(80,3) = "%x{"
+        │   ├── content_loc: (80,3)-(80,16) = "one two three"
+        │   ├── closing_loc: (80,16)-(80,17) = "}"
         │   └── unescaped: "one two three"
-        └── @ ArrayNode (location: (504...511))
+        └── @ ArrayNode (location: (82,0)-(82,7))
             ├── elements: (length: 1)
-            │   └── @ StringNode (location: (507...510))
+            │   └── @ StringNode (location: (82,3)-(82,6))
             │       ├── flags: ∅
             │       ├── opening_loc: ∅
-            │       ├── content_loc: (507...510) = "\\C:"
+            │       ├── content_loc: (82,3)-(82,6) = "\\C:"
             │       ├── closing_loc: ∅
             │       └── unescaped: "\\C:"
-            ├── opening_loc: (504...507) = "%w["
-            └── closing_loc: (510...511) = "]"
+            ├── opening_loc: (82,0)-(82,3) = "%w["
+            └── closing_loc: (82,6)-(82,7) = "]"

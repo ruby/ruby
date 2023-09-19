@@ -1,27 +1,27 @@
-@ ProgramNode (location: (0...747))
+@ ProgramNode (location: (1,0)-(111,3))
 ├── locals: [:b, :_, :lhs, :x, :rhs, :c, :e]
 └── statements:
-    @ StatementsNode (location: (0...747))
+    @ StatementsNode (location: (1,0)-(111,3))
     └── body: (length: 28)
-        ├── @ CaseNode (location: (0...21))
+        ├── @ CaseNode (location: (1,0)-(3,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (5...7))
-        │   │   ├── opening_loc: (5...6) = ":"
-        │   │   ├── value_loc: (6...7) = "a"
+        │   │   @ SymbolNode (location: (1,5)-(1,7))
+        │   │   ├── opening_loc: (1,5)-(1,6) = ":"
+        │   │   ├── value_loc: (1,6)-(1,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (8...16))
+        │   │   └── @ InNode (location: (2,0)-(2,8))
         │   │       ├── pattern:
-        │   │       │   @ HashPatternNode (location: (12...16))
+        │   │       │   @ HashPatternNode (location: (2,4)-(2,8))
         │   │       │   ├── constant: ∅
         │   │       │   ├── assocs: (length: 1)
-        │   │       │   │   └── @ AssocNode (location: (12...16))
+        │   │       │   │   └── @ AssocNode (location: (2,4)-(2,8))
         │   │       │   │       ├── key:
-        │   │       │   │       │   @ SymbolNode (location: (12...16))
-        │   │       │   │       │   ├── opening_loc: (12...13) = "\""
-        │   │       │   │       │   ├── value_loc: (13...14) = "b"
-        │   │       │   │       │   ├── closing_loc: (14...16) = "\":"
+        │   │       │   │       │   @ SymbolNode (location: (2,4)-(2,8))
+        │   │       │   │       │   ├── opening_loc: (2,4)-(2,5) = "\""
+        │   │       │   │       │   ├── value_loc: (2,5)-(2,6) = "b"
+        │   │       │   │       │   ├── closing_loc: (2,6)-(2,8) = "\":"
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value: ∅
         │   │       │   │       └── operator_loc: ∅
@@ -29,502 +29,502 @@
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (8...10) = "in"
+        │   │       ├── in_loc: (2,0)-(2,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (0...4) = "case"
-        │   └── end_keyword_loc: (18...21) = "end"
-        ├── @ CaseNode (location: (23...45))
+        │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
+        │   └── end_keyword_loc: (3,0)-(3,3) = "end"
+        ├── @ CaseNode (location: (5,0)-(7,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (28...30))
-        │   │   ├── opening_loc: (28...29) = ":"
-        │   │   ├── value_loc: (29...30) = "a"
+        │   │   @ SymbolNode (location: (5,5)-(5,7))
+        │   │   ├── opening_loc: (5,5)-(5,6) = ":"
+        │   │   ├── value_loc: (5,6)-(5,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (31...41))
+        │   │   └── @ InNode (location: (6,0)-(6,10))
         │   │       ├── pattern:
-        │   │       │   @ ArrayNode (location: (34...41))
+        │   │       │   @ ArrayNode (location: (6,3)-(6,10))
         │   │       │   ├── elements: (length: 2)
-        │   │       │   │   ├── @ SymbolNode (location: (37...38))
+        │   │       │   │   ├── @ SymbolNode (location: (6,6)-(6,7))
         │   │       │   │   │   ├── opening_loc: ∅
-        │   │       │   │   │   ├── value_loc: (37...38) = "a"
+        │   │       │   │   │   ├── value_loc: (6,6)-(6,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
-        │   │       │   │   └── @ SymbolNode (location: (39...40))
+        │   │       │   │   └── @ SymbolNode (location: (6,8)-(6,9))
         │   │       │   │       ├── opening_loc: ∅
-        │   │       │   │       ├── value_loc: (39...40) = "b"
+        │   │       │   │       ├── value_loc: (6,8)-(6,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
-        │   │       │   ├── opening_loc: (34...37) = "%I["
-        │   │       │   └── closing_loc: (40...41) = "]"
+        │   │       │   ├── opening_loc: (6,3)-(6,6) = "%I["
+        │   │       │   └── closing_loc: (6,9)-(6,10) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (31...33) = "in"
+        │   │       ├── in_loc: (6,0)-(6,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (23...27) = "case"
-        │   └── end_keyword_loc: (42...45) = "end"
-        ├── @ CaseNode (location: (47...69))
+        │   ├── case_keyword_loc: (5,0)-(5,4) = "case"
+        │   └── end_keyword_loc: (7,0)-(7,3) = "end"
+        ├── @ CaseNode (location: (9,0)-(11,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (52...54))
-        │   │   ├── opening_loc: (52...53) = ":"
-        │   │   ├── value_loc: (53...54) = "a"
+        │   │   @ SymbolNode (location: (9,5)-(9,7))
+        │   │   ├── opening_loc: (9,5)-(9,6) = ":"
+        │   │   ├── value_loc: (9,6)-(9,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (55...65))
+        │   │   └── @ InNode (location: (10,0)-(10,10))
         │   │       ├── pattern:
-        │   │       │   @ ArrayNode (location: (58...65))
+        │   │       │   @ ArrayNode (location: (10,3)-(10,10))
         │   │       │   ├── elements: (length: 2)
-        │   │       │   │   ├── @ StringNode (location: (61...62))
+        │   │       │   │   ├── @ StringNode (location: (10,6)-(10,7))
         │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: ∅
-        │   │       │   │   │   ├── content_loc: (61...62) = "a"
+        │   │       │   │   │   ├── content_loc: (10,6)-(10,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
-        │   │       │   │   └── @ StringNode (location: (63...64))
+        │   │       │   │   └── @ StringNode (location: (10,8)-(10,9))
         │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
-        │   │       │   │       ├── content_loc: (63...64) = "b"
+        │   │       │   │       ├── content_loc: (10,8)-(10,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
-        │   │       │   ├── opening_loc: (58...61) = "%W["
-        │   │       │   └── closing_loc: (64...65) = "]"
+        │   │       │   ├── opening_loc: (10,3)-(10,6) = "%W["
+        │   │       │   └── closing_loc: (10,9)-(10,10) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (55...57) = "in"
+        │   │       ├── in_loc: (10,0)-(10,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (47...51) = "case"
-        │   └── end_keyword_loc: (66...69) = "end"
-        ├── @ CaseNode (location: (71...93))
+        │   ├── case_keyword_loc: (9,0)-(9,4) = "case"
+        │   └── end_keyword_loc: (11,0)-(11,3) = "end"
+        ├── @ CaseNode (location: (13,0)-(15,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (76...78))
-        │   │   ├── opening_loc: (76...77) = ":"
-        │   │   ├── value_loc: (77...78) = "a"
+        │   │   @ SymbolNode (location: (13,5)-(13,7))
+        │   │   ├── opening_loc: (13,5)-(13,6) = ":"
+        │   │   ├── value_loc: (13,6)-(13,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (79...89))
+        │   │   └── @ InNode (location: (14,0)-(14,10))
         │   │       ├── pattern:
-        │   │       │   @ ArrayNode (location: (82...89))
+        │   │       │   @ ArrayNode (location: (14,3)-(14,10))
         │   │       │   ├── elements: (length: 2)
-        │   │       │   │   ├── @ SymbolNode (location: (85...86))
+        │   │       │   │   ├── @ SymbolNode (location: (14,6)-(14,7))
         │   │       │   │   │   ├── opening_loc: ∅
-        │   │       │   │   │   ├── value_loc: (85...86) = "a"
+        │   │       │   │   │   ├── value_loc: (14,6)-(14,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
-        │   │       │   │   └── @ SymbolNode (location: (87...88))
+        │   │       │   │   └── @ SymbolNode (location: (14,8)-(14,9))
         │   │       │   │       ├── opening_loc: ∅
-        │   │       │   │       ├── value_loc: (87...88) = "b"
+        │   │       │   │       ├── value_loc: (14,8)-(14,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
-        │   │       │   ├── opening_loc: (82...85) = "%i["
-        │   │       │   └── closing_loc: (88...89) = "]"
+        │   │       │   ├── opening_loc: (14,3)-(14,6) = "%i["
+        │   │       │   └── closing_loc: (14,9)-(14,10) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (79...81) = "in"
+        │   │       ├── in_loc: (14,0)-(14,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (71...75) = "case"
-        │   └── end_keyword_loc: (90...93) = "end"
-        ├── @ CaseNode (location: (95...117))
+        │   ├── case_keyword_loc: (13,0)-(13,4) = "case"
+        │   └── end_keyword_loc: (15,0)-(15,3) = "end"
+        ├── @ CaseNode (location: (17,0)-(19,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (100...102))
-        │   │   ├── opening_loc: (100...101) = ":"
-        │   │   ├── value_loc: (101...102) = "a"
+        │   │   @ SymbolNode (location: (17,5)-(17,7))
+        │   │   ├── opening_loc: (17,5)-(17,6) = ":"
+        │   │   ├── value_loc: (17,6)-(17,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (103...113))
+        │   │   └── @ InNode (location: (18,0)-(18,10))
         │   │       ├── pattern:
-        │   │       │   @ ArrayNode (location: (106...113))
+        │   │       │   @ ArrayNode (location: (18,3)-(18,10))
         │   │       │   ├── elements: (length: 2)
-        │   │       │   │   ├── @ StringNode (location: (109...110))
+        │   │       │   │   ├── @ StringNode (location: (18,6)-(18,7))
         │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: ∅
-        │   │       │   │   │   ├── content_loc: (109...110) = "a"
+        │   │       │   │   │   ├── content_loc: (18,6)-(18,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
-        │   │       │   │   └── @ StringNode (location: (111...112))
+        │   │       │   │   └── @ StringNode (location: (18,8)-(18,9))
         │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
-        │   │       │   │       ├── content_loc: (111...112) = "b"
+        │   │       │   │       ├── content_loc: (18,8)-(18,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
-        │   │       │   ├── opening_loc: (106...109) = "%w["
-        │   │       │   └── closing_loc: (112...113) = "]"
+        │   │       │   ├── opening_loc: (18,3)-(18,6) = "%w["
+        │   │       │   └── closing_loc: (18,9)-(18,10) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (103...105) = "in"
+        │   │       ├── in_loc: (18,0)-(18,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (95...99) = "case"
-        │   └── end_keyword_loc: (114...117) = "end"
-        ├── @ CaseNode (location: (119...141))
+        │   ├── case_keyword_loc: (17,0)-(17,4) = "case"
+        │   └── end_keyword_loc: (19,0)-(19,3) = "end"
+        ├── @ CaseNode (location: (21,0)-(23,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (124...126))
-        │   │   ├── opening_loc: (124...125) = ":"
-        │   │   ├── value_loc: (125...126) = "a"
+        │   │   @ SymbolNode (location: (21,5)-(21,7))
+        │   │   ├── opening_loc: (21,5)-(21,6) = ":"
+        │   │   ├── value_loc: (21,6)-(21,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (127...136))
+        │   │   └── @ InNode (location: (22,0)-(22,9))
         │   │       ├── pattern:
-        │   │       │   @ RangeNode (location: (131...136))
+        │   │       │   @ RangeNode (location: (22,4)-(22,9))
         │   │       │   ├── left: ∅
         │   │       │   ├── right:
-        │   │       │   │   @ IntegerNode (location: (134...136))
+        │   │       │   │   @ IntegerNode (location: (22,7)-(22,9))
         │   │       │   │   └── flags: decimal
-        │   │       │   ├── operator_loc: (131...134) = "..."
+        │   │       │   ├── operator_loc: (22,4)-(22,7) = "..."
         │   │       │   └── flags: exclude_end
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (127...129) = "in"
+        │   │       ├── in_loc: (22,0)-(22,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (119...123) = "case"
-        │   └── end_keyword_loc: (138...141) = "end"
-        ├── @ CaseNode (location: (143...164))
+        │   ├── case_keyword_loc: (21,0)-(21,4) = "case"
+        │   └── end_keyword_loc: (23,0)-(23,3) = "end"
+        ├── @ CaseNode (location: (25,0)-(27,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (148...150))
-        │   │   ├── opening_loc: (148...149) = ":"
-        │   │   ├── value_loc: (149...150) = "a"
+        │   │   @ SymbolNode (location: (25,5)-(25,7))
+        │   │   ├── opening_loc: (25,5)-(25,6) = ":"
+        │   │   ├── value_loc: (25,6)-(25,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (151...159))
+        │   │   └── @ InNode (location: (26,0)-(26,8))
         │   │       ├── pattern:
-        │   │       │   @ RangeNode (location: (155...159))
+        │   │       │   @ RangeNode (location: (26,4)-(26,8))
         │   │       │   ├── left: ∅
         │   │       │   ├── right:
-        │   │       │   │   @ IntegerNode (location: (157...159))
+        │   │       │   │   @ IntegerNode (location: (26,6)-(26,8))
         │   │       │   │   └── flags: decimal
-        │   │       │   ├── operator_loc: (155...157) = ".."
+        │   │       │   ├── operator_loc: (26,4)-(26,6) = ".."
         │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (151...153) = "in"
+        │   │       ├── in_loc: (26,0)-(26,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (143...147) = "case"
-        │   └── end_keyword_loc: (161...164) = "end"
-        ├── @ CaseNode (location: (166...187))
+        │   ├── case_keyword_loc: (25,0)-(25,4) = "case"
+        │   └── end_keyword_loc: (27,0)-(27,3) = "end"
+        ├── @ CaseNode (location: (29,0)-(31,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (171...173))
-        │   │   ├── opening_loc: (171...172) = ":"
-        │   │   ├── value_loc: (172...173) = "a"
+        │   │   @ SymbolNode (location: (29,5)-(29,7))
+        │   │   ├── opening_loc: (29,5)-(29,6) = ":"
+        │   │   ├── value_loc: (29,6)-(29,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (174...182))
+        │   │   └── @ InNode (location: (30,0)-(30,8))
         │   │       ├── pattern:
-        │   │       │   @ RangeNode (location: (178...182))
+        │   │       │   @ RangeNode (location: (30,4)-(30,8))
         │   │       │   ├── left:
-        │   │       │   │   @ IntegerNode (location: (178...179))
+        │   │       │   │   @ IntegerNode (location: (30,4)-(30,5))
         │   │       │   │   └── flags: decimal
         │   │       │   ├── right: ∅
-        │   │       │   ├── operator_loc: (179...182) = "..."
+        │   │       │   ├── operator_loc: (30,5)-(30,8) = "..."
         │   │       │   └── flags: exclude_end
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (174...176) = "in"
+        │   │       ├── in_loc: (30,0)-(30,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (166...170) = "case"
-        │   └── end_keyword_loc: (184...187) = "end"
-        ├── @ CaseNode (location: (189...211))
+        │   ├── case_keyword_loc: (29,0)-(29,4) = "case"
+        │   └── end_keyword_loc: (31,0)-(31,3) = "end"
+        ├── @ CaseNode (location: (33,0)-(35,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (194...196))
-        │   │   ├── opening_loc: (194...195) = ":"
-        │   │   ├── value_loc: (195...196) = "a"
+        │   │   @ SymbolNode (location: (33,5)-(33,7))
+        │   │   ├── opening_loc: (33,5)-(33,6) = ":"
+        │   │   ├── value_loc: (33,6)-(33,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (197...206))
+        │   │   └── @ InNode (location: (34,0)-(34,9))
         │   │       ├── pattern:
-        │   │       │   @ RangeNode (location: (201...206))
+        │   │       │   @ RangeNode (location: (34,4)-(34,9))
         │   │       │   ├── left:
-        │   │       │   │   @ IntegerNode (location: (201...202))
+        │   │       │   │   @ IntegerNode (location: (34,4)-(34,5))
         │   │       │   │   └── flags: decimal
         │   │       │   ├── right:
-        │   │       │   │   @ IntegerNode (location: (205...206))
+        │   │       │   │   @ IntegerNode (location: (34,8)-(34,9))
         │   │       │   │   └── flags: decimal
-        │   │       │   ├── operator_loc: (202...205) = "..."
+        │   │       │   ├── operator_loc: (34,5)-(34,8) = "..."
         │   │       │   └── flags: exclude_end
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (197...199) = "in"
+        │   │       ├── in_loc: (34,0)-(34,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (189...193) = "case"
-        │   └── end_keyword_loc: (208...211) = "end"
-        ├── @ CaseNode (location: (213...232))
+        │   ├── case_keyword_loc: (33,0)-(33,4) = "case"
+        │   └── end_keyword_loc: (35,0)-(35,3) = "end"
+        ├── @ CaseNode (location: (37,0)-(39,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (218...220))
-        │   │   ├── opening_loc: (218...219) = ":"
-        │   │   ├── value_loc: (219...220) = "a"
+        │   │   @ SymbolNode (location: (37,5)-(37,7))
+        │   │   ├── opening_loc: (37,5)-(37,6) = ":"
+        │   │   ├── value_loc: (37,6)-(37,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (221...227))
+        │   │   └── @ InNode (location: (38,0)-(38,6))
         │   │       ├── pattern:
-        │   │       │   @ IntegerNode (location: (225...227))
+        │   │       │   @ IntegerNode (location: (38,4)-(38,6))
         │   │       │   └── flags: decimal
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (221...223) = "in"
+        │   │       ├── in_loc: (38,0)-(38,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (213...217) = "case"
-        │   └── end_keyword_loc: (229...232) = "end"
-        ├── @ CaseNode (location: (234...254))
+        │   ├── case_keyword_loc: (37,0)-(37,4) = "case"
+        │   └── end_keyword_loc: (39,0)-(39,3) = "end"
+        ├── @ CaseNode (location: (41,0)-(43,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (239...241))
-        │   │   ├── opening_loc: (239...240) = ":"
-        │   │   ├── value_loc: (240...241) = "a"
+        │   │   @ SymbolNode (location: (41,5)-(41,7))
+        │   │   ├── opening_loc: (41,5)-(41,6) = ":"
+        │   │   ├── value_loc: (41,6)-(41,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (242...250))
+        │   │   └── @ InNode (location: (42,0)-(42,8))
         │   │       ├── pattern:
-        │   │       │   @ HashPatternNode (location: (245...250))
+        │   │       │   @ HashPatternNode (location: (42,3)-(42,8))
         │   │       │   ├── constant: ∅
         │   │       │   ├── assocs: (length: 1)
-        │   │       │   │   └── @ NoKeywordsParameterNode (location: (245...250))
-        │   │       │   │       ├── operator_loc: (245...247) = "**"
-        │   │       │   │       └── keyword_loc: (247...250) = "nil"
+        │   │       │   │   └── @ NoKeywordsParameterNode (location: (42,3)-(42,8))
+        │   │       │   │       ├── operator_loc: (42,3)-(42,5) = "**"
+        │   │       │   │       └── keyword_loc: (42,5)-(42,8) = "nil"
         │   │       │   ├── kwrest: ∅
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (242...244) = "in"
+        │   │       ├── in_loc: (42,0)-(42,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (234...238) = "case"
-        │   └── end_keyword_loc: (251...254) = "end"
-        ├── @ CaseNode (location: (256...279))
+        │   ├── case_keyword_loc: (41,0)-(41,4) = "case"
+        │   └── end_keyword_loc: (43,0)-(43,3) = "end"
+        ├── @ CaseNode (location: (45,0)-(47,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (261...263))
-        │   │   ├── opening_loc: (261...262) = ":"
-        │   │   ├── value_loc: (262...263) = "a"
+        │   │   @ SymbolNode (location: (45,5)-(45,7))
+        │   │   ├── opening_loc: (45,5)-(45,6) = ":"
+        │   │   ├── value_loc: (45,6)-(45,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (264...275))
+        │   │   └── @ InNode (location: (46,0)-(46,11))
         │   │       ├── pattern:
-        │   │       │   @ RegularExpressionNode (location: (267...275))
-        │   │       │   ├── opening_loc: (267...268) = "/"
-        │   │       │   ├── content_loc: (268...274) = "regexp"
-        │   │       │   ├── closing_loc: (274...275) = "/"
+        │   │       │   @ RegularExpressionNode (location: (46,3)-(46,11))
+        │   │       │   ├── opening_loc: (46,3)-(46,4) = "/"
+        │   │       │   ├── content_loc: (46,4)-(46,10) = "regexp"
+        │   │       │   ├── closing_loc: (46,10)-(46,11) = "/"
         │   │       │   ├── unescaped: "regexp"
         │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (264...266) = "in"
+        │   │       ├── in_loc: (46,0)-(46,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (256...260) = "case"
-        │   └── end_keyword_loc: (276...279) = "end"
-        ├── @ CaseNode (location: (281...306))
+        │   ├── case_keyword_loc: (45,0)-(45,4) = "case"
+        │   └── end_keyword_loc: (47,0)-(47,3) = "end"
+        ├── @ CaseNode (location: (49,0)-(51,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (286...288))
-        │   │   ├── opening_loc: (286...287) = ":"
-        │   │   ├── value_loc: (287...288) = "a"
+        │   │   @ SymbolNode (location: (49,5)-(49,7))
+        │   │   ├── opening_loc: (49,5)-(49,6) = ":"
+        │   │   ├── value_loc: (49,6)-(49,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (289...302))
+        │   │   └── @ InNode (location: (50,0)-(50,13))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (292...302))
+        │   │       │   @ ArrayPatternNode (location: (50,3)-(50,13))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
-        │   │       │   │   └── @ SymbolNode (location: (292...294))
-        │   │       │   │       ├── opening_loc: (292...293) = ":"
-        │   │       │   │       ├── value_loc: (293...294) = "b"
+        │   │       │   │   └── @ SymbolNode (location: (50,3)-(50,5))
+        │   │       │   │       ├── opening_loc: (50,3)-(50,4) = ":"
+        │   │       │   │       ├── value_loc: (50,4)-(50,5) = "b"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
         │   │       │   ├── rest:
-        │   │       │   │   @ SplatNode (location: (296...298))
-        │   │       │   │   ├── operator_loc: (296...297) = "*"
+        │   │       │   │   @ SplatNode (location: (50,7)-(50,9))
+        │   │       │   │   ├── operator_loc: (50,7)-(50,8) = "*"
         │   │       │   │   └── expression:
-        │   │       │   │       @ LocalVariableTargetNode (location: (297...298))
+        │   │       │   │       @ LocalVariableTargetNode (location: (50,8)-(50,9))
         │   │       │   │       ├── name: :_
         │   │       │   │       └── depth: 0
         │   │       │   ├── posts: (length: 1)
-        │   │       │   │   └── @ SymbolNode (location: (300...302))
-        │   │       │   │       ├── opening_loc: (300...301) = ":"
-        │   │       │   │       ├── value_loc: (301...302) = "c"
+        │   │       │   │   └── @ SymbolNode (location: (50,11)-(50,13))
+        │   │       │   │       ├── opening_loc: (50,11)-(50,12) = ":"
+        │   │       │   │       ├── value_loc: (50,12)-(50,13) = "c"
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "c"
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (289...291) = "in"
+        │   │       ├── in_loc: (50,0)-(50,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (281...285) = "case"
-        │   └── end_keyword_loc: (303...306) = "end"
-        ├── @ CaseNode (location: (308...331))
+        │   ├── case_keyword_loc: (49,0)-(49,4) = "case"
+        │   └── end_keyword_loc: (51,0)-(51,3) = "end"
+        ├── @ CaseNode (location: (53,0)-(55,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (313...315))
-        │   │   ├── opening_loc: (313...314) = ":"
-        │   │   ├── value_loc: (314...315) = "a"
+        │   │   @ SymbolNode (location: (53,5)-(53,7))
+        │   │   ├── opening_loc: (53,5)-(53,6) = ":"
+        │   │   ├── value_loc: (53,6)-(53,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (316...327))
+        │   │   └── @ InNode (location: (54,0)-(54,11))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (319...327))
+        │   │       │   @ ArrayPatternNode (location: (54,3)-(54,11))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
-        │   │       │   │   ├── @ SymbolNode (location: (319...321))
-        │   │       │   │   │   ├── opening_loc: (319...320) = ":"
-        │   │       │   │   │   ├── value_loc: (320...321) = "b"
+        │   │       │   │   ├── @ SymbolNode (location: (54,3)-(54,5))
+        │   │       │   │   │   ├── opening_loc: (54,3)-(54,4) = ":"
+        │   │       │   │   │   ├── value_loc: (54,4)-(54,5) = "b"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "b"
-        │   │       │   │   └── @ ArrayPatternNode (location: (323...327))
+        │   │       │   │   └── @ ArrayPatternNode (location: (54,7)-(54,11))
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 1)
-        │   │       │   │       │   └── @ SymbolNode (location: (324...326))
-        │   │       │   │       │       ├── opening_loc: (324...325) = ":"
-        │   │       │   │       │       ├── value_loc: (325...326) = "c"
+        │   │       │   │       │   └── @ SymbolNode (location: (54,8)-(54,10))
+        │   │       │   │       │       ├── opening_loc: (54,8)-(54,9) = ":"
+        │   │       │   │       │       ├── value_loc: (54,9)-(54,10) = "c"
         │   │       │   │       │       ├── closing_loc: ∅
         │   │       │   │       │       └── unescaped: "c"
         │   │       │   │       ├── rest: ∅
         │   │       │   │       ├── posts: (length: 0)
-        │   │       │   │       ├── opening_loc: (323...324) = "["
-        │   │       │   │       └── closing_loc: (326...327) = "]"
+        │   │       │   │       ├── opening_loc: (54,7)-(54,8) = "["
+        │   │       │   │       └── closing_loc: (54,10)-(54,11) = "]"
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (316...318) = "in"
+        │   │       ├── in_loc: (54,0)-(54,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (308...312) = "case"
-        │   └── end_keyword_loc: (328...331) = "end"
-        ├── @ CaseNode (location: (333...356))
+        │   ├── case_keyword_loc: (53,0)-(53,4) = "case"
+        │   └── end_keyword_loc: (55,0)-(55,3) = "end"
+        ├── @ CaseNode (location: (57,0)-(59,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (338...340))
-        │   │   ├── opening_loc: (338...339) = ":"
-        │   │   ├── value_loc: (339...340) = "a"
+        │   │   @ SymbolNode (location: (57,5)-(57,7))
+        │   │   ├── opening_loc: (57,5)-(57,6) = ":"
+        │   │   ├── value_loc: (57,6)-(57,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (341...352))
+        │   │   └── @ InNode (location: (58,0)-(58,11))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (344...352))
+        │   │       │   @ ArrayPatternNode (location: (58,3)-(58,11))
         │   │       │   ├── constant:
-        │   │       │   │   @ ConstantReadNode (location: (344...350))
+        │   │       │   │   @ ConstantReadNode (location: (58,3)-(58,9))
         │   │       │   │   └── name: :Symbol
         │   │       │   ├── requireds: (length: 0)
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (350...351) = "("
-        │   │       │   └── closing_loc: (351...352) = ")"
+        │   │       │   ├── opening_loc: (58,9)-(58,10) = "("
+        │   │       │   └── closing_loc: (58,10)-(58,11) = ")"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (341...343) = "in"
+        │   │       ├── in_loc: (58,0)-(58,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (333...337) = "case"
-        │   └── end_keyword_loc: (353...356) = "end"
-        ├── @ CaseNode (location: (358...394))
+        │   ├── case_keyword_loc: (57,0)-(57,4) = "case"
+        │   └── end_keyword_loc: (59,0)-(59,3) = "end"
+        ├── @ CaseNode (location: (61,0)-(63,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (363...365))
-        │   │   ├── opening_loc: (363...364) = ":"
-        │   │   ├── value_loc: (364...365) = "a"
+        │   │   @ SymbolNode (location: (61,5)-(61,7))
+        │   │   ├── opening_loc: (61,5)-(61,6) = ":"
+        │   │   ├── value_loc: (61,6)-(61,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (366...390))
+        │   │   └── @ InNode (location: (62,0)-(62,24))
         │   │       ├── pattern:
-        │   │       │   @ FindPatternNode (location: (369...390))
+        │   │       │   @ FindPatternNode (location: (62,3)-(62,24))
         │   │       │   ├── constant:
-        │   │       │   │   @ ConstantReadNode (location: (369...375))
+        │   │       │   │   @ ConstantReadNode (location: (62,3)-(62,9))
         │   │       │   │   └── name: :Symbol
         │   │       │   ├── left:
-        │   │       │   │   @ SplatNode (location: (376...380))
-        │   │       │   │   ├── operator_loc: (376...377) = "*"
+        │   │       │   │   @ SplatNode (location: (62,10)-(62,14))
+        │   │       │   │   ├── operator_loc: (62,10)-(62,11) = "*"
         │   │       │   │   └── expression:
-        │   │       │   │       @ LocalVariableTargetNode (location: (377...380))
+        │   │       │   │       @ LocalVariableTargetNode (location: (62,11)-(62,14))
         │   │       │   │       ├── name: :lhs
         │   │       │   │       └── depth: 0
         │   │       │   ├── requireds: (length: 1)
-        │   │       │   │   └── @ LocalVariableTargetNode (location: (382...383))
+        │   │       │   │   └── @ LocalVariableTargetNode (location: (62,16)-(62,17))
         │   │       │   │       ├── name: :x
         │   │       │   │       └── depth: 0
         │   │       │   ├── right:
-        │   │       │   │   @ SplatNode (location: (385...389))
-        │   │       │   │   ├── operator_loc: (385...386) = "*"
+        │   │       │   │   @ SplatNode (location: (62,19)-(62,23))
+        │   │       │   │   ├── operator_loc: (62,19)-(62,20) = "*"
         │   │       │   │   └── expression:
-        │   │       │   │       @ LocalVariableTargetNode (location: (386...389))
+        │   │       │   │       @ LocalVariableTargetNode (location: (62,20)-(62,23))
         │   │       │   │       ├── name: :rhs
         │   │       │   │       └── depth: 0
-        │   │       │   ├── opening_loc: (375...376) = "("
-        │   │       │   └── closing_loc: (389...390) = ")"
+        │   │       │   ├── opening_loc: (62,9)-(62,10) = "("
+        │   │       │   └── closing_loc: (62,23)-(62,24) = ")"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (366...368) = "in"
+        │   │       ├── in_loc: (62,0)-(62,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (358...362) = "case"
-        │   └── end_keyword_loc: (391...394) = "end"
-        ├── @ CaseNode (location: (396...432))
+        │   ├── case_keyword_loc: (61,0)-(61,4) = "case"
+        │   └── end_keyword_loc: (63,0)-(63,3) = "end"
+        ├── @ CaseNode (location: (65,0)-(67,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (401...403))
-        │   │   ├── opening_loc: (401...402) = ":"
-        │   │   ├── value_loc: (402...403) = "a"
+        │   │   @ SymbolNode (location: (65,5)-(65,7))
+        │   │   ├── opening_loc: (65,5)-(65,6) = ":"
+        │   │   ├── value_loc: (65,6)-(65,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (404...428))
+        │   │   └── @ InNode (location: (66,0)-(66,24))
         │   │       ├── pattern:
-        │   │       │   @ FindPatternNode (location: (407...428))
+        │   │       │   @ FindPatternNode (location: (66,3)-(66,24))
         │   │       │   ├── constant:
-        │   │       │   │   @ ConstantReadNode (location: (407...413))
+        │   │       │   │   @ ConstantReadNode (location: (66,3)-(66,9))
         │   │       │   │   └── name: :Symbol
         │   │       │   ├── left:
-        │   │       │   │   @ SplatNode (location: (414...418))
-        │   │       │   │   ├── operator_loc: (414...415) = "*"
+        │   │       │   │   @ SplatNode (location: (66,10)-(66,14))
+        │   │       │   │   ├── operator_loc: (66,10)-(66,11) = "*"
         │   │       │   │   └── expression:
-        │   │       │   │       @ LocalVariableTargetNode (location: (415...418))
+        │   │       │   │       @ LocalVariableTargetNode (location: (66,11)-(66,14))
         │   │       │   │       ├── name: :lhs
         │   │       │   │       └── depth: 0
         │   │       │   ├── requireds: (length: 1)
-        │   │       │   │   └── @ LocalVariableTargetNode (location: (420...421))
+        │   │       │   │   └── @ LocalVariableTargetNode (location: (66,16)-(66,17))
         │   │       │   │       ├── name: :x
         │   │       │   │       └── depth: 0
         │   │       │   ├── right:
-        │   │       │   │   @ SplatNode (location: (423...427))
-        │   │       │   │   ├── operator_loc: (423...424) = "*"
+        │   │       │   │   @ SplatNode (location: (66,19)-(66,23))
+        │   │       │   │   ├── operator_loc: (66,19)-(66,20) = "*"
         │   │       │   │   └── expression:
-        │   │       │   │       @ LocalVariableTargetNode (location: (424...427))
+        │   │       │   │       @ LocalVariableTargetNode (location: (66,20)-(66,23))
         │   │       │   │       ├── name: :rhs
         │   │       │   │       └── depth: 0
-        │   │       │   ├── opening_loc: (413...414) = "["
-        │   │       │   └── closing_loc: (427...428) = "]"
+        │   │       │   ├── opening_loc: (66,9)-(66,10) = "["
+        │   │       │   └── closing_loc: (66,23)-(66,24) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (404...406) = "in"
+        │   │       ├── in_loc: (66,0)-(66,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (396...400) = "case"
-        │   └── end_keyword_loc: (429...432) = "end"
-        ├── @ CaseNode (location: (434...468))
+        │   ├── case_keyword_loc: (65,0)-(65,4) = "case"
+        │   └── end_keyword_loc: (67,0)-(67,3) = "end"
+        ├── @ CaseNode (location: (69,0)-(71,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (439...441))
-        │   │   ├── opening_loc: (439...440) = ":"
-        │   │   ├── value_loc: (440...441) = "a"
+        │   │   @ SymbolNode (location: (69,5)-(69,7))
+        │   │   ├── opening_loc: (69,5)-(69,6) = ":"
+        │   │   ├── value_loc: (69,6)-(69,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (442...464))
+        │   │   └── @ InNode (location: (70,0)-(70,22))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (445...464))
+        │   │       │   @ ArrayPatternNode (location: (70,3)-(70,22))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
-        │   │       │   │   ├── @ LambdaNode (location: (446...460))
+        │   │       │   │   ├── @ LambdaNode (location: (70,4)-(70,18))
         │   │       │   │   │   ├── locals: [:b]
-        │   │       │   │   │   ├── operator_loc: (446...448) = "->"
-        │   │       │   │   │   ├── opening_loc: (452...453) = "{"
-        │   │       │   │   │   ├── closing_loc: (459...460) = "}"
+        │   │       │   │   │   ├── operator_loc: (70,4)-(70,6) = "->"
+        │   │       │   │   │   ├── opening_loc: (70,10)-(70,11) = "{"
+        │   │       │   │   │   ├── closing_loc: (70,17)-(70,18) = "}"
         │   │       │   │   │   ├── parameters:
-        │   │       │   │   │   │   @ BlockParametersNode (location: (448...451))
+        │   │       │   │   │   │   @ BlockParametersNode (location: (70,6)-(70,9))
         │   │       │   │   │   │   ├── parameters:
-        │   │       │   │   │   │   │   @ ParametersNode (location: (449...450))
+        │   │       │   │   │   │   │   @ ParametersNode (location: (70,7)-(70,8))
         │   │       │   │   │   │   │   ├── requireds: (length: 1)
-        │   │       │   │   │   │   │   │   └── @ RequiredParameterNode (location: (449...450))
+        │   │       │   │   │   │   │   │   └── @ RequiredParameterNode (location: (70,7)-(70,8))
         │   │       │   │   │   │   │   │       └── name: :b
         │   │       │   │   │   │   │   ├── optionals: (length: 0)
         │   │       │   │   │   │   │   ├── rest: ∅
@@ -533,360 +533,360 @@
         │   │       │   │   │   │   │   ├── keyword_rest: ∅
         │   │       │   │   │   │   │   └── block: ∅
         │   │       │   │   │   │   ├── locals: (length: 0)
-        │   │       │   │   │   │   ├── opening_loc: (448...449) = "("
-        │   │       │   │   │   │   └── closing_loc: (450...451) = ")"
+        │   │       │   │   │   │   ├── opening_loc: (70,6)-(70,7) = "("
+        │   │       │   │   │   │   └── closing_loc: (70,8)-(70,9) = ")"
         │   │       │   │   │   └── body:
-        │   │       │   │   │       @ StatementsNode (location: (454...458))
+        │   │       │   │   │       @ StatementsNode (location: (70,12)-(70,16))
         │   │       │   │   │       └── body: (length: 1)
-        │   │       │   │   │           └── @ TrueNode (location: (454...458))
-        │   │       │   │   └── @ LocalVariableTargetNode (location: (462...463))
+        │   │       │   │   │           └── @ TrueNode (location: (70,12)-(70,16))
+        │   │       │   │   └── @ LocalVariableTargetNode (location: (70,20)-(70,21))
         │   │       │   │       ├── name: :c
         │   │       │   │       └── depth: 0
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (445...446) = "["
-        │   │       │   └── closing_loc: (463...464) = "]"
+        │   │       │   ├── opening_loc: (70,3)-(70,4) = "["
+        │   │       │   └── closing_loc: (70,21)-(70,22) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (442...444) = "in"
+        │   │       ├── in_loc: (70,0)-(70,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (434...438) = "case"
-        │   └── end_keyword_loc: (465...468) = "end"
-        ├── @ CaseNode (location: (470...510))
+        │   ├── case_keyword_loc: (69,0)-(69,4) = "case"
+        │   └── end_keyword_loc: (71,0)-(71,3) = "end"
+        ├── @ CaseNode (location: (73,0)-(75,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (475...477))
-        │   │   ├── opening_loc: (475...476) = ":"
-        │   │   ├── value_loc: (476...477) = "a"
+        │   │   @ SymbolNode (location: (73,5)-(73,7))
+        │   │   ├── opening_loc: (73,5)-(73,6) = ":"
+        │   │   ├── value_loc: (73,6)-(73,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (478...506))
+        │   │   └── @ InNode (location: (74,0)-(74,28))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (481...506))
+        │   │       │   @ ArrayPatternNode (location: (74,3)-(74,28))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 4)
-        │   │       │   │   ├── @ SymbolNode (location: (482...484))
-        │   │       │   │   │   ├── opening_loc: (482...483) = ":"
-        │   │       │   │   │   ├── value_loc: (483...484) = "a"
+        │   │       │   │   ├── @ SymbolNode (location: (74,4)-(74,6))
+        │   │       │   │   │   ├── opening_loc: (74,4)-(74,5) = ":"
+        │   │       │   │   │   ├── value_loc: (74,5)-(74,6) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
-        │   │       │   │   ├── @ LocalVariableTargetNode (location: (486...487))
+        │   │       │   │   ├── @ LocalVariableTargetNode (location: (74,8)-(74,9))
         │   │       │   │   │   ├── name: :b
         │   │       │   │   │   └── depth: 0
-        │   │       │   │   ├── @ LocalVariableTargetNode (location: (489...490))
+        │   │       │   │   ├── @ LocalVariableTargetNode (location: (74,11)-(74,12))
         │   │       │   │   │   ├── name: :c
         │   │       │   │   │   └── depth: 0
-        │   │       │   │   └── @ ArrayPatternNode (location: (492...505))
+        │   │       │   │   └── @ ArrayPatternNode (location: (74,14)-(74,27))
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 1)
-        │   │       │   │       │   └── @ SymbolNode (location: (493...495))
-        │   │       │   │       │       ├── opening_loc: (493...494) = ":"
-        │   │       │   │       │       ├── value_loc: (494...495) = "d"
+        │   │       │   │       │   └── @ SymbolNode (location: (74,15)-(74,17))
+        │   │       │   │       │       ├── opening_loc: (74,15)-(74,16) = ":"
+        │   │       │   │       │       ├── value_loc: (74,16)-(74,17) = "d"
         │   │       │   │       │       ├── closing_loc: ∅
         │   │       │   │       │       └── unescaped: "d"
         │   │       │   │       ├── rest:
-        │   │       │   │       │   @ SplatNode (location: (497...499))
-        │   │       │   │       │   ├── operator_loc: (497...498) = "*"
+        │   │       │   │       │   @ SplatNode (location: (74,19)-(74,21))
+        │   │       │   │       │   ├── operator_loc: (74,19)-(74,20) = "*"
         │   │       │   │       │   └── expression:
-        │   │       │   │       │       @ LocalVariableTargetNode (location: (498...499))
+        │   │       │   │       │       @ LocalVariableTargetNode (location: (74,20)-(74,21))
         │   │       │   │       │       ├── name: :e
         │   │       │   │       │       └── depth: 0
         │   │       │   │       ├── posts: (length: 1)
-        │   │       │   │       │   └── @ NilNode (location: (501...504))
-        │   │       │   │       ├── opening_loc: (492...493) = "["
-        │   │       │   │       └── closing_loc: (504...505) = "]"
+        │   │       │   │       │   └── @ NilNode (location: (74,23)-(74,26))
+        │   │       │   │       ├── opening_loc: (74,14)-(74,15) = "["
+        │   │       │   │       └── closing_loc: (74,26)-(74,27) = "]"
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (481...482) = "["
-        │   │       │   └── closing_loc: (505...506) = "]"
+        │   │       │   ├── opening_loc: (74,3)-(74,4) = "["
+        │   │       │   └── closing_loc: (74,27)-(74,28) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (478...480) = "in"
+        │   │       ├── in_loc: (74,0)-(74,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (470...474) = "case"
-        │   └── end_keyword_loc: (507...510) = "end"
-        ├── @ CaseNode (location: (512...536))
+        │   ├── case_keyword_loc: (73,0)-(73,4) = "case"
+        │   └── end_keyword_loc: (75,0)-(75,3) = "end"
+        ├── @ CaseNode (location: (77,0)-(79,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (517...519))
-        │   │   ├── opening_loc: (517...518) = ":"
-        │   │   ├── value_loc: (518...519) = "a"
+        │   │   @ SymbolNode (location: (77,5)-(77,7))
+        │   │   ├── opening_loc: (77,5)-(77,6) = ":"
+        │   │   ├── value_loc: (77,6)-(77,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (520...532))
+        │   │   └── @ InNode (location: (78,0)-(78,12))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (523...532))
+        │   │       │   @ ArrayPatternNode (location: (78,3)-(78,12))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
-        │   │       │   │   └── @ ConstantReadNode (location: (524...525))
+        │   │       │   │   └── @ ConstantReadNode (location: (78,4)-(78,5))
         │   │       │   │       └── name: :A
         │   │       │   ├── rest:
-        │   │       │   │   @ SplatNode (location: (527...528))
-        │   │       │   │   ├── operator_loc: (527...528) = "*"
+        │   │       │   │   @ SplatNode (location: (78,7)-(78,8))
+        │   │       │   │   ├── operator_loc: (78,7)-(78,8) = "*"
         │   │       │   │   └── expression: ∅
         │   │       │   ├── posts: (length: 1)
-        │   │       │   │   └── @ ConstantReadNode (location: (530...531))
+        │   │       │   │   └── @ ConstantReadNode (location: (78,10)-(78,11))
         │   │       │   │       └── name: :B
-        │   │       │   ├── opening_loc: (523...524) = "["
-        │   │       │   └── closing_loc: (531...532) = "]"
+        │   │       │   ├── opening_loc: (78,3)-(78,4) = "["
+        │   │       │   └── closing_loc: (78,11)-(78,12) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (520...522) = "in"
+        │   │       ├── in_loc: (78,0)-(78,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (512...516) = "case"
-        │   └── end_keyword_loc: (533...536) = "end"
-        ├── @ CaseNode (location: (538...572))
+        │   ├── case_keyword_loc: (77,0)-(77,4) = "case"
+        │   └── end_keyword_loc: (79,0)-(79,3) = "end"
+        ├── @ CaseNode (location: (81,0)-(83,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (543...545))
-        │   │   ├── opening_loc: (543...544) = ":"
-        │   │   ├── value_loc: (544...545) = "a"
+        │   │   @ SymbolNode (location: (81,5)-(81,7))
+        │   │   ├── opening_loc: (81,5)-(81,6) = ":"
+        │   │   ├── value_loc: (81,6)-(81,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (546...568))
+        │   │   └── @ InNode (location: (82,0)-(82,22))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (549...568))
+        │   │       │   @ ArrayPatternNode (location: (82,3)-(82,22))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
-        │   │       │   │   ├── @ ArrayPatternNode (location: (550...557))
+        │   │       │   │   ├── @ ArrayPatternNode (location: (82,4)-(82,11))
         │   │       │   │   │   ├── constant: ∅
         │   │       │   │   │   ├── requireds: (length: 2)
-        │   │       │   │   │   │   ├── @ SymbolNode (location: (551...553))
-        │   │       │   │   │   │   │   ├── opening_loc: (551...552) = ":"
-        │   │       │   │   │   │   │   ├── value_loc: (552...553) = "b"
+        │   │       │   │   │   │   ├── @ SymbolNode (location: (82,5)-(82,7))
+        │   │       │   │   │   │   │   ├── opening_loc: (82,5)-(82,6) = ":"
+        │   │       │   │   │   │   │   ├── value_loc: (82,6)-(82,7) = "b"
         │   │       │   │   │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   │   │   └── unescaped: "b"
-        │   │       │   │   │   │   └── @ LocalVariableTargetNode (location: (555...556))
+        │   │       │   │   │   │   └── @ LocalVariableTargetNode (location: (82,9)-(82,10))
         │   │       │   │   │   │       ├── name: :c
         │   │       │   │   │   │       └── depth: 0
         │   │       │   │   │   ├── rest: ∅
         │   │       │   │   │   ├── posts: (length: 0)
-        │   │       │   │   │   ├── opening_loc: (550...551) = "["
-        │   │       │   │   │   └── closing_loc: (556...557) = "]"
-        │   │       │   │   └── @ ArrayPatternNode (location: (559...567))
+        │   │       │   │   │   ├── opening_loc: (82,4)-(82,5) = "["
+        │   │       │   │   │   └── closing_loc: (82,10)-(82,11) = "]"
+        │   │       │   │   └── @ ArrayPatternNode (location: (82,13)-(82,21))
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 2)
-        │   │       │   │       │   ├── @ SymbolNode (location: (560...562))
-        │   │       │   │       │   │   ├── opening_loc: (560...561) = ":"
-        │   │       │   │       │   │   ├── value_loc: (561...562) = "d"
+        │   │       │   │       │   ├── @ SymbolNode (location: (82,14)-(82,16))
+        │   │       │   │       │   │   ├── opening_loc: (82,14)-(82,15) = ":"
+        │   │       │   │       │   │   ├── value_loc: (82,15)-(82,16) = "d"
         │   │       │   │       │   │   ├── closing_loc: ∅
         │   │       │   │       │   │   └── unescaped: "d"
-        │   │       │   │       │   └── @ PinnedVariableNode (location: (564...566))
+        │   │       │   │       │   └── @ PinnedVariableNode (location: (82,18)-(82,20))
         │   │       │   │       │       ├── variable:
-        │   │       │   │       │       │   @ LocalVariableReadNode (location: (565...566))
+        │   │       │   │       │       │   @ LocalVariableReadNode (location: (82,19)-(82,20))
         │   │       │   │       │       │   ├── name: :e
         │   │       │   │       │       │   └── depth: 0
-        │   │       │   │       │       └── operator_loc: (564...565) = "^"
+        │   │       │   │       │       └── operator_loc: (82,18)-(82,19) = "^"
         │   │       │   │       ├── rest: ∅
         │   │       │   │       ├── posts: (length: 0)
-        │   │       │   │       ├── opening_loc: (559...560) = "["
-        │   │       │   │       └── closing_loc: (566...567) = "]"
+        │   │       │   │       ├── opening_loc: (82,13)-(82,14) = "["
+        │   │       │   │       └── closing_loc: (82,20)-(82,21) = "]"
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (549...550) = "["
-        │   │       │   └── closing_loc: (567...568) = "]"
+        │   │       │   ├── opening_loc: (82,3)-(82,4) = "["
+        │   │       │   └── closing_loc: (82,21)-(82,22) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (546...548) = "in"
+        │   │       ├── in_loc: (82,0)-(82,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (538...542) = "case"
-        │   └── end_keyword_loc: (569...572) = "end"
-        ├── @ CaseNode (location: (574...591))
+        │   ├── case_keyword_loc: (81,0)-(81,4) = "case"
+        │   └── end_keyword_loc: (83,0)-(83,3) = "end"
+        ├── @ CaseNode (location: (85,0)-(87,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (579...581))
-        │   │   ├── opening_loc: (579...580) = ":"
-        │   │   ├── value_loc: (580...581) = "a"
+        │   │   @ SymbolNode (location: (85,5)-(85,7))
+        │   │   ├── opening_loc: (85,5)-(85,6) = ":"
+        │   │   ├── value_loc: (85,6)-(85,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (582...587))
+        │   │   └── @ InNode (location: (86,0)-(86,5))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (585...587))
+        │   │       │   @ ArrayPatternNode (location: (86,3)-(86,5))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 0)
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (585...586) = "["
-        │   │       │   └── closing_loc: (586...587) = "]"
+        │   │       │   ├── opening_loc: (86,3)-(86,4) = "["
+        │   │       │   └── closing_loc: (86,4)-(86,5) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (582...584) = "in"
+        │   │       ├── in_loc: (86,0)-(86,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (574...578) = "case"
-        │   └── end_keyword_loc: (588...591) = "end"
-        ├── @ CaseNode (location: (593...614))
+        │   ├── case_keyword_loc: (85,0)-(85,4) = "case"
+        │   └── end_keyword_loc: (87,0)-(87,3) = "end"
+        ├── @ CaseNode (location: (89,0)-(91,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (598...600))
-        │   │   ├── opening_loc: (598...599) = ":"
-        │   │   ├── value_loc: (599...600) = "a"
+        │   │   @ SymbolNode (location: (89,5)-(89,7))
+        │   │   ├── opening_loc: (89,5)-(89,6) = ":"
+        │   │   ├── value_loc: (89,6)-(89,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (601...610))
+        │   │   └── @ InNode (location: (90,0)-(90,9))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (604...610))
+        │   │       │   @ ArrayPatternNode (location: (90,3)-(90,9))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
-        │   │       │   │   └── @ PinnedExpressionNode (location: (605...609))
+        │   │       │   │   └── @ PinnedExpressionNode (location: (90,4)-(90,8))
         │   │       │   │       ├── expression:
-        │   │       │   │       │   @ CallNode (location: (607...608))
+        │   │       │   │       │   @ CallNode (location: (90,6)-(90,7))
         │   │       │   │       │   ├── receiver: ∅
         │   │       │   │       │   ├── call_operator_loc: ∅
-        │   │       │   │       │   ├── message_loc: (607...608) = "a"
+        │   │       │   │       │   ├── message_loc: (90,6)-(90,7) = "a"
         │   │       │   │       │   ├── opening_loc: ∅
         │   │       │   │       │   ├── arguments: ∅
         │   │       │   │       │   ├── closing_loc: ∅
         │   │       │   │       │   ├── block: ∅
         │   │       │   │       │   ├── flags: variable_call
         │   │       │   │       │   └── name: "a"
-        │   │       │   │       ├── operator_loc: (605...606) = "^"
-        │   │       │   │       ├── lparen_loc: (606...607) = "("
-        │   │       │   │       └── rparen_loc: (608...609) = ")"
+        │   │       │   │       ├── operator_loc: (90,4)-(90,5) = "^"
+        │   │       │   │       ├── lparen_loc: (90,5)-(90,6) = "("
+        │   │       │   │       └── rparen_loc: (90,7)-(90,8) = ")"
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (604...605) = "["
-        │   │       │   └── closing_loc: (609...610) = "]"
+        │   │       │   ├── opening_loc: (90,3)-(90,4) = "["
+        │   │       │   └── closing_loc: (90,8)-(90,9) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (601...603) = "in"
+        │   │       ├── in_loc: (90,0)-(90,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (593...597) = "case"
-        │   └── end_keyword_loc: (611...614) = "end"
-        ├── @ CaseNode (location: (616...647))
+        │   ├── case_keyword_loc: (89,0)-(89,4) = "case"
+        │   └── end_keyword_loc: (91,0)-(91,3) = "end"
+        ├── @ CaseNode (location: (93,0)-(95,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (621...623))
-        │   │   ├── opening_loc: (621...622) = ":"
-        │   │   ├── value_loc: (622...623) = "a"
+        │   │   @ SymbolNode (location: (93,5)-(93,7))
+        │   │   ├── opening_loc: (93,5)-(93,6) = ":"
+        │   │   ├── value_loc: (93,6)-(93,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (624...643))
+        │   │   └── @ InNode (location: (94,0)-(94,19))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (627...643))
+        │   │       │   @ ArrayPatternNode (location: (94,3)-(94,19))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 3)
-        │   │       │   │   ├── @ PinnedVariableNode (location: (628...631))
+        │   │       │   │   ├── @ PinnedVariableNode (location: (94,4)-(94,7))
         │   │       │   │   │   ├── variable:
-        │   │       │   │   │   │   @ InstanceVariableReadNode (location: (629...631))
+        │   │       │   │   │   │   @ InstanceVariableReadNode (location: (94,5)-(94,7))
         │   │       │   │   │   │   └── name: :@a
-        │   │       │   │   │   └── operator_loc: (628...629) = "^"
-        │   │       │   │   ├── @ PinnedVariableNode (location: (633...636))
+        │   │       │   │   │   └── operator_loc: (94,4)-(94,5) = "^"
+        │   │       │   │   ├── @ PinnedVariableNode (location: (94,9)-(94,12))
         │   │       │   │   │   ├── variable:
-        │   │       │   │   │   │   @ GlobalVariableReadNode (location: (634...636))
+        │   │       │   │   │   │   @ GlobalVariableReadNode (location: (94,10)-(94,12))
         │   │       │   │   │   │   └── name: :$b
-        │   │       │   │   │   └── operator_loc: (633...634) = "^"
-        │   │       │   │   └── @ PinnedVariableNode (location: (638...642))
+        │   │       │   │   │   └── operator_loc: (94,9)-(94,10) = "^"
+        │   │       │   │   └── @ PinnedVariableNode (location: (94,14)-(94,18))
         │   │       │   │       ├── variable:
-        │   │       │   │       │   @ ClassVariableReadNode (location: (639...642))
+        │   │       │   │       │   @ ClassVariableReadNode (location: (94,15)-(94,18))
         │   │       │   │       │   └── name: :@@c
-        │   │       │   │       └── operator_loc: (638...639) = "^"
+        │   │       │   │       └── operator_loc: (94,14)-(94,15) = "^"
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
-        │   │       │   ├── opening_loc: (627...628) = "["
-        │   │       │   └── closing_loc: (642...643) = "]"
+        │   │       │   ├── opening_loc: (94,3)-(94,4) = "["
+        │   │       │   └── closing_loc: (94,18)-(94,19) = "]"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (624...626) = "in"
+        │   │       ├── in_loc: (94,0)-(94,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (616...620) = "case"
-        │   └── end_keyword_loc: (644...647) = "end"
-        ├── @ CaseNode (location: (649...673))
+        │   ├── case_keyword_loc: (93,0)-(93,4) = "case"
+        │   └── end_keyword_loc: (95,0)-(95,3) = "end"
+        ├── @ CaseNode (location: (97,0)-(99,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (654...656))
-        │   │   ├── opening_loc: (654...655) = ":"
-        │   │   ├── value_loc: (655...656) = "a"
+        │   │   @ SymbolNode (location: (97,5)-(97,7))
+        │   │   ├── opening_loc: (97,5)-(97,6) = ":"
+        │   │   ├── value_loc: (97,6)-(97,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (657...669))
+        │   │   └── @ InNode (location: (98,0)-(98,12))
         │   │       ├── pattern:
-        │   │       │   @ XStringNode (location: (660...669))
-        │   │       │   ├── opening_loc: (660...661) = "`"
-        │   │       │   ├── content_loc: (661...668) = "echo hi"
-        │   │       │   ├── closing_loc: (668...669) = "`"
+        │   │       │   @ XStringNode (location: (98,3)-(98,12))
+        │   │       │   ├── opening_loc: (98,3)-(98,4) = "`"
+        │   │       │   ├── content_loc: (98,4)-(98,11) = "echo hi"
+        │   │       │   ├── closing_loc: (98,11)-(98,12) = "`"
         │   │       │   └── unescaped: "echo hi"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (657...659) = "in"
+        │   │       ├── in_loc: (98,0)-(98,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (649...653) = "case"
-        │   └── end_keyword_loc: (670...673) = "end"
-        ├── @ CaseNode (location: (675...703))
+        │   ├── case_keyword_loc: (97,0)-(97,4) = "case"
+        │   └── end_keyword_loc: (99,0)-(99,3) = "end"
+        ├── @ CaseNode (location: (101,0)-(103,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (680...682))
-        │   │   ├── opening_loc: (680...681) = ":"
-        │   │   ├── value_loc: (681...682) = "a"
+        │   │   @ SymbolNode (location: (101,5)-(101,7))
+        │   │   ├── opening_loc: (101,5)-(101,6) = ":"
+        │   │   ├── value_loc: (101,6)-(101,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (683...699))
+        │   │   └── @ InNode (location: (102,0)-(102,16))
         │   │       ├── pattern:
-        │   │       │   @ ArrayPatternNode (location: (686...699))
+        │   │       │   @ ArrayPatternNode (location: (102,3)-(102,16))
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 3)
-        │   │       │   │   ├── @ NilNode (location: (686...689))
-        │   │       │   │   ├── @ NilNode (location: (691...694))
-        │   │       │   │   └── @ NilNode (location: (696...699))
+        │   │       │   │   ├── @ NilNode (location: (102,3)-(102,6))
+        │   │       │   │   ├── @ NilNode (location: (102,8)-(102,11))
+        │   │       │   │   └── @ NilNode (location: (102,13)-(102,16))
         │   │       │   ├── rest: ∅
         │   │       │   ├── posts: (length: 0)
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (683...685) = "in"
+        │   │       ├── in_loc: (102,0)-(102,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (675...679) = "case"
-        │   └── end_keyword_loc: (700...703) = "end"
-        ├── @ CaseNode (location: (705...728))
+        │   ├── case_keyword_loc: (101,0)-(101,4) = "case"
+        │   └── end_keyword_loc: (103,0)-(103,3) = "end"
+        ├── @ CaseNode (location: (105,0)-(107,3))
         │   ├── predicate:
-        │   │   @ SymbolNode (location: (710...712))
-        │   │   ├── opening_loc: (710...711) = ":"
-        │   │   ├── value_loc: (711...712) = "a"
+        │   │   @ SymbolNode (location: (105,5)-(105,7))
+        │   │   ├── opening_loc: (105,5)-(105,6) = ":"
+        │   │   ├── value_loc: (105,6)-(105,7) = "a"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "a"
         │   ├── conditions: (length: 1)
-        │   │   └── @ InNode (location: (713...724))
+        │   │   └── @ InNode (location: (106,0)-(106,11))
         │   │       ├── pattern:
-        │   │       │   @ HashPatternNode (location: (716...724))
+        │   │       │   @ HashPatternNode (location: (106,3)-(106,11))
         │   │       │   ├── constant: ∅
         │   │       │   ├── assocs: (length: 1)
-        │   │       │   │   └── @ AssocNode (location: (718...722))
+        │   │       │   │   └── @ AssocNode (location: (106,5)-(106,9))
         │   │       │   │       ├── key:
-        │   │       │   │       │   @ SymbolNode (location: (718...722))
-        │   │       │   │       │   ├── opening_loc: (718...719) = "\""
-        │   │       │   │       │   ├── value_loc: (719...720) = "b"
-        │   │       │   │       │   ├── closing_loc: (720...722) = "\":"
+        │   │       │   │       │   @ SymbolNode (location: (106,5)-(106,9))
+        │   │       │   │       │   ├── opening_loc: (106,5)-(106,6) = "\""
+        │   │       │   │       │   ├── value_loc: (106,6)-(106,7) = "b"
+        │   │       │   │       │   ├── closing_loc: (106,7)-(106,9) = "\":"
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value: ∅
         │   │       │   │       └── operator_loc: ∅
         │   │       │   ├── kwrest: ∅
-        │   │       │   ├── opening_loc: (716...717) = "{"
-        │   │       │   └── closing_loc: (723...724) = "}"
+        │   │       │   ├── opening_loc: (106,3)-(106,4) = "{"
+        │   │       │   └── closing_loc: (106,10)-(106,11) = "}"
         │   │       ├── statements: ∅
-        │   │       ├── in_loc: (713...715) = "in"
+        │   │       ├── in_loc: (106,0)-(106,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent: ∅
-        │   ├── case_keyword_loc: (705...709) = "case"
-        │   └── end_keyword_loc: (725...728) = "end"
-        └── @ CaseNode (location: (730...747))
+        │   ├── case_keyword_loc: (105,0)-(105,4) = "case"
+        │   └── end_keyword_loc: (107,0)-(107,3) = "end"
+        └── @ CaseNode (location: (109,0)-(111,3))
             ├── predicate:
-            │   @ SymbolNode (location: (735...737))
-            │   ├── opening_loc: (735...736) = ":"
-            │   ├── value_loc: (736...737) = "a"
+            │   @ SymbolNode (location: (109,5)-(109,7))
+            │   ├── opening_loc: (109,5)-(109,6) = ":"
+            │   ├── value_loc: (109,6)-(109,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
-            │   └── @ InNode (location: (738...743))
+            │   └── @ InNode (location: (110,0)-(110,5))
             │       ├── pattern:
-            │       │   @ HashPatternNode (location: (741...743))
+            │       │   @ HashPatternNode (location: (110,3)-(110,5))
             │       │   ├── constant: ∅
             │       │   ├── assocs: (length: 0)
             │       │   ├── kwrest: ∅
-            │       │   ├── opening_loc: (741...742) = "{"
-            │       │   └── closing_loc: (742...743) = "}"
+            │       │   ├── opening_loc: (110,3)-(110,4) = "{"
+            │       │   └── closing_loc: (110,4)-(110,5) = "}"
             │       ├── statements: ∅
-            │       ├── in_loc: (738...740) = "in"
+            │       ├── in_loc: (110,0)-(110,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅
-            ├── case_keyword_loc: (730...734) = "case"
-            └── end_keyword_loc: (744...747) = "end"
+            ├── case_keyword_loc: (109,0)-(109,4) = "case"
+            └── end_keyword_loc: (111,0)-(111,3) = "end"

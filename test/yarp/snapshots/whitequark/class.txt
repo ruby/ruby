@@ -1,27 +1,27 @@
-@ ProgramNode (location: (0...29))
+@ ProgramNode (location: (1,0)-(3,14))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...29))
+    @ StatementsNode (location: (1,0)-(3,14))
     └── body: (length: 2)
-        ├── @ ClassNode (location: (0...13))
+        ├── @ ClassNode (location: (1,0)-(1,13))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (0...5) = "class"
+        │   ├── class_keyword_loc: (1,0)-(1,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (6...9))
+        │   │   @ ConstantReadNode (location: (1,6)-(1,9))
         │   │   └── name: :Foo
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body: ∅
-        │   ├── end_keyword_loc: (10...13) = "end"
+        │   ├── end_keyword_loc: (1,10)-(1,13) = "end"
         │   └── name: :Foo
-        └── @ ClassNode (location: (15...29))
+        └── @ ClassNode (location: (3,0)-(3,14))
             ├── locals: []
-            ├── class_keyword_loc: (15...20) = "class"
+            ├── class_keyword_loc: (3,0)-(3,5) = "class"
             ├── constant_path:
-            │   @ ConstantReadNode (location: (21...24))
+            │   @ ConstantReadNode (location: (3,6)-(3,9))
             │   └── name: :Foo
             ├── inheritance_operator_loc: ∅
             ├── superclass: ∅
             ├── body: ∅
-            ├── end_keyword_loc: (26...29) = "end"
+            ├── end_keyword_loc: (3,11)-(3,14) = "end"
             └── name: :Foo

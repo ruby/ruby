@@ -1,38 +1,38 @@
-@ ProgramNode (location: (0...17))
+@ ProgramNode (location: (1,0)-(1,17))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...17))
+    @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...17))
+        └── @ CallNode (location: (1,0)-(1,17))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...3) = "tap"
+            ├── message_loc: (1,0)-(1,3) = "tap"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (4...17))
+            │   @ ArgumentsNode (location: (1,4)-(1,17))
             │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (4...17))
+            │       └── @ ParenthesesNode (location: (1,4)-(1,17))
             │           ├── body:
-            │           │   @ StatementsNode (location: (5...16))
+            │           │   @ StatementsNode (location: (1,5)-(1,16))
             │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (5...16))
+            │           │       └── @ CallNode (location: (1,5)-(1,16))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (5...9) = "proc"
+            │           │           ├── message_loc: (1,5)-(1,9) = "proc"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
             │           │           ├── block:
-            │           │           │   @ BlockNode (location: (10...16))
+            │           │           │   @ BlockNode (location: (1,10)-(1,16))
             │           │           │   ├── locals: []
             │           │           │   ├── parameters: ∅
             │           │           │   ├── body: ∅
-            │           │           │   ├── opening_loc: (10...12) = "do"
-            │           │           │   └── closing_loc: (13...16) = "end"
+            │           │           │   ├── opening_loc: (1,10)-(1,12) = "do"
+            │           │           │   └── closing_loc: (1,13)-(1,16) = "end"
             │           │           ├── flags: ∅
             │           │           └── name: "proc"
-            │           ├── opening_loc: (4...5) = "("
-            │           └── closing_loc: (16...17) = ")"
+            │           ├── opening_loc: (1,4)-(1,5) = "("
+            │           └── closing_loc: (1,16)-(1,17) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

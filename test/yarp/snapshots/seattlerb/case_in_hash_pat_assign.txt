@@ -1,76 +1,76 @@
-@ ProgramNode (location: (0...56))
+@ ProgramNode (location: (1,0)-(4,3))
 ├── locals: [:x, :f]
 └── statements:
-    @ StatementsNode (location: (0...56))
+    @ StatementsNode (location: (1,0)-(4,3))
     └── body: (length: 1)
-        └── @ CaseNode (location: (0...56))
+        └── @ CaseNode (location: (1,0)-(4,3))
             ├── predicate:
-            │   @ SymbolNode (location: (5...7))
-            │   ├── opening_loc: (5...6) = ":"
-            │   ├── value_loc: (6...7) = "a"
+            │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── opening_loc: (1,5)-(1,6) = ":"
+            │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
-            │   └── @ InNode (location: (8...52))
+            │   └── @ InNode (location: (2,0)-(3,4))
             │       ├── pattern:
-            │       │   @ HashPatternNode (location: (11...42))
+            │       │   @ HashPatternNode (location: (2,3)-(2,34))
             │       │   ├── constant: ∅
             │       │   ├── assocs: (length: 3)
-            │       │   │   ├── @ AssocNode (location: (13...28))
+            │       │   │   ├── @ AssocNode (location: (2,5)-(2,20))
             │       │   │   │   ├── key:
-            │       │   │   │   │   @ SymbolNode (location: (13...15))
+            │       │   │   │   │   @ SymbolNode (location: (2,5)-(2,7))
             │       │   │   │   │   ├── opening_loc: ∅
-            │       │   │   │   │   ├── value_loc: (13...14) = "b"
-            │       │   │   │   │   ├── closing_loc: (14...15) = ":"
+            │       │   │   │   │   ├── value_loc: (2,5)-(2,6) = "b"
+            │       │   │   │   │   ├── closing_loc: (2,6)-(2,7) = ":"
             │       │   │   │   │   └── unescaped: "b"
             │       │   │   │   ├── value:
-            │       │   │   │   │   @ CapturePatternNode (location: (16...28))
+            │       │   │   │   │   @ CapturePatternNode (location: (2,8)-(2,20))
             │       │   │   │   │   ├── value:
-            │       │   │   │   │   │   @ ConstantReadNode (location: (16...23))
+            │       │   │   │   │   │   @ ConstantReadNode (location: (2,8)-(2,15))
             │       │   │   │   │   │   └── name: :Integer
             │       │   │   │   │   ├── target:
-            │       │   │   │   │   │   @ LocalVariableTargetNode (location: (27...28))
+            │       │   │   │   │   │   @ LocalVariableTargetNode (location: (2,19)-(2,20))
             │       │   │   │   │   │   ├── name: :x
             │       │   │   │   │   │   └── depth: 0
-            │       │   │   │   │   └── operator_loc: (24...26) = "=>"
+            │       │   │   │   │   └── operator_loc: (2,16)-(2,18) = "=>"
             │       │   │   │   └── operator_loc: ∅
-            │       │   │   ├── @ AssocNode (location: (30...36))
+            │       │   │   ├── @ AssocNode (location: (2,22)-(2,28))
             │       │   │   │   ├── key:
-            │       │   │   │   │   @ SymbolNode (location: (30...32))
+            │       │   │   │   │   @ SymbolNode (location: (2,22)-(2,24))
             │       │   │   │   │   ├── opening_loc: ∅
-            │       │   │   │   │   ├── value_loc: (30...31) = "d"
-            │       │   │   │   │   ├── closing_loc: (31...32) = ":"
+            │       │   │   │   │   ├── value_loc: (2,22)-(2,23) = "d"
+            │       │   │   │   │   ├── closing_loc: (2,23)-(2,24) = ":"
             │       │   │   │   │   └── unescaped: "d"
             │       │   │   │   ├── value:
-            │       │   │   │   │   @ StringNode (location: (33...36))
+            │       │   │   │   │   @ StringNode (location: (2,25)-(2,28))
             │       │   │   │   │   ├── flags: ∅
-            │       │   │   │   │   ├── opening_loc: (33...34) = "\""
-            │       │   │   │   │   ├── content_loc: (34...35) = "e"
-            │       │   │   │   │   ├── closing_loc: (35...36) = "\""
+            │       │   │   │   │   ├── opening_loc: (2,25)-(2,26) = "\""
+            │       │   │   │   │   ├── content_loc: (2,26)-(2,27) = "e"
+            │       │   │   │   │   ├── closing_loc: (2,27)-(2,28) = "\""
             │       │   │   │   │   └── unescaped: "e"
             │       │   │   │   └── operator_loc: ∅
-            │       │   │   └── @ AssocNode (location: (38...40))
+            │       │   │   └── @ AssocNode (location: (2,30)-(2,32))
             │       │   │       ├── key:
-            │       │   │       │   @ SymbolNode (location: (38...40))
+            │       │   │       │   @ SymbolNode (location: (2,30)-(2,32))
             │       │   │       │   ├── opening_loc: ∅
-            │       │   │       │   ├── value_loc: (38...39) = "f"
-            │       │   │       │   ├── closing_loc: (39...40) = ":"
+            │       │   │       │   ├── value_loc: (2,30)-(2,31) = "f"
+            │       │   │       │   ├── closing_loc: (2,31)-(2,32) = ":"
             │       │   │       │   └── unescaped: "f"
             │       │   │       ├── value: ∅
             │       │   │       └── operator_loc: ∅
             │       │   ├── kwrest: ∅
-            │       │   ├── opening_loc: (11...12) = "{"
-            │       │   └── closing_loc: (41...42) = "}"
+            │       │   ├── opening_loc: (2,3)-(2,4) = "{"
+            │       │   └── closing_loc: (2,33)-(2,34) = "}"
             │       ├── statements:
-            │       │   @ StatementsNode (location: (50...52))
+            │       │   @ StatementsNode (location: (3,2)-(3,4))
             │       │   └── body: (length: 1)
-            │       │       └── @ SymbolNode (location: (50...52))
-            │       │           ├── opening_loc: (50...51) = ":"
-            │       │           ├── value_loc: (51...52) = "g"
+            │       │       └── @ SymbolNode (location: (3,2)-(3,4))
+            │       │           ├── opening_loc: (3,2)-(3,3) = ":"
+            │       │           ├── value_loc: (3,3)-(3,4) = "g"
             │       │           ├── closing_loc: ∅
             │       │           └── unescaped: "g"
-            │       ├── in_loc: (8...10) = "in"
-            │       └── then_loc: (43...47) = "then"
+            │       ├── in_loc: (2,0)-(2,2) = "in"
+            │       └── then_loc: (2,35)-(2,39) = "then"
             ├── consequent: ∅
-            ├── case_keyword_loc: (0...4) = "case"
-            └── end_keyword_loc: (53...56) = "end"
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (4,0)-(4,3) = "end"

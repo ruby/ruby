@@ -1,14 +1,14 @@
-@ ProgramNode (location: (0...15))
+@ ProgramNode (location: (1,0)-(1,15))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...15))
+    @ StatementsNode (location: (1,0)-(1,15))
     └── body: (length: 1)
-        └── @ ModuleNode (location: (0...15))
+        └── @ ModuleNode (location: (1,0)-(1,15))
             ├── locals: []
-            ├── module_keyword_loc: (0...6) = "module"
+            ├── module_keyword_loc: (1,0)-(1,6) = "module"
             ├── constant_path:
-            │   @ ConstantReadNode (location: (7...10))
+            │   @ ConstantReadNode (location: (1,7)-(1,10))
             │   └── name: :Foo
             ├── body: ∅
-            ├── end_keyword_loc: (12...15) = "end"
+            ├── end_keyword_loc: (1,12)-(1,15) = "end"
             └── name: :Foo

@@ -1,15 +1,15 @@
-@ ProgramNode (location: (0...58))
+@ ProgramNode (location: (1,0)-(3,26))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...58))
+    @ StatementsNode (location: (1,0)-(3,26))
     └── body: (length: 2)
-        ├── @ IfNode (location: (0...30))
-        │   ├── if_keyword_loc: (0...2) = "if"
+        ├── @ IfNode (location: (1,0)-(1,30))
+        │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
         │   ├── predicate:
-        │   │   @ CallNode (location: (3...6))
+        │   │   @ CallNode (location: (1,3)-(1,6))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (3...6) = "foo"
+        │   │   ├── message_loc: (1,3)-(1,6) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -17,12 +17,12 @@
         │   │   ├── flags: variable_call
         │   │   └── name: "foo"
         │   ├── statements:
-        │   │   @ StatementsNode (location: (12...15))
+        │   │   @ StatementsNode (location: (1,12)-(1,15))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (12...15))
+        │   │       └── @ CallNode (location: (1,12)-(1,15))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (12...15) = "bar"
+        │   │           ├── message_loc: (1,12)-(1,15) = "bar"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
@@ -30,30 +30,30 @@
         │   │           ├── flags: variable_call
         │   │           └── name: "bar"
         │   ├── consequent:
-        │   │   @ ElseNode (location: (17...30))
-        │   │   ├── else_keyword_loc: (17...21) = "else"
+        │   │   @ ElseNode (location: (1,17)-(1,30))
+        │   │   ├── else_keyword_loc: (1,17)-(1,21) = "else"
         │   │   ├── statements:
-        │   │   │   @ StatementsNode (location: (22...25))
+        │   │   │   @ StatementsNode (location: (1,22)-(1,25))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ CallNode (location: (22...25))
+        │   │   │       └── @ CallNode (location: (1,22)-(1,25))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
-        │   │   │           ├── message_loc: (22...25) = "baz"
+        │   │   │           ├── message_loc: (1,22)-(1,25) = "baz"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
         │   │   │           └── name: "baz"
-        │   │   └── end_keyword_loc: (27...30) = "end"
-        │   └── end_keyword_loc: (27...30) = "end"
-        └── @ IfNode (location: (32...58))
-            ├── if_keyword_loc: (32...34) = "if"
+        │   │   └── end_keyword_loc: (1,27)-(1,30) = "end"
+        │   └── end_keyword_loc: (1,27)-(1,30) = "end"
+        └── @ IfNode (location: (3,0)-(3,26))
+            ├── if_keyword_loc: (3,0)-(3,2) = "if"
             ├── predicate:
-            │   @ CallNode (location: (35...38))
+            │   @ CallNode (location: (3,3)-(3,6))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (35...38) = "foo"
+            │   ├── message_loc: (3,3)-(3,6) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -61,12 +61,12 @@
             │   ├── flags: variable_call
             │   └── name: "foo"
             ├── statements:
-            │   @ StatementsNode (location: (40...43))
+            │   @ StatementsNode (location: (3,8)-(3,11))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (40...43))
+            │       └── @ CallNode (location: (3,8)-(3,11))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (40...43) = "bar"
+            │           ├── message_loc: (3,8)-(3,11) = "bar"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -74,20 +74,20 @@
             │           ├── flags: variable_call
             │           └── name: "bar"
             ├── consequent:
-            │   @ ElseNode (location: (45...58))
-            │   ├── else_keyword_loc: (45...49) = "else"
+            │   @ ElseNode (location: (3,13)-(3,26))
+            │   ├── else_keyword_loc: (3,13)-(3,17) = "else"
             │   ├── statements:
-            │   │   @ StatementsNode (location: (50...53))
+            │   │   @ StatementsNode (location: (3,18)-(3,21))
             │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (50...53))
+            │   │       └── @ CallNode (location: (3,18)-(3,21))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (50...53) = "baz"
+            │   │           ├── message_loc: (3,18)-(3,21) = "baz"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
             │   │           └── name: "baz"
-            │   └── end_keyword_loc: (55...58) = "end"
-            └── end_keyword_loc: (55...58) = "end"
+            │   └── end_keyword_loc: (3,23)-(3,26) = "end"
+            └── end_keyword_loc: (3,23)-(3,26) = "end"

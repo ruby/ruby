@@ -1,22 +1,22 @@
-@ ProgramNode (location: (0...13))
+@ ProgramNode (location: (1,0)-(3,1))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...13))
+    @ StatementsNode (location: (1,0)-(3,1))
     └── body: (length: 1)
-        └── @ PreExecutionNode (location: (0...13))
+        └── @ PreExecutionNode (location: (1,0)-(3,1))
             ├── statements:
-            │   @ StatementsNode (location: (8...11))
+            │   @ StatementsNode (location: (2,0)-(2,3))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (8...11))
+            │       └── @ CallNode (location: (2,0)-(2,3))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (8...11) = "foo"
+            │           ├── message_loc: (2,0)-(2,3) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
             │           └── name: "foo"
-            ├── keyword_loc: (0...5) = "BEGIN"
-            ├── opening_loc: (6...7) = "{"
-            └── closing_loc: (12...13) = "}"
+            ├── keyword_loc: (1,0)-(1,5) = "BEGIN"
+            ├── opening_loc: (1,6)-(1,7) = "{"
+            └── closing_loc: (3,0)-(3,1) = "}"

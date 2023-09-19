@@ -1,34 +1,34 @@
-@ ProgramNode (location: (0...14))
+@ ProgramNode (location: (1,0)-(3,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...14))
+    @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 3)
-        ├── @ RangeNode (location: (0...4))
+        ├── @ RangeNode (location: (1,0)-(1,4))
         │   ├── left: ∅
         │   ├── right:
-        │   │   @ IntegerNode (location: (2...4))
+        │   │   @ IntegerNode (location: (1,2)-(1,4))
         │   │   └── flags: decimal
-        │   ├── operator_loc: (0...2) = ".."
+        │   ├── operator_loc: (1,0)-(1,2) = ".."
         │   └── flags: ∅
-        ├── @ RangeNode (location: (7...10))
+        ├── @ RangeNode (location: (2,2)-(2,5))
         │   ├── left: ∅
         │   ├── right:
-        │   │   @ CallNode (location: (9...10))
+        │   │   @ CallNode (location: (2,4)-(2,5))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (9...10) = "a"
+        │   │   ├── message_loc: (2,4)-(2,5) = "a"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "a"
-        │   ├── operator_loc: (7...9) = ".."
+        │   ├── operator_loc: (2,2)-(2,4) = ".."
         │   └── flags: ∅
-        └── @ CallNode (location: (13...14))
+        └── @ CallNode (location: (3,2)-(3,3))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (13...14) = "c"
+            ├── message_loc: (3,2)-(3,3) = "c"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅

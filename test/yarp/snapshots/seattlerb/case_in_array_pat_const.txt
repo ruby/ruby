@@ -1,40 +1,40 @@
-@ ProgramNode (location: (0...24))
+@ ProgramNode (location: (1,0)-(4,3))
 ├── locals: [:c]
 └── statements:
-    @ StatementsNode (location: (0...24))
+    @ StatementsNode (location: (1,0)-(4,3))
     └── body: (length: 1)
-        └── @ CaseNode (location: (0...24))
+        └── @ CaseNode (location: (1,0)-(4,3))
             ├── predicate:
-            │   @ SymbolNode (location: (5...7))
-            │   ├── opening_loc: (5...6) = ":"
-            │   ├── value_loc: (6...7) = "a"
+            │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── opening_loc: (1,5)-(1,6) = ":"
+            │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
-            │   └── @ InNode (location: (8...20))
+            │   └── @ InNode (location: (2,0)-(3,4))
             │       ├── pattern:
-            │       │   @ ArrayPatternNode (location: (11...15))
+            │       │   @ ArrayPatternNode (location: (2,3)-(2,7))
             │       │   ├── constant:
-            │       │   │   @ ConstantReadNode (location: (11...12))
+            │       │   │   @ ConstantReadNode (location: (2,3)-(2,4))
             │       │   │   └── name: :B
             │       │   ├── requireds: (length: 1)
-            │       │   │   └── @ LocalVariableTargetNode (location: (13...14))
+            │       │   │   └── @ LocalVariableTargetNode (location: (2,5)-(2,6))
             │       │   │       ├── name: :c
             │       │   │       └── depth: 0
             │       │   ├── rest: ∅
             │       │   ├── posts: (length: 0)
-            │       │   ├── opening_loc: (12...13) = "["
-            │       │   └── closing_loc: (14...15) = "]"
+            │       │   ├── opening_loc: (2,4)-(2,5) = "["
+            │       │   └── closing_loc: (2,6)-(2,7) = "]"
             │       ├── statements:
-            │       │   @ StatementsNode (location: (18...20))
+            │       │   @ StatementsNode (location: (3,2)-(3,4))
             │       │   └── body: (length: 1)
-            │       │       └── @ SymbolNode (location: (18...20))
-            │       │           ├── opening_loc: (18...19) = ":"
-            │       │           ├── value_loc: (19...20) = "d"
+            │       │       └── @ SymbolNode (location: (3,2)-(3,4))
+            │       │           ├── opening_loc: (3,2)-(3,3) = ":"
+            │       │           ├── value_loc: (3,3)-(3,4) = "d"
             │       │           ├── closing_loc: ∅
             │       │           └── unescaped: "d"
-            │       ├── in_loc: (8...10) = "in"
+            │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅
-            ├── case_keyword_loc: (0...4) = "case"
-            └── end_keyword_loc: (21...24) = "end"
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (4,0)-(4,3) = "end"

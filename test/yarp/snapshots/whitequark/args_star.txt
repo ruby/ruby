@@ -1,68 +1,68 @@
-@ ProgramNode (location: (0...25))
+@ ProgramNode (location: (1,0)-(3,14))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...25))
+    @ StatementsNode (location: (1,0)-(3,14))
     └── body: (length: 2)
-        ├── @ CallNode (location: (0...9))
+        ├── @ CallNode (location: (1,0)-(1,9))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...3) = "fun"
-        │   ├── opening_loc: (3...4) = "("
+        │   ├── message_loc: (1,0)-(1,3) = "fun"
+        │   ├── opening_loc: (1,3)-(1,4) = "("
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (4...8))
+        │   │   @ ArgumentsNode (location: (1,4)-(1,8))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ SplatNode (location: (4...8))
-        │   │           ├── operator_loc: (4...5) = "*"
+        │   │       └── @ SplatNode (location: (1,4)-(1,8))
+        │   │           ├── operator_loc: (1,4)-(1,5) = "*"
         │   │           └── expression:
-        │   │               @ CallNode (location: (5...8))
+        │   │               @ CallNode (location: (1,5)-(1,8))
         │   │               ├── receiver: ∅
         │   │               ├── call_operator_loc: ∅
-        │   │               ├── message_loc: (5...8) = "bar"
+        │   │               ├── message_loc: (1,5)-(1,8) = "bar"
         │   │               ├── opening_loc: ∅
         │   │               ├── arguments: ∅
         │   │               ├── closing_loc: ∅
         │   │               ├── block: ∅
         │   │               ├── flags: variable_call
         │   │               └── name: "bar"
-        │   ├── closing_loc: (8...9) = ")"
+        │   ├── closing_loc: (1,8)-(1,9) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "fun"
-        └── @ CallNode (location: (11...25))
+        └── @ CallNode (location: (3,0)-(3,14))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (11...14) = "fun"
-            ├── opening_loc: (14...15) = "("
+            ├── message_loc: (3,0)-(3,3) = "fun"
+            ├── opening_loc: (3,3)-(3,4) = "("
             ├── arguments:
-            │   @ ArgumentsNode (location: (15...19))
+            │   @ ArgumentsNode (location: (3,4)-(3,8))
             │   └── arguments: (length: 1)
-            │       └── @ SplatNode (location: (15...19))
-            │           ├── operator_loc: (15...16) = "*"
+            │       └── @ SplatNode (location: (3,4)-(3,8))
+            │           ├── operator_loc: (3,4)-(3,5) = "*"
             │           └── expression:
-            │               @ CallNode (location: (16...19))
+            │               @ CallNode (location: (3,5)-(3,8))
             │               ├── receiver: ∅
             │               ├── call_operator_loc: ∅
-            │               ├── message_loc: (16...19) = "bar"
+            │               ├── message_loc: (3,5)-(3,8) = "bar"
             │               ├── opening_loc: ∅
             │               ├── arguments: ∅
             │               ├── closing_loc: ∅
             │               ├── block: ∅
             │               ├── flags: variable_call
             │               └── name: "bar"
-            ├── closing_loc: (25...26) = ")"
+            ├── closing_loc: (3,14)-(3,15) = ")"
             ├── block:
-            │   @ BlockArgumentNode (location: (21...25))
+            │   @ BlockArgumentNode (location: (3,10)-(3,14))
             │   ├── expression:
-            │   │   @ CallNode (location: (22...25))
+            │   │   @ CallNode (location: (3,11)-(3,14))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (22...25) = "baz"
+            │   │   ├── message_loc: (3,11)-(3,14) = "baz"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
             │   │   └── name: "baz"
-            │   └── operator_loc: (21...22) = "&"
+            │   └── operator_loc: (3,10)-(3,11) = "&"
             ├── flags: ∅
             └── name: "fun"

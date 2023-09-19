@@ -1,109 +1,109 @@
-@ ProgramNode (location: (0...293))
+@ ProgramNode (location: (1,0)-(30,13))
 ├── locals: [:foo]
 └── statements:
-    @ StatementsNode (location: (0...293))
+    @ StatementsNode (location: (1,0)-(30,13))
     └── body: (length: 14)
-        ├── @ CallNode (location: (0...9))
+        ├── @ CallNode (location: (1,0)-(1,9))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...3) = "foo"
+        │   ├── message_loc: (1,0)-(1,3) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (4...9))
+        │   │   @ ArgumentsNode (location: (1,4)-(1,9))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ RegularExpressionNode (location: (4...9))
-        │   │           ├── opening_loc: (4...5) = "/"
-        │   │           ├── content_loc: (5...8) = "bar"
-        │   │           ├── closing_loc: (8...9) = "/"
+        │   │       └── @ RegularExpressionNode (location: (1,4)-(1,9))
+        │   │           ├── opening_loc: (1,4)-(1,5) = "/"
+        │   │           ├── content_loc: (1,5)-(1,8) = "bar"
+        │   │           ├── closing_loc: (1,8)-(1,9) = "/"
         │   │           ├── unescaped: "bar"
         │   │           └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "foo"
-        ├── @ RegularExpressionNode (location: (11...19))
-        │   ├── opening_loc: (11...14) = "%r{"
-        │   ├── content_loc: (14...17) = "abc"
-        │   ├── closing_loc: (17...19) = "}i"
+        ├── @ RegularExpressionNode (location: (3,0)-(3,8))
+        │   ├── opening_loc: (3,0)-(3,3) = "%r{"
+        │   ├── content_loc: (3,3)-(3,6) = "abc"
+        │   ├── closing_loc: (3,6)-(3,8) = "}i"
         │   ├── unescaped: "abc"
         │   └── flags: ignore_case
-        ├── @ RegularExpressionNode (location: (21...26))
-        │   ├── opening_loc: (21...22) = "/"
-        │   ├── content_loc: (22...25) = "a\\b"
-        │   ├── closing_loc: (25...26) = "/"
+        ├── @ RegularExpressionNode (location: (5,0)-(5,5))
+        │   ├── opening_loc: (5,0)-(5,1) = "/"
+        │   ├── content_loc: (5,1)-(5,4) = "a\\b"
+        │   ├── closing_loc: (5,4)-(5,5) = "/"
         │   ├── unescaped: "a\b"
         │   └── flags: ∅
-        ├── @ InterpolatedRegularExpressionNode (location: (28...39))
-        │   ├── opening_loc: (28...29) = "/"
+        ├── @ InterpolatedRegularExpressionNode (location: (7,0)-(7,11))
+        │   ├── opening_loc: (7,0)-(7,1) = "/"
         │   ├── parts: (length: 2)
-        │   │   ├── @ StringNode (location: (29...33))
+        │   │   ├── @ StringNode (location: (7,1)-(7,5))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (29...33) = "aaa "
+        │   │   │   ├── content_loc: (7,1)-(7,5) = "aaa "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "aaa "
-        │   │   └── @ EmbeddedVariableNode (location: (33...38))
-        │   │       ├── operator_loc: (33...34) = "#"
+        │   │   └── @ EmbeddedVariableNode (location: (7,5)-(7,10))
+        │   │       ├── operator_loc: (7,5)-(7,6) = "#"
         │   │       └── variable:
-        │   │           @ GlobalVariableReadNode (location: (34...38))
+        │   │           @ GlobalVariableReadNode (location: (7,6)-(7,10))
         │   │           └── name: :$bbb
-        │   ├── closing_loc: (38...39) = "/"
+        │   ├── closing_loc: (7,10)-(7,11) = "/"
         │   └── flags: ∅
-        ├── @ InterpolatedRegularExpressionNode (location: (41...57))
-        │   ├── opening_loc: (41...42) = "/"
+        ├── @ InterpolatedRegularExpressionNode (location: (9,0)-(9,16))
+        │   ├── opening_loc: (9,0)-(9,1) = "/"
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (42...46))
+        │   │   ├── @ StringNode (location: (9,1)-(9,5))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (42...46) = "aaa "
+        │   │   │   ├── content_loc: (9,1)-(9,5) = "aaa "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "aaa "
-        │   │   ├── @ EmbeddedStatementsNode (location: (46...52))
-        │   │   │   ├── opening_loc: (46...48) = "\#{"
+        │   │   ├── @ EmbeddedStatementsNode (location: (9,5)-(9,11))
+        │   │   │   ├── opening_loc: (9,5)-(9,7) = "\#{"
         │   │   │   ├── statements:
-        │   │   │   │   @ StatementsNode (location: (48...51))
+        │   │   │   │   @ StatementsNode (location: (9,7)-(9,10))
         │   │   │   │   └── body: (length: 1)
-        │   │   │   │       └── @ CallNode (location: (48...51))
+        │   │   │   │       └── @ CallNode (location: (9,7)-(9,10))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
-        │   │   │   │           ├── message_loc: (48...51) = "bbb"
+        │   │   │   │           ├── message_loc: (9,7)-(9,10) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: "bbb"
-        │   │   │   └── closing_loc: (51...52) = "}"
-        │   │   └── @ StringNode (location: (52...56))
+        │   │   │   └── closing_loc: (9,10)-(9,11) = "}"
+        │   │   └── @ StringNode (location: (9,11)-(9,15))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (52...56) = " ccc"
+        │   │       ├── content_loc: (9,11)-(9,15) = " ccc"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " ccc"
-        │   ├── closing_loc: (56...57) = "/"
+        │   ├── closing_loc: (9,15)-(9,16) = "/"
         │   └── flags: ∅
-        ├── @ ArrayNode (location: (59...86))
+        ├── @ ArrayNode (location: (11,0)-(11,27))
         │   ├── elements: (length: 2)
-        │   │   ├── @ MatchWriteNode (location: (60...80))
+        │   │   ├── @ MatchWriteNode (location: (11,1)-(11,21))
         │   │   │   ├── call:
-        │   │   │   │   @ CallNode (location: (60...80))
+        │   │   │   │   @ CallNode (location: (11,1)-(11,21))
         │   │   │   │   ├── receiver:
-        │   │   │   │   │   @ RegularExpressionNode (location: (60...73))
-        │   │   │   │   │   ├── opening_loc: (60...61) = "/"
-        │   │   │   │   │   ├── content_loc: (61...72) = "(?<foo>bar)"
-        │   │   │   │   │   ├── closing_loc: (72...73) = "/"
+        │   │   │   │   │   @ RegularExpressionNode (location: (11,1)-(11,14))
+        │   │   │   │   │   ├── opening_loc: (11,1)-(11,2) = "/"
+        │   │   │   │   │   ├── content_loc: (11,2)-(11,13) = "(?<foo>bar)"
+        │   │   │   │   │   ├── closing_loc: (11,13)-(11,14) = "/"
         │   │   │   │   │   ├── unescaped: "(?<foo>bar)"
         │   │   │   │   │   └── flags: ∅
         │   │   │   │   ├── call_operator_loc: ∅
-        │   │   │   │   ├── message_loc: (74...76) = "=~"
+        │   │   │   │   ├── message_loc: (11,15)-(11,17) = "=~"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments:
-        │   │   │   │   │   @ ArgumentsNode (location: (77...80))
+        │   │   │   │   │   @ ArgumentsNode (location: (11,18)-(11,21))
         │   │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │   │       └── @ CallNode (location: (77...80))
+        │   │   │   │   │       └── @ CallNode (location: (11,18)-(11,21))
         │   │   │   │   │           ├── receiver: ∅
         │   │   │   │   │           ├── call_operator_loc: ∅
-        │   │   │   │   │           ├── message_loc: (77...80) = "baz"
+        │   │   │   │   │           ├── message_loc: (11,18)-(11,21) = "baz"
         │   │   │   │   │           ├── opening_loc: ∅
         │   │   │   │   │           ├── arguments: ∅
         │   │   │   │   │           ├── closing_loc: ∅
@@ -115,95 +115,95 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: "=~"
         │   │   │   └── locals: [:foo]
-        │   │   └── @ LocalVariableReadNode (location: (82...85))
+        │   │   └── @ LocalVariableReadNode (location: (11,23)-(11,26))
         │   │       ├── name: :foo
         │   │       └── depth: 0
-        │   ├── opening_loc: (59...60) = "["
-        │   └── closing_loc: (85...86) = "]"
-        ├── @ RegularExpressionNode (location: (88...94))
-        │   ├── opening_loc: (88...89) = "/"
-        │   ├── content_loc: (89...92) = "abc"
-        │   ├── closing_loc: (92...94) = "/i"
+        │   ├── opening_loc: (11,0)-(11,1) = "["
+        │   └── closing_loc: (11,26)-(11,27) = "]"
+        ├── @ RegularExpressionNode (location: (13,0)-(13,6))
+        │   ├── opening_loc: (13,0)-(13,1) = "/"
+        │   ├── content_loc: (13,1)-(13,4) = "abc"
+        │   ├── closing_loc: (13,4)-(13,6) = "/i"
         │   ├── unescaped: "abc"
         │   └── flags: ignore_case
-        ├── @ RegularExpressionNode (location: (96...122))
-        │   ├── opening_loc: (96...99) = "%r/"
-        │   ├── content_loc: (99...120) = "[a-z$._?][\\w$.?\#@~]*:"
-        │   ├── closing_loc: (120...122) = "/i"
+        ├── @ RegularExpressionNode (location: (15,0)-(15,26))
+        │   ├── opening_loc: (15,0)-(15,3) = "%r/"
+        │   ├── content_loc: (15,3)-(15,24) = "[a-z$._?][\\w$.?\#@~]*:"
+        │   ├── closing_loc: (15,24)-(15,26) = "/i"
         │   ├── unescaped: "[a-z$._?][w$.?\#@~]*:"
         │   └── flags: ignore_case
-        ├── @ RegularExpressionNode (location: (124...161))
-        │   ├── opening_loc: (124...127) = "%r/"
-        │   ├── content_loc: (127...159) = "([a-z$._?][\\w$.?\#@~]*)(\\s+)(equ)"
-        │   ├── closing_loc: (159...161) = "/i"
+        ├── @ RegularExpressionNode (location: (17,0)-(17,37))
+        │   ├── opening_loc: (17,0)-(17,3) = "%r/"
+        │   ├── content_loc: (17,3)-(17,35) = "([a-z$._?][\\w$.?\#@~]*)(\\s+)(equ)"
+        │   ├── closing_loc: (17,35)-(17,37) = "/i"
         │   ├── unescaped: "([a-z$._?][w$.?\#@~]*)( +)(equ)"
         │   └── flags: ignore_case
-        ├── @ RegularExpressionNode (location: (163...188))
-        │   ├── opening_loc: (163...166) = "%r/"
-        │   ├── content_loc: (166...186) = "[a-z$._?][\\w$.?\#@~]*"
-        │   ├── closing_loc: (186...188) = "/i"
+        ├── @ RegularExpressionNode (location: (19,0)-(19,25))
+        │   ├── opening_loc: (19,0)-(19,3) = "%r/"
+        │   ├── content_loc: (19,3)-(19,23) = "[a-z$._?][\\w$.?\#@~]*"
+        │   ├── closing_loc: (19,23)-(19,25) = "/i"
         │   ├── unescaped: "[a-z$._?][w$.?\#@~]*"
         │   └── flags: ignore_case
-        ├── @ RegularExpressionNode (location: (190...249))
-        │   ├── opening_loc: (190...193) = "%r("
-        │   ├── content_loc: (193...248) = "\n(?:[\\w\#$%_']|\\(\\)|\\(,\\)|\\[\\]|[0-9])*\n  (?:[\\w\#$%_']+)\n"
-        │   ├── closing_loc: (248...249) = ")"
+        ├── @ RegularExpressionNode (location: (21,0)-(24,1))
+        │   ├── opening_loc: (21,0)-(21,3) = "%r("
+        │   ├── content_loc: (21,3)-(23,0) = "\n(?:[\\w\#$%_']|\\(\\)|\\(,\\)|\\[\\]|[0-9])*\n  (?:[\\w\#$%_']+)\n"
+        │   ├── closing_loc: (24,0)-(24,1) = ")"
         │   ├── unescaped: "\n(?:[w\#$%_']|()|(,)|[]|[0-9])*\n  (?:[w\#$%_']+)\n"
         │   └── flags: ∅
-        ├── @ CallNode (location: (251...267))
+        ├── @ CallNode (location: (26,0)-(26,16))
         │   ├── receiver:
-        │   │   @ RegularExpressionNode (location: (251...259))
-        │   │   ├── opening_loc: (251...252) = "/"
-        │   │   ├── content_loc: (252...258) = "(?#\\))"
-        │   │   ├── closing_loc: (258...259) = "/"
+        │   │   @ RegularExpressionNode (location: (26,0)-(26,8))
+        │   │   ├── opening_loc: (26,0)-(26,1) = "/"
+        │   │   ├── content_loc: (26,1)-(26,7) = "(?#\\))"
+        │   │   ├── closing_loc: (26,7)-(26,8) = "/"
         │   │   ├── unescaped: "(?#))"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (260...262) = "=~"
+        │   ├── message_loc: (26,9)-(26,11) = "=~"
         │   ├── opening_loc: ∅
         │   ├── arguments:
-        │   │   @ ArgumentsNode (location: (263...267))
+        │   │   @ ArgumentsNode (location: (26,12)-(26,16))
         │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (263...267))
+        │   │       └── @ StringNode (location: (26,12)-(26,16))
         │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (263...264) = "\""
-        │   │           ├── content_loc: (264...266) = "hi"
-        │   │           ├── closing_loc: (266...267) = "\""
+        │   │           ├── opening_loc: (26,12)-(26,13) = "\""
+        │   │           ├── content_loc: (26,13)-(26,15) = "hi"
+        │   │           ├── closing_loc: (26,15)-(26,16) = "\""
         │   │           └── unescaped: "hi"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "=~"
-        ├── @ RegularExpressionNode (location: (269...278))
-        │   ├── opening_loc: (269...272) = "%r#"
-        │   ├── content_loc: (272...277) = "pound"
-        │   ├── closing_loc: (277...278) = "#"
+        ├── @ RegularExpressionNode (location: (28,0)-(28,9))
+        │   ├── opening_loc: (28,0)-(28,3) = "%r#"
+        │   ├── content_loc: (28,3)-(28,8) = "pound"
+        │   ├── closing_loc: (28,8)-(28,9) = "#"
         │   ├── unescaped: "pound"
         │   └── flags: ∅
-        └── @ InterpolatedRegularExpressionNode (location: (280...293))
-            ├── opening_loc: (280...281) = "/"
+        └── @ InterpolatedRegularExpressionNode (location: (30,0)-(30,13))
+            ├── opening_loc: (30,0)-(30,1) = "/"
             ├── parts: (length: 2)
-            │   ├── @ StringNode (location: (281...285))
+            │   ├── @ StringNode (location: (30,1)-(30,5))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
-            │   │   ├── content_loc: (281...285) = "aaa "
+            │   │   ├── content_loc: (30,1)-(30,5) = "aaa "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "aaa "
-            │   └── @ EmbeddedStatementsNode (location: (285...291))
-            │       ├── opening_loc: (285...287) = "\#{"
+            │   └── @ EmbeddedStatementsNode (location: (30,5)-(30,11))
+            │       ├── opening_loc: (30,5)-(30,7) = "\#{"
             │       ├── statements:
-            │       │   @ StatementsNode (location: (287...290))
+            │       │   @ StatementsNode (location: (30,7)-(30,10))
             │       │   └── body: (length: 1)
-            │       │       └── @ CallNode (location: (287...290))
+            │       │       └── @ CallNode (location: (30,7)-(30,10))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
-            │       │           ├── message_loc: (287...290) = "bbb"
+            │       │           ├── message_loc: (30,7)-(30,10) = "bbb"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: variable_call
             │       │           └── name: "bbb"
-            │       └── closing_loc: (290...291) = "}"
-            ├── closing_loc: (291...293) = "/o"
+            │       └── closing_loc: (30,10)-(30,11) = "}"
+            ├── closing_loc: (30,11)-(30,13) = "/o"
             └── flags: once

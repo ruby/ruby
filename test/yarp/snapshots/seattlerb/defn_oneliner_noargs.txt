@@ -1,20 +1,20 @@
-@ ProgramNode (location: (0...17))
+@ ProgramNode (location: (1,0)-(1,17))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...17))
+    @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
-        └── @ DefNode (location: (0...17))
+        └── @ DefNode (location: (1,0)-(1,17))
             ├── name: :exec
-            ├── name_loc: (4...8) = "exec"
+            ├── name_loc: (1,4)-(1,8) = "exec"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:
-            │   @ StatementsNode (location: (11...17))
+            │   @ StatementsNode (location: (1,11)-(1,17))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (11...17))
+            │       └── @ CallNode (location: (1,11)-(1,17))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (11...17) = "system"
+            │           ├── message_loc: (1,11)-(1,17) = "system"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -22,9 +22,9 @@
             │           ├── flags: variable_call
             │           └── name: "system"
             ├── locals: []
-            ├── def_keyword_loc: (0...3) = "def"
+            ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
-            ├── equal_loc: (9...10) = "="
+            ├── equal_loc: (1,9)-(1,10) = "="
             └── end_keyword_loc: ∅

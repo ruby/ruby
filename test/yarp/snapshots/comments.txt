@@ -1,142 +1,142 @@
-@ ProgramNode (location: (0...118))
+@ ProgramNode (location: (1,0)-(24,5))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...118))
+    @ StatementsNode (location: (1,0)-(24,5))
     └── body: (length: 9)
-        ├── @ CallNode (location: (0...1))
+        ├── @ CallNode (location: (1,0)-(1,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (0...1) = "a"
+        │   ├── message_loc: (1,0)-(1,1) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
         │   └── name: "a"
-        ├── @ CallNode (location: (13...14))
+        ├── @ CallNode (location: (3,0)-(3,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (13...14) = "b"
+        │   ├── message_loc: (3,0)-(3,1) = "b"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
         │   └── name: "b"
-        ├── @ CallNode (location: (16...17))
+        ├── @ CallNode (location: (5,0)-(5,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (16...17) = "c"
+        │   ├── message_loc: (5,0)-(5,1) = "c"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
         │   └── name: "c"
-        ├── @ CallNode (location: (28...29))
+        ├── @ CallNode (location: (6,0)-(6,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (28...29) = "d"
+        │   ├── message_loc: (6,0)-(6,1) = "d"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
         │   └── name: "d"
-        ├── @ CallNode (location: (31...47))
+        ├── @ CallNode (location: (8,0)-(10,4))
         │   ├── receiver:
-        │   │   @ CallNode (location: (31...32))
+        │   │   @ CallNode (location: (8,0)-(8,1))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (31...32) = "e"
+        │   │   ├── message_loc: (8,0)-(8,1) = "e"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "e"
-        │   ├── call_operator_loc: (45...46) = "."
-        │   ├── message_loc: (46...47) = "f"
+        │   ├── call_operator_loc: (10,2)-(10,3) = "."
+        │   ├── message_loc: (10,3)-(10,4) = "f"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "f"
-        ├── @ CallNode (location: (49...64))
+        ├── @ CallNode (location: (12,0)-(14,2))
         │   ├── receiver:
-        │   │   @ CallNode (location: (49...50))
+        │   │   @ CallNode (location: (12,0)-(12,1))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (49...50) = "g"
+        │   │   ├── message_loc: (12,0)-(12,1) = "g"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "g"
-        │   ├── call_operator_loc: (62...63) = "."
-        │   ├── message_loc: (63...64) = "h"
+        │   ├── call_operator_loc: (14,0)-(14,1) = "."
+        │   ├── message_loc: (14,1)-(14,2) = "h"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "h"
-        ├── @ CallNode (location: (66...80))
+        ├── @ CallNode (location: (16,0)-(17,2))
         │   ├── receiver:
-        │   │   @ CallNode (location: (66...67))
+        │   │   @ CallNode (location: (16,0)-(16,1))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (66...67) = "i"
+        │   │   ├── message_loc: (16,0)-(16,1) = "i"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "i"
-        │   ├── call_operator_loc: (78...79) = "."
-        │   ├── message_loc: (79...80) = "j"
+        │   ├── call_operator_loc: (17,0)-(17,1) = "."
+        │   ├── message_loc: (17,1)-(17,2) = "j"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "j"
-        ├── @ CallNode (location: (82...98))
+        ├── @ CallNode (location: (19,0)-(20,4))
         │   ├── receiver:
-        │   │   @ CallNode (location: (82...83))
+        │   │   @ CallNode (location: (19,0)-(19,1))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (82...83) = "k"
+        │   │   ├── message_loc: (19,0)-(19,1) = "k"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: "k"
-        │   ├── call_operator_loc: (96...97) = "."
-        │   ├── message_loc: (97...98) = "l"
+        │   ├── call_operator_loc: (20,2)-(20,3) = "."
+        │   ├── message_loc: (20,3)-(20,4) = "l"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: "l"
-        └── @ CallNode (location: (100...118))
+        └── @ CallNode (location: (22,0)-(24,5))
             ├── receiver:
-            │   @ CallNode (location: (100...101))
+            │   @ CallNode (location: (22,0)-(22,1))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (100...101) = "m"
+            │   ├── message_loc: (22,0)-(22,1) = "m"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
             │   └── name: "m"
-            ├── call_operator_loc: (115...117) = "&."
-            ├── message_loc: (117...118) = "n"
+            ├── call_operator_loc: (24,2)-(24,4) = "&."
+            ├── message_loc: (24,4)-(24,5) = "n"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅

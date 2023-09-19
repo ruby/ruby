@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...39))
+@ ProgramNode (location: (1,0)-(1,39))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...39))
+    @ StatementsNode (location: (1,0)-(1,39))
     └── body: (length: 1)
-        └── @ BeginNode (location: (0...39))
-            ├── begin_keyword_loc: (0...5) = "begin"
+        └── @ BeginNode (location: (1,0)-(1,39))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements:
-            │   @ StatementsNode (location: (7...11))
+            │   @ StatementsNode (location: (1,7)-(1,11))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (7...11))
+            │       └── @ CallNode (location: (1,7)-(1,11))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (7...11) = "meth"
+            │           ├── message_loc: (1,7)-(1,11) = "meth"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -19,20 +19,20 @@
             │           ├── flags: variable_call
             │           └── name: "meth"
             ├── rescue_clause:
-            │   @ RescueNode (location: (13...34))
-            │   ├── keyword_loc: (13...19) = "rescue"
+            │   @ RescueNode (location: (1,13)-(1,34))
+            │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
             │   ├── exceptions: (length: 1)
-            │   │   └── @ ConstantReadNode (location: (20...29))
+            │   │   └── @ ConstantReadNode (location: (1,20)-(1,29))
             │   │       └── name: :Exception
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements:
-            │   │   @ StatementsNode (location: (31...34))
+            │   │   @ StatementsNode (location: (1,31)-(1,34))
             │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (31...34))
+            │   │       └── @ CallNode (location: (1,31)-(1,34))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (31...34) = "bar"
+            │   │           ├── message_loc: (1,31)-(1,34) = "bar"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
@@ -42,4 +42,4 @@
             │   └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅
-            └── end_keyword_loc: (36...39) = "end"
+            └── end_keyword_loc: (1,36)-(1,39) = "end"

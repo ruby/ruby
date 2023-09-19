@@ -1,24 +1,24 @@
-@ ProgramNode (location: (0...19))
+@ ProgramNode (location: (1,0)-(1,19))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...19))
+    @ StatementsNode (location: (1,0)-(1,19))
     └── body: (length: 1)
-        └── @ NextNode (location: (0...19))
+        └── @ NextNode (location: (1,0)-(1,19))
             ├── arguments:
-            │   @ ArgumentsNode (location: (5...19))
+            │   @ ArgumentsNode (location: (1,5)-(1,19))
             │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (5...19))
+            │       └── @ CallNode (location: (1,5)-(1,19))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (5...8) = "fun"
+            │           ├── message_loc: (1,5)-(1,8) = "fun"
             │           ├── opening_loc: ∅
             │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (9...12))
+            │           │   @ ArgumentsNode (location: (1,9)-(1,12))
             │           │   └── arguments: (length: 1)
-            │           │       └── @ CallNode (location: (9...12))
+            │           │       └── @ CallNode (location: (1,9)-(1,12))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (9...12) = "foo"
+            │           │           ├── message_loc: (1,9)-(1,12) = "foo"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
@@ -27,12 +27,12 @@
             │           │           └── name: "foo"
             │           ├── closing_loc: ∅
             │           ├── block:
-            │           │   @ BlockNode (location: (13...19))
+            │           │   @ BlockNode (location: (1,13)-(1,19))
             │           │   ├── locals: []
             │           │   ├── parameters: ∅
             │           │   ├── body: ∅
-            │           │   ├── opening_loc: (13...15) = "do"
-            │           │   └── closing_loc: (16...19) = "end"
+            │           │   ├── opening_loc: (1,13)-(1,15) = "do"
+            │           │   └── closing_loc: (1,16)-(1,19) = "end"
             │           ├── flags: ∅
             │           └── name: "fun"
-            └── keyword_loc: (0...4) = "next"
+            └── keyword_loc: (1,0)-(1,4) = "next"

@@ -1,12 +1,12 @@
-@ ProgramNode (location: (0...9))
+@ ProgramNode (location: (1,0)-(1,9))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...9))
+    @ StatementsNode (location: (1,0)-(1,9))
     └── body: (length: 1)
-        └── @ GlobalVariableWriteNode (location: (0...9))
+        └── @ GlobalVariableWriteNode (location: (1,0)-(1,9))
             ├── name: :$var
-            ├── name_loc: (0...4) = "$var"
+            ├── name_loc: (1,0)-(1,4) = "$var"
             ├── value:
-            │   @ IntegerNode (location: (7...9))
+            │   @ IntegerNode (location: (1,7)-(1,9))
             │   └── flags: decimal
-            └── operator_loc: (5...6) = "="
+            └── operator_loc: (1,5)-(1,6) = "="

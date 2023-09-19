@@ -1,31 +1,31 @@
-@ ProgramNode (location: (0...8))
+@ ProgramNode (location: (1,0)-(1,8))
 ├── locals: [:c]
 └── statements:
-    @ StatementsNode (location: (0...8))
+    @ StatementsNode (location: (1,0)-(1,8))
     └── body: (length: 1)
-        └── @ LocalVariableWriteNode (location: (0...8))
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,8))
             ├── name: :c
             ├── depth: 0
-            ├── name_loc: (0...1) = "c"
+            ├── name_loc: (1,0)-(1,1) = "c"
             ├── value:
-            │   @ CallNode (location: (4...8))
+            │   @ CallNode (location: (1,4)-(1,8))
             │   ├── receiver:
-            │   │   @ CallNode (location: (4...5))
+            │   │   @ CallNode (location: (1,4)-(1,5))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (4...5) = "a"
+            │   │   ├── message_loc: (1,4)-(1,5) = "a"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
             │   │   └── name: "a"
-            │   ├── call_operator_loc: (5...7) = "&."
-            │   ├── message_loc: (7...8) = "b"
+            │   ├── call_operator_loc: (1,5)-(1,7) = "&."
+            │   ├── message_loc: (1,7)-(1,8) = "b"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: safe_navigation
             │   └── name: "b"
-            └── operator_loc: (2...3) = "="
+            └── operator_loc: (1,2)-(1,3) = "="

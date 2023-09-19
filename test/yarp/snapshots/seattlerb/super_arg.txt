@@ -1,15 +1,15 @@
-@ ProgramNode (location: (0...8))
+@ ProgramNode (location: (1,0)-(1,8))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...8))
+    @ StatementsNode (location: (1,0)-(1,8))
     └── body: (length: 1)
-        └── @ SuperNode (location: (0...8))
-            ├── keyword_loc: (0...5) = "super"
+        └── @ SuperNode (location: (1,0)-(1,8))
+            ├── keyword_loc: (1,0)-(1,5) = "super"
             ├── lparen_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (6...8))
+            │   @ ArgumentsNode (location: (1,6)-(1,8))
             │   └── arguments: (length: 1)
-            │       └── @ IntegerNode (location: (6...8))
+            │       └── @ IntegerNode (location: (1,6)-(1,8))
             │           └── flags: decimal
             ├── rparen_loc: ∅
             └── block: ∅

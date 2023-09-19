@@ -1,118 +1,118 @@
-@ ProgramNode (location: (0...370))
+@ ProgramNode (location: (1,0)-(35,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...370))
+    @ StatementsNode (location: (1,0)-(35,3))
     └── body: (length: 14)
-        ├── @ ClassNode (location: (0...17))
+        ├── @ ClassNode (location: (1,0)-(1,17))
         │   ├── locals: [:a]
-        │   ├── class_keyword_loc: (0...5) = "class"
+        │   ├── class_keyword_loc: (1,0)-(1,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (6...7))
+        │   │   @ ConstantReadNode (location: (1,6)-(1,7))
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (8...13))
+        │   │   @ StatementsNode (location: (1,8)-(1,13))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableWriteNode (location: (8...13))
+        │   │       └── @ LocalVariableWriteNode (location: (1,8)-(1,13))
         │   │           ├── name: :a
         │   │           ├── depth: 0
-        │   │           ├── name_loc: (8...9) = "a"
+        │   │           ├── name_loc: (1,8)-(1,9) = "a"
         │   │           ├── value:
-        │   │           │   @ IntegerNode (location: (12...13))
+        │   │           │   @ IntegerNode (location: (1,12)-(1,13))
         │   │           │   └── flags: decimal
-        │   │           └── operator_loc: (10...11) = "="
-        │   ├── end_keyword_loc: (14...17) = "end"
+        │   │           └── operator_loc: (1,10)-(1,11) = "="
+        │   ├── end_keyword_loc: (1,14)-(1,17) = "end"
         │   └── name: :A
-        ├── @ ClassNode (location: (19...39))
+        ├── @ ClassNode (location: (3,0)-(3,20))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (19...24) = "class"
+        │   ├── class_keyword_loc: (3,0)-(3,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (25...26))
+        │   │   @ ConstantReadNode (location: (3,6)-(3,7))
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (28...39))
+        │   │   @ BeginNode (location: (3,9)-(3,20))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause:
-        │   │   │   @ EnsureNode (location: (28...39))
-        │   │   │   ├── ensure_keyword_loc: (28...34) = "ensure"
+        │   │   │   @ EnsureNode (location: (3,9)-(3,20))
+        │   │   │   ├── ensure_keyword_loc: (3,9)-(3,15) = "ensure"
         │   │   │   ├── statements: ∅
-        │   │   │   └── end_keyword_loc: (36...39) = "end"
-        │   │   └── end_keyword_loc: (36...39) = "end"
-        │   ├── end_keyword_loc: (36...39) = "end"
+        │   │   │   └── end_keyword_loc: (3,17)-(3,20) = "end"
+        │   │   └── end_keyword_loc: (3,17)-(3,20) = "end"
+        │   ├── end_keyword_loc: (3,17)-(3,20) = "end"
         │   └── name: :A
-        ├── @ ClassNode (location: (41...75))
+        ├── @ ClassNode (location: (5,0)-(5,34))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (41...46) = "class"
+        │   ├── class_keyword_loc: (5,0)-(5,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (47...48))
+        │   │   @ ConstantReadNode (location: (5,6)-(5,7))
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (50...75))
+        │   │   @ BeginNode (location: (5,9)-(5,34))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:
-        │   │   │   @ RescueNode (location: (50...56))
-        │   │   │   ├── keyword_loc: (50...56) = "rescue"
+        │   │   │   @ RescueNode (location: (5,9)-(5,15))
+        │   │   │   ├── keyword_loc: (5,9)-(5,15) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements: ∅
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause:
-        │   │   │   @ ElseNode (location: (58...70))
-        │   │   │   ├── else_keyword_loc: (58...62) = "else"
+        │   │   │   @ ElseNode (location: (5,17)-(5,29))
+        │   │   │   ├── else_keyword_loc: (5,17)-(5,21) = "else"
         │   │   │   ├── statements: ∅
-        │   │   │   └── end_keyword_loc: (64...70) = "ensure"
+        │   │   │   └── end_keyword_loc: (5,23)-(5,29) = "ensure"
         │   │   ├── ensure_clause:
-        │   │   │   @ EnsureNode (location: (64...75))
-        │   │   │   ├── ensure_keyword_loc: (64...70) = "ensure"
+        │   │   │   @ EnsureNode (location: (5,23)-(5,34))
+        │   │   │   ├── ensure_keyword_loc: (5,23)-(5,29) = "ensure"
         │   │   │   ├── statements: ∅
-        │   │   │   └── end_keyword_loc: (72...75) = "end"
-        │   │   └── end_keyword_loc: (72...75) = "end"
-        │   ├── end_keyword_loc: (72...75) = "end"
+        │   │   │   └── end_keyword_loc: (5,31)-(5,34) = "end"
+        │   │   └── end_keyword_loc: (5,31)-(5,34) = "end"
+        │   ├── end_keyword_loc: (5,31)-(5,34) = "end"
         │   └── name: :A
-        ├── @ ClassNode (location: (77...98))
+        ├── @ ClassNode (location: (7,0)-(9,3))
         │   ├── locals: [:a]
-        │   ├── class_keyword_loc: (77...82) = "class"
+        │   ├── class_keyword_loc: (7,0)-(7,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (83...84))
+        │   │   @ ConstantReadNode (location: (7,6)-(7,7))
         │   │   └── name: :A
-        │   ├── inheritance_operator_loc: (85...86) = "<"
+        │   ├── inheritance_operator_loc: (7,8)-(7,9) = "<"
         │   ├── superclass:
-        │   │   @ ConstantReadNode (location: (87...88))
+        │   │   @ ConstantReadNode (location: (7,10)-(7,11))
         │   │   └── name: :B
         │   ├── body:
-        │   │   @ StatementsNode (location: (89...94))
+        │   │   @ StatementsNode (location: (8,0)-(8,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableWriteNode (location: (89...94))
+        │   │       └── @ LocalVariableWriteNode (location: (8,0)-(8,5))
         │   │           ├── name: :a
         │   │           ├── depth: 0
-        │   │           ├── name_loc: (89...90) = "a"
+        │   │           ├── name_loc: (8,0)-(8,1) = "a"
         │   │           ├── value:
-        │   │           │   @ IntegerNode (location: (93...94))
+        │   │           │   @ IntegerNode (location: (8,4)-(8,5))
         │   │           │   └── flags: decimal
-        │   │           └── operator_loc: (91...92) = "="
-        │   ├── end_keyword_loc: (95...98) = "end"
+        │   │           └── operator_loc: (8,2)-(8,3) = "="
+        │   ├── end_keyword_loc: (9,0)-(9,3) = "end"
         │   └── name: :A
-        ├── @ SingletonClassNode (location: (100...120))
+        ├── @ SingletonClassNode (location: (11,0)-(12,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (100...105) = "class"
-        │   ├── operator_loc: (106...108) = "<<"
+        │   ├── class_keyword_loc: (11,0)-(11,5) = "class"
+        │   ├── operator_loc: (11,6)-(11,8) = "<<"
         │   ├── expression:
-        │   │   @ CallNode (location: (109...116))
+        │   │   @ CallNode (location: (11,9)-(11,16))
         │   │   ├── receiver:
-        │   │   │   @ CallNode (location: (113...116))
+        │   │   │   @ CallNode (location: (11,13)-(11,16))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (113...116) = "foo"
+        │   │   │   ├── message_loc: (11,13)-(11,16) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
@@ -120,7 +120,7 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "foo"
         │   │   ├── call_operator_loc: ∅
-        │   │   ├── message_loc: (109...112) = "not"
+        │   │   ├── message_loc: (11,9)-(11,12) = "not"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -128,101 +128,101 @@
         │   │   ├── flags: ∅
         │   │   └── name: "!"
         │   ├── body: ∅
-        │   └── end_keyword_loc: (117...120) = "end"
-        ├── @ ClassNode (location: (122...162))
+        │   └── end_keyword_loc: (12,0)-(12,3) = "end"
+        ├── @ ClassNode (location: (14,0)-(14,40))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (122...127) = "class"
+        │   ├── class_keyword_loc: (14,0)-(14,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (128...129))
+        │   │   @ ConstantReadNode (location: (14,6)-(14,7))
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (131...157))
+        │   │   @ StatementsNode (location: (14,9)-(14,35))
         │   │   └── body: (length: 1)
-        │   │       └── @ SingletonClassNode (location: (131...157))
+        │   │       └── @ SingletonClassNode (location: (14,9)-(14,35))
         │   │           ├── locals: []
-        │   │           ├── class_keyword_loc: (131...136) = "class"
-        │   │           ├── operator_loc: (137...139) = "<<"
+        │   │           ├── class_keyword_loc: (14,9)-(14,14) = "class"
+        │   │           ├── operator_loc: (14,15)-(14,17) = "<<"
         │   │           ├── expression:
-        │   │           │   @ SelfNode (location: (140...144))
+        │   │           │   @ SelfNode (location: (14,18)-(14,22))
         │   │           ├── body:
-        │   │           │   @ BeginNode (location: (146...157))
+        │   │           │   @ BeginNode (location: (14,24)-(14,35))
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause: ∅
         │   │           │   ├── else_clause: ∅
         │   │           │   ├── ensure_clause:
-        │   │           │   │   @ EnsureNode (location: (146...157))
-        │   │           │   │   ├── ensure_keyword_loc: (146...152) = "ensure"
+        │   │           │   │   @ EnsureNode (location: (14,24)-(14,35))
+        │   │           │   │   ├── ensure_keyword_loc: (14,24)-(14,30) = "ensure"
         │   │           │   │   ├── statements: ∅
-        │   │           │   │   └── end_keyword_loc: (154...157) = "end"
-        │   │           │   └── end_keyword_loc: (154...157) = "end"
-        │   │           └── end_keyword_loc: (154...157) = "end"
-        │   ├── end_keyword_loc: (159...162) = "end"
+        │   │           │   │   └── end_keyword_loc: (14,32)-(14,35) = "end"
+        │   │           │   └── end_keyword_loc: (14,32)-(14,35) = "end"
+        │   │           └── end_keyword_loc: (14,32)-(14,35) = "end"
+        │   ├── end_keyword_loc: (14,37)-(14,40) = "end"
         │   └── name: :A
-        ├── @ ClassNode (location: (164...218))
+        ├── @ ClassNode (location: (16,0)-(16,54))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (164...169) = "class"
+        │   ├── class_keyword_loc: (16,0)-(16,5) = "class"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (170...171))
+        │   │   @ ConstantReadNode (location: (16,6)-(16,7))
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ StatementsNode (location: (173...213))
+        │   │   @ StatementsNode (location: (16,9)-(16,49))
         │   │   └── body: (length: 1)
-        │   │       └── @ SingletonClassNode (location: (173...213))
+        │   │       └── @ SingletonClassNode (location: (16,9)-(16,49))
         │   │           ├── locals: []
-        │   │           ├── class_keyword_loc: (173...178) = "class"
-        │   │           ├── operator_loc: (179...181) = "<<"
+        │   │           ├── class_keyword_loc: (16,9)-(16,14) = "class"
+        │   │           ├── operator_loc: (16,15)-(16,17) = "<<"
         │   │           ├── expression:
-        │   │           │   @ SelfNode (location: (182...186))
+        │   │           │   @ SelfNode (location: (16,18)-(16,22))
         │   │           ├── body:
-        │   │           │   @ BeginNode (location: (188...213))
+        │   │           │   @ BeginNode (location: (16,24)-(16,49))
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause:
-        │   │           │   │   @ RescueNode (location: (188...194))
-        │   │           │   │   ├── keyword_loc: (188...194) = "rescue"
+        │   │           │   │   @ RescueNode (location: (16,24)-(16,30))
+        │   │           │   │   ├── keyword_loc: (16,24)-(16,30) = "rescue"
         │   │           │   │   ├── exceptions: (length: 0)
         │   │           │   │   ├── operator_loc: ∅
         │   │           │   │   ├── reference: ∅
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── consequent: ∅
         │   │           │   ├── else_clause:
-        │   │           │   │   @ ElseNode (location: (196...208))
-        │   │           │   │   ├── else_keyword_loc: (196...200) = "else"
+        │   │           │   │   @ ElseNode (location: (16,32)-(16,44))
+        │   │           │   │   ├── else_keyword_loc: (16,32)-(16,36) = "else"
         │   │           │   │   ├── statements: ∅
-        │   │           │   │   └── end_keyword_loc: (202...208) = "ensure"
+        │   │           │   │   └── end_keyword_loc: (16,38)-(16,44) = "ensure"
         │   │           │   ├── ensure_clause:
-        │   │           │   │   @ EnsureNode (location: (202...213))
-        │   │           │   │   ├── ensure_keyword_loc: (202...208) = "ensure"
+        │   │           │   │   @ EnsureNode (location: (16,38)-(16,49))
+        │   │           │   │   ├── ensure_keyword_loc: (16,38)-(16,44) = "ensure"
         │   │           │   │   ├── statements: ∅
-        │   │           │   │   └── end_keyword_loc: (210...213) = "end"
-        │   │           │   └── end_keyword_loc: (210...213) = "end"
-        │   │           └── end_keyword_loc: (210...213) = "end"
-        │   ├── end_keyword_loc: (215...218) = "end"
+        │   │           │   │   └── end_keyword_loc: (16,46)-(16,49) = "end"
+        │   │           │   └── end_keyword_loc: (16,46)-(16,49) = "end"
+        │   │           └── end_keyword_loc: (16,46)-(16,49) = "end"
+        │   ├── end_keyword_loc: (16,51)-(16,54) = "end"
         │   └── name: :A
-        ├── @ SingletonClassNode (location: (220...240))
+        ├── @ SingletonClassNode (location: (18,0)-(19,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (220...225) = "class"
-        │   ├── operator_loc: (226...228) = "<<"
+        │   ├── class_keyword_loc: (18,0)-(18,5) = "class"
+        │   ├── operator_loc: (18,6)-(18,8) = "<<"
         │   ├── expression:
-        │   │   @ CallNode (location: (229...236))
+        │   │   @ CallNode (location: (18,9)-(18,16))
         │   │   ├── receiver:
-        │   │   │   @ CallNode (location: (229...232))
+        │   │   │   @ CallNode (location: (18,9)-(18,12))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (229...232) = "foo"
+        │   │   │   ├── message_loc: (18,9)-(18,12) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "foo"
-        │   │   ├── call_operator_loc: (232...233) = "."
-        │   │   ├── message_loc: (233...236) = "bar"
+        │   │   ├── call_operator_loc: (18,12)-(18,13) = "."
+        │   │   ├── message_loc: (18,13)-(18,16) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -230,26 +230,26 @@
         │   │   ├── flags: ∅
         │   │   └── name: "bar"
         │   ├── body: ∅
-        │   └── end_keyword_loc: (237...240) = "end"
-        ├── @ SingletonClassNode (location: (242...262))
+        │   └── end_keyword_loc: (19,0)-(19,3) = "end"
+        ├── @ SingletonClassNode (location: (21,0)-(21,20))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (242...247) = "class"
-        │   ├── operator_loc: (248...250) = "<<"
+        │   ├── class_keyword_loc: (21,0)-(21,5) = "class"
+        │   ├── operator_loc: (21,6)-(21,8) = "<<"
         │   ├── expression:
-        │   │   @ CallNode (location: (251...258))
+        │   │   @ CallNode (location: (21,9)-(21,16))
         │   │   ├── receiver:
-        │   │   │   @ CallNode (location: (251...254))
+        │   │   │   @ CallNode (location: (21,9)-(21,12))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (251...254) = "foo"
+        │   │   │   ├── message_loc: (21,9)-(21,12) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "foo"
-        │   │   ├── call_operator_loc: (254...255) = "."
-        │   │   ├── message_loc: (255...258) = "bar"
+        │   │   ├── call_operator_loc: (21,12)-(21,13) = "."
+        │   │   ├── message_loc: (21,13)-(21,16) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
@@ -257,99 +257,99 @@
         │   │   ├── flags: ∅
         │   │   └── name: "bar"
         │   ├── body: ∅
-        │   └── end_keyword_loc: (259...262) = "end"
-        ├── @ SingletonClassNode (location: (264...281))
+        │   └── end_keyword_loc: (21,17)-(21,20) = "end"
+        ├── @ SingletonClassNode (location: (23,0)-(24,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (264...269) = "class"
-        │   ├── operator_loc: (270...272) = "<<"
+        │   ├── class_keyword_loc: (23,0)-(23,5) = "class"
+        │   ├── operator_loc: (23,6)-(23,8) = "<<"
         │   ├── expression:
-        │   │   @ SelfNode (location: (273...277))
+        │   │   @ SelfNode (location: (23,9)-(23,13))
         │   ├── body: ∅
-        │   └── end_keyword_loc: (278...281) = "end"
-        ├── @ SingletonClassNode (location: (283...300))
+        │   └── end_keyword_loc: (24,0)-(24,3) = "end"
+        ├── @ SingletonClassNode (location: (26,0)-(26,17))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (283...288) = "class"
-        │   ├── operator_loc: (289...291) = "<<"
+        │   ├── class_keyword_loc: (26,0)-(26,5) = "class"
+        │   ├── operator_loc: (26,6)-(26,8) = "<<"
         │   ├── expression:
-        │   │   @ SelfNode (location: (292...296))
+        │   │   @ SelfNode (location: (26,9)-(26,13))
         │   ├── body: ∅
-        │   └── end_keyword_loc: (297...300) = "end"
-        ├── @ SingletonClassNode (location: (302...325))
+        │   └── end_keyword_loc: (26,14)-(26,17) = "end"
+        ├── @ SingletonClassNode (location: (28,0)-(30,3))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (302...307) = "class"
-        │   ├── operator_loc: (308...310) = "<<"
+        │   ├── class_keyword_loc: (28,0)-(28,5) = "class"
+        │   ├── operator_loc: (28,6)-(28,8) = "<<"
         │   ├── expression:
-        │   │   @ SelfNode (location: (311...315))
+        │   │   @ SelfNode (location: (28,9)-(28,13))
         │   ├── body:
-        │   │   @ StatementsNode (location: (316...321))
+        │   │   @ StatementsNode (location: (29,0)-(29,5))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (316...321))
+        │   │       └── @ CallNode (location: (29,0)-(29,5))
         │   │           ├── receiver:
-        │   │           │   @ IntegerNode (location: (316...317))
+        │   │           │   @ IntegerNode (location: (29,0)-(29,1))
         │   │           │   └── flags: decimal
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (318...319) = "+"
+        │   │           ├── message_loc: (29,2)-(29,3) = "+"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (320...321))
+        │   │           │   @ ArgumentsNode (location: (29,4)-(29,5))
         │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (320...321))
+        │   │           │       └── @ IntegerNode (location: (29,4)-(29,5))
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: "+"
-        │   └── end_keyword_loc: (322...325) = "end"
-        ├── @ SingletonClassNode (location: (327...350))
+        │   └── end_keyword_loc: (30,0)-(30,3) = "end"
+        ├── @ SingletonClassNode (location: (32,0)-(32,23))
         │   ├── locals: []
-        │   ├── class_keyword_loc: (327...332) = "class"
-        │   ├── operator_loc: (333...335) = "<<"
+        │   ├── class_keyword_loc: (32,0)-(32,5) = "class"
+        │   ├── operator_loc: (32,6)-(32,8) = "<<"
         │   ├── expression:
-        │   │   @ SelfNode (location: (336...340))
+        │   │   @ SelfNode (location: (32,9)-(32,13))
         │   ├── body:
-        │   │   @ StatementsNode (location: (341...346))
+        │   │   @ StatementsNode (location: (32,14)-(32,19))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (341...346))
+        │   │       └── @ CallNode (location: (32,14)-(32,19))
         │   │           ├── receiver:
-        │   │           │   @ IntegerNode (location: (341...342))
+        │   │           │   @ IntegerNode (location: (32,14)-(32,15))
         │   │           │   └── flags: decimal
         │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (343...344) = "+"
+        │   │           ├── message_loc: (32,16)-(32,17) = "+"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (345...346))
+        │   │           │   @ ArgumentsNode (location: (32,18)-(32,19))
         │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (345...346))
+        │   │           │       └── @ IntegerNode (location: (32,18)-(32,19))
         │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: "+"
-        │   └── end_keyword_loc: (347...350) = "end"
-        └── @ ClassNode (location: (352...370))
+        │   └── end_keyword_loc: (32,20)-(32,23) = "end"
+        └── @ ClassNode (location: (34,0)-(35,3))
             ├── locals: []
-            ├── class_keyword_loc: (352...357) = "class"
+            ├── class_keyword_loc: (34,0)-(34,5) = "class"
             ├── constant_path:
-            │   @ ConstantReadNode (location: (358...359))
+            │   @ ConstantReadNode (location: (34,6)-(34,7))
             │   └── name: :A
-            ├── inheritance_operator_loc: (360...361) = "<"
+            ├── inheritance_operator_loc: (34,8)-(34,9) = "<"
             ├── superclass:
-            │   @ CallNode (location: (362...366))
+            │   @ CallNode (location: (34,10)-(34,14))
             │   ├── receiver:
-            │   │   @ ConstantReadNode (location: (362...363))
+            │   │   @ ConstantReadNode (location: (34,10)-(34,11))
             │   │   └── name: :B
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (363...366) = "[1]"
-            │   ├── opening_loc: (363...364) = "["
+            │   ├── message_loc: (34,11)-(34,14) = "[1]"
+            │   ├── opening_loc: (34,11)-(34,12) = "["
             │   ├── arguments:
-            │   │   @ ArgumentsNode (location: (364...365))
+            │   │   @ ArgumentsNode (location: (34,12)-(34,13))
             │   │   └── arguments: (length: 1)
-            │   │       └── @ IntegerNode (location: (364...365))
+            │   │       └── @ IntegerNode (location: (34,12)-(34,13))
             │   │           └── flags: decimal
-            │   ├── closing_loc: (365...366) = "]"
+            │   ├── closing_loc: (34,13)-(34,14) = "]"
             │   ├── block: ∅
             │   ├── flags: ∅
             │   └── name: "[]"
             ├── body: ∅
-            ├── end_keyword_loc: (367...370) = "end"
+            ├── end_keyword_loc: (35,0)-(35,3) = "end"
             └── name: :A

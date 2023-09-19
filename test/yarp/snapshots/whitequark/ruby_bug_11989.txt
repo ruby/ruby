@@ -1,21 +1,21 @@
-@ ProgramNode (location: (0...8))
+@ ProgramNode (location: (1,0)-(1,8))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...8))
+    @ StatementsNode (location: (1,0)-(1,8))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...8))
+        └── @ CallNode (location: (1,0)-(1,8))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
-            ├── message_loc: (0...1) = "p"
+            ├── message_loc: (1,0)-(1,1) = "p"
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (2...8))
+            │   @ ArgumentsNode (location: (1,2)-(1,8))
             │   └── arguments: (length: 1)
-            │       └── @ StringNode (location: (2...8))
+            │       └── @ StringNode (location: (1,2)-(1,8))
             │           ├── flags: ∅
-            │           ├── opening_loc: (2...8) = "<<~\"E\""
-            │           ├── content_loc: (9...19) = "  x\\n   y\n"
-            │           ├── closing_loc: (19...21) = "E\n"
+            │           ├── opening_loc: (1,2)-(1,8) = "<<~\"E\""
+            │           ├── content_loc: (2,0)-(2,0) = "  x\\n   y\n"
+            │           ├── closing_loc: (3,0)-(3,0) = "E\n"
             │           └── unescaped: "x\n   y\n"
             ├── closing_loc: ∅
             ├── block: ∅

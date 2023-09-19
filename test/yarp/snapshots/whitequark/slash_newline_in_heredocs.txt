@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...33))
+@ ProgramNode (location: (1,0)-(8,4))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...33))
+    @ StatementsNode (location: (1,0)-(8,4))
     └── body: (length: 2)
-        ├── @ StringNode (location: (0...4))
+        ├── @ StringNode (location: (1,0)-(1,4))
         │   ├── flags: ∅
-        │   ├── opening_loc: (0...4) = "<<-E"
-        │   ├── content_loc: (5...25) = "    1 \\\n    2\n    3\n"
-        │   ├── closing_loc: (25...27) = "E\n"
+        │   ├── opening_loc: (1,0)-(1,4) = "<<-E"
+        │   ├── content_loc: (2,0)-(4,0) = "    1 \\\n    2\n    3\n"
+        │   ├── closing_loc: (5,0)-(5,0) = "E\n"
         │   └── unescaped: "    1     2\n    3\n"
-        └── @ StringNode (location: (29...33))
+        └── @ StringNode (location: (8,0)-(8,4))
             ├── flags: ∅
-            ├── opening_loc: (29...33) = "<<~E"
-            ├── content_loc: (34...54) = "    1 \\\n    2\n    3\n"
-            ├── closing_loc: (54...56) = "E\n"
+            ├── opening_loc: (8,0)-(8,4) = "<<~E"
+            ├── content_loc: (9,0)-(11,0) = "    1 \\\n    2\n    3\n"
+            ├── closing_loc: (12,0)-(12,0) = "E\n"
             └── unescaped: "1 2\n3\n"

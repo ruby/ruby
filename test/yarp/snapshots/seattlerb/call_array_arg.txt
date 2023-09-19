@@ -1,32 +1,32 @@
-@ ProgramNode (location: (0...13))
+@ ProgramNode (location: (1,0)-(1,13))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...13))
+    @ StatementsNode (location: (1,0)-(1,13))
     └── body: (length: 1)
-        └── @ CallNode (location: (0...13))
+        └── @ CallNode (location: (1,0)-(1,13))
             ├── receiver:
-            │   @ IntegerNode (location: (0...1))
+            │   @ IntegerNode (location: (1,0)-(1,1))
             │   └── flags: decimal
             ├── call_operator_loc: ∅
-            ├── message_loc: (2...4) = "=="
+            ├── message_loc: (1,2)-(1,4) = "=="
             ├── opening_loc: ∅
             ├── arguments:
-            │   @ ArgumentsNode (location: (5...13))
+            │   @ ArgumentsNode (location: (1,5)-(1,13))
             │   └── arguments: (length: 1)
-            │       └── @ ArrayNode (location: (5...13))
+            │       └── @ ArrayNode (location: (1,5)-(1,13))
             │           ├── elements: (length: 2)
-            │           │   ├── @ SymbolNode (location: (6...8))
-            │           │   │   ├── opening_loc: (6...7) = ":"
-            │           │   │   ├── value_loc: (7...8) = "b"
+            │           │   ├── @ SymbolNode (location: (1,6)-(1,8))
+            │           │   │   ├── opening_loc: (1,6)-(1,7) = ":"
+            │           │   │   ├── value_loc: (1,7)-(1,8) = "b"
             │           │   │   ├── closing_loc: ∅
             │           │   │   └── unescaped: "b"
-            │           │   └── @ SymbolNode (location: (10...12))
-            │           │       ├── opening_loc: (10...11) = ":"
-            │           │       ├── value_loc: (11...12) = "c"
+            │           │   └── @ SymbolNode (location: (1,10)-(1,12))
+            │           │       ├── opening_loc: (1,10)-(1,11) = ":"
+            │           │       ├── value_loc: (1,11)-(1,12) = "c"
             │           │       ├── closing_loc: ∅
             │           │       └── unescaped: "c"
-            │           ├── opening_loc: (5...6) = "["
-            │           └── closing_loc: (12...13) = "]"
+            │           ├── opening_loc: (1,5)-(1,6) = "["
+            │           └── closing_loc: (1,12)-(1,13) = "]"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

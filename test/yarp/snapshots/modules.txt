@@ -1,69 +1,69 @@
-@ ProgramNode (location: (0...140))
+@ ProgramNode (location: (1,0)-(18,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...140))
+    @ StatementsNode (location: (1,0)-(18,3))
     └── body: (length: 7)
-        ├── @ ModuleNode (location: (0...18))
+        ├── @ ModuleNode (location: (1,0)-(1,18))
         │   ├── locals: [:a]
-        │   ├── module_keyword_loc: (0...6) = "module"
+        │   ├── module_keyword_loc: (1,0)-(1,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (7...8))
+        │   │   @ ConstantReadNode (location: (1,7)-(1,8))
         │   │   └── name: :A
         │   ├── body:
-        │   │   @ StatementsNode (location: (9...14))
+        │   │   @ StatementsNode (location: (1,9)-(1,14))
         │   │   └── body: (length: 1)
-        │   │       └── @ LocalVariableWriteNode (location: (9...14))
+        │   │       └── @ LocalVariableWriteNode (location: (1,9)-(1,14))
         │   │           ├── name: :a
         │   │           ├── depth: 0
-        │   │           ├── name_loc: (9...10) = "a"
+        │   │           ├── name_loc: (1,9)-(1,10) = "a"
         │   │           ├── value:
-        │   │           │   @ IntegerNode (location: (13...14))
+        │   │           │   @ IntegerNode (location: (1,13)-(1,14))
         │   │           │   └── flags: decimal
-        │   │           └── operator_loc: (11...12) = "="
-        │   ├── end_keyword_loc: (15...18) = "end"
+        │   │           └── operator_loc: (1,11)-(1,12) = "="
+        │   ├── end_keyword_loc: (1,15)-(1,18) = "end"
         │   └── name: :A
-        ├── @ InterpolatedStringNode (location: (20...38))
-        │   ├── opening_loc: (20...23) = "%Q{"
+        ├── @ InterpolatedStringNode (location: (3,0)-(3,18))
+        │   ├── opening_loc: (3,0)-(3,3) = "%Q{"
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (23...27))
+        │   │   ├── @ StringNode (location: (3,3)-(3,7))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (23...27) = "aaa "
+        │   │   │   ├── content_loc: (3,3)-(3,7) = "aaa "
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "aaa "
-        │   │   ├── @ EmbeddedStatementsNode (location: (27...33))
-        │   │   │   ├── opening_loc: (27...29) = "\#{"
+        │   │   ├── @ EmbeddedStatementsNode (location: (3,7)-(3,13))
+        │   │   │   ├── opening_loc: (3,7)-(3,9) = "\#{"
         │   │   │   ├── statements:
-        │   │   │   │   @ StatementsNode (location: (29...32))
+        │   │   │   │   @ StatementsNode (location: (3,9)-(3,12))
         │   │   │   │   └── body: (length: 1)
-        │   │   │   │       └── @ CallNode (location: (29...32))
+        │   │   │   │       └── @ CallNode (location: (3,9)-(3,12))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
-        │   │   │   │           ├── message_loc: (29...32) = "bbb"
+        │   │   │   │           ├── message_loc: (3,9)-(3,12) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: "bbb"
-        │   │   │   └── closing_loc: (32...33) = "}"
-        │   │   └── @ StringNode (location: (33...37))
+        │   │   │   └── closing_loc: (3,12)-(3,13) = "}"
+        │   │   └── @ StringNode (location: (3,13)-(3,17))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (33...37) = " ccc"
+        │   │       ├── content_loc: (3,13)-(3,17) = " ccc"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: " ccc"
-        │   └── closing_loc: (37...38) = "}"
-        ├── @ ModuleNode (location: (40...55))
+        │   └── closing_loc: (3,17)-(3,18) = "}"
+        ├── @ ModuleNode (location: (5,0)-(6,3))
         │   ├── locals: []
-        │   ├── module_keyword_loc: (40...46) = "module"
+        │   ├── module_keyword_loc: (5,0)-(5,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantPathNode (location: (47...51))
+        │   │   @ ConstantPathNode (location: (5,7)-(5,11))
         │   │   ├── parent:
-        │   │   │   @ CallNode (location: (47...48))
+        │   │   │   @ CallNode (location: (5,7)-(5,8))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (47...48) = "m"
+        │   │   │   ├── message_loc: (5,7)-(5,8) = "m"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
@@ -71,35 +71,35 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: "m"
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (50...51))
+        │   │   │   @ ConstantReadNode (location: (5,10)-(5,11))
         │   │   │   └── name: :M
-        │   │   └── delimiter_loc: (48...50) = "::"
+        │   │   └── delimiter_loc: (5,8)-(5,10) = "::"
         │   ├── body: ∅
-        │   ├── end_keyword_loc: (52...55) = "end"
+        │   ├── end_keyword_loc: (6,0)-(6,3) = "end"
         │   └── name: :M
-        ├── @ ModuleNode (location: (57...85))
+        ├── @ ModuleNode (location: (8,0)-(9,19))
         │   ├── locals: [:x]
-        │   ├── module_keyword_loc: (57...63) = "module"
+        │   ├── module_keyword_loc: (8,0)-(8,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantReadNode (location: (64...65))
+        │   │   @ ConstantReadNode (location: (8,7)-(8,8))
         │   │   └── name: :A
         │   ├── body:
-        │   │   @ BeginNode (location: (67...85))
+        │   │   @ BeginNode (location: (9,1)-(9,19))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
-        │   │   │   @ StatementsNode (location: (67...72))
+        │   │   │   @ StatementsNode (location: (9,1)-(9,6))
         │   │   │   └── body: (length: 1)
-        │   │   │       └── @ LocalVariableWriteNode (location: (67...72))
+        │   │   │       └── @ LocalVariableWriteNode (location: (9,1)-(9,6))
         │   │   │           ├── name: :x
         │   │   │           ├── depth: 0
-        │   │   │           ├── name_loc: (67...68) = "x"
+        │   │   │           ├── name_loc: (9,1)-(9,2) = "x"
         │   │   │           ├── value:
-        │   │   │           │   @ IntegerNode (location: (71...72))
+        │   │   │           │   @ IntegerNode (location: (9,5)-(9,6))
         │   │   │           │   └── flags: decimal
-        │   │   │           └── operator_loc: (69...70) = "="
+        │   │   │           └── operator_loc: (9,3)-(9,4) = "="
         │   │   ├── rescue_clause:
-        │   │   │   @ RescueNode (location: (74...80))
-        │   │   │   ├── keyword_loc: (74...80) = "rescue"
+        │   │   │   @ RescueNode (location: (9,8)-(9,14))
+        │   │   │   ├── keyword_loc: (9,8)-(9,14) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
@@ -107,73 +107,73 @@
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
-        │   │   └── end_keyword_loc: (82...85) = "end"
-        │   ├── end_keyword_loc: (82...85) = "end"
+        │   │   └── end_keyword_loc: (9,16)-(9,19) = "end"
+        │   ├── end_keyword_loc: (9,16)-(9,19) = "end"
         │   └── name: :A
-        ├── @ ModuleNode (location: (87...101))
+        ├── @ ModuleNode (location: (11,0)-(12,3))
         │   ├── locals: []
-        │   ├── module_keyword_loc: (87...93) = "module"
+        │   ├── module_keyword_loc: (11,0)-(11,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantPathNode (location: (94...97))
+        │   │   @ ConstantPathNode (location: (11,7)-(11,10))
         │   │   ├── parent: ∅
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (96...97))
+        │   │   │   @ ConstantReadNode (location: (11,9)-(11,10))
         │   │   │   └── name: :A
-        │   │   └── delimiter_loc: (94...96) = "::"
+        │   │   └── delimiter_loc: (11,7)-(11,9) = "::"
         │   ├── body: ∅
-        │   ├── end_keyword_loc: (98...101) = "end"
+        │   ├── end_keyword_loc: (12,0)-(12,3) = "end"
         │   └── name: :A
-        ├── @ ModuleNode (location: (103...120))
+        ├── @ ModuleNode (location: (14,0)-(15,3))
         │   ├── locals: []
-        │   ├── module_keyword_loc: (103...109) = "module"
+        │   ├── module_keyword_loc: (14,0)-(14,6) = "module"
         │   ├── constant_path:
-        │   │   @ ConstantPathNode (location: (110...116))
+        │   │   @ ConstantPathNode (location: (14,7)-(14,13))
         │   │   ├── parent:
-        │   │   │   @ CallNode (location: (110...113))
+        │   │   │   @ CallNode (location: (14,7)-(14,10))
         │   │   │   ├── receiver:
-        │   │   │   │   @ ConstantReadNode (location: (110...111))
+        │   │   │   │   @ ConstantReadNode (location: (14,7)-(14,8))
         │   │   │   │   └── name: :A
         │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── message_loc: (111...113) = "[]"
-        │   │   │   ├── opening_loc: (111...112) = "["
+        │   │   │   ├── message_loc: (14,8)-(14,10) = "[]"
+        │   │   │   ├── opening_loc: (14,8)-(14,9) = "["
         │   │   │   ├── arguments: ∅
-        │   │   │   ├── closing_loc: (112...113) = "]"
+        │   │   │   ├── closing_loc: (14,9)-(14,10) = "]"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
         │   │   │   └── name: "[]"
         │   │   ├── child:
-        │   │   │   @ ConstantReadNode (location: (115...116))
+        │   │   │   @ ConstantReadNode (location: (14,12)-(14,13))
         │   │   │   └── name: :B
-        │   │   └── delimiter_loc: (113...115) = "::"
+        │   │   └── delimiter_loc: (14,10)-(14,12) = "::"
         │   ├── body: ∅
-        │   ├── end_keyword_loc: (117...120) = "end"
+        │   ├── end_keyword_loc: (15,0)-(15,3) = "end"
         │   └── name: :B
-        └── @ ModuleNode (location: (122...140))
+        └── @ ModuleNode (location: (17,0)-(18,3))
             ├── locals: []
-            ├── module_keyword_loc: (122...128) = "module"
+            ├── module_keyword_loc: (17,0)-(17,6) = "module"
             ├── constant_path:
-            │   @ ConstantPathNode (location: (129...136))
+            │   @ ConstantPathNode (location: (17,7)-(17,14))
             │   ├── parent:
-            │   │   @ CallNode (location: (129...133))
+            │   │   @ CallNode (location: (17,7)-(17,11))
             │   │   ├── receiver:
-            │   │   │   @ ConstantReadNode (location: (129...130))
+            │   │   │   @ ConstantReadNode (location: (17,7)-(17,8))
             │   │   │   └── name: :A
             │   │   ├── call_operator_loc: ∅
-            │   │   ├── message_loc: (130...133) = "[1]"
-            │   │   ├── opening_loc: (130...131) = "["
+            │   │   ├── message_loc: (17,8)-(17,11) = "[1]"
+            │   │   ├── opening_loc: (17,8)-(17,9) = "["
             │   │   ├── arguments:
-            │   │   │   @ ArgumentsNode (location: (131...132))
+            │   │   │   @ ArgumentsNode (location: (17,9)-(17,10))
             │   │   │   └── arguments: (length: 1)
-            │   │   │       └── @ IntegerNode (location: (131...132))
+            │   │   │       └── @ IntegerNode (location: (17,9)-(17,10))
             │   │   │           └── flags: decimal
-            │   │   ├── closing_loc: (132...133) = "]"
+            │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
             │   │   └── name: "[]"
             │   ├── child:
-            │   │   @ ConstantReadNode (location: (135...136))
+            │   │   @ ConstantReadNode (location: (17,13)-(17,14))
             │   │   └── name: :B
-            │   └── delimiter_loc: (133...135) = "::"
+            │   └── delimiter_loc: (17,11)-(17,13) = "::"
             ├── body: ∅
-            ├── end_keyword_loc: (137...140) = "end"
+            ├── end_keyword_loc: (18,0)-(18,3) = "end"
             └── name: :B

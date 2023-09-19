@@ -1,17 +1,17 @@
-@ ProgramNode (location: (0...42))
+@ ProgramNode (location: (1,0)-(1,42))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...42))
+    @ StatementsNode (location: (1,0)-(1,42))
     └── body: (length: 1)
-        └── @ BeginNode (location: (0...42))
-            ├── begin_keyword_loc: (0...5) = "begin"
+        └── @ BeginNode (location: (1,0)-(1,42))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements:
-            │   @ StatementsNode (location: (7...11))
+            │   @ StatementsNode (location: (1,7)-(1,11))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (7...11))
+            │       └── @ CallNode (location: (1,7)-(1,11))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (7...11) = "meth"
+            │           ├── message_loc: (1,7)-(1,11) = "meth"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
@@ -19,18 +19,18 @@
             │           ├── flags: variable_call
             │           └── name: "meth"
             ├── rescue_clause:
-            │   @ RescueNode (location: (13...24))
-            │   ├── keyword_loc: (13...19) = "rescue"
+            │   @ RescueNode (location: (1,13)-(1,24))
+            │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
             │   ├── exceptions: (length: 0)
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements:
-            │   │   @ StatementsNode (location: (21...24))
+            │   │   @ StatementsNode (location: (1,21)-(1,24))
             │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (21...24))
+            │   │       └── @ CallNode (location: (1,21)-(1,24))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (21...24) = "baz"
+            │   │           ├── message_loc: (1,21)-(1,24) = "baz"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
@@ -40,20 +40,20 @@
             │   └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause:
-            │   @ EnsureNode (location: (26...42))
-            │   ├── ensure_keyword_loc: (26...32) = "ensure"
+            │   @ EnsureNode (location: (1,26)-(1,42))
+            │   ├── ensure_keyword_loc: (1,26)-(1,32) = "ensure"
             │   ├── statements:
-            │   │   @ StatementsNode (location: (34...37))
+            │   │   @ StatementsNode (location: (1,34)-(1,37))
             │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (34...37))
+            │   │       └── @ CallNode (location: (1,34)-(1,37))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
-            │   │           ├── message_loc: (34...37) = "bar"
+            │   │           ├── message_loc: (1,34)-(1,37) = "bar"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
             │   │           └── name: "bar"
-            │   └── end_keyword_loc: (39...42) = "end"
-            └── end_keyword_loc: (39...42) = "end"
+            │   └── end_keyword_loc: (1,39)-(1,42) = "end"
+            └── end_keyword_loc: (1,39)-(1,42) = "end"

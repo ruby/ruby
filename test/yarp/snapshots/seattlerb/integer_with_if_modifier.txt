@@ -1,16 +1,16 @@
-@ ProgramNode (location: (0...12))
+@ ProgramNode (location: (1,0)-(1,12))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (0...12))
+    @ StatementsNode (location: (1,0)-(1,12))
     └── body: (length: 1)
-        └── @ IfNode (location: (0...12))
-            ├── if_keyword_loc: (5...7) = "if"
+        └── @ IfNode (location: (1,0)-(1,12))
+            ├── if_keyword_loc: (1,5)-(1,7) = "if"
             ├── predicate:
-            │   @ TrueNode (location: (8...12))
+            │   @ TrueNode (location: (1,8)-(1,12))
             ├── statements:
-            │   @ StatementsNode (location: (0...5))
+            │   @ StatementsNode (location: (1,0)-(1,5))
             │   └── body: (length: 1)
-            │       └── @ IntegerNode (location: (0...5))
+            │       └── @ IntegerNode (location: (1,0)-(1,5))
             │           └── flags: decimal
             ├── consequent: ∅
             └── end_keyword_loc: ∅
