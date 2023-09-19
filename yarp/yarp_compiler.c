@@ -492,7 +492,6 @@ yp_new_child_iseq(rb_iseq_t *iseq, yp_scope_node_t * node, yp_parser_t *parser,
     return ret_iseq;
 }
 
-
 static int
 yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node, const uint8_t * src, bool popped, yp_compile_context_t *compile_context)
 {
@@ -941,7 +940,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
 
-
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
@@ -1149,7 +1147,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
 
-
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
@@ -1338,7 +1335,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   instance_variable_name_val,
                   get_ivar_ic_value(iseq, instance_variable_name_id));
 
-
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
@@ -1444,7 +1440,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (parts_size > 1) {
               ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(parts_size)));
           }
-
 
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, rb_intern("`"), INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
           if (popped) {
@@ -1806,7 +1801,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_parameters_node_t *parameters_node = (yp_parameters_node_t *)scope_node->parameters;
           yp_node_list_t requireds_list = YP_EMPTY_NODE_LIST;
           yp_node_list_t optionals_list = YP_EMPTY_NODE_LIST;
-
 
           if (parameters_node) {
               requireds_list = parameters_node->requireds;
