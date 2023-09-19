@@ -23,13 +23,15 @@ module Bundler
       Gem::Version.create("1.13") => [PLUGIN].freeze,
     }.freeze
 
-    KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten.freeze
+    KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten!.freeze
 
     ENVIRONMENT_VERSION_SECTIONS = [BUNDLED, RUBY].freeze
     deprecate_constant(:ENVIRONMENT_VERSION_SECTIONS)
 
     def self.sections_in_lockfile(lockfile_contents)
-      lockfile_contents.scan(/^\w[\w ]*$/).uniq
+      sections = lockfile_contents.scan(/^\w[\w ]*$/)
+      sections.uniq!
+      sections
     end
 
     def self.unknown_sections_in_lockfile(lockfile_contents)
@@ -38,7 +40,7 @@ module Bundler
 
     def self.sections_to_ignore(base_version = nil)
       base_version &&= base_version.release
-      base_version ||= Gem::Version.create("1.0".dup)
+      base_version ||= Gem::Version.create("1.0")
       attributes = []
       SECTIONS_BY_VERSION_INTRODUCED.each do |version, introduced|
         next if version <= base_version
@@ -61,7 +63,7 @@ module Bundler
       @platforms    = []
       @sources      = []
       @dependencies = {}
-      @state        = nil
+      @parse_method = nil
       @specs        = {}
 
       if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
@@ -69,25 +71,25 @@ module Bundler
           "Run `git checkout HEAD -- #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` first to get a clean lock."
       end
 
-      lockfile.split(/(?:\r?\n)+/).each do |line|
+      lockfile.split(/(?:\r?\n)+/) do |line|
         if SOURCE.include?(line)
-          @state = :source
+          @parse_method = :parse_source
           parse_source(line)
         elsif line == DEPENDENCIES
-          @state = :dependency
+          @parse_method = :parse_dependency
         elsif line == PLATFORMS
-          @state = :platform
+          @parse_method = :parse_platform
         elsif line == RUBY
-          @state = :ruby
+          @parse_method = :parse_ruby
         elsif line == BUNDLED
-          @state = :bundled_with
+          @parse_method = :parse_bundled_with
         elsif /^[^\s]/.match?(line)
-          @state = nil
-        elsif @state
-          send("parse_#{@state}", line)
+          @parse_method = nil
+        elsif @parse_method
+          send(@parse_method, line)
         end
       end
-      @specs = @specs.values.sort_by(&:full_name)
+      @specs = @specs.values.sort_by!(&:full_name)
     rescue ArgumentError => e
       Bundler.ui.debug(e)
       raise LockfileError, "Your lockfile is unreadable. Run `rm #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` " \
@@ -149,11 +151,11 @@ module Bundler
       return unless line =~ NAME_VERSION
       spaces = $1
       return unless spaces.size == 2
-      name = $2
+      name = -$2
       version = $3
       pinned = $5
 
-      version = version.split(",").map(&:strip) if version
+      version = version.split(",").each(&:strip!) if version
 
       dep = Bundler::Dependency.new(name, version)
 
@@ -177,11 +179,13 @@ module Bundler
     def parse_spec(line)
       return unless line =~ NAME_VERSION
       spaces = $1
-      name = $2
+      name = -$2
       version = $3
-      platform = $4
 
       if spaces.size == 4
+        # only load platform for non-dependency (spec) line
+        platform = $4
+
         version = Gem::Version.new(version)
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
         @current_spec = LazySpecification.new(name, version, platform)
@@ -190,7 +194,7 @@ module Bundler
 
         @specs[@current_spec.full_name] = @current_spec
       elsif spaces.size == 6
-        version = version.split(",").map(&:strip) if version
+        version = version.split(",").each(&:strip!) if version
         dep = Gem::Dependency.new(name, version)
         @current_spec.dependencies << dep
       end
@@ -201,13 +205,14 @@ module Bundler
     end
 
     def parse_bundled_with(line)
-      line = line.strip
+      line.strip!
       return unless Gem::Version.correct?(line)
       @bundler_version = Gem::Version.create(line)
     end
 
     def parse_ruby(line)
-      @ruby_version = line.strip
+      line.strip!
+      @ruby_version = line
     end
   end
 end
