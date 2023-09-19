@@ -1777,8 +1777,21 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (!popped) {
               yp_regular_expression_node_t *regular_expression_node = (yp_regular_expression_node_t *) node;
               VALUE regex_str = parse_string(&regular_expression_node->unescaped);
-              // TODO: Replace 0 with regex options
-              VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), 0);
+              int flags = 0;
+
+              if (regular_expression_node->base.flags & YP_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
+                  flags |= ONIG_OPTION_IGNORECASE;
+              }
+
+              if (regular_expression_node->base.flags & YP_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) {
+                  flags |= ONIG_OPTION_MULTILINE;
+              }
+
+              if (regular_expression_node->base.flags & YP_REGULAR_EXPRESSION_FLAGS_EXTENDED) {
+                  flags |= ONIG_OPTION_EXTEND;
+              }
+
+              VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), flags);
               ADD_INSN1(ret, &dummy_line_node, putobject, regex);
           }
           return;
