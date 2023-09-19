@@ -119,7 +119,6 @@ VALUE rb_module_s_alloc(VALUE klass);
 void rb_module_set_initialized(VALUE module);
 void rb_module_check_initializable(VALUE module);
 VALUE rb_make_metaclass(VALUE, VALUE);
-VALUE rb_iclass_alloc(VALUE klass);
 VALUE rb_include_class_new(VALUE, VALUE);
 void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_detach_subclasses(VALUE);
@@ -206,7 +205,7 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
 static inline void
 RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
 {
-    assert(BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_MODULE || klass == rb_mRubyVMFrozenCore);
+    assert(BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_MODULE);
     assert(classpath == 0 || BUILTIN_TYPE(classpath) == T_STRING);
 
     RB_OBJ_WRITE(klass, &(RCLASS_EXT(klass)->classpath), classpath);
