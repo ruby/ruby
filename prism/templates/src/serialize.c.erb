@@ -203,16 +203,16 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
     offset = buffer->length;
     pm_buffer_append_zeroes(buffer, parser->constant_pool.size * 8);
 
-    pm_constant_t *constant;
     for (uint32_t index = 0; index < parser->constant_pool.capacity; index++) {
-        constant = &parser->constant_pool.constants[index];
+        pm_constant_pool_bucket_t *bucket = &parser->constant_pool.buckets[index];
 
         // If we find a constant at this index, serialize it at the correct
         // index in the buffer.
-        if (constant->id != 0) {
-            size_t buffer_offset = offset + ((((size_t) constant->id) - 1) * 8);
+        if (bucket->id != 0) {
+            pm_constant_t *constant = &parser->constant_pool.constants[bucket->id - 1];
+            size_t buffer_offset = offset + ((((size_t)bucket->id) - 1) * 8);
 
-            if (constant->owned) {
+            if (bucket->owned) {
                 // Since this is an owned constant, we are going to write its
                 // contents into the buffer after the constant pool. So
                 // effectively in place of the source offset, we have a buffer
