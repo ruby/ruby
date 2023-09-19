@@ -252,6 +252,13 @@ module YARP
 
     def test_RegularExpressionNode
       test_yarp_eval('/yct/')
+      test_yarp_eval('/yct/i')
+      test_yarp_eval('/yct/x')
+      test_yarp_eval('/yct/m')
+      test_yarp_eval('/yct/im')
+      test_yarp_eval('/yct/mx')
+      test_yarp_eval('/yct/xi')
+      test_yarp_eval('/yct/ixm')
     end
 
     def test_StringConcatNode
