@@ -515,6 +515,58 @@ yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *
     }
 }
 
+/**
+ * In order to properly compile multiple-assignment, some preprocessing needs to
+ * be performed in the case of call or constant path targets. This is when they
+ * are read, the "parent" of each of these nodes should only be read once (the
+ * receiver in the case of a call, the parent constant in the case of a constant
+ * path).
+ */
+static uint8_t
+yp_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const yp_node_t *node, LINK_ANCHOR *const ret, yp_compile_context_t *compile_context, uint8_t pushed, bool nested) {
+    switch (YP_NODE_TYPE(node)) {
+        case YP_MULTI_TARGET_NODE: {
+            yp_multi_target_node_t *cast = (yp_multi_target_node_t *) node;
+            for (size_t index = 0; index < cast->targets.size; index++) {
+                pushed = yp_compile_multi_write_lhs(iseq, dummy_line_node, cast->targets.nodes[index], ret, compile_context, pushed, false);
+            }
+            break;
+        }
+        case YP_CONSTANT_PATH_TARGET_NODE: {
+            yp_constant_path_target_node_t *cast = (yp_constant_path_target_node_t *)node;
+            if (cast->parent) {
+                ADD_INSN(ret, &dummy_line_node, putnil);
+                pushed = yp_compile_multi_write_lhs(iseq, dummy_line_node, cast->parent, ret, compile_context, pushed, false);
+            } else {
+                ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
+            }
+            break;
+        }
+        case YP_CONSTANT_PATH_NODE: {
+            yp_constant_path_node_t *cast = (yp_constant_path_node_t *) node;
+            if (cast->parent) {
+                pushed = yp_compile_multi_write_lhs(iseq, dummy_line_node, cast->parent, ret, compile_context, pushed, false);
+            } else {
+                ADD_INSN(ret, &dummy_line_node, pop);
+                ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
+            }
+            pushed = yp_compile_multi_write_lhs(iseq, dummy_line_node, cast->child, ret, compile_context, pushed, cast->parent);
+            break;
+        }
+        case YP_CONSTANT_READ_NODE: {
+            yp_constant_read_node_t *cast = (yp_constant_read_node_t *) node;
+            ADD_INSN1(ret, &dummy_line_node, putobject, RBOOL(!nested));
+            ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(yp_constant_id_lookup(compile_context, cast->name)));
+            pushed = pushed + 2;
+            break;
+        }
+        default:
+            break;
+    }
+
+    return pushed;
+}
+
 /*
  * Compiles a YARP node into instruction sequences
  *
@@ -846,6 +898,13 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(yp_constant_id_lookup(compile_context, child->name)));
           YP_POP_IF_POPPED;
+          return;
+      }
+      case YP_CONSTANT_PATH_TARGET_NODE: {
+          yp_constant_path_target_node_t *cast = (yp_constant_path_target_node_t *)node;
+
+          YP_COMPILE(cast->parent);
+
           return;
       }
       case YP_CONSTANT_PATH_WRITE_NODE: {
@@ -1527,8 +1586,23 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           YP_POP_IF_POPPED;
           return;
       }
+      case YP_MULTI_TARGET_NODE: {
+          yp_multi_target_node_t *cast = (yp_multi_target_node_t *) node;
+          for (size_t index = 0; index < cast->targets.size; index++) {
+              YP_COMPILE(cast->targets.nodes[index]);
+          }
+          return;
+      }
       case YP_MULTI_WRITE_NODE: {
           yp_multi_write_node_t *multi_write_node = (yp_multi_write_node_t *)node;
+          yp_node_list_t node_list = multi_write_node->targets;
+
+          // pre-process the left hand side of multi-assignments.
+          uint8_t pushed = 0;
+          for (size_t index = 0; index < node_list.size; index++) {
+              pushed = yp_compile_multi_write_lhs(iseq, dummy_line_node, node_list.nodes[index], ret, compile_context, pushed, false);
+          }
+
           YP_COMPILE_NOT_POPPED(multi_write_node->value);
 
           // TODO: int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
@@ -1538,10 +1612,28 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               ADD_INSN(ret, &dummy_line_node, dup);
           }
           ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(multi_write_node->targets.size), INT2FIX(flag));
-          yp_node_list_t node_list = multi_write_node->targets;
 
           for (size_t index = 0; index < node_list.size; index++) {
-              YP_COMPILE(node_list.nodes[index]);
+              yp_node_t *considered_node = node_list.nodes[index];
+
+              if (YP_NODE_TYPE_P(considered_node, YP_CONSTANT_PATH_TARGET_NODE) && pushed > 0) {
+                  yp_constant_path_target_node_t *cast = (yp_constant_path_target_node_t *)considered_node;
+                  ID name = yp_constant_id_lookup(compile_context, ((yp_constant_read_node_t * ) cast->child)->name);
+
+                  pushed -= 2;
+
+                  ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(pushed));
+                  ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(name));
+              } else {
+                  YP_COMPILE(node_list.nodes[index]);
+              }
+          }
+
+          if (pushed) {
+              ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(pushed));
+              for (uint8_t index = 0; index < pushed; index++) {
+                  ADD_INSN(ret, &dummy_line_node, pop);
+              }
           }
 
           return;

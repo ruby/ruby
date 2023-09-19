@@ -133,6 +133,22 @@ module YARP
       Object.send(:remove_const, constant_name)
     end
 
+    def test_ConstantPathTargetNode
+      # Create some temporary nested constants
+      Object.send(:const_set, "MyFoo", Object)
+      Object.const_get("MyFoo").send(:const_set, "Bar", Object)
+
+      constant_names = ["MyBar", "MyFoo::Bar", "MyFoo::Bar::Baz"]
+      source = "#{constant_names.join(",")} = Object"
+      yarp_eval = RubyVM::InstructionSequence.compile_yarp(source).eval
+      assert_equal yarp_eval, Object
+
+      ## Teardown temp constants
+      Object.const_get("MyFoo").send(:remove_const, "Bar")
+      Object.send(:remove_const, "MyFoo")
+      Object.send(:remove_const, "MyBar")
+    end
+
     def test_ConstantPathWriteNode
       # test_yarp_eval("YARP::YCT = 1")
     end
