@@ -437,6 +437,7 @@ module SyncDefaultGems
       [^/]+ # top-level entries
       |\.git.*
       |bin/.*
+      |ext/.*\.java
       |rakelib/.*
       |test/(?:lib|fixtures)/.*
       |tool/.*
