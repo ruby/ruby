@@ -3711,6 +3711,7 @@ Init_VM(void)
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
+    rb_gc_register_mark_object(rb_class_path_cached(fcore));
     rb_mRubyVMFrozenCore = fcore;
 
     /*
