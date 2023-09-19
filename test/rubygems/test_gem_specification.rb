@@ -2291,7 +2291,7 @@ dependencies: []
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "2"
+  s.version = "2".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze, "other".freeze]
@@ -2306,7 +2306,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
+  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\".freeze])
 end
     SPEC
 
@@ -2331,7 +2331,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "2"
+  s.version = "2".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
@@ -2364,7 +2364,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "2"
+  s.version = "2".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
@@ -2376,11 +2376,11 @@ Gem::Specification.new do |s|
   s.rubygems_version = "#{Gem::VERSION}".freeze
   s.summary = "this is a summary".freeze
 
-  s.installed_by_version = "#{Gem::VERSION}" if s.respond_to? :installed_by_version
+  s.installed_by_version = "#{Gem::VERSION}".freeze if s.respond_to? :installed_by_version
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
+  s.add_runtime_dependency(%q<b>.freeze, ["= 1".freeze])
 end
     SPEC
 
@@ -2400,7 +2400,7 @@ end
     ruby_code = @c1.to_ruby
 
     local = Gem::Platform.local
-    expected_platform = "[#{local.cpu.inspect}, #{local.os.inspect}, #{local.version.inspect}]"
+    expected_platform = "[#{local.cpu.inspect}.freeze, #{local.os.inspect}.freeze, #{local.version.inspect}.freeze]"
     stub_require_paths =
       @c1.instance_variable_get(:@require_paths).join "\u0000"
     extensions = @c1.extensions.join "\u0000"
@@ -2412,7 +2412,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "1"
+  s.version = "1".freeze
   s.platform = Gem::Platform.new(#{expected_platform})
 
   s.required_rubygems_version = Gem::Requirement.new(\">= 0\".freeze) if s.respond_to? :required_rubygems_version=
@@ -2433,9 +2433,9 @@ Gem::Specification.new do |s|
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
-  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
-  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
+  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\".freeze])
+  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\".freeze])
+  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
 end
     SPEC
 
@@ -2451,7 +2451,7 @@ end
       s.add_dependency "b", ["~> 1.0", ">= 1.0.0"]
     end
 
-    assert_includes spec.to_ruby, '"~> 1.0", ">= 1.0.0"'
+    assert_includes spec.to_ruby, '"~> 1.0".freeze, ">= 1.0.0".freeze'
   end
 
   def test_to_ruby_legacy
@@ -3665,7 +3665,7 @@ Did you mean 'Ruby'?
 
 Gem::Specification.new do |s|
   s.name = "m".freeze
-  s.version = "1"
+  s.version = "1".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "one" => "two", "two" => "three" } if s.respond_to? :metadata=

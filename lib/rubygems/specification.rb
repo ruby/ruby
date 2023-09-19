@@ -2363,12 +2363,12 @@ class Gem::Specification < Gem::BasicSpecification
     when Hash               then
       seg = obj.keys.sort.map {|k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
       "{ #{seg.join(", ")} }"
-    when Gem::Version       then obj.to_s.dump
+    when Gem::Version       then ruby_code(obj.to_s)
     when DateLike           then obj.strftime("%Y-%m-%d").dump
     when Time               then obj.strftime("%Y-%m-%d").dump
     when Numeric            then obj.inspect
     when true, false, nil   then obj.inspect
-    when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
+    when Gem::Platform      then "Gem::Platform.new(#{ruby_code obj.to_a})"
     when Gem::Requirement   then
       list = obj.as_list
       "Gem::Requirement.new(#{ruby_code(list.size == 1 ? obj.to_s : list)})"
@@ -2533,12 +2533,12 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     if String === signing_key
-      result << "  s.signing_key = #{signing_key.dump}.freeze"
+      result << "  s.signing_key = #{ruby_code signing_key}"
     end
 
     if @installed_by_version
       result << nil
-      result << "  s.installed_by_version = \"#{Gem::VERSION}\" if s.respond_to? :installed_by_version"
+      result << "  s.installed_by_version = #{ruby_code Gem::VERSION} if s.respond_to? :installed_by_version"
     end
 
     unless dependencies.empty?
@@ -2547,9 +2547,8 @@ class Gem::Specification < Gem::BasicSpecification
       result << nil
 
       dependencies.each do |dep|
-        req = dep.requirements_list.inspect
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
+        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{ruby_code dep.requirements_list})"
       end
     end
 
