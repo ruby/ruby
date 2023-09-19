@@ -1047,7 +1047,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
     assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+
+    assert_equal(bignum * 2 + 1, (0...).bsearch {|i| i > bignum * 2 })
     assert_equal(bignum * 2 + 1, (bignum...).bsearch {|i| i > bignum * 2 })
+    assert_equal(-bignum * 2 + 1, (...0).bsearch {|i| i > -bignum * 2 })
     assert_equal(-bignum * 2 + 1, (...-bignum).bsearch {|i| i > -bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }

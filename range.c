@@ -703,10 +703,10 @@ range_bsearch(VALUE range)
      * (-1...0.0).bsearch to yield -0.0.
      */
 
-#define BSEARCH(conv) \
+#define BSEARCH(conv, excl) \
     do { \
         RETURN_ENUMERATOR(range, 0, 0); \
-        if (EXCL(range)) high--; \
+        if (excl) high--; \
         org_high = high; \
         while (low < high) { \
             mid = ((high < 0) == (low < 0)) ? low + ((high - low) / 2) \
@@ -726,22 +726,26 @@ range_bsearch(VALUE range)
         return satisfied; \
     } while (0)
 
+#define BSEARCH_FIXNUM(beg, end, excl) \
+    do { \
+        long low = FIX2LONG(beg); \
+        long high = FIX2LONG(end); \
+        long mid, org_high; \
+        BSEARCH(INT2FIX, (excl)); \
+    } while (0)
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
-        long low = FIX2LONG(beg);
-        long high = FIX2LONG(end);
-        long mid, org_high;
-        BSEARCH(INT2FIX);
+        BSEARCH_FIXNUM(beg, end, EXCL(range));
     }
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_FLOAT_TYPE_P(beg) || RB_FLOAT_TYPE_P(end)) {
         int64_t low  = double_as_int64(NIL_P(beg) ? -HUGE_VAL : RFLOAT_VALUE(rb_Float(beg)));
         int64_t high = double_as_int64(NIL_P(end) ?  HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
         int64_t mid, org_high;
-        BSEARCH(int64_as_double_to_num);
+        BSEARCH(int64_as_double_to_num, EXCL(range));
     }
 #endif
     else if (is_integer_p(beg) && is_integer_p(end)) {
@@ -755,7 +759,12 @@ range_bsearch(VALUE range)
             VALUE mid = rb_funcall(beg, '+', 1, diff);
             BSEARCH_CHECK(mid);
             if (smaller) {
-                return bsearch_integer_range(beg, mid, 0);
+                if (FIXNUM_P(beg) && FIXNUM_P(mid)) {
+                    BSEARCH_FIXNUM(beg, mid, false);
+                }
+                else {
+                    return bsearch_integer_range(beg, mid, false);
+                }
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
             beg = mid;
@@ -768,7 +777,12 @@ range_bsearch(VALUE range)
             VALUE mid = rb_funcall(end, '+', 1, diff);
             BSEARCH_CHECK(mid);
             if (!smaller) {
-                return bsearch_integer_range(mid, end, 0);
+                if (FIXNUM_P(mid) && FIXNUM_P(end)) {
+                    BSEARCH_FIXNUM(mid, end, false);
+                }
+                else {
+                    return bsearch_integer_range(mid, end, false);
+                }
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
             end = mid;
