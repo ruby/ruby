@@ -2888,12 +2888,6 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 }
 
 void
-Init_Method(void)
-{
-    //
-}
-
-void
 Init_eval_method(void)
 {
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
