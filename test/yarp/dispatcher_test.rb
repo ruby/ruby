@@ -11,20 +11,23 @@ module YARP
         @events_received = []
       end
 
-      def call_node_enter(node)
-        events_received << :call_node_enter
+      def on_call_node_enter(node)
+        events_received << :on_call_node_enter
       end
 
-      def call_node_leave(node)
-        events_received << :call_node_leave
+      def on_call_node_leave(node)
+        events_received << :on_call_node_leave
+      end
+
+      def on_integer_node_enter(node)
+        events_received << :on_integer_node_enter
       end
     end
 
     def test_dispatching_events
       listener = TestListener.new
-
       dispatcher = Dispatcher.new
-      dispatcher.register(listener, :call_node_enter, :call_node_leave)
+      dispatcher.register(listener, :on_call_node_enter, :on_call_node_leave, :on_integer_node_enter)
 
       root = YARP.parse(<<~RUBY).value
         def foo
@@ -33,7 +36,11 @@ module YARP
       RUBY
 
       dispatcher.dispatch(root)
-      assert_equal([:call_node_enter, :call_node_leave], listener.events_received)
+      assert_equal([:on_call_node_enter, :on_integer_node_enter, :on_integer_node_enter, :on_integer_node_enter, :on_call_node_leave], listener.events_received)
+
+      listener.events_received.clear
+      dispatcher.dispatch_once(root.statements.body.first.body.body.first)
+      assert_equal([:on_call_node_enter, :on_call_node_leave], listener.events_received)
     end
   end
 end

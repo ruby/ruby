@@ -161,13 +161,6 @@ module YARP
       <%- end -%>
       inspector.to_str
     end
-
-    # Returns a symbol representation of the type of node.
-    #
-    # def human: () -> Symbol
-    def human
-      :<%= node.human %>
-    end
   end
 
   <%- end -%>
@@ -189,9 +182,38 @@ module YARP
     <%- end -%>
   end
 
-  # The dispatcher class fires events for nodes that are found while walking an AST to all registered listeners. It's
-  # useful for performing different types of analysis on the AST without having to repeat the same visits multiple times
-  class Dispatcher
+  # The dispatcher class fires events for nodes that are found while walking an
+  # AST to all registered listeners. It's useful for performing different types
+  # of analysis on the AST while only having to walk the tree once.
+  #
+  # To use the dispatcher, you would first instantiate it and register listeners
+  # for the events you're interested in:
+  #
+  #     class OctalListener
+  #       def on_integer_node_enter(node)
+  #         if node.octal? && !node.slice.start_with?("0o")
+  #           warn("Octal integers should be written with the 0o prefix")
+  #         end
+  #       end
+  #     end
+  #
+  #     dispatcher = Dispatcher.new
+  #     dispatcher.register(listener, :on_integer_node_enter)
+  #
+  # Then, you can walk any number of trees and dispatch events to the listeners:
+  #
+  #     result = YARP.parse("001 + 002 + 003")
+  #     dispatcher.dispatch(result.value)
+  #
+  # Optionally, you can also use `#dispatch_once` to dispatch enter and leave
+  # events for a single node without recursing further down the tree. This can
+  # be useful in circumstances where you want to reuse the listeners you already
+  # have registers but want to stop walking the tree at a certain point.
+  #
+  #     integer = result.value.statements.body.first.receiver.receiver
+  #     dispatcher.dispatch_once(integer)
+  #
+  class Dispatcher < Visitor
     # attr_reader listeners: Hash[Symbol, Array[Listener]]
     attr_reader :listeners
 
@@ -209,33 +231,39 @@ module YARP
     # Walks `root` dispatching events to all registered listeners
     #
     # def dispatch: (Node) -> void
-    def dispatch(root)
-      queue = [root]
-
-      while (node = queue.shift)
-        case node.human
-        <%- nodes.each do |node| -%>
-        when :<%= node.human %>
-          listeners[:<%= node.human %>_enter]&.each { |listener| listener.<%= node.human %>_enter(node) }
-          queue = node.compact_child_nodes.concat(queue)
-          listeners[:<%= node.human %>_leave]&.each { |listener| listener.<%= node.human %>_leave(node) }
-        <%- end -%>
-        end
-      end
-    end
+    alias dispatch visit
 
     # Dispatches a single event for `node` to all registered listeners
     #
     # def dispatch_once: (Node) -> void
     def dispatch_once(node)
-      case node.human
-      <%- nodes.each do |node| -%>
-      when :<%= node.human %>
-        listeners[:<%= node.human %>_enter]&.each { |listener| listener.<%= node.human %>_enter(node) }
-        listeners[:<%= node.human %>_leave]&.each { |listener| listener.<%= node.human %>_leave(node) }
-      <%- end -%>
-      end
+      node.accept(DispatchOnce.new(listeners))
     end
+    <%- nodes.each do |node| -%>
+
+    def visit_<%= node.human %>(node)
+      listeners[:on_<%= node.human %>_enter]&.each { |listener| listener.on_<%= node.human %>_enter(node) }
+      super
+      listeners[:on_<%= node.human %>_leave]&.each { |listener| listener.on_<%= node.human %>_leave(node) }
+    end
+    <%- end -%>
+
+    class DispatchOnce < Visitor
+      attr_reader :listeners
+
+      def initialize(listeners)
+        @listeners = listeners
+      end
+      <%- nodes.each do |node| -%>
+
+      def visit_<%= node.human %>(node)
+        listeners[:on_<%= node.human %>_enter]&.each { |listener| listener.on_<%= node.human %>_enter(node) }
+        listeners[:on_<%= node.human %>_leave]&.each { |listener| listener.on_<%= node.human %>_leave(node) }
+      end
+      <%- end -%>
+    end
+
+    private_constant :DispatchOnce
   end
 
   module DSL
