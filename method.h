@@ -179,9 +179,9 @@ typedef struct rb_method_optimized {
 struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     unsigned int iseq_overload: 1;
-    int alias_count : 27;
-    int complemented_count : 28;
     unsigned int no_redef_warning: 1;
+    unsigned int aliased : 1;
+    int reference_count : 28;
 
     union {
         rb_method_iseq_t iseq;
@@ -214,7 +214,7 @@ void rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type, un
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
 
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
-rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, rb_method_definition_t *def);
 
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 
