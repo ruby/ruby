@@ -725,6 +725,10 @@ yp_statements_node_create(yp_parser_t *parser);
 static void
 yp_statements_node_body_append(yp_statements_node_t *node, yp_node_t *statement);
 
+// Get the length of the given StatementsNode node's body.
+static size_t
+yp_statements_node_body_length(yp_statements_node_t *node);
+
 // This function is here to allow us a place to extend in the future when we
 // implement our own arena allocation.
 static inline void *
@@ -2654,7 +2658,7 @@ yp_if_node_create(yp_parser_t *parser,
         end = end_keyword->end;
     } else if (consequent != NULL) {
         end = consequent->location.end;
-    } else if ((statements != NULL) && (statements->body.size != 0)) {
+    } else if (yp_statements_node_body_length(statements) != 0) {
         end = statements->base.location.end;
     } else {
         end = predicate->location.end;
@@ -4008,7 +4012,7 @@ yp_rescue_node_reference_set(yp_rescue_node_t *node, yp_node_t *reference) {
 static void
 yp_rescue_node_statements_set(yp_rescue_node_t *node, yp_statements_node_t *statements) {
     node->statements = statements;
-    if ((statements != NULL) && (statements->body.size > 0)) {
+    if (yp_statements_node_body_length(statements) > 0) {
         node->base.location.end = statements->base.location.end;
     }
 }
