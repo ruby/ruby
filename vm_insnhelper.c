@@ -3811,7 +3811,7 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
         VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
         cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
-        if (me->def->alias_count + me->def->complemented_count == 0) {
+        if (me->def->reference_count == 1) {
             RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
         }
         else {

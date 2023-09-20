@@ -3293,7 +3293,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_complemented_method_entry_memory_leak
-    # [Bug #19894]
+    # [Bug #19894] [Bug #19896]
     assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
       code = proc do
         $c = Class.new do
@@ -3317,7 +3317,7 @@ class TestModule < Test::Unit::TestCase
       end
       1_000.times(&code)
     PREP
-      100_000.times(&code)
+      300_000.times(&code)
     CODE
   end
 
