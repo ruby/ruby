@@ -44,6 +44,9 @@
 
 #define NODE_BUF_DEFAULT_LEN 16
 
+typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE * node);
+static void iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, void *ctx);
+
 /* Setup NODE structure.
  * NODE is not an object managed by GC, but it imitates an object
  * so that it can work with `RB_TYPE_P(obj, T_NODE)`.
@@ -162,8 +165,25 @@ struct rb_ast_local_table_link {
 };
 
 static void
+free_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+      case NODE_ARGS:
+        xfree(node->nd_ainfo);
+        break;
+      case NODE_ARYPTN:
+        xfree(node->nd_apinfo);
+        break;
+      case NODE_FNDPTN:
+        xfree(node->nd_fpinfo);
+        break;
+    }
+}
+
+static void
 rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
 {
+    iterate_node_values(ast, &nb->unmarkable, free_ast_value, NULL);
     node_buffer_list_free(ast, &nb->unmarkable);
     node_buffer_list_free(ast, &nb->markable);
     struct rb_ast_local_table_link *local_table = nb->local_tables;
@@ -204,9 +224,6 @@ nodetype_markable_p(enum node_type type)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-      case NODE_ARGS:
-      case NODE_ARYPTN:
-      case NODE_FNDPTN:
         return true;
       default:
         return false;
@@ -284,8 +301,6 @@ rb_ast_new(void)
 }
 #endif
 
-typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE * node);
-
 static void
 iterate_buffer_elements(rb_ast_t *ast, node_buffer_elem_t *nbe, long len, node_itr_t *func, void *ctx)
 {
@@ -318,12 +333,6 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
 #endif
 
     switch (nd_type(node)) {
-      case NODE_ARGS:
-        {
-            struct rb_args_info *args = node->nd_ainfo;
-            rb_gc_mark_movable(args->imemo);
-            break;
-        }
       case NODE_MATCH:
       case NODE_LIT:
       case NODE_STR:
@@ -333,10 +342,6 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
       case NODE_DREGX:
       case NODE_DSYM:
         rb_gc_mark_movable(node->nd_lit);
-        break;
-      case NODE_ARYPTN:
-      case NODE_FNDPTN:
-        rb_gc_mark_movable(node->nd_rval);
         break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
@@ -351,12 +356,6 @@ update_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
 #endif
 
     switch (nd_type(node)) {
-      case NODE_ARGS:
-        {
-            struct rb_args_info *args = node->nd_ainfo;
-            args->imemo = rb_gc_location(args->imemo);
-            break;
-        }
       case NODE_MATCH:
       case NODE_LIT:
       case NODE_STR:
@@ -366,10 +365,6 @@ update_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
       case NODE_DREGX:
       case NODE_DSYM:
         node->nd_lit = rb_gc_location(node->nd_lit);
-        break;
-      case NODE_ARYPTN:
-      case NODE_FNDPTN:
-        node->nd_rval = rb_gc_location(node->nd_rval);
         break;
       default:
         rb_bug("unreachable");
