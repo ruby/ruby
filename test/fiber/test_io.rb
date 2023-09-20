@@ -219,4 +219,19 @@ class TestFiberIO < Test::Unit::TestCase
       assert_equal [[r], [w], []], result
     end
   end
+
+  def test_backquote
+    result = nil
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        result = `#{EnvUtil.rubybin} -e "sleep 0.1;puts %[ok]"`
+      end
+    end
+    thread.join
+
+    assert_equal "ok\n", result
+  end
 end

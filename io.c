@@ -5574,12 +5574,9 @@ clear_codeconv(rb_io_t *fptr)
     clear_writeconv(fptr);
 }
 
-void
-rb_io_fptr_finalize_internal(void *ptr)
+static void
+rb_io_fptr_cleanup_all(rb_io_t *fptr)
 {
-    rb_io_t *fptr = ptr;
-
-    if (!ptr) return;
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
         rb_io_fptr_cleanup(fptr, TRUE);
@@ -5587,7 +5584,14 @@ rb_io_fptr_finalize_internal(void *ptr)
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
-    free(fptr);
+}
+
+void
+rb_io_fptr_finalize_internal(void *ptr)
+{
+    if (!ptr) return;
+    rb_io_fptr_cleanup_all(ptr);
+    free(ptr);
 }
 
 #undef rb_io_fptr_finalize
@@ -10467,11 +10471,9 @@ rb_f_backquote(VALUE obj, VALUE str)
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
-    rb_obj_hide(port);
     result = read_all(fptr, remain_size(fptr), Qnil);
     rb_io_close(port);
-    RFILE(port)->fptr = NULL;
-    rb_io_fptr_finalize(fptr);
+    rb_io_fptr_cleanup_all(fptr);
     RB_GC_GUARD(port);
 
     return result;
