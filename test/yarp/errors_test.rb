@@ -1302,6 +1302,14 @@ module YARP
       assert_error_messages "%sXfooX", error_messages
     end
 
+    def test_conditional_predicate_closed
+      source = "if 0 0; end\nunless 0 0; end"
+      assert_errors expression(source), source, [
+        ["Expected `then` or `;` or '\n" + "'", 5..6],
+        ["Expected `then` or `;` or '\n" + "'", 21..22],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

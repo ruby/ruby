@@ -93,6 +93,7 @@ static const char* const diagnostic_messages[YP_DIAGNOSTIC_ID_LEN] = {
     [YP_ERR_CLASS_TERM]                         = "Expected an `end` to close the `class` statement",
     [YP_ERR_CONDITIONAL_ELSIF_PREDICATE]        = "Expected a predicate expression for the `elsif` statement",
     [YP_ERR_CONDITIONAL_IF_PREDICATE]           = "Expected a predicate expression for the `if` statement",
+    [YP_ERR_CONDITIONAL_PREDICATE_TERM]         = "Expected `then` or `;` or '\n'",
     [YP_ERR_CONDITIONAL_TERM]                   = "Expected an `end` to close the conditional clause",
     [YP_ERR_CONDITIONAL_TERM_ELSE]              = "Expected an `end` to close the `else` clause",
     [YP_ERR_CONDITIONAL_UNLESS_PREDICATE]       = "Expected a predicate expression for the `unless` statement",

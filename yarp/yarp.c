@@ -9814,8 +9814,11 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
     yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_MODIFIER, error_id);
 
     // Predicates are closed by a term, a "then", or a term and then a "then".
-    accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
-    accept1(parser, YP_TOKEN_KEYWORD_THEN);
+    bool predicate_closed = accept2(parser, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+    predicate_closed |= accept1(parser, YP_TOKEN_KEYWORD_THEN);
+    if (!predicate_closed) {
+        yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, YP_ERR_CONDITIONAL_PREDICATE_TERM);
+    }
 
     context_pop(parser);
     yp_statements_node_t *statements = NULL;
