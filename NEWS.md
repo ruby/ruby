@@ -164,9 +164,14 @@ changelog for details of the default gems or bundled gems.
 * The default value for `--yjit-exec-mem-size` is changed from 64 to 128.
 * More thorough testing and multiple bug fixes
 
+### MJIT
+
+* MJIT is removed.
+  * `--disable-jit-support` is removed. Consider using `--disable-yjit --disable-rjit` instead.
+
 ### RJIT
 
-* Introduced a pure-Ruby JIT compiler RJIT and replaced MJIT.
+* Introduced a pure-Ruby JIT compiler RJIT.
   * RJIT supports only x86\_64 architecture on Unix platforms.
   * Unlike MJIT, it doesn't require a C compiler at runtime.
 * RJIT exists only for experimental purposes.
