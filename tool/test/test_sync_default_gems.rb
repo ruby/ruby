@@ -94,8 +94,12 @@ module Test_SyncDefaultGems
       Dir.chdir(@testdir)
       ["src", @target].each do |dir|
         git(*%W"init -q #{dir}")
+        File.write("#{dir}/.gitignore", "*~\n")
+        Dir.mkdir("#{dir}/lib")
+        File.write("#{dir}/lib/common.rb", ":ok\n")
+        git(*%W"add .gitignore lib/common.rb", chdir: dir)
+        git(*%W"commit -q -m", "Initialize", chdir: dir)
         if dir == "src"
-          Dir.mkdir("#{dir}/lib")
           File.write("#{dir}/lib/fine.rb", "return\n")
           Dir.mkdir("#{dir}/test")
           File.write("#{dir}/test/test_fine.rb", "return\n")
@@ -166,6 +170,18 @@ module Test_SyncDefaultGems
       out
     end
 
+    def test_sync
+      File.write("#@target/lib/common.rb", "# OK!\n")
+      git(*%W"commit -q -m", "OK", "lib/common.rb", chdir: @target)
+      out = assert_sync()
+      assert_not_equal(@sha["src"], top_commit("src"), out)
+      assert_equal("# OK!\n", File.read("src/lib/common.rb"))
+      log = top_commit("src", format: "%B").lines
+      assert_equal("[ruby/#@target] OK\n", log.first, out)
+      assert_match(%r[/ruby/#{@target}/commit/\h+$], log.last, out)
+      assert_operator(top_commit(@target), :start_with?, log.last[/\h+$/], out)
+    end
+
     def test_skip_tool
       git(*%W"rm -q tool/ok", chdir: @target)
       git(*%W"commit -q -m", "Remove tool", chdir: @target)
@@ -197,7 +213,6 @@ module Test_SyncDefaultGems
     def test_adding_toplevel
       Dir.mkdir("#@target/docs")
       File.write("#@target/docs/NEWS.md", "= New library\n")
-      Dir.mkdir("#@target/lib")
       File.write("#@target/lib/news.rb", "return\n")
       git(*%W"add --", "docs/NEWS.md", "lib/news.rb", chdir: @target)
       git(*%W"commit -q -m", "New lib", chdir: @target)
