@@ -97,7 +97,10 @@ module Test_SyncDefaultGems
         File.write("#{dir}/.gitignore", "*~\n")
         Dir.mkdir("#{dir}/lib")
         File.write("#{dir}/lib/common.rb", ":ok\n")
-        git(*%W"add .gitignore lib/common.rb", chdir: dir)
+        Dir.mkdir("#{dir}/.github")
+        Dir.mkdir("#{dir}/.github/workflows")
+        File.write("#{dir}/.github/workflows/default.yml", "default:\n")
+        git(*%W"add .gitignore lib/common.rb .github", chdir: dir)
         git(*%W"commit -q -m", "Initialize", chdir: dir)
         if dir == "src"
           File.write("#{dir}/lib/fine.rb", "return\n")
@@ -221,6 +224,20 @@ module Test_SyncDefaultGems
       assert_equal "return\n", File.read("src/lib/news.rb")
       assert_include top_commit("src", format: "oneline"), "[ruby/#{@target}] New lib"
       assert_not_operator File, :exist?, "src/docs"
+    end
+
+    def test_gitignore
+      File.write("#@target/.gitignore", "*.bak\n", mode: "a")
+      File.write("#@target/lib/common.rb", "Should.be_merged\n", mode: "a")
+      File.write("#@target/.github/workflows/main.yml", "# Should not merge\n", mode: "a")
+      git(*%W"add .github", chdir: @target)
+      git(*%W"commit -q -m", "Should be common.rb only",
+          *%W".gitignore lib/common.rb .github", chdir: @target)
+      out = assert_sync()
+      assert_not_equal(@sha["src"], top_commit("src"), out)
+      assert_equal("*~\n", File.read("src/.gitignore"), out)
+      assert_equal("#!/bin/sh\n""echo ok\n", File.read("src/tool/ok"), out)
+      assert_not_operator(File, :exist?, "src/.github/workflows/.yml", out)
     end
   end
 end
