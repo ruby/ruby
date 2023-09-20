@@ -292,8 +292,6 @@ struct rb_args_info {
     unsigned int no_kwarg: 1;
     unsigned int ruby2_keywords: 1;
     unsigned int forwarding: 1;
-
-    VALUE imemo;
 };
 
 struct rb_ary_pattern_info {
@@ -364,8 +362,6 @@ typedef struct rb_parser_config_struct {
     // TODO: Should it return `rb_strterm_t *'?
     VALUE (*new_strterm)(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc);
     int (*strterm_is_heredoc)(VALUE strterm);
-    VALUE (*tmpbuf_auto_free_pointer)(void);
-    void *(*tmpbuf_set_ptr)(VALUE v, void *ptr);
     rb_imemo_tmpbuf_t *(*tmpbuf_parser_heap)(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
     rb_ast_t *(*ast_new)(VALUE nb);
 

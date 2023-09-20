@@ -566,8 +566,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->new_strterm = new_strterm;
     config->strterm_is_heredoc = strterm_is_heredoc;
-    config->tmpbuf_auto_free_pointer = rb_imemo_tmpbuf_auto_free_pointer;
-    config->tmpbuf_set_ptr = rb_imemo_tmpbuf_set_ptr;
     config->tmpbuf_parser_heap = tmpbuf_parser_heap;
     config->ast_new = ast_new;
 
