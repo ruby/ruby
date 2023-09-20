@@ -384,8 +384,21 @@ def package(vcs, rev, destdir, tmp = nil)
     puts $colorize.fail("patching failed")
     return
   end
-  def (clean = []).add(n) push(n); n end
-  def clean.create(file, content = "") File.binwrite(add(file), content) end
+
+  class << (clean = [])
+    def add(n) push(n)
+      n
+    end
+    def create(file, content = "", &block)
+      add(file)
+      if block
+        File.open(file, "wb", &block)
+      else
+        File.binwrite(file, content)
+      end
+    end
+  end
+
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
       vcs.export_changelog(url, nil, revision, "ChangeLog")
@@ -406,7 +419,7 @@ def package(vcs, rev, destdir, tmp = nil)
       puts
     end
 
-    File.open(clean.add("cross.rb"), "w") do |f|
+    clean.create("cross.rb") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
       f.puts "Object.__send__(:remove_const, :RUBY_PLATFORM)"
