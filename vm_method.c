@@ -693,10 +693,12 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, c
 const rb_method_entry_t *
 rb_method_entry_clone(const rb_method_entry_t *src_me)
 {
-    rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class,
-                                                  method_definition_addref(src_me->def));
+    rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class, src_me->def);
     if (METHOD_ENTRY_COMPLEMENTED(src_me)) {
         method_definition_addref_complement(src_me->def);
+    }
+    else {
+        method_definition_addref(src_me->def);
     }
 
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
@@ -724,7 +726,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
         def = NULL;
     }
     else {
-        def = method_definition_addref_complement(def);
+        method_definition_addref_complement(def);
     }
     me = rb_method_entry_alloc(called_id, src_me->owner, defined_class, def);
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
