@@ -230,6 +230,11 @@ module Prism
       test_prism_eval("pit = 0; pit += 1")
     end
 
+    def test_MatchWriteNode
+      test_prism_eval("/(?<foo>bar)(?<baz>bar>)/ =~ 'barbar'")
+      test_prism_eval("/(?<foo>bar)/ =~ 'barbar'")
+    end
+
     ############################################################################
     # String-likes                                                             #
     ############################################################################

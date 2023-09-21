@@ -1592,6 +1592,68 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_MATCH_WRITE_NODE: {
+          pm_match_write_node_t *cast = (pm_match_write_node_t *)node;
+          LABEL *fail_label = NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+          size_t capture_count = cast->locals.size;
+          VALUE r;
+
+          pm_constant_id_t *locals = ALLOCV_N(pm_constant_id_t, r, capture_count);
+
+          for (size_t i = 0; i < capture_count; i++) {
+              locals[i] = cast->locals.ids[i];
+          }
+
+          PM_COMPILE((pm_node_t *)cast->call);
+          VALUE global_variable_name = rb_id2sym(idBACKREF);
+
+          ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
+          ADD_INSN(ret, &dummy_line_node, dup);
+          ADD_INSNL(ret, &dummy_line_node, branchunless, fail_label);
+
+          if (capture_count == 1) {
+              int local_index = pm_lookup_local_index(iseq, compile_context, *locals);
+
+              DECL_ANCHOR(nom);
+              INIT_ANCHOR(nom);
+
+              ADD_INSNL(nom, &dummy_line_node, jump, end_label);
+              ADD_LABEL(nom, fail_label);
+              ADD_LABEL(nom, end_label);
+              ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(compile_context, *locals)));
+              ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
+              ADD_SETLOCAL(nom, &dummy_line_node, local_index, 0);
+
+              ADD_SEQ(ret, nom);
+              return;
+          }
+
+          for (size_t index = 0; index < capture_count; index++) {
+              int local_index = pm_lookup_local_index(iseq, compile_context, locals[index]);
+
+              if (index < (capture_count - 1)) {
+                  ADD_INSN(ret, &dummy_line_node, dup);
+              }
+              ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(compile_context, locals[index])));
+              ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
+              ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+          ADD_LABEL(ret, fail_label);
+          ADD_INSN(ret, &dummy_line_node, pop);
+
+          for (size_t index = 0; index < capture_count; index++) {
+              pm_constant_id_t constant = cast->locals.ids[index];
+              int local_index = pm_lookup_local_index(iseq, compile_context, constant);
+
+              ADD_INSN(ret, &dummy_line_node, putnil);
+              ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
+          }
+          ADD_LABEL(ret, end_label);
+          return;
+      }
       case PM_MISSING_NODE: {
         rb_bug("A pm_missing_node_t should not exist in prism's AST.");
         return;
