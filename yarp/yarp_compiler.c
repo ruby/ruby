@@ -430,9 +430,6 @@ yp_interpolated_node_compile(yp_node_list_t parts, rb_iseq_t *iseq, NODE dummy_l
                 ADD_INSN(ret, &dummy_line_node, dup);
                 ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
                 ADD_INSN(ret, &dummy_line_node, anytostring);
-                if (popped) {
-                    ADD_INSN(ret, &dummy_line_node, pop);
-                }
             }
         }
     }
@@ -719,7 +716,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           // TODO: Once we merge constant path nodes correctly, fix this flag
           const int flags = VM_DEFINECLASS_TYPE_CLASS |
               (class_node->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
-              yp_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node, src, popped, compile_context);
+              yp_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node, src, false, compile_context);
 
           if (class_node->superclass) {
               YP_COMPILE(class_node->superclass);
@@ -866,7 +863,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_CONSTANT_PATH_NODE: {
           yp_constant_path_node_t *constant_path_node = (yp_constant_path_node_t*) node;
           if (constant_path_node->parent) {
-              YP_COMPILE(constant_path_node->parent);
+              YP_COMPILE_NOT_POPPED(constant_path_node->parent);
           }
           ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
 
@@ -1432,6 +1429,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, intern);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, pop);
           }
 
           return;
