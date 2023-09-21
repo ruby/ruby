@@ -17,7 +17,9 @@ class TestGemSafeMarshal < Gem::TestCase
   define_method("test_safe_load_marshal Float 30000000.0") { assert_safe_load_marshal "\x04\bf\b3e7" }
   define_method("test_safe_load_marshal Float -30000000.0") { assert_safe_load_marshal "\x04\bf\t-3e7" }
   define_method("test_safe_load_marshal Gem::Version #<Gem::Version \"1.abc\">") { assert_safe_load_marshal "\x04\bU:\x11Gem::Version[\x06I\"\n1.abc\x06:\x06ET" }
-  define_method("test_safe_load_marshal Hash {}") { assert_safe_load_marshal "\x04\b}\x00[\x00" }
+  define_method("test_safe_load_marshal Hash {} default value") { assert_safe_load_marshal "\x04\b}\x00[\x00", additional_methods: [:default] }
+  define_method("test_safe_load_marshal Hash {}") { assert_safe_load_marshal "\x04\b{\x00" }
+  define_method("test_safe_load_marshal Array {}") { assert_safe_load_marshal "\x04\b[\x00" }
   define_method("test_safe_load_marshal Hash {:runtime=>:development}") { assert_safe_load_marshal "\x04\bI{\x06:\fruntime:\x10development\x06:\n@type[\x00", permitted_ivars: { "Hash" => %w[@type] } }
   define_method("test_safe_load_marshal Integer -1") { assert_safe_load_marshal "\x04\bi\xFA" }
   define_method("test_safe_load_marshal Integer -1048575") { assert_safe_load_marshal "\x04\bi\xFD\x01\x00\xF0" }
@@ -124,6 +126,12 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_safe_load_as [:development, :development]
   end
 
+  def test_length_one_symbols
+    with_const(Gem::SafeMarshal, :PERMITTED_SYMBOLS, %w[E A b 0] << "") do
+      assert_safe_load_as [:A, :E, :E, :A, "".to_sym, "".to_sym], additional_methods: [:instance_variables]
+    end
+  end
+
   def test_repeated_string
     s = "hello"
     a = [s]
@@ -156,6 +164,12 @@ class TestGemSafeMarshal < Gem::TestCase
       String.new("abc", encoding: "Windows-1256"),
       String.new("abc", encoding: Encoding::BINARY),
       String.new("abc", encoding: "UTF-32"),
+
+      String.new("", encoding: "US-ASCII"),
+      String.new("", encoding: "UTF-8"),
+      String.new("", encoding: "Windows-1256"),
+      String.new("", encoding: Encoding::BINARY),
+      String.new("", encoding: "UTF-32"),
     ].each do |s|
       assert_safe_load_as s, additional_methods: [:encoding]
       assert_safe_load_as [s, s], additional_methods: [->(a) { a.map(&:encoding) }]
@@ -280,6 +294,20 @@ class TestGemSafeMarshal < Gem::TestCase
     end
 
     assert_equal e.message, "Attempting to load unpermitted symbol \"rspec\" @ root.[9].[0].@name"
+  end
+
+  def test_gem_spec_disallowed_ivar
+    e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnpermittedIvarError) do
+      spec = Gem::Specification.new do |s|
+        s.name = "hi"
+        s.version = "1.2.3"
+
+        s.dependencies << Gem::Dependency.new("rspec", Gem::Requirement.new([">= 1.2.3"]), :runtime).tap {|d| d.instance_variable_set(:@foobar, "rspec") }
+      end
+      Gem::SafeMarshal.safe_load(Marshal.dump(spec))
+    end
+
+    assert_equal e.message, "Attempting to set unpermitted ivar \"@foobar\" on object of class Gem::Dependency @ root.[9].[0].ivar_5"
   end
 
   def assert_safe_load_marshal(dumped, additional_methods: [], permitted_ivars: nil, equality: true, marshal_dump_equality: true)

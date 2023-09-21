@@ -7,14 +7,14 @@ module Gem
       end
 
       class Symbol < Element
-        def initialize(name:)
+        def initialize(name)
           @name = name
         end
         attr_reader :name
       end
 
       class UserDefined < Element
-        def initialize(name:, binary_string:)
+        def initialize(name, binary_string)
           @name = name
           @binary_string = binary_string
         end
@@ -23,7 +23,7 @@ module Gem
       end
 
       class UserMarshal < Element
-        def initialize(name:, data:)
+        def initialize(name, data)
           @name = name
           @data = data
         end
@@ -32,7 +32,7 @@ module Gem
       end
 
       class String < Element
-        def initialize(str:)
+        def initialize(str)
           @str = str
         end
 
@@ -40,7 +40,7 @@ module Gem
       end
 
       class Hash < Element
-        def initialize(pairs:)
+        def initialize(pairs)
           @pairs = pairs
         end
 
@@ -48,8 +48,8 @@ module Gem
       end
 
       class HashWithDefaultValue < Hash
-        def initialize(default:, **kwargs)
-          super(**kwargs)
+        def initialize(pairs, default)
+          super(pairs)
           @default = default
         end
 
@@ -57,7 +57,7 @@ module Gem
       end
 
       class Array < Element
-        def initialize(elements:)
+        def initialize(elements)
           @elements = elements
         end
 
@@ -65,7 +65,7 @@ module Gem
       end
 
       class Integer < Element
-        def initialize(int:)
+        def initialize(int)
           @int = int
         end
 
@@ -86,7 +86,7 @@ module Gem
       end
 
       class WithIvars < Element
-        def initialize(object:,ivars:)
+        def initialize(object, ivars)
           @object = object
           @ivars = ivars
         end
@@ -95,7 +95,7 @@ module Gem
       end
 
       class Object < Element
-        def initialize(name:)
+        def initialize(name)
           @name = name
         end
         attr_reader :name
@@ -106,28 +106,28 @@ module Gem
       end
 
       class ObjectLink < Element
-        def initialize(offset:)
+        def initialize(offset)
           @offset = offset
         end
         attr_reader :offset
       end
 
       class SymbolLink < Element
-        def initialize(offset:)
+        def initialize(offset)
           @offset = offset
         end
         attr_reader :offset
       end
 
       class Float < Element
-        def initialize(string:)
+        def initialize(string)
           @string = string
         end
         attr_reader :string
       end
 
       class Bignum < Element # rubocop:disable Lint/UnifiedInteger
-        def initialize(sign:, data:)
+        def initialize(sign, data)
           @sign = sign
           @data = data
         end
