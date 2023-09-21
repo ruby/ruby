@@ -302,12 +302,12 @@ class TestGemSafeMarshal < Gem::TestCase
         s.name = "hi"
         s.version = "1.2.3"
 
-        s.dependencies << Gem::Dependency.new("rspec", Gem::Requirement.new([">= 1.2.3"]), :runtime).tap {|d| d.instance_variable_set(:@foobar, "rspec") }
+        s.metadata.instance_variable_set(:@foobar, "rspec")
       end
       Gem::SafeMarshal.safe_load(Marshal.dump(spec))
     end
 
-    assert_equal e.message, "Attempting to set unpermitted ivar \"@foobar\" on object of class Gem::Dependency @ root.[9].[0].ivar_5"
+    assert_equal e.message, "Attempting to set unpermitted ivar \"@foobar\" on object of class Hash @ root.[18].ivar_0"
   end
 
   def assert_safe_load_marshal(dumped, additional_methods: [], permitted_ivars: nil, equality: true, marshal_dump_equality: true)
