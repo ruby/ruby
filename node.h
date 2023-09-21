@@ -50,7 +50,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef UNIVERSAL_PARSER
 rb_ast_t *rb_ast_new(rb_parser_config_t *config);
 #else
-rb_ast_t *rb_ast_new();
+rb_ast_t *rb_ast_new(void);
 #endif
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
