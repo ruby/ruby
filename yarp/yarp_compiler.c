@@ -1529,12 +1529,14 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_MULTI_WRITE_NODE: {
           yp_multi_write_node_t *multi_write_node = (yp_multi_write_node_t *)node;
-          YP_COMPILE(multi_write_node->value);
+          YP_COMPILE_NOT_POPPED(multi_write_node->value);
 
           // TODO: int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
           int flag = 0x00;
 
-          ADD_INSN(ret, &dummy_line_node, dup);
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
           ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(multi_write_node->targets.size), INT2FIX(flag));
           yp_node_list_t node_list = multi_write_node->targets;
 
