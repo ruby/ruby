@@ -1,3 +1,4 @@
 == disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,1)>
-0000 duparray                               ["  some text\n"]         (   3)
-0002 leave
+0000 putstring                              "  some text\n"           (   3)
+0002 newarray                               1
+0004 leave

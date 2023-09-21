@@ -1,0 +1,12 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,12)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putobject_INT2FIX_1_
+0001 putobject                              2
+0003 putobject                              3
+0005 newarray                               3
+0007 dup
+0008 expandarray                            1, 0
+0011 setlocal_WC_0                          a@0
+0013 splatarray                             true
+0015 leave
