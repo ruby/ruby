@@ -83,7 +83,9 @@ ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
 
-YARP_FILES = yarp/api_node.$(OBJEXT) \
+YARP_BUILD_DIR = yarp
+
+YARP_FILES =    yarp/api_node.$(OBJEXT) \
 		yarp/api_pack.$(OBJEXT) \
 		yarp/diagnostic.$(OBJEXT) \
 		yarp/enc/yp_big5.$(OBJEXT) \
