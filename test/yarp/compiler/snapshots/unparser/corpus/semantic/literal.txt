@@ -3,9 +3,9 @@
 0003 dup
 0004 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
 0006 anytostring
-0007 pop
-0008 putobject                              "baz"
-0010 toregexp                               0, 2
+0007 putobject                              "baz"
+0009 toregexp                               0, 2
+0012 pop
 0013 putself                                                          (  13)
 0014 putself
 0015 putself

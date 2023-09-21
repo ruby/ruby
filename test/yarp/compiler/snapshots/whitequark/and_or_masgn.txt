@@ -3,23 +3,21 @@ local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 [ 2] a@0        [ 1] b@1
 0000 putself
 0001 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0003 branchunless                           17
+0003 branchunless                           15
 0005 putself
 0006 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0008 pop
-0009 dup
-0010 expandarray                            2, 0
-0013 setlocal_WC_0                          a@0
-0015 setlocal_WC_0                          b@1
-0017 putself                                                          (   2)
-0018 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0020 dup
-0021 branchif                               35
-0023 pop
-0024 putself
-0025 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0027 dup
-0028 expandarray                            2, 0
-0031 setlocal_WC_0                          a@0
-0033 setlocal_WC_0                          b@1
-0035 leave
+0008 expandarray                            2, 0
+0011 setlocal_WC_0                          a@0
+0013 setlocal_WC_0                          b@1
+0015 putself                                                          (   2)
+0016 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0018 dup
+0019 branchif                               33
+0021 pop
+0022 putself
+0023 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0025 dup
+0026 expandarray                            2, 0
+0029 setlocal_WC_0                          a@0
+0031 setlocal_WC_0                          b@1
+0033 leave

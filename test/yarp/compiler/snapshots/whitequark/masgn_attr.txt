@@ -1,26 +1,26 @@
 == disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,18)>
 local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
 [ 1] foo@0
-0000 dup
-0001 expandarray                            2, 0
-0004 putself
-0005 opt_send_without_block                 <calldata!mid:A=, argc:0, ARGS_SIMPLE>
-0007 pop
-0008 setlocal_WC_0                          foo@0
-0010 dup                                                              (   2)
-0011 expandarray                            2, 0
-0014 putself
-0015 opt_send_without_block                 <calldata!mid:a=, argc:0, ARGS_SIMPLE>
-0017 pop
-0018 putself
-0019 putobject_INT2FIX_1_
-0020 putobject                              2
-0022 opt_aset                               <calldata!mid:[]=, argc:2, ARGS_SIMPLE>[CcCr]
-0024 pop
-0025 getlocal_WC_0                          foo@0                     (   4)
-0027 dup
-0028 expandarray                            2, 0
-0031 putself
-0032 opt_send_without_block                 <calldata!mid:a=, argc:0, ARGS_SIMPLE>
-0034 setlocal_WC_0                          foo@0
-0036 leave
+0000 getlocal_WC_0                          foo@0
+0002 expandarray                            2, 0
+0005 putself
+0006 opt_send_without_block                 <calldata!mid:A=, argc:0, ARGS_SIMPLE>
+0008 pop
+0009 setlocal_WC_0                          foo@0
+0011 getlocal_WC_0                          foo@0                     (   2)
+0013 expandarray                            2, 0
+0016 putself
+0017 opt_send_without_block                 <calldata!mid:a=, argc:0, ARGS_SIMPLE>
+0019 pop
+0020 putself
+0021 putobject_INT2FIX_1_
+0022 putobject                              2
+0024 opt_aset                               <calldata!mid:[]=, argc:2, ARGS_SIMPLE>[CcCr]
+0026 pop
+0027 getlocal_WC_0                          foo@0                     (   4)
+0029 dup
+0030 expandarray                            2, 0
+0033 putself
+0034 opt_send_without_block                 <calldata!mid:a=, argc:0, ARGS_SIMPLE>
+0036 setlocal_WC_0                          foo@0
+0038 leave

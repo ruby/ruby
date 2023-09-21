@@ -2,19 +2,24 @@
 0000 putself                                                          (  36)
 0001 putobject                              "\#@1"
 0003 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0005 putself                                                          (  38)
-0006 putobject                              "\#@@1"
-0008 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0010 putself                                                          (  60)
-0011 putobject                              "\#@1"
-0013 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0015 putself                                                          (  62)
-0016 putobject                              "\#@@1"
-0018 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0020 putself                                                          (  80)
-0021 putobject                              "\#@1\n"
-0023 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0025 putself                                                          (  84)
-0026 putobject                              "\#@@1\n"
-0028 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0030 leave
+0005 pop
+0006 putself                                                          (  38)
+0007 putobject                              "\#@@1"
+0009 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0011 pop
+0012 putself                                                          (  60)
+0013 putobject                              "\#@1"
+0015 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0017 pop
+0018 putself                                                          (  62)
+0019 putobject                              "\#@@1"
+0021 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0023 pop
+0024 putself                                                          (  80)
+0025 putobject                              "\#@1\n"
+0027 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0029 pop
+0030 putself                                                          (  84)
+0031 putobject                              "\#@@1\n"
+0033 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0035 leave

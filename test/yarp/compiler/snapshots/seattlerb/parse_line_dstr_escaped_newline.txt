@@ -4,7 +4,6 @@
 0003 dup
 0004 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
 0006 anytostring
-0007 pop
-0008 concatstrings                          2
-0010 putobject                              true                      (   2)
-0012 leave
+0007 adjuststack                            2
+0009 putobject                              true                      (   2)
+0011 leave

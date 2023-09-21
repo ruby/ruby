@@ -10,29 +10,25 @@
 0011 dup
 0012 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
 0014 anytostring
-0015 pop
-0016 concatstrings                          2
-0018 putobject                              "b"                       (  38)
-0020 putobject_INT2FIX_1_
-0021 dup
-0022 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0024 anytostring
-0025 pop
-0026 concatstrings                          2
-0028 putobject                              2
-0030 dup
-0031 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0033 anytostring
-0034 pop
-0035 putobject                              "c"
-0037 concatstrings                          2
-0039 putobject                              "d"
-0041 putobject                              3
-0043 dup
-0044 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0046 anytostring
-0047 pop
-0048 putobject                              "f"
-0050 concatstrings                          3
-0052 putobject                              :__ENCODING__             (  92)
-0054 leave
+0015 adjuststack                            2
+0017 putobject                              "b"                       (  38)
+0019 putobject_INT2FIX_1_
+0020 dup
+0021 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0023 anytostring
+0024 adjuststack                            2
+0026 putobject                              2
+0028 dup
+0029 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0031 anytostring
+0032 putobject                              "c"
+0034 adjuststack                            2
+0036 putobject                              "d"
+0038 putobject                              3
+0040 dup
+0041 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0043 anytostring
+0044 putobject                              "f"
+0046 adjuststack                            3
+0048 putobject                              :__ENCODING__             (  92)
+0050 leave

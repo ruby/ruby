@@ -6,7 +6,6 @@
 0005 leave                                  [Re]
 0006 leave                                                            (   8)[Re]
 0007 leave                                                            (  13)[Re]
-0008 putnil                                                           (  20)
-0009 leave                                  [Re]
-0010 putnil                                                           (  22)
-0011 leave
+0008 leave                                                            (  20)[Re]
+0009 putnil                                                           (  22)
+0010 leave

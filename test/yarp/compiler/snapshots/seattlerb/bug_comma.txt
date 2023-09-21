@@ -4,8 +4,7 @@
 0003 putself
 0004 opt_send_without_block                 <calldata!mid:dir, argc:0, FCALL|VCALL|ARGS_SIMPLE>
 0006 opt_send_without_block                 <calldata!mid:test, argc:2, FCALL|ARGS_SIMPLE>
-0008 branchunless                           12
-0010 putnil
-0011 leave
-0012 putnil
-0013 leave
+0008 branchunless                           11
+0010 leave
+0011 putnil
+0012 leave

@@ -10,8 +10,7 @@ local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 0008 expandarray                            2, 0
 0011 setlocal_WC_0                          a@0
 0013 setlocal_WC_0                          b@1
-0015 branchunless                           19
-0017 putnil
-0018 leave
-0019 putnil
-0020 leave
+0015 branchunless                           18
+0017 leave
+0018 putnil
+0019 leave

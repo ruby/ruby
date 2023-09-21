@@ -3,11 +3,9 @@ local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 [ 2] a@0        [ 1] b@1
 0000 putself                                                          (   1)
 0001 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0003 pop
-0004 dup
-0005 expandarray                            2, 0
-0008 setlocal_WC_0                          a@0
-0010 setlocal_WC_0                          b@1                       (   1)
-0012 putself                                                          (   2)
-0013 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0015 leave
+0003 expandarray                            2, 0
+0006 setlocal_WC_0                          a@0
+0008 setlocal_WC_0                          b@1                       (   1)
+0010 putself                                                          (   2)
+0011 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0013 leave

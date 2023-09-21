@@ -20,35 +20,33 @@
 0029 dup                                                              (  24)
 0030 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
 0032 anytostring
-0033 pop
-0034 putobject                              "\n"
-0036 concatstrings                          3
-0038 putobject                              "  a\n"                   (  29)
-0040 putself                                                          (  31)
-0041 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0043 dup                                                              (  29)
-0044 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0046 anytostring
-0047 pop
-0048 putobject                              "\n"
-0050 concatstrings                          3
-0052 putstring                              "  a\n"                   (  48)
-0054 putobject                              "  b\n  "
-0056 putobject                              2                         (  52)
-0058 dup                                                              (  48)
-0059 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0061 anytostring
-0062 putobject                              "\n"
-0064 concatstrings                          3
-0066 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
-0068 pop
-0069 putstring                              "  a\n"                   (  56)
-0071 putobject                              "  b\n  "
-0073 putobject                              2                         (  62)
-0075 dup                                                              (  56)
-0076 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0078 anytostring
-0079 putobject                              "\n"
-0081 concatstrings                          3
-0083 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
-0085 leave
+0033 putobject                              "\n"
+0035 adjuststack                            3
+0037 putobject                              "  a\n"                   (  29)
+0039 putself                                                          (  31)
+0040 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0042 dup                                                              (  29)
+0043 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0045 anytostring
+0046 putobject                              "\n"
+0048 adjuststack                            3
+0050 putstring                              "  a\n"                   (  48)
+0052 putobject                              "  b\n  "
+0054 putobject                              2                         (  52)
+0056 dup                                                              (  48)
+0057 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0059 anytostring
+0060 putobject                              "\n"
+0062 concatstrings                          3
+0064 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0066 pop
+0067 putstring                              "  a\n"                   (  56)
+0069 putobject                              "  b\n  "
+0071 putobject                              2                         (  62)
+0073 dup                                                              (  56)
+0074 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0076 anytostring
+0077 putobject                              "\n"
+0079 concatstrings                          3
+0081 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0083 leave

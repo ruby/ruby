@@ -2,8 +2,7 @@
 0000 putself
 0001 putobject                              :x
 0003 opt_send_without_block                 <calldata!mid:f, argc:1, FCALL|ARGS_SIMPLE>
-0005 branchunless                           9
-0007 putnil
-0008 leave
-0009 putnil
-0010 leave
+0005 branchunless                           8
+0007 leave
+0008 putnil
+0009 leave

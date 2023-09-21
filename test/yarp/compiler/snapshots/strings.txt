@@ -10,40 +10,37 @@
 0013 dup
 0014 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
 0016 anytostring
-0017 pop
-0018 putobject                              " ccc"
-0020 concatstrings                          3
-0022 putstring                              "foo"                     (  38)
-0024 putstring                              "bar"                     (  40)
-0026 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>(  38)[CcCr]
-0028 pop
-0029 putobject                              "aaa "                    (  54)
-0031 putself
-0032 opt_send_without_block                 <calldata!mid:bbb, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0034 dup
-0035 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0037 anytostring
-0038 pop
-0039 putobject                              " ccc"
-0041 concatstrings                          3
-0043 putobject                              "b"                       (  66)
-0045 putself
-0046 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0048 dup
-0049 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0051 anytostring
-0052 pop
-0053 putobject                              "d"
-0055 concatstrings                          3
-0057 getglobal                              :$foo                     (  80)
-0059 dup
-0060 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0062 anytostring
-0063 pop
-0064 getinstancevariable                    :@foo, <is:0>             (  82)
-0067 dup
-0068 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0070 anytostring
-0071 pop
-0072 putstring                              "#"                       ( 104)
-0074 leave
+0017 putobject                              " ccc"
+0019 adjuststack                            3
+0021 putstring                              "foo"                     (  38)
+0023 putstring                              "bar"                     (  40)
+0025 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>(  38)[CcCr]
+0027 pop
+0028 putobject                              "aaa "                    (  54)
+0030 putself
+0031 opt_send_without_block                 <calldata!mid:bbb, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0033 dup
+0034 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0036 anytostring
+0037 putobject                              " ccc"
+0039 adjuststack                            3
+0041 putobject                              "b"                       (  66)
+0043 putself
+0044 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0046 dup
+0047 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0049 anytostring
+0050 putobject                              "d"
+0052 adjuststack                            3
+0054 getglobal                              :$foo                     (  80)
+0056 dup
+0057 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0059 anytostring
+0060 pop
+0061 getinstancevariable                    :@foo, <is:0>             (  82)
+0064 dup
+0065 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0067 anytostring
+0068 pop
+0069 putstring                              "#"                       ( 104)
+0071 leave

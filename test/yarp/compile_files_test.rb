@@ -60,6 +60,7 @@ module YARP
       whitequark/next.txt
       whitequark/next_block.txt
       whitequark/redo.txt
+      whitequark/bug_regex_verification.txt
     )
 
     # Fixtures that currently lead to errors when run

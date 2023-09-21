@@ -2,21 +2,23 @@
 0000 putself
 0001 putobject                              "foo"
 0003 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0005 putself                                                          (   2)
-0006 putobject                              "foo "
-0008 putself
-0009 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
-0011 dup
-0012 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
-0014 anytostring
-0015 putobject                              " baz"
-0017 concatstrings                          3
-0019 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0021 pop
-0022 putself                                                          (   4)
-0023 putobject                              "foo"
-0025 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0027 putself                                                          (   6)
-0028 putobject                              "foo"
-0030 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
-0032 leave
+0005 pop
+0006 putself                                                          (   2)
+0007 putobject                              "foo "
+0009 putself
+0010 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0012 dup
+0013 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0015 anytostring
+0016 putobject                              " baz"
+0018 concatstrings                          3
+0020 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0022 pop
+0023 putself                                                          (   4)
+0024 putobject                              "foo"
+0026 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0028 pop
+0029 putself                                                          (   6)
+0030 putobject                              "foo"
+0032 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0034 leave
