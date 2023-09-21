@@ -225,7 +225,7 @@ module YARP
 
     def test_InterpolatedXStringNode
       test_yarp_eval('`echo #{1}`')
-      test_yarp_eval('`printf "100"`')
+      test_yarp_eval('`printf #{"100"}`')
     end
 
     def test_RegularExpressionNode
@@ -278,11 +278,18 @@ module YARP
 
     private
 
-    def test_yarp_eval(source)
+    def compare_eval(source)
       ruby_eval = RubyVM::InstructionSequence.compile(source).eval
       yarp_eval = RubyVM::InstructionSequence.compile_yarp(source).eval
 
       assert_equal ruby_eval, yarp_eval
+    end
+
+    def test_yarp_eval(source)
+      compare_eval(source)
+
+      # Test "popped" functionality
+      compare_eval("#{source}; 1")
     end
   end
 end
