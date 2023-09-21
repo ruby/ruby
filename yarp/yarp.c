@@ -14141,6 +14141,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
             if (block != NULL) {
                 if (arguments.block != NULL) {
                     yp_diagnostic_list_append(&parser->error_list, block->base.location.start, block->base.location.end, YP_ERR_ARGUMENT_AFTER_BLOCK);
+                    if (arguments.arguments == NULL) {
+                        arguments.arguments = yp_arguments_node_create(parser);
+                    }
                     yp_arguments_node_arguments_append(arguments.arguments, arguments.block);
                 }
 
