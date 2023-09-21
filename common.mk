@@ -1289,7 +1289,6 @@ $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 # $(MKFILES): $(REVISION_H)
 
 ripper_srcs: $(RIPPER_SRCS)
-.NOTPARALLEL: ripper_srcs
 
 $(RIPPER_SRCS): $(srcdir)/parse.y $(srcdir)/defs/id.def
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/ext/ripper/tools/dsl.rb
