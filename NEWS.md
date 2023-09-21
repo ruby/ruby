@@ -91,6 +91,7 @@ The following default gems are updated.
 * fileutils 1.7.1
 * irb 1.8.1
 * nkf 0.1.3
+* openssl 3.2.0
 * optparse 0.4.0.pre.1
 * psych 5.1.0
 * reline 0.3.8
