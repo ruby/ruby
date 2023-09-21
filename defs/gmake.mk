@@ -518,7 +518,13 @@ matz: up
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk
 
-ifeq ($(DOT_WAIT),)
+
+# ripper_srcs makes all sources at once. invoking this target multiple
+# times in parallel means all sources will be built for the number of
+# sources times respectively.
+ifneq ($(DOT_WAIT),)
+.NOTPARALLEL: ripper_srcs
+else
 ripper_src =
 $(foreach r,$(RIPPER_SRCS),$(eval $(value r): | $(value ripper_src))\
 	$(eval ripper_src := $(value r)))
