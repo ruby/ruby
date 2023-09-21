@@ -123,7 +123,7 @@ jobs:
         with:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:
