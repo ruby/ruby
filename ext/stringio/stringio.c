@@ -603,7 +603,7 @@ strio_to_read(VALUE self)
  *   eof? -> true or false
  *
  * Returns +true+ if positioned at end-of-stream, +false+ otherwise;
- * see {Position}[rdoc-ref:File@Position].
+ * see {Position}[rdoc-ref:IO@Position].
  *
  * Raises IOError if the stream is not opened for reading.
  */
