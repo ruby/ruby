@@ -39,14 +39,32 @@ yp_iseq_new_with_opt(yp_scope_node_t *node, yp_parser_t *parser, VALUE name, VAL
                      enum rb_iseq_type type, const rb_compile_option_t *option);
 
 static VALUE
-parse_integer(const yp_node_t *node)
+parse_integer(const yp_integer_node_t *node)
 {
-    const char *start = (const char *)node->location.start;
-    const char *end = (const char *)node->location.end;
-    size_t length = end - start;
-    VALUE number = rb_int_parse_cstr(start, length, NULL, NULL, -10, RB_INT_PARSE_DEFAULT);
+    const char *start = (const char *) node->base.location.start;
+    const char *end = (const char *) node->base.location.end;
 
-    return number;
+    size_t length = end - start;
+    int base = -10;
+
+    switch (node->base.flags & (YP_INTEGER_BASE_FLAGS_BINARY | YP_INTEGER_BASE_FLAGS_DECIMAL | YP_INTEGER_BASE_FLAGS_OCTAL | YP_INTEGER_BASE_FLAGS_HEXADECIMAL)) {
+        case YP_INTEGER_BASE_FLAGS_BINARY:
+            base = 2;
+            break;
+        case YP_INTEGER_BASE_FLAGS_DECIMAL:
+            base = 10;
+            break;
+        case YP_INTEGER_BASE_FLAGS_OCTAL:
+            base = 8;
+            break;
+        case YP_INTEGER_BASE_FLAGS_HEXADECIMAL:
+            base = 16;
+            break;
+        default:
+            rb_bug("Unexpected integer base");
+    }
+
+    return rb_int_parse_cstr(start, length, NULL, NULL, base, RB_INT_PARSE_DEFAULT);
 }
 
 static VALUE
@@ -110,7 +128,7 @@ parse_imaginary(yp_imaginary_node_t *node)
           break;
       }
       case YP_INTEGER_NODE: {
-          imaginary_part = parse_integer(node->numeric);
+          imaginary_part = parse_integer((yp_integer_node_t *) node->numeric);
           break;
       }
       case YP_RATIONAL_NODE: {
@@ -174,7 +192,7 @@ yp_static_literal_value(yp_node_t *node)
       case YP_IMAGINARY_NODE:
         return parse_imaginary((yp_imaginary_node_t *)node);
       case YP_INTEGER_NODE:
-        return parse_integer(node);
+        return parse_integer((yp_integer_node_t *) node);
       case YP_NIL_NODE:
         return Qnil;
       case YP_RATIONAL_NODE:
@@ -1043,7 +1061,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_defined_node_t *defined_node = (yp_defined_node_t *)node;
           // TODO: Correct defined_type
           enum defined_type dtype = DEFINED_CONST;
-          VALUE sym = parse_integer(defined_node->value);
+
+          VALUE sym = Qnil;
+          if (YP_NODE_TYPE_P(defined_node->value, YP_INTEGER_NODE)) {
+              sym = parse_integer((yp_integer_node_t *) defined_node->value);
+          }
 
           ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(dtype), sym, rb_iseq_defined_string(dtype));
           return;
@@ -1373,7 +1395,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_INTEGER_NODE: {
           if (!popped) {
-              ADD_INSN1(ret, &dummy_line_node, putobject, parse_integer(node));
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_integer((yp_integer_node_t *) node));
           }
           return;
       }
@@ -1722,8 +1744,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   yp_node_t *left = range_node->left;
                   yp_node_t *right = range_node->right;
                   VALUE val = rb_range_new(
-                          left && YP_NODE_TYPE_P(left, YP_INTEGER_NODE) ? parse_integer(left) : Qnil,
-                          right && YP_NODE_TYPE_P(right, YP_INTEGER_NODE) ? parse_integer(right) : Qnil,
+                          left && YP_NODE_TYPE_P(left, YP_INTEGER_NODE) ? parse_integer((yp_integer_node_t *) left) : Qnil,
+                          right && YP_NODE_TYPE_P(right, YP_INTEGER_NODE) ? parse_integer((yp_integer_node_t *) right) : Qnil,
                           exclusive
                           );
                   ADD_INSN1(ret, &dummy_line_node, putobject, val);
