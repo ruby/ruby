@@ -6,6 +6,11 @@ require_relative "helper"
 module TestIRB
   class InputTest < IntegrationTestCase
     def test_symbol_aliases_are_handled_correctly
+      write_rc <<~RUBY
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+      RUBY
+
       write_ruby <<~'RUBY'
         class Foo
         end
@@ -21,12 +26,11 @@ module TestIRB
     end
 
     def test_symbol_aliases_are_handled_correctly_with_singleline_mode
-      @irbrc = Tempfile.new('irbrc')
-      @irbrc.write <<~RUBY
+      write_rc <<~RUBY
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
         IRB.conf[:USE_SINGLELINE] = true
       RUBY
-      @irbrc.close
-      @envs['IRBRC'] = @irbrc.path
 
       write_ruby <<~'RUBY'
         class Foo
@@ -43,8 +47,6 @@ module TestIRB
       # Make sure it's tested in singleline mode
       assert_include output, "InputMethod: ReadlineInputMethod"
       assert_include output, "From: #{@ruby_file.path}:1"
-    ensure
-      @irbrc.unlink if @irbrc
     end
 
     def test_symbol_aliases_dont_affect_ruby_syntax
