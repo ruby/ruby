@@ -3,7 +3,7 @@
 0001 opt_send_without_block                 <calldata!mid:fun, argc:0, FCALL|VCALL|ARGS_SIMPLE>
 0003 pop
 0004 putself                                                          (   2)
-0005 opt_send_without_block                 <calldata!mid:fun!, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0005 opt_send_without_block                 <calldata!mid:fun!, argc:0, FCALL|ARGS_SIMPLE>
 0007 pop
 0008 putself                                                          (   4)
 0009 putobject_INT2FIX_1_

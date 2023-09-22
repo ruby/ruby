@@ -41,7 +41,7 @@
 0052 opt_send_without_block                 <calldata!mid:foo, argc:2, FCALL|ARGS_SIMPLE>
 0054 pop
 0055 putself
-0056 opt_send_without_block                 <calldata!mid:bar?, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0056 opt_send_without_block                 <calldata!mid:bar?, argc:0, FCALL|ARGS_SIMPLE>
 0058 branchif                               47
 0060 putnil
 0061 pop

@@ -2,7 +2,7 @@
 0000 putself
 0001 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
 0003 putself
-0004 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|ARGS_SIMPLE>
 0006 send                                   <calldata!mid:b, argc:1>, block in <compiled>
 0009 send                                   <calldata!mid:e, argc:0>, block in <compiled>
 0012 leave

@@ -1,0 +1,16 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,24)>
+local table (size: 7, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 7] a@0        [ 6] b@1        [ 5] c@2        [ 4] s@3        [ 3] x@4        [ 2] y@5        [ 1] z@6
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:f, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 dup
+0004 expandarray                            7, 0
+0007 setlocal_WC_0                          a@0
+0009 setlocal_WC_0                          b@1
+0011 setlocal_WC_0                          c@2
+0013 setlocal_WC_0                          s@3
+0015 splatarray                             true
+0017 setlocal_WC_0                          x@4
+0019 setlocal_WC_0                          y@5
+0021 setlocal_WC_0                          z@6
+0023 leave
