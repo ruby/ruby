@@ -68,6 +68,7 @@ Gem::Specification.new do |spec|
     "lib/yarp/lex_compat.rb",
     "lib/yarp/mutation_compiler.rb",
     "lib/yarp/node.rb",
+    "lib/yarp/node_inspector.rb",
     "lib/yarp/pack.rb",
     "lib/yarp/pattern.rb",
     "lib/yarp/ripper_compat.rb",
