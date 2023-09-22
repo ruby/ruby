@@ -1340,6 +1340,14 @@ module YARP
       ]
     end
 
+    def test_loop_conditional_is_closed
+      source = "while 0 0; foo; end; until 0 0; foo; end"
+      assert_errors expression(source), source, [
+        ["Expected a predicate expression for the `while` statement", 7..7],
+        ["Expected a predicate expression for the `until` statement", 28..28],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

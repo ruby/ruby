@@ -8267,6 +8267,18 @@ expect2(yp_parser_t *parser, yp_token_type_t type1, yp_token_type_t type2, yp_di
     parser->previous.type = YP_TOKEN_MISSING;
 }
 
+// This function is the same as expect2, but it expects one of three token types.
+static void
+expect3(yp_parser_t *parser, yp_token_type_t type1, yp_token_type_t type2, yp_token_type_t type3, yp_diagnostic_id_t diag_id) {
+    if (accept3(parser, type1, type2, type3)) return;
+
+    const uint8_t *location = parser->previous.end;
+    yp_diagnostic_list_append(&parser->error_list, location, location, diag_id);
+
+    parser->previous.start = location;
+    parser->previous.type = YP_TOKEN_MISSING;
+}
+
 static yp_node_t *
 parse_expression(yp_parser_t *parser, yp_binding_power_t binding_power, yp_diagnostic_id_t diag_id);
 
@@ -12804,7 +12816,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_CONDITIONAL_UNTIL_PREDICATE);
             yp_do_loop_stack_pop(parser);
 
-            accept3(parser, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            expect3(parser, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON, YP_ERR_CONDITIONAL_UNTIL_PREDICATE);
             yp_statements_node_t *statements = NULL;
 
             if (!accept1(parser, YP_TOKEN_KEYWORD_END)) {
@@ -12825,7 +12837,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *predicate = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_CONDITIONAL_WHILE_PREDICATE);
             yp_do_loop_stack_pop(parser);
 
-            accept3(parser, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
+            expect3(parser, YP_TOKEN_KEYWORD_DO_LOOP, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON, YP_ERR_CONDITIONAL_WHILE_PREDICATE);
             yp_statements_node_t *statements = NULL;
 
             if (!accept1(parser, YP_TOKEN_KEYWORD_END)) {
