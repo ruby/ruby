@@ -1427,7 +1427,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(parts_size)));
           }
 
-          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, rb_intern("`"), INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
           YP_POP_IF_POPPED;
           return;
       }
@@ -2016,7 +2016,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
               YP_COMPILE(undef_node->names.nodes[index]);
 
-              ADD_SEND(ret, &dummy_line_node, rb_intern("core#undef_method"), INT2NUM(2));
+              ADD_SEND(ret, &dummy_line_node, id_core_undef_method, INT2NUM(2));
 
               if (index < undef_node->names.size - 1)
                   ADD_INSN(ret, &dummy_line_node, pop);
@@ -2056,7 +2056,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_x_string_node_t *xstring_node = (yp_x_string_node_t *) node;
           ADD_INSN(ret, &dummy_line_node, putself);
           ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&xstring_node->unescaped));
-          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, rb_intern("`"), INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
 
           YP_POP_IF_POPPED;
           return;
