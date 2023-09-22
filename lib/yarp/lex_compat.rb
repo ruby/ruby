@@ -795,48 +795,44 @@ module YARP
     end
   end
 
-  # The constant that wraps the behavior of the lexer to match Ripper's output
-  # is an implementation detail, so we don't want it to be public.
-  private_constant :LexCompat
+  # This is a class that wraps the Ripper lexer to produce almost exactly the
+  # same tokens.
+  class LexRipper
+    attr_reader :source
 
-  # Returns an array of tokens that closely resembles that of the Ripper lexer.
-  # The only difference is that since we don't keep track of lexer state in the
-  # same way, it's going to always return the NONE state.
-  def self.lex_compat(source, filepath = "")
-    LexCompat.new(source, filepath).result
-  end
-
-  # This lexes with the Ripper lex. It drops any space events but otherwise
-  # returns the same tokens. Raises SyntaxError if the syntax in source is
-  # invalid.
-  def self.lex_ripper(source)
-    previous = []
-    results = []
-
-    Ripper.lex(source, raise_errors: true).each do |token|
-      case token[1]
-      when :on_sp
-        # skip
-      when :on_tstring_content
-        if previous[1] == :on_tstring_content && (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
-          previous[2] << token[2]
-        else
-          results << token
-          previous = token
-        end
-      when :on_words_sep
-        if previous[1] == :on_words_sep
-          previous[2] << token[2]
-        else
-          results << token
-          previous = token
-        end
-      else
-        results << token
-        previous = token
-      end
+    def initialize(source)
+      @source = source
     end
 
-    results
+    def result
+      previous = []
+      results = []
+
+      Ripper.lex(source, raise_errors: true).each do |token|
+        case token[1]
+        when :on_sp
+          # skip
+        when :on_tstring_content
+          if previous[1] == :on_tstring_content && (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
+            previous[2] << token[2]
+          else
+            results << token
+            previous = token
+          end
+        when :on_words_sep
+          if previous[1] == :on_words_sep
+            previous[2] << token[2]
+          else
+            results << token
+            previous = token
+          end
+        else
+          results << token
+          previous = token
+        end
+      end
+
+      results
+    end
   end
 end
