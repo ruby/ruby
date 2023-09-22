@@ -55,11 +55,18 @@ module Bundler
       if spec.source.instance_of?(Source::Path) && spec.source.path.absolute?
         full_path
       else
-        Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
+        relative_path_from(Bundler.root.join(bundler_path), :to => full_path) || full_path
       end
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)
+    end
+
+    def relative_path_from(source, to:)
+      Pathname.new(to).relative_path_from(source).to_s
+    rescue ArgumentError
+      # on Windows, if source and destination are on different drivers, there's no relative path from one to the other
+      nil
     end
 
     def define_path_helpers
