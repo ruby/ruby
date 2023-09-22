@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 module YARP
-  class DesugarVisitorTest < TestCase
+  class DesugarCompilerTest < TestCase
     def test_and_write
       assert_desugars("(AndNode (ClassVariableReadNode) (ClassVariableWriteNode (CallNode)))", "@@foo &&= bar")
       assert_not_desugared("Foo::Bar &&= baz", "Desugaring would execute Foo twice or need temporary variables")
@@ -72,7 +72,7 @@ module YARP
     end
 
     def assert_desugars(expected, source)
-      ast = YARP.parse(source).value.accept(DesugarVisitor.new)
+      ast = YARP.parse(source).value.accept(DesugarCompiler.new)
       assert_equal expected, ast_inspect(ast.statements.body.last)
 
       ast.accept(EnsureEveryNodeOnceInAST.new)
@@ -80,7 +80,7 @@ module YARP
 
     def assert_not_desugared(source, reason)
       ast = YARP.parse(source).value
-      assert_equal_nodes(ast, ast.accept(DesugarVisitor.new))
+      assert_equal_nodes(ast, ast.accept(DesugarCompiler.new))
     end
   end
 end
