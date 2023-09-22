@@ -202,27 +202,6 @@ module YARP
     end
   end
 
-  # A class that knows how to walk down the tree. None of the individual visit
-  # methods are implemented on this visitor, so it forces the consumer to
-  # implement each one that they need. For a default implementation that
-  # continues walking the tree, see the Visitor class.
-  class BasicVisitor
-    def visit(node)
-      node&.accept(self)
-    end
-
-    def visit_all(nodes)
-      nodes.map { |node| visit(node) }
-    end
-
-    def visit_child_nodes(node)
-      visit_all(node.child_nodes)
-    end
-  end
-
-  class Visitor < BasicVisitor
-  end
-
   # This represents the result of a call to ::parse or ::parse_file. It contains
   # the AST, any comments that were encounters, and any errors that were
   # encountered.
@@ -247,6 +226,24 @@ module YARP
 
     def failure?
       !success?
+    end
+  end
+
+  # A class that knows how to walk down the tree. None of the individual visit
+  # methods are implemented on this visitor, so it forces the consumer to
+  # implement each one that they need. For a default implementation that
+  # continues walking the tree, see the Visitor class.
+  class BasicVisitor
+    def visit(node)
+      node&.accept(self)
+    end
+
+    def visit_all(nodes)
+      nodes.map { |node| visit(node) }
+    end
+
+    def visit_child_nodes(node)
+      visit_all(node.child_nodes)
     end
   end
 
@@ -377,11 +374,6 @@ module YARP
     def to_str
       output
     end
-  end
-
-  # Load the serialized AST using the source as a reference into a tree.
-  def self.load(source, serialized)
-    Serialize.load(source, serialized)
   end
 
   # This module is used for testing and debugging and is not meant to be used by
@@ -554,6 +546,11 @@ module YARP
   autoload :Pack, "yarp/pack"
   autoload :Pattern, "yarp/pattern"
   autoload :Serialize, "yarp/serialize"
+
+  # Load the serialized AST using the source as a reference into a tree.
+  def self.load(source, serialized)
+    Serialize.load(source, serialized)
+  end
 end
 
 require_relative "yarp/lex_compat"
