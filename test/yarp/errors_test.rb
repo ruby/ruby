@@ -1333,6 +1333,13 @@ module YARP
       assert_errors expression(source), source, errors, compare_ripper: false
     end
 
+    def test_class_name
+      source = "class 0.X end"
+      assert_errors expression(source), source, [
+        ["Expected a constant name after `class`", 6..9],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

@@ -12304,6 +12304,11 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_constant_id_list_t locals = parser->current_scope->locals;
             yp_parser_scope_pop(parser);
             yp_do_loop_stack_pop(parser);
+
+            if (!YP_NODE_TYPE_P(constant_path, YP_CONSTANT_PATH_NODE) && !(YP_NODE_TYPE_P(constant_path, YP_CONSTANT_READ_NODE))) {
+                yp_diagnostic_list_append(&parser->error_list, constant_path->location.start, constant_path->location.end, YP_ERR_CLASS_NAME);
+            }
+
             return (yp_node_t *) yp_class_node_create(parser, &locals, &class_keyword, constant_path, &name, &inheritance_operator, superclass, statements, &parser->previous);
         }
         case YP_TOKEN_KEYWORD_DEF: {
