@@ -1302,6 +1302,13 @@ module YARP
       assert_error_messages "%sXfooX", error_messages
     end
 
+    def test_numbered_parameters_in_block_arguments
+      source = "foo { |_1| }"
+      assert_errors expression(source), source, [
+        ["Token reserved for a numbered parameter", 7..9],
+      ]
+    end
+
     def test_conditional_predicate_closed
       source = "if 0 0; end\nunless 0 0; end"
       assert_errors expression(source), source, [
