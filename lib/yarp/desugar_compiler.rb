@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module YARP
-  class DesugarVisitor < MutationVisitor
+  class DesugarCompiler < MutationCompiler
     # @@foo &&= bar
     #
     # becomes

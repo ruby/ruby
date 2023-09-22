@@ -229,24 +229,6 @@ module YARP
     end
   end
 
-  # A class that knows how to walk down the tree. None of the individual visit
-  # methods are implemented on this visitor, so it forces the consumer to
-  # implement each one that they need. For a default implementation that
-  # continues walking the tree, see the Visitor class.
-  class BasicVisitor
-    def visit(node)
-      node&.accept(self)
-    end
-
-    def visit_all(nodes)
-      nodes.map { |node| visit(node) }
-    end
-
-    def visit_child_nodes(node)
-      visit_all(node.child_nodes)
-    end
-  end
-
   # This represents a token from the Ruby source.
   class Token
     attr_reader :type, :value, :location
@@ -539,14 +521,17 @@ module YARP
   # which means the files can end up being quite large. We autoload them to make
   # our require speed faster since consuming libraries are unlikely to use all
   # of these features.
-  autoload :DesugarVisitor, "yarp/desugar_visitor"
+  autoload :BasicVisitor, "yarp/visitor"
+  autoload :Compiler, "yarp/compiler"
+  autoload :DesugarCompiler, "yarp/desugar_compiler"
   autoload :Dispatcher, "yarp/dispatcher"
   autoload :DSL, "yarp/dsl"
-  autoload :MutationVisitor, "yarp/mutation_visitor"
+  autoload :MutationCompiler, "yarp/mutation_compiler"
   autoload :RipperCompat, "yarp/ripper_compat"
   autoload :Pack, "yarp/pack"
   autoload :Pattern, "yarp/pattern"
   autoload :Serialize, "yarp/serialize"
+  autoload :Visitor, "yarp/visitor"
 
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)

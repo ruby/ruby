@@ -164,7 +164,8 @@ module YARP
   end
 
   <%- end -%>
-  <%- flags.each do |flag| -%>
+  <%- flags.each_with_index do |flag, flag_index| -%>
+<%= "\n" if flag_index > 0 -%>
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
@@ -172,13 +173,5 @@ module YARP
 <%= "\n" if value != flag.values.last -%>
     <%- end -%>
   end
-
   <%- end -%>
-  class Visitor < BasicVisitor
-    <%- nodes.each do |node| -%>
-    # Visit a <%= node.name %> node
-    alias visit_<%= node.human %> visit_child_nodes
-<%= "\n" if node != nodes.last -%>
-    <%- end -%>
-  end
 end
