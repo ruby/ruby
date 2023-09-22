@@ -77,6 +77,7 @@ static const char* const diagnostic_messages[YP_DIAGNOSTIC_ID_LEN] = {
     [YP_ERR_BEGIN_TERM]                         = "Expected an `end` to close the `begin` statement",
     [YP_ERR_BEGIN_UPCASE_BRACE]                 = "Expected a `{` after `BEGIN`",
     [YP_ERR_BEGIN_UPCASE_TERM]                  = "Expected a `}` to close the `BEGIN` statement",
+    [YP_ERR_BEGIN_UPCASE_TOPLEVEL]              = "BEGIN is permitted only at toplevel",
     [YP_ERR_BLOCK_PARAM_LOCAL_VARIABLE]         = "Expected a local variable name in the block parameters",
     [YP_ERR_BLOCK_PARAM_PIPE_TERM]              = "Expected the block parameters to end with `|`",
     [YP_ERR_BLOCK_TERM_BRACE]                   = "Expected a block beginning with `{` to end with `}`",
