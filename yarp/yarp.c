@@ -4818,10 +4818,20 @@ yp_parser_local_add_owned(yp_parser_t *parser, const uint8_t *start, size_t leng
     if (constant_id != 0) yp_parser_local_add(parser, constant_id);
 }
 
+static inline bool
+token_is_numbered_parameter(const uint8_t *start, const uint8_t *end) {
+    return (end - start == 2) && (start[0] == '_') && (start[1] != '0') && (yp_char_is_decimal_digit(start[1]));
+}
+
 // Add a parameter name to the current scope and check whether the name of the
 // parameter is unique or not.
 static void
 yp_parser_parameter_name_check(yp_parser_t *parser, yp_token_t *name) {
+    // We want to check whether the parameter name is a numbered parameter or not.
+    if (token_is_numbered_parameter(name->start, name->end)) {
+        yp_diagnostic_list_append(&parser->error_list, name->start, name->end, YP_ERR_PARAMETER_NUMBERED_RESERVED);
+    }
+
     // We want to ignore any parameter name that starts with an underscore.
     if ((*name->start == '_')) return;
 
@@ -4900,11 +4910,6 @@ char_is_global_name_punctuation(const uint8_t b) {
     if (i <= 0x20 || 0x7e < i) return false;
 
     return (yp_global_name_punctuation_hash[(i - 0x20) / 32] >> (i % 32)) & 1;
-}
-
-static inline bool
-token_is_numbered_parameter(const uint8_t *start, const uint8_t *end) {
-    return (end - start == 2) && (start[0] == '_') && (start[1] != '0') && (yp_char_is_decimal_digit(start[1]));
 }
 
 static inline bool
@@ -12155,6 +12160,10 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_statements_node_t *statements = parse_statements(parser, YP_CONTEXT_PREEXE);
 
             expect1(parser, YP_TOKEN_BRACE_RIGHT, YP_ERR_BEGIN_UPCASE_TERM);
+            yp_context_t context = parser->current_context->context;
+            if ((context != YP_CONTEXT_MAIN) && (context != YP_CONTEXT_PREEXE)) {
+                yp_diagnostic_list_append(&parser->error_list, keyword.start, keyword.end, YP_ERR_BEGIN_UPCASE_TOPLEVEL);
+            }
             return (yp_node_t *) yp_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
         }
         case YP_TOKEN_KEYWORD_BREAK:
