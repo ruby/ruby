@@ -232,6 +232,8 @@ tokens:
     comment: "<<"
   - name: LESS_LESS_EQUAL
     comment: "<<="
+  - name: METHOD_NAME
+    comment: "a method name"
   - name: MINUS
     comment: "-"
   - name: MINUS_EQUAL

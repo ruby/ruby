@@ -128,6 +128,7 @@ module YARP
       LESS_EQUAL_GREATER: :on_op,
       LESS_LESS: :on_op,
       LESS_LESS_EQUAL: :on_op,
+      METHOD_NAME: :on_ident,
       MINUS: :on_op,
       MINUS_EQUAL: :on_op,
       MINUS_GREATER: :on_tlambda,

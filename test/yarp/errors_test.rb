@@ -1310,6 +1310,15 @@ module YARP
       ]
     end
 
+    def test_parameter_name_ending_with_bang_or_question_mark
+      source = "def foo(x!,y?); end"
+      errors = [
+        ["Unexpected name for a parameter", 8..10],
+        ["Unexpected name for a parameter", 11..13]
+      ]
+      assert_errors expression(source), source, errors, compare_ripper: false
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
