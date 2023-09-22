@@ -298,6 +298,11 @@ module YARP
       test_yarp_eval("(1)")
     end
 
+    def test_PreExecutionNode
+      test_yarp_eval("BEGIN { 1 }")
+      test_yarp_eval("BEGIN { def a; 1; end; a }")
+    end
+
     private
 
     def compare_eval(source)

@@ -1698,6 +1698,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           return;
       }
+      case YP_PRE_EXECUTION_NODE: {
+          yp_pre_execution_node_t *pre_execution_node = (yp_pre_execution_node_t *) node;
+          YP_COMPILE_POPPED((yp_node_t *)(pre_execution_node->statements));
+          YP_PUTNIL_UNLESS_POPPED;
+          return;
+      }
       case YP_PROGRAM_NODE: {
           yp_program_node_t *program_node = (yp_program_node_t *) node;
 
