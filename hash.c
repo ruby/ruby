@@ -685,9 +685,8 @@ ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
     return ar_find_entry_hint(hash, hint, key);
 }
 
-//old one
 static inline void
-ar_free_and_clear_table(VALUE hash)
+hash_ar_free_and_clear_table(VALUE hash)
 {
     RHASH_AR_TABLE_CLEAR(hash);
 
@@ -715,7 +714,7 @@ ar_try_convert_table(VALUE hash)
         st_add_direct(new_tab, pair->key, pair->val);
     }
 
-    ar_free_and_clear_table(hash);
+    hash_ar_free_and_clear_table(hash);
     RHASH_ST_TABLE_SET(hash, new_tab);
 }
 
@@ -742,7 +741,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
             ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
             st_add_direct(new_tab, pair->key, pair->val);
         }
-        ar_free_and_clear_table(hash);
+        hash_ar_free_and_clear_table(hash);
     }
 
     RHASH_ST_TABLE_SET(hash, new_tab);
@@ -1161,7 +1160,7 @@ ar_clear(VALUE hash)
 }
 
 static void
-st_free_and_clear_table(VALUE hash)
+hash_st_free_and_clear_table(VALUE hash)
 {
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
@@ -1962,7 +1961,8 @@ rb_hash_rehash(VALUE hash)
     if (RHASH_AR_TABLE_P(hash)) {
         tmp = hash_alloc(0);
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
-        ar_free_and_clear_table(hash);
+
+        hash_ar_free_and_clear_table(hash);
         ar_copy(hash, tmp);
     }
     else if (RHASH_ST_TABLE_P(hash)) {
@@ -1974,6 +1974,7 @@ rb_hash_rehash(VALUE hash)
 
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
+        hash_st_free_and_clear_table(hash);
         RHASH_ST_TABLE_SET(hash, tbl);
         RHASH_ST_CLEAR(tmp);
     }
@@ -2906,10 +2907,10 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     COPY_DEFAULT(hash, hash2);
 
     if (RHASH_AR_TABLE_P(hash)) {
-        ar_free_and_clear_table(hash);
+        hash_ar_free_and_clear_table(hash);
     }
     else {
-        st_free_and_clear_table(hash);
+        hash_st_free_and_clear_table(hash);
     }
 
     hash_copy(hash, hash2);

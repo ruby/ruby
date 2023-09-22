@@ -744,6 +744,21 @@ class TestHash < Test::Unit::TestCase
     assert_equal(100, h[a])
   end
 
+  def test_rehash_memory_leak
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      ar_hash = 1.times.map { |i| [i, i] }.to_h
+      st_hash = 10.times.map { |i| [i, i] }.to_h
+
+      code = proc do
+        ar_hash.rehash
+        st_hash.rehash
+      end
+      1_000.times(&code)
+    PREP
+      1_000_000.times(&code)
+    CODE
+  end
+
   def test_reject
     assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].reject {|k, v| k + v < 7 })
 
