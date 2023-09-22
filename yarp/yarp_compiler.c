@@ -682,6 +682,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_BLOCK_ARGUMENT_NODE: {
+          yp_block_argument_node_t *block_argument_node = (yp_block_argument_node_t *) node;
+          YP_COMPILE(block_argument_node->expression);
+          return;
+      }
       case YP_BREAK_NODE: {
           yp_break_node_t *break_node = (yp_break_node_t *) node;
           if (break_node->arguments) {
@@ -719,26 +724,31 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
 
           VALUE block_iseq = Qnil;
-          if (call_node->block != NULL) {
+          if (call_node->block != NULL && YP_NODE_TYPE_P(call_node->block, YP_BLOCK_NODE)) {
               // Scope associated with the block
               yp_scope_node_t scope_node;
-              yp_scope_node_init((yp_node_t *)call_node->block, &scope_node);
+              yp_scope_node_init(call_node->block, &scope_node);
 
               const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
               ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
               ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq);
           }
           else {
+              if (node->flags & YP_CALL_NODE_FLAGS_VARIABLE_CALL) {
+                  flags |= VM_CALL_VCALL;
+              }
+
+              if (call_node->block != NULL) {
+                  YP_COMPILE_NOT_POPPED(call_node->block);
+                  flags |= VM_CALL_ARGS_BLOCKARG;
+              }
+
               if (block_iseq == Qnil && flags == 0) {
                   flags |= VM_CALL_ARGS_SIMPLE;
               }
 
               if (call_node->receiver == NULL) {
                   flags |= VM_CALL_FCALL;
-
-                  if (block_iseq == Qnil && call_node->arguments == NULL) {
-                      flags |= VM_CALL_VCALL;
-                  }
               }
 
               ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(orig_argc), INT2FIX(flags));
