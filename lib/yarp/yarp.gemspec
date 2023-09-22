@@ -60,6 +60,7 @@ Gem::Specification.new do |spec|
     "include/yarp/version.h",
     "lib/yarp.rb",
     "lib/yarp/compiler.rb",
+    "lib/yarp/debug.rb",
     "lib/yarp/desugar_compiler.rb",
     "lib/yarp/dispatcher.rb",
     "lib/yarp/dsl.rb",
