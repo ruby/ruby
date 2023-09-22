@@ -541,6 +541,7 @@ module YARP
   # of these features.
   autoload :DesugarVisitor, "yarp/desugar_visitor"
   autoload :Dispatcher, "yarp/dispatcher"
+  autoload :DSL, "yarp/dsl"
   autoload :MutationVisitor, "yarp/mutation_visitor"
   autoload :RipperCompat, "yarp/ripper_compat"
   autoload :Pack, "yarp/pack"

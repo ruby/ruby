@@ -61,6 +61,7 @@ Gem::Specification.new do |spec|
     "lib/yarp.rb",
     "lib/yarp/desugar_visitor.rb",
     "lib/yarp/dispatcher.rb",
+    "lib/yarp/dsl.rb",
     "lib/yarp/ffi.rb",
     "lib/yarp/lex_compat.rb",
     "lib/yarp/mutation_visitor.rb",

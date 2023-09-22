@@ -367,6 +367,7 @@ module YARP
     "java/org/yarp/Nodes.java",
     "java/org/yarp/AbstractNodeVisitor.java",
     "lib/yarp/dispatcher.rb",
+    "lib/yarp/dsl.rb",
     "lib/yarp/mutation_visitor.rb",
     "lib/yarp/node.rb",
     "lib/yarp/serialize.rb",

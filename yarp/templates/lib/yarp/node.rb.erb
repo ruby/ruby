@@ -181,20 +181,4 @@ module YARP
 <%= "\n" if node != nodes.last -%>
     <%- end -%>
   end
-
-  module DSL
-    private
-
-    # Create a new Location object
-    def Location(source = nil, start_offset = 0, length = 0)
-      Location.new(source, start_offset, length)
-    end
-    <%- nodes.each do |node| -%>
-
-    # Create a new <%= node.name %> node
-    def <%= node.name %>(<%= (node.fields.map(&:name) + ["location = Location()"]).join(", ") %>)
-      <%= node.name %>.new(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
-    end
-    <%- end -%>
-  end
 end
