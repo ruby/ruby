@@ -1,0 +1,45 @@
+module YARP
+  # The DSL module provides a set of methods that can be used to create YARP
+  # nodes in a more concise manner. For example, instead of writing:
+  #
+  #     source = YARP::Source.new("[1]")
+  #
+  #     YARP::ArrayNode.new(
+  #       [
+  #         YARP::IntegerNode.new(
+  #           YARP::IntegerBaseFlags::DECIMAL,
+  #           YARP::Location.new(source, 1, 1),
+  #         )
+  #       ],
+  #       YARP::Location.new(source, 0, 1),
+  #       YARP::Location.new(source, 2, 1)
+  #     )
+  #
+  # you could instead write:
+  #
+  #     source = YARP::Source.new("[1]")
+  #
+  #     ArrayNode(
+  #       IntegerNode(YARP::IntegerBaseFlags::DECIMAL, Location(source, 1, 1))),
+  #       Location(source, 0, 1),
+  #       Location(source, 2, 1)
+  #     )
+  #
+  # This is mostly helpful in the context of writing tests, but can also be used
+  # to generate trees programmatically.
+  module DSL
+    private
+
+    # Create a new Location object
+    def Location(source = nil, start_offset = 0, length = 0)
+      Location.new(source, start_offset, length)
+    end
+    <%- nodes.each do |node| -%>
+
+    # Create a new <%= node.name %> node
+    def <%= node.name %>(<%= (node.fields.map(&:name) + ["location = Location()"]).join(", ") %>)
+      <%= node.name %>.new(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+    end
+    <%- end -%>
+  end
+end
