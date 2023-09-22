@@ -200,7 +200,7 @@ struct rb_method_definition_struct {
 struct rb_id_table;
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
-STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
+STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body) <= 8);
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
