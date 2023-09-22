@@ -547,21 +547,25 @@ module YARP
   # which means the files can end up being quite large. We autoload them to make
   # our require speed faster since consuming libraries are unlikely to use all
   # of these features.
+  autoload :DesugarVisitor, "yarp/desugar_visitor"
   autoload :Dispatcher, "yarp/dispatcher"
+  autoload :MutationVisitor, "yarp/mutation_visitor"
+  autoload :RipperCompat, "yarp/ripper_compat"
+  autoload :Pack, "yarp/pack"
+  autoload :Pattern, "yarp/pattern"
+  autoload :Serialize, "yarp/serialize"
 end
 
 require_relative "yarp/lex_compat"
-require_relative "yarp/mutation_visitor"
-require_relative "yarp/desugar_visitor"
 require_relative "yarp/node"
-require_relative "yarp/ripper_compat"
-require_relative "yarp/serialize"
-require_relative "yarp/pack"
-require_relative "yarp/pattern"
 
 require_relative "yarp/parse_result/comments"
 require_relative "yarp/parse_result/newlines"
 
+# This is a Ruby implementation of the YARP parser. If we're running on CRuby
+# and we haven't explicitly set the YARP_FFI_BACKEND environment variable, then
+# it's going to require the built library. Otherwise, it's going to require a
+# module that uses FFI to call into the library.
 if RUBY_ENGINE == "ruby" and !ENV["YARP_FFI_BACKEND"]
   require "yarp/yarp"
 else
