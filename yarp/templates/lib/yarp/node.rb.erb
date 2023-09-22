@@ -1,5 +1,37 @@
 module YARP
+  # This represents a node in the tree. It is the parent class of all of the
+  # various node types.
+  class Node
+    attr_reader :location
+
+    def newline?
+      @newline ? true : false
+    end
+
+    def set_newline_flag(newline_marked)
+      line = location.start_line
+      unless newline_marked[line]
+        newline_marked[line] = true
+        @newline = true
+      end
+    end
+
+    # Slice the location of the node from the source.
+    def slice
+      location.slice
+    end
+
+    # Similar to inspect, but respects the current level of indentation given by
+    # the pretty print object.
+    def pretty_print(q)
+      q.seplist(inspect.chomp.each_line, -> { q.breakable }) do |line|
+        q.text(line.chomp)
+      end
+      q.current_group.break
+    end
+  end
   <%- nodes.each do |node| -%>
+
   <%= "#{node.comment.split("\n").map { |line| line.empty? ? "#" : "# #{line}" }.join("\n  ")}\n  " if node.comment %>class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>
     # attr_reader <%= field.name %>: <%= field.rbs_class %>
@@ -162,10 +194,9 @@ module YARP
       inspector.to_str
     end
   end
-
   <%- end -%>
   <%- flags.each_with_index do |flag, flag_index| -%>
-<%= "\n" if flag_index > 0 -%>
+
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
