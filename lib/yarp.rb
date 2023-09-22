@@ -542,6 +542,12 @@ module YARP
   # annoying for testing since you have to const_get it to access the methods,
   # but at least this way it's clear it's not meant for consumers.
   private_constant :Debug
+
+  # There are many files in YARP that are templated to handle every node type,
+  # which means the files can end up being quite large. We autoload them to make
+  # our require speed faster since consuming libraries are unlikely to use all
+  # of these features.
+  autoload :Dispatcher, "yarp/dispatcher"
 end
 
 require_relative "yarp/lex_compat"
