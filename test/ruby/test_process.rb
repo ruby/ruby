@@ -715,6 +715,10 @@ class TestProcess < Test::Unit::TestCase
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
+        sleep 0.2 # wait for the child to return to opening "fifo".
+        # On arm64-darwin22, often deadlocks while the child is
+        # opening "fifo".  Not sure to where "ok" line being written
+        # at the next has gone.
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
