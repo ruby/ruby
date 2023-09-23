@@ -698,15 +698,22 @@ class VCS
               fix = $1
               s = s.lines
               fix.each_line do |x|
+                next unless x.sub!(/^(\s+)(?:(\d+)|\$(?:-\d+)?)/, '')
+                b = ($2&.to_i || (s.size - 1 + $3.to_i))
+                sp = $1
+                if x.sub!(/^,(?:(\d+)|\$(?:-\d+)?)/, '')
+                  range = b..($1&.to_i || (s.size - 1 + $2.to_i))
+                else
+                  range = b..b
+                end
                 case x
-                when %r[^ +(\d+)s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\2(.*)\2]o
-                  n = $1.to_i
-                  wrong = $3
-                  correct = $4
-                  begin
+                when %r[^s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\1(.*)\1]o
+                  wrong = $2
+                  correct = $3
+                  range.each do |n|
                     s[n][wrong] = correct
                   rescue IndexError
-                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #$1\n"]
+                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #{n}\n"]
                     from = [1, n-2].max
                     to = [s.size-1, n+2].min
                     s.each_with_index do |e, i|
@@ -716,12 +723,13 @@ class VCS
                     end
                     raise message.join('')
                   end
-                when %r[^( +)(\d+)i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\3]o
-                  s[$2.to_i, 0] = "#{$1}#{$4}\n"
-                when %r[^ +(\d+)(?:,(\d+))?d]
-                  n = $1.to_i
-                  e = $2
-                  s[n..(e ? e.to_i : n)] = []
+                when %r[^i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\1]o
+                  insert = "#{sp}#{$2}\n"
+                  range.reverse_each do |n|
+                    s[n, 0] = insert
+                  end
+                when %r[^d]
+                  s[range] = []
                 end
               end
               s = s.join('')
