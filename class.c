@@ -471,6 +471,7 @@ copy_tables(VALUE clone, VALUE orig)
         rb_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
         RCLASS_CVC_TBL(clone) = rb_cvc_tbl_dup;
     }
+    rb_id_table_free(RCLASS_M_TBL(clone));
     RCLASS_M_TBL(clone) = 0;
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         st_data_t id;
