@@ -5950,7 +5950,7 @@ f_opt		: f_arg_asgn f_eq arg_value
                         p->cur_arg = 0;
                         p->ctxt.in_argdef = 1;
                     /*%%%*/
-                        $$ = NEW_OPT_ARG(0, assignable(p, $1, $3, &@$), &@$);
+                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
                     /*% %*/
                     /*% ripper: rb_assoc_new(get_value(assignable(p, $1)), get_value($3)) %*/
                     }
@@ -5961,7 +5961,7 @@ f_block_opt	: f_arg_asgn f_eq primary_value
                         p->cur_arg = 0;
                         p->ctxt.in_argdef = 1;
                     /*%%%*/
-                        $$ = NEW_OPT_ARG(0, assignable(p, $1, $3, &@$), &@$);
+                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
                     /*% %*/
                     /*% ripper: rb_assoc_new(get_value(assignable(p, $1)), get_value($3)) %*/
                     }
