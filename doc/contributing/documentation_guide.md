@@ -216,14 +216,12 @@ may not render them properly.
 In particular, avoid building tables with HTML tags
 (<tt><table></tt>, etc.).
 
-Alternatives are:
-
-- The GFM (GitHub Flavored Markdown) table extension,
-  which is enabled by default. See
-  {GFM tables extension}[https://github.github.com/gfm/#tables-extension-].
+An alternative is:
 
 - A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
   using spaces and punctuation to format the text.
+  See {examples}[rdoc-ref:File@Read-2FWrite+Mode].
+
   Note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
   will not be honored.
 
