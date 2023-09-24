@@ -1431,18 +1431,6 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
 }
 #endif
 
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-static int
-get_native_thread_id(void)
-{
-#ifdef __linux__
-    return (int)syscall(SYS_gettid);
-#elif defined(__FreeBSD__)
-    return pthread_getthreadid_np();
-#endif
-}
-#endif
-
 #if defined(HAVE_WORKING_FORK)
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
