@@ -128,6 +128,34 @@ size_t rb_size_pool_slot_size(unsigned char pool_id);
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
+/*Fiber stuff*/
+bool rb_gc_is_full_marking(void);
+struct fiber_stack_object
+{
+    //a pointer to a object pointer on a fiber stack
+    const VALUE *stack_obj;
+    struct fiber_stack_object *next;
+};
+
+struct fiber_record_struct
+{
+    //the head of a linked list storing pointer values found on a fiber's stack.
+    //any pointers found on the stack are *VALUE type. gc_mark_maybe is given VALUE, which is a pointer to an object
+    struct fiber_stack_object *head;
+    struct fiber_stack_object *tail;
+
+    // Stack barrier points to some position on stack
+    // that GC cannot go beyond
+    void * stack_barrier;
+
+    void *fiber;
+
+};
+
+void rb_fiber_record_free(struct fiber_record_struct *fiber_record);
+struct fiber_record_struct* rb_get_fiber_record(const rb_execution_context_t* ec);
+void rb_fiber_record_mark(const rb_execution_context_t *ec, const VALUE *start, const VALUE *end);
+
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
 # undef RB_NEWOBJ_OF
@@ -243,7 +271,6 @@ int rb_objspace_garbage_object_p(VALUE obj);
 bool rb_gc_is_ptr_to_obj(void *ptr);
 VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
 VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
-
 void rb_gc_mark_and_move(VALUE *ptr);
 
 void rb_gc_mark_weak(VALUE *ptr);
@@ -285,7 +312,7 @@ size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
-void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
+void rb_gc_mark_vm_stack_values(long n, const VALUE *values, struct fiber_record_struct *fiber_record);
 void rb_gc_update_values(long n, VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
