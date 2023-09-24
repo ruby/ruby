@@ -1178,6 +1178,14 @@ hash_st_free_and_clear_table(VALUE hash)
     RHASH_ST_CLEAR(hash);
 }
 
+void
+rb_hash_free(VALUE hash)
+{
+    if (RHASH_ST_TABLE_P(hash)) {
+        hash_st_free(hash);
+    }
+}
+
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
 struct foreach_safe_arg {

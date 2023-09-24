@@ -3539,12 +3539,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
 #endif
 
-        if (RHASH_ST_TABLE_P(obj)) {
-            st_table *tab = RHASH_ST_TABLE(obj);
-
-            free(tab->bins);
-            free(tab->entries);
-        }
+        rb_hash_free(obj);
         break;
       case T_REGEXP:
         if (RANY(obj)->as.regexp.ptr) {
