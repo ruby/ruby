@@ -651,7 +651,7 @@ typedef struct rb_vm_struct {
 
             unsigned int running_cnt;
 
-            unsigned int max_proc;
+            unsigned int max_cpu;
             struct ccan_list_head grq; // // Global Ready Queue
             unsigned int grq_cnt;
 

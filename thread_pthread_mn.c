@@ -362,7 +362,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
         unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
         if (((int)snt_cnt < MINIMUM_SNT) ||
             (snt_cnt < vm->ractor.cnt  &&
-             snt_cnt < vm->ractor.sched.max_proc)) {
+             snt_cnt < vm->ractor.sched.max_cpu)) {
 
             RUBY_DEBUG_LOG("added snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",
                            vm->ractor.sched.snt_cnt,

@@ -1431,6 +1431,18 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
 }
 #endif
 
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+static int
+get_native_thread_id(void)
+{
+#ifdef __linux__
+    return (int)syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    return pthread_getthreadid_np();
+#endif
+}
+#endif
+
 #if defined(HAVE_WORKING_FORK)
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
@@ -1465,6 +1477,12 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     else {
         thread_sched_setup_running_threads(sched, th->ractor, vm, th, NULL, NULL);
     }
+
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    if (th->nt) {
+        th->nt->tid = get_native_thread_id();
+    }
+#endif
 }
 
 #endif
@@ -1515,18 +1533,6 @@ ruby_thread_set_native(rb_thread_t *th)
 #endif
 }
 
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-static int
-get_native_thread_id(void)
-{
-#ifdef __linux__
-    return (int)syscall(SYS_gettid);
-#elif defined(__FreeBSD__)
-    return pthread_getthreadid_np();
-#endif
-}
-#endif
-
 static void native_thread_setup(struct rb_native_thread *nt);
 
 void
@@ -1571,16 +1577,16 @@ Init_native_thread(rb_thread_t *main_th)
     }
     main_th->ractor->threads.sched.enable_mn_threads = enable_mn_threads;
 
-    const char *max_proc_cstr = getenv("RUBY_MAX_PROC");
-    int max_proc;
-    if (max_proc_cstr && (max_proc = atoi(max_proc_cstr)) > 0) {
-        // TODO: fprintf(stderr, "max_proc = %d\n", max_proc);
+    const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
+    int max_cpu;
+    if (max_cpu_cstr && (max_cpu = atoi(max_cpu_cstr)) > 0) {
+        // TODO: fprintf(stderr, "max_cpu = %d\n", max_cpu);
     }
     else {
-        max_proc = 8; // TODO: CPU num?
+        max_cpu = 8; // TODO: CPU num?
     }
 
-    vm->ractor.sched.max_proc = max_proc;
+    vm->ractor.sched.max_cpu = max_cpu;
     vm->ractor.sched.dnt_cnt = 1;
 
     // setup main thread
