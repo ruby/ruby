@@ -1160,7 +1160,7 @@ ar_clear(VALUE hash)
 }
 
 static void
-hash_st_free_and_clear_table(VALUE hash)
+hash_st_free(VALUE hash)
 {
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
@@ -1168,6 +1168,12 @@ hash_st_free_and_clear_table(VALUE hash)
 
     free(tab->bins);
     free(tab->entries);
+}
+
+static void
+hash_st_free_and_clear_table(VALUE hash)
+{
+    hash_st_free(hash);
 
     RHASH_ST_CLEAR(hash);
 }
@@ -1974,7 +1980,7 @@ rb_hash_rehash(VALUE hash)
 
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
-        hash_st_free_and_clear_table(hash);
+        hash_st_free(hash);
         RHASH_ST_TABLE_SET(hash, tbl);
         RHASH_ST_CLEAR(tmp);
     }
