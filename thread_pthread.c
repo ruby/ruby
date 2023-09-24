@@ -1573,7 +1573,7 @@ Init_native_thread(rb_thread_t *main_th)
         // TODO: fprintf(stderr, "MN threads is enabled.\n");
     }
     else {
-        enable_mn_threads = true; // default: off on main Ractor
+        enable_mn_threads = false; // default: off on main Ractor
     }
     main_th->ractor->threads.sched.enable_mn_threads = enable_mn_threads;
 
