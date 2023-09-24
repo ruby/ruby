@@ -1817,6 +1817,7 @@ range_string_cover_internal(VALUE range, VALUE val)
             return r_cover_p(range, beg, end, val);
         }
         if (NIL_P(beg)) {
+unbounded_begin:;
             VALUE r = rb_funcall(val, id_cmp, 1, end);
             if (NIL_P(r)) return Qfalse;
             if (RANGE_EXCL(range)) {
@@ -1825,10 +1826,18 @@ range_string_cover_internal(VALUE range, VALUE val)
             return RBOOL(rb_cmpint(r, val, end) <= 0);
         }
         else if (NIL_P(end)) {
+unbounded_end:;
             VALUE r = rb_funcall(beg, id_cmp, 1, val);
             if (NIL_P(r)) return Qfalse;
             return RBOOL(rb_cmpint(r, beg, val) <= 0);
         }
+    }
+
+    if (!NIL_P(beg) && NIL_P(end)) {
+        goto unbounded_end;
+    }
+    if (NIL_P(beg) && !NIL_P(end)) {
+        goto unbounded_begin;
     }
 
     return range_include_fallback(beg, end, val);
