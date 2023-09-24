@@ -2130,49 +2130,49 @@ expr		: command_call
                     {
                         $$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
                     }
-                | arg tASSOC
+                | arg tASSOC[ctxt]
                     {
-                        value_expr($1);
+                        value_expr($arg);
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
-                        $<ctxt>2 = p->ctxt;
+                        $<ctxt>ctxt = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         $<tbl>$ = push_pvtbl(p);
-                    }
+                    }[pvtbl]
                     {
                         $<tbl>$ = push_pktbl(p);
-                    }
-                  p_top_expr_body
+                    }[pktbl]
+                  p_top_expr_body[body]
                     {
-                        pop_pktbl(p, $<tbl>4);
-                        pop_pvtbl(p, $<tbl>3);
-                        p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
+                        pop_pktbl(p, $<tbl>pktbl);
+                        pop_pvtbl(p, $<tbl>pvtbl);
+                        p->ctxt.in_kwarg = $<ctxt>ctxt.in_kwarg;
                     /*%%%*/
-                        $$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
+                        $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body), &@$);
                     /*% %*/
-                    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
+                    /*% ripper: case!($arg, in!($body, Qnil, Qnil)) %*/
                     }
-                | arg keyword_in
+                | arg keyword_in[ctxt]
                     {
-                        value_expr($1);
+                        value_expr($arg);
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
-                        $<ctxt>2 = p->ctxt;
+                        $<ctxt>ctxt = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         $<tbl>$ = push_pvtbl(p);
-                    }
+                    }[pvtbl]
                     {
                         $<tbl>$ = push_pktbl(p);
-                    }
-                  p_top_expr_body
+                    }[pktbl]
+                  p_top_expr_body[body]
                     {
-                        pop_pktbl(p, $<tbl>4);
-                        pop_pvtbl(p, $<tbl>3);
-                        p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
+                        pop_pktbl(p, $<tbl>pktbl);
+                        pop_pvtbl(p, $<tbl>pvtbl);
+                        p->ctxt.in_kwarg = $<ctxt>ctxt.in_kwarg;
                     /*%%%*/
-                        $$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
+                        $$ = NEW_CASE3($arg, NEW_IN($body, NEW_TRUE(&@body), NEW_FALSE(&@body), &@body), &@$);
                     /*% %*/
-                    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
+                    /*% ripper: case!($arg, in!($body, Qnil, Qnil)) %*/
                     }
                 | arg %prec tLBRACE_ARG
                 ;
@@ -3851,7 +3851,6 @@ k_do		: keyword_do
                     /*%%%*/
                         push_end_expect_token_locations(p, &@1.beg_pos);
                     /*% %*/
-
                     }
                 ;
 
@@ -4214,43 +4213,43 @@ bvar		: tIDENTIFIER
                     }
                 ;
 
-lambda		: tLAMBDA
+lambda		: tLAMBDA[dyna]
                     {
                         token_info_push(p, "->", &@1);
                         $<vars>1 = dyna_push(p);
                         $<num>$ = p->lex.lpar_beg;
                         p->lex.lpar_beg = p->lex.paren_nest;
-                    }
+                    }[lpar]
                     {
                         $<num>$ = p->max_numparam;
                         p->max_numparam = 0;
-                    }
+                    }[max_numparam]
                     {
                         $<node>$ = numparam_push(p);
-                    }
-                  f_larglist
+                    }[numparam]
+                  f_larglist[args]
                     {
                         CMDARG_PUSH(0);
                     }
-                  lambda_body
+                  lambda_body[body]
                     {
                         int max_numparam = p->max_numparam;
-                        p->lex.lpar_beg = $<num>2;
-                        p->max_numparam = $<num>3;
+                        p->lex.lpar_beg = $<num>lpar;
+                        p->max_numparam = $<num>max_numparam;
                         CMDARG_POP();
-                        $5 = args_with_numbered(p, $5, max_numparam);
+                        $5 = args_with_numbered(p, $args, max_numparam);
                     /*%%%*/
                         {
-                            YYLTYPE loc = code_loc_gen(&@5, &@7);
-                            $$ = NEW_LAMBDA($5, $7, &loc);
-                            nd_set_line($$->nd_body, @7.end_pos.lineno);
-                            nd_set_line($$, @5.end_pos.lineno);
+                            YYLTYPE loc = code_loc_gen(&@args, &@body);
+                            $$ = NEW_LAMBDA($args, $body, &loc);
+                            nd_set_line($$->nd_body, @body.end_pos.lineno);
+                            nd_set_line($$, @args.end_pos.lineno);
                             nd_set_first_loc($$, @1.beg_pos);
                         }
                     /*% %*/
-                    /*% ripper: lambda!($5, $7) %*/
-                        numparam_pop(p, $<node>4);
-                        dyna_pop(p, $<vars>1);
+                    /*% ripper: lambda!($args, $body) %*/
+                        numparam_pop(p, $<node>numparam);
+                        dyna_pop(p, $<vars>dyna);
                     }
                 ;
 
@@ -4425,49 +4424,49 @@ brace_block	: '{' brace_body '}'
                     }
                 ;
 
-brace_body	: {$<vars>$ = dyna_push(p);}
+brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
                     {
                         $<num>$ = p->max_numparam;
                         p->max_numparam = 0;
-                    }
+                    }[max_numparam]
                     {
                         $<node>$ = numparam_push(p);
-                    }
+                    }[numparam]
                   opt_block_param compstmt
                     {
                         int max_numparam = p->max_numparam;
-                        p->max_numparam = $<num>2;
-                        $4 = args_with_numbered(p, $4, max_numparam);
+                        p->max_numparam = $<num>max_numparam;
+                        $opt_block_param = args_with_numbered(p, $opt_block_param, max_numparam);
                     /*%%%*/
-                        $$ = NEW_ITER($4, $5, &@$);
+                        $$ = NEW_ITER($opt_block_param, $compstmt, &@$);
                     /*% %*/
-                    /*% ripper: brace_block!(escape_Qundef($4), $5) %*/
-                        numparam_pop(p, $<node>3);
-                        dyna_pop(p, $<vars>1);
+                    /*% ripper: brace_block!(escape_Qundef($opt_block_param), $compstmt) %*/
+                        numparam_pop(p, $<node>numparam);
+                        dyna_pop(p, $<vars>dyna);
                     }
                 ;
 
-do_body 	: {$<vars>$ = dyna_push(p);}
+do_body 	: {$<vars>$ = dyna_push(p);}[dyna]
                     {
                         $<num>$ = p->max_numparam;
                         p->max_numparam = 0;
-                    }
+                    }[max_numparam]
                     {
                         $<node>$ = numparam_push(p);
                         CMDARG_PUSH(0);
-                    }
+                    }[numparam]
                   opt_block_param bodystmt
                     {
                         int max_numparam = p->max_numparam;
-                        p->max_numparam = $<num>2;
-                        $4 = args_with_numbered(p, $4, max_numparam);
+                        p->max_numparam = $<num>max_numparam;
+                        $opt_block_param = args_with_numbered(p, $opt_block_param, max_numparam);
                     /*%%%*/
-                        $$ = NEW_ITER($4, $5, &@$);
+                        $$ = NEW_ITER($opt_block_param, $bodystmt, &@$);
                     /*% %*/
-                    /*% ripper: do_block!(escape_Qundef($4), $5) %*/
+                    /*% ripper: do_block!(escape_Qundef($opt_block_param), $bodystmt) %*/
                         CMDARG_POP();
-                        numparam_pop(p, $<node>3);
-                        dyna_pop(p, $<vars>1);
+                        numparam_pop(p, $<node>numparam);
+                        dyna_pop(p, $<vars>dyna);
                     }
                 ;
 
@@ -4519,30 +4518,30 @@ cases		: opt_else
                 | case_body
                 ;
 
-p_case_body	: keyword_in
+p_case_body	: keyword_in[ctxt]
                     {
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
-                        $<ctxt>1 = p->ctxt;
+                        $<ctxt>ctxt = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         $<tbl>$ = push_pvtbl(p);
-                    }
+                    }[pvtbl]
                     {
                         $<tbl>$ = push_pktbl(p);
-                    }
-                  p_top_expr then
+                    }[pktbl]
+                  p_top_expr[expr] then
                     {
-                        pop_pktbl(p, $<tbl>3);
-                        pop_pvtbl(p, $<tbl>2);
-                        p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+                        pop_pktbl(p, $<tbl>pktbl);
+                        pop_pvtbl(p, $<tbl>pvtbl);
+                        p->ctxt.in_kwarg = $<ctxt>ctxt.in_kwarg;
                     }
                   compstmt
-                  p_cases
+                  p_cases[cases]
                     {
                     /*%%%*/
-                        $$ = NEW_IN($4, $7, $8, &@$);
+                        $$ = NEW_IN($expr, $compstmt, $cases, &@$);
                     /*% %*/
-                    /*% ripper: in!($4, $7, escape_Qundef($8)) %*/
+                    /*% ripper: in!($expr, $compstmt, escape_Qundef($cases)) %*/
                     }
                 ;
 
@@ -5412,33 +5411,33 @@ string_content	: tSTRING_CONTENT
                         /* need to backup p->lex.strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
                         $<strterm>$ = p->lex.strterm;
                         p->lex.strterm = 0;
-                    }
+                    }[term]
                     {
                         $<num>$ = p->lex.state;
                         SET_LEX_STATE(EXPR_BEG);
-                    }
+                    }[state]
                     {
                         $<num>$ = p->lex.brace_nest;
                         p->lex.brace_nest = 0;
-                    }
+                    }[brace]
                     {
                         $<num>$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
-                    }
+                    }[indent]
                   compstmt string_dend
                     {
                         COND_POP();
                         CMDARG_POP();
-                        p->lex.strterm = $<strterm>3;
-                        SET_LEX_STATE($<num>4);
-                        p->lex.brace_nest = $<num>5;
-                        p->heredoc_indent = $<num>6;
+                        p->lex.strterm = $<strterm>term;
+                        SET_LEX_STATE($<num>state);
+                        p->lex.brace_nest = $<num>brace;
+                        p->heredoc_indent = $<num>indent;
                         p->heredoc_line_indent = -1;
                     /*%%%*/
-                        if ($7) $7->flags &= ~NODE_FL_NEWLINE;
-                        $$ = new_evstr(p, $7, &@$);
+                        if ($compstmt) $compstmt->flags &= ~NODE_FL_NEWLINE;
+                        $$ = new_evstr(p, $compstmt, &@$);
                     /*% %*/
-                    /*% ripper: string_embexpr!($7) %*/
+                    /*% ripper: string_embexpr!($compstmt) %*/
                     }
                 ;
 
