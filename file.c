@@ -6531,7 +6531,7 @@ const char ruby_null_device[] =
  *  \Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
- *  === About the Examples
+ *  == About the Examples
  *
  *  Many examples here use these variables:
  *
