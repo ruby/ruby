@@ -1237,11 +1237,7 @@ new_args(struct parser_params *p, VALUE pre_args, VALUE opt_args, VALUE rest_arg
 static inline VALUE
 new_args_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, VALUE block, YYLTYPE *loc)
 {
-    NODE *t = rb_node_newnode(NODE_ARGS_AUX, kw_args, kw_rest_arg, block, &NULL_LOC);
-    add_mark_object(p, kw_args);
-    add_mark_object(p, kw_rest_arg);
-    add_mark_object(p, block);
-    return (VALUE)t;
+    return ripper_new_yylval2(p, kw_args, kw_rest_arg, block);
 }
 
 static inline VALUE
