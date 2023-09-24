@@ -1224,14 +1224,12 @@ void ripper_error(struct parser_params *p);
 #define params_new(pars, opts, rest, pars2, kws, kwrest, blk) \
         dispatch7(params, (pars), (opts), (rest), (pars2), (kws), (kwrest), (blk))
 
-#define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
-
 static inline VALUE
 new_args(struct parser_params *p, VALUE pre_args, VALUE opt_args, VALUE rest_arg, VALUE post_args, VALUE tail, YYLTYPE *loc)
 {
     NODE *t = (NODE *)tail;
     VALUE kw_args = t->u1.value, kw_rest_arg = t->u2.value, block = t->u3.value;
-    return params_new(pre_args, opt_args, rest_arg, post_args, kw_args, kw_rest_arg, escape_Qundef(block));
+    return params_new(pre_args, opt_args, rest_arg, post_args, kw_args, kw_rest_arg, block);
 }
 
 static inline VALUE
@@ -1798,7 +1796,7 @@ bodystmt	: compstmt
                     /*%%%*/
                         $$ = new_bodystmt(p, $1, $2, $5, $6, &@$);
                     /*% %*/
-                    /*% ripper: bodystmt!(escape_Qundef($1), escape_Qundef($2), escape_Qundef($5), escape_Qundef($6)) %*/
+                    /*% ripper: bodystmt!($1, $2, $5, $6) %*/
                     }
                 | compstmt
                   opt_rescue
@@ -1807,7 +1805,7 @@ bodystmt	: compstmt
                     /*%%%*/
                         $$ = new_bodystmt(p, $1, $2, 0, $3, &@$);
                     /*% %*/
-                    /*% ripper: bodystmt!(escape_Qundef($1), escape_Qundef($2), Qnil, escape_Qundef($3)) %*/
+                    /*% ripper: bodystmt!($1, $2, Qnil, $3) %*/
                     }
                 ;
 
@@ -2018,7 +2016,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     /*%%%*/
                         $$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$);
                     /*% %*/
-                    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $7) %*/
+                    /*% ripper: opassign!(aref_field!($1, $3), $5, $7) %*/
 
                     }
                 | primary_value call_op tIDENTIFIER tOP_ASGN lex_ctxt command_rhs
@@ -2527,7 +2525,7 @@ mlhs_node	: user_variable
                     /*%%%*/
                         $$ = aryset(p, $1, $3, &@$);
                     /*% %*/
-                    /*% ripper: aref_field!($1, escape_Qundef($3)) %*/
+                    /*% ripper: aref_field!($1, $3) %*/
                     }
                 | primary_value call_op tIDENTIFIER
                     {
@@ -2595,7 +2593,7 @@ lhs		: user_variable
                     /*%%%*/
                         $$ = aryset(p, $1, $3, &@$);
                     /*% %*/
-                    /*% ripper: aref_field!($1, escape_Qundef($3)) %*/
+                    /*% ripper: aref_field!($1, $3) %*/
                     }
                 | primary_value call_op tIDENTIFIER
                     {
@@ -2779,7 +2777,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     /*%%%*/
                         $$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$);
                     /*% %*/
-                    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $7) %*/
+                    /*% ripper: opassign!(aref_field!($1, $3), $5, $7) %*/
                     }
                 | primary_value call_op tIDENTIFIER tOP_ASGN lex_ctxt arg_rhs
                     {
@@ -3107,7 +3105,7 @@ paren_args	: '(' opt_call_args rparen
                     /*%%%*/
                         $$ = $2;
                     /*% %*/
-                    /*% ripper: arg_paren!(escape_Qundef($2)) %*/
+                    /*% ripper: arg_paren!($2) %*/
                     }
                 | '(' args ',' args_forward rparen
                     {
@@ -3411,7 +3409,7 @@ primary		: literal
                     /*%%%*/
                         $$ = make_list($2, &@$);
                     /*% %*/
-                    /*% ripper: array!(escape_Qundef($2)) %*/
+                    /*% ripper: array!($2) %*/
                     }
                 | tLBRACE assoc_list '}'
                     {
@@ -3419,7 +3417,7 @@ primary		: literal
                         $$ = new_hash(p, $2, &@$);
                         $$->nd_brace = TRUE;
                     /*% %*/
-                    /*% ripper: hash!(escape_Qundef($2)) %*/
+                    /*% ripper: hash!($2) %*/
                     }
                 | k_return
                     {
@@ -3488,7 +3486,7 @@ primary		: literal
                         $$ = new_if(p, $2, $4, $5, &@$);
                         fixpos($$, $2);
                     /*% %*/
-                    /*% ripper: if!($2, $4, escape_Qundef($5)) %*/
+                    /*% ripper: if!($2, $4, $5) %*/
                     }
                 | k_unless expr_value then
                   compstmt
@@ -3499,7 +3497,7 @@ primary		: literal
                         $$ = new_unless(p, $2, $4, $5, &@$);
                         fixpos($$, $2);
                     /*% %*/
-                    /*% ripper: unless!($2, $4, escape_Qundef($5)) %*/
+                    /*% ripper: unless!($2, $4, $5) %*/
                     }
                 | k_while expr_value_do
                   compstmt
@@ -3941,7 +3939,7 @@ if_tail		: opt_else
                         $$ = new_if(p, $2, $4, $5, &@$);
                         fixpos($$, $2);
                     /*% %*/
-                    /*% ripper: elsif!($2, $4, escape_Qundef($5)) %*/
+                    /*% ripper: elsif!($2, $4, $5) %*/
                     }
                 ;
 
@@ -4168,7 +4166,8 @@ block_param_def	: '|' opt_bv_decl '|'
                     /*%%%*/
                         $$ = 0;
                     /*% %*/
-                    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), escape_Qundef($2)) %*/
+                    /*% ripper: params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil) %*/
+                    /*% ripper: block_var!($$, $2) %*/
                     }
                 | '|' block_param opt_bv_decl '|'
                     {
@@ -4178,7 +4177,7 @@ block_param_def	: '|' opt_bv_decl '|'
                     /*%%%*/
                         $$ = $2;
                     /*% %*/
-                    /*% ripper: block_var!(escape_Qundef($2), escape_Qundef($3)) %*/
+                    /*% ripper: block_var!($2, $3) %*/
                     }
                 ;
 
@@ -4404,7 +4403,7 @@ method_call	: fcall paren_args
                         $$ = NEW_CALL($1, tAREF, $3, &@$);
                         fixpos($$, $1);
                     /*% %*/
-                    /*% ripper: aref!($1, escape_Qundef($3)) %*/
+                    /*% ripper: aref!($1, $3) %*/
                     }
                 ;
 
@@ -4440,7 +4439,7 @@ brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
                     /*%%%*/
                         $$ = NEW_ITER($opt_block_param, $compstmt, &@$);
                     /*% %*/
-                    /*% ripper: brace_block!(escape_Qundef($opt_block_param), $compstmt) %*/
+                    /*% ripper: brace_block!($opt_block_param, $compstmt) %*/
                         numparam_pop(p, $<node>numparam);
                         dyna_pop(p, $<vars>dyna);
                     }
@@ -4463,7 +4462,7 @@ do_body 	: {$<vars>$ = dyna_push(p);}[dyna]
                     /*%%%*/
                         $$ = NEW_ITER($opt_block_param, $bodystmt, &@$);
                     /*% %*/
-                    /*% ripper: do_block!(escape_Qundef($opt_block_param), $bodystmt) %*/
+                    /*% ripper: do_block!($opt_block_param, $bodystmt) %*/
                         CMDARG_POP();
                         numparam_pop(p, $<node>numparam);
                         dyna_pop(p, $<vars>dyna);
@@ -4510,7 +4509,7 @@ case_body	: k_when case_args then
                         $$ = NEW_WHEN($2, $4, $5, &@$);
                         fixpos($$, $2);
                     /*% %*/
-                    /*% ripper: when!($2, $4, escape_Qundef($5)) %*/
+                    /*% ripper: when!($2, $4, $5) %*/
                     }
                 ;
 
@@ -4541,7 +4540,7 @@ p_case_body	: keyword_in[ctxt]
                     /*%%%*/
                         $$ = NEW_IN($expr, $compstmt, $cases, &@$);
                     /*% %*/
-                    /*% ripper: in!($expr, $compstmt, escape_Qundef($cases)) %*/
+                    /*% ripper: in!($expr, $compstmt, $cases) %*/
                     }
                 ;
 
@@ -5076,7 +5075,7 @@ opt_rescue	: k_rescue exc_list exc_var then
                             fixpos($$, $5);
                         }
                     /*% %*/
-                    /*% ripper: rescue!(escape_Qundef($2), escape_Qundef($3), escape_Qundef($5), escape_Qundef($6)) %*/
+                    /*% ripper: rescue!($2, $3, $5, $6) %*/
                     }
                 | none
                 ;
