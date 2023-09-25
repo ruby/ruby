@@ -798,7 +798,6 @@ timer_thread_polling(rb_vm_t *vm)
         .events = POLLIN,
     };
 
-    
     int r = poll(&pfd, 1, timeout);
 
     switch (r) {
