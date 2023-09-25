@@ -5401,17 +5401,13 @@ string_content	: tSTRING_CONTENT
                     /*% %*/
                     /*% ripper: string_dvar!($3) %*/
                     }
-                | tSTRING_DBEG
+                | tSTRING_DBEG[term]
                     {
                         CMDARG_PUSH(0);
                         COND_PUSH(0);
-                    }
-                    {
                         /* need to backup p->lex.strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
-                        $<strterm>$ = p->lex.strterm;
+                        $<strterm>term = p->lex.strterm;
                         p->lex.strterm = 0;
-                    }[term]
-                    {
                         $<num>$ = p->lex.state;
                         SET_LEX_STATE(EXPR_BEG);
                     }[state]
