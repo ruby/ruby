@@ -139,8 +139,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
   end
 
-  def _test_deadlock # omit 'TODO'
-
+  def test_deadlock
     mutex = Thread::Mutex.new
     condition = Thread::ConditionVariable.new
     q = 0.0001
