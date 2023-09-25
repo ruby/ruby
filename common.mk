@@ -17729,7 +17729,7 @@ thread.$(OBJEXT): {$(VPATH)}thread.c
 thread.$(OBJEXT): {$(VPATH)}thread.h
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).c
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
-thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL)_mn.c
+thread.$(OBJEXT): {$(VPATH)}thread_pthread_mn.c
 thread.$(OBJEXT): {$(VPATH)}thread_native.h
 thread.$(OBJEXT): {$(VPATH)}thread_sync.c
 thread.$(OBJEXT): {$(VPATH)}thread_sync.rbinc
