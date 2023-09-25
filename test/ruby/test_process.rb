@@ -2569,8 +2569,6 @@ EOS
   end
 
   def test_forked_child_handles_signal
-    omit 'TODO'
-
     omit "fork not supported" unless Process.respond_to?(:fork)
     assert_normal_exit(<<-"end;", '[ruby-core:82883] [Bug #13916]')
       require 'timeout'
