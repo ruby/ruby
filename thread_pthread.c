@@ -2823,7 +2823,7 @@ static void *
 timer_thread_func(void *ptr)
 {
     rb_vm_t *vm = (rb_vm_t *)ptr;
-#if RUBY_NT_SERIAL
+#if defined(RUBY_NT_SERIAL)
     ruby_nt_serial = (rb_atomic_t)-1;
 #endif
 

@@ -129,6 +129,8 @@ struct rb_thread_sched {
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
+  NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
+
   # ifdef __APPLE__
     // on Darwin, TLS can not be accessed across .so
     struct rb_execution_context_struct *rb_current_ec(void);
@@ -139,8 +141,6 @@ struct rb_thread_sched {
     RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
     #define RUBY_NT_SERIAL 1
   # endif
-
-  NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
 #else
 typedef pthread_key_t native_tls_key_t;
 
