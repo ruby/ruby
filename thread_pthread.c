@@ -3101,6 +3101,7 @@ static void
 native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     struct rb_thread_sched *sched = TH_SCHED(th);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
 
     RUBY_DEBUG_LOG("rel:%d", rel ? (int)*rel : 0);
     if (rel) {
@@ -3114,7 +3115,9 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     else {
         thread_sched_to_waiting_until_wakeup(sched, th);
     }
+
     RUBY_DEBUG_LOG("wakeup");
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
 }
 
 static VALUE

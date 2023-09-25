@@ -3273,8 +3273,6 @@ __END__
   end
 
   def test_cross_thread_close_fd
-    omit "TODO"
-
     with_pipe do |r,w|
       read_thread = Thread.new do
         begin
@@ -3292,7 +3290,6 @@ __END__
   end
 
   def test_cross_thread_close_stdio
-    omit 'TODO'
     omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
     assert_separately([], <<-'end;')
@@ -3314,8 +3311,6 @@ __END__
   end
 
   def test_single_exception_on_close
-    omit 'TODO'
-
     a = []
     t = []
     10.times do
@@ -3934,8 +3929,6 @@ __END__
   end
 
   def test_race_gets_and_close
-    omit 'TODO' # malloc(): unsorted double linked list corrupted
-
     opt = { signal: :ABRT, timeout: 10 }
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", **opt)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
@@ -3967,7 +3960,6 @@ __END__
   end
 
   def test_race_closed_stream
-    omit 'TODO'
     omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
@@ -4064,7 +4056,6 @@ __END__
     end
 
     def test_closed_stream_in_rescue
-      omit 'TODO'
       omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
       assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
@@ -4130,8 +4121,6 @@ __END__
   end if Socket.const_defined?(:MSG_OOB)
 
   def test_recycled_fd_close
-    omit "TODO"
-
     dot = -'.'
     IO.pipe do |sig_rd, sig_wr|
       noex = Thread.new do # everything right and never see exceptions :)

@@ -2525,7 +2525,6 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
 int
 rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
 {
-#if 0 // TODO
     rb_vm_t *vm = GET_THREAD()->vm;
     struct waiting_fd *wfd = 0, *next;
     ccan_list_head_init(&busy->pending_fd_users);
@@ -2566,9 +2565,6 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
        of this function. */
     RB_GC_GUARD(wakeup_mutex);
     return has_any;
-#else
-    return 0;
-#endif
 }
 
 void

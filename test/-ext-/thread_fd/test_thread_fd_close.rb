@@ -5,8 +5,6 @@ require '-test-/thread_fd'
 class TestThreadFdClose < Test::Unit::TestCase
 
   def test_thread_fd_close
-    omit 'TODO'
-
     IO.pipe do |r, w|
       th = Thread.new do
         begin
