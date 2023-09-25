@@ -402,9 +402,9 @@ setup_debug_log(void)
             ruby_debug_log_mode |= ruby_debug_log_file;
 
             // pid extension with %p
-            int len = strlen(log_config);
+            unsigned long len = strlen(log_config);
 
-            for (int i=0, j=0; i<len; i++) {
+            for (unsigned long i=0, j=0; i<len; i++) {
                 const char c = log_config[i];
 
                 if (c == '%') {
