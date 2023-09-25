@@ -2504,7 +2504,7 @@ fail:
 #if defined(__FreeBSD__) || defined(__DragonFly__)
 # include <sys/sysctl.h>
 #endif
-/* ssize_t main_exe_path(void)
+/* ssize_t main_exe_path(FILE *errout)
  *
  * store the path of the main executable to `binary_filename`,
  * and returns strlen(binary_filename).
@@ -2512,7 +2512,7 @@ fail:
  */
 #if defined(__linux__) || defined(__NetBSD__)
 static ssize_t
-main_exe_path(void)
+main_exe_path(FILE *errout)
 {
 # if defined(__linux__)
 #  define PROC_SELF_EXE "/proc/self/exe"
@@ -2526,7 +2526,7 @@ main_exe_path(void)
 }
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
 static ssize_t
-main_exe_path(void)
+main_exe_path(FILE *errout)
 {
     int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
     size_t len = PATH_MAX;
@@ -2540,7 +2540,7 @@ main_exe_path(void)
 }
 #elif defined(HAVE_LIBPROC_H)
 static ssize_t
-main_exe_path(void)
+main_exe_path(FILE *errout)
 {
     int len = proc_pidpath(getpid(), binary_filename, PATH_MAX);
     if (len == 0) return 0;
@@ -2614,7 +2614,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout)
 #ifdef HAVE_MAIN_EXE_PATH
     char *main_path = NULL; /* used on printing backtrace */
     ssize_t len;
-    if ((len = main_exe_path()) > 0) {
+    if ((len = main_exe_path(errout)) > 0) {
 	main_path = (char *)alloca(len + 1);
 	if (main_path) {
 	    uintptr_t addr;
