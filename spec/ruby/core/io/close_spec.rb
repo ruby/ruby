@@ -51,8 +51,6 @@ describe "IO#close" do
   end
 
   it 'raises an IOError with a clear message' do
-    skip 'TODO (close)'
-
     matching_exception = nil
 
     -> do

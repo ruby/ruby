@@ -394,8 +394,6 @@ describe "IO#read" do
 
   platform_is_not :windows do
     it "raises IOError when stream is closed by another thread" do
-      skip 'TODO (close)'
-
       r, w = IO.pipe
       t = Thread.new do
         begin
