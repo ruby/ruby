@@ -1378,6 +1378,18 @@ endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
         } \
     } while (0)
 
+#define begin_definition(k, loc_beg, loc_end) \
+    do { \
+        if (!(p->ctxt.in_class = (k)[0] != 0)) { \
+            p->ctxt.in_def = 0; \
+        } \
+        else if (p->ctxt.in_def) { \
+            YYLTYPE loc = code_loc_gen(loc_beg, loc_end); \
+            yyerror1(&loc, k " definition in method body"); \
+        } \
+        local_push(p, 0); \
+    } while (0)
+
 #ifndef RIPPER
 # define Qnone 0
 # define Qnull 0
@@ -3606,12 +3618,7 @@ primary		: literal
                     }
                 | k_class cpath superclass
                     {
-                        if (p->ctxt.in_def) {
-                            YYLTYPE loc = code_loc_gen(&@1, &@2);
-                            yyerror1(&loc, "class definition in method body");
-                        }
-                        p->ctxt.in_class = 1;
-                        local_push(p, 0);
+                        begin_definition("class", &@1, &@2);
                     }
                   bodystmt
                   k_end
@@ -3629,9 +3636,7 @@ primary		: literal
                     }
                 | k_class tLSHFT expr
                     {
-                        p->ctxt.in_def = 0;
-                        p->ctxt.in_class = 0;
-                        local_push(p, 0);
+                        begin_definition("", &@1, &@2);
                     }
                   term
                   bodystmt
@@ -3651,12 +3656,7 @@ primary		: literal
                     }
                 | k_module cpath
                     {
-                        if (p->ctxt.in_def) {
-                            YYLTYPE loc = code_loc_gen(&@1, &@2);
-                            yyerror1(&loc, "module definition in method body");
-                        }
-                        p->ctxt.in_class = 1;
-                        local_push(p, 0);
+                        begin_definition("module", &@1, &@2);
                     }
                   bodystmt
                   k_end
