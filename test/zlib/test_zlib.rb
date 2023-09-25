@@ -12,6 +12,10 @@ rescue LoadError
 end
 
 if defined? Zlib
+  child_env = {}
+  child_env['DFLTCC'] = '0' if RUBY_PLATFORM =~ /s390x/
+  Zlib::CHILD_ENV = child_env.freeze
+
   class TestZlibDeflate < Test::Unit::TestCase
     def test_initialize
       z = Zlib::Deflate.new
@@ -44,59 +48,63 @@ if defined? Zlib
     end
 
     def test_deflate_chunked
-      original = ''.dup
-      chunks = []
-      r = Random.new 0
+      assert_separately([Zlib::CHILD_ENV, '-rzlib'], <<~'end;')
+        original = ''.dup
+        chunks = []
+        r = Random.new 0
 
-      z = Zlib::Deflate.new
+        z = Zlib::Deflate.new
 
-      2.times do
-        input = r.bytes(20000)
-        original << input
-        z.deflate(input) do |chunk|
-          chunks << chunk
+        2.times do
+          input = r.bytes(20000)
+          original << input
+          z.deflate(input) do |chunk|
+            chunks << chunk
+          end
         end
-      end
 
-      assert_equal [16384, 16384],
-                   chunks.map { |chunk| chunk.length }
+        assert_equal [16384, 16384],
+                     chunks.map { |chunk| chunk.length }
 
-      final = z.finish
+        final = z.finish
 
-      assert_equal 7253, final.length
+        assert_equal 7253, final.length
 
-      chunks << final
-      all = chunks.join
+        chunks << final
+         all = chunks.join
 
-      inflated = Zlib.inflate all
+        inflated = Zlib.inflate all
 
-      assert_equal original, inflated
+        assert_equal original, inflated
+      end;
     end
 
     def test_deflate_chunked_break
-      chunks = []
-      r = Random.new 0
+      assert_separately([Zlib::CHILD_ENV, '-rzlib'], <<~'end;')
+        chunks = []
+        r = Random.new 0
 
-      z = Zlib::Deflate.new
+        z = Zlib::Deflate.new
 
-      input = r.bytes(20000)
-      z.deflate(input) do |chunk|
-        chunks << chunk
-        break
-      end
+        input = r.bytes(20000)
+        z.deflate(input) do |chunk|
+          chunks << chunk
+          break
+        end
 
-      assert_equal [16384], chunks.map { |chunk| chunk.length }
+        assert_equal [16384], chunks.map { |chunk| chunk.length }
 
-      final = z.finish
+        final = z.finish
 
-      assert_equal 3632, final.length
+        assert_equal 3632, final.length
 
-      all = chunks.join
-      all << final
+        all = chunks.join
+        all << final
 
-      original = Zlib.inflate all
+        original = Zlib.inflate all
 
-      assert_equal input, original
+        assert_equal input, original
+      end;
     end
 
     def test_addstr
@@ -952,30 +960,32 @@ if defined? Zlib
     end
 
     def test_unused2
-      zio = StringIO.new
+      assert_separately([Zlib::CHILD_ENV, '-rzlib', '-rstringio'], <<~'end;')
+        zio = StringIO.new
 
-      io = Zlib::GzipWriter.new zio
-      io.write 'aaaa'
-      io.finish
+        io = Zlib::GzipWriter.new zio
+        io.write 'aaaa'
+        io.finish
 
-      io = Zlib::GzipWriter.new zio
-      io.write 'bbbb'
-      io.finish
+        io = Zlib::GzipWriter.new zio
+        io.write 'bbbb'
+        io.finish
 
-      zio.rewind
+        zio.rewind
 
-      io = Zlib::GzipReader.new zio
-      assert_equal('aaaa', io.read)
-      unused = io.unused
-      assert_equal(24, unused.bytesize)
-      io.finish
+        io = Zlib::GzipReader.new zio
+        assert_equal('aaaa', io.read)
+        unused = io.unused
+        assert_equal(24, unused.bytesize)
+        io.finish
 
-      zio.pos -= unused.length
+        zio.pos -= unused.length
 
-      io = Zlib::GzipReader.new zio
-      assert_equal('bbbb', io.read)
-      assert_equal(nil, io.unused)
-      io.finish
+        io = Zlib::GzipReader.new zio
+        assert_equal('bbbb', io.read)
+        assert_equal(nil, io.unused)
+        io.finish
+      end;
     end
 
     def test_read
@@ -1402,36 +1412,46 @@ if defined? Zlib
     end
 
     def test_deflate_stream
-      r = Random.new 0
+      assert_separately([Zlib::CHILD_ENV, '-rzlib'], <<~'end;')
+        r = Random.new 0
 
-      deflated = ''.dup
+        deflated = ''.dup
 
-      Zlib.deflate(r.bytes(20000)) do |chunk|
-        deflated << chunk
-      end
+        Zlib.deflate(r.bytes(20000)) do |chunk|
+          deflated << chunk
+        end
 
-      assert_equal 20016, deflated.length
+        assert_equal 20016, deflated.length
+      end;
     end
 
     def test_gzip
-      actual = Zlib.gzip("foo".freeze)
-      actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
-      actual[9] = "\xff" # replace OS
-      expected = %w[1f8b08000000000000ff4bcbcf07002165738c03000000].pack("H*")
-      assert_equal expected, actual
+      assert_separately([Zlib::CHILD_ENV, '-rzlib'], <<~'end;')
+        actual = Zlib.gzip("foo".freeze)
+        actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
+        actual[9] = "\xff" # replace OS
+        expected = %w[1f8b08000000000000ff4bcbcf07002165738c03000000].pack("H*")
+        assert_equal expected, actual
+      end;
+    end
 
+    def test_gzip_level_0
       actual = Zlib.gzip("foo".freeze, level: 0)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000000ff010300fcff666f6f2165738c03000000].pack("H*")
       assert_equal expected, actual
+    end
 
+    def test_gzip_level_9
       actual = Zlib.gzip("foo".freeze, level: 9)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")
       assert_equal expected, actual
+    end
 
+    def test_gzip_level_9_filtered
       actual = Zlib.gzip("foo".freeze, level: 9, strategy: Zlib::FILTERED)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
