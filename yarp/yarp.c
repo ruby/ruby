@@ -9810,6 +9810,9 @@ parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accept
                 arguments->block = (yp_node_t *) block;
             } else {
                 yp_diagnostic_list_append(&parser->error_list, block->base.location.start, block->base.location.end, YP_ERR_ARGUMENT_BLOCK_MULTI);
+                if (arguments->arguments == NULL) {
+                    arguments->arguments = yp_arguments_node_create(parser);
+                }
                 yp_arguments_node_arguments_append(arguments->arguments, arguments->block);
                 arguments->block = (yp_node_t *) block;
             }
