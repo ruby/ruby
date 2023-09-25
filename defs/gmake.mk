@@ -414,6 +414,17 @@ endif
 .SECONDARY: update-unicode-ucd-emoji-files
 .SECONDARY: update-unicode-emoji-files
 
+ifneq ($(DOT_WAIT),)
+.NOTPARALLEL: update-unicode
+.NOTPARALLEL: update-unicode-files
+.NOTPARALLEL: update-unicode-auxiliary-files
+.NOTPARALLEL: update-unicode-ucd-emoji-files
+.NOTPARALLEL: update-unicode-emoji-files
+.NOTPARALLEL: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+.NOTPARALLEL: $(UNICODE_AUXILIARY_FILES)
+.NOTPARALLEL: $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
+endif
+
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
 else
