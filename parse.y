@@ -1976,7 +1976,10 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
                     /*%%%*/
                         YYLTYPE loc = code_loc_gen(&@5, &@6);
-                        $$ = node_assign(p, $1, NEW_RESCUE($4, NEW_RESBODY(0, remove_begin($6), 0, &loc), 0, &@$), $3, &@$);
+                        NODE *resbody = NEW_RESBODY(0, remove_begin($6), 0, &loc);
+                        loc.beg_pos = @4.beg_pos;
+                        NODE *rhs = NEW_RESCUE($4, resbody, 0, &loc);
+                        $$ = node_assign(p, $1, rhs, $3, &@$);
                     /*% %*/
                     /*% ripper: massign!($1, rescue_mod!($4, $6)) %*/
                     }
@@ -5061,10 +5064,13 @@ opt_rescue	: k_rescue exc_list exc_var then
                   opt_rescue
                     {
                     /*%%%*/
-                        $$ = NEW_RESBODY($2,
-                                         $3 ? block_append(p, node_assign(p, $3, NEW_ERRINFO(&@3), NO_LEX_CTXT, &@3), $5) : $5,
-                                         $6, &@$);
-
+                        NODE *body = $5;
+                        if ($3) {
+                            NODE *err = NEW_ERRINFO(&@3);
+                            err = node_assign(p, $3, err, NO_LEX_CTXT, &@3);
+                            body = block_append(p, err, body);
+                        }
+                        $$ = NEW_RESBODY($2, body, $6, &@$);
                         if ($2) {
                             fixpos($$, $2);
                         }
