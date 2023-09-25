@@ -821,6 +821,7 @@ rb_print_backtrace(FILE *errout)
         }
         free(syms);
     }
+  error:
 #endif
 #elif defined(_WIN32)
     struct dump_thead_arg arg = {
