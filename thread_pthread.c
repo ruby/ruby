@@ -1463,6 +1463,7 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     // rb_native_cond_destroy(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.barrier_complete_cond);
+    rb_native_cond_initialize(&vm->ractor.sched.barrier_release_cond);
 
     ccan_list_head_init(&vm->ractor.sched.grq);
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
@@ -1563,6 +1564,8 @@ Init_native_thread(rb_thread_t *main_th)
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
     rb_native_cond_initialize(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.barrier_complete_cond);
+    rb_native_cond_initialize(&vm->ractor.sched.barrier_release_cond);
+
     ccan_list_head_init(&vm->ractor.sched.grq);
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
