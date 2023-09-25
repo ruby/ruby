@@ -19,13 +19,6 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
-// copy from hrtime.h
-#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
-typedef int128_t rb_hrtime_t;
-#else
-typedef uint64_t rb_hrtime_t;
-#endif
-
 // per-Thead scheduler helper data
 struct rb_thread_sched_item {
     struct {
@@ -54,7 +47,12 @@ struct rb_thread_sched_item {
         } flags;
 
         struct {
-            rb_hrtime_t timeout;
+            // should be compat with hrtime.h
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+            int128_t timeout;
+#else
+            uint64_t timeout;
+#endif
             int fd; // -1 for timeout only
             int result;
         } data;
