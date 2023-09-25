@@ -2063,26 +2063,28 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     /*% %*/
                     /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
                     }
-                | defn_head f_opt_paren_args '=' endless_command
+                | defn_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
                     {
-                        endless_method_name(p, $<node>1, &@1);
-                        restore_defun(p, $<node>1->nd_defn);
+                        endless_method_name(p, $<node>head, &@head);
+                        restore_defun(p, $<node>head->nd_defn);
                     /*%%%*/
-                        $$ = set_defun_body(p, $1, $2, $4, &@$);
+                        $$ = set_defun_body(p, $head, $args, $bodystmt, &@$);
                     /*% %*/
-                    /*% ripper: def!(get_value($1), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
+                    /*% ripper: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: def!($head, $args, $$) %*/
                         local_pop(p);
                     }
-                | defs_head f_opt_paren_args '=' endless_command
+                | defs_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
                     {
-                        endless_method_name(p, $<node>1, &@1);
-                        restore_defun(p, $<node>1->nd_defn);
+                        endless_method_name(p, $<node>head, &@head);
+                        restore_defun(p, $<node>head->nd_defn);
                     /*%%%*/
-                        $$ = set_defun_body(p, $1, $2, $4, &@$);
+                        $$ = set_defun_body(p, $head, $args, $bodystmt, &@$);
                     /*%
-                        $1 = get_value($1);
+                        $head = get_value($head);
                     %*/
-                    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
+                    /*% ripper: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: defs!(AREF($head, 0), AREF($head, 1), AREF($head, 2), $args, $$) %*/
                         local_pop(p);
                     }
                 | backref tOP_ASGN lex_ctxt command_rhs
@@ -2229,11 +2231,11 @@ defs_head	: k_def singleton dot_or_colon
                   def_name
                     {
                         SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
-                        $$ = $5;
+                        $$ = $def_name;
                     /*%%%*/
-                        $$ = NEW_NODE(NODE_DEFS, $2, $$->nd_mid, $$, &@$);
+                        $$ = NEW_NODE(NODE_DEFS, $singleton, $$->nd_mid, $$, &@$);
                     /*%
-                        VALUE ary = rb_ary_new_from_args(3, $2, $3, get_value($$));
+                        VALUE ary = rb_ary_new_from_args(3, $singleton, $dot_or_colon, get_value($$));
                         add_mark_object(p, ary);
                         $<node>$->nd_rval = ary;
                     %*/
@@ -3000,26 +3002,28 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     /*% %*/
                     /*% ripper: ifop!($1, $3, $6) %*/
                     }
-                | defn_head f_opt_paren_args '=' endless_arg
+                | defn_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
                     {
-                        endless_method_name(p, $<node>1, &@1);
-                        restore_defun(p, $<node>1->nd_defn);
+                        endless_method_name(p, $<node>head, &@head);
+                        restore_defun(p, $<node>head->nd_defn);
                     /*%%%*/
-                        $$ = set_defun_body(p, $1, $2, $4, &@$);
+                        $$ = set_defun_body(p, $head, $2, $bodystmt, &@$);
                     /*% %*/
-                    /*% ripper: def!(get_value($1), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
+                    /*% ripper: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: def!($head, $2, $$) %*/
                         local_pop(p);
                     }
-                | defs_head f_opt_paren_args '=' endless_arg
+                | defs_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
                     {
-                        endless_method_name(p, $<node>1, &@1);
-                        restore_defun(p, $<node>1->nd_defn);
+                        endless_method_name(p, $<node>head, &@head);
+                        restore_defun(p, $<node>head->nd_defn);
                     /*%%%*/
-                        $$ = set_defun_body(p, $1, $2, $4, &@$);
+                        $$ = set_defun_body(p, $head, $args, $bodystmt, &@$);
                     /*%
-                        $1 = get_value($1);
+                        $head = get_value($head);
                     %*/
-                    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
+                    /*% ripper: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: defs!(AREF($head, 0), AREF($head, 1), AREF($head, 2), $args, $$) %*/
                         local_pop(p);
                     }
                 | primary
@@ -3618,94 +3622,94 @@ primary		: literal
                     }
                 | k_class cpath superclass
                     {
-                        begin_definition("class", &@1, &@2);
+                        begin_definition("class", &@k_class, &@cpath);
                     }
                   bodystmt
                   k_end
                     {
                     /*%%%*/
-                        $$ = NEW_CLASS($2, $5, $3, &@$);
-                        nd_set_line($$->nd_body, @6.end_pos.lineno);
-                        set_line_body($5, @3.end_pos.lineno);
-                        nd_set_line($$, @3.end_pos.lineno);
+                        $$ = NEW_CLASS($cpath, $bodystmt, $superclass, &@$);
+                        nd_set_line($$->nd_body, @k_end.end_pos.lineno);
+                        set_line_body($bodystmt, @superclass.end_pos.lineno);
+                        nd_set_line($$, @superclass.end_pos.lineno);
                     /*% %*/
-                    /*% ripper: class!($2, $3, $5) %*/
+                    /*% ripper: class!($cpath, $superclass, $bodystmt) %*/
                         local_pop(p);
-                        p->ctxt.in_class = $1.in_class;
-                        p->ctxt.shareable_constant_value = $1.shareable_constant_value;
+                        p->ctxt.in_class = $k_class.in_class;
+                        p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
                     }
                 | k_class tLSHFT expr
                     {
-                        begin_definition("", &@1, &@2);
+                        begin_definition("", &@k_class, &@tLSHFT);
                     }
                   term
                   bodystmt
                   k_end
                     {
                     /*%%%*/
-                        $$ = NEW_SCLASS($3, $6, &@$);
-                        nd_set_line($$->nd_body, @7.end_pos.lineno);
-                        set_line_body($6, nd_line($3));
-                        fixpos($$, $3);
+                        $$ = NEW_SCLASS($expr, $bodystmt, &@$);
+                        nd_set_line($$->nd_body, @k_end.end_pos.lineno);
+                        set_line_body($bodystmt, nd_line($expr));
+                        fixpos($$, $expr);
                     /*% %*/
-                    /*% ripper: sclass!($3, $6) %*/
+                    /*% ripper: sclass!($expr, $bodystmt) %*/
                         local_pop(p);
-                        p->ctxt.in_def = $1.in_def;
-                        p->ctxt.in_class = $1.in_class;
-                        p->ctxt.shareable_constant_value = $1.shareable_constant_value;
+                        p->ctxt.in_def = $k_class.in_def;
+                        p->ctxt.in_class = $k_class.in_class;
+                        p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
                     }
                 | k_module cpath
                     {
-                        begin_definition("module", &@1, &@2);
+                        begin_definition("module", &@k_module, &@cpath);
                     }
                   bodystmt
                   k_end
                     {
                     /*%%%*/
-                        $$ = NEW_MODULE($2, $4, &@$);
-                        nd_set_line($$->nd_body, @5.end_pos.lineno);
-                        set_line_body($4, @2.end_pos.lineno);
-                        nd_set_line($$, @2.end_pos.lineno);
+                        $$ = NEW_MODULE($cpath, $bodystmt, &@$);
+                        nd_set_line($$->nd_body, @k_end.end_pos.lineno);
+                        set_line_body($bodystmt, @cpath.end_pos.lineno);
+                        nd_set_line($$, @cpath.end_pos.lineno);
                     /*% %*/
-                    /*% ripper: module!($2, $4) %*/
+                    /*% ripper: module!($cpath, $bodystmt) %*/
                         local_pop(p);
-                        p->ctxt.in_class = $1.in_class;
-                        p->ctxt.shareable_constant_value = $1.shareable_constant_value;
+                        p->ctxt.in_class = $k_module.in_class;
+                        p->ctxt.shareable_constant_value = $k_module.shareable_constant_value;
                     }
-                | defn_head
-                  f_arglist
+                | defn_head[head]
+                  f_arglist[args]
                     {
                     /*%%%*/
-                        push_end_expect_token_locations(p, &@1.beg_pos);
+                        push_end_expect_token_locations(p, &@head.beg_pos);
                     /*% %*/
                     }
                   bodystmt
                   k_end
                     {
-                        restore_defun(p, $<node>1->nd_defn);
+                        restore_defun(p, $<node>head->nd_defn);
                     /*%%%*/
-                        $$ = set_defun_body(p, $1, $2, $4, &@$);
+                        $$ = set_defun_body(p, $head, $args, $bodystmt, &@$);
                     /*% %*/
-                    /*% ripper: def!(get_value($1), $2, $4) %*/
+                    /*% ripper: def!($head, $args, $bodystmt) %*/
                         local_pop(p);
                     }
-                | defs_head
-                  f_arglist
+                | defs_head[head]
+                  f_arglist[args]
                     {
                     /*%%%*/
-                        push_end_expect_token_locations(p, &@1.beg_pos);
+                        push_end_expect_token_locations(p, &@head.beg_pos);
                     /*% %*/
                     }
                   bodystmt
                   k_end
                     {
-                        restore_defun(p, $<node>1->nd_defn);
+                        restore_defun(p, $<node>head->nd_defn);
                     /*%%%*/
-                        $$ = set_defun_body(p, $1, $2, $4, &@$);
+                        $$ = set_defun_body(p, $head, $args, $bodystmt, &@$);
                     /*%
-                        $1 = get_value($1);
+                        $head = get_value($head);
                     %*/
-                    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
+                    /*% ripper: defs!(AREF($head, 0), AREF($head, 1), AREF($head, 2), $args, $bodystmt) %*/
                         local_pop(p);
                     }
                 | keyword_break
