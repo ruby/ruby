@@ -569,8 +569,7 @@ class TestSocket < Test::Unit::TestCase
     assert_equal(stamp.data[-8,8].unpack("Q")[0], t.subsec * 2**64)
   end
 
-  def _test_closed_read
-    omit 'TODO'
+  def test_closed_read
     require 'timeout'
     require 'socket'
     bug4390 = '[ruby-core:35203]'
