@@ -19,6 +19,15 @@ class TestThreadQueue < Test::Unit::TestCase
     }
   end
 
+  def test_freeze
+    assert_raise(TypeError) {
+      Queue.new.freeze
+    }
+    assert_raise(TypeError) {
+      SizedQueue.new(5).freeze
+    }
+  end
+
   def test_queue
     grind(5, 1000, 15, Queue)
   end
