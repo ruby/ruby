@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module YARP
-  class CompilerTest < Test::Unit::TestCase
+  class ISeqTest < Test::Unit::TestCase
     def test_empty_program
       test_yarp_eval("")
     end

@@ -398,14 +398,14 @@ module SyncDefaultGems
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
     when "yarp"
-      # We don't want to remove yarp_init.c, so we temporarily move it
-      # out of the yarp dir, wipe the yarp dir, and then put it back
+      # We don't want to remove YARP-specific files that existing in ruby/ruby
+      # that do not exist in ruby/yarp, so we temporarily move them out of the
+      # yarp dir, wipe the yarp dir, and then put them back.
       mv("yarp/yarp_init.c", ".")
       mv("yarp/yarp_compiler.c", ".")
-      mv("test/yarp/compiler_test.rb", ".")
+      mv("test/yarp/iseq_test.rb", ".")
       rm_rf(%w[test/yarp yarp])
 
-      # Run the YARP templating scripts
       cp_r("#{upstream}/ext/yarp", "yarp")
       cp_r("#{upstream}/lib/.", "lib")
       cp_r("#{upstream}/test/yarp", "test")
@@ -422,7 +422,7 @@ module SyncDefaultGems
       rm("yarp/extconf.rb")
       mv("yarp_init.c", "yarp/")
       mv("yarp_compiler.c", "yarp/")
-      mv("compiler_test.rb", "test/yarp/")
+      mv("iseq_test.rb", "test/yarp/")
     else
       sync_lib gem, upstream
     end
