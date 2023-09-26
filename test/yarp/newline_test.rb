@@ -36,12 +36,7 @@ module YARP
 
       result = YARP.parse_file(filepath)
       assert_empty result.errors
-
-      result.mark_newlines!
-      visitor = NewlineVisitor.new(result.source)
-
-      result.value.accept(visitor)
-      actual = visitor.newlines
+      actual = yarp_lines(result)
 
       source.each_line.with_index(1) do |line, line_number|
         # Lines like `while (foo = bar)` result in two line flags in the
@@ -91,6 +86,20 @@ module YARP
       end
 
       lines.sort
+    end
+
+    def yarp_lines(result)
+      result.mark_newlines!
+
+      queue = [result.value]
+      newlines = []
+
+      while node = queue.shift
+        queue.concat(node.compact_child_nodes)
+        newlines << result.source.line(node.location.start_offset) if node&.newline?
+      end
+
+      newlines
     end
   end
 end
