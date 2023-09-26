@@ -847,7 +847,7 @@ class TestRubyOptions < Test::Unit::TestCase
       else
         cmd = ['-e', SEGVTest::KILL_SELF]
       end
-      status = assert_segv([{"RUBY_CRASH_REPORT"=>path, "RUBY_ON_BUG"=>nil}, *cmd], list: [], chdir: dir)
+      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir)
       reports = Dir.glob("*.log", File::FNM_DOTMATCH, base: dir)
       assert_equal(1, reports.size)
       assert_pattern_list(list, File.read(File.join(dir, reports.first)))
@@ -887,7 +887,8 @@ class TestRubyOptions < Test::Unit::TestCase
     else
       omit "/bin/echo not found"
     end
-    assert_in_out_err([{"RUBY_CRASH_REPORT"=>"| #{echo} %e:%f:%p"}], SEGVTest::KILL_SELF,
+    env = {"RUBY_CRASH_REPORT"=>"| #{echo} %e:%f:%p", "RUBY_ON_BUG"=>nil}
+    assert_in_out_err([env], SEGVTest::KILL_SELF,
                       encoding: "ASCII-8BIT",
                       **SEGVTest::ExecOptions) do |stdout, stderr, status|
       assert_empty(stderr)
