@@ -254,13 +254,13 @@ nt_stack_chunk_dump(void)
     fprintf(stderr, "** nt_stack_chunks\n");
     ch = nt_stack_chunks;
     for (i=0; ch; i++, ch = ch->prev_chunk) {
-        fprintf(stderr, "%d %p free_pos:%d\n", i, ch, (int)ch->free_stack_pos);
+        fprintf(stderr, "%d %p free_pos:%d\n", i, (void *)ch, (int)ch->free_stack_pos);
     }
 
     fprintf(stderr, "** nt_free_stack_chunks\n");
     ch = nt_free_stack_chunks;
     for (i=0; ch; i++, ch = ch->prev_free_chunk) {
-        fprintf(stderr, "%d %p free_pos:%d\n", i, ch, (int)ch->free_stack_pos);
+        fprintf(stderr, "%d %p free_pos:%d\n", i, (void *)ch, (int)ch->free_stack_pos);
     }
 }
 
