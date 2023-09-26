@@ -59,11 +59,11 @@ module YARP
     ############################################################################
 
     def test_ClassVariableReadNode
-      test_yarp_eval("class YARP::CompilerTest; @@yct = 1; @@yct; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct = 1; @@yct; end")
     end
 
     def test_ConstantPathNode
-      test_yarp_eval("YARP::CompilerTest")
+      test_yarp_eval("YARP::ISeqTest")
     end
 
     def test_ConstantReadNode
@@ -75,7 +75,7 @@ module YARP
     end
 
     def test_InstanceVariableReadNode
-      test_yarp_eval("class YARP::CompilerTest; @yct = 1; @yct; end")
+      test_yarp_eval("class YARP::ISeqTest; @yct = 1; @yct; end")
     end
 
     def test_LocalVariableReadNode
@@ -87,24 +87,24 @@ module YARP
     ############################################################################
 
     def test_ClassVariableTargetNode
-      test_yarp_eval("class YARP::CompilerTest; @@yct, @@yct1 = 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct, @@yct1 = 1; end")
     end
 
     def test_ClassVariableWriteNode
-      test_yarp_eval("class YARP::CompilerTest; @@yct = 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct = 1; end")
     end
 
     def test_ClassVariableAndWriteNode
-      test_yarp_eval("class YARP::CompilerTest; @@yct = 0; @@yct &&= 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct = 0; @@yct &&= 1; end")
     end
 
     def test_ClassVariableOrWriteNode
-      test_yarp_eval("class YARP::CompilerTest; @@yct = 1; @@yct ||= 0; end")
-      test_yarp_eval("class YARP::CompilerTest; @@yct = nil; @@yct ||= 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct = 1; @@yct ||= 0; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct = nil; @@yct ||= 1; end")
     end
 
     def test_ClassVariableOperatorWriteNode
-      test_yarp_eval("class YARP::CompilerTest; @@yct = 0; @@yct += 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @@yct = 0; @@yct += 1; end")
     end
 
     def test_ConstantTargetNode
@@ -180,11 +180,11 @@ module YARP
     end
 
     def test_InstanceVariableTargetNode
-      test_yarp_eval("class YARP::CompilerTest; @yct, @yct1 = 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @yct, @yct1 = 1; end")
     end
 
     def test_InstanceVariableWriteNode
-      test_yarp_eval("class YARP::CompilerTest; @yct = 1; end")
+      test_yarp_eval("class YARP::ISeqTest; @yct = 1; end")
     end
 
     def test_InstanceVariableAndWriteNode
@@ -224,8 +224,8 @@ module YARP
     ############################################################################
 
     def test_EmbeddedVariableNode
-      # test_yarp_eval('class YARP::CompilerTest; @yct = 1; "#@yct"; end')
-      # test_yarp_eval('class YARP::CompilerTest; @@yct = 1; "#@@yct"; end')
+      # test_yarp_eval('class YARP::ISeqTest; @yct = 1; "#@yct"; end')
+      # test_yarp_eval('class YARP::ISeqTest; @@yct = 1; "#@@yct"; end')
       test_yarp_eval('$yct = 1; "#$yct"')
     end
 
@@ -262,7 +262,7 @@ module YARP
     end
 
     def test_StringConcatNode
-      # test_yarp_eval('"YARP" "::" "CompilerTest"')
+      # test_yarp_eval('"YARP" "::" "ISeqTest"')
     end
 
     def test_StringNode
@@ -275,7 +275,7 @@ module YARP
 
     def test_XStringNode
       # test_yarp_eval(<<~RUBY)
-      #   class YARP::CompilerTest
+      #   class YARP::ISeqTest
       #     def self.`(command) = command * 2
       #     `yct`
       #   end
