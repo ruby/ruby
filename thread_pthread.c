@@ -391,6 +391,7 @@ ASSERT_thread_sched_locked(struct rb_thread_sched *sched, rb_thread_t *th)
 #define ractor_sched_lock(a, b) ractor_sched_lock_(a, b, __FILE__, __LINE__)
 #define ractor_sched_unlock(a, b) ractor_sched_unlock_(a, b, __FILE__, __LINE__)
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static unsigned int
 rb_ractor_serial(const rb_ractor_t *r) {
     if (r) {
