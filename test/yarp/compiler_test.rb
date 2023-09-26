@@ -310,8 +310,13 @@ module YARP
     def test_yarp_eval(source)
       compare_eval(source)
 
-      # Test "popped" functionality
-      compare_eval("#{source}; 1")
+      begin
+        $VERBOSE, verbose_bak = nil, $VERBOSE
+        # Test "popped" functionality
+        compare_eval("#{source}; 1")
+      ensure
+        $VERBOSE = verbose_bak
+      end
     end
   end
 end
