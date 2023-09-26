@@ -1138,6 +1138,21 @@ rb_queue_length(VALUE self)
     return LONG2NUM(queue_length(self, queue_ptr(self)));
 }
 
+NORETURN(static VALUE rb_queue_freeze(VALUE self));
+/*
+ * call-seq:
+ *   freeze
+ *
+ * Raises an exception:
+ *   Queue.new.freeze # Raises TypeError (cannot freeze #<Thread::Queue:0x...>)
+ */
+static VALUE
+rb_queue_freeze(VALUE self)
+{
+    rb_raise(rb_eTypeError, "cannot freeze " "%+"PRIsVALUE, self);
+    UNREACHABLE_RETURN(self);
+}
+
 /*
  * Document-method: Thread::Queue#num_waiting
  *
@@ -1599,6 +1614,7 @@ Init_thread_sync(void)
     rb_define_method(rb_cQueue, "clear", rb_queue_clear, 0);
     rb_define_method(rb_cQueue, "length", rb_queue_length, 0);
     rb_define_method(rb_cQueue, "num_waiting", rb_queue_num_waiting, 0);
+    rb_define_method(rb_cQueue, "freeze", rb_queue_freeze, 0);
 
     rb_define_alias(rb_cQueue, "enq", "push");
     rb_define_alias(rb_cQueue, "<<", "push");
@@ -1615,6 +1631,7 @@ Init_thread_sync(void)
     rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
     rb_define_method(rb_cSizedQueue, "length", rb_szqueue_length, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
+    rb_define_method(rb_cSizedQueue, "freeze", rb_queue_freeze, 0);
     rb_define_alias(rb_cSizedQueue, "size", "length");
 
     /* CVar */
