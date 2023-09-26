@@ -692,8 +692,11 @@ clean-local:: clean-runnable
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
+	$(Q)$(RM) $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/*/.time
 	-$(Q)$(RMALL) yjit/target
-	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit \
+	  $(YARP_BUILD_DIR)/*/ $(YARP_BUILD_DIR) tmp \
+	2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY
 	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || $(NULLCMD)
