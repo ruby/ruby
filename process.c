@@ -3090,7 +3090,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *    Foo
  *
- *  See {Execution Shell}[rdoc-ref:Process@Shell] for details about the shell.
+ *  See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
  *  Raises an exception if the new process could not execute.
  *
@@ -4771,7 +4771,7 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *    Foo
  *
- *  See {Execution Shell}[rdoc-ref:Process@Shell] for details about the shell.
+ *  See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
  *  Raises an exception if the new process could not execute.
  *
@@ -4944,7 +4944,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    Foo
  *
- *  See {Execution Shell}[rdoc-ref:Process@Shell] for details about the shell.
+ *  See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
  *  Raises an exception if the new process could not execute.
  *
