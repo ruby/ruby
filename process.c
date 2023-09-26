@@ -3090,21 +3090,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *    Foo
  *
- *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
- *  otherwise the shell is determined by environment variable
- *  <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
- *
- *  Except for the +COMSPEC+ case,
- *  the entire string +command_line+ is passed as an argument
- *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
- *
- *  The shell performs normal shell expansion on the command line:
- *
- *    exec('echo C*')
- *
- *  Output:
- *
- *    CONTRIBUTING.md COPYING COPYING.ja
+ *  See {Execution Shell}[rdoc-ref:Process@Shell] for details about the shell.
  *
  *  Raises an exception if the new process could not execute.
  *
@@ -4785,21 +4771,7 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *    Foo
  *
- *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
- *  otherwise the shell is determined by environment variable
- *  <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
- *
- *  Except for the +COMSPEC+ case,
- *  the entire string +command_line+ is passed as an argument
- *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
- *
- *  The shell performs normal shell expansion on the command line:
- *
- *    system('echo C*') # => true
- *
- *  Output:
- *
- *    CONTRIBUTING.md COPYING COPYING.ja
+ *  See {Execution Shell}[rdoc-ref:Process@Shell] for details about the shell.
  *
  *  Raises an exception if the new process could not execute.
  *
@@ -4972,22 +4944,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    Foo
  *
- *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
- *  otherwise the shell is determined by environment variable
- *  <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
- *
- *  Except for the +COMSPEC+ case,
- *  the entire string +command_line+ is passed as an argument
- *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
- *
- *  The shell performs normal shell expansion on the command line:
- *
- *    spawn('echo C*') # => 799139
- *    Process.wait     # => 799139
- *
- *  Output:
- *
- *    CONTRIBUTING.md COPYING COPYING.ja
+ *  See {Execution Shell}[rdoc-ref:Process@Shell] for details about the shell.
  *
  *  Raises an exception if the new process could not execute.
  *
@@ -8972,6 +8929,25 @@ proc_warmup(VALUE _)
  *
  * Use execution option <tt>:close_others => true</tt> to modify that inheritance
  * by closing non-standard fds (3 and greater) that are not otherwise redirected.
+ *
+ * === Execution Shell
+ *
+ * On a Unix-like system, the shell invoked is <tt>/bin/sh</tt>;
+ * otherwise the shell invoked is determined by environment variable
+ * <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
+ *
+ * Except for the +COMSPEC+ case,
+ * the entire string +command_line+ is passed as an argument
+ * to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
+ *
+ * The shell performs normal shell expansion on the command line:
+ *
+ *   spawn('echo C*') # => 799139
+ *   Process.wait     # => 799139
+ *
+ * Output:
+ *
+ *   CONTRIBUTING.md COPYING COPYING.ja
  *
  * == What's Here
  *
