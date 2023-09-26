@@ -118,7 +118,7 @@ module Bundler
             end
           end
 
-          ref = @commit_ref || (full_sha_revision? && @revision)
+          ref = @commit_ref || (locked_to_full_sha? && @revision)
           git "fetch", "--force", "--quiet", *extra_fetch_args(ref), :dir => destination if ref
 
           git "reset", "--hard", @revision, :dir => destination
@@ -236,11 +236,15 @@ module Bundler
         end
 
         def pinned_to_full_sha?
-          ref =~ /\A\h{40}\z/
+          full_sha_revision?(ref)
         end
 
-        def full_sha_revision?
-          @revision.match?(/\A\h{40}\z/)
+        def locked_to_full_sha?
+          full_sha_revision?(@revision)
+        end
+
+        def full_sha_revision?(ref)
+          ref&.match?(/\A\h{40}\z/)
         end
 
         def git_null(*command, dir: nil)
