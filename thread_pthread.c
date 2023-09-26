@@ -68,7 +68,7 @@ static const void *const condattr_monotonic = NULL;
 // #define HAVE_SYS_EPOLL_H 0
 #endif
 
-#if HAVE_SYS_EPOLL_H
+#if HAVE_SYS_EPOLL_H && !defined(COROUTINE_PTHREAD_CONTEXT)
   #include <sys/epoll.h>
   #define USE_MN_THREADS 1
 #else
