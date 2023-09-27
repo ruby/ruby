@@ -3069,7 +3069,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *  - +command_line+ if it is a string,
  *    and if it begins with a shell reserved word or special built-in,
- *    or if it contains one or more metacharacters.
+ *    or if it contains one or more meta characters.
  *  - +exe_path+ otherwise.
  *
  *  <b>Argument +command_line+</b>
@@ -3078,8 +3078,8 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  it must begin with a shell reserved word, begin with a special built-in,
  *  or contain meta characters:
  *
- *    exec('echo')                         # Built-in.
  *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
+ *    exec('echo')                         # Built-in.
  *    exec('date > date.tmp')              # Contains meta character.
  *
  *  The command line may also contain arguments and options for the command:
@@ -4741,7 +4741,7 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *  - +command_line+ if it is a string,
  *    and if it begins with a shell reserved word or special built-in,
- *    or if it contains one or more metacharacters.
+ *    or if it contains one or more meta characters.
  *  - +exe_path+ otherwise.
  *
  *  <b>Argument +command_line+</b>
@@ -4750,8 +4750,8 @@ rb_spawn(int argc, const VALUE *argv)
  *  it must begin with a shell reserved word, begin with a special built-in,
  *  or contain meta characters:
  *
- *    system('echo')                                  # => true  # Built-in.
  *    system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
+ *    system('echo')                                  # => true  # Built-in.
  *    system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *    system('date > /nop/date.tmp')                  # => false
  *    system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
@@ -4917,7 +4917,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  - +command_line+ if it is a string,
  *    and if it begins with a shell reserved word or special built-in,
- *    or if it contains one or more metacharacters.
+ *    or if it contains one or more meta characters.
  *  - +exe_path+ otherwise.
  *
  *  <b>Argument +command_line+</b>
@@ -4926,11 +4926,11 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *  it must begin with a shell reserved word, begin with a special built-in,
  *  or contain meta characters:
  *
- *    spawn('echo')                         # => 798847
+ *    spawn('if true; then echo "Foo"; fi') # => 798847 # Shell reserved word.
  *    Process.wait                          # => 798847
- *    spawn('if true; then echo "Foo"; fi') # => 798848
+ *    spawn('echo')                         # => 798848 # Built-in.
  *    Process.wait                          # => 798848
- *    spawn('date > /tmp/date.tmp')         # => 798879
+ *    spawn('date > /tmp/date.tmp')         # => 798879 # Contains meta character.
  *    Process.wait                          # => 798849
  *    spawn('date > /nop/date.tmp')         # => 798882 # Issues error message.
  *    Process.wait                          # => 798882
