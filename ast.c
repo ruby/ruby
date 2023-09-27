@@ -474,13 +474,10 @@ node_children(rb_ast_t *ast, const NODE *node)
                                     NEW_CHILD(ast, RNODE_ARGSCAT(RNODE_OP_ASGN1(node)->nd_args)->nd_head),
                                     NEW_CHILD(ast, RNODE_ARGSCAT(RNODE_OP_ASGN1(node)->nd_args)->nd_body));
       case NODE_OP_ASGN2:
-        // NODE_OP_ASGN2 has NODE_OP_ASGN2 in its nd_next, however nd_next
-        // has different structure, whose u1 is ID attr, u2 is ID op, u3 is bool.
-        // See: NEW_OP_ASGN2
         return rb_ary_new_from_args(5, NEW_CHILD(ast, RNODE_OP_ASGN2(node)->nd_recv),
-                                    RBOOL(RNODE_OP_ASGN22(RNODE_OP_ASGN2(node)->nd_next)->nd_aid),
-                                    ID2SYM(RNODE_OP_ASGN22(RNODE_OP_ASGN2(node)->nd_next)->nd_vid),
-                                    ID2SYM(RNODE_OP_ASGN22(RNODE_OP_ASGN2(node)->nd_next)->nd_mid),
+                                    RBOOL(RNODE_OP_ASGN2(node)->nd_aid),
+                                    ID2SYM(RNODE_OP_ASGN2(node)->nd_vid),
+                                    ID2SYM(RNODE_OP_ASGN2(node)->nd_mid),
                                     NEW_CHILD(ast, RNODE_OP_ASGN2(node)->nd_value));
       case NODE_OP_ASGN_AND:
         return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_OP_ASGN_AND(node)->nd_head), ID2SYM(idANDOP),

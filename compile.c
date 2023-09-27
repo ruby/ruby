@@ -8708,8 +8708,8 @@ static int
 compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = nd_line(node);
-    ID atype = RNODE_OP_ASGN2(node)->nd_next->nd_mid;
-    ID vid = RNODE_OP_ASGN2(node)->nd_next->nd_vid, aid = rb_id_attrset(vid);
+    ID atype = RNODE_OP_ASGN2(node)->nd_mid;
+    ID vid = RNODE_OP_ASGN2(node)->nd_vid, aid = rb_id_attrset(vid);
     int asgnflag;
     LABEL *lfin = NEW_LABEL(line);
     LABEL *lcfin = NEW_LABEL(line);
@@ -8769,7 +8769,7 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 
     asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node, RNODE_OP_ASGN2(node)->nd_recv);
     CHECK(asgnflag != -1);
-    if (RNODE_OP_ASGN2(node)->nd_next->nd_aid) {
+    if (RNODE_OP_ASGN2(node)->nd_aid) {
         lskip = NEW_LABEL(line);
         ADD_INSN(ret, node, dup);
         ADD_INSNL(ret, node, branchnil, lskip);
