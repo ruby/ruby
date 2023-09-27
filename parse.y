@@ -11302,7 +11302,6 @@ rb_node_case_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YY
     rb_node_case_t *n = NODE_NEWNODE(NODE_CASE, rb_node_case_t, loc);
     n->nd_head = nd_head;
     n->nd_body = nd_body;
-    n->not_used = 0;
 
     return n;
 }
@@ -11313,7 +11312,6 @@ rb_node_case2_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
     rb_node_case2_t *n = NODE_NEWNODE(NODE_CASE2, rb_node_case2_t, loc);
     n->nd_head = 0;
     n->nd_body = nd_body;
-    n->not_used = 0;
 
     return n;
 }
@@ -11324,7 +11322,6 @@ rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const Y
     rb_node_case3_t *n = NODE_NEWNODE(NODE_CASE3, rb_node_case3_t, loc);
     n->nd_head = nd_head;
     n->nd_body = nd_body;
-    n->not_used = 0;
 
     return n;
 }
