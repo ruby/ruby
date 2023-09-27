@@ -6999,7 +6999,7 @@ static const rb_data_type_t env_data_type = {
  *  - #key: Returns the key for the first-found entry with a given value.
  *  - #keys: Returns an array containing all keys in +self+.
  *  - #rassoc: Returns a 2-element array consisting of the key and value
-      of the first-found entry having a given value.
+ *    of the first-found entry having a given value.
  *  - #values: Returns an array containing all values in +self+/
  *  - #values_at: Returns an array containing values for given keys.
  *
