@@ -920,7 +920,6 @@ typedef struct RNode_DOT2 {
 
     struct RNode *nd_beg;
     struct RNode *nd_end;
-    VALUE not_used;
 } rb_node_dot2_t;
 
 typedef struct RNode_DOT3 {
@@ -928,7 +927,6 @@ typedef struct RNode_DOT3 {
 
     struct RNode *nd_beg;
     struct RNode *nd_end;
-    VALUE not_used;
 } rb_node_dot3_t;
 
 typedef struct RNode_FLIP2 {
@@ -936,7 +934,6 @@ typedef struct RNode_FLIP2 {
 
     struct RNode *nd_beg;
     struct RNode *nd_end;
-    VALUE not_used;
 } rb_node_flip2_t;
 
 typedef struct RNode_FLIP3 {
@@ -944,7 +941,6 @@ typedef struct RNode_FLIP3 {
 
     struct RNode *nd_beg;
     struct RNode *nd_end;
-    VALUE not_used;
 } rb_node_flip3_t;
 
 typedef struct RNode_SELF {
