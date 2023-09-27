@@ -3357,7 +3357,7 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
  *   "main.rb"
  *
  * If no block is given, returns an enumerator.
-  */
+ */
 static VALUE
 dir_each_child_m(VALUE dir)
 {

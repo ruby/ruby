@@ -999,7 +999,7 @@ num_negative_p(VALUE num)
  *  - #/: Returns the quotient of +self+ and the given value.
  *  - #ceil: Returns the smallest number greater than or equal to +self+.
  *  - #coerce: Returns a 2-element array containing the given value converted to a \Float
-      and +self+
+ *    and +self+
  *  - #divmod: Returns a 2-element array containing the quotient and remainder
  *    results of dividing +self+ by the given value.
  *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
@@ -1683,12 +1683,12 @@ rb_dbl_cmp(double a, double b)
  *  Examples:
  *
  *    2.0 <=> 2              # => 0
-      2.0 <=> 2.0            # => 0
-      2.0 <=> Rational(2, 1) # => 0
-      2.0 <=> Complex(2, 0)  # => 0
-      2.0 <=> 1.9            # => 1
-      2.0 <=> 2.1            # => -1
-      2.0 <=> 'foo'          # => nil
+ *    2.0 <=> 2.0            # => 0
+ *    2.0 <=> Rational(2, 1) # => 0
+ *    2.0 <=> Complex(2, 0)  # => 0
+ *    2.0 <=> 1.9            # => 1
+ *    2.0 <=> 2.1            # => -1
+ *    2.0 <=> 'foo'          # => nil
  *
  *  This is the basis for the tests in the Comparable module.
  *

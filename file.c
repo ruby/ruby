@@ -1773,7 +1773,7 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
  *
  * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
-  *  File.chardev?($stdin)     # => true
+ *   File.chardev?($stdin)     # => true
  *   File.chardev?('t.txt')     # => false
  *
  */

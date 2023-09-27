@@ -6487,7 +6487,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
  *  Returns the result of interpreting leading characters in +self+ as a Float:
  *
  *    '3.14159'.to_f  # => 3.14159
-      '1.234e-2'.to_f # => 0.01234
+ *    '1.234e-2'.to_f # => 0.01234
  *
  *  Characters past a leading valid number (in the given +base+) are ignored:
  *
