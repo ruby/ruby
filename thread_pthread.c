@@ -1084,6 +1084,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched)
 {
     rb_native_mutex_initialize(&sched->lock_);
     ccan_list_head_init(&sched->readyq);
+    sched->readyq_cnt = 0;
 }
 
 static void
