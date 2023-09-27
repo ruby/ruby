@@ -12013,9 +12013,6 @@ static rb_node_errinfo_t *
 rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_errinfo_t *n = NODE_NEWNODE(NODE_ERRINFO, rb_node_errinfo_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
-    n->not_used3 = 0;
 
     return n;
 }

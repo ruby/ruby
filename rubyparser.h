@@ -937,10 +937,6 @@ typedef struct RNode_FALSE {
 
 typedef struct RNode_ERRINFO {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_errinfo_t;
 
 typedef struct RNode_DEFINED {
