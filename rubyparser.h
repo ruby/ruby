@@ -634,17 +634,13 @@ typedef struct RNode_CVAR {
 typedef struct RNode_NTH_REF {
     NODE node;
 
-    VALUE not_used;
     long nd_nth;
-    VALUE not_used2;
 } rb_node_nth_ref_t;
 
 typedef struct RNode_BACK_REF {
     NODE node;
 
-    VALUE not_used;
     long nd_nth;
-    VALUE not_used2;
 } rb_node_back_ref_t;
 
 /* RNode_MATCH, RNode_LIT, RNode_STR and RNode_XSTR should be same structure */
