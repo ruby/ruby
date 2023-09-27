@@ -1355,6 +1355,13 @@ module Prism
       ]
     end
 
+    def test_semicolon_after_inheritance_operator
+      source = "class Foo < Bar end"
+      assert_errors expression(source), source, [
+        ["Unexpected `end`, expecting ';' or '\n'", 15..15],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

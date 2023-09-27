@@ -92,6 +92,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_CLASS_NAME]                         = "Expected a constant name after `class`",
     [PM_ERR_CLASS_SUPERCLASS]                   = "Expected a superclass after `<`",
     [PM_ERR_CLASS_TERM]                         = "Expected an `end` to close the `class` statement",
+    [PM_ERR_CLASS_UNEXPECTED_END]               = "Unexpected `end`, expecting ';' or '\n'",
     [PM_ERR_CONDITIONAL_ELSIF_PREDICATE]        = "Expected a predicate expression for the `elsif` statement",
     [PM_ERR_CONDITIONAL_IF_PREDICATE]           = "Expected a predicate expression for the `if` statement",
     [PM_ERR_CONDITIONAL_PREDICATE_TERM]         = "Expected `then` or `;` or '\n'",

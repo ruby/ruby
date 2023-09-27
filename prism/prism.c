@@ -12304,7 +12304,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             }
 
             pm_parser_scope_push(parser, true);
-            accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+            if (inheritance_operator.type != PM_TOKEN_NOT_PROVIDED) {
+                expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CLASS_UNEXPECTED_END);
+            } else {
+                accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+            }
             pm_node_t *statements = NULL;
 
             if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {

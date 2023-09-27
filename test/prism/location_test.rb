@@ -206,7 +206,7 @@ module Prism
 
     def test_ClassNode
       assert_location(ClassNode, "class Foo end")
-      assert_location(ClassNode, "class Foo < Bar end")
+      assert_location(ClassNode, "class Foo < Bar; end")
     end
 
     def test_ClassVariableAndWriteNode
