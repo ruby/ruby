@@ -132,7 +132,6 @@ enum node_type {
     NODE_FNDPTN,
     NODE_ERROR,
     NODE_DEF_TEMP,
-    NODE_DEF_TEMP2,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
@@ -845,16 +844,10 @@ typedef struct RNode_DEF_TEMP {
 
     ID nd_vid;
     ID nd_mid;
-    struct RNode_DEF_TEMP2 *nd_next;
-} rb_node_def_temp_t;
-
-typedef struct RNode_DEF_TEMP2 {
-    NODE node;
-
     struct RNode *nd_head;
     long nd_nth;
     VALUE nd_cval;
-} rb_node_def_temp2_t;
+} rb_node_def_temp_t;
 
 typedef struct RNode_ALIAS {
     NODE node;
@@ -1134,7 +1127,6 @@ typedef struct RNode_ERROR {
 #define RNODE_DEFN(node) ((struct RNode_DEFN *)(node))
 #define RNODE_DEFS(node) ((struct RNode_DEFS *)(node))
 #define RNODE_DEF_TEMP(node) ((struct RNode_DEF_TEMP *)(node))
-#define RNODE_DEF_TEMP2(node) ((struct RNode_DEF_TEMP2 *)(node))
 #define RNODE_ALIAS(node) ((struct RNode_ALIAS *)(node))
 #define RNODE_VALIAS(node) ((struct RNode_VALIAS *)(node))
 #define RNODE_UNDEF(node) ((struct RNode_UNDEF *)(node))
