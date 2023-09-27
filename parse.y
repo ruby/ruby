@@ -11423,8 +11423,6 @@ static rb_node_self_t *
 rb_node_self_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_self_t *n = NODE_NEWNODE(NODE_SELF, rb_node_self_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
     n->nd_state = 1;
 
     return n;
@@ -11434,9 +11432,6 @@ static rb_node_nil_t *
 rb_node_nil_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_nil_t *n = NODE_NEWNODE(NODE_NIL, rb_node_nil_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
-    n->not_used3 = 0;
 
     return n;
 }
@@ -11445,9 +11440,6 @@ static rb_node_true_t *
 rb_node_true_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_true_t *n = NODE_NEWNODE(NODE_TRUE, rb_node_true_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
-    n->not_used3 = 0;
 
     return n;
 }
@@ -11456,9 +11448,6 @@ static rb_node_false_t *
 rb_node_false_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_false_t *n = NODE_NEWNODE(NODE_FALSE, rb_node_false_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
-    n->not_used3 = 0;
 
     return n;
 }
