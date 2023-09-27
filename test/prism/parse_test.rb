@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class ParseTest < TestCase
     # When we pretty-print the trees to compare against the snapshots, we want to
     # be certain that we print with the same external encoding. This is because
@@ -20,26 +20,26 @@ module YARP
     end
 
     def test_empty_string
-      result = YARP.parse("")
+      result = Prism.parse("")
       assert_equal [], result.value.statements.body
     end
 
     def test_parse_takes_file_path
       filepath = "filepath.rb"
-      result = YARP.parse("def foo; __FILE__; end", filepath)
+      result = Prism.parse("def foo; __FILE__; end", filepath)
 
       assert_equal filepath, find_source_file_node(result.value).filepath
     end
 
     def test_parse_lex
-      node, tokens = YARP.parse_lex("def foo; end").value
+      node, tokens = Prism.parse_lex("def foo; end").value
 
       assert_kind_of ProgramNode, node
       assert_equal 5, tokens.length
     end
 
     def test_parse_lex_file
-      node, tokens = YARP.parse_lex_file(__FILE__).value
+      node, tokens = Prism.parse_lex_file(__FILE__).value
 
       assert_kind_of ProgramNode, node
       refute_empty tokens
@@ -85,23 +85,12 @@ module YARP
         # and explicitly set the external encoding to UTF-8 to override the binmode default.
         source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
-        if ripper_should_parse
-          src = source
-
-          case relative
-          when /break|next|redo|if|unless|rescue|control|keywords|retry/
-            # Uncaught syntax errors: Invalid break, Invalid next
-            src = "->do\nrescue\n#{src}\nend"
-            ripper_should_match = false
-          end
-
-          # Make sure that it can be correctly parsed by Ripper. If it can't, then we have a fixture
-          # that is invalid Ruby.
-          refute_nil(Ripper.sexp_raw(src), "Ripper failed to parse")
-        end
+        # Make sure that it can be correctly parsed by Ripper. If it can't, then we have a fixture
+        # that is invalid Ruby.
+        refute_nil(Ripper.sexp_raw(source), "Ripper failed to parse") if ripper_should_parse
 
         # Next, assert that there were no errors during parsing.
-        result = YARP.parse(source, relative)
+        result = Prism.parse(source, relative)
         assert_empty result.errors
 
         # Next, pretty print the source.
@@ -128,7 +117,7 @@ module YARP
 
         # Next, assert that the value can be serialized and deserialized without
         # changing the shape of the tree.
-        assert_equal_nodes(result.value, YARP.load(source, YARP.dump(source, relative)).value)
+        assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, relative)).value)
 
         # Next, check that the location ranges of each node in the tree are a
         # superset of their respective child nodes.
@@ -142,13 +131,13 @@ module YARP
         if ripper_should_parse && ripper_should_match
           # Finally, assert that we can lex the source and get the same tokens as
           # Ripper.
-          lex_result = YARP.lex_compat(source)
+          lex_result = Prism.lex_compat(source)
           assert_equal [], lex_result.errors
           tokens = lex_result.value
 
           begin
-            YARP.lex_ripper(source).zip(tokens).each do |(ripper, yarp)|
-              assert_equal ripper, yarp
+            Prism.lex_ripper(source).zip(tokens).each do |(ripper, prism)|
+              assert_equal ripper, prism
             end
           rescue SyntaxError
             raise ArgumentError, "Test file has invalid syntax #{filepath}"
@@ -171,10 +160,10 @@ module YARP
 
         file_contents.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
           snippet = snippet.rstrip
-          result = YARP.parse(snippet, relative)
+          result = Prism.parse(snippet, relative)
           assert_empty result.errors
 
-          assert_equal_nodes(result.value, YARP.load(snippet, YARP.dump(snippet, relative)).value)
+          assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, relative)).value)
         end
       end
     end

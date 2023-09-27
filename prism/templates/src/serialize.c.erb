@@ -1,64 +1,64 @@
-#include "yarp.h"
+#include "prism.h"
 
 #include <stdio.h>
 
 static inline uint32_t
-yp_ptrdifft_to_u32(ptrdiff_t value) {
+pm_ptrdifft_to_u32(ptrdiff_t value) {
     assert(value >= 0 && ((unsigned long) value) < UINT32_MAX);
     return (uint32_t) value;
 }
 
 static inline uint32_t
-yp_sizet_to_u32(size_t value) {
+pm_sizet_to_u32(size_t value) {
     assert(value < UINT32_MAX);
     return (uint32_t) value;
 }
 
 static void
-yp_serialize_location(yp_parser_t *parser, yp_location_t *location, yp_buffer_t *buffer) {
+pm_serialize_location(pm_parser_t *parser, pm_location_t *location, pm_buffer_t *buffer) {
     assert(location->start);
     assert(location->end);
     assert(location->start <= location->end);
 
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(location->start - parser->start));
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(location->end - location->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(location->start - parser->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(location->end - location->start));
 }
 
 static void
-yp_serialize_string(yp_parser_t *parser, yp_string_t *string, yp_buffer_t *buffer) {
+pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffer) {
     switch (string->type) {
-        case YP_STRING_SHARED: {
-            yp_buffer_append_u8(buffer, 1);
-            yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(yp_string_source(string) - parser->start));
-            yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_string_length(string)));
+        case PM_STRING_SHARED: {
+            pm_buffer_append_u8(buffer, 1);
+            pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(pm_string_source(string) - parser->start));
+            pm_buffer_append_u32(buffer, pm_sizet_to_u32(pm_string_length(string)));
             break;
         }
-        case YP_STRING_OWNED:
-        case YP_STRING_CONSTANT: {
-            uint32_t length = yp_sizet_to_u32(yp_string_length(string));
-            yp_buffer_append_u8(buffer, 2);
-            yp_buffer_append_u32(buffer, length);
-            yp_buffer_append_bytes(buffer, yp_string_source(string), length);
+        case PM_STRING_OWNED:
+        case PM_STRING_CONSTANT: {
+            uint32_t length = pm_sizet_to_u32(pm_string_length(string));
+            pm_buffer_append_u8(buffer, 2);
+            pm_buffer_append_u32(buffer, length);
+            pm_buffer_append_bytes(buffer, pm_string_source(string), length);
             break;
         }
-        case YP_STRING_MAPPED:
+        case PM_STRING_MAPPED:
             assert(false && "Cannot serialize mapped strings.");
             break;
     }
 }
 
 void
-yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
-    yp_buffer_append_u8(buffer, (uint8_t) YP_NODE_TYPE(node));
+pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+    pm_buffer_append_u8(buffer, (uint8_t) PM_NODE_TYPE(node));
 
     size_t offset = buffer->length;
 
-    yp_serialize_location(parser, &node->location, buffer);
+    pm_serialize_location(parser, &node->location, buffer);
 
-    switch (YP_NODE_TYPE(node)) {
+    switch (PM_NODE_TYPE(node)) {
         // We do not need to serialize a ScopeNode ever as
         // it is not part of the AST
-        case YP_SCOPE_NODE:
+        case PM_SCOPE_NODE:
             return;
         <%- nodes.each do |node| -%>
         case <%= node.type %>: {
@@ -66,58 +66,58 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
             // serialize length
             // encoding of location u32s make us need to save this offset.
             size_t length_offset = buffer->length;
-            yp_buffer_append_str(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
+            pm_buffer_append_str(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when YARP::NodeField -%>
-            yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when YARP::OptionalNodeField -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
-                yp_buffer_append_u8(buffer, 0);
+            <%- when Prism::NodeField -%>
+            pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when Prism::OptionalNodeField -%>
+            if (((pm_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
+                pm_buffer_append_u8(buffer, 0);
             } else {
-                yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+                pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
-            <%- when YARP::StringField -%>
-            yp_serialize_string(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when YARP::NodeListField -%>
-            uint32_t <%= field.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            yp_buffer_append_u32(buffer, <%= field.name %>_size);
+            <%- when Prism::StringField -%>
+            pm_serialize_string(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when Prism::NodeListField -%>
+            uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
+            pm_buffer_append_u32(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
-                yp_serialize_node(parser, (yp_node_t *) ((yp_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
+                pm_serialize_node(parser, (pm_node_t *) ((pm_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
             }
-            <%- when YARP::ConstantField, YARP::OptionalConstantField -%>
-            yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>));
-            <%- when YARP::ConstantListField -%>
-            uint32_t <%= field.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            yp_buffer_append_u32(buffer, <%= field.name %>_size);
+            <%- when Prism::ConstantField, Prism::OptionalConstantField -%>
+            pm_buffer_append_u32(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>));
+            <%- when Prism::ConstantListField -%>
+            uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
+            pm_buffer_append_u32(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
-                yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
+                pm_buffer_append_u32(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
             }
-            <%- when YARP::LocationField -%>
+            <%- when Prism::LocationField -%>
             <%- if field.should_be_serialized? -%>
-            yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            pm_serialize_location(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- end -%>
-            <%- when YARP::OptionalLocationField -%>
+            <%- when Prism::OptionalLocationField -%>
             <%- if field.should_be_serialized? -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
-                yp_buffer_append_u8(buffer, 0);
+            if (((pm_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
+                pm_buffer_append_u8(buffer, 0);
             } else {
-                yp_buffer_append_u8(buffer, 1);
-                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+                pm_buffer_append_u8(buffer, 1);
+                pm_serialize_location(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- end -%>
-            <%- when YARP::UInt32Field -%>
-            yp_buffer_append_u32(buffer, ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when YARP::FlagsField -%>
-            yp_buffer_append_u32(buffer, node->flags >> <%= YARP::COMMON_FLAGS %>);
+            <%- when Prism::UInt32Field -%>
+            pm_buffer_append_u32(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            <%- when Prism::FlagsField -%>
+            pm_buffer_append_u32(buffer, node->flags >> <%= Prism::COMMON_FLAGS %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
             <%- end -%>
             <%- if node.needs_serialized_length? -%>
             // serialize length
-            uint32_t length = yp_sizet_to_u32(buffer->length - offset - sizeof(uint32_t));
+            uint32_t length = pm_sizet_to_u32(buffer->length - offset - sizeof(uint32_t));
             memcpy(buffer->value + length_offset, &length, sizeof(uint32_t));
             <%- end -%>
             break;
@@ -127,83 +127,83 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
 }
 
 static void
-yp_serialize_comment(yp_parser_t *parser, yp_comment_t *comment, yp_buffer_t *buffer) {
+pm_serialize_comment(pm_parser_t *parser, pm_comment_t *comment, pm_buffer_t *buffer) {
     // serialize type
-    yp_buffer_append_u8(buffer, (uint8_t) comment->type);
+    pm_buffer_append_u8(buffer, (uint8_t) comment->type);
 
     // serialize location
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(comment->start - parser->start));
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(comment->end - comment->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(comment->start - parser->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(comment->end - comment->start));
 }
 
 static void
-yp_serialize_comment_list(yp_parser_t *parser, yp_list_t *list, yp_buffer_t *buffer) {
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(list)));
+pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
+    pm_buffer_append_u32(buffer, pm_sizet_to_u32(pm_list_size(list)));
 
-    yp_comment_t *comment;
-    for (comment = (yp_comment_t *) list->head; comment != NULL; comment = (yp_comment_t *) comment->node.next) {
-        yp_serialize_comment(parser, comment, buffer);
+    pm_comment_t *comment;
+    for (comment = (pm_comment_t *) list->head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
+        pm_serialize_comment(parser, comment, buffer);
     }
 }
 
 static void
-yp_serialize_diagnostic(yp_parser_t *parser, yp_diagnostic_t *diagnostic, yp_buffer_t *buffer) {
+pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
     // serialize message
     size_t message_length = strlen(diagnostic->message);
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(message_length));
-    yp_buffer_append_str(buffer, diagnostic->message, message_length);
+    pm_buffer_append_u32(buffer, pm_sizet_to_u32(message_length));
+    pm_buffer_append_str(buffer, diagnostic->message, message_length);
 
     // serialize location
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(diagnostic->start - parser->start));
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(diagnostic->end - diagnostic->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(diagnostic->start - parser->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(diagnostic->end - diagnostic->start));
 }
 
 static void
-yp_serialize_diagnostic_list(yp_parser_t *parser, yp_list_t *list, yp_buffer_t *buffer) {
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(list)));
+pm_serialize_diagnostic_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
+    pm_buffer_append_u32(buffer, pm_sizet_to_u32(pm_list_size(list)));
 
-    yp_diagnostic_t *diagnostic;
-    for (diagnostic = (yp_diagnostic_t *) list->head; diagnostic != NULL; diagnostic = (yp_diagnostic_t *) diagnostic->node.next) {
-        yp_serialize_diagnostic(parser, diagnostic, buffer);
+    pm_diagnostic_t *diagnostic;
+    for (diagnostic = (pm_diagnostic_t *) list->head; diagnostic != NULL; diagnostic = (pm_diagnostic_t *) diagnostic->node.next) {
+        pm_serialize_diagnostic(parser, diagnostic, buffer);
     }
 }
 
 static void
-yp_serialize_encoding(yp_encoding_t *encoding, yp_buffer_t *buffer) {
+pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
     size_t encoding_length = strlen(encoding->name);
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(encoding_length));
-    yp_buffer_append_str(buffer, encoding->name, encoding_length);
+    pm_buffer_append_u32(buffer, pm_sizet_to_u32(encoding_length));
+    pm_buffer_append_str(buffer, encoding->name, encoding_length);
 }
 
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
 void
-yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
-    yp_serialize_encoding(&parser->encoding, buffer);
-    yp_serialize_comment_list(parser, &parser->comment_list, buffer);
-    yp_serialize_diagnostic_list(parser, &parser->error_list, buffer);
-    yp_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
+pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+    pm_serialize_encoding(&parser->encoding, buffer);
+    pm_serialize_comment_list(parser, &parser->comment_list, buffer);
+    pm_serialize_diagnostic_list(parser, &parser->error_list, buffer);
+    pm_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
 
     // Here we're going to leave space for the offset of the constant pool in
     // the buffer.
     size_t offset = buffer->length;
-    yp_buffer_append_zeroes(buffer, 4);
+    pm_buffer_append_zeroes(buffer, 4);
 
     // Next, encode the length of the constant pool.
-    yp_buffer_append_u32(buffer, parser->constant_pool.size);
+    pm_buffer_append_u32(buffer, parser->constant_pool.size);
 
     // Now we're going to serialize the content of the node.
-    yp_serialize_node(parser, node, buffer);
+    pm_serialize_node(parser, node, buffer);
 
     // Now we're going to serialize the offset of the constant pool back where
     // we left space for it.
-    uint32_t length = yp_sizet_to_u32(buffer->length);
+    uint32_t length = pm_sizet_to_u32(buffer->length);
     memcpy(buffer->value + offset, &length, sizeof(uint32_t));
 
     // Now we're going to serialize the constant pool.
     offset = buffer->length;
-    yp_buffer_append_zeroes(buffer, parser->constant_pool.size * 8);
+    pm_buffer_append_zeroes(buffer, parser->constant_pool.size * 8);
 
-    yp_constant_t *constant;
+    pm_constant_t *constant;
     for (uint32_t index = 0; index < parser->constant_pool.capacity; index++) {
         constant = &parser->constant_pool.constants[index];
 
@@ -218,82 +218,82 @@ yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) 
                 // effectively in place of the source offset, we have a buffer
                 // offset. We will add a leading 1 to indicate that this is a
                 // buffer offset.
-                uint32_t content_offset = yp_sizet_to_u32(buffer->length);
+                uint32_t content_offset = pm_sizet_to_u32(buffer->length);
                 uint32_t owned_mask = (uint32_t) (1 << 31);
 
                 assert(content_offset < owned_mask);
                 content_offset |= owned_mask;
 
                 memcpy(buffer->value + buffer_offset, &content_offset, 4);
-                yp_buffer_append_bytes(buffer, constant->start, constant->length);
+                pm_buffer_append_bytes(buffer, constant->start, constant->length);
             } else {
                 // Since this is a shared constant, we are going to write its
                 // source offset directly into the buffer.
-                uint32_t source_offset = yp_ptrdifft_to_u32(constant->start - parser->start);
+                uint32_t source_offset = pm_ptrdifft_to_u32(constant->start - parser->start);
                 memcpy(buffer->value + buffer_offset, &source_offset, 4);
             }
 
             // Now we can write the length of the constant into the buffer.
-            uint32_t constant_length = yp_sizet_to_u32(constant->length);
+            uint32_t constant_length = pm_sizet_to_u32(constant->length);
             memcpy(buffer->value + buffer_offset + 4, &constant_length, 4);
         }
     }
 }
 
 static void
-serialize_token(void *data, yp_parser_t *parser, yp_token_t *token) {
-    yp_buffer_t *buffer = (yp_buffer_t *) data;
+serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
+    pm_buffer_t *buffer = (pm_buffer_t *) data;
 
-    yp_buffer_append_u32(buffer, token->type);
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(token->start - parser->start));
-    yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(token->end - token->start));
-    yp_buffer_append_u32(buffer, parser->lex_state);
+    pm_buffer_append_u32(buffer, token->type);
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(token->start - parser->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(token->end - token->start));
+    pm_buffer_append_u32(buffer, parser->lex_state);
 }
 
-YP_EXPORTED_FUNCTION void
-yp_lex_serialize(const uint8_t *source, size_t size, const char *filepath, yp_buffer_t *buffer) {
-    yp_parser_t parser;
-    yp_parser_init(&parser, source, size, filepath);
+PRISM_EXPORTED_FUNCTION void
+pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, source, size, filepath);
 
-    yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
+    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) buffer,
         .callback = serialize_token,
     };
 
     parser.lex_callback = &lex_callback;
-    yp_node_t *node = yp_parse(&parser);
+    pm_node_t *node = pm_parse(&parser);
 
     // Append 0 to mark end of tokens
-    yp_buffer_append_u8(buffer, 0);
+    pm_buffer_append_u8(buffer, 0);
 
-    yp_serialize_encoding(&parser.encoding, buffer);
-    yp_serialize_comment_list(&parser, &parser.comment_list, buffer);
-    yp_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
-    yp_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
+    pm_serialize_encoding(&parser.encoding, buffer);
+    pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
+    pm_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
+    pm_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
 
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
 }
 
 // Parse and serialize both the AST and the tokens represented by the given
 // source to the given buffer.
-YP_EXPORTED_FUNCTION void
-yp_parse_lex_serialize(const uint8_t *source, size_t size, yp_buffer_t *buffer, const char *metadata) {
-    yp_parser_t parser;
-    yp_parser_init(&parser, source, size, NULL);
-    if (metadata) yp_parser_metadata(&parser, metadata);
+PRISM_EXPORTED_FUNCTION void
+pm_parse_lex_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, source, size, NULL);
+    if (metadata) pm_parser_metadata(&parser, metadata);
 
-    yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
+    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) buffer,
         .callback = serialize_token,
     };
 
     parser.lex_callback = &lex_callback;
-    yp_node_t *node = yp_parse(&parser);
+    pm_node_t *node = pm_parse(&parser);
 
-    yp_buffer_append_u8(buffer, 0);
-    yp_serialize(&parser, node, buffer);
+    pm_buffer_append_u8(buffer, 0);
+    pm_serialize(&parser, node, buffer);
 
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
 }

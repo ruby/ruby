@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class CommentsTest < TestCase
     def test_comment_inline
       source = "# comment"
@@ -67,7 +67,7 @@ module YARP
         end # Foo end
       RUBY
 
-      result = YARP.parse(source)
+      result = Prism.parse(source)
       result.attach_comments!
       tree = result.value
       class_node = tree.statements.body.first
@@ -92,7 +92,7 @@ module YARP
         end_column: end_column
       }
 
-      result = YARP.parse(source)
+      result = Prism.parse(source)
       assert result.errors.empty?, result.errors.map(&:message).join("\n")
       assert_equal type, result.comments.first.type
 

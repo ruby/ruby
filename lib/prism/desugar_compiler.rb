@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   # DesugarCompiler is a compiler that desugars Ruby code into a more primitive
   # form. This is useful for consumers that want to deal with fewer node types.
   class DesugarCompiler < MutationCompiler

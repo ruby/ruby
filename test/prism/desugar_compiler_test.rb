@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class DesugarCompilerTest < TestCase
     def test_and_write
       assert_desugars("(AndNode (ClassVariableReadNode) (ClassVariableWriteNode (CallNode)))", "@@foo &&= bar")
@@ -72,14 +72,14 @@ module YARP
     end
 
     def assert_desugars(expected, source)
-      ast = YARP.parse(source).value.accept(DesugarCompiler.new)
+      ast = Prism.parse(source).value.accept(DesugarCompiler.new)
       assert_equal expected, ast_inspect(ast.statements.body.last)
 
       ast.accept(EnsureEveryNodeOnceInAST.new)
     end
 
     def assert_not_desugared(source, reason)
-      ast = YARP.parse(source).value
+      ast = Prism.parse(source).value
       assert_equal_nodes(ast, ast.accept(DesugarCompiler.new))
     end
   end

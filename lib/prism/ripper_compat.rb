@@ -2,14 +2,14 @@
 
 require "ripper"
 
-module YARP
-  # This class is meant to provide a compatibility layer between YARP and
+module Prism
+  # This class is meant to provide a compatibility layer between prism and
   # Ripper. It functions by parsing the entire tree first and then walking it
   # and executing each of the Ripper callbacks as it goes.
   #
   # This class is going to necessarily be slower than the native Ripper API. It
-  # is meant as a stopgap until developers migrate to using YARP. It is also
-  # meant as a test harness for the YARP parser.
+  # is meant as a stopgap until developers migrate to using prism. It is also
+  # meant as a test harness for the prism parser.
   class RipperCompat
     # This class mirrors the ::Ripper::SexpBuilder subclass of ::Ripper that
     # returns the arrays of [type, *children].
@@ -156,7 +156,7 @@ module YARP
     end
 
     def result
-      @result ||= YARP.parse(source)
+      @result ||= Prism.parse(source)
     end
 
     def _dispatch0; end

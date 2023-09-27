@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class VersionTest < TestCase
     def test_version_is_set
       refute_nil VERSION

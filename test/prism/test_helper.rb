@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "yarp"
+require "prism"
 require "ripper"
 require "pp"
 require "test/unit"
 require "tempfile"
 
-puts "Using YARP backend: #{YARP::BACKEND}" if ENV["YARP_FFI_BACKEND"]
+puts "Using prism backend: #{Prism::BACKEND}" if ENV["PRISM_FFI_BACKEND"]
 
 # It is useful to have a diff even if the strings to compare are big
 # However, ruby/ruby does not have a version of Test::Unit with access to
@@ -15,7 +15,7 @@ if defined?(Test::Unit::Assertions::AssertionMessage)
   Test::Unit::Assertions::AssertionMessage.max_diff_target_string_size = 5000
 end
 
-module YARP
+module Prism
   class TestCase < ::Test::Unit::TestCase
     private
 

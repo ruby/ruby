@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 int
-yp_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length) {
+pm_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length) {
     size_t offset = 0;
     int difference = 0;
 

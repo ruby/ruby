@@ -1,7 +1,7 @@
-#ifndef YARP_DEFINES_H
-#define YARP_DEFINES_H
+#ifndef PRISM_DEFINES_H
+#define PRISM_DEFINES_H
 
-// This file should be included first by any *.h or *.c in YARP
+// This file should be included first by any *.h or *.c in prism
 
 #include <ctype.h>
 #include <stdarg.h>
@@ -10,24 +10,24 @@
 #include <stdio.h>
 #include <string.h>
 
-// YP_EXPORTED_FUNCTION
-#ifndef YP_EXPORTED_FUNCTION
-#   ifdef YP_EXPORT_SYMBOLS
+// PRISM_EXPORTED_FUNCTION
+#ifndef PRISM_EXPORTED_FUNCTION
+#   ifdef PRISM_EXPORT_SYMBOLS
 #       ifdef _WIN32
-#          define YP_EXPORTED_FUNCTION __declspec(dllexport) extern
+#          define PRISM_EXPORTED_FUNCTION __declspec(dllexport) extern
 #       else
-#          define YP_EXPORTED_FUNCTION __attribute__((__visibility__("default"))) extern
+#          define PRISM_EXPORTED_FUNCTION __attribute__((__visibility__("default"))) extern
 #       endif
 #   else
-#       define YP_EXPORTED_FUNCTION
+#       define PRISM_EXPORTED_FUNCTION
 #   endif
 #endif
 
-// YP_ATTRIBUTE_UNUSED
+// PRISM_ATTRIBUTE_UNUSED
 #if defined(__GNUC__)
-#   define YP_ATTRIBUTE_UNUSED __attribute__((unused))
+#   define PRISM_ATTRIBUTE_UNUSED __attribute__((unused))
 #else
-#   define YP_ATTRIBUTE_UNUSED
+#   define PRISM_ATTRIBUTE_UNUSED
 #endif
 
 // inline
@@ -40,6 +40,6 @@
 #   define snprintf _snprintf
 #endif
 
-int yp_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length);
+int pm_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length);
 
 #endif

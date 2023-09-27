@@ -1,4 +1,4 @@
-#include "yarp/util/yp_string.h"
+#include "prism/util/pm_string.h"
 
 // The following headers are necessary to read files using demand paging.
 #ifdef _WIN32
@@ -12,11 +12,11 @@
 
 // Initialize a shared string that is based on initial input.
 void
-yp_string_shared_init(yp_string_t *string, const uint8_t *start, const uint8_t *end) {
+pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end) {
     assert(start <= end);
 
-    *string = (yp_string_t) {
-        .type = YP_STRING_SHARED,
+    *string = (pm_string_t) {
+        .type = PM_STRING_SHARED,
         .source = start,
         .length = (size_t) (end - start)
     };
@@ -24,9 +24,9 @@ yp_string_shared_init(yp_string_t *string, const uint8_t *start, const uint8_t *
 
 // Initialize an owned string that is responsible for freeing allocated memory.
 void
-yp_string_owned_init(yp_string_t *string, uint8_t *source, size_t length) {
-    *string = (yp_string_t) {
-        .type = YP_STRING_OWNED,
+pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) {
+    *string = (pm_string_t) {
+        .type = PM_STRING_OWNED,
         .source = source,
         .length = length
     };
@@ -34,18 +34,18 @@ yp_string_owned_init(yp_string_t *string, uint8_t *source, size_t length) {
 
 // Initialize a constant string that doesn't own its memory source.
 void
-yp_string_constant_init(yp_string_t *string, const char *source, size_t length) {
-    *string = (yp_string_t) {
-        .type = YP_STRING_CONSTANT,
+pm_string_constant_init(pm_string_t *string, const char *source, size_t length) {
+    *string = (pm_string_t) {
+        .type = PM_STRING_CONSTANT,
         .source = (const uint8_t *) source,
         .length = length
     };
 }
 
 static void
-yp_string_mapped_init_internal(yp_string_t *string, uint8_t *source, size_t length) {
-    *string = (yp_string_t) {
-        .type = YP_STRING_MAPPED,
+pm_string_mapped_init_internal(pm_string_t *string, uint8_t *source, size_t length) {
+    *string = (pm_string_t) {
+        .type = PM_STRING_MAPPED,
         .source = source,
         .length = length
     };
@@ -53,9 +53,9 @@ yp_string_mapped_init_internal(yp_string_t *string, uint8_t *source, size_t leng
 
 // Returns the memory size associated with the string.
 size_t
-yp_string_memsize(const yp_string_t *string) {
-    size_t size = sizeof(yp_string_t);
-    if (string->type == YP_STRING_OWNED) {
+pm_string_memsize(const pm_string_t *string) {
+    size_t size = sizeof(pm_string_t);
+    if (string->type == PM_STRING_OWNED) {
         size += string->length;
     }
     return size;
@@ -64,39 +64,39 @@ yp_string_memsize(const yp_string_t *string) {
 // Ensure the string is owned. If it is not, then reinitialize it as owned and
 // copy over the previous source.
 void
-yp_string_ensure_owned(yp_string_t *string) {
-    if (string->type == YP_STRING_OWNED) return;
+pm_string_ensure_owned(pm_string_t *string) {
+    if (string->type == PM_STRING_OWNED) return;
 
-    size_t length = yp_string_length(string);
-    const uint8_t *source = yp_string_source(string);
+    size_t length = pm_string_length(string);
+    const uint8_t *source = pm_string_source(string);
 
     uint8_t *memory = malloc(length);
     if (!memory) return;
 
-    yp_string_owned_init(string, memory, length);
+    pm_string_owned_init(string, memory, length);
     memcpy((void *) string->source, source, length);
 }
 
 // Returns the length associated with the string.
-YP_EXPORTED_FUNCTION size_t
-yp_string_length(const yp_string_t *string) {
+PRISM_EXPORTED_FUNCTION size_t
+pm_string_length(const pm_string_t *string) {
     return string->length;
 }
 
 // Returns the start pointer associated with the string.
-YP_EXPORTED_FUNCTION const uint8_t *
-yp_string_source(const yp_string_t *string) {
+PRISM_EXPORTED_FUNCTION const uint8_t *
+pm_string_source(const pm_string_t *string) {
     return string->source;
 }
 
 // Free the associated memory of the given string.
-YP_EXPORTED_FUNCTION void
-yp_string_free(yp_string_t *string) {
+PRISM_EXPORTED_FUNCTION void
+pm_string_free(pm_string_t *string) {
     void *memory = (void *) string->source;
 
-    if (string->type == YP_STRING_OWNED) {
+    if (string->type == PM_STRING_OWNED) {
         free(memory);
-    } else if (string->type == YP_STRING_MAPPED && string->length) {
+    } else if (string->type == PM_STRING_MAPPED && string->length) {
 #if defined(_WIN32)
         UnmapViewOfFile(memory);
 #else
@@ -106,7 +106,7 @@ yp_string_free(yp_string_t *string) {
 }
 
 bool
-yp_string_mapped_init(yp_string_t *string, const char *filepath) {
+pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
     HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -129,7 +129,7 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     if (file_size == 0) {
         CloseHandle(file);
         uint8_t empty[] = "";
-        yp_string_mapped_init_internal(string, empty, 0);
+        pm_string_mapped_init_internal(string, empty, 0);
         return true;
     }
 
@@ -151,7 +151,7 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
         return false;
     }
 
-    yp_string_mapped_init_internal(string, source, (size_t) file_size);
+    pm_string_mapped_init_internal(string, source, (size_t) file_size);
     return true;
 #else
     // Open the file for reading
@@ -176,7 +176,7 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     if (size == 0) {
         close(fd);
         uint8_t empty[] = "";
-        yp_string_mapped_init_internal(string, empty, 0);
+        pm_string_mapped_init_internal(string, empty, 0);
         return true;
     }
 
@@ -187,14 +187,14 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     }
 
     close(fd);
-    yp_string_mapped_init_internal(string, source, size);
+    pm_string_mapped_init_internal(string, source, size);
     return true;
 #endif
 }
 
-// Returns the size of the yp_string_t struct. This is necessary to allocate the
+// Returns the size of the pm_string_t struct. This is necessary to allocate the
 // correct amount of memory in the FFI backend.
-YP_EXPORTED_FUNCTION size_t
-yp_string_sizeof(void) {
-    return sizeof(yp_string_t);
+PRISM_EXPORTED_FUNCTION size_t
+pm_string_sizeof(void) {
+    return sizeof(pm_string_t);
 }

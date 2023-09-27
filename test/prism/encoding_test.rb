@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class EncodingTest < TestCase
     %w[
       ascii
@@ -39,27 +39,27 @@ module YARP
       CP1252
     ].each do |encoding|
       define_method "test_encoding_#{encoding}" do
-        result = YARP.parse("# encoding: #{encoding}\nident")
+        result = Prism.parse("# encoding: #{encoding}\nident")
         actual = result.value.statements.body.first.name.encoding
         assert_equal Encoding.find(encoding), actual
       end
     end
 
     def test_coding
-      result = YARP.parse("# coding: utf-8\nident")
+      result = Prism.parse("# coding: utf-8\nident")
       actual = result.value.statements.body.first.name.encoding
       assert_equal Encoding.find("utf-8"), actual
     end
 
     def test_coding_with_whitespace
-      result = YARP.parse("# coding \t \r  \v   :     \t \v    \r   ascii-8bit \nident")
+      result = Prism.parse("# coding \t \r  \v   :     \t \v    \r   ascii-8bit \nident")
       actual = result.value.statements.body.first.name.encoding
       assert_equal Encoding.find("ascii-8bit"), actual
     end
 
 
     def test_emacs_style
-      result = YARP.parse("# -*- coding: utf-8 -*-\nident")
+      result = Prism.parse("# -*- coding: utf-8 -*-\nident")
       actual = result.value.statements.body.first.name.encoding
       assert_equal Encoding.find("utf-8"), actual
     end
@@ -67,7 +67,7 @@ module YARP
     # This test may be a little confusing. Basically when we use our strpbrk, it
     # takes into account the encoding of the file.
     def test_strpbrk_multibyte
-      result = YARP.parse(<<~RUBY)
+      result = Prism.parse(<<~RUBY)
         # encoding: Shift_JIS
         %w[\x81\x5c]
       RUBY
@@ -86,19 +86,19 @@ module YARP
         utf-8-mac
         utf-8-*
       ].each do |encoding|
-        result = YARP.parse("# coding: #{encoding}\nident")
+        result = Prism.parse("# coding: #{encoding}\nident")
         actual = result.value.statements.body.first.name.encoding
         assert_equal Encoding.find("utf-8"), actual
       end
     end
 
     def test_first_lexed_token
-      encoding = YARP.lex("# encoding: ascii-8bit").value[0][0].value.encoding
+      encoding = Prism.lex("# encoding: ascii-8bit").value[0][0].value.encoding
       assert_equal Encoding.find("ascii-8bit"), encoding
     end
 
     def test_slice_encoding
-      slice = YARP.parse("# encoding: Shift_JIS\nア").value.slice
+      slice = Prism.parse("# encoding: Shift_JIS\nア").value.slice
       assert_equal (+"ア").force_encoding(Encoding::SHIFT_JIS), slice
       assert_equal Encoding::SHIFT_JIS, slice.encoding
     end

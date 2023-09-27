@@ -1,4 +1,4 @@
-module YARP
+module Prism
   # This represents a node in the tree. It is the parent class of all of the
   # various node types.
   class Node
@@ -35,7 +35,7 @@ module YARP
   <%= "#{node.comment.split("\n").map { |line| line.empty? ? "#" : "# #{line}" }.join("\n  ")}\n  " if node.comment %>class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>
     # attr_reader <%= field.name %>: <%= field.rbs_class %>
-    <%= "private " if field.is_a?(YARP::FlagsField) %>attr_reader :<%= field.name %>
+    <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
 
     <%- end -%>
     # def initialize: (<%= (node.fields.map { |field| "#{field.name}: #{field.rbs_class}" } + ["location: Location"]).join(", ") %>) -> void
@@ -60,9 +60,9 @@ module YARP
     def set_newline_flag(newline_marked)
       <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
       <%- case field -%>
-      <%- when YARP::NodeField, YARP::OptionalNodeField -%>
+      <%- when Prism::NodeField, Prism::OptionalNodeField -%>
       <%= field.name %>.set_newline_flag(newline_marked)
-      <%- when YARP::NodeListField -%>
+      <%- when Prism::NodeListField -%>
       first = <%= field.name %>.first
       first.set_newline_flag(newline_marked) if first
       <%- else raise field.class.name -%>
@@ -74,23 +74,23 @@ module YARP
     def child_nodes
       [<%= node.fields.map { |field|
         case field
-        when YARP::NodeField, YARP::OptionalNodeField then field.name
-        when YARP::NodeListField then "*#{field.name}"
+        when Prism::NodeField, Prism::OptionalNodeField then field.name
+        when Prism::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
     end
 
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
-      <%- if node.fields.any? { |field| field.is_a?(YARP::OptionalNodeField) } -%>
+      <%- if node.fields.any? { |field| field.is_a?(Prism::OptionalNodeField) } -%>
       compact = []
       <%- node.fields.each do |field| -%>
       <%- case field -%>
-      <%- when YARP::NodeField -%>
+      <%- when Prism::NodeField -%>
       compact << <%= field.name %>
-      <%- when YARP::OptionalNodeField -%>
+      <%- when Prism::OptionalNodeField -%>
       compact << <%= field.name %> if <%= field.name %>
-      <%- when YARP::NodeListField -%>
+      <%- when Prism::NodeListField -%>
       compact.concat(<%= field.name %>)
       <%- end -%>
       <%- end -%>
@@ -98,8 +98,8 @@ module YARP
       <%- else -%>
       [<%= node.fields.map { |field|
         case field
-        when YARP::NodeField then field.name
-        when YARP::NodeListField then "*#{field.name}"
+        when Prism::NodeField then field.name
+        when Prism::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
       <%- end -%>
@@ -109,8 +109,8 @@ module YARP
     def comment_targets
       [<%= node.fields.map { |field|
         case field
-        when YARP::NodeField, YARP::LocationField then field.name
-        when YARP::OptionalNodeField, YARP::NodeListField, YARP::OptionalLocationField then "*#{field.name}"
+        when Prism::NodeField, Prism::LocationField then field.name
+        when Prism::OptionalNodeField, Prism::NodeListField, Prism::OptionalLocationField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
     end
@@ -133,7 +133,7 @@ module YARP
     end
     <%- node.fields.each do |field| -%>
     <%- case field -%>
-    <%- when YARP::LocationField -%>
+    <%- when Prism::LocationField -%>
     <%- raise unless field.name.end_with?("_loc") -%>
     <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
 
@@ -141,7 +141,7 @@ module YARP
     def <%= field.name.delete_suffix("_loc") %>
       <%= field.name %>.slice
     end
-    <%- when YARP::OptionalLocationField -%>
+    <%- when Prism::OptionalLocationField -%>
     <%- raise unless field.name.end_with?("_loc") -%>
     <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
 
@@ -149,7 +149,7 @@ module YARP
     def <%= field.name.delete_suffix("_loc") %>
       <%= field.name %>&.slice
     end
-    <%- when YARP::FlagsField -%>
+    <%- when Prism::FlagsField -%>
     <%- flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag }.values.each do |value| -%>
 
     # def <%= value.name.downcase %>?: () -> bool
@@ -165,27 +165,27 @@ module YARP
       <%- node.fields.each_with_index do |field, index| -%>
       <%- pointer, preadd = index == node.fields.length - 1 ? ["└── ", "    "] : ["├── ", "│   "] -%>
       <%- case field -%>
-      <%- when YARP::NodeListField -%>
+      <%- when Prism::NodeListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.list("#{inspector.prefix}<%= preadd %>", <%= field.name %>)}"
-      <%- when YARP::ConstantListField -%>
+      <%- when Prism::ConstantListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      <%- when YARP::NodeField -%>
+      <%- when Prism::NodeField -%>
       inspector << "<%= pointer %><%= field.name %>:\n"
       inspector << inspector.child_node(<%= field.name %>, "<%= preadd %>")
-      <%- when YARP::OptionalNodeField -%>
+      <%- when Prism::OptionalNodeField -%>
       if (<%= field.name %> = self.<%= field.name %>).nil?
         inspector << "<%= pointer %><%= field.name %>: ∅\n"
       else
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when YARP::ConstantField, YARP::OptionalConstantField, YARP::StringField, YARP::UInt32Field -%>
+      <%- when Prism::ConstantField, Prism::OptionalConstantField, Prism::StringField, Prism::UInt32Field -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
-      <%- when YARP::FlagsField -%>
+      <%- when Prism::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
       flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact
       inspector << "<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n"
-      <%- when YARP::LocationField, YARP::OptionalLocationField -%>
+      <%- when Prism::LocationField, Prism::OptionalLocationField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.location(<%= field.name %>)}\n"
       <%- else -%>
       <%- raise -%>

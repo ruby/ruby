@@ -1,16 +1,16 @@
 // Note that the UTF-8 decoding code is based on Bjoern Hoehrmann's UTF-8 DFA
 // decoder. See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
 
-#include "yarp/enc/yp_encoding.h"
+#include "prism/enc/pm_encoding.h"
 
-typedef uint32_t yp_unicode_codepoint_t;
+typedef uint32_t pm_unicode_codepoint_t;
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding unicode codepoint. Note that
 // this table is different from other encodings where we used a lookup table
 // because the indices of those tables are the byte representations, not the
 // codepoints themselves.
-const uint8_t yp_encoding_unicode_table[256] = {
+const uint8_t pm_encoding_unicode_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -31,7 +31,7 @@ const uint8_t yp_encoding_unicode_table[256] = {
 };
 
 #define UNICODE_ALPHA_CODEPOINTS_LENGTH 1450
-static const yp_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
+static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
     0x2E0, 0x2E4,
@@ -760,7 +760,7 @@ static const yp_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
 };
 
 #define UNICODE_ALNUM_CODEPOINTS_LENGTH 1528
-static const yp_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
+static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
     0x2E0, 0x2E4,
@@ -1528,7 +1528,7 @@ static const yp_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
 };
 
 #define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1296
-static const yp_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
+static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
     0x100, 0x100,
     0x102, 0x102,
     0x104, 0x104,
@@ -2180,7 +2180,7 @@ static const yp_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
 };
 
 static bool
-yp_unicode_codepoint_match(yp_unicode_codepoint_t codepoint, const yp_unicode_codepoint_t *codepoints, size_t size) {
+pm_unicode_codepoint_match(pm_unicode_codepoint_t codepoint, const pm_unicode_codepoint_t *codepoints, size_t size) {
     size_t start = 0;
     size_t end = size;
 
@@ -2202,7 +2202,7 @@ yp_unicode_codepoint_match(yp_unicode_codepoint_t codepoint, const yp_unicode_co
     return false;
 }
 
-static const uint8_t yp_utf_8_dfa[] = {
+static const uint8_t pm_utf_8_dfa[] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 40..5f
@@ -2219,8 +2219,8 @@ static const uint8_t yp_utf_8_dfa[] = {
     1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
 
-static yp_unicode_codepoint_t
-yp_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
+static pm_unicode_codepoint_t
+pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
     assert(n >= 1);
     size_t maximum = (size_t) n;
 
@@ -2229,16 +2229,16 @@ yp_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
 
     for (size_t index = 0; index < 4 && index < maximum; index++) {
         uint32_t byte = b[index];
-        uint32_t type = yp_utf_8_dfa[byte];
+        uint32_t type = pm_utf_8_dfa[byte];
 
         codepoint = (state != 0) ?
             (byte & 0x3fu) | (codepoint << 6) :
             (0xffu >> type) & (byte);
 
-        state = yp_utf_8_dfa[256 + (state * 16) + type];
+        state = pm_utf_8_dfa[256 + (state * 16) + type];
         if (!state) {
             *width = index + 1;
-            return (yp_unicode_codepoint_t) codepoint;
+            return (pm_unicode_codepoint_t) codepoint;
         }
     }
 
@@ -2247,57 +2247,57 @@ yp_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
 }
 
 static size_t
-yp_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
+pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
     size_t width;
-    yp_utf_8_codepoint(b, n, &width);
+    pm_utf_8_codepoint(b, n, &width);
     return width;
 }
 
 size_t
-yp_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
-        return (yp_encoding_unicode_table[*b] & YP_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
+        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
 
     size_t width;
-    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(b, n, &width);
+    pm_unicode_codepoint_t codepoint = pm_utf_8_codepoint(b, n, &width);
 
     if (codepoint <= 0xFF) {
-        return (yp_encoding_unicode_table[(uint8_t) codepoint] & YP_ENCODING_ALPHABETIC_BIT) ? width : 0;
+        return (pm_encoding_unicode_table[(uint8_t) codepoint] & PRISM_ENCODING_ALPHABETIC_BIT) ? width : 0;
     } else {
-        return yp_unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
+        return pm_unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
 size_t
-yp_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
-        return (yp_encoding_unicode_table[*b] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
+        return (pm_encoding_unicode_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
 
     size_t width;
-    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(b, n, &width);
+    pm_unicode_codepoint_t codepoint = pm_utf_8_codepoint(b, n, &width);
 
     if (codepoint <= 0xFF) {
-        return (yp_encoding_unicode_table[(uint8_t) codepoint] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
+        return (pm_encoding_unicode_table[(uint8_t) codepoint] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
     } else {
-        return yp_unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
+        return pm_unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
 static bool
-yp_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
-        return (yp_encoding_unicode_table[*b] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
+        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     }
 
     size_t width;
-    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(b, n, &width);
+    pm_unicode_codepoint_t codepoint = pm_utf_8_codepoint(b, n, &width);
 
     if (codepoint <= 0xFF) {
-        return (yp_encoding_unicode_table[(uint8_t) codepoint] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
+        return (pm_encoding_unicode_table[(uint8_t) codepoint] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     } else {
-        return yp_unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
+        return pm_unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
     }
 }
 
@@ -2305,20 +2305,20 @@ yp_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 #undef UNICODE_ALNUM_CODEPOINTS_LENGTH
 #undef UNICODE_ISUPPER_CODEPOINTS_LENGTH
 
-yp_encoding_t yp_encoding_utf_8 = {
+pm_encoding_t pm_encoding_utf_8 = {
     .name = "utf-8",
-    .char_width = yp_encoding_utf_8_char_width,
-    .alnum_char = yp_encoding_utf_8_alnum_char,
-    .alpha_char = yp_encoding_utf_8_alpha_char,
-    .isupper_char = yp_encoding_utf_8_isupper_char,
+    .char_width = pm_encoding_utf_8_char_width,
+    .alnum_char = pm_encoding_utf_8_alnum_char,
+    .alpha_char = pm_encoding_utf_8_alpha_char,
+    .isupper_char = pm_encoding_utf_8_isupper_char,
     .multibyte = true
 };
 
-yp_encoding_t yp_encoding_utf8_mac = {
+pm_encoding_t pm_encoding_utf8_mac = {
     .name = "utf8-mac",
-    .char_width = yp_encoding_utf_8_char_width,
-    .alnum_char = yp_encoding_utf_8_alnum_char,
-    .alpha_char = yp_encoding_utf_8_alpha_char,
-    .isupper_char = yp_encoding_utf_8_isupper_char,
+    .char_width = pm_encoding_utf_8_char_width,
+    .alnum_char = pm_encoding_utf_8_alnum_char,
+    .alpha_char = pm_encoding_utf_8_alpha_char,
+    .isupper_char = pm_encoding_utf_8_isupper_char,
     .multibyte = true
 };

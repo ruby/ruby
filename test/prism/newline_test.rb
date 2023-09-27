@@ -4,7 +4,7 @@ require_relative "test_helper"
 
 return unless defined?(RubyVM::InstructionSequence)
 
-module YARP
+module Prism
   class NewlineTest < TestCase
     base = File.dirname(__dir__)
     Dir["{lib,test}/**/*.rb", base: base].each do |relative|
@@ -20,9 +20,9 @@ module YARP
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
       expected = rubyvm_lines(source)
 
-      result = YARP.parse_file(filepath)
+      result = Prism.parse_file(filepath)
       assert_empty result.errors
-      actual = yarp_lines(result)
+      actual = prism_lines(result)
 
       source.each_line.with_index(1) do |line, line_number|
         # Lines like `while (foo = bar)` result in two line flags in the
@@ -74,7 +74,7 @@ module YARP
       lines.sort
     end
 
-    def yarp_lines(result)
+    def prism_lines(result)
       result.mark_newlines!
 
       queue = [result.value]

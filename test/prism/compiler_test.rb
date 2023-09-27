@@ -2,9 +2,9 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class CompilerTest < TestCase
-    class SExpressions < YARP::Compiler
+    class SExpressions < Prism::Compiler
       def visit_arguments_node(node)
         [:arguments, super]
       end
@@ -24,7 +24,7 @@ module YARP
 
     def test_compiler
       expected = [:program, [[[:call, [[:integer], [:arguments, [[:integer]]]]]]]]
-      assert_equal expected, YARP.parse("1 + 2").value.accept(SExpressions.new)
+      assert_equal expected, Prism.parse("1 + 2").value.accept(SExpressions.new)
     end
   end
 end

@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class ErrorsTest < TestCase
     include DSL
 
@@ -1175,7 +1175,7 @@ module YARP
     end
 
     def test_invalid_message_name
-      result = YARP.parse("+.@foo,+=foo")
+      result = Prism.parse("+.@foo,+=foo")
       assert_equal "", result.value.statements.body.first.write_name
     end
 
@@ -1354,7 +1354,7 @@ module YARP
       # Ripper behaves differently on JRuby/TruffleRuby, so only check this on CRuby
       assert_nil Ripper.sexp_raw(source) if compare_ripper
 
-      result = YARP.parse(source)
+      result = Prism.parse(source)
       node = result.value.statements.body.last
 
       assert_equal_nodes(expected, node, compare_location: false)
@@ -1363,12 +1363,12 @@ module YARP
 
     def assert_error_messages(source, errors, compare_ripper: RUBY_ENGINE == "ruby")
       assert_nil Ripper.sexp_raw(source) if compare_ripper
-      result = YARP.parse(source)
+      result = Prism.parse(source)
       assert_equal(errors, result.errors.map(&:message))
     end
 
     def expression(source)
-      YARP.parse(source).value.statements.body.last
+      Prism.parse(source).value.statements.body.last
     end
   end
 end

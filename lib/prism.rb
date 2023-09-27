@@ -1,25 +1,25 @@
 # frozen_string_literal: true
 
-module YARP
-  # There are many files in YARP that are templated to handle every node type,
+module Prism
+  # There are many files in prism that are templated to handle every node type,
   # which means the files can end up being quite large. We autoload them to make
   # our require speed faster since consuming libraries are unlikely to use all
   # of these features.
-  autoload :BasicVisitor, "yarp/visitor"
-  autoload :Compiler, "yarp/compiler"
-  autoload :Debug, "yarp/debug"
-  autoload :DesugarCompiler, "yarp/desugar_compiler"
-  autoload :Dispatcher, "yarp/dispatcher"
-  autoload :DSL, "yarp/dsl"
-  autoload :LexCompat, "yarp/lex_compat"
-  autoload :LexRipper, "yarp/lex_compat"
-  autoload :MutationCompiler, "yarp/mutation_compiler"
-  autoload :NodeInspector, "yarp/node_inspector"
-  autoload :RipperCompat, "yarp/ripper_compat"
-  autoload :Pack, "yarp/pack"
-  autoload :Pattern, "yarp/pattern"
-  autoload :Serialize, "yarp/serialize"
-  autoload :Visitor, "yarp/visitor"
+  autoload :BasicVisitor, "prism/visitor"
+  autoload :Compiler, "prism/compiler"
+  autoload :Debug, "prism/debug"
+  autoload :DesugarCompiler, "prism/desugar_compiler"
+  autoload :Dispatcher, "prism/dispatcher"
+  autoload :DSL, "prism/dsl"
+  autoload :LexCompat, "prism/lex_compat"
+  autoload :LexRipper, "prism/lex_compat"
+  autoload :MutationCompiler, "prism/mutation_compiler"
+  autoload :NodeInspector, "prism/node_inspector"
+  autoload :RipperCompat, "prism/ripper_compat"
+  autoload :Pack, "prism/pack"
+  autoload :Pattern, "prism/pattern"
+  autoload :Serialize, "prism/serialize"
+  autoload :Visitor, "prism/visitor"
 
   # Some of these constants are not meant to be exposed, so marking them as
   # private here.
@@ -47,18 +47,18 @@ module YARP
   end
 end
 
-require_relative "yarp/node"
-require_relative "yarp/node_ext"
-require_relative "yarp/parse_result"
-require_relative "yarp/parse_result/comments"
-require_relative "yarp/parse_result/newlines"
+require_relative "prism/node"
+require_relative "prism/node_ext"
+require_relative "prism/parse_result"
+require_relative "prism/parse_result/comments"
+require_relative "prism/parse_result/newlines"
 
-# This is a Ruby implementation of the YARP parser. If we're running on CRuby
-# and we haven't explicitly set the YARP_FFI_BACKEND environment variable, then
+# This is a Ruby implementation of the prism parser. If we're running on CRuby
+# and we haven't explicitly set the PRISM_FFI_BACKEND environment variable, then
 # it's going to require the built library. Otherwise, it's going to require a
 # module that uses FFI to call into the library.
-if RUBY_ENGINE == "ruby" and !ENV["YARP_FFI_BACKEND"]
-  require "yarp/yarp"
+if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
+  require "prism/prism"
 else
-  require_relative "yarp/ffi"
+  require_relative "prism/ffi"
 end

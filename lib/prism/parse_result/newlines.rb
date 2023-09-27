@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   class ParseResult
     # The :line tracepoint event gets fired whenever the Ruby VM encounters an
     # expression on a new line. The types of expressions that can trigger this

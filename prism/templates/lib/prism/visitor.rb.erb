@@ -1,4 +1,4 @@
-module YARP
+module Prism
   # A class that knows how to walk down the tree. None of the individual visit
   # methods are implemented on this visitor, so it forces the consumer to
   # implement each one that they need. For a default implementation that
@@ -25,7 +25,7 @@ module YARP
   # For example, to find all of the method calls that call the `foo` method, you
   # could write:
   #
-  #     class FooCalls < YARP::Visitor
+  #     class FooCalls < Prism::Visitor
   #       def visit_call_node(node)
   #         if node.name == "foo"
   #           # Do something with the node

@@ -1,4 +1,4 @@
-module YARP
+module Prism
   # A compiler is a visitor that returns the value of each node as it visits.
   # This is as opposed to a visitor which will only walk the tree. This can be
   # useful when you are trying to compile a tree into a different format.
@@ -6,14 +6,14 @@ module YARP
   # For example, to build a representation of the tree as s-expressions, you
   # could write:
   #
-  #     class SExpressions < YARP::Compiler
+  #     class SExpressions < Prism::Compiler
   #       def visit_arguments_node(node) = [:arguments, super]
   #       def visit_call_node(node) = [:call, super]
   #       def visit_integer_node(node) = [:integer]
   #       def visit_program_node(node) = [:program, super]
   #     end
   #
-  #     YARP.parse("1 + 2").value.accept(SExpressions.new)
+  #     Prism.parse("1 + 2").value.accept(SExpressions.new)
   #     # => [:program, [[[:call, [[:integer], [:arguments, [[:integer]]]]]]]]
   #
   class Compiler

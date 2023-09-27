@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class LocationTest < TestCase
     def test_AliasGlobalVariableNode
       assert_location(AliasGlobalVariableNode, "alias $foo $bar")
@@ -839,7 +839,7 @@ module YARP
     end
 
     def test_all_tested
-      expected = YARP.constants.grep(/.Node$/).sort - %i[MissingNode ProgramNode]
+      expected = Prism.constants.grep(/.Node$/).sort - %i[MissingNode ProgramNode]
       actual = LocationTest.instance_methods(false).grep(/.Node$/).map { |name| name[5..].to_sym }.sort
       assert_equal expected, actual
     end
@@ -847,7 +847,7 @@ module YARP
     private
 
     def assert_location(kind, source, expected = 0...source.length)
-      result = YARP.parse(source)
+      result = Prism.parse(source)
       assert_equal [], result.comments
       assert_equal [], result.errors
 

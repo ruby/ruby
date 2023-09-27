@@ -2,13 +2,13 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class HeredocDedentTest < TestCase
     filepath = File.expand_path("fixtures/tilde_heredocs.txt", __dir__)
 
     File.read(filepath).split(/(?=\n)\n(?=<)/).each_with_index do |heredoc, index|
       define_method "test_heredoc_#{index}" do
-        node = YARP.parse(heredoc).value.statements.body.first
+        node = Prism.parse(heredoc).value.statements.body.first
         if node.is_a? StringNode
           actual = node.unescaped
         else

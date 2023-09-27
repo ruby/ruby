@@ -1,4 +1,4 @@
-module YARP
+module Prism
   # The dispatcher class fires events for nodes that are found while walking an
   # AST to all registered listeners. It's useful for performing different types
   # of analysis on the AST while only having to walk the tree once.
@@ -19,7 +19,7 @@ module YARP
   #
   # Then, you can walk any number of trees and dispatch events to the listeners:
   #
-  #     result = YARP.parse("001 + 002 + 003")
+  #     result = Prism.parse("001 + 002 + 003")
   #     dispatcher.dispatch(result.value)
   #
   # Optionally, you can also use `#dispatch_once` to dispatch enter and leave

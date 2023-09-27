@@ -2,9 +2,9 @@
 
 require_relative "test_helper"
 
-return if YARP::BACKEND == :FFI
+return if Prism::BACKEND == :FFI
 
-module YARP
+module Prism
   class RegexpTest < TestCase
     ##############################################################################
     # These tests test the actual use case of extracting named capture groups
@@ -236,7 +236,7 @@ module YARP
     def options(flags)
       options =
         ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
-          YARP.parse(source).value.statements.body.first.options
+          Prism.parse(source).value.statements.body.first.options
         end
 
       # Check that we get the same set of options from both regular expressions
