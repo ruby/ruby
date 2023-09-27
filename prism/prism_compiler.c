@@ -1594,6 +1594,32 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
           ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
           return;
       }
+      case PM_MATCH_LAST_LINE_NODE: {
+          if (!popped) {
+              pm_match_last_line_node_t *regular_expression_node = (pm_match_last_line_node_t *) node;
+              VALUE regex_str = parse_string(&regular_expression_node->unescaped);
+              int flags = 0;
+
+              if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
+                  flags |= ONIG_OPTION_IGNORECASE;
+              }
+
+              if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) {
+                  flags |= ONIG_OPTION_MULTILINE;
+              }
+
+              if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) {
+                  flags |= ONIG_OPTION_EXTEND;
+              }
+
+              VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), flags);
+              ADD_INSN1(ret, &dummy_line_node, putobject, regex);
+              ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(0), INT2FIX(0));
+              ADD_SEND(ret, &dummy_line_node, idEqTilde, INT2NUM(1));
+          }
+
+          return;
+      }
       case PM_MISSING_NODE: {
           rb_bug("A pm_missing_node_t should not exist in prism's AST.");
           return;

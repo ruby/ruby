@@ -37,6 +37,17 @@ module Prism
       test_prism_eval("010")
     end
 
+    def test_MatchLastLineNode
+      test_prism_eval("if /foo/; end")
+      test_prism_eval("if /foo/i; end")
+      test_prism_eval("if /foo/x; end")
+      test_prism_eval("if /foo/m; end")
+      test_prism_eval("if /foo/im; end")
+      test_prism_eval("if /foo/mx; end")
+      test_prism_eval("if /foo/xi; end")
+      test_prism_eval("if /foo/ixm; end")
+    end
+
     def test_NilNode
       test_prism_eval("nil")
     end
