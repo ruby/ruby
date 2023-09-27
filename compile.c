@@ -874,12 +874,9 @@ rb_iseq_compile_prism_node(rb_iseq_t * iseq, const pm_node_t *node, pm_parser_t 
     ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
     rb_encoding *encoding = rb_enc_find(parser->encoding.name);
 
-    for (size_t index = 0; index < parser->constant_pool.capacity; index++) {
-        pm_constant_t constant = parser->constant_pool.constants[index];
-
-        if (constant.id != 0) {
-            constants[constant.id - 1] = rb_intern3((const char *) constant.start, constant.length, encoding);
-        }
+    for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
+        pm_constant_t *constant = &parser->constant_pool.constants[index];
+        constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
     }
 
     pm_compile_context_t compile_context = {
