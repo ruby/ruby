@@ -43,7 +43,8 @@ module Open3
   #
   # - Creates a child process, by calling Process.spawn with the given arguments.
   # - Creates streams +stdin+, +stdout+, and +stderr+,
-  #   which are streams $stdin, $stdout, and $stderr in the child process.
+  #   which are the standard input, standard output, and standard error streams
+  #   in the child process.
   # - Creates thread +wait_thread+ that waits for the child process to exit;
   #   the thread has method +pid+, which returns the process ID
   #   of the child process.
@@ -59,7 +60,6 @@ module Open3
   #   stderr.close
   #   wait_thread.pid   # => 2210481
   #   wait_thread.value # => #<Process::Status: pid 2210481 exit 0>
-  #
   #
   # With a block given, calls the block with the four variables
   # (three streams and the wait thread)
@@ -149,7 +149,7 @@ module Open3
   # Output streams +stdout+ and +stderr+ have fixed-size buffers,
   # so reading extensively from one but not the other can cause a deadlock
   # when the unread buffer fills.
-  # To avoid that, stdout and stderr should be read simultaneously
+  # To avoid that, +stdout+ and +stderr+ should be read simultaneously
   # (using threads or IO.select).
   def popen3(*cmd, &block)
     if Hash === cmd.last
