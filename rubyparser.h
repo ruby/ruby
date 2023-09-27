@@ -261,7 +261,6 @@ typedef struct RNode_UNTIL {
 typedef struct RNode_ITER {
     NODE node;
 
-    VALUE not_used;
     struct RNode *nd_body;
     struct RNode *nd_iter;
 } rb_node_iter_t;
@@ -269,7 +268,6 @@ typedef struct RNode_ITER {
 typedef struct RNode_FOR {
     NODE node;
 
-    VALUE not_used;
     struct RNode *nd_body;
     struct RNode *nd_iter;
 } rb_node_for_t;

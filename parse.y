@@ -11093,7 +11093,6 @@ static rb_node_for_t *
 rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc)
 {
     rb_node_for_t *n = NODE_NEWNODE(NODE_FOR, rb_node_for_t, loc);
-    n->not_used = 0;
     n->nd_body = nd_body;
     n->nd_iter = nd_iter;
 
@@ -11273,7 +11272,6 @@ rb_node_iter_new(struct parser_params *p, NODE *nd_args, NODE *nd_body, const YY
     /* Keep the order of node creation */
     NODE *scope = NEW_SCOPE(nd_args, nd_body, loc);
     rb_node_iter_t *n = NODE_NEWNODE(NODE_ITER, rb_node_iter_t, loc);
-    n->not_used = 0;
     n->nd_body = scope;
     n->nd_iter = 0;
 
