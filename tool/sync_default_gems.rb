@@ -398,31 +398,31 @@ module SyncDefaultGems
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
     when "yarp"
-      # We don't want to remove YARP-specific files that existing in ruby/ruby
-      # that do not exist in ruby/yarp, so we temporarily move them out of the
-      # yarp dir, wipe the yarp dir, and then put them back.
-      mv("yarp/yarp_init.c", ".")
-      mv("yarp/yarp_compiler.c", ".")
-      mv("test/yarp/iseq_test.rb", ".")
-      rm_rf(%w[test/yarp yarp])
+      # We don't want to remove prism-specific files that existing in ruby/ruby
+      # that do not exist in ruby/prism, so we temporarily move them out of the
+      # prism dir, wipe the prism dir, and then put them back.
+      mv("prism/prism_init.c", ".")
+      mv("prism/prism_compiler.c", ".")
+      mv("test/prism/iseq_test.rb", ".")
+      rm_rf(%w[test/prism prism])
 
-      cp_r("#{upstream}/ext/yarp", "yarp")
+      cp_r("#{upstream}/ext/prism", "prism")
       cp_r("#{upstream}/lib/.", "lib")
-      cp_r("#{upstream}/test/yarp", "test")
-      cp_r("#{upstream}/src/.", "yarp")
+      cp_r("#{upstream}/test/prism", "test")
+      cp_r("#{upstream}/src/.", "prism")
 
-      cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
-      cp_r("#{upstream}/include/yarp/.", "yarp")
-      cp_r("#{upstream}/include/yarp.h", "yarp")
+      cp_r("#{upstream}/prism.gemspec", "lib/prism")
+      cp_r("#{upstream}/include/prism/.", "prism")
+      cp_r("#{upstream}/include/prism.h", "prism")
 
-      cp_r("#{upstream}/config.yml", "yarp/")
-      cp_r("#{upstream}/templates", "yarp/")
-      rm_rf("yarp/templates/java")
+      cp_r("#{upstream}/config.yml", "prism/")
+      cp_r("#{upstream}/templates", "prism/")
+      rm_rf("prism/templates/java")
 
-      rm("yarp/extconf.rb")
-      mv("yarp_init.c", "yarp/")
-      mv("yarp_compiler.c", "yarp/")
-      mv("iseq_test.rb", "test/yarp/")
+      rm("prism/extconf.rb")
+      mv("prism_init.c", "prism/")
+      mv("prism_compiler.c", "prism/")
+      mv("iseq_test.rb", "test/prism/")
     else
       sync_lib gem, upstream
     end
