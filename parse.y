@@ -11520,7 +11520,6 @@ rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
     rb_node_hash_t *n = NODE_NEWNODE(NODE_HASH, rb_node_hash_t, loc);
     n->nd_head = nd_head;
     n->nd_brace = 0;
-    n->not_used = 0;
 
     return n;
 }

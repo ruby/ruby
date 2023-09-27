@@ -558,7 +558,6 @@ typedef struct RNode_HASH {
 
     struct RNode *nd_head;
     long nd_brace;
-    VALUE not_used;
 } rb_node_hash_t;
 
 typedef struct RNode_RETURN {
