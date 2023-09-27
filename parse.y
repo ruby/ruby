@@ -11171,7 +11171,6 @@ rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTY
     rb_node_and_t *n = NODE_NEWNODE(NODE_AND, rb_node_and_t, loc);
     n->nd_1st = nd_1st;
     n->nd_2nd = nd_2nd;
-    n->not_used = 0;
 
     return n;
 }
@@ -11182,7 +11181,6 @@ rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYP
     rb_node_or_t *n = NODE_NEWNODE(NODE_OR, rb_node_or_t, loc);
     n->nd_1st = nd_1st;
     n->nd_2nd = nd_2nd;
-    n->not_used = 0;
 
     return n;
 }

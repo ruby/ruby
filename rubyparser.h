@@ -354,7 +354,6 @@ typedef struct RNode_AND {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
-    VALUE not_used;
 } rb_node_and_t;
 
 typedef struct RNode_OR {
@@ -362,7 +361,6 @@ typedef struct RNode_OR {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
-    VALUE not_used;
 } rb_node_or_t;
 
 typedef struct RNode_MASGN {
