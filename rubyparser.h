@@ -438,16 +438,10 @@ typedef struct RNode_OP_ASGN2 {
 
     struct RNode *nd_recv;
     struct RNode *nd_value;
-    struct RNode_OP_ASGN22 *nd_next;
-} rb_node_op_asgn2_t;
-
-typedef struct RNode_OP_ASGN22 {
-    NODE node;
-
     ID nd_vid;
     ID nd_mid;
     bool nd_aid;
-} rb_node_op_asgn22_t;
+} rb_node_op_asgn2_t;
 
 typedef struct RNode_OP_ASGN_AND {
     NODE node;
