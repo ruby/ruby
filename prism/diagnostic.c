@@ -202,6 +202,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_PARAMETER_ORDER]                    = "Unexpected parameter order",
     [PM_ERR_PARAMETER_SPLAT_MULTI]              = "Unexpected multiple `*` splat parameters",
     [PM_ERR_PARAMETER_STAR]                     = "Unexpected parameter `*`",
+    [PM_ERR_PARAMETER_UNEXPECTED_FWD]           = "Unexpected `...` in parameters",
     [PM_ERR_PARAMETER_WILD_LOOSE_COMMA]         = "Unexpected `,` in parameters",
     [PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET]   = "Expected a pattern expression after the `[` operator",
     [PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA]     = "Expected a pattern expression after `,`",

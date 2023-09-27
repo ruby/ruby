@@ -9292,6 +9292,14 @@ parse_parameters(
 
                     pm_parser_local_add_token(parser, &parser->previous);
                     pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);
+                    if (params->keyword_rest != NULL) {
+                        // If we already have a keyword rest parameter, then we replace it with the
+                        // forwarding parameter and move the keyword rest parameter to the posts list.
+                        pm_node_t *keyword_rest = params->keyword_rest;
+                        pm_parameters_node_posts_append(params, keyword_rest);
+                        pm_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, PM_ERR_PARAMETER_UNEXPECTED_FWD);
+                        params->keyword_rest = NULL;
+                    }
                     pm_parameters_node_keyword_rest_set(params, (pm_node_t *)param);
                 } else {
                     update_parameter_state(parser, &parser->current, &order);
