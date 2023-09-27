@@ -845,7 +845,6 @@ typedef struct RNode_MODULE {
 
     struct RNode *nd_cpath;
     struct RNode *nd_body;
-    VALUE not_used;
 } rb_node_module_t;
 
 typedef struct RNode_SCLASS {
@@ -853,7 +852,6 @@ typedef struct RNode_SCLASS {
 
     struct RNode *nd_recv;
     struct RNode *nd_body;
-    VALUE not_used;
 } rb_node_sclass_t;
 
 typedef struct RNode_COLON2 {
