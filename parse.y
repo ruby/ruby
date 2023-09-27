@@ -11251,7 +11251,6 @@ rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const 
     rb_node_sclass_t *n = NODE_NEWNODE(NODE_SCLASS, rb_node_sclass_t, loc);
     n->nd_recv = nd_recv;
     n->nd_body = scope;
-    n->not_used = 0;
 
     return n;
 }
@@ -11264,7 +11263,6 @@ rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const
     rb_node_module_t *n = NODE_NEWNODE(NODE_MODULE, rb_node_module_t, loc);
     n->nd_cpath = nd_cpath;
     n->nd_body = scope;
-    n->not_used = 0;
 
     return n;
 }
