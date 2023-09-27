@@ -11992,7 +11992,6 @@ rb_node_alias_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYL
     rb_node_alias_t *n = NODE_NEWNODE(NODE_ALIAS, rb_node_alias_t, loc);
     n->nd_1st = nd_1st;
     n->nd_2nd = nd_2nd;
-    n->not_used = 0;
 
     return n;
 }
@@ -12003,7 +12002,6 @@ rb_node_valias_new(struct parser_params *p, ID nd_alias, ID nd_orig, const YYLTY
     rb_node_valias_t *n = NODE_NEWNODE(NODE_VALIAS, rb_node_valias_t, loc);
     n->nd_alias = nd_alias;
     n->nd_orig = nd_orig;
-    n->not_used = 0;
 
     return n;
 }
@@ -12012,9 +12010,7 @@ static rb_node_undef_t *
 rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc)
 {
     rb_node_undef_t *n = NODE_NEWNODE(NODE_UNDEF, rb_node_undef_t, loc);
-    n->not_used = 0;
     n->nd_undef = nd_undef;
-    n->not_used2 = 0;
 
     return n;
 }

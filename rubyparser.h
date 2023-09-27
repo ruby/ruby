@@ -855,7 +855,6 @@ typedef struct RNode_ALIAS {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
-    VALUE not_used;
 } rb_node_alias_t;
 
 typedef struct RNode_VALIAS {
@@ -863,15 +862,12 @@ typedef struct RNode_VALIAS {
 
     ID nd_alias;
     ID nd_orig;
-    VALUE not_used;
 } rb_node_valias_t;
 
 typedef struct RNode_UNDEF {
     NODE node;
 
-    VALUE not_used;
     struct RNode *nd_undef;
-    VALUE not_used2;
 } rb_node_undef_t;
 
 typedef struct RNode_CLASS {
