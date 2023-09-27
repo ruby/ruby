@@ -956,33 +956,19 @@ typedef struct RNode_FLIP3 {
 typedef struct RNode_SELF {
     NODE node;
 
-    VALUE not_used;
-    VALUE not_used2;
     long nd_state; /* Default 1. See NEW_SELF. */
 } rb_node_self_t;
 
 typedef struct RNode_NIL {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_nil_t;
 
 typedef struct RNode_TRUE {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_true_t;
 
 typedef struct RNode_FALSE {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_false_t;
 
 typedef struct RNode_ERRINFO {
