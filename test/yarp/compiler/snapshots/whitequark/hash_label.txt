@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,10)>
+0000 duphash                                {:foo=>2}
+0002 leave

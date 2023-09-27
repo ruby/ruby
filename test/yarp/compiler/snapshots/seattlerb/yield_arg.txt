@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,8)>
+0000 invokeblock                            <calldata!argc:0, ARGS_SIMPLE>
+0002 leave

@@ -1,0 +1,6 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,4)>
+0000 putnil
+0001 putobject                              true
+0003 getconstant                            :A
+0005 opt_send_without_block                 <calldata!mid:b, argc:0, ARGS_SIMPLE>
+0007 leave

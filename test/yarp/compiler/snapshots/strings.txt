@@ -1,0 +1,46 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(104,4)>
+0000 getclassvariable                       :@@foo, <is:1>            (  30)
+0003 dup
+0004 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0006 anytostring
+0007 pop
+0008 putobject                              "aaa "                    (  34)
+0010 putself
+0011 opt_send_without_block                 <calldata!mid:bbb, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0013 dup
+0014 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0016 anytostring
+0017 putobject                              " ccc"
+0019 adjuststack                            3
+0021 putstring                              "foo"                     (  38)
+0023 putstring                              "bar"                     (  40)
+0025 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>(  38)[CcCr]
+0027 pop
+0028 putobject                              "aaa "                    (  54)
+0030 putself
+0031 opt_send_without_block                 <calldata!mid:bbb, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0033 dup
+0034 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0036 anytostring
+0037 putobject                              " ccc"
+0039 adjuststack                            3
+0041 putobject                              "b"                       (  66)
+0043 putself
+0044 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0046 dup
+0047 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0049 anytostring
+0050 putobject                              "d"
+0052 adjuststack                            3
+0054 getglobal                              :$foo                     (  80)
+0056 dup
+0057 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0059 anytostring
+0060 pop
+0061 getinstancevariable                    :@foo, <is:0>             (  82)
+0064 dup
+0065 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0067 anytostring
+0068 pop
+0069 putstring                              "#"                       ( 104)
+0071 leave

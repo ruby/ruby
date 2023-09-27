@@ -1,0 +1,6 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,13)>
+0000 putself
+0001 putstring                              "\n"
+0003 putobject                              true
+0005 opt_send_without_block                 <calldata!mid:a, argc:2, FCALL|ARGS_SIMPLE>
+0007 leave

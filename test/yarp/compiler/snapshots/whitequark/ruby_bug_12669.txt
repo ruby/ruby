@@ -1,0 +1,37 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,16)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0        [ 1] b@1
+0000 getlocal_WC_0                          a@0
+0002 getlocal_WC_0                          b@1
+0004 putself
+0005 putobject                              :x
+0007 opt_send_without_block                 <calldata!mid:raise, argc:1, FCALL|ARGS_SIMPLE>
+0009 opt_plus                               <calldata!mid:+, argc:1, FCALL|VCALL|ARGS_SIMPLE>[CcCr]
+0011 dup
+0012 setlocal_WC_0                          b@1
+0014 opt_plus                               <calldata!mid:+, argc:1, FCALL|VCALL|ARGS_SIMPLE>[CcCr]
+0016 setlocal_WC_0                          a@0
+0018 getlocal_WC_0                          a@0                       (   2)
+0020 putself
+0021 putobject                              :x
+0023 opt_send_without_block                 <calldata!mid:raise, argc:1, FCALL|ARGS_SIMPLE>
+0025 dup
+0026 setlocal_WC_0                          b@1
+0028 opt_plus                               <calldata!mid:+, argc:1, FCALL|VCALL|ARGS_SIMPLE>[CcCr]
+0030 setlocal_WC_0                          a@0
+0032 getlocal_WC_0                          b@1                       (   4)
+0034 putself
+0035 putobject                              :x
+0037 opt_send_without_block                 <calldata!mid:raise, argc:1, FCALL|ARGS_SIMPLE>
+0039 opt_plus                               <calldata!mid:+, argc:1, FCALL|VCALL|ARGS_SIMPLE>[CcCr]
+0041 dup
+0042 setlocal_WC_0                          b@1
+0044 setlocal_WC_0                          a@0
+0046 putself                                                          (   6)
+0047 putobject                              :x
+0049 opt_send_without_block                 <calldata!mid:raise, argc:1, FCALL|ARGS_SIMPLE>
+0051 dup
+0052 setlocal_WC_0                          b@1
+0054 dup
+0055 setlocal_WC_0                          a@0
+0057 leave

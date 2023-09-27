@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,7)>
+0000 putnil                                                           (   2)
+0001 dup
+0002 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0004 anytostring
+0005 putobject                              "\n"
+0007 concatstrings                          2
+0009 leave

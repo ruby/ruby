@@ -1,0 +1,336 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(70,7)>
+0000 putself
+0001 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0004 pop
+0005 putself                                                          (   2)
+0006 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0009 pop
+0010 putself                                                          (   4)
+0011 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0014 pop
+0015 putself                                                          (   6)
+0016 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0019 pop
+0020 putself                                                          (   8)
+0021 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0024 pop
+0025 putself                                                          (  10)
+0026 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0029 pop
+0030 putself                                                          (  12)
+0031 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0034 pop
+0035 putself                                                          (  14)
+0036 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0039 pop
+0040 putself                                                          (  16)
+0041 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0044 pop
+0045 putself                                                          (  18)
+0046 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0049 pop
+0050 putself                                                          (  22)
+0051 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0054 pop
+0055 putself                                                          (  24)
+0056 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0059 pop
+0060 putself                                                          (  26)
+0061 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0064 pop
+0065 putself                                                          (  28)
+0066 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0069 pop
+0070 putself                                                          (  30)
+0071 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0074 pop
+0075 putself                                                          (  32)
+0076 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0079 pop
+0080 putself                                                          (  34)
+0081 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0084 pop
+0085 putself                                                          (  36)
+0086 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0089 pop
+0090 putself                                                          (  38)
+0091 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0094 pop
+0095 putself                                                          (  40)
+0096 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0099 pop
+0100 putself                                                          (  42)
+0101 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0104 pop
+0105 putself                                                          (  44)
+0106 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0109 pop
+0110 putself                                                          (  46)
+0111 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0114 pop
+0115 putself                                                          (  48)
+0116 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0119 pop
+0120 putself                                                          (  50)
+0121 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0124 pop
+0125 putself                                                          (  52)
+0126 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0129 pop
+0130 putself                                                          (  54)
+0131 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0134 pop
+0135 putself                                                          (  56)
+0136 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0139 pop
+0140 putself                                                          (  58)
+0141 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0144 pop
+0145 putself                                                          (  60)
+0146 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0149 pop
+0150 putself                                                          (  62)
+0151 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0154 pop
+0155 putself                                                          (  64)
+0156 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0159 pop
+0160 putself                                                          (  66)
+0161 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0164 pop
+0165 putself                                                          (  68)
+0166 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0169 pop
+0170 putself                                                          (  70)
+0171 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0174 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,1)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:3 (3,0)-(3,0)>
+0000 putnil                                                           (   2)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:5 (5,0)-(5,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] b@0
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:7 (7,0)-(7,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] baz@0      [ 1] b@1
+0000 putnil                                                           (   6)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:9 (9,0)-(9,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] *@0        [ 1] b@1
+0000 putnil                                                           (   8)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:11 (11,0)-(11,0)>
+local table (size: 3, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] r@0        [ 2] p@1        [ 1] b@2
+0000 putnil                                                           (  10)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:13 (13,0)-(13,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] s@0        [ 1] b@1
+0000 putnil                                                           (  12)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:15 (15,0)-(15,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] s@0
+0000 putnil                                                           (  14)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:17 (17,0)-(17,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] *@0
+0000 putnil                                                           (  16)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:19 (19,0)-(21,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putnil                                                           (  18)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:23 (23,0)-(23,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putnil                                                           (  22)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:25 (25,0)-(25,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] b@1
+0000 putnil                                                           (  24)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:27 (27,0)-(27,0)>
+local table (size: 3, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] *@1        [ 1] b@2
+0000 putnil                                                           (  26)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:29 (29,0)-(29,0)>
+local table (size: 4, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] a@0<Arg>   [ 3] r@1        [ 2] p@2        [ 1] b@3
+0000 putnil                                                           (  28)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:31 (31,0)-(31,0)>
+local table (size: 3, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] s@1        [ 1] b@2
+0000 putnil                                                           (  30)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:33 (33,0)-(33,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] s@1
+0000 putnil                                                           (  32)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:35 (35,0)-(35,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] *@1
+0000 putnil                                                           (  34)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:37 (37,0)-(37,0)>
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] b@1<Arg>
+0000 putnil                                                           (  36)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:39 (39,0)-(39,0)>
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] c@1<Arg>
+0000 putnil                                                           (  38)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:41 (41,0)-(41,0)>
+local table (size: 3, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] o@1<Opt=0> [ 1] b@2
+0000 putobject_INT2FIX_1_                                             (  40)
+0001 setlocal_WC_0                          o@1
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:43 (43,0)-(43,0)>
+local table (size: 5, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 5] a@0<Arg>   [ 4] o@1<Opt=0> [ 3] r@2        [ 2] p@3        [ 1] b@4
+0000 putobject_INT2FIX_1_                                             (  42)
+0001 setlocal_WC_0                          o@1
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:45 (45,0)-(45,0)>
+local table (size: 5, argc: 1 [opts: 2, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 5] a@0<Arg>   [ 4] o@1<Opt=0> [ 3] o1@2<Opt=3>[ 2] r@3        [ 1] b@4
+0000 putobject_INT2FIX_1_                                             (  44)
+0001 setlocal_WC_0                          o@1
+0003 putobject                              2
+0005 setlocal_WC_0                          o1@2
+0007 nop                                    [Bc]
+0008 putnil
+0009 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:47 (47,0)-(47,0)>
+local table (size: 4, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] a@0<Arg>   [ 3] o@1<Opt=0> [ 2] p@2        [ 1] b@3
+0000 putobject_INT2FIX_1_                                             (  46)
+0001 setlocal_WC_0                          o@1
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:49 (49,0)-(49,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (  48)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:51 (51,0)-(51,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (  50)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:53 (53,0)-(53,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (  52)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:55 (55,0)-(55,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (  54)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:57 (57,0)-(57,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] foo@0      [ 1] b@1
+0000 putnil                                                           (  56)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:59 (59,0)-(59,0)>
+local table (size: 4, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] foo@0      [ 3] bar@1      [ 2] baz@2      [ 1] b@3
+0000 putnil                                                           (  58)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:61 (61,0)-(61,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 putnil                                                           (  60)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:63 (63,0)-(63,0)>
+local table (size: 2, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] o@0<Opt=0> [ 1] b@1
+0000 putobject_INT2FIX_1_                                             (  62)
+0001 setlocal_WC_0                          o@0
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:65 (65,0)-(65,0)>
+local table (size: 3, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] o@0<Opt=0> [ 2] r@1        [ 1] b@2
+0000 putobject_INT2FIX_1_                                             (  64)
+0001 setlocal_WC_0                          o@0
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:67 (67,0)-(67,0)>
+local table (size: 4, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] o@0<Opt=0> [ 3] r@1        [ 2] p@2        [ 1] b@3
+0000 putobject_INT2FIX_1_                                             (  66)
+0001 setlocal_WC_0                          o@0
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:69 (69,0)-(69,0)>
+local table (size: 3, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] o@0<Opt=0> [ 2] p@1        [ 1] b@2
+0000 putobject_INT2FIX_1_                                             (  68)
+0001 setlocal_WC_0                          o@0
+0003 nop                                    [Bc]
+0004 putnil
+0005 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:71 (71,0)-(71,0)>
+0000 putnil                                                           (  70)[Bc]
+0001 leave                                  [Br]

@@ -1,0 +1,13 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,14)>
+0000 jump                                   10
+0002 putnil
+0003 pop
+0004 jump                                   10
+0006 putself
+0007 opt_send_without_block                 <calldata!mid:meth, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0009 pop
+0010 putself
+0011 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0013 branchif                               6
+0015 putnil
+0016 leave

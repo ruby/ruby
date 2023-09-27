@@ -1,0 +1,5 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,9)>
+0000 putobject                              10
+0002 dup
+0003 setinstancevariable                    :@var, <is:0>
+0006 leave

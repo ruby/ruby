@@ -1,0 +1,12 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,19)>
+0000 definemethod                           :f, f
+0003 putobject                              :f
+0005 leave
+
+== disasm: #<ISeq:f@<compiled>:0 (0,0)-(0,19)>
+local table (size: 2, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Opt=0> [ 1] b@1
+0000 putnil
+0001 setlocal_WC_0                          a@0
+0003 putnil
+0004 leave

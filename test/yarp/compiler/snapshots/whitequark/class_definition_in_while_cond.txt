@@ -1,0 +1,93 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,44)>
+0000 jump                                   9
+0002 putnil
+0003 pop
+0004 jump                                   9
+0006 putnil
+0007 jump                                   18
+0009 putself
+0010 putnil
+0011 defineclass                            :singletonclass, singleton class, 1
+0015 branchif                               6
+0017 putnil
+0018 pop
+0019 jump                                   28                        (   2)
+0021 putnil
+0022 pop
+0023 jump                                   28
+0025 putnil                                                           (   3)
+0026 jump                                   37
+0028 putself                                                          (   2)
+0029 putnil                                                           (   3)
+0030 defineclass                            :singletonclass, singleton class, 1
+0034 branchif                               25
+0036 putnil                                                           (   2)
+0037 pop
+0038 jump                                   47                        (   4)
+0040 putnil
+0041 pop
+0042 jump                                   47
+0044 putnil                                                           (   5)
+0045 jump                                   57
+0047 putspecialobject                       3
+0049 putnil
+0050 defineclass                            :Foo, <class:Foo>, 0
+0054 branchif                               44
+0056 putnil                                                           (   4)
+0057 pop
+0058 jump                                   66                        (   6)
+0060 putnil
+0061 pop
+0062 jump                                   66
+0064 putnil                                                           (   7)
+0065 leave
+0066 putspecialobject                       3                         (   7)
+0068 putnil
+0069 defineclass                            :Foo, <class:Foo>, 0
+0073 branchif                               64
+0075 putnil                                                           (   6)
+0076 leave
+
+== disasm: #<ISeq:singleton class@<compiled>:0 (0,6)-(1,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putself
+0001 send                                   <calldata!mid:tap, argc:0>, block in singleton class
+0004 dup
+0005 setlocal_WC_0                          a@0
+0007 leave
+
+== disasm: #<ISeq:block in singleton class@<compiled>:0 (0,29)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:singleton class@<compiled>:3 (3,0)-(3,0)>
+0000 putself                                                          (   2)
+0001 send                                   <calldata!mid:tap, argc:0>, block in singleton class
+0004 leave
+
+== disasm: #<ISeq:block in singleton class@<compiled>:2 (2,26)-(3,0)>
+0000 putnil                                                           (   2)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:<class:Foo>@<compiled>:5 (5,0)-(5,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putself                                                          (   4)
+0001 send                                   <calldata!mid:tap, argc:0>, block in <class:Foo>
+0004 dup
+0005 setlocal_WC_0                          a@0
+0007 leave
+
+== disasm: #<ISeq:block in <class:Foo>@<compiled>:4 (4,25)-(5,0)>
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:<class:Foo>@<compiled>:7 (7,0)-(7,0)>
+0000 putself                                                          (   6)
+0001 send                                   <calldata!mid:tap, argc:0>, block in <class:Foo>
+0004 leave
+
+== disasm: #<ISeq:block in <class:Foo>@<compiled>:6 (6,22)-(7,0)>
+0000 putnil                                                           (   6)[Bc]
+0001 leave                                  [Br]

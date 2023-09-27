@@ -1,0 +1,17 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,20)>
+0000 definemethod                           :f, f
+0003 definemethod                           :f, f                     (   2)
+0006 putobject                              :f
+0008 leave
+
+== disasm: #<ISeq:f@<compiled>:0 (0,0)-(0,15)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0<Arg>
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:2 (2,0)-(3,0)>
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] foo@0<Arg> [ 1] bar@1<Arg>
+0000 putnil                                                           (   2)
+0001 leave

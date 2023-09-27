@@ -1,0 +1,14 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,15)>
+0000 putobject                              :a
+0002 putobject                              "b"
+0004 putobject_INT2FIX_1_
+0005 putobject_INT2FIX_1_
+0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0008 dup
+0009 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0011 anytostring
+0012 concatstrings                          2
+0014 intern
+0015 putobject                              :c
+0017 newarray                               3
+0019 leave

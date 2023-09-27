@@ -1,0 +1,19 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(7,12)>
+0000 putself
+0001 putobject                              :state
+0003 newhash                                0                         (   1)
+0005 newhash                                2
+0007 opt_send_without_block                 <calldata!mid:f, argc:1, FCALL|ARGS_SIMPLE>
+0009 pop
+0010 putself                                                          (   4)
+0011 putobject                              :state
+0013 newhash                                0
+0015 newhash                                2
+0017 opt_send_without_block                 <calldata!mid:f, argc:1, FCALL|ARGS_SIMPLE>
+0019 pop
+0020 putself                                                          (   7)
+0021 putobject                              :state
+0023 newhash                                0
+0025 newhash                                2
+0027 opt_send_without_block                 <calldata!mid:f, argc:1, FCALL|ARGS_SIMPLE>
+0029 leave

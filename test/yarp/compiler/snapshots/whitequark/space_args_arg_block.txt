@@ -1,0 +1,27 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,10)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putobject_INT2FIX_1_
+0004 send                                   <calldata!mid:fun, argc:1>, block in <compiled>
+0007 pop
+0008 putself                                                          (   2)
+0009 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0011 putobject_INT2FIX_1_                                             (   3)
+0012 send                                   <calldata!mid:fun, argc:1>, block in <compiled>(   2)
+0015 pop
+0016 putself                                                          (   4)
+0017 putobject_INT2FIX_1_                                             (   5)
+0018 send                                   <calldata!mid:fun, argc:1>, block in <compiled>(   4)
+0021 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,12)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:3 (3,0)-(3,0)>
+0000 putnil                                                           (   2)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:5 (5,0)-(5,0)>
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]

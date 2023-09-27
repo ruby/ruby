@@ -1,0 +1,7 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,8)>
+0000 putnil
+0001 putobject                              true
+0003 getconstant                            :Bar
+0005 putobject                              false
+0007 getconstant                            :Foo
+0009 leave

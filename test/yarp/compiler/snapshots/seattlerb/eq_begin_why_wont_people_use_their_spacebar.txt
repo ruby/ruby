@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,8)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:h, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putself
+0004 opt_send_without_block                 <calldata!mid:k, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0006 putobject                              42                        (   1)
+0008 opt_aset                               <calldata!mid:[]=, argc:2, ARGS_SIMPLE>[CcCr]
+0010 leave

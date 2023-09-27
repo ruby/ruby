@@ -1,0 +1,34 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(92,13)>
+0000 putself                                                          (   2)
+0001 opt_send_without_block                 <calldata!mid:var, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 dup
+0004 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0006 anytostring
+0007 pop
+0008 putobject                              "abc"                     (   4)
+0010 putobject_INT2FIX_1_
+0011 dup
+0012 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0014 anytostring
+0015 adjuststack                            2
+0017 putobject                              "b"                       (  38)
+0019 putobject_INT2FIX_1_
+0020 dup
+0021 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0023 anytostring
+0024 adjuststack                            2
+0026 putobject                              2
+0028 dup
+0029 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0031 anytostring
+0032 putobject                              "c"
+0034 adjuststack                            2
+0036 putobject                              "d"
+0038 putobject                              3
+0040 dup
+0041 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0043 anytostring
+0044 putobject                              "f"
+0046 adjuststack                            3
+0048 putobject                              :__ENCODING__             (  92)
+0050 leave

@@ -1,0 +1,11 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(1,3)>
+0000 putspecialobject                       3
+0002 putnil
+0003 putobject                              true
+0005 getconstant                            :B
+0007 defineclass                            :A, <class:A>, 16
+0011 leave
+
+== disasm: #<ISeq:<class:A>@<compiled>:0 (0,0)-(1,3)>
+0000 putnil
+0001 leave

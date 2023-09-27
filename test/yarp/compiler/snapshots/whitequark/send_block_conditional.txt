@@ -1,0 +1,9 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,11)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 send                                   <calldata!mid:bar, argc:0>, block in <compiled>
+0006 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,9)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]

@@ -1,0 +1,17 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,28)>
+0000 putself
+0001 definemethod                           :x, x
+0004 putobject                              :x
+0006 opt_send_without_block                 <calldata!mid:m, argc:1, FCALL|ARGS_SIMPLE>
+0008 pop
+0009 putobject_INT2FIX_1_                                             (   1)
+0010 send                                   <calldata!mid:tap, argc:0>, block in <compiled>
+0013 leave
+
+== disasm: #<ISeq:x@<compiled>:0 (0,2)-(1,0)>
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:1 (1,0)-(1,0)>
+0000 putnil                                                           (   1)[Bc]
+0001 leave                                  [Br]

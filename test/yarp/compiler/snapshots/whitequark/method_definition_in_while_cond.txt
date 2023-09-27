@@ -1,0 +1,85 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,47)>
+0000 jump                                   9
+0002 putnil
+0003 pop
+0004 jump                                   9
+0006 putnil
+0007 jump                                   15
+0009 definemethod                           :foo, foo
+0012 jump                                   6
+0014 putnil
+0015 pop
+0016 jump                                   25                        (   2)
+0018 putnil
+0019 pop
+0020 jump                                   25
+0022 putnil                                                           (   3)
+0023 jump                                   31
+0025 definemethod                           :foo, foo
+0028 jump                                   22
+0030 putnil                                                           (   2)
+0031 pop
+0032 jump                                   41                        (   4)
+0034 putnil
+0035 pop
+0036 jump                                   41
+0038 putnil                                                           (   5)
+0039 jump                                   47
+0041 definemethod                           :foo, foo
+0044 jump                                   38
+0046 putnil                                                           (   4)
+0047 pop
+0048 jump                                   56                        (   6)
+0050 putnil
+0051 pop
+0052 jump                                   56
+0054 putnil                                                           (   7)
+0055 leave
+0056 definemethod                           :foo, foo                 (   7)
+0059 jump                                   54
+0061 putnil                                                           (   6)
+0062 leave
+
+== disasm: #<ISeq:foo@<compiled>:0 (0,6)-(1,0)>
+local table (size: 1, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Opt=0>
+0000 putself
+0001 send                                   <calldata!mid:tap, argc:0>, block in foo
+0004 setlocal_WC_0                          a@0
+0006 putnil
+0007 leave
+
+== disasm: #<ISeq:block in foo@<compiled>:0 (0,22)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:foo@<compiled>:3 (3,0)-(3,0)>
+0000 putself                                                          (   2)
+0001 send                                   <calldata!mid:tap, argc:0>, block in foo
+0004 leave
+
+== disasm: #<ISeq:block in foo@<compiled>:2 (2,20)-(3,0)>
+0000 putnil                                                           (   2)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:foo@<compiled>:5 (5,0)-(5,0)>
+local table (size: 1, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Opt=0>
+0000 putself                                                          (   4)
+0001 send                                   <calldata!mid:tap, argc:0>, block in foo
+0004 setlocal_WC_0                          a@0
+0006 putnil
+0007 leave
+
+== disasm: #<ISeq:block in foo@<compiled>:4 (4,28)-(5,0)>
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:foo@<compiled>:7 (7,0)-(7,0)>
+0000 putself                                                          (   6)
+0001 send                                   <calldata!mid:tap, argc:0>, block in foo
+0004 leave
+
+== disasm: #<ISeq:block in foo@<compiled>:6 (6,25)-(7,0)>
+0000 putnil                                                           (   6)[Bc]
+0001 leave                                  [Br]

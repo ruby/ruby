@@ -1,0 +1,14 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,19)>
+0000 putself
+0001 putspecialobject                       1
+0003 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0006 send                                   <calldata!mid:a, argc:1>, block in <compiled>
+0009 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,2)-(1,0)>
+0000 putobject_INT2FIX_1_                   [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:1 (1,0)-(1,0)>
+0000 putobject                              2[Bc]
+0002 leave                                  [Br]

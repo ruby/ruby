@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(3,11)>
+0000 newarray                               0                         (   3)
+0002 leave

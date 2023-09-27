@@ -1,0 +1,10 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,29)>
+0000 definemethod                           :call, call
+0003 putobject                              :call
+0005 leave
+
+== disasm: #<ISeq:call@<compiled>:0 (0,0)-(0,29)>
+local table (size: 3, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] interp@0<Arg>[ 2] *@1        [ 1] args@2
+0000 putnil
+0001 leave

@@ -1,0 +1,9 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(5,3)>
+0000 putspecialobject                       3                         (   4)
+0002 putnil
+0003 defineclass                            :Foo, <class:Foo>, 0
+0007 leave
+
+== disasm: #<ISeq:<class:Foo>@<compiled>:4 (4,1)-(6,0)>
+0000 putnil                                                           (   4)
+0001 leave

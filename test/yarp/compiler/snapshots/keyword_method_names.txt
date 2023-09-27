@@ -1,0 +1,54 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(28,3)>
+0000 definemethod                           :def, def
+0003 definemethod                           :ensure, ensure           (   3)
+0006 putself                                                          (   6)
+0007 definemethod                           :foo, foo                 (   7)
+0010 putobject                              :foo
+0012 opt_send_without_block                 <calldata!mid:private, argc:1, FCALL|ARGS_SIMPLE>(   6)
+0014 pop
+0015 definemethod                           :m, m                     (  11)
+0018 definemethod                           :a, a                     (  14)
+0021 definemethod                           :a, a                     (  21)
+0024 definemethod                           :a, a                     (  24)
+0027 definemethod                           :a, a                     (  27)
+0030 putobject                              :a
+0032 leave
+
+== disasm: #<ISeq:def@<compiled>:0 (0,0)-(1,3)>
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:ensure@<compiled>:3 (3,0)-(5,0)>
+0000 putnil                                                           (   3)
+0001 leave
+
+== disasm: #<ISeq:foo@<compiled>:7 (7,0)-(10,0)>
+0000 putself                                                          (   7)
+0001 send                                   <calldata!mid:bar, argc:0>, block in foo
+0004 leave                                                            (   6)
+
+== disasm: #<ISeq:block in foo@<compiled>:7 (7,22)-(9,0)>
+0000 putnil                                                           (   7)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:m@<compiled>:11 (11,0)-(13,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (  11)
+0001 leave
+
+== disasm: #<ISeq:a@<compiled>:14 (14,0)-(16,0)>
+0000 putnil                                                           (  14)
+0001 leave
+
+== disasm: #<ISeq:a@<compiled>:21 (21,0)-(23,0)>
+0000 putnil                                                           (  21)
+0001 leave
+
+== disasm: #<ISeq:a@<compiled>:24 (24,0)-(26,0)>
+0000 putnil                                                           (  24)
+0001 leave
+
+== disasm: #<ISeq:a@<compiled>:27 (27,0)-(29,0)>
+0000 putnil                                                           (  27)
+0001 leave

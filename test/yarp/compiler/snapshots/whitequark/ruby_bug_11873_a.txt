@@ -1,0 +1,311 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(38,20)>
+0000 putself
+0001 putself
+0002 putself
+0003 putself
+0004 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0006 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0008 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0010 putobject_INT2FIX_1_
+0011 send                                   <calldata!mid:a, argc:2>, block in <compiled>
+0014 pop
+0015 putself                                                          (   2)
+0016 putself                                                          (   3)
+0017 putself
+0018 putself
+0019 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0021 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0023 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0025 putobject                              1.0
+0027 send                                   <calldata!mid:a, argc:2>, block in <compiled>(   2)
+0030 pop
+0031 putself                                                          (   4)
+0032 putself                                                          (   5)
+0033 putself
+0034 putself
+0035 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0037 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0039 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0041 putobject                              (0+1.0i)
+0043 send                                   <calldata!mid:a, argc:2>, block in <compiled>(   4)
+0046 pop
+0047 putself                                                          (   6)
+0048 putself                                                          (   7)
+0049 putself
+0050 putself
+0051 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0053 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0055 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0057 putobject                              (1/1)
+0059 send                                   <calldata!mid:a, argc:2>, block in <compiled>(   6)
+0062 pop
+0063 putself                                                          (   8)
+0064 putself                                                          (   9)
+0065 putself
+0066 putself
+0067 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0069 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0071 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0073 putobject                              :e
+0075 send                                   <calldata!mid:a, argc:2>, block in <compiled>(   8)
+0078 pop
+0079 putself                                                          (  10)
+0080 putself                                                          (  11)
+0081 putself
+0082 putself
+0083 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0085 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0087 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0089 putobject_INT2FIX_1_
+0090 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  10)
+0093 pop
+0094 putself                                                          (  12)
+0095 putself                                                          (  13)
+0096 putself
+0097 putself
+0098 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0100 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0102 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0104 putobject                              1.0
+0106 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  12)
+0109 pop
+0110 putself                                                          (  14)
+0111 putself                                                          (  15)
+0112 putself
+0113 putself
+0114 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0116 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0118 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0120 putobject                              (0+1.0i)
+0122 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  14)
+0125 pop
+0126 putself                                                          (  16)
+0127 putself                                                          (  17)
+0128 putself
+0129 putself
+0130 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0132 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0134 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0136 putobject                              (1/1)
+0138 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  16)
+0141 pop
+0142 putself                                                          (  18)
+0143 putself                                                          (  19)
+0144 putself
+0145 putself
+0146 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0148 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0150 opt_send_without_block                 <calldata!mid:b, argc:1, FCALL|ARGS_SIMPLE>
+0152 putobject                              :e
+0154 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  18)
+0157 pop
+0158 putself                                                          (  20)
+0159 putself                                                          (  21)
+0160 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0163 putobject_INT2FIX_1_
+0164 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  20)
+0167 pop
+0168 putself                                                          (  22)
+0169 putself                                                          (  23)
+0170 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0173 putobject                              1.0
+0175 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  22)
+0178 pop
+0179 putself                                                          (  24)
+0180 putself                                                          (  25)
+0181 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0184 putobject                              (0+1.0i)
+0186 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  24)
+0189 pop
+0190 putself                                                          (  26)
+0191 putself                                                          (  27)
+0192 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0195 putobject                              (1/1)
+0197 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  26)
+0200 pop
+0201 putself                                                          (  28)
+0202 putself                                                          (  29)
+0203 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0206 putobject                              :e
+0208 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  28)
+0211 pop
+0212 putself                                                          (  30)
+0213 putself                                                          (  31)
+0214 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0217 putobject_INT2FIX_1_
+0218 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  30)
+0221 pop
+0222 putself                                                          (  32)
+0223 putself                                                          (  33)
+0224 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0227 putobject                              1.0
+0229 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  32)
+0232 pop
+0233 putself                                                          (  34)
+0234 putself                                                          (  35)
+0235 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0238 putobject                              (0+1.0i)
+0240 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  34)
+0243 pop
+0244 putself                                                          (  36)
+0245 putself                                                          (  37)
+0246 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0249 putobject                              (1/1)
+0251 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  36)
+0254 pop
+0255 putself                                                          (  38)
+0256 putself                                                          (  39)
+0257 send                                   <calldata!mid:b, argc:0>, block in <compiled>
+0260 putobject                              :e
+0262 send                                   <calldata!mid:a, argc:2>, block in <compiled>(  38)
+0265 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,12)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:3 (3,0)-(3,0)>
+0000 putnil                                                           (   2)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:5 (5,0)-(5,0)>
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:7 (7,0)-(7,0)>
+0000 putnil                                                           (   6)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:9 (9,0)-(9,0)>
+0000 putnil                                                           (   8)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:11 (11,0)-(11,0)>
+0000 putnil                                                           (  10)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:13 (13,0)-(13,0)>
+0000 putnil                                                           (  12)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:15 (15,0)-(15,0)>
+0000 putnil                                                           (  14)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:17 (17,0)-(17,0)>
+0000 putnil                                                           (  16)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:19 (19,0)-(19,0)>
+0000 putnil                                                           (  18)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:21 (21,0)-(21,0)>
+0000 putself                                                          (  20)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:21 (21,0)-(21,0)>
+0000 putnil                                                           (  20)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:23 (23,0)-(23,0)>
+0000 putself                                                          (  22)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:23 (23,0)-(23,0)>
+0000 putnil                                                           (  22)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:25 (25,0)-(25,0)>
+0000 putself                                                          (  24)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:25 (25,0)-(25,0)>
+0000 putnil                                                           (  24)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:27 (27,0)-(27,0)>
+0000 putself                                                          (  26)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:27 (27,0)-(27,0)>
+0000 putnil                                                           (  26)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:29 (29,0)-(29,0)>
+0000 putself                                                          (  28)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:29 (29,0)-(29,0)>
+0000 putnil                                                           (  28)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:31 (31,0)-(31,0)>
+0000 putself                                                          (  30)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:31 (31,0)-(31,0)>
+0000 putnil                                                           (  30)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:33 (33,0)-(33,0)>
+0000 putself                                                          (  32)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:33 (33,0)-(33,0)>
+0000 putnil                                                           (  32)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:35 (35,0)-(35,0)>
+0000 putself                                                          (  34)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:35 (35,0)-(35,0)>
+0000 putnil                                                           (  34)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:37 (37,0)-(37,0)>
+0000 putself                                                          (  36)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:37 (37,0)-(37,0)>
+0000 putnil                                                           (  36)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:39 (39,0)-(39,0)>
+0000 putself                                                          (  38)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0006 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:39 (39,0)-(39,0)>
+0000 putnil                                                           (  38)[Bc]
+0001 leave                                  [Br]

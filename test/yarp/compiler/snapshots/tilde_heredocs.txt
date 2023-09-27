@@ -1,0 +1,42 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(87,6)>
+0000 putobject_INT2FIX_1_                                             (  11)
+0001 dup                                                              (  10)
+0002 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0004 anytostring
+0005 putobject                              " a\n"
+0007 adjuststack                            2
+0009 putobject                              "a "                      (  14)
+0011 putobject_INT2FIX_1_                                             (  15)
+0012 dup                                                              (  14)
+0013 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0015 anytostring
+0016 putobject                              "\n"
+0018 adjuststack                            3
+0020 putobject                              " a\n"                    (  18)
+0022 putobject_INT2FIX_1_                                             (  20)
+0023 dup                                                              (  18)
+0024 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0026 anytostring
+0027 putobject                              "\n"
+0029 adjuststack                            3
+0031 putobject                              "a\n"                     (  23)
+0033 putobject_INT2FIX_1_                                             (  25)
+0034 dup                                                              (  23)
+0035 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0037 anytostring
+0038 putobject                              "\n"
+0040 adjuststack                            3
+0042 putobject                              "\n"                      (  82)
+0044 putobject_INT2FIX_1_                                             (  84)
+0045 dup                                                              (  82)
+0046 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0048 anytostring
+0049 putobject                              "a\n"
+0051 adjuststack                            3
+0053 putobject_INT2FIX_1_                                             (  89)
+0054 dup                                                              (  87)
+0055 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0057 anytostring
+0058 putobject                              "\n\tb\n"
+0060 concatstrings                          2
+0062 leave

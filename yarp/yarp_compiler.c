@@ -205,7 +205,7 @@ yp_static_literal_value(yp_node_t *node)
         return Qtrue;
         // TODO: Implement this method for the other literal nodes described above
       default:
-        rb_raise(rb_eArgError, "Don't have a literal value for this type");
+        rb_bug("Don't have a literal value for this type");
         return Qfalse;
     }
 }
@@ -457,6 +457,7 @@ yp_interpolated_node_compile(yp_node_list_t parts, rb_iseq_t *iseq, NODE dummy_l
         ADD_INSN(ret, &dummy_line_node, putnil);
     }
 }
+
 static int
 yp_lookup_local_index(rb_iseq_t *iseq, yp_compile_context_t *compile_context, yp_constant_id_t constant_id)
 {
@@ -700,6 +701,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_BLOCK_ARGUMENT_NODE: {
+          yp_block_argument_node_t *block_argument_node = (yp_block_argument_node_t *) node;
+          YP_COMPILE(block_argument_node->expression);
+          return;
+      }
       case YP_BREAK_NODE: {
           yp_break_node_t *break_node = (yp_break_node_t *) node;
           if (break_node->arguments) {
@@ -737,26 +743,31 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
 
           VALUE block_iseq = Qnil;
-          if (call_node->block != NULL) {
+          if (call_node->block != NULL && YP_NODE_TYPE_P(call_node->block, YP_BLOCK_NODE)) {
               // Scope associated with the block
               yp_scope_node_t scope_node;
-              yp_scope_node_init((yp_node_t *)call_node->block, &scope_node);
+              yp_scope_node_init(call_node->block, &scope_node);
 
               const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
               ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
               ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq);
           }
           else {
+              if (node->flags & YP_CALL_NODE_FLAGS_VARIABLE_CALL) {
+                  flags |= VM_CALL_VCALL;
+              }
+
+              if (call_node->block != NULL) {
+                  YP_COMPILE_NOT_POPPED(call_node->block);
+                  flags |= VM_CALL_ARGS_BLOCKARG;
+              }
+
               if (block_iseq == Qnil && flags == 0) {
                   flags |= VM_CALL_ARGS_SIMPLE;
               }
 
               if (call_node->receiver == NULL) {
                   flags |= VM_CALL_FCALL;
-
-                  if (block_iseq == Qnil && call_node->arguments == NULL) {
-                      flags |= VM_CALL_VCALL;
-                  }
               }
 
               ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(orig_argc), INT2FIX(flags));
@@ -1246,8 +1257,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
               if (yp_static_node_literal_p(assoc_node->key) &&
                       yp_static_node_literal_p(assoc_node->value)) {
+                  // TODO: Extrapolate this further to bigger hashes
                   VALUE hash = rb_hash_new_with_size(1);
+                  VALUE ary = rb_ary_hidden_new(2);
+                  VALUE elem[2];
+                  elem[0] = yp_static_literal_value(assoc_node->key);
+                  elem[1] = yp_static_literal_value(assoc_node->value);
+                  rb_ary_cat(ary, elem, 2);
                   hash = rb_obj_hide(hash);
+                  rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
                   OBJ_FREEZE(hash);
                   ADD_INSN1(ret, &dummy_line_node, duphash, hash);
                   return;

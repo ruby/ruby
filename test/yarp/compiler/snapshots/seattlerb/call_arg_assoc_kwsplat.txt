@@ -1,0 +1,10 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,16)>
+0000 putself
+0001 putobject_INT2FIX_1_
+0002 putobject                              :kw
+0004 putobject                              2
+0006 putobject                              3
+0008 newarraykwsplat                        0
+0010 newhash                                4
+0012 opt_send_without_block                 <calldata!mid:f, argc:2, FCALL|ARGS_SIMPLE>
+0014 leave

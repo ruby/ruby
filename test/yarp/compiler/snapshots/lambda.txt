@@ -1,0 +1,50 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(10,18)>
+0000 putspecialobject                       1
+0002 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0005 pop
+0006 putspecialobject                       1                         (   4)
+0008 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0011 pop
+0012 putspecialobject                       1                         (   6)
+0014 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0017 pop
+0018 putspecialobject                       1                         (   8)
+0020 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0023 pop
+0024 putspecialobject                       1                         (  10)
+0026 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0029 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,0)-(2,4)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0<Arg>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:4 (4,0)-(5,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] x@0
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:6 (6,0)-(7,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putnil                                                           (   6)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:8 (8,0)-(9,0)>
+local table (size: 1, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0<Opt=0>
+0000 putself                                                          (   8)
+0001 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 setlocal_WC_0                          foo@0
+0005 nop                                    [Bc]
+0006 putnil
+0007 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:10 (10,0)-(11,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 putnil                                                           (  10)[Bc]
+0001 leave                                  [Br]

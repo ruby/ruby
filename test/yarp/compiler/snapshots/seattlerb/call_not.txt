@@ -1,0 +1,4 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,6)>
+0000 putobject                              42
+0002 opt_not                                <calldata!mid:!, argc:0, ARGS_SIMPLE>[CcCr]
+0004 leave

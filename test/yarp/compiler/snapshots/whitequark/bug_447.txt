@@ -1,0 +1,18 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,14)>
+0000 putself
+0001 newarray                               0
+0003 send                                   <calldata!mid:m, argc:1>, block in <compiled>
+0006 pop
+0007 putself                                                          (   2)
+0008 newarray                               0                         (   3)
+0010 putobject_INT2FIX_1_
+0011 send                                   <calldata!mid:m, argc:2>, block in <compiled>(   2)
+0014 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,5)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:3 (3,0)-(3,0)>
+0000 putnil                                                           (   2)[Bc]
+0001 leave                                  [Br]

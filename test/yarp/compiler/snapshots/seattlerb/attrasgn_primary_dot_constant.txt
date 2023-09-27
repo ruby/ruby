@@ -1,0 +1,6 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,7)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putobject_INT2FIX_1_
+0004 opt_send_without_block                 <calldata!mid:B=, argc:1, ARGS_SIMPLE>
+0006 leave

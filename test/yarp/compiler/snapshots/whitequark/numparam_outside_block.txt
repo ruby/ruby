@@ -1,0 +1,38 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(8,17)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 pop
+0004 putself                                                          (   2)
+0005 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0007 pop
+0008 putnil
+0009 defineclass                            :singletonclass, singleton class, 1
+0013 putspecialobject                       3                         (   4)
+0015 putnil
+0016 defineclass                            :A, <class:A>, 0
+0020 pop
+0021 definemethod                           :m, m                     (   6)
+0024 putspecialobject                       3                         (   8)
+0026 putnil
+0027 defineclass                            :A, <module:A>, 2
+0031 leave
+
+== disasm: #<ISeq:singleton class@<compiled>:2 (2,1)-(3,0)>
+0000 putself                                                          (   2)
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave
+
+== disasm: #<ISeq:<class:A>@<compiled>:4 (4,0)-(5,0)>
+0000 putself                                                          (   4)
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave
+
+== disasm: #<ISeq:m@<compiled>:6 (6,0)-(7,0)>
+0000 putself                                                          (   6)
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave
+
+== disasm: #<ISeq:<module:A>@<compiled>:8 (8,0)-(9,0)>
+0000 putself                                                          (   8)
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave

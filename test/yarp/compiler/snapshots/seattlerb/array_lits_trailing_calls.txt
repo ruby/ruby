@@ -1,0 +1,7 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,4)>
+0000 newarray                               0
+0002 opt_send_without_block                 <calldata!mid:b, argc:0, ARGS_SIMPLE>
+0004 pop
+0005 newarray                               0                         (   2)
+0007 opt_send_without_block                 <calldata!mid:b, argc:0, ARGS_SIMPLE>
+0009 leave

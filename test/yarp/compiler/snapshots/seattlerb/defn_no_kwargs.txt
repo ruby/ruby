@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,17)>
+0000 definemethod                           :x, x
+0003 putobject                              :x
+0005 leave
+
+== disasm: #<ISeq:x@<compiled>:0 (0,0)-(0,17)>
+0000 putnil
+0001 leave
