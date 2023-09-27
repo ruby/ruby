@@ -209,7 +209,6 @@ typedef struct RNode_CASE {
 
     struct RNode *nd_head;
     struct RNode *nd_body;
-    VALUE not_used;
 } rb_node_case_t;
 
 typedef struct RNode_CASE2 {
@@ -217,7 +216,6 @@ typedef struct RNode_CASE2 {
 
     struct RNode *nd_head;
     struct RNode *nd_body;
-    VALUE not_used;
 } rb_node_case2_t;
 
 typedef struct RNode_CASE3 {
@@ -225,7 +223,6 @@ typedef struct RNode_CASE3 {
 
     struct RNode *nd_head;
     struct RNode *nd_body;
-    VALUE not_used;
 } rb_node_case3_t;
 
 typedef struct RNode_WHEN {
