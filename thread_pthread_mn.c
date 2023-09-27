@@ -482,7 +482,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 #endif // USE_MN_THREADS
 
 /// EPOLL specific code
-#if HAVE_SYS_EPOLL_H
+#if HAVE_SYS_EPOLL_H && USE_MN_THREADS
 
 static bool
 fd_readable_nonblock(int fd)

@@ -663,6 +663,7 @@ thread_sched_readyq_contain_p(struct rb_thread_sched *sched, rb_thread_t *th)
 static rb_thread_t *
 thread_sched_deq(struct rb_thread_sched *sched)
 {
+    ASSERT_thread_sched_locked(sched, NULL);
     rb_thread_t *next_th;
 
     VM_ASSERT(sched->running != NULL);
@@ -687,6 +688,7 @@ thread_sched_deq(struct rb_thread_sched *sched)
 static void
 thread_sched_enq(struct rb_thread_sched *sched, rb_thread_t *ready_th)
 {
+    ASSERT_thread_sched_locked(sched, NULL);
     RUBY_DEBUG_LOG("ready_th:%u readyq_cnt:%d", rb_th_serial(ready_th), sched->readyq_cnt);
 
     VM_ASSERT(sched->running != NULL);
@@ -2642,7 +2644,7 @@ static struct {
 
     int comm_fds[2]; // r, w
 
-#if HAVE_SYS_EPOLL_H
+#if HAVE_SYS_EPOLL_H && USE_MN_THREADS
 #define EPOLL_EVENTS_MAX 0x10
     int epoll_fd;
     struct epoll_event finished_events[EPOLL_EVENTS_MAX];
@@ -2929,7 +2931,7 @@ rb_thread_create_timer_thread(void)
             RUBY_DEBUG_LOG("forked child process");
 
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
-#if HAVE_SYS_EPOLL_H
+#if HAVE_SYS_EPOLL_H && USE_MN_THREADS
             close_invalidate(&timer_th.epoll_fd, "close epoll_fd");
 #endif
             rb_native_mutex_destroy(&timer_th.waiting_lock);
@@ -3021,7 +3023,7 @@ rb_reserved_fd_p(int fd)
 
     if (fd == timer_th.comm_fds[0] ||
         fd == timer_th.comm_fds[1]
-#if HAVE_SYS_EPOLL_H
+#if HAVE_SYS_EPOLL_H && USE_MN_THREADS
         || fd == timer_th.epoll_fd
 #endif
         ) {
