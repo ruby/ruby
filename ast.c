@@ -681,7 +681,6 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:
       case NODE_DEF_TEMP:
-      case NODE_DEF_TEMP2:
       case NODE_RIPPER:
       case NODE_RIPPER_VALUES:
       case NODE_LAST:

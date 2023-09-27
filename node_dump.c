@@ -1105,7 +1105,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ARGS_AUX:
       case NODE_DEF_TEMP:
-      case NODE_DEF_TEMP2:
       case NODE_RIPPER:
       case NODE_RIPPER_VALUES:
       case NODE_LAST:

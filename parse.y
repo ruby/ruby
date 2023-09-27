@@ -1091,14 +1091,12 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 static rb_node_break_t *rb_node_break_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc);
 static rb_node_next_t *rb_node_next_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc);
 static rb_node_redo_t *rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_def_temp_t *rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_def_temp2_t *nd_next, const YYLTYPE *loc);
-static rb_node_def_temp2_t *rb_node_def_temp2_new(struct parser_params *p, NODE *nd_head, long nd_nth, VALUE nd_cval);
+static rb_node_def_temp_t *rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, VALUE nd_cval, const YYLTYPE *loc);
 
 #define NEW_BREAK(s,loc) (NODE *)rb_node_break_new(p,s,loc)
 #define NEW_NEXT(s,loc) (NODE *)rb_node_next_new(p,s,loc)
 #define NEW_REDO(loc) (NODE *)rb_node_redo_new(p,loc)
-#define NEW_DEF_TEMP(v,m,n,loc) (NODE *)rb_node_def_temp_new(p,v,m,n,loc)
-#define NEW_DEF_TEMP2(h,n,c) rb_node_def_temp2_new(p,h,n,c)
+#define NEW_DEF_TEMP(v,m,h,n,c,loc) (NODE *)rb_node_def_temp_new(p,v,m,h,n,c,loc)
 
 /* Make a new internal node, which should not be appeared in the
  * result AST and does not have node_id and location. */
@@ -1579,14 +1577,14 @@ static void
 restore_defun(struct parser_params *p, NODE *name)
 {
     /* See: def_name action */
-    struct RNode_DEF_TEMP2 *save = RNODE_DEF_TEMP(name)->nd_next;
-    YYSTYPE c = {.val = save->nd_cval};
-    p->cur_arg = RNODE_DEF_TEMP(name)->nd_vid;
+    rb_node_def_temp_t *temp = RNODE_DEF_TEMP(name);
+    YYSTYPE c = {.val = temp->nd_cval};
+    p->cur_arg = temp->nd_vid;
     p->ctxt.in_def = c.ctxt.in_def;
     p->ctxt.shareable_constant_value = c.ctxt.shareable_constant_value;
     p->ctxt.in_rescue = c.ctxt.in_rescue;
-    p->max_numparam = (int)save->nd_nth;
-    numparam_pop(p, save->nd_head);
+    p->max_numparam = (int)temp->nd_nth;
+    numparam_pop(p, temp->nd_head);
     clear_block_exit(p, true);
 }
 
@@ -2549,15 +2547,12 @@ def_name	: fname
                         ID cur_arg = p->cur_arg;
                         YYSTYPE c = {.ctxt = p->ctxt};
                         numparam_name(p, fname);
-                        rb_node_def_temp2_t *save =
-                            NEW_DEF_TEMP2(/*head*/numparam_push(p),
-                                          /*nth*/p->max_numparam,
-                                          /*cval*/c.val);
+                        NODE *save = numparam_push(p);
                         local_push(p, 0);
                         p->cur_arg = 0;
                         p->ctxt.in_def = 1;
                         p->ctxt.in_rescue = before_rescue;
-                        $<node>$ = NEW_DEF_TEMP(/*vid*/cur_arg, /*mid*/fname, /*next*/save, &@$);
+                        $<node>$ = NEW_DEF_TEMP(cur_arg, fname, save, p->max_numparam, c.val, &@$);
                     /*%%%*/
                     /*%
                         $$ = NEW_RIPPER(fname, get_value($1), $$, &NULL_LOC);
@@ -12182,20 +12177,11 @@ rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_def_temp_t *
-rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_def_temp2_t *nd_next, const YYLTYPE *loc)
+rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, VALUE nd_cval, const YYLTYPE *loc)
 {
     rb_node_def_temp_t *n = NODE_NEWNODE(NODE_DEF_TEMP, rb_node_def_temp_t, loc);
     n->nd_vid = nd_vid;
     n->nd_mid = nd_mid;
-    n->nd_next = nd_next;
-
-    return n;
-}
-
-static rb_node_def_temp2_t *
-rb_node_def_temp2_new(struct parser_params *p, NODE *nd_head, long nd_nth, VALUE nd_cval)
-{
-    rb_node_def_temp2_t *n = NODE_NEW_INTERNAL(NODE_DEF_TEMP2, rb_node_def_temp2_t);
     n->nd_head = nd_head;
     n->nd_nth = nd_nth;
     n->nd_cval = nd_cval;
