@@ -11716,9 +11716,7 @@ static rb_node_nth_ref_t *
 rb_node_nth_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc)
 {
     rb_node_nth_ref_t *n = NODE_NEWNODE(NODE_NTH_REF, rb_node_nth_ref_t, loc);
-    n->not_used = 0;
     n->nd_nth = nd_nth;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11727,9 +11725,7 @@ static rb_node_back_ref_t *
 rb_node_back_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc)
 {
     rb_node_back_ref_t *n = NODE_NEWNODE(NODE_BACK_REF, rb_node_back_ref_t, loc);
-    n->not_used = 0;
     n->nd_nth = nd_nth;
-    n->not_used2 = 0;
 
     return n;
 }
