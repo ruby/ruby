@@ -1,26 +1,26 @@
-module YARP
-  # The DSL module provides a set of methods that can be used to create YARP
+module Prism
+  # The DSL module provides a set of methods that can be used to create prism
   # nodes in a more concise manner. For example, instead of writing:
   #
-  #     source = YARP::Source.new("[1]")
+  #     source = Prism::Source.new("[1]")
   #
-  #     YARP::ArrayNode.new(
+  #     Prism::ArrayNode.new(
   #       [
-  #         YARP::IntegerNode.new(
-  #           YARP::IntegerBaseFlags::DECIMAL,
-  #           YARP::Location.new(source, 1, 1),
+  #         Prism::IntegerNode.new(
+  #           Prism::IntegerBaseFlags::DECIMAL,
+  #           Prism::Location.new(source, 1, 1),
   #         )
   #       ],
-  #       YARP::Location.new(source, 0, 1),
-  #       YARP::Location.new(source, 2, 1)
+  #       Prism::Location.new(source, 0, 1),
+  #       Prism::Location.new(source, 2, 1)
   #     )
   #
   # you could instead write:
   #
-  #     source = YARP::Source.new("[1]")
+  #     source = Prism::Source.new("[1]")
   #
   #     ArrayNode(
-  #       IntegerNode(YARP::IntegerBaseFlags::DECIMAL, Location(source, 1, 1))),
+  #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, Location(source, 1, 1))),
   #       Location(source, 0, 1),
   #       Location(source, 2, 1)
   #     )

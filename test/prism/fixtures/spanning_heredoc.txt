@@ -31,7 +31,7 @@ A
 j]
 
 # ripper can't parse this successfully, though ruby runs it correctly
-# TODO: yarp does not include the "\n" in "l\nl" in the AST like ruby does
+# TODO: prism does not include the "\n" in "l\nl" in the AST like ruby does
 pp <<-A, %W[l\
 k
 A
@@ -43,8 +43,8 @@ m
 A
 n]
 
-# ripper gets this one wrong in the same way that YARP does ...
-# TODO: yarp does not include the "\n" in "p\np" in the AST like ruby does
+# ripper gets this one wrong in the same way that prism does ...
+# TODO: prism does not include the "\n" in "p\np" in the AST like ruby does
 pp <<-A, %I[p\
 o
 A

@@ -15,7 +15,7 @@ return if RUBY_PLATFORM =~ /i686/
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class LocalsTest < TestCase
     invalid = []
     todos = []
@@ -93,7 +93,7 @@ module YARP
       source = File.read(filepath)
 
       expected = Debug.cruby_locals(source)
-      actual = Debug.yarp_locals(source)
+      actual = Debug.prism_locals(source)
 
       assert_equal(expected, actual)
     end

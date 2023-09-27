@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class PatternTest < TestCase
     def test_invalid_syntax
       assert_raise(Pattern::CompilationError) { scan("", "<>") }
@@ -69,7 +69,7 @@ module YARP
     end
 
     def test_constant_path
-      results = scan("Foo + Bar + Baz", "YARP::ConstantReadNode")
+      results = scan("Foo + Bar + Baz", "Prism::ConstantReadNode")
 
       assert_equal 3, results.length
     end
@@ -84,7 +84,7 @@ module YARP
       results = scan("Foo + Bar + Baz", "{ name: /^[[:punct:]]$/ }")
 
       assert_equal 2, results.length
-      assert_equal ["YARP::CallNode"], results.map { |node| node.class.name }.uniq
+      assert_equal ["Prism::CallNode"], results.map { |node| node.class.name }.uniq
     end
 
     def test_nil
@@ -126,7 +126,7 @@ module YARP
     private
 
     def scan(source, query)
-      YARP::Pattern.new(query).scan(YARP.parse(source).value).to_a
+      Prism::Pattern.new(query).scan(Prism.parse(source).value).to_a
     end
   end
 end

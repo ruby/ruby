@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class RipperCompatTest < TestCase
     def test_1_plus_2
       assert_equivalent("1 + 2")

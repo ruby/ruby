@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   # This module is used for testing and debugging and is not meant to be used by
   # consumers of this library.
   module Debug
@@ -77,11 +77,11 @@ module YARP
       end
     end
 
-    # For the given source, parses with YARP and returns a list of all of the
+    # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
-    def self.yarp_locals(source)
+    def self.prism_locals(source)
       locals = []
-      stack = [YARP.parse(source).value]
+      stack = [Prism.parse(source).value]
 
       while (node = stack.pop)
         case node
@@ -91,7 +91,7 @@ module YARP
           params = node.parameters
           params = params&.parameters unless node.is_a?(DefNode)
 
-          # YARP places parameters in the same order that they appear in the
+          # prism places parameters in the same order that they appear in the
           # source. CRuby places them in the order that they need to appear
           # according to their own internal calling convention. We mimic that
           # order here so that we can compare properly.
@@ -147,7 +147,7 @@ module YARP
     end
 
     def self.newlines(source)
-      YARP.parse(source).source.offsets
+      Prism.parse(source).source.offsets
     end
 
     def self.parse_serialize_file(filepath)

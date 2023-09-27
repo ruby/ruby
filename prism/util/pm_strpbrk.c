@@ -1,8 +1,8 @@
-#include "yarp/util/yp_strpbrk.h"
+#include "prism/util/pm_strpbrk.h"
 
 // This is the slow path that does care about the encoding.
 static inline const uint8_t *
-yp_strpbrk_multi_byte(yp_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t maximum) {
+pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t maximum) {
     size_t index = 0;
 
     while (index < maximum) {
@@ -23,7 +23,7 @@ yp_strpbrk_multi_byte(yp_parser_t *parser, const uint8_t *source, const uint8_t 
 
 // This is the fast path that does not care about the encoding.
 static inline const uint8_t *
-yp_strpbrk_single_byte(const uint8_t *source, const uint8_t *charset, size_t maximum) {
+pm_strpbrk_single_byte(const uint8_t *source, const uint8_t *charset, size_t maximum) {
     size_t index = 0;
 
     while (index < maximum) {
@@ -39,9 +39,9 @@ yp_strpbrk_single_byte(const uint8_t *source, const uint8_t *charset, size_t max
 
 // Here we have rolled our own version of strpbrk. The standard library strpbrk
 // has undefined behavior when the source string is not null-terminated. We want
-// to support strings that are not null-terminated because yp_parse does not
+// to support strings that are not null-terminated because pm_parse does not
 // have the contract that the string is null-terminated. (This is desirable
-// because it means the extension can call yp_parse with the result of a call to
+// because it means the extension can call pm_parse with the result of a call to
 // mmap).
 //
 // The standard library strpbrk also does not support passing a maximum length
@@ -55,12 +55,12 @@ yp_strpbrk_single_byte(const uint8_t *source, const uint8_t *charset, size_t max
 // Shift-JIS, the backslash character can be a trailing byte. In that case we
 // need to take a slower path and iterate one multi-byte character at a time.
 const uint8_t *
-yp_strpbrk(yp_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length) {
+pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length) {
     if (length <= 0) {
         return NULL;
     } else if (parser->encoding_changed && parser->encoding.multibyte) {
-        return yp_strpbrk_multi_byte(parser, source, charset, (size_t) length);
+        return pm_strpbrk_multi_byte(parser, source, charset, (size_t) length);
     } else {
-        return yp_strpbrk_single_byte(source, charset, (size_t) length);
+        return pm_strpbrk_single_byte(source, charset, (size_t) length);
     }
 }

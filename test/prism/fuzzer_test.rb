@@ -2,11 +2,11 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   # These tests are simply to exercise snippets found by the fuzzer that caused invalid memory access.
   class FuzzerTest < TestCase
     def self.snippet(name, source)
-      define_method(:"test_fuzzer_#{name}") { YARP.dump(source) }
+      define_method(:"test_fuzzer_#{name}") { Prism.dump(source) }
     end
 
     snippet "incomplete global variable", "$"

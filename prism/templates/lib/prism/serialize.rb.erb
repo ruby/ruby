@@ -11,7 +11,7 @@ if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset
   )
 end
 
-module YARP
+module Prism
   module Serialize
     MAJOR_VERSION = 0
     MINOR_VERSION = 12
@@ -67,7 +67,7 @@ module YARP
           length = load_varint
           lex_state = load_varint
           location = Location.new(@source, start, length)
-          tokens << [YARP::Token.new(type, location.slice, location), lex_state]
+          tokens << [Prism::Token.new(type, location.slice, location), lex_state]
         end
 
         tokens
@@ -83,11 +83,11 @@ module YARP
         end
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-        YARP::ParseResult.new(tokens, comments, errors, warnings, @source)
+        Prism::ParseResult.new(tokens, comments, errors, warnings, @source)
       end
 
       def load_nodes
-        raise "Invalid serialization" if io.read(4) != "YARP"
+        raise "Invalid serialization" if io.read(5) != "PRISM"
         raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
         only_semantic_fields = io.read(1).unpack1("C")
         unless only_semantic_fields == 0
@@ -107,7 +107,7 @@ module YARP
 
       def load_result
         node, comments, errors, warnings = load_nodes
-        YARP::ParseResult.new(node, comments, errors, warnings, @source)
+        Prism::ParseResult.new(node, comments, errors, warnings, @source)
       end
 
       private
@@ -204,16 +204,16 @@ module YARP
           <%- end -%>
           <%= node.name %>.new(<%= (node.fields.map { |field|
             case field
-            when YARP::NodeField then "load_node"
-            when YARP::OptionalNodeField then "load_optional_node"
-            when YARP::StringField then "load_string"
-            when YARP::NodeListField then "Array.new(load_varint) { load_node }"
-            when YARP::ConstantField then "load_required_constant"
-            when YARP::OptionalConstantField then "load_optional_constant"
-            when YARP::ConstantListField then "Array.new(load_varint) { load_required_constant }"
-            when YARP::LocationField then "load_location"
-            when YARP::OptionalLocationField then "load_optional_location"
-            when YARP::UInt32Field, YARP::FlagsField then "load_varint"
+            when Prism::NodeField then "load_node"
+            when Prism::OptionalNodeField then "load_optional_node"
+            when Prism::StringField then "load_string"
+            when Prism::NodeListField then "Array.new(load_varint) { load_node }"
+            when Prism::ConstantField then "load_required_constant"
+            when Prism::OptionalConstantField then "load_optional_constant"
+            when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
+            when Prism::LocationField then "load_location"
+            when Prism::OptionalLocationField then "load_optional_location"
+            when Prism::UInt32Field, Prism::FlagsField then "load_varint"
             else raise
             end
           } + ["location"]).join(", ") -%>)

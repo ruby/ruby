@@ -4,12 +4,12 @@ require "erb"
 require "fileutils"
 require "yaml"
 
-module YARP
+module Prism
   COMMON_FLAGS = 2
 
-  SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("YARP_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
+  SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
 
-  JAVA_BACKEND = ENV["YARP_JAVA_BACKEND"] || "truffleruby"
+  JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
   JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
 
   # This represents a field on a node. It contains all of the necessary
@@ -35,9 +35,9 @@ module YARP
   class NodeKindField < Field
     def c_type
       if options[:kind]
-        "yp_#{options[:kind].gsub(/(?<=.)[A-Z]/, "_\\0").downcase}"
+        "pm_#{options[:kind].gsub(/(?<=.)[A-Z]/, "_\\0").downcase}"
       else
-        "yp_node"
+        "pm_node"
       end
     end
 
@@ -201,7 +201,7 @@ module YARP
       @name = config.fetch("name")
 
       type = @name.gsub(/(?<=.)[A-Z]/, "_\\0")
-      @type = "YP_#{type.upcase}"
+      @type = "PM_#{type.upcase}"
       @human = type.downcase
 
       @fields =
@@ -255,7 +255,7 @@ module YARP
 
     def declaration
       output = []
-      output << "YP_TOKEN_#{name}"
+      output << "PM_TOKEN_#{name}"
       output << " = #{value}" if value
       output << ", // #{comment}"
       output.join
@@ -361,18 +361,18 @@ module YARP
   end
 
   TEMPLATES = [
-    "ext/yarp/api_node.c",
-    "include/yarp/ast.h",
-    "java/org/yarp/Loader.java",
-    "java/org/yarp/Nodes.java",
-    "java/org/yarp/AbstractNodeVisitor.java",
-    "lib/yarp/compiler.rb",
-    "lib/yarp/dispatcher.rb",
-    "lib/yarp/dsl.rb",
-    "lib/yarp/mutation_compiler.rb",
-    "lib/yarp/node.rb",
-    "lib/yarp/serialize.rb",
-    "lib/yarp/visitor.rb",
+    "ext/prism/api_node.c",
+    "include/prism/ast.h",
+    "java/org/prism/Loader.java",
+    "java/org/prism/Nodes.java",
+    "java/org/prism/AbstractNodeVisitor.java",
+    "lib/prism/compiler.rb",
+    "lib/prism/dispatcher.rb",
+    "lib/prism/dsl.rb",
+    "lib/prism/mutation_compiler.rb",
+    "lib/prism/node.rb",
+    "lib/prism/serialize.rb",
+    "lib/prism/visitor.rb",
     "src/node.c",
     "src/prettyprint.c",
     "src/serialize.c",
@@ -382,9 +382,9 @@ end
 
 if __FILE__ == $0
   if ARGV.empty?
-    YARP::TEMPLATES.each { |filepath| YARP.template(filepath) }
+    Prism::TEMPLATES.each { |filepath| Prism.template(filepath) }
   else # ruby/ruby
     name, write_to = ARGV
-    YARP.template(name, write_to: write_to)
+    Prism.template(name, write_to: write_to)
   end
 end

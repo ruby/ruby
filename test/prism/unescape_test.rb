@@ -2,9 +2,9 @@
 
 require_relative "test_helper"
 
-return if YARP::BACKEND == :FFI
+return if Prism::BACKEND == :FFI
 
-module YARP
+module Prism
   class UnescapeNoneTest < TestCase
     def test_backslash
       assert_unescape_none("\\")

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   class ParseResult
     # When we've parsed the source, we have both the syntax tree and the list of
     # comments that we found in the source. This class is responsible for

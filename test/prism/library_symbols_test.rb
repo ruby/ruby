@@ -4,9 +4,9 @@ require_relative "test_helper"
 
 return if RUBY_PLATFORM !~ /linux/
 
-module YARP
+module Prism
   #
-  #  examine a yarp dll or static archive for expected external symbols.
+  #  examine a prism dll or static archive for expected external symbols.
   #  these tests only work on a linux system right now.
   #
   class LibrarySymbolsTest < TestCase
@@ -15,7 +15,7 @@ module YARP
 
       @librubyparser_a = File.expand_path("../../build/librubyparser.a", __dir__)
       @librubyparser_so = File.expand_path("../../build/librubyparser.so", __dir__)
-      @yarp_so = File.expand_path("../../lib/yarp/yarp.so", __dir__)
+      @prism_so = File.expand_path("../../lib/prism/prism.so", __dir__)
     end
 
     # objdump runner and helpers
@@ -64,12 +64,12 @@ module YARP
       assert_empty(names(visible_global_objdump_symbols(@librubyparser_a)))
     end
 
-    def test_librubyparser_a_contains_hidden_yp_symbols
+    def test_librubyparser_a_contains_hidden_pm_symbols
       omit("librubyparser.a is not built") unless File.exist?(@librubyparser_a)
 
       names(hidden_global_objdump_symbols(@librubyparser_a)).tap do |symbols|
-        assert_includes(symbols, "yp_parse")
-        assert_includes(symbols, "yp_version")
+        assert_includes(symbols, "pm_parse")
+        assert_includes(symbols, "pm_version")
       end
     end
 
@@ -80,23 +80,23 @@ module YARP
       omit("librubyparser.so is not built") unless File.exist?(@librubyparser_so)
 
       names(global_nm_symbols(@librubyparser_so)).tap do |symbols|
-        assert_includes(symbols, "yp_parse")
-        assert_includes(symbols, "yp_version")
+        assert_includes(symbols, "pm_parse")
+        assert_includes(symbols, "pm_version")
       end
       names(local_nm_symbols(@librubyparser_so)).tap do |symbols|
-        assert_includes(symbols, "yp_encoding_shift_jis_isupper_char")
+        assert_includes(symbols, "pm_encoding_shift_jis_isupper_char")
       end
       # TODO: someone who uses this library needs to finish this test
     end
 
     #
-    #  shared object - yarp.so
+    #  shared object - prism.so
     #
-    def test_yarp_so_exports_only_the_C_extension_init_function
-      omit("yarp.so is not built") unless File.exist?(@yarp_so)
+    def test_prism_so_exports_only_the_C_extension_init_function
+      omit("prism.so is not built") unless File.exist?(@prism_so)
 
-      names(global_nm_symbols(@yarp_so)).tap do |symbols|
-        assert_equal(["Init_yarp"], symbols)
+      names(global_nm_symbols(@prism_so)).tap do |symbols|
+        assert_equal(["Init_prism"], symbols)
       end
     end
   end

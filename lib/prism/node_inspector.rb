@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   # This object is responsible for generating the output for the inspect method
   # implementations of child nodes.
   class NodeInspector

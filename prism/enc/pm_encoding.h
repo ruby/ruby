@@ -1,7 +1,7 @@
-#ifndef YARP_ENCODING_H
-#define YARP_ENCODING_H
+#ifndef PRISM_ENCODING_H
+#define PRISM_ENCODING_H
 
-#include "yarp/defines.h"
+#include "prism/defines.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -39,57 +39,57 @@ typedef struct {
 
     // Return true if the encoding is a multibyte encoding.
     bool multibyte;
-} yp_encoding_t;
+} pm_encoding_t;
 
 // These bits define the location of each bit of metadata within the various
 // lookup tables that are used to determine the properties of a character.
-#define YP_ENCODING_ALPHABETIC_BIT 1 << 0
-#define YP_ENCODING_ALPHANUMERIC_BIT 1 << 1
-#define YP_ENCODING_UPPERCASE_BIT 1 << 2
+#define PRISM_ENCODING_ALPHABETIC_BIT 1 << 0
+#define PRISM_ENCODING_ALPHANUMERIC_BIT 1 << 1
+#define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
 
 // These functions are reused by some other encodings, so they are defined here
 // so they can be shared.
-size_t yp_encoding_ascii_alpha_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n);
-size_t yp_encoding_ascii_alnum_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n);
-bool yp_encoding_ascii_isupper_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n);
+size_t pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n);
+size_t pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n);
+bool pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n);
 
 // These functions are shared between the actual encoding and the fast path in
 // the parser so they need to be internally visible.
-size_t yp_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
-size_t yp_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
+size_t pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
+size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
 
 // This lookup table is referenced in both the UTF-8 encoding file and the
 // parser directly in order to speed up the default encoding processing.
-extern const uint8_t yp_encoding_unicode_table[256];
+extern const uint8_t pm_encoding_unicode_table[256];
 
 // These are the encodings that are supported by the parser. They are defined in
 // their own files in the src/enc directory.
-extern yp_encoding_t yp_encoding_ascii;
-extern yp_encoding_t yp_encoding_ascii_8bit;
-extern yp_encoding_t yp_encoding_big5;
-extern yp_encoding_t yp_encoding_euc_jp;
-extern yp_encoding_t yp_encoding_gbk;
-extern yp_encoding_t yp_encoding_iso_8859_1;
-extern yp_encoding_t yp_encoding_iso_8859_2;
-extern yp_encoding_t yp_encoding_iso_8859_3;
-extern yp_encoding_t yp_encoding_iso_8859_4;
-extern yp_encoding_t yp_encoding_iso_8859_5;
-extern yp_encoding_t yp_encoding_iso_8859_6;
-extern yp_encoding_t yp_encoding_iso_8859_7;
-extern yp_encoding_t yp_encoding_iso_8859_8;
-extern yp_encoding_t yp_encoding_iso_8859_9;
-extern yp_encoding_t yp_encoding_iso_8859_10;
-extern yp_encoding_t yp_encoding_iso_8859_11;
-extern yp_encoding_t yp_encoding_iso_8859_13;
-extern yp_encoding_t yp_encoding_iso_8859_14;
-extern yp_encoding_t yp_encoding_iso_8859_15;
-extern yp_encoding_t yp_encoding_iso_8859_16;
-extern yp_encoding_t yp_encoding_koi8_r;
-extern yp_encoding_t yp_encoding_shift_jis;
-extern yp_encoding_t yp_encoding_utf_8;
-extern yp_encoding_t yp_encoding_utf8_mac;
-extern yp_encoding_t yp_encoding_windows_31j;
-extern yp_encoding_t yp_encoding_windows_1251;
-extern yp_encoding_t yp_encoding_windows_1252;
+extern pm_encoding_t pm_encoding_ascii;
+extern pm_encoding_t pm_encoding_ascii_8bit;
+extern pm_encoding_t pm_encoding_big5;
+extern pm_encoding_t pm_encoding_euc_jp;
+extern pm_encoding_t pm_encoding_gbk;
+extern pm_encoding_t pm_encoding_iso_8859_1;
+extern pm_encoding_t pm_encoding_iso_8859_2;
+extern pm_encoding_t pm_encoding_iso_8859_3;
+extern pm_encoding_t pm_encoding_iso_8859_4;
+extern pm_encoding_t pm_encoding_iso_8859_5;
+extern pm_encoding_t pm_encoding_iso_8859_6;
+extern pm_encoding_t pm_encoding_iso_8859_7;
+extern pm_encoding_t pm_encoding_iso_8859_8;
+extern pm_encoding_t pm_encoding_iso_8859_9;
+extern pm_encoding_t pm_encoding_iso_8859_10;
+extern pm_encoding_t pm_encoding_iso_8859_11;
+extern pm_encoding_t pm_encoding_iso_8859_13;
+extern pm_encoding_t pm_encoding_iso_8859_14;
+extern pm_encoding_t pm_encoding_iso_8859_15;
+extern pm_encoding_t pm_encoding_iso_8859_16;
+extern pm_encoding_t pm_encoding_koi8_r;
+extern pm_encoding_t pm_encoding_shift_jis;
+extern pm_encoding_t pm_encoding_utf_8;
+extern pm_encoding_t pm_encoding_utf8_mac;
+extern pm_encoding_t pm_encoding_windows_31j;
+extern pm_encoding_t pm_encoding_windows_1251;
+extern pm_encoding_t pm_encoding_windows_1252;
 
 #endif

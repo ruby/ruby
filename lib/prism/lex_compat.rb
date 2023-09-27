@@ -2,14 +2,14 @@
 
 require "delegate"
 
-module YARP
-  # This class is responsible for lexing the source using YARP and then
+module Prism
+  # This class is responsible for lexing the source using prism and then
   # converting those tokens to be compatible with Ripper. In the vast majority
   # of cases, this is a one-to-one mapping of the token type. Everything else
   # generally lines up. However, there are a few cases that require special
   # handling.
   class LexCompat
-    # This is a mapping of YARP token types to Ripper token types. This is a
+    # This is a mapping of prism token types to Ripper token types. This is a
     # many-to-one mapping because we split up our token types, whereas Ripper
     # tends to group them.
     RIPPER = {
@@ -339,8 +339,8 @@ module YARP
 
       # Heredocs that are dedenting heredocs are a little more complicated.
       # Ripper outputs on_ignored_sp tokens for the whitespace that is being
-      # removed from the output. YARP only modifies the node itself and keeps
-      # the token the same. This simplifies YARP, but makes comparing against
+      # removed from the output. prism only modifies the node itself and keeps
+      # the token the same. This simplifies prism, but makes comparing against
       # Ripper much harder because there is a length mismatch.
       #
       # Fortunately, we already have to pull out the heredoc tokens in order to
@@ -563,7 +563,7 @@ module YARP
       state = :default
       heredoc_stack = [[]]
 
-      result = YARP.lex(source, @filepath)
+      result = Prism.lex(source, @filepath)
       result_value = result.value
       previous_state = nil
 
@@ -650,7 +650,7 @@ module YARP
             IgnoredNewlineToken.new([[lineno, column], event, value, lex_state])
           when :on_regexp_end
             # On regex end, Ripper scans and then sets end state, so the ripper
-            # lexed output is begin, when it should be end. YARP sets lex state
+            # lexed output is begin, when it should be end. prism sets lex state
             # correctly to end state, but we want to be able to compare against
             # Ripper's lexed state. So here, if it's a regexp end token, we
             # output the state as the previous state, solely for the sake of
@@ -706,7 +706,7 @@ module YARP
 
         # The order in which tokens appear in our lexer is different from the
         # order that they appear in Ripper. When we hit the declaration of a
-        # heredoc in YARP, we skip forward and lex the rest of the content of
+        # heredoc in prism, we skip forward and lex the rest of the content of
         # the heredoc before going back and lexing at the end of the heredoc
         # identifier.
         #

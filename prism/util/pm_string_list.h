@@ -1,25 +1,25 @@
-#ifndef YARP_STRING_LIST_H
-#define YARP_STRING_LIST_H
+#ifndef PRISM_STRING_LIST_H
+#define PRISM_STRING_LIST_H
 
-#include "yarp/defines.h"
-#include "yarp/util/yp_string.h"
+#include "prism/defines.h"
+#include "prism/util/pm_string.h"
 
 #include <stddef.h>
 #include <stdlib.h>
 
 typedef struct {
-    yp_string_t *strings;
+    pm_string_t *strings;
     size_t length;
     size_t capacity;
-} yp_string_list_t;
+} pm_string_list_t;
 
-// Initialize a yp_string_list_t with its default values.
-YP_EXPORTED_FUNCTION void yp_string_list_init(yp_string_list_t *string_list);
+// Initialize a pm_string_list_t with its default values.
+PRISM_EXPORTED_FUNCTION void pm_string_list_init(pm_string_list_t *string_list);
 
-// Append a yp_string_t to the given string list.
-void yp_string_list_append(yp_string_list_t *string_list, yp_string_t *string);
+// Append a pm_string_t to the given string list.
+void pm_string_list_append(pm_string_list_t *string_list, pm_string_t *string);
 
 // Free the memory associated with the string list.
-YP_EXPORTED_FUNCTION void yp_string_list_free(yp_string_list_t *string_list);
+PRISM_EXPORTED_FUNCTION void pm_string_list_free(pm_string_list_t *string_list);
 
 #endif

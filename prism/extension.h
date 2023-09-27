@@ -1,18 +1,18 @@
-#ifndef YARP_EXT_NODE_H
-#define YARP_EXT_NODE_H
+#ifndef PRISM_EXT_NODE_H
+#define PRISM_EXT_NODE_H
 
-#define EXPECTED_YARP_VERSION "0.12.0"
+#define EXPECTED_PRISM_VERSION "0.12.0"
 
 #include <ruby.h>
 #include <ruby/encoding.h>
-#include "yarp.h"
+#include "prism.h"
 
-VALUE yp_source_new(yp_parser_t *parser, rb_encoding *encoding);
-VALUE yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding, VALUE source);
-VALUE yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding);
+VALUE pm_source_new(pm_parser_t *parser, rb_encoding *encoding);
+VALUE pm_token_new(pm_parser_t *parser, pm_token_t *token, rb_encoding *encoding, VALUE source);
+VALUE pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding);
 
-void Init_yarp_api_node(void);
-void Init_yarp_pack(void);
-YP_EXPORTED_FUNCTION void Init_yarp(void);
+void Init_prism_api_node(void);
+void Init_prism_pack(void);
+PRISM_EXPORTED_FUNCTION void Init_prism(void);
 
 #endif

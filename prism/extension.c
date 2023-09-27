@@ -1,18 +1,18 @@
-#include "yarp/extension.h"
+#include "prism/extension.h"
 
 // NOTE: this file should contain only bindings.
 // All non-trivial logic should be in librubyparser so it can be shared its the various callers.
 
-VALUE rb_cYARP;
-VALUE rb_cYARPNode;
-VALUE rb_cYARPSource;
-VALUE rb_cYARPToken;
-VALUE rb_cYARPLocation;
+VALUE rb_cPrism;
+VALUE rb_cPrismNode;
+VALUE rb_cPrismSource;
+VALUE rb_cPrismToken;
+VALUE rb_cPrismLocation;
 
-VALUE rb_cYARPComment;
-VALUE rb_cYARPParseError;
-VALUE rb_cYARPParseWarning;
-VALUE rb_cYARPParseResult;
+VALUE rb_cPrismComment;
+VALUE rb_cPrismParseError;
+VALUE rb_cPrismParseWarning;
+VALUE rb_cPrismParseResult;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -37,15 +37,15 @@ check_string(VALUE value) {
     return RSTRING_PTR(value);
 }
 
-// Load the contents and size of the given string into the given yp_string_t.
+// Load the contents and size of the given string into the given pm_string_t.
 static void
-input_load_string(yp_string_t *input, VALUE string) {
+input_load_string(pm_string_t *input, VALUE string) {
     // Check if the string is a string. If it's not, then raise a type error.
     if (!RB_TYPE_P(string, T_STRING)) {
         rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(string));
     }
 
-    yp_string_constant_init(input, RSTRING_PTR(string), RSTRING_LEN(string));
+    pm_string_constant_init(input, RSTRING_PTR(string), RSTRING_LEN(string));
 }
 
 /******************************************************************************/
@@ -54,22 +54,22 @@ input_load_string(yp_string_t *input, VALUE string) {
 
 // Dump the AST corresponding to the given input to a string.
 static VALUE
-dump_input(yp_string_t *input, const char *filepath) {
-    yp_buffer_t buffer;
-    if (!yp_buffer_init(&buffer)) {
+dump_input(pm_string_t *input, const char *filepath) {
+    pm_buffer_t buffer;
+    if (!pm_buffer_init(&buffer)) {
         rb_raise(rb_eNoMemError, "failed to allocate memory");
     }
 
-    yp_parser_t parser;
-    yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
 
-    yp_node_t *node = yp_parse(&parser);
-    yp_serialize(&parser, node, &buffer);
+    pm_node_t *node = pm_parse(&parser);
+    pm_serialize(&parser, node, &buffer);
 
-    VALUE result = rb_str_new(yp_buffer_value(&buffer), yp_buffer_length(&buffer));
-    yp_node_destroy(&parser, node);
-    yp_buffer_free(&buffer);
-    yp_parser_free(&parser);
+    VALUE result = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+    pm_node_destroy(&parser, node);
+    pm_buffer_free(&buffer);
+    pm_parser_free(&parser);
 
     return result;
 }
@@ -81,19 +81,19 @@ dump(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    yp_string_t input;
+    pm_string_t input;
     input_load_string(&input, string);
 
-#ifdef YARP_DEBUG_MODE_BUILD
-    size_t length = yp_string_length(&input);
+#ifdef PRISM_DEBUG_MODE_BUILD
+    size_t length = pm_string_length(&input);
     char* dup = malloc(length);
-    memcpy(dup, yp_string_source(&input), length);
-    yp_string_constant_init(&input, dup, length);
+    memcpy(dup, pm_string_source(&input), length);
+    pm_string_constant_init(&input, dup, length);
 #endif
 
     VALUE value = dump_input(&input, check_string(filepath));
 
-#ifdef YARP_DEBUG_MODE_BUILD
+#ifdef PRISM_DEBUG_MODE_BUILD
     free(dup);
 #endif
 
@@ -103,13 +103,13 @@ dump(int argc, VALUE *argv, VALUE self) {
 // Dump the AST corresponding to the given file to a string.
 static VALUE
 dump_file(VALUE self, VALUE filepath) {
-    yp_string_t input;
+    pm_string_t input;
 
     const char *checked = check_string(filepath);
-    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = dump_input(&input, checked);
-    yp_string_free(&input);
+    pm_string_free(&input);
 
     return value;
 }
@@ -120,10 +120,10 @@ dump_file(VALUE self, VALUE filepath) {
 
 // Extract the comments out of the parser into an array.
 static VALUE
-parser_comments(yp_parser_t *parser, VALUE source) {
+parser_comments(pm_parser_t *parser, VALUE source) {
     VALUE comments = rb_ary_new();
 
-    for (yp_comment_t *comment = (yp_comment_t *) parser->comment_list.head; comment != NULL; comment = (yp_comment_t *) comment->node.next) {
+    for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(comment->start - parser->start),
@@ -132,13 +132,13 @@ parser_comments(yp_parser_t *parser, VALUE source) {
 
         VALUE type;
         switch (comment->type) {
-            case YP_COMMENT_INLINE:
+            case PM_COMMENT_INLINE:
                 type = ID2SYM(rb_intern("inline"));
                 break;
-            case YP_COMMENT_EMBDOC:
+            case PM_COMMENT_EMBDOC:
                 type = ID2SYM(rb_intern("embdoc"));
                 break;
-            case YP_COMMENT___END__:
+            case PM_COMMENT___END__:
                 type = ID2SYM(rb_intern("__END__"));
                 break;
             default:
@@ -146,8 +146,8 @@ parser_comments(yp_parser_t *parser, VALUE source) {
                 break;
         }
 
-        VALUE comment_argv[] = { type, rb_class_new_instance(3, location_argv, rb_cYARPLocation) };
-        rb_ary_push(comments, rb_class_new_instance(2, comment_argv, rb_cYARPComment));
+        VALUE comment_argv[] = { type, rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
+        rb_ary_push(comments, rb_class_new_instance(2, comment_argv, rb_cPrismComment));
     }
 
     return comments;
@@ -155,11 +155,11 @@ parser_comments(yp_parser_t *parser, VALUE source) {
 
 // Extract the errors out of the parser into an array.
 static VALUE
-parser_errors(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
+parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     VALUE errors = rb_ary_new();
-    yp_diagnostic_t *error;
+    pm_diagnostic_t *error;
 
-    for (error = (yp_diagnostic_t *) parser->error_list.head; error != NULL; error = (yp_diagnostic_t *) error->node.next) {
+    for (error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(error->start - parser->start),
@@ -168,10 +168,10 @@ parser_errors(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
         VALUE error_argv[] = {
             rb_enc_str_new_cstr(error->message, encoding),
-            rb_class_new_instance(3, location_argv, rb_cYARPLocation)
+            rb_class_new_instance(3, location_argv, rb_cPrismLocation)
         };
 
-        rb_ary_push(errors, rb_class_new_instance(2, error_argv, rb_cYARPParseError));
+        rb_ary_push(errors, rb_class_new_instance(2, error_argv, rb_cPrismParseError));
     }
 
     return errors;
@@ -179,11 +179,11 @@ parser_errors(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
 // Extract the warnings out of the parser into an array.
 static VALUE
-parser_warnings(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
+parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     VALUE warnings = rb_ary_new();
-    yp_diagnostic_t *warning;
+    pm_diagnostic_t *warning;
 
-    for (warning = (yp_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (yp_diagnostic_t *) warning->node.next) {
+    for (warning = (pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(warning->start - parser->start),
@@ -192,10 +192,10 @@ parser_warnings(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
         VALUE warning_argv[] = {
             rb_enc_str_new_cstr(warning->message, encoding),
-            rb_class_new_instance(3, location_argv, rb_cYARPLocation)
+            rb_class_new_instance(3, location_argv, rb_cPrismLocation)
         };
 
-        rb_ary_push(warnings, rb_class_new_instance(2, warning_argv, rb_cYARPParseWarning));
+        rb_ary_push(warnings, rb_class_new_instance(2, warning_argv, rb_cPrismParseWarning));
     }
 
     return warnings;
@@ -218,11 +218,11 @@ typedef struct {
 // token is found. Once found, we initialize a new instance of Token and push it
 // onto the tokens array.
 static void
-parse_lex_token(void *data, yp_parser_t *parser, yp_token_t *token) {
+parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
 
     VALUE yields = rb_ary_new_capa(2);
-    rb_ary_push(yields, yp_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source));
+    rb_ary_push(yields, pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source));
     rb_ary_push(yields, INT2FIX(parser->lex_state));
 
     rb_ary_push(parse_lex_data->tokens, yields);
@@ -232,7 +232,7 @@ parse_lex_token(void *data, yp_parser_t *parser, yp_token_t *token) {
 // the top of the file. We use it to update the encoding that we are using to
 // create tokens.
 static void
-parse_lex_encoding_changed_callback(yp_parser_t *parser) {
+parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
     parse_lex_data->encoding = rb_enc_find(parser->encoding.name);
 
@@ -254,14 +254,14 @@ parse_lex_encoding_changed_callback(yp_parser_t *parser) {
 // Parse the given input and return a ParseResult containing just the tokens or
 // the nodes and tokens.
 static VALUE
-parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
-    yp_parser_t parser;
-    yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
-    yp_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
+parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+    pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { rb_str_new((const char *) yp_string_source(input), yp_string_length(input)), offsets };
-    VALUE source = rb_class_new_instance(2, source_argv, rb_cYARPSource);
+    VALUE source_argv[] = { rb_str_new((const char *) pm_string_source(input), pm_string_length(input)), offsets };
+    VALUE source = rb_class_new_instance(2, source_argv, rb_cPrismSource);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
@@ -270,13 +270,13 @@ parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
     };
 
     parse_lex_data_t *data = &parse_lex_data;
-    yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
+    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) data,
         .callback = parse_lex_token,
     };
 
     parser.lex_callback = &lex_callback;
-    yp_node_t *node = yp_parse(&parser);
+    pm_node_t *node = pm_parse(&parser);
 
     // Here we need to update the source range to have the correct newline
     // offsets. We do it here because we've already created the object and given
@@ -288,7 +288,7 @@ parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
     VALUE value;
     if (return_nodes) {
         value = rb_ary_new_capa(2);
-        rb_ary_push(value, yp_ast_new(&parser, node, parse_lex_data.encoding));
+        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding));
         rb_ary_push(value, parse_lex_data.tokens);
     } else {
         value = parse_lex_data.tokens;
@@ -302,9 +302,9 @@ parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
         source
     };
 
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
-    return rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+    return rb_class_new_instance(5, result_argv, rb_cPrismParseResult);
 }
 
 // Return an array of tokens corresponding to the given string.
@@ -314,7 +314,7 @@ lex(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    yp_string_t input;
+    pm_string_t input;
     input_load_string(&input, string);
 
     return parse_lex_input(&input, check_string(filepath), false);
@@ -323,13 +323,13 @@ lex(int argc, VALUE *argv, VALUE self) {
 // Return an array of tokens corresponding to the given file.
 static VALUE
 lex_file(VALUE self, VALUE filepath) {
-    yp_string_t input;
+    pm_string_t input;
 
     const char *checked = check_string(filepath);
-    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = parse_lex_input(&input, checked, false);
-    yp_string_free(&input);
+    pm_string_free(&input);
 
     return value;
 }
@@ -340,26 +340,26 @@ lex_file(VALUE self, VALUE filepath) {
 
 // Parse the given input and return a ParseResult instance.
 static VALUE
-parse_input(yp_string_t *input, const char *filepath) {
-    yp_parser_t parser;
-    yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
+parse_input(pm_string_t *input, const char *filepath) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
 
-    yp_node_t *node = yp_parse(&parser);
+    pm_node_t *node = pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
 
-    VALUE source = yp_source_new(&parser, encoding);
+    VALUE source = pm_source_new(&parser, encoding);
     VALUE result_argv[] = {
-        yp_ast_new(&parser, node, encoding),
+        pm_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
         parser_errors(&parser, encoding, source),
         parser_warnings(&parser, encoding, source),
         source
     };
 
-    VALUE result = rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
+    VALUE result = rb_class_new_instance(5, result_argv, rb_cPrismParseResult);
 
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
 
     return result;
 }
@@ -371,19 +371,19 @@ parse(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    yp_string_t input;
+    pm_string_t input;
     input_load_string(&input, string);
 
-#ifdef YARP_DEBUG_MODE_BUILD
-    size_t length = yp_string_length(&input);
+#ifdef PRISM_DEBUG_MODE_BUILD
+    size_t length = pm_string_length(&input);
     char* dup = malloc(length);
-    memcpy(dup, yp_string_source(&input), length);
-    yp_string_constant_init(&input, dup, length);
+    memcpy(dup, pm_string_source(&input), length);
+    pm_string_constant_init(&input, dup, length);
 #endif
 
     VALUE value = parse_input(&input, check_string(filepath));
 
-#ifdef YARP_DEBUG_MODE_BUILD
+#ifdef PRISM_DEBUG_MODE_BUILD
     free(dup);
 #endif
 
@@ -393,13 +393,13 @@ parse(int argc, VALUE *argv, VALUE self) {
 // Parse the given file and return a ParseResult instance.
 static VALUE
 parse_file(VALUE self, VALUE filepath) {
-    yp_string_t input;
+    pm_string_t input;
 
     const char *checked = check_string(filepath);
-    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = parse_input(&input, checked);
-    yp_string_free(&input);
+    pm_string_free(&input);
 
     return value;
 }
@@ -411,11 +411,11 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    yp_string_t input;
+    pm_string_t input;
     input_load_string(&input, string);
 
     VALUE value = parse_lex_input(&input, check_string(filepath), true);
-    yp_string_free(&input);
+    pm_string_free(&input);
 
     return value;
 }
@@ -423,13 +423,13 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 // Parse and lex the given file and return a ParseResult instance.
 static VALUE
 parse_lex_file(VALUE self, VALUE filepath) {
-    yp_string_t input;
+    pm_string_t input;
 
     const char *checked = check_string(filepath);
-    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = parse_lex_input(&input, checked, true);
-    yp_string_free(&input);
+    pm_string_free(&input);
 
     return value;
 }
@@ -439,40 +439,40 @@ parse_lex_file(VALUE self, VALUE filepath) {
 /******************************************************************************/
 
 // Returns an array of strings corresponding to the named capture groups in the
-// given source string. If YARP was unable to parse the regular expression, this
+// given source string. If prism was unable to parse the regular expression, this
 // function returns nil.
 static VALUE
 named_captures(VALUE self, VALUE source) {
-    yp_string_list_t string_list;
-    yp_string_list_init(&string_list);
+    pm_string_list_t string_list;
+    pm_string_list_init(&string_list);
 
-    if (!yp_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
-        yp_string_list_free(&string_list);
+    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &pm_encoding_utf_8)) {
+        pm_string_list_free(&string_list);
         return Qnil;
     }
 
     VALUE names = rb_ary_new();
     for (size_t index = 0; index < string_list.length; index++) {
-        const yp_string_t *string = &string_list.strings[index];
-        rb_ary_push(names, rb_str_new((const char *) yp_string_source(string), yp_string_length(string)));
+        const pm_string_t *string = &string_list.strings[index];
+        rb_ary_push(names, rb_str_new((const char *) pm_string_source(string), pm_string_length(string)));
     }
 
-    yp_string_list_free(&string_list);
+    pm_string_list_free(&string_list);
     return names;
 }
 
 // Accepts a source string and a type of unescaping and returns the unescaped
 // version.
 static VALUE
-unescape(VALUE source, yp_unescape_type_t unescape_type) {
-    yp_string_t result;
+unescape(VALUE source, pm_unescape_type_t unescape_type) {
+    pm_string_t result;
 
-    if (yp_unescape_string((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
-        VALUE str = rb_str_new((const char *) yp_string_source(&result), yp_string_length(&result));
-        yp_string_free(&result);
+    if (pm_unescape_string((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
+        VALUE str = rb_str_new((const char *) pm_string_source(&result), pm_string_length(&result));
+        pm_string_free(&result);
         return str;
     } else {
-        yp_string_free(&result);
+        pm_string_free(&result);
         return Qnil;
     }
 }
@@ -481,41 +481,41 @@ unescape(VALUE source, yp_unescape_type_t unescape_type) {
 // consistent API.
 static VALUE
 unescape_none(VALUE self, VALUE source) {
-    return unescape(source, YP_UNESCAPE_NONE);
+    return unescape(source, PM_UNESCAPE_NONE);
 }
 
 // Minimally unescape the given string. This means effectively unescaping just
 // the quotes of a string. Returns the unescaped string.
 static VALUE
 unescape_minimal(VALUE self, VALUE source) {
-    return unescape(source, YP_UNESCAPE_MINIMAL);
+    return unescape(source, PM_UNESCAPE_MINIMAL);
 }
 
 // Escape the given string minimally plus whitespace. Returns the unescaped string.
 static VALUE
 unescape_whitespace(VALUE self, VALUE source) {
-    return unescape(source, YP_UNESCAPE_WHITESPACE);
+    return unescape(source, PM_UNESCAPE_WHITESPACE);
 }
 
 // Unescape everything in the given string. Return the unescaped string.
 static VALUE
 unescape_all(VALUE self, VALUE source) {
-    return unescape(source, YP_UNESCAPE_ALL);
+    return unescape(source, PM_UNESCAPE_ALL);
 }
 
 // Return a hash of information about the given source string's memory usage.
 static VALUE
 memsize(VALUE self, VALUE string) {
-    yp_parser_t parser;
+    pm_parser_t parser;
     size_t length = RSTRING_LEN(string);
-    yp_parser_init(&parser, (const uint8_t *) RSTRING_PTR(string), length, NULL);
+    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(string), length, NULL);
 
-    yp_node_t *node = yp_parse(&parser);
-    yp_memsize_t memsize;
-    yp_node_memsize(node, &memsize);
+    pm_node_t *node = pm_parse(&parser);
+    pm_memsize_t memsize;
+    pm_node_memsize(node, &memsize);
 
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
 
     VALUE result = rb_hash_new();
     rb_hash_aset(result, ID2SYM(rb_intern("length")), INT2FIX(length));
@@ -528,19 +528,19 @@ memsize(VALUE self, VALUE string) {
 // parser for memory and speed.
 static VALUE
 profile_file(VALUE self, VALUE filepath) {
-    yp_string_t input;
+    pm_string_t input;
 
     const char *checked = check_string(filepath);
-    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    yp_parser_t parser;
-    yp_parser_init(&parser, yp_string_source(&input), yp_string_length(&input), checked);
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), checked);
 
-    yp_node_t *node = yp_parse(&parser);
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
+    pm_node_t *node = pm_parse(&parser);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
 
-    yp_string_free(&input);
+    pm_string_free(&input);
 
     return Qnil;
 }
@@ -549,18 +549,18 @@ profile_file(VALUE self, VALUE filepath) {
 // path since it is used by client libraries.
 static VALUE
 parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
-    yp_string_t input;
-    yp_buffer_t buffer;
-    yp_buffer_init(&buffer);
+    pm_string_t input;
+    pm_buffer_t buffer;
+    pm_buffer_init(&buffer);
 
     const char *checked = check_string(filepath);
-    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    yp_parse_serialize(yp_string_source(&input), yp_string_length(&input), &buffer, check_string(metadata));
-    VALUE result = rb_str_new(yp_buffer_value(&buffer), yp_buffer_length(&buffer));
+    pm_parse_serialize(pm_string_source(&input), pm_string_length(&input), &buffer, check_string(metadata));
+    VALUE result = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
 
-    yp_string_free(&input);
-    yp_buffer_free(&buffer);
+    pm_string_free(&input);
+    pm_buffer_free(&buffer);
     return result;
 }
 
@@ -569,58 +569,58 @@ parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
 /******************************************************************************/
 
 RUBY_FUNC_EXPORTED void
-Init_yarp(void) {
-    // Make sure that the YARP library version matches the expected version.
+Init_prism(void) {
+    // Make sure that the prism library version matches the expected version.
     // Otherwise something was compiled incorrectly.
-    if (strcmp(yp_version(), EXPECTED_YARP_VERSION) != 0) {
+    if (strcmp(pm_version(), EXPECTED_PRISM_VERSION) != 0) {
         rb_raise(
             rb_eRuntimeError,
-            "The YARP library version (%s) does not match the expected version (%s)",
-            yp_version(),
-            EXPECTED_YARP_VERSION
+            "The prism library version (%s) does not match the expected version (%s)",
+            pm_version(),
+            EXPECTED_PRISM_VERSION
         );
     }
 
     // Grab up references to all of the constants that we're going to need to
     // reference throughout this extension.
-    rb_cYARP = rb_define_module("YARP");
-    rb_cYARPNode = rb_define_class_under(rb_cYARP, "Node", rb_cObject);
-    rb_cYARPSource = rb_define_class_under(rb_cYARP, "Source", rb_cObject);
-    rb_cYARPToken = rb_define_class_under(rb_cYARP, "Token", rb_cObject);
-    rb_cYARPLocation = rb_define_class_under(rb_cYARP, "Location", rb_cObject);
-    rb_cYARPComment = rb_define_class_under(rb_cYARP, "Comment", rb_cObject);
-    rb_cYARPParseError = rb_define_class_under(rb_cYARP, "ParseError", rb_cObject);
-    rb_cYARPParseWarning = rb_define_class_under(rb_cYARP, "ParseWarning", rb_cObject);
-    rb_cYARPParseResult = rb_define_class_under(rb_cYARP, "ParseResult", rb_cObject);
+    rb_cPrism = rb_define_module("Prism");
+    rb_cPrismNode = rb_define_class_under(rb_cPrism, "Node", rb_cObject);
+    rb_cPrismSource = rb_define_class_under(rb_cPrism, "Source", rb_cObject);
+    rb_cPrismToken = rb_define_class_under(rb_cPrism, "Token", rb_cObject);
+    rb_cPrismLocation = rb_define_class_under(rb_cPrism, "Location", rb_cObject);
+    rb_cPrismComment = rb_define_class_under(rb_cPrism, "Comment", rb_cObject);
+    rb_cPrismParseError = rb_define_class_under(rb_cPrism, "ParseError", rb_cObject);
+    rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
+    rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cObject);
 
     // Define the version string here so that we can use the constants defined
-    // in yarp.h.
-    rb_define_const(rb_cYARP, "VERSION", rb_str_new2(EXPECTED_YARP_VERSION));
-    rb_define_const(rb_cYARP, "BACKEND", ID2SYM(rb_intern("CExtension")));
+    // in prism.h.
+    rb_define_const(rb_cPrism, "VERSION", rb_str_new2(EXPECTED_PRISM_VERSION));
+    rb_define_const(rb_cPrism, "BACKEND", ID2SYM(rb_intern("CExtension")));
 
     // First, the functions that have to do with lexing and parsing.
-    rb_define_singleton_method(rb_cYARP, "dump", dump, -1);
-    rb_define_singleton_method(rb_cYARP, "dump_file", dump_file, 1);
-    rb_define_singleton_method(rb_cYARP, "lex", lex, -1);
-    rb_define_singleton_method(rb_cYARP, "lex_file", lex_file, 1);
-    rb_define_singleton_method(rb_cYARP, "parse", parse, -1);
-    rb_define_singleton_method(rb_cYARP, "parse_file", parse_file, 1);
-    rb_define_singleton_method(rb_cYARP, "parse_lex", parse_lex, -1);
-    rb_define_singleton_method(rb_cYARP, "parse_lex_file", parse_lex_file, 1);
+    rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
+    rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, 1);
+    rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
+    rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, 1);
+    rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, 1);
+    rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, 1);
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
-    VALUE rb_cYARPDebug = rb_define_module_under(rb_cYARP, "Debug");
-    rb_define_singleton_method(rb_cYARPDebug, "named_captures", named_captures, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "unescape_none", unescape_none, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "unescape_minimal", unescape_minimal, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "unescape_whitespace", unescape_whitespace, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "unescape_all", unescape_all, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "memsize", memsize, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "profile_file", profile_file, 1);
-    rb_define_singleton_method(rb_cYARPDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);
+    VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
+    rb_define_singleton_method(rb_cPrismDebug, "named_captures", named_captures, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "unescape_none", unescape_none, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "unescape_minimal", unescape_minimal, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "unescape_whitespace", unescape_whitespace, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "unescape_all", unescape_all, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
+    rb_define_singleton_method(rb_cPrismDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);
 
     // Next, initialize the other APIs.
-    Init_yarp_api_node();
-    Init_yarp_pack();
+    Init_prism_api_node();
+    Init_prism_pack();
 }

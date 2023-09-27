@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class DispatcherTest < TestCase
     class TestListener
       attr_reader :events_received
@@ -29,7 +29,7 @@ module YARP
       dispatcher = Dispatcher.new
       dispatcher.register(listener, :on_call_node_enter, :on_call_node_leave, :on_integer_node_enter)
 
-      root = YARP.parse(<<~RUBY).value
+      root = Prism.parse(<<~RUBY).value
         def foo
           something(1, 2, 3)
         end

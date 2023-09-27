@@ -2,9 +2,9 @@
 
 require_relative "test_helper"
 
-return if YARP::BACKEND == :FFI
+return if Prism::BACKEND == :FFI
 
-module YARP
+module Prism
   class MemsizeTest < TestCase
     def test_memsize
       result = Debug.memsize("2 + 3")

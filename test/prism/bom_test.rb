@@ -6,7 +6,7 @@ return if RUBY_ENGINE == "jruby" || RUBY_ENGINE == "truffleruby"
 
 require_relative "test_helper"
 
-module YARP
+module Prism
   class BOMTest < TestCase
     def test_ident
       assert_bom("foo")
@@ -53,7 +53,7 @@ module YARP
 
     def assert_bom(source)
       bommed = "\xEF\xBB\xBF#{source}"
-      assert_equal YARP.lex_ripper(bommed), YARP.lex_compat(bommed).value
+      assert_equal Prism.lex_ripper(bommed), Prism.lex_compat(bommed).value
     end
   end
 end
