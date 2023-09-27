@@ -11403,7 +11403,6 @@ rb_node_dot2_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLT
     rb_node_dot2_t *n = NODE_NEWNODE(NODE_DOT2, rb_node_dot2_t, loc);
     n->nd_beg = nd_beg;
     n->nd_end = nd_end;
-    n->not_used = 0;
 
     return n;
 }
@@ -11414,7 +11413,6 @@ rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLT
     rb_node_dot3_t *n = NODE_NEWNODE(NODE_DOT3, rb_node_dot3_t, loc);
     n->nd_beg = nd_beg;
     n->nd_end = nd_end;
-    n->not_used = 0;
 
     return n;
 }
