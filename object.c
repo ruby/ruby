@@ -993,24 +993,34 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *
  * Callback invoked whenever a subclass of the current class is created.
  *
+ * The callback is only called on the immediate superclass of the new
+ * subclass, and not further ancestors.
+ * So if you want to propagate it, you'll have to manually call +super+.
+ *
  * Example:
  *
- *    class Foo
+ *    class GrandParent
  *      def self.inherited(subclass)
- *        puts "New subclass: #{subclass}"
+ *        super
+ *        puts "New GrandParent subclass: #{subclass}"
  *      end
  *    end
  *
- *    class Bar < Foo
+ *    class Parent < GrandParent
+ *      def self.inherited(subclass)
+ *        super
+ *        puts "New Parent subclass: #{subclass}"
+ *      end
  *    end
  *
- *    class Baz < Bar
+ *    class Child < Parent
  *    end
  *
  * <em>produces:</em>
  *
- *    New subclass: Bar
- *    New subclass: Baz
+ *   New GrandParent subclass: Parent
+ *   New GrandParent subclass: Child
+ *   New Parent subclass: Child
  */
 #define rb_obj_class_inherited rb_obj_dummy1
 
