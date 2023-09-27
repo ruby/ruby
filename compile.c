@@ -43,7 +43,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "yarp/yarp.h"
+#include "prism/prism.h"
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
@@ -856,17 +856,17 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-typedef struct yp_compile_context {
-    yp_parser_t *parser;
-    struct yp_compile_context *previous;
+typedef struct pm_compile_context {
+    pm_parser_t *parser;
+    struct pm_compile_context *previous;
     ID *constants;
     st_table *index_lookup_table;
-} yp_compile_context_t;
+} pm_compile_context_t;
 
-static VALUE rb_translate_yarp(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, yp_compile_context_t *compile_context);
+static VALUE rb_translate_prism(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_compile_context_t *compile_context);
 
 VALUE
-rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t *yarp_pointer, yp_parser_t *parser)
+rb_iseq_compile_prism_node(rb_iseq_t * iseq, const pm_node_t *node, pm_parser_t *parser)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
@@ -875,20 +875,20 @@ rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t *yarp_pointer, yp_pa
     rb_encoding *encoding = rb_enc_find(parser->encoding.name);
 
     for (size_t index = 0; index < parser->constant_pool.capacity; index++) {
-        yp_constant_t constant = parser->constant_pool.constants[index];
+        pm_constant_t constant = parser->constant_pool.constants[index];
 
         if (constant.id != 0) {
             constants[constant.id - 1] = rb_intern3((const char *) constant.start, constant.length, encoding);
         }
     }
 
-    yp_compile_context_t compile_context = {
+    pm_compile_context_t compile_context = {
         .parser = parser,
         .previous = NULL,
         .constants = constants
     };
 
-    CHECK(rb_translate_yarp(iseq, yarp_pointer, ret, &compile_context));
+    CHECK(rb_translate_prism(iseq, node, ret, &compile_context));
     free(constants);
 
     CHECK(iseq_setup_insn(iseq, ret));
@@ -13369,4 +13369,4 @@ rb_iseq_ibf_load_extra_data(VALUE str)
     return extra_str;
 }
 
-#include "yarp/yarp_compiler.c"
+#include "prism/prism_compiler.c"

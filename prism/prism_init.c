@@ -1,9 +1,9 @@
-#include "yarp/extension.h"
+#include "prism/extension.h"
 
 void ruby_init_ext(const char *name, void (*init)(void));
 
 void
-Init_YARP(void)
+Init_Prism(void)
 {
-    ruby_init_ext("yarp/yarp.so", Init_yarp);
+    ruby_init_ext("prism/prism.so", Init_prism);
 }

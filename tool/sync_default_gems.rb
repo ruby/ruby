@@ -53,6 +53,7 @@ module SyncDefaultGems
     pathname: "ruby/pathname",
     pp: "ruby/pp",
     prettyprint: "ruby/prettyprint",
+    prism: ["ruby/prism", "main"],
     pstore: "ruby/pstore",
     psych: 'ruby/psych',
     rdoc: 'ruby/rdoc',
@@ -79,7 +80,6 @@ module SyncDefaultGems
     weakref: "ruby/weakref",
     win32ole: "ruby/win32ole",
     yaml: "ruby/yaml",
-    yarp: ["ruby/yarp", "main"],
     zlib: 'ruby/zlib',
   }.transform_keys(&:to_s)
 
@@ -397,7 +397,7 @@ module SyncDefaultGems
       rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
-    when "yarp"
+    when "prism"
       # We don't want to remove prism-specific files that existing in ruby/ruby
       # that do not exist in ruby/prism, so we temporarily move them out of the
       # prism dir, wipe the prism dir, and then put them back.

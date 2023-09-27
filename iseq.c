@@ -43,7 +43,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "yarp/yarp.h"
+#include "prism/prism.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -939,10 +939,10 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     return iseq_translate(iseq);
 }
 
-VALUE rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer, yp_parser_t *parser);
+VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, const pm_node_t *node, pm_parser_t *parser);
 
 rb_iseq_t *
-yp_iseq_new_with_opt(yp_node_t *node, yp_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+pm_iseq_new_with_opt(pm_node_t *node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option)
 {
@@ -953,17 +953,18 @@ yp_iseq_new_with_opt(yp_node_t *node, yp_parser_t *parser, VALUE name, VALUE pat
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
     if (node) {
-        yp_line_column_t start_line_col = yp_newline_list_line_column(&(parser->newline_list), node->location.start);
-        yp_line_column_t end_line_col= yp_newline_list_line_column(&(parser->newline_list), node->location.end);
+        pm_line_column_t start_line_col = pm_newline_list_line_column(&parser->newline_list, node->location.start);
+        pm_line_column_t end_line_col = pm_newline_list_line_column(&parser->newline_list, node->location.end);
+
         code_loc = (rb_code_location_t) {
             .beg_pos = {
-                .lineno = (int)start_line_col.line,
-                .column = (int)start_line_col.column
+                .lineno = (int) start_line_col.line,
+                .column = (int) start_line_col.column
             },
-                .end_pos = {
-                    .lineno = (int)end_line_col.line,
-                    .column = (int)end_line_col.column
-                },
+            .end_pos = {
+                .lineno = (int) end_line_col.line,
+                .column = (int) end_line_col.column
+            },
         };
     }
 
@@ -972,7 +973,7 @@ yp_iseq_new_with_opt(yp_node_t *node, yp_parser_t *parser, VALUE name, VALUE pat
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_loc, node_id,
             parent, isolated_depth, type, script_lines, option);
 
-    rb_iseq_compile_yarp_node(iseq, node, parser);
+    rb_iseq_compile_prism_node(iseq, node, parser);
 
     finish_iseq_build(iseq);
 
@@ -1387,7 +1388,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-iseqw_s_compile_yarp(int argc, VALUE *argv, VALUE self)
+iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 {
     VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
     int i;
@@ -1410,17 +1411,17 @@ iseqw_s_compile_yarp(int argc, VALUE *argv, VALUE self)
 
     rb_iseq_t *iseq = iseq_alloc();
 
-    yp_parser_t parser;
+    pm_parser_t parser;
     size_t len = RSTRING_LEN(src);
     VALUE name = rb_fstring_lit("<compiled>");
 
-    yp_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), len, "");
+    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), len, "");
 
-    yp_node_t *node = yp_parse(&parser);
+    pm_node_t *node = pm_parse(&parser);
 
     int first_lineno = NUM2INT(line);
-    yp_line_column_t start_loc = yp_newline_list_line_column(&parser.newline_list, node->location.start);
-    yp_line_column_t end_loc = yp_newline_list_line_column(&parser.newline_list, node->location.end);
+    pm_line_column_t start_loc = pm_newline_list_line_column(&parser.newline_list, node->location.start);
+    pm_line_column_t end_loc = pm_newline_list_line_column(&parser.newline_list, node->location.end);
 
     rb_code_location_t node_location;
     node_location.beg_pos.lineno = (int)start_loc.line;
@@ -1439,11 +1440,11 @@ iseqw_s_compile_yarp(int argc, VALUE *argv, VALUE self)
     prepare_iseq_build(iseq, name, file, path, first_lineno, &node_location, node_id,
                        parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
 
-    rb_iseq_compile_yarp_node(iseq, node, &parser);
+    rb_iseq_compile_prism_node(iseq, node, &parser);
 
     finish_iseq_build(iseq);
-    yp_node_destroy(&parser, node);
-    yp_parser_free(&parser);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
 
     return iseqw_new(iseq);
 }
@@ -4020,7 +4021,7 @@ Init_ISeq(void)
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);
-    rb_define_singleton_method(rb_cISeq, "compile_yarp", iseqw_s_compile_yarp, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_prism", iseqw_s_compile_prism, -1);
     rb_define_singleton_method(rb_cISeq, "new", iseqw_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_file", iseqw_s_compile_file, -1);
     rb_define_singleton_method(rb_cISeq, "compile_option", iseqw_s_compile_option_get, 0);

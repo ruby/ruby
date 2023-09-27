@@ -93,6 +93,7 @@ The following default gems are updated.
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
+* prism 0.12.0
 * psych 5.1.0
 * reline 0.3.8
 * stringio 3.0.9
@@ -101,7 +102,6 @@ The following default gems are updated.
 * time 0.2.2
 * timeout 0.4.0
 * uri 0.12.2
-* yarp 0.12.0
 
 The following bundled gems are updated.
 
