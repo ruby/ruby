@@ -130,6 +130,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Install Rust
         if: ${{ matrix.rust_version }}
@@ -144,11 +145,6 @@ jobs:
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
-
-      - name: Create dummy files in build dir
-        run: |
-          ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
-        if: ${{ matrix.test_task == 'check' }}
 
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV

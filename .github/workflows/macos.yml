@@ -69,6 +69,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
