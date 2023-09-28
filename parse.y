@@ -2037,7 +2037,8 @@ static int looking_at_eol_p(struct parser_params *p);
 program		:  {
                         SET_LEX_STATE(EXPR_BEG);
                         local_push(p, ifndef_ripper(1)+0);
-                        init_block_exit(p);
+                        /* jumps are possible in the top-level loop. */
+                        if (!ifndef_ripper(p->do_loop) + 0) init_block_exit(p);
                     }
                   top_compstmt
                     {

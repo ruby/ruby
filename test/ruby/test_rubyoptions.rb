@@ -381,6 +381,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-cw -e !defined?(next)), "", ["Syntax OK"], [])
     assert_in_out_err(%w(-cw -e !defined?(redo)), "", ["Syntax OK"], [])
     assert_in_out_err(%w(-cw -e !defined?(retry)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-n -cw -e break), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-n -cw -e next), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-n -cw -e redo), "", ["Syntax OK"], [])
   end
 
   def test_invalid_option
