@@ -1512,6 +1512,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
+      case PM_IMPLICIT_NODE: {
+        // Implicit nodes mark places in the syntax tree where explicit syntax
+        // was omitted, but implied. For example,
+        //
+        //     { foo: }
+        //
+        // In this case a method call/local variable read is implied by virtue
+        // of the missing value. To compile these nodes, we simply compile the
+        // value that is implied, which is helpfully supplied by the parser.
+        pm_implicit_node_t *cast = (pm_implicit_node_t *)node;
+        PM_COMPILE(cast->value);
+        return;
+      }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {
         pm_instance_variable_and_write_node_t *instance_variable_and_write_node = (pm_instance_variable_and_write_node_t*) node;
 

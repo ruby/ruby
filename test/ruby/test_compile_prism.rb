@@ -312,6 +312,9 @@ module Prism
       test_prism_eval("{ a: :a }")
       test_prism_eval("{ a: :a, b: :b }")
       test_prism_eval("a = 1; { a: a }")
+      test_prism_eval("a = 1; { a: }")
+      test_prism_eval("{ to_s: }")
+      test_prism_eval("{ Prism: }")
     end
 
     ############################################################################
