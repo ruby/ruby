@@ -9843,12 +9843,10 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
 }
 
 static inline pm_node_t *
-parse_conditional(pm_parser_t *parser, pm_context_t context) {
-    pm_token_t keyword = parser->previous;
-
+parse_predicate(pm_parser_t *parser, pm_binding_power_t binding_power, pm_context_t context) {
     context_push(parser, PM_CONTEXT_PREDICATE);
     pm_diagnostic_id_t error_id = context == PM_CONTEXT_IF ? PM_ERR_CONDITIONAL_IF_PREDICATE : PM_ERR_CONDITIONAL_UNLESS_PREDICATE;
-    pm_node_t *predicate = parse_expression(parser, PM_BINDING_POWER_MODIFIER, error_id);
+    pm_node_t *predicate = parse_expression(parser, binding_power, error_id);
 
     // Predicates are closed by a term, a "then", or a term and then a "then".
     bool predicate_closed = accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
@@ -9858,6 +9856,13 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
     }
 
     context_pop(parser);
+    return predicate;
+}
+
+static inline pm_node_t *
+parse_conditional(pm_parser_t *parser, pm_context_t context) {
+    pm_token_t keyword = parser->previous;
+    pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, context);
     pm_statements_node_t *statements = NULL;
 
     if (!match3(parser, PM_TOKEN_KEYWORD_ELSIF, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
@@ -9889,12 +9894,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
     if (context == PM_CONTEXT_IF) {
         while (accept1(parser, PM_TOKEN_KEYWORD_ELSIF)) {
             pm_token_t elsif_keyword = parser->previous;
-            pm_node_t *predicate = parse_expression(parser, PM_BINDING_POWER_MODIFIER, PM_ERR_CONDITIONAL_ELSIF_PREDICATE);
-
-            // Predicates are closed by a term, a "then", or a term and then a "then".
-            accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-            accept1(parser, PM_TOKEN_KEYWORD_THEN);
-
+            pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, PM_CONTEXT_ELSIF);
             pm_accepts_block_stack_push(parser, true);
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_ELSIF);
             pm_accepts_block_stack_pop(parser);
