@@ -1572,6 +1572,12 @@ static void restore_block_exit(struct parser_params *p, NODE *exits);
 static void clear_block_exit(struct parser_params *p, bool error);
 
 static void
+next_rescue_context(struct lex_context *next, const struct lex_context *outer, enum rescue_context def)
+{
+    next->in_rescue = outer->in_rescue == after_rescue ? after_rescue : def;
+}
+
+static void
 restore_defun(struct parser_params *p, NODE *name)
 {
     /* See: def_name action */
@@ -2116,29 +2122,37 @@ begin_block	: block_open top_compstmt '}'
                     }
                 ;
 
-bodystmt	: compstmt
+bodystmt	: compstmt[body]
+                  lex_ctxt[ctxt]
                   opt_rescue
                   k_else
                     {
-                        if (!$2) yyerror1(&@3, "else without rescue is useless");
-                        p->ctxt.in_rescue = after_else;
+                        if (!$opt_rescue) yyerror1(&@k_else, "else without rescue is useless");
+                        next_rescue_context(&p->ctxt, &$ctxt, after_else);
                     }
-                  compstmt
+                  compstmt[elsebody]
+                    {
+                        next_rescue_context(&p->ctxt, &$ctxt, after_ensure);
+                    }
                   opt_ensure
                     {
                     /*%%%*/
-                        $$ = new_bodystmt(p, $1, $2, $5, $6, &@$);
+                        $$ = new_bodystmt(p, $body, $opt_rescue, $elsebody, $opt_ensure, &@$);
                     /*% %*/
-                    /*% ripper: bodystmt!($1, $2, $5, $6) %*/
+                    /*% ripper: bodystmt!($body, $opt_rescue, $elsebody, $opt_ensure) %*/
                     }
-                | compstmt
+                | compstmt[body]
+                  lex_ctxt[ctxt]
                   opt_rescue
+                    {
+                        next_rescue_context(&p->ctxt, &$ctxt, after_ensure);
+                    }
                   opt_ensure
                     {
                     /*%%%*/
-                        $$ = new_bodystmt(p, $1, $2, 0, $3, &@$);
+                        $$ = new_bodystmt(p, $body, $opt_rescue, 0, $opt_ensure, &@$);
                     /*% %*/
-                    /*% ripper: bodystmt!($1, $2, Qnil, $3) %*/
+                    /*% ripper: bodystmt!($body, $opt_rescue, Qnil, $opt_ensure) %*/
                     }
                 ;
 
@@ -4242,7 +4256,6 @@ k_ensure	: keyword_ensure
                     {
                         token_info_warn(p, "ensure", p->token_info, 1, &@$);
                         $$ = p->ctxt;
-                        p->ctxt.in_rescue = after_ensure;
                     }
                 ;
 
