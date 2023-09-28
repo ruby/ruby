@@ -4112,7 +4112,6 @@ pm_self_node_create(pm_parser_t *parser, const pm_token_t *token) {
 
     *node = (pm_self_node_t) {{
         .type = PM_SELF_NODE,
-        .flags = PM_NODE_FLAG_STATIC_LITERAL,
         .location = PM_LOCATION_TOKEN_VALUE(token)
     }};
 
