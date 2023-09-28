@@ -907,7 +907,7 @@ pm_array_node_elements_append(pm_array_node_t *node, pm_node_t *element) {
 
     // If the element is not a static literal, then the array is not a static
     // literal. Turn that flag off.
-    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
+    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
         node->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
     }
 }
@@ -1051,8 +1051,10 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         end = key->location.end;
     }
 
+    // If the key and value of this assoc node are both static literals, then
+    // we can mark this node as a static literal.
     pm_node_flags_t flags = 0;
-    if (value && !PM_NODE_TYPE_P(value, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(value, PM_HASH_NODE)) {
+    if (value && !PM_NODE_TYPE_P(value, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(value, PM_HASH_NODE) && !PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
         flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
     }
 
@@ -3870,10 +3872,27 @@ pm_pre_execution_node_create(pm_parser_t *parser, const pm_token_t *keyword, con
 static pm_range_node_t *
 pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
     pm_range_node_t *node = PM_ALLOC_NODE(parser, pm_range_node_t);
+    pm_node_flags_t flags = 0;
+
+    // Indicate that this node an exclusive range if the operator is `...`.
+    if (operator->type == PM_TOKEN_DOT_DOT_DOT || operator->type == PM_TOKEN_UDOT_DOT_DOT) {
+        flags |= PM_RANGE_FLAGS_EXCLUDE_END;
+    }
+
+    // Indicate that this node is a static literal (i.e., can be compiled with
+    // a putobject in CRuby) if the left and right are implicit nil, explicit
+    // nil, or integers.
+    if (
+        (left == NULL || PM_NODE_TYPE_P(left, PM_NIL_NODE) || PM_NODE_TYPE_P(left, PM_INTEGER_NODE)) &&
+        (right == NULL || PM_NODE_TYPE_P(right, PM_NIL_NODE) || PM_NODE_TYPE_P(right, PM_INTEGER_NODE))
+    ) {
+        flags |= PM_NODE_FLAG_STATIC_LITERAL;
+    }
 
     *node = (pm_range_node_t) {
         {
             .type = PM_RANGE_NODE,
+            .flags = flags,
             .location = {
                 .start = (left == NULL ? operator->start : left->location.start),
                 .end = (right == NULL ? operator->end : right->location.end)
@@ -3883,15 +3902,6 @@ pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *ope
         .right = right,
         .operator_loc = PM_LOCATION_TOKEN_VALUE(operator)
     };
-
-    switch (operator->type) {
-        case PM_TOKEN_DOT_DOT_DOT:
-        case PM_TOKEN_UDOT_DOT_DOT:
-            node->base.flags |= PM_RANGE_FLAGS_EXCLUDE_END;
-            break;
-        default:
-            break;
-    }
 
     return node;
 }
