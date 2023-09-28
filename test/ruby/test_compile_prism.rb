@@ -307,6 +307,13 @@ module Prism
     # Structures                                                               #
     ############################################################################
 
+    def test_ArrayNode
+      test_prism_eval("[]")
+      test_prism_eval("[1, 2, 3]")
+      test_prism_eval("%i[foo bar baz]")
+      test_prism_eval("%w[foo bar baz]")
+    end
+
     def test_HashNode
       test_prism_eval("{}")
       test_prism_eval("{ a: :a }")

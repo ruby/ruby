@@ -179,7 +179,7 @@ pm_optimizable_range_item_p(pm_node_t *node)
  * set.
  */
 static inline bool
-pm_static_node_literal_p(pm_node_t *node)
+pm_static_node_literal_p(const pm_node_t *node)
 {
     return node->flags & PM_NODE_FLAG_STATIC_LITERAL;
 }
@@ -837,22 +837,40 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_ARRAY_NODE: {
-        pm_array_node_t *array_node = (pm_array_node_t *) node;
-        pm_node_list_t elements = array_node->elements;
-        if (elements.size == 1 && pm_static_node_literal_p(elements.nodes[0]) && !popped) {
-            VALUE ary = rb_ary_hidden_new(1);
-            rb_ary_push(ary, pm_static_literal_value(elements.nodes[0]));
-            OBJ_FREEZE(ary);
+        pm_array_node_t *cast = (pm_array_node_t *) node;
+        pm_node_list_t *elements = &cast->elements;
 
-            ADD_INSN1(ret, &dummy_line_node, duparray, ary);
-        }
-        else {
-            for (size_t index = 0; index < elements.size; index++) {
-                PM_COMPILE(elements.nodes[index]);
+        // If every node in the array is static, then we can compile the entire
+        // array now instead of later.
+        if (pm_static_node_literal_p(node)) {
+            // We're only going to compile this node if it's not popped. If it
+            // is popped, then we know we don't need to do anything since it's
+            // statically known.
+            if (!popped) {
+                VALUE array = rb_ary_hidden_new(elements->size);
+                for (size_t index = 0; index < elements->size; index++) {
+                    rb_ary_push(array, pm_static_literal_value(elements->nodes[index]));
+                }
+
+                OBJ_FREEZE(array);
+                ADD_INSN1(ret, &dummy_line_node, duparray, array);
+                RB_OBJ_WRITTEN(iseq, Qundef, array);
+            }
+        } else {
+            // Here since we know there are possible side-effects inside the
+            // array contents, we're going to build it entirely at runtime.
+            // We'll do this by pushing all of the elements onto the stack and
+            // then combining them with newarray.
+            //
+            // If this hash is popped, then this serves only to ensure we enact
+            // all side-effects (like method calls) that are contained within
+            // the hash contents.
+            for (size_t index = 0; index < elements->size; index++) {
+                PM_COMPILE(elements->nodes[index]);
             }
 
             if (!popped) {
-                ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(elements.size));
+                ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(elements->size));
             }
         }
 
@@ -1442,26 +1460,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_hash_node_t *cast = (pm_hash_node_t *) node;
         pm_node_list_t elements = cast->elements;
 
-        // First, we're going to determine if everything within this hash is
-        // statically known. If it is, then we can create the hash now at
-        // compile-time instead of pushing everything onto the stack and
-        // creating it at run-time.
-        size_t static_nodes;
-        for (static_nodes = 0; static_nodes < elements.size; static_nodes++) {
-            if (!PM_NODE_TYPE_P(elements.nodes[static_nodes], PM_ASSOC_NODE)) break;
-
-            pm_assoc_node_t *cast = (pm_assoc_node_t *) elements.nodes[static_nodes];
-            if (!pm_static_node_literal_p(cast->key) || !pm_static_node_literal_p(cast->value)) break;
-        }
-
         // If every node in the hash is static, then we can compile the entire
         // hash now instead of later.
-        if (static_nodes == elements.size) {
+        if (pm_static_node_literal_p(node)) {
             // We're only going to compile this node if it's not popped. If it
             // is popped, then we know we don't need to do anything since it's
             // statically known.
             if (!popped) {
-                VALUE array = rb_ary_hidden_new(static_nodes * 2);
+                VALUE array = rb_ary_hidden_new(elements.size * 2);
 
                 for (size_t index = 0; index < elements.size; index++) {
                     pm_assoc_node_t *cast = (pm_assoc_node_t *) elements.nodes[index];
