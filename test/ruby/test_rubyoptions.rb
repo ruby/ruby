@@ -368,19 +368,19 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_syntax_check
-    assert_in_out_err(%w(-c -e a=1+1 -e !a), "", ["Syntax OK"], [])
-    assert_in_out_err(%w(-c -e break), "", [], ["-e:1: Invalid break", :*])
-    assert_in_out_err(%w(-c -e next), "", [], ["-e:1: Invalid next", :*])
-    assert_in_out_err(%w(-c -e redo), "", [], ["-e:1: Invalid redo", :*])
-    assert_in_out_err(%w(-c -e retry), "", [], ["-e:1: Invalid retry", :*])
-    assert_in_out_err(%w(-c -e begin -e break -e end), "", [], ["-e:2: Invalid break", :*])
-    assert_in_out_err(%w(-c -e begin -e next -e end), "", [], ["-e:2: Invalid next", :*])
-    assert_in_out_err(%w(-c -e begin -e redo -e end), "", [], ["-e:2: Invalid redo", :*])
-    assert_in_out_err(%w(-c -e begin -e retry -e end), "", [], ["-e:2: Invalid retry", :*])
-    assert_in_out_err(%w(-c -e !defined?(break)), "", ["Syntax OK"], [])
-    assert_in_out_err(%w(-c -e !defined?(next)), "", ["Syntax OK"], [])
-    assert_in_out_err(%w(-c -e !defined?(redo)), "", ["Syntax OK"], [])
-    assert_in_out_err(%w(-c -e !defined?(retry)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e a=1+1 -e !a), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e break), "", [], ["-e:1: Invalid break", :*])
+    assert_in_out_err(%w(-cw -e next), "", [], ["-e:1: Invalid next", :*])
+    assert_in_out_err(%w(-cw -e redo), "", [], ["-e:1: Invalid redo", :*])
+    assert_in_out_err(%w(-cw -e retry), "", [], ["-e:1: Invalid retry", :*])
+    assert_in_out_err(%w(-cw -e begin -e break -e end), "", [], ["-e:2: Invalid break", :*])
+    assert_in_out_err(%w(-cw -e begin -e next -e end), "", [], ["-e:2: Invalid next", :*])
+    assert_in_out_err(%w(-cw -e begin -e redo -e end), "", [], ["-e:2: Invalid redo", :*])
+    assert_in_out_err(%w(-cw -e begin -e retry -e end), "", [], ["-e:2: Invalid retry", :*])
+    assert_in_out_err(%w(-cw -e !defined?(break)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(next)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(redo)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(retry)), "", ["Syntax OK"], [])
   end
 
   def test_invalid_option

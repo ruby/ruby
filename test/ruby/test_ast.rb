@@ -214,9 +214,9 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
-  def assert_parse(code)
-    node = RubyVM::AbstractSyntaxTree.parse(code)
-    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, node)
+  def assert_parse(code, warning: '')
+    node = assert_warning(warning) {RubyVM::AbstractSyntaxTree.parse(code)}
+    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, node, code)
   end
 
   def assert_invalid_parse(msg, code)
@@ -245,14 +245,14 @@ class TestAst < Test::Unit::TestCase
       assert_invalid_parse(msg, "begin; #{code}; end")
       assert_parse("END {#{code}}")
 
-      assert_parse("defined?(#{code})")
+      assert_parse("!defined?(#{code})")
       assert_parse("def m; defined?(#{code}); end")
-      assert_parse("begin; defined?(#{code}); end")
+      assert_parse("!begin; defined?(#{code}); end")
 
       next if code.include?(" ")
-      assert_parse("defined? #{code}")
+      assert_parse("!defined? #{code}")
       assert_parse("def m; defined? #{code}; end")
-      assert_parse("begin; defined? #{code}; end")
+      assert_parse("!begin; defined? #{code}; end")
     end
   end
 
@@ -268,17 +268,17 @@ class TestAst < Test::Unit::TestCase
     assert_invalid_parse(msg, "END {retry}")
     assert_invalid_parse(msg, "begin rescue; END {retry}; end")
 
-    assert_parse("defined?(retry)")
+    assert_parse("!defined?(retry)")
     assert_parse("def m; defined?(retry); end")
-    assert_parse("begin defined?(retry); end")
+    assert_parse("!begin defined?(retry); end")
     assert_parse("begin rescue; else; defined?(retry); end")
     assert_parse("begin rescue; ensure; defined?(retry); end")
     assert_parse("END {defined?(retry)}")
     assert_parse("begin rescue; END {defined?(retry)}; end")
-    assert_parse("defined? retry")
+    assert_parse("!defined? retry")
 
     assert_parse("def m; defined? retry; end")
-    assert_parse("begin defined? retry; end")
+    assert_parse("!begin defined? retry; end")
     assert_parse("begin rescue; else; defined? retry; end")
     assert_parse("begin rescue; ensure; defined? retry; end")
     assert_parse("END {defined? retry}")
