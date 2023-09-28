@@ -131,7 +131,7 @@ require_relative "deprecate"
 #
 # == Preventing Version Catastrophe:
 #
-# From: http://blog.zenspider.com/2008/10/rubygems-howto-preventing-cata.html
+# From: https://www.zenspider.com/ruby/2008/10/rubygems-how-to-preventing-catastrophe.html
 #
 # Let's say you're depending on the fnord gem version 2.y.z. If you
 # specify your dependency as ">= 2.0.0" then, you're good, right? What
