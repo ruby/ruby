@@ -338,6 +338,13 @@ module Prism
     # Pattern matching                                                         #
     ############################################################################
 
+    def test_AlternationPatternNode
+      test_prism_eval("1 in 1 | 2")
+      test_prism_eval("1 in 2 | 1")
+      test_prism_eval("1 in 2 | 3 | 4 | 1")
+      test_prism_eval("1 in 2 | 3")
+    end
+
     def test_MatchPredicateNode
       test_prism_eval("1 in 1")
       test_prism_eval("1.0 in 1.0")
@@ -355,11 +362,6 @@ module Prism
       test_prism_eval("5 in 0..10")
       test_prism_eval("5 in 0...10")
 
-      test_prism_eval("module Prism; @@prism = 1; 1 in ^@@prism; end")
-      test_prism_eval("module Prism; @prism = 1; 1 in ^@prism; end")
-      test_prism_eval("$prism = 1; 1 in ^$prism")
-      test_prism_eval("prism = 1; 1 in ^prism")
-
       test_prism_eval("[\"5\"] in %w[5]")
 
       test_prism_eval("Prism in Prism")
@@ -370,9 +372,19 @@ module Prism
       test_prism_eval("\"foo\" in /.../")
       test_prism_eval("\"foo1\" in /...\#{1}/")
       test_prism_eval("4 in ->(v) { v.even? }")
-      test_prism_eval("4 in ^(4)")
 
       test_prism_eval("1 in 2")
+    end
+
+    def test_PinnedExpressionNode
+      test_prism_eval("4 in ^(4)")
+    end
+
+    def test_PinnedVariableNode
+      test_prism_eval("module Prism; @@prism = 1; 1 in ^@@prism; end")
+      test_prism_eval("module Prism; @prism = 1; 1 in ^@prism; end")
+      test_prism_eval("$prism = 1; 1 in ^$prism")
+      test_prism_eval("prism = 1; 1 in ^prism")
     end
 
     private
