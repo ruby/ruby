@@ -1678,7 +1678,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
-    if (events && !th->nt->dedicated) {
+    if (events && !th_has_dedicated_nt(th)) {
         VM_ASSERT(events == RB_WAITFD_IN || events == RB_WAITFD_OUT);
 
         // wait readable/writable
@@ -5394,8 +5394,9 @@ Init_Thread(void)
         /* main thread setting */
         {
             /* acquire global vm lock */
+#if USE_MN_THREADS
             VM_ASSERT(TH_SCHED(th)->running == th);
-
+#endif
             // thread_sched_to_running() should not be called because
             // it assumes blocked by thread_sched_to_waiting().
             // thread_sched_to_running(sched, th);
@@ -5470,7 +5471,10 @@ static void
 rb_check_deadlock(rb_ractor_t *r)
 {
     if (GET_THREAD()->vm->thread_ignore_deadlock) return;
+
+#ifdef RUBY_THREAD_PTHREAD_H
     if (r->threads.sched.readyq_cnt > 0) return;
+#endif
 
     int sleeper_num = rb_ractor_sleeper_thread_num(r);
     int ltnum = rb_ractor_living_thread_num(r);

@@ -244,12 +244,16 @@ assert_equal 'true', %{
 
 assert_equal 'true', %{
   Thread.new{}.join
-  Process.waitpid2 fork{
-    Thread.new{
-      sleep 0.1
-    }.join
-  }
-  true
+  begin
+    Process.waitpid2 fork{
+      Thread.new{
+        sleep 0.1
+      }.join
+    }
+    true
+  rescue NotImplementedError
+    true
+  end
 }
 
 assert_equal 'ok', %{

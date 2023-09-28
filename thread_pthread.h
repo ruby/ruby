@@ -120,7 +120,6 @@ struct rb_thread_sched {
 
     struct ccan_list_head readyq;
     int readyq_cnt;
-
     // ractor scheduling
     struct ccan_list_node grq_node;
 };

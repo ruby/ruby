@@ -241,6 +241,9 @@ ractor_free(void *ptr)
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
     rb_native_mutex_destroy(&r->sync.lock);
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_destroy(&r->sync.cond);
+#endif
     ractor_queue_free(&r->sync.recv_queue);
     ractor_queue_free(&r->sync.takers_queue);
     ractor_local_storage_free(r);
@@ -528,9 +531,18 @@ ractor_sleeping_by(const rb_ractor_t *r, enum rb_ractor_wait_status wait_status)
     return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
 }
 
+#ifdef RUBY_THREAD_PTHREAD_H
 // thread_*.c
-void rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf);
 void rb_ractor_sched_wakeup(rb_ractor_t *r);
+#else
+
+static void
+rb_ractor_sched_wakeup(rb_ractor_t *r)
+{
+    rb_native_cond_broadcast(&r->sync.cond);
+}
+#endif
+
 
 static bool
 ractor_wakeup(rb_ractor_t *r, enum rb_ractor_wait_status wait_status, enum rb_ractor_wakeup_status wakeup_status)
@@ -600,6 +612,54 @@ ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_clea
         cr->sync.wait.status = prev_wait_status;
     }
 }
+
+#ifdef RUBY_THREAD_PTHREAD_H
+void rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf);
+#else
+
+// win32
+static void
+ractor_cond_wait(rb_ractor_t *r)
+{
+#if RACTOR_CHECK_MODE > 0
+    VALUE locked_by = r->sync.locked_by;
+    r->sync.locked_by = Qnil;
+#endif
+    rb_native_cond_wait(&r->sync.cond, &r->sync.lock);
+
+#if RACTOR_CHECK_MODE > 0
+    r->sync.locked_by = locked_by;
+#endif
+}
+
+static void *
+ractor_sleep_wo_gvl(void *ptr)
+{
+    rb_ractor_t *cr = ptr;
+    RACTOR_LOCK_SELF(cr);
+    {
+        VM_ASSERT(cr->sync.wait.status != wait_none);
+        if (cr->sync.wait.wakeup_status == wakeup_none) {
+            ractor_cond_wait(cr);
+        }
+        cr->sync.wait.status = wait_none;
+    }
+    RACTOR_UNLOCK_SELF(cr);
+    return NULL;
+}
+
+static void
+rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf)
+{
+    RACTOR_UNLOCK(cr);
+    {
+        rb_nogvl(ractor_sleep_wo_gvl, cr,
+                 ubf, cr,
+                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
+    }
+    RACTOR_LOCK(cr);
+}
+#endif
 
 static enum rb_ractor_wakeup_status
 ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_ractor_wait_status wait_status,
@@ -1951,6 +2011,11 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     ractor_queue_setup(&r->sync.takers_queue);
     rb_native_mutex_initialize(&r->sync.lock);
     rb_native_cond_initialize(&r->barrier_wait_cond);
+
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_initialize(&r->sync.cond);
+    rb_native_cond_initialize(&r->barrier_wait_cond);
+#endif
 
     // thread management
     rb_thread_sched_init(&r->threads.sched);

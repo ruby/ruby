@@ -121,6 +121,10 @@ struct rb_ractor_sync {
         enum rb_ractor_wakeup_status wakeup_status;
         rb_thread_t *waiting_thread;
     } wait;
+
+#ifndef RUBY_THREAD_PTHREAD_H
+    rb_nativethread_cond_t cond;
+#endif
 };
 
 // created

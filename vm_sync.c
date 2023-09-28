@@ -58,6 +58,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
         VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
         VM_ASSERT(vm->ractor.sync.lock_rec == 0);
 
+#ifdef RUBY_THREAD_PTHREAD_H
         if (!no_barrier &&
             cr->threads.sched.running != NULL // ractor has running threads.
             ) {
@@ -67,6 +68,13 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
                 rb_ractor_sched_barrier_join(vm, cr);
             }
         }
+#else
+        if (!no_barrier) {
+            while (vm->ractor.sync.barrier_waiting) {
+                rb_ractor_sched_barrier_join(vm, cr);
+            }
+        }
+#endif
 
         VM_ASSERT(vm->ractor.sync.lock_rec == 0);
         VM_ASSERT(vm->ractor.sync.lock_owner == NULL);

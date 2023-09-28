@@ -4075,6 +4075,10 @@ Init_BareVM(void)
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
+
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+#endif
 }
 
 #ifndef _WIN32

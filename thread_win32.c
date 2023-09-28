@@ -637,6 +637,10 @@ thread_start_func_1(void *th_ptr)
     RUBY_DEBUG_LOG("thread created th:%u, thid: %p, event: %p",
                    rb_th_serial(th), th->nt->thread_id, th->nt->interrupt_event);
 
+    thread_sched_to_running(TH_SCHED(th), th);
+    ruby_thread_set_native(th);
+
+    // kick threads
     thread_start_func_2(th, th->ec->machine.stack_start);
 
     w32_close_handle(thread_id);
@@ -647,6 +651,12 @@ thread_start_func_1(void *th_ptr)
 static int
 native_thread_create(rb_thread_t *th)
 {
+    // setup vm stack
+    size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+    void *vm_stack = ruby_xmalloc(vm_stack_word_size * sizeof(VALUE));
+    rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
+
+    // setup nt
     const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
     th->nt = ZALLOC(struct rb_native_thread);
     th->nt->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
@@ -860,5 +870,129 @@ native_thread_native_thread_id(rb_thread_t *th)
     return ULONG2NUM(tid);
 }
 #define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
+
+void
+rb_add_running_thread(rb_thread_t *th){
+    // do nothing
+}
+
+void
+rb_del_running_thread(rb_thread_t *th)
+{
+    // do nothing
+}
+
+static bool
+th_has_dedicated_nt(const rb_thread_t *th)
+{
+    return true;
+}
+
+void
+rb_threadptr_sched_free(rb_thread_t *th)
+{
+    // free vm stack
+    ruby_xfree(th->ec->vm_stack);
+}
+
+static bool
+thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
+{
+    return false;
+}
+
+static bool
+vm_barrier_finish_p(rb_vm_t *vm)
+{
+    RUBY_DEBUG_LOG("cnt:%u living:%u blocking:%u",
+                   vm->ractor.blocking_cnt == vm->ractor.cnt,
+                   vm->ractor.sync.barrier_cnt,
+                   vm->ractor.cnt,
+                   vm->ractor.blocking_cnt);
+
+    VM_ASSERT(vm->ractor.blocking_cnt <= vm->ractor.cnt);
+    return vm->ractor.blocking_cnt == vm->ractor.cnt;
+}
+
+void
+rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    vm->ractor.sync.barrier_waiting = true;
+
+    RUBY_DEBUG_LOG("barrier start. cnt:%u living:%u blocking:%u",
+                   vm->ractor.sync.barrier_cnt,
+                   vm->ractor.cnt,
+                   vm->ractor.blocking_cnt);
+
+    rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
+
+    // send signal
+    rb_ractor_t *r = 0;
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        if (r != cr) {
+            rb_ractor_vm_barrier_interrupt_running_thread(r);
+        }
+    }
+
+    // wait
+    while (!vm_barrier_finish_p(vm)) {
+        rb_vm_cond_wait(vm, &vm->ractor.sync.barrier_cond);
+    }
+
+    RUBY_DEBUG_LOG("cnt:%u barrier success", vm->ractor.sync.barrier_cnt);
+
+    rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
+
+    vm->ractor.sync.barrier_waiting = false;
+    vm->ractor.sync.barrier_cnt++;
+
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        rb_native_cond_signal(&r->barrier_wait_cond);
+    }
+}
+
+void
+rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    vm->ractor.sync.lock_owner = cr;
+    unsigned int barrier_cnt = vm->ractor.sync.barrier_cnt;
+    rb_thread_t *th = GET_THREAD();
+    bool running;
+
+    RB_VM_SAVE_MACHINE_CONTEXT(th);
+
+    if (rb_ractor_status_p(cr, ractor_running)) {
+        rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
+        running = true;
+    }
+    else {
+        running = false;
+    }
+    VM_ASSERT(rb_ractor_status_p(cr, ractor_blocking));
+
+    if (vm_barrier_finish_p(vm)) {
+        RUBY_DEBUG_LOG("wakeup barrier owner");
+        rb_native_cond_signal(&vm->ractor.sync.barrier_cond);
+    }
+    else {
+        RUBY_DEBUG_LOG("wait for barrier finish");
+    }
+
+    // wait for restart
+    while (barrier_cnt == vm->ractor.sync.barrier_cnt) {
+        vm->ractor.sync.lock_owner = NULL;
+        rb_native_cond_wait(&cr->barrier_wait_cond, &vm->ractor.sync.lock);
+        VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
+        vm->ractor.sync.lock_owner = cr;
+    }
+
+    RUBY_DEBUG_LOG("barrier is released. Acquire vm_lock");
+
+    if (running) {
+        rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
+    }
+
+        vm->ractor.sync.lock_owner = NULL;
+}
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
