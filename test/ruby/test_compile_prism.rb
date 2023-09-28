@@ -70,11 +70,11 @@ module Prism
     ############################################################################
 
     def test_ClassVariableReadNode
-      test_prism_eval("class Prism::ISeqTest; @@pit = 1; @@pit; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit = 1; @@pit; end")
     end
 
     def test_ConstantPathNode
-      test_prism_eval("Prism::ISeqTest")
+      test_prism_eval("Prism::TestCompilePrism")
     end
 
     def test_ConstantReadNode
@@ -86,7 +86,7 @@ module Prism
     end
 
     def test_InstanceVariableReadNode
-      test_prism_eval("class Prism::ISeqTest; @pit = 1; @pit; end")
+      test_prism_eval("class Prism::TestCompilePrism; @pit = 1; @pit; end")
     end
 
     def test_LocalVariableReadNode
@@ -98,24 +98,24 @@ module Prism
     ############################################################################
 
     def test_ClassVariableTargetNode
-      test_prism_eval("class Prism::ISeqTest; @@pit, @@pit1 = 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit, @@pit1 = 1; end")
     end
 
     def test_ClassVariableWriteNode
-      test_prism_eval("class Prism::ISeqTest; @@pit = 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit = 1; end")
     end
 
     def test_ClassVariableAndWriteNode
-      test_prism_eval("class Prism::ISeqTest; @@pit = 0; @@pit &&= 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit = 0; @@pit &&= 1; end")
     end
 
     def test_ClassVariableOrWriteNode
-      test_prism_eval("class Prism::ISeqTest; @@pit = 1; @@pit ||= 0; end")
-      test_prism_eval("class Prism::ISeqTest; @@pit = nil; @@pit ||= 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit = 1; @@pit ||= 0; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit = nil; @@pit ||= 1; end")
     end
 
     def test_ClassVariableOperatorWriteNode
-      test_prism_eval("class Prism::ISeqTest; @@pit = 0; @@pit += 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @@pit = 0; @@pit += 1; end")
     end
 
     def test_ConstantTargetNode
@@ -191,11 +191,11 @@ module Prism
     end
 
     def test_InstanceVariableTargetNode
-      test_prism_eval("class Prism::ISeqTest; @pit, @pit1 = 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @pit, @pit1 = 1; end")
     end
 
     def test_InstanceVariableWriteNode
-      test_prism_eval("class Prism::ISeqTest; @pit = 1; end")
+      test_prism_eval("class Prism::TestCompilePrism; @pit = 1; end")
     end
 
     def test_InstanceVariableAndWriteNode
@@ -235,8 +235,8 @@ module Prism
     ############################################################################
 
     def test_EmbeddedVariableNode
-      # test_prism_eval('class Prism::ISeqTest; @pit = 1; "#@pit"; end')
-      # test_prism_eval('class Prism::ISeqTest; @@pit = 1; "#@@pit"; end')
+      # test_prism_eval('class Prism::TestCompilePrism; @pit = 1; "#@pit"; end')
+      # test_prism_eval('class Prism::TestCompilePrism; @@pit = 1; "#@@pit"; end')
       test_prism_eval('$pit = 1; "#$pit"')
     end
 
@@ -273,7 +273,7 @@ module Prism
     end
 
     def test_StringConcatNode
-      # test_prism_eval('"Prism" "::" "ISeqTest"')
+      # test_prism_eval('"Prism" "::" "TestCompilePrism"')
     end
 
     def test_StringNode
@@ -286,7 +286,7 @@ module Prism
 
     def test_XStringNode
       # test_prism_eval(<<~RUBY)
-      #   class Prism::ISeqTest
+      #   class Prism::TestCompilePrism
       #     def self.`(command) = command * 2
       #     `pit`
       #   end
