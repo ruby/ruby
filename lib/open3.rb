@@ -33,56 +33,124 @@ require 'open3/version'
 
 module Open3
 
-  # Open stdin, stdout, and stderr streams and start external executable.
-  # In addition, a thread to wait for the started process is created.
-  # The thread has a pid method and a thread variable :pid which is the pid of
-  # the started process.
+  # :call-seq:
+  #   Open3.popen3([env, ] command_line, options = {}) -> [stdin, stdout, stderr, wait_thread]
+  #   Open3.popen3([env, ] exe_path, *args, options = {}) -> [stdin, stdout, stderr, wait_thread]
+  #   Open3.popen3([env, ] command_line, options = {}) {|stdin, stdout, stderr, wait_thread| ... } -> object
+  #   Open3.popen3([env, ] exe_path, *args, options = {}) {|stdin, stdout, stderr, wait_thread| ... } -> object
   #
-  # Block form:
+  # Basically a wrapper for Process.spawn that:
   #
-  #   Open3.popen3([env,] cmd... [, opts]) {|stdin, stdout, stderr, wait_thr|
-  #     pid = wait_thr.pid # pid of the started process.
-  #     ...
-  #     exit_status = wait_thr.value # Process::Status object returned.
-  #   }
+  # - Creates a child process, by calling Process.spawn with the given arguments.
+  # - Creates streams +stdin+, +stdout+, and +stderr+,
+  #   which are the standard input, standard output, and standard error streams
+  #   in the child process.
+  # - Creates thread +wait_thread+ that waits for the child process to exit;
+  #   the thread has method +pid+, which returns the process ID
+  #   of the child process.
   #
-  # Non-block form:
+  # With no block given, returns the array
+  # <tt>[stdin, stdout, stderr, wait_thread]</tt>.
+  # The caller should close each of the three returned streams.
   #
-  #   stdin, stdout, stderr, wait_thr = Open3.popen3([env,] cmd... [, opts])
-  #   pid = wait_thr[:pid]  # pid of the started process
-  #   ...
-  #   stdin.close  # stdin, stdout and stderr should be closed explicitly in this form.
+  #   stdin, stdout, stderr, wait_thread = Open3.popen3('echo')
+  #   # => [#<IO:fd 8>, #<IO:fd 10>, #<IO:fd 12>, #<Process::Waiter:0x00007f58d5428f58 run>]
+  #   stdin.close
   #   stdout.close
   #   stderr.close
-  #   exit_status = wait_thr.value  # Process::Status object returned.
+  #   wait_thread.pid   # => 2210481
+  #   wait_thread.value # => #<Process::Status: pid 2210481 exit 0>
   #
-  # The parameters env, cmd, and opts are passed to Process.spawn.
-  # A commandline string and a list of argument strings can be accepted as follows:
+  # With a block given, calls the block with the four variables
+  # (three streams and the wait thread)
+  # and returns the block's return value.
+  # The caller need not close the streams:
   #
-  #   Open3.popen3("echo abc") {|i, o, e, t| ... }
-  #   Open3.popen3("echo", "abc") {|i, o, e, t| ... }
-  #   Open3.popen3(["echo", "argv0"], "abc") {|i, o, e, t| ... }
+  #   Open3.popen3('echo') do |stdin, stdout, stderr, wait_thread|
+  #     p stdin
+  #     p stdout
+  #     p stderr
+  #     p wait_thread
+  #     p wait_thread.pid
+  #     p wait_thread.value
+  #   end
   #
-  # If the last parameter, opts, is a Hash, it is recognized as an option for Process.spawn.
+  # Output:
   #
-  #   Open3.popen3("pwd", :chdir=>"/") {|i,o,e,t|
-  #     p o.read.chomp #=> "/"
-  #   }
+  #   #<IO:fd 6>
+  #   #<IO:fd 7>
+  #   #<IO:fd 9>
+  #   #<Process::Waiter:0x00007f58d53606e8 sleep>
+  #   2211047
+  #   #<Process::Status: pid 2211047 exit 0>
   #
-  # wait_thr.value waits for the termination of the process.
-  # The block form also waits for the process when it returns.
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
   #
-  # Closing stdin, stdout and stderr does not wait for the process to complete.
+  # Unlike Process.spawn, this method waits for the child process to exit
+  # before returning, so the caller need not do so.
   #
-  # You should be careful to avoid deadlocks.
-  # Since pipes are fixed length buffers,
-  # Open3.popen3("prog") {|i, o, e, t| o.read } deadlocks if
-  # the program generates too much output on stderr.
-  # You should read stdout and stderr simultaneously (using threads or IO.select).
-  # However, if you don't need stderr output, you can use Open3.popen2.
-  # If merged stdout and stderr output is not a problem, you can use Open3.popen2e.
-  # If you really need stdout and stderr output as separate strings, you can consider Open3.capture3.
+  # Argument +options+ is a hash of options for the new process;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # The single required argument is one of the following:
+  #
+  # - +command_line+ if it is a string,
+  #   and if it begins with a shell reserved word or special built-in,
+  #   or if it contains one or more metacharacters.
+  # - +exe_path+ otherwise.
+  #
+  # <b>Argument +command_line+</b>
+  #
+  # \String argument +command_line+ is a command line to be passed to a shell;
+  # it must begin with a shell reserved word, begin with a special built-in,
+  # or contain meta characters:
+  #
+  #   Open3.popen3('if true; then echo "Foo"; fi') {|*args| p args } # Shell reserved word.
+  #   Open3.popen3('echo') {|*args| p args }                         # Built-in.
+  #   Open3.popen3('date > date.tmp') {|*args| p args }              # Contains meta character.
+  #
+  # Output (for each call above):
+  #
+  #   [#<IO:(closed)>, #<IO:(closed)>, #<IO:(closed)>, #<Process::Waiter:0x00007f58d52f28c8 dead>]
+  #
+  # The command line may also contain arguments and options for the command:
+  #
+  #   Open3.popen3('echo "Foo"') { |i, o, e, t| o.gets }
+  #   "Foo\n"
+  #
+  # <b>Argument +exe_path+</b>
+  #
+  # Argument +exe_path+ is one of the following:
+  #
+  # - The string path to an executable to be called.
+  # - A 2-element array containing the path to an executable
+  #   and the string to be used as the name of the executing process.
+  #
+  # Example:
+  #
+  #   Open3.popen3('/usr/bin/date') { |i, o, e, t| o.gets }
+  #   # => "Wed Sep 27 02:56:44 PM CDT 2023\n"
+  #
+  # Ruby invokes the executable directly, with no shell and no shell expansion:
+  #
+  #   Open3.popen3('doesnt_exist') { |i, o, e, t| o.gets } # Raises Errno::ENOENT
+  #
+  # If one or more +args+ is given, each is an argument or option
+  # to be passed to the executable:
+  #
+  #   Open3.popen3('echo', 'C #') { |i, o, e, t| o.gets }
+  #   # => "C #\n"
+  #   Open3.popen3('echo', 'hello', 'world') { |i, o, e, t| o.gets }
+  #   # => "hello world\n"
+  #
+  # Take care to avoid deadlocks.
+  # Output streams +stdout+ and +stderr+ have fixed-size buffers,
+  # so reading extensively from one but not the other can cause a deadlock
+  # when the unread buffer fills.
+  # To avoid that, +stdout+ and +stderr+ should be read simultaneously
+  # (using threads or IO.select).
   def popen3(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
