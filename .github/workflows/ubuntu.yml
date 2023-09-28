@@ -101,7 +101,7 @@ jobs:
         run: >-
           $SETARCH make -s ${{ matrix.test_task }}
           ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
-          ${{ contains(matrix.test_task, 'bundle') && '' || 'RUBYOPT=-w' }}
+          ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: '-q --tty=no'
