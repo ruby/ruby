@@ -611,6 +611,62 @@ pm_reg_flags(const pm_node_t *node) {
     return flags;
 }
 
+/**
+ * Compile a pattern matching expression.
+ */
+static void
+pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_compile_context_t *compile_context, LABEL *matched_label, LABEL *unmatched_label)
+{
+    int lineno = (int) pm_newline_list_line_column(&compile_context->parser->newline_list, node->location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    switch (PM_NODE_TYPE(node)) {
+      case PM_ARRAY_NODE:
+      case PM_CLASS_VARIABLE_READ_NODE:
+      case PM_CONSTANT_PATH_NODE:
+      case PM_CONSTANT_READ_NODE:
+      case PM_FALSE_NODE:
+      case PM_FLOAT_NODE:
+      case PM_GLOBAL_VARIABLE_READ_NODE:
+      case PM_IMAGINARY_NODE:
+      case PM_INSTANCE_VARIABLE_READ_NODE:
+      case PM_INTEGER_NODE:
+      case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+      case PM_INTERPOLATED_STRING_NODE:
+      case PM_INTERPOLATED_SYMBOL_NODE:
+      case PM_INTERPOLATED_X_STRING_NODE:
+      case PM_LAMBDA_NODE:
+      case PM_LOCAL_VARIABLE_READ_NODE:
+      case PM_NIL_NODE:
+      case PM_RANGE_NODE:
+      case PM_RATIONAL_NODE:
+      case PM_REGULAR_EXPRESSION_NODE:
+      case PM_SELF_NODE:
+      case PM_STRING_NODE:
+      case PM_SYMBOL_NODE:
+      case PM_TRUE_NODE:
+      case PM_X_STRING_NODE:
+        PM_COMPILE_NOT_POPPED(node);
+        ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
+        ADD_INSNL(ret, &dummy_line_node, branchif, matched_label);
+        ADD_INSNL(ret, &dummy_line_node, jump, unmatched_label);
+        break;
+      case PM_PINNED_VARIABLE_NODE: {
+        pm_pinned_variable_node_t *cast = (pm_pinned_variable_node_t *) node;
+        pm_compile_pattern(iseq, cast->variable, ret, src, compile_context, matched_label, unmatched_label);
+        break;
+      }
+      case PM_PINNED_EXPRESSION_NODE: {
+        pm_pinned_expression_node_t *cast = (pm_pinned_expression_node_t *) node;
+        pm_compile_pattern(iseq, cast->expression, ret, src, compile_context, matched_label, unmatched_label);
+        break;
+      }
+      default:
+        rb_bug("Unexpected node type in pattern matching expression: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+        break;
+    }
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *
@@ -938,6 +994,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_constant_path_node_t *constant_path_node = (pm_constant_path_node_t*) node;
         if (constant_path_node->parent) {
             PM_COMPILE_NOT_POPPED(constant_path_node->parent);
+        } else {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
         }
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
 
@@ -1615,6 +1673,44 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_SEND(ret, &dummy_line_node, idEqTilde, INT2NUM(1));
         }
 
+        return;
+      }
+      case PM_MATCH_PREDICATE_NODE: {
+        pm_match_predicate_node_t *cast = (pm_match_predicate_node_t *) node;
+
+        // First, allocate some stack space for the cached return value of any
+        // calls to #deconstruct.
+        ADD_INSN(ret, &dummy_line_node, putnil);
+
+        // Next, compile the expression that we're going to match against.
+        PM_COMPILE_NOT_POPPED(cast->value);
+        ADD_INSN(ret, &dummy_line_node, dup);
+
+        // Now compile the pattern that is going to be used to match against the
+        // expression.
+        LABEL *matched_label = NEW_LABEL(lineno);
+        LABEL *unmatched_label = NEW_LABEL(lineno);
+        LABEL *done_label = NEW_LABEL(lineno);
+        pm_compile_pattern(iseq, cast->pattern, ret, src, compile_context, matched_label, unmatched_label);
+
+        // If the pattern did not match, then compile the necessary instructions
+        // to handle pushing false onto the stack, then jump to the end.
+        ADD_LABEL(ret, unmatched_label);
+        ADD_INSN(ret, &dummy_line_node, pop);
+        ADD_INSN(ret, &dummy_line_node, pop);
+
+        if (!popped) ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+        ADD_INSNL(ret, &dummy_line_node, jump, done_label);
+        ADD_INSN(ret, &dummy_line_node, putnil);
+
+        // If the pattern did match, then compile the necessary instructions to
+        // handle pushing true onto the stack, then jump to the end.
+        ADD_LABEL(ret, matched_label);
+        ADD_INSN1(ret, &dummy_line_node, adjuststack, INT2FIX(2));
+        if (!popped) ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+        ADD_INSNL(ret, &dummy_line_node, jump, done_label);
+
+        ADD_LABEL(ret, done_label);
         return;
       }
       case PM_MATCH_WRITE_NODE: {
