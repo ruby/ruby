@@ -621,6 +621,30 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
     switch (PM_NODE_TYPE(node)) {
+      case PM_ARRAY_PATTERN_NODE:
+        rb_bug("Array pattern matching not yet supported.");
+        break;
+      case PM_FIND_PATTERN_NODE:
+        rb_bug("Find pattern matching not yet supported.");
+        break;
+      case PM_HASH_PATTERN_NODE:
+        rb_bug("Hash pattern matching not yet supported.");
+        break;
+      case PM_LOCAL_VARIABLE_TARGET_NODE:
+        rb_bug("Local variable target node matching not yet supported.");
+        break;
+      case PM_IF_NODE:
+        rb_bug("If guards on pattern matching not yet supported.");
+        break;
+      case PM_UNLESS_NODE:
+        rb_bug("Unless guards on pattern matching not yet supported.");
+        break;
+      case PM_ALTERNATION_PATTERN_NODE:
+        rb_bug("Alternation pattern matching not yet supported.");
+        break;
+      case PM_CAPTURE_PATTERN_NODE:
+        rb_bug("Capture pattern matching not yet supported.");
+        break;
       case PM_ARRAY_NODE:
       case PM_CLASS_VARIABLE_READ_NODE:
       case PM_CONSTANT_PATH_NODE:
