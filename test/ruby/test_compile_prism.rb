@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Prism
-  class ISeqTest < Test::Unit::TestCase
+  class TestCompilePrism < Test::Unit::TestCase
     def test_empty_program
       test_prism_eval("")
     end
@@ -334,10 +334,11 @@ module Prism
     end
 
     def test_prism_eval(source)
-      compare_eval(source)
+      $VERBOSE, verbose_bak = nil, $VERBOSE
 
       begin
-        $VERBOSE, verbose_bak = nil, $VERBOSE
+        compare_eval(source)
+
         # Test "popped" functionality
         compare_eval("#{source}; 1")
       ensure

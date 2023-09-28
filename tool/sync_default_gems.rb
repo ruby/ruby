@@ -398,12 +398,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
     when "prism"
-      # We don't want to remove prism-specific files that existing in ruby/ruby
-      # that do not exist in ruby/prism, so we temporarily move them out of the
-      # prism dir, wipe the prism dir, and then put them back.
-      mv("prism/prism_init.c", ".")
-      mv("prism/prism_compiler.c", ".")
-      mv("test/prism/iseq_test.rb", ".")
       rm_rf(%w[test/prism prism])
 
       cp_r("#{upstream}/ext/prism", "prism")
@@ -420,9 +414,6 @@ module SyncDefaultGems
       rm_rf("prism/templates/java")
 
       rm("prism/extconf.rb")
-      mv("prism_init.c", "prism/")
-      mv("prism_compiler.c", "prism/")
-      mv("iseq_test.rb", "test/prism/")
     else
       sync_lib gem, upstream
     end
