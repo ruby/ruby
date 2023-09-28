@@ -1037,7 +1037,6 @@ typedef struct RNode_ARYPTN {
     NODE node;
 
     struct RNode *nd_pconst;
-    VALUE not_used;
     struct rb_ary_pattern_info *nd_apinfo;
 } rb_node_aryptn_t;
 
@@ -1053,7 +1052,6 @@ typedef struct RNode_FNDPTN {
     NODE node;
 
     struct RNode *nd_pconst;
-    VALUE not_used;
     struct rb_fnd_pattern_info *nd_fpinfo;
 } rb_node_fndptn_t;
 
