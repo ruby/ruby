@@ -744,22 +744,36 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
       case PM_X_STRING_NODE:
+        // These nodes are all simple patterns, which means we'll use the
+        // checkmatch instruction to match against them, which is effectively a
+        // VM-level === operator.
         PM_COMPILE_NOT_POPPED(node);
         ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
         ADD_INSNL(ret, &dummy_line_node, branchif, matched_label);
         ADD_INSNL(ret, &dummy_line_node, jump, unmatched_label);
         break;
       case PM_PINNED_VARIABLE_NODE: {
+        // Pinned variables are a way to match against the value of a variable
+        // without it looking like you're trying to write to the variable. This
+        // looks like: foo in ^@bar. To compile these, we compile the variable
+        // that they hold.
         pm_pinned_variable_node_t *cast = (pm_pinned_variable_node_t *) node;
         pm_compile_pattern(iseq, cast->variable, ret, src, compile_context, matched_label, unmatched_label, false);
         break;
       }
       case PM_PINNED_EXPRESSION_NODE: {
+        // Pinned expressions are a way to match against the value of an
+        // expression that should be evaluated at runtime. This looks like:
+        // foo in ^(bar). To compile these, we compile the expression that they
+        // hold.
         pm_pinned_expression_node_t *cast = (pm_pinned_expression_node_t *) node;
         pm_compile_pattern(iseq, cast->expression, ret, src, compile_context, matched_label, unmatched_label, false);
         break;
       }
       default:
+        // If we get here, then we have a node type that should not be in this
+        // position. This would be a bug in the parser, because a different node
+        // type should never have been created in this position in the tree.
         rb_bug("Unexpected node type in pattern matching expression: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
         break;
     }
