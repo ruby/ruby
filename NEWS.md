@@ -110,7 +110,8 @@ The following bundled gems are updated.
 * rexml 3.2.6
 * rss 0.3.0
 * net-imap 0.3.7
-* rbs 3.2.1
+* net-smtp 0.4.0
+* rbs 3.2.2
 * typeprof 0.21.8
 * debug 1.8.0
 
