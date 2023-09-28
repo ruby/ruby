@@ -878,6 +878,7 @@ pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening) {
     *node = (pm_array_node_t) {
         {
             .type = PM_ARRAY_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = PM_LOCATION_TOKEN_VALUE(opening)
         },
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
@@ -900,8 +901,15 @@ pm_array_node_elements_append(pm_array_node_t *node, pm_node_t *element) {
     if (!node->elements.size && !node->opening_loc.start) {
         node->base.location.start = element->location.start;
     }
+
     pm_node_list_append(&node->elements, element);
     node->base.location.end = element->location.end;
+
+    // If the element is not a static literal, then the array is not a static
+    // literal. Turn that flag off.
+    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
+        node->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
+    }
 }
 
 // Set the closing token and end location of an array node.
@@ -1043,9 +1051,15 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         end = key->location.end;
     }
 
+    pm_node_flags_t flags = 0;
+    if (value && !PM_NODE_TYPE_P(value, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(value, PM_HASH_NODE)) {
+        flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
+    }
+
     *node = (pm_assoc_node_t) {
         {
             .type = PM_ASSOC_NODE,
+            .flags = flags,
             .location = {
                 .start = key->location.start,
                 .end = end
@@ -2620,6 +2634,7 @@ pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening) {
     *node = (pm_hash_node_t) {
         {
             .type = PM_HASH_NODE,
+            .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = PM_LOCATION_TOKEN_VALUE(opening)
         },
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
@@ -2630,9 +2645,16 @@ pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening) {
     return node;
 }
 
+// Append a new element to a hash node.
 static inline void
 pm_hash_node_elements_append(pm_hash_node_t *hash, pm_node_t *element) {
     pm_node_list_append(&hash->elements, element);
+
+    // If the element is not a static literal, then the hash is not a static
+    // literal. Turn that flag off.
+    if ((element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
+        hash->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
+    }
 }
 
 static inline void
@@ -3892,7 +3914,7 @@ pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening
     *node = (pm_regular_expression_node_t) {
         {
             .type = PM_REGULAR_EXPRESSION_NODE,
-            .flags = pm_regular_expression_flags_create(closing),
+            .flags = pm_regular_expression_flags_create(closing) | PM_NODE_FLAG_STATIC_LITERAL,
             .location = {
                 .start = MIN(opening->start, closing->start),
                 .end = MAX(opening->end, closing->end)
