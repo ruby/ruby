@@ -175,12 +175,6 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
       case NODE_ARGS:
         xfree(RNODE_ARGS(node)->nd_ainfo);
         break;
-      case NODE_ARYPTN:
-        xfree(RNODE_ARYPTN(node)->nd_apinfo);
-        break;
-      case NODE_FNDPTN:
-        xfree(RNODE_FNDPTN(node)->nd_fpinfo);
-        break;
     }
 }
 

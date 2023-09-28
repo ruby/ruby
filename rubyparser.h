@@ -963,7 +963,9 @@ typedef struct RNode_ARYPTN {
     NODE node;
 
     struct RNode *nd_pconst;
-    struct rb_ary_pattern_info *nd_apinfo;
+    NODE *pre_args;
+    NODE *rest_arg;
+    NODE *post_args;
 } rb_node_aryptn_t;
 
 typedef struct RNode_HSHPTN {
@@ -978,7 +980,9 @@ typedef struct RNode_FNDPTN {
     NODE node;
 
     struct RNode *nd_pconst;
-    struct rb_fnd_pattern_info *nd_fpinfo;
+    NODE *pre_rest_arg;
+    NODE *args;
+    NODE *post_rest_arg;
 } rb_node_fndptn_t;
 
 typedef struct RNode_ERROR {
@@ -1153,18 +1157,6 @@ struct rb_args_info {
     unsigned int no_kwarg: 1;
     unsigned int ruby2_keywords: 1;
     unsigned int forwarding: 1;
-};
-
-struct rb_ary_pattern_info {
-    NODE *pre_args;
-    NODE *rest_arg;
-    NODE *post_args;
-};
-
-struct rb_fnd_pattern_info {
-    NODE *pre_rest_arg;
-    NODE *args;
-    NODE *post_rest_arg;
 };
 
 typedef struct node_buffer_struct node_buffer_t;

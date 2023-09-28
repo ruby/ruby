@@ -648,23 +648,21 @@ node_children(rb_ast_t *ast, const NODE *node)
         }
       case NODE_ARYPTN:
         {
-            struct rb_ary_pattern_info *apinfo = RNODE_ARYPTN(node)->nd_apinfo;
-            VALUE rest = rest_arg(ast, apinfo->rest_arg);
+            VALUE rest = rest_arg(ast, RNODE_ARYPTN(node)->rest_arg);
             return rb_ary_new_from_args(4,
                                         NEW_CHILD(ast, RNODE_ARYPTN(node)->nd_pconst),
-                                        NEW_CHILD(ast, apinfo->pre_args),
+                                        NEW_CHILD(ast, RNODE_ARYPTN(node)->pre_args),
                                         rest,
-                                        NEW_CHILD(ast, apinfo->post_args));
+                                        NEW_CHILD(ast, RNODE_ARYPTN(node)->post_args));
         }
       case NODE_FNDPTN:
         {
-            struct rb_fnd_pattern_info *fpinfo = RNODE_FNDPTN(node)->nd_fpinfo;
-            VALUE pre_rest = rest_arg(ast, fpinfo->pre_rest_arg);
-            VALUE post_rest = rest_arg(ast, fpinfo->post_rest_arg);
+            VALUE pre_rest = rest_arg(ast, RNODE_FNDPTN(node)->pre_rest_arg);
+            VALUE post_rest = rest_arg(ast, RNODE_FNDPTN(node)->post_rest_arg);
             return rb_ary_new_from_args(4,
                                         NEW_CHILD(ast, RNODE_FNDPTN(node)->nd_pconst),
                                         pre_rest,
-                                        NEW_CHILD(ast, fpinfo->args),
+                                        NEW_CHILD(ast, RNODE_FNDPTN(node)->args),
                                         post_rest);
         }
       case NODE_HSHPTN:
