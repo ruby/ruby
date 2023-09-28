@@ -373,6 +373,8 @@ module Prism
       test_prism_eval("\"foo1\" in /...\#{1}/")
       test_prism_eval("4 in ->(v) { v.even? }")
 
+      test_prism_eval("5 in foo")
+
       test_prism_eval("1 in 2")
     end
 
