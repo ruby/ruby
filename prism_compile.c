@@ -630,15 +630,43 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
       case PM_HASH_PATTERN_NODE:
         rb_bug("Hash pattern matching not yet supported.");
         break;
-      case PM_IF_NODE:
-        rb_bug("If guards on pattern matching not yet supported.");
-        break;
-      case PM_UNLESS_NODE:
-        rb_bug("Unless guards on pattern matching not yet supported.");
-        break;
       case PM_CAPTURE_PATTERN_NODE:
         rb_bug("Capture pattern matching not yet supported.");
         break;
+      case PM_IF_NODE: {
+        // If guards can be placed on patterns to further limit matches based on
+        // a dynamic predicate. This looks like:
+        //
+        //     case foo
+        //     in bar if baz
+        //     end
+        //
+        pm_if_node_t *cast = (pm_if_node_t *) node;
+
+        pm_compile_pattern(iseq, cast->statements->body.nodes[0], ret, src, compile_context, matched_label, unmatched_label, in_alternation_pattern);
+        PM_COMPILE_NOT_POPPED(cast->predicate);
+
+        ADD_INSNL(ret, &dummy_line_node, branchunless, unmatched_label);
+        ADD_INSNL(ret, &dummy_line_node, jump, matched_label);
+        break;
+      }
+      case PM_UNLESS_NODE: {
+        // Unless guards can be placed on patterns to further limit matches
+        // based on a dynamic predicate. This looks like:
+        //
+        //     case foo
+        //     in bar unless baz
+        //     end
+        //
+        pm_unless_node_t *cast = (pm_unless_node_t *) node;
+
+        pm_compile_pattern(iseq, cast->statements->body.nodes[0], ret, src, compile_context, matched_label, unmatched_label, in_alternation_pattern);
+        PM_COMPILE_NOT_POPPED(cast->predicate);
+
+        ADD_INSNL(ret, &dummy_line_node, branchif, unmatched_label);
+        ADD_INSNL(ret, &dummy_line_node, jump, matched_label);
+        break;
+      }
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
         // Local variables can be targetted by placing identifiers in the place
         // of a pattern. For example, foo in bar. This results in the value
@@ -651,9 +679,11 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
         // it's ambiguous which value should be used. So instead we indicate
         // this with a compile error.
         if (in_alternation_pattern) {
-            const char *name = rb_id2name(pm_constant_id_lookup(compile_context, cast->name));
+            ID id = pm_constant_id_lookup(compile_context, cast->name);
+            const char *name = rb_id2name(id);
+
             if (name && strlen(name) > 0 && name[0] != '_') {
-                COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")", name);
+                COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")", rb_id2str(id));
                 return COMPILE_NG;
             }
         }
@@ -733,6 +763,8 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
         rb_bug("Unexpected node type in pattern matching expression: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
         break;
     }
+
+    return COMPILE_OK;
 }
 
 /*
