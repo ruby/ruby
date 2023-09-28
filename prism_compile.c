@@ -639,9 +639,33 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
       case PM_UNLESS_NODE:
         rb_bug("Unless guards on pattern matching not yet supported.");
         break;
-      case PM_ALTERNATION_PATTERN_NODE:
-        rb_bug("Alternation pattern matching not yet supported.");
+      case PM_ALTERNATION_PATTERN_NODE: {
+        // Alternation patterns allow you to specify multiple patterns in a
+        // single expression using the | operator.
+        pm_alternation_pattern_node_t *cast = (pm_alternation_pattern_node_t *) node;
+
+        LABEL *matched_left_label = NEW_LABEL(lineno);
+        LABEL *unmatched_left_label = NEW_LABEL(lineno);
+
+        // First, we're going to attempt to match against the left pattern. If
+        // that pattern matches, then we'll skip matching the right pattern.
+        ADD_INSN(ret, &dummy_line_node, dup);
+        pm_compile_pattern(iseq, cast->left, ret, src, compile_context, matched_left_label, unmatched_left_label);
+
+        // If we get here, then we matched on the left pattern. In this case we
+        // should pop out the duplicate value that we preemptively added to
+        // match against the right pattern and then jump to the match label.
+        ADD_LABEL(ret, matched_left_label);
+        ADD_INSN(ret, &dummy_line_node, pop);
+        ADD_INSNL(ret, &dummy_line_node, jump, matched_label);
+        ADD_INSN(ret, &dummy_line_node, putnil);
+
+        // If we get here, then we didn't match on the left pattern. In this
+        // case we attempt to match against the right pattern.
+        ADD_LABEL(ret, unmatched_left_label);
+        pm_compile_pattern(iseq, cast->right, ret, src, compile_context, matched_label, unmatched_label);
         break;
+      }
       case PM_CAPTURE_PATTERN_NODE:
         rb_bug("Capture pattern matching not yet supported.");
         break;
