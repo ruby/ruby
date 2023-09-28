@@ -327,7 +327,13 @@ module Prism
     private
 
     def compare_eval(source)
-      ruby_eval = RubyVM::InstructionSequence.compile(source).eval
+      begin
+        $VERBOSE, verbose_bak = nil, $VERBOSE
+        ruby_eval = RubyVM::InstructionSequence.compile(source).eval
+      ensure
+        $VERBOSE = verbose_bak
+      end
+
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
 
       assert_equal ruby_eval, prism_eval
@@ -336,13 +342,8 @@ module Prism
     def test_prism_eval(source)
       compare_eval(source)
 
-      begin
-        $VERBOSE, verbose_bak = nil, $VERBOSE
-        # Test "popped" functionality
-        compare_eval("#{source}; 1")
-      ensure
-        $VERBOSE = verbose_bak
-      end
+      # Test "popped" functionality
+      compare_eval("#{source}; 1")
     end
   end
 end
