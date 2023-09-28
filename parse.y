@@ -12037,7 +12037,6 @@ rb_node_aryptn_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_aryptn_t *n = NODE_NEWNODE(NODE_ARYPTN, rb_node_aryptn_t, loc);
     n->nd_pconst = 0;
-    n->not_used = 0;
     n->nd_apinfo = 0;
 
     return n;
@@ -12059,7 +12058,6 @@ rb_node_fndptn_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_fndptn_t *n = NODE_NEWNODE(NODE_FNDPTN, rb_node_fndptn_t, loc);
     n->nd_pconst = 0;
-    n->not_used = 0;
     n->nd_fpinfo = 0;
 
     return n;
