@@ -5394,7 +5394,7 @@ Init_Thread(void)
         /* main thread setting */
         {
             /* acquire global vm lock */
-#if USE_MN_THREADS
+#ifdef HAVE_PTHREAD_NP_H
             VM_ASSERT(TH_SCHED(th)->running == th);
 #endif
             // thread_sched_to_running() should not be called because

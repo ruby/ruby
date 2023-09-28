@@ -638,7 +638,7 @@ typedef struct rb_vm_struct {
             rb_nativethread_cond_t terminate_cond;
             bool terminate_waiting;
 
-#ifdef RUBY_THREAD_WIN32_H
+#ifndef RUBY_THREAD_PTHREAD_H
             bool barrier_waiting;
             unsigned int barrier_cnt;
             rb_nativethread_cond_t barrier_cond;
