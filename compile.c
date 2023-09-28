@@ -13372,4 +13372,4 @@ rb_iseq_ibf_load_extra_data(VALUE str)
     return extra_str;
 }
 
-#include "prism/prism_compiler.c"
+#include "prism_compile.c"
