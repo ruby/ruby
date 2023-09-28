@@ -334,6 +334,47 @@ module Prism
       test_prism_eval("(1)")
     end
 
+    ############################################################################
+    # Pattern matching                                                         #
+    ############################################################################
+
+    def test_MatchPredicateNode
+      test_prism_eval("1 in 1")
+      test_prism_eval("1.0 in 1.0")
+      test_prism_eval("1i in 1i")
+      test_prism_eval("1r in 1r")
+
+      test_prism_eval("\"foo\" in \"foo\"")
+      test_prism_eval("\"foo \#{1}\" in \"foo \#{1}\"")
+
+      test_prism_eval("false in false")
+      test_prism_eval("nil in nil")
+      test_prism_eval("self in self")
+      test_prism_eval("true in true")
+
+      test_prism_eval("5 in 0..10")
+      test_prism_eval("5 in 0...10")
+
+      test_prism_eval("module Prism; @@prism = 1; 1 in ^@@prism; end")
+      test_prism_eval("module Prism; @prism = 1; 1 in ^@prism; end")
+      test_prism_eval("$prism = 1; 1 in ^$prism")
+      test_prism_eval("prism = 1; 1 in ^prism")
+
+      test_prism_eval("[\"5\"] in %w[5]")
+
+      test_prism_eval("Prism in Prism")
+      test_prism_eval("Prism in ::Prism")
+
+      test_prism_eval(":prism in :prism")
+      test_prism_eval("%s[prism\#{1}] in %s[prism\#{1}]")
+      test_prism_eval("\"foo\" in /.../")
+      test_prism_eval("\"foo1\" in /...\#{1}/")
+      test_prism_eval("4 in ->(v) { v.even? }")
+      test_prism_eval("4 in ^(4)")
+
+      test_prism_eval("1 in 2")
+    end
+
     private
 
     def compare_eval(source)
