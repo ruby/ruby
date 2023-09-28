@@ -325,8 +325,7 @@ pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, 
         if (node_body) {
             pm_compile_node(iseq, (pm_node_t *)node_body, then_seq, src, popped, compile_context);
             PM_POP_IF_POPPED;
-        }
-        else {
+        } else {
             PM_PUTNIL_UNLESS_POPPED;
         }
 
@@ -582,6 +581,29 @@ pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_
     }
 
     return pushed;
+}
+
+/**
+ * Check the prism flags of a regular expression-like node and return the flags
+ * that are expected by the CRuby VM.
+ */
+static int
+pm_reg_flags(const pm_node_t *node) {
+    int flags = 0;
+
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
+        flags |= ONIG_OPTION_IGNORECASE;
+    }
+
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) {
+        flags |= ONIG_OPTION_MULTILINE;
+    }
+
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) {
+        flags |= ONIG_OPTION_EXTEND;
+    }
+
+    return flags;
 }
 
 /*
@@ -1381,13 +1403,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
-      case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
-        pm_interpolated_regular_expression_node_t *interp_regular_expression_node= (pm_interpolated_regular_expression_node_t *) node;
-        pm_interpolated_node_compile(interp_regular_expression_node->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
-        if (interp_regular_expression_node->parts.size > 1) {
-            ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(0), INT2FIX((int)(interp_regular_expression_node->parts.size)));
-        }
+      case PM_INTERPOLATED_MATCH_LAST_LINE_NODE: {
+        pm_interpolated_match_last_line_node_t *cast = (pm_interpolated_match_last_line_node_t *) node;
+        pm_interpolated_node_compile(cast->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
 
+        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX((int) (cast->parts.size)));
+
+        ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(0), INT2FIX(0));
+        ADD_SEND(ret, &dummy_line_node, idEqTilde, INT2NUM(1));
+        PM_POP_IF_POPPED;
+
+        return;
+      }
+      case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+        pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) node;
+        pm_interpolated_node_compile(cast->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
+
+        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX((int) (cast->parts.size)));
         PM_POP_IF_POPPED;
         return;
       }
@@ -1568,23 +1600,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_MATCH_LAST_LINE_NODE: {
         if (!popped) {
-            pm_match_last_line_node_t *regular_expression_node = (pm_match_last_line_node_t *) node;
-            VALUE regex_str = parse_string(&regular_expression_node->unescaped);
-            int flags = 0;
+            pm_match_last_line_node_t *cast = (pm_match_last_line_node_t *) node;
 
-            if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
-                flags |= ONIG_OPTION_IGNORECASE;
-            }
+            VALUE regex_str = parse_string(&cast->unescaped);
+            VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), pm_reg_flags(node));
 
-            if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) {
-                flags |= ONIG_OPTION_MULTILINE;
-            }
-
-            if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) {
-                flags |= ONIG_OPTION_EXTEND;
-            }
-
-            VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), flags);
             ADD_INSN1(ret, &dummy_line_node, putobject, regex);
             ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(0), INT2FIX(0));
             ADD_SEND(ret, &dummy_line_node, idEqTilde, INT2NUM(1));
@@ -1791,23 +1811,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_REGULAR_EXPRESSION_NODE: {
         if (!popped) {
-            pm_regular_expression_node_t *regular_expression_node = (pm_regular_expression_node_t *) node;
-            VALUE regex_str = parse_string(&regular_expression_node->unescaped);
-            int flags = 0;
+            pm_regular_expression_node_t *cast = (pm_regular_expression_node_t *) node;
 
-            if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
-                flags |= ONIG_OPTION_IGNORECASE;
-            }
+            VALUE regex_str = parse_string(&cast->unescaped);
+            VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), pm_reg_flags(node));
 
-            if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) {
-                flags |= ONIG_OPTION_MULTILINE;
-            }
-
-            if (regular_expression_node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) {
-                flags |= ONIG_OPTION_EXTEND;
-            }
-
-            VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), flags);
             ADD_INSN1(ret, &dummy_line_node, putobject, regex);
         }
         return;

@@ -240,8 +240,13 @@ module Prism
       test_prism_eval('$pit = 1; "#$pit"')
     end
 
+    def test_InterpolatedMatchLastLineNode
+      test_prism_eval("$pit = '.oo'; if /\#$pit/mix; end")
+    end
+
     def test_InterpolatedRegularExpressionNode
       test_prism_eval('$pit = 1; /1 #$pit 1/')
+      test_prism_eval('$pit = 1; /#$pit/i')
       test_prism_eval('/1 #{1 + 2} 1/')
       test_prism_eval('/1 #{"2"} #{1 + 2} 1/')
     end
