@@ -111,7 +111,7 @@ module Open3
   #   Open3.popen3('echo') {|*args| p args }                         # Built-in.
   #   Open3.popen3('date > date.tmp') {|*args| p args }              # Contains meta character.
   #
-  # Output (for each call above):
+  # Output (similar for each call above):
   #
   #   [#<IO:(closed)>, #<IO:(closed)>, #<IO:(closed)>, #<Process::Waiter:0x00007f58d52f28c8 dead>]
   #
@@ -152,7 +152,15 @@ module Open3
   # To avoid that, +stdout+ and +stderr+ should be read simultaneously
   # (using threads or IO.select).
   #
-  # Related: Open3.popen2, Open3.popen2e.
+  # Related:
+  #
+  # - Open3.popen2: Makes the standard input and standard output streams
+  #   of the child process available as separate streams,
+  #   with no access to the standard error stream.
+  # - Open3.popen2e: Makes the standard input and the merge
+  #   of the standard output and standard error streams
+  #   of the child process available as separate streams.
+  #
   def popen3(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
@@ -249,7 +257,7 @@ module Open3
   #   Open3.popen2('echo') {|*args| p args }                         # Built-in.
   #   Open3.popen2('date > date.tmp') {|*args| p args }              # Contains meta character.
   #
-  # Output (for each call above):
+  # Output (similar for each call above):
   #
   #   # => [#<IO:(closed)>, #<IO:(closed)>, #<Process::Waiter:0x00007f7577dfe410 dead>]
   #
@@ -284,7 +292,15 @@ module Open3
   #   # => "hello world\n"
   #
   #
-  # Related: Open3.popen3, Open3.popen2e.
+  # Related:
+  #
+  # - Open3.popen2e: Makes the standard input and the merge
+  #   of the standard output and standard error streams
+  #   of the child process available as separate streams.
+  # - Open3.popen3: Makes the standard input, standard output,
+  #   and standard error streams
+  #   of the child process available as separate streams.
+  #
   def popen2(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
@@ -303,36 +319,123 @@ module Open3
   end
   module_function :popen2
 
-  # Open3.popen2e is similar to Open3.popen3 except that it merges
-  # the standard output stream and the standard error stream.
+  # :call-seq:
+  #   Open3.popen2e([env, ] command_line, options = {}) -> [stdin, stdout_and_stderr, wait_thread]
+  #   Open3.popen2e([env, ] exe_path, *args, options = {}) -> [stdin, stdout_and_stderr, wait_thread]
+  #   Open3.popen2e([env, ] command_line, options = {}) {|stdin, stdout_and_stderr, wait_thread| ... } -> object
+  #   Open3.popen2e([env, ] exe_path, *args, options = {}) {|stdin, stdout_and_stderr, wait_thread| ... } -> object
   #
-  # Block form:
+  # Basically a wrapper for Process.spawn that:
   #
-  #   Open3.popen2e([env,] cmd... [, opts]) {|stdin, stdout_and_stderr, wait_thr|
-  #     pid = wait_thr.pid # pid of the started process.
-  #     ...
-  #     exit_status = wait_thr.value # Process::Status object returned.
-  #   }
+  # - Creates a child process, by calling Process.spawn with the given arguments.
+  # - Creates streams +stdin+, +stdout_and_stderr+,
+  #   which are the standard input and the merge of the standard output
+  #   and standard error streams in the child process.
+  # - Creates thread +wait_thread+ that waits for the child process to exit;
+  #   the thread has method +pid+, which returns the process ID
+  #   of the child process.
   #
-  # Non-block form:
+  # With no block given, returns the array
+  # <tt>[stdin, stdout_and_stderr, wait_thread]</tt>.
+  # The caller should close each of the two returned streams.
   #
-  #   stdin, stdout_and_stderr, wait_thr = Open3.popen2e([env,] cmd... [, opts])
-  #   ...
-  #   stdin.close  # stdin and stdout_and_stderr should be closed explicitly in this form.
+  #   stdin, stdout_and_stderr, wait_thread = Open3.popen2e('echo')
+  #   # => [#<IO:fd 6>, #<IO:fd 7>, #<Process::Waiter:0x00007f7577da4398 run>]
+  #   stdin.close
   #   stdout_and_stderr.close
+  #   wait_thread.pid   # => 2274600
+  #   wait_thread.value # => #<Process::Status: pid 2274600 exit 0>
   #
-  # See Process.spawn for the optional hash arguments _env_ and _opts_.
+  # With a block given, calls the block with the three variables
+  # (two streams and the wait thread)
+  # and returns the block's return value.
+  # The caller need not close the streams:
+  #
+  #   Open3.popen2e('echo') do |stdin, stdout_and_stderr, wait_thread|
+  #     p stdin
+  #     p stdout_and_stderr
+  #     p wait_thread
+  #     p wait_thread.pid
+  #     p wait_thread.value
+  #   end
+  #
+  # Output:
+  #
+  #   #<IO:fd 6>
+  #   #<IO:fd 7>
+  #   #<Process::Waiter:0x00007f75777578c8 sleep>
+  #   2274763
+  #   #<Process::Status: pid 2274763 exit 0>
+  #
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  #
+  # Unlike Process.spawn, this method waits for the child process to exit
+  # before returning, so the caller need not do so.
+  #
+  # Argument +options+ is a hash of options for the new process;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # The single required argument is one of the following:
+  #
+  # - +command_line+ if it is a string,
+  #   and if it begins with a shell reserved word or special built-in,
+  #   or if it contains one or more metacharacters.
+  # - +exe_path+ otherwise.
+  #
+  # <b>Argument +command_line+</b>
+  #
+  # \String argument +command_line+ is a command line to be passed to a shell;
+  # it must begin with a shell reserved word, begin with a special built-in,
+  # or contain meta characters:
+  #
+  #   Open3.popen2e('if true; then echo "Foo"; fi') {|*args| p args } # Shell reserved word.
+  #   Open3.popen2e('echo') {|*args| p args }                         # Built-in.
+  #   Open3.popen2e('date > date.tmp') {|*args| p args }              # Contains meta character.
+  #
+  # Output (similar for each call above):
+  #
+  #   # => [#<IO:(closed)>, #<IO:(closed)>, #<Process::Waiter:0x00007f7577d8a1f0 dead>]
+  #
+  # The command line may also contain arguments and options for the command:
+  #
+  #   Open3.popen2e('echo "Foo"') { |i, o_and_e, t| o_and_e.gets }
+  #   "Foo\n"
+  #
+  # <b>Argument +exe_path+</b>
+  #
+  # Argument +exe_path+ is one of the following:
+  #
+  # - The string path to an executable to be called.
+  # - A 2-element array containing the path to an executable
+  #   and the string to be used as the name of the executing process.
   #
   # Example:
-  #   # check gcc warnings
-  #   source = "foo.c"
-  #   Open3.popen2e("gcc", "-Wall", source) {|i,oe,t|
-  #     oe.each {|line|
-  #       if /warning/ =~ line
-  #         ...
-  #       end
-  #     }
-  #   }
+  #
+  #   Open3.popen2e('/usr/bin/date') { |i, o_and_e, t| o_and_e.gets }
+  #   # => "Thu Sep 28 01:58:45 PM CDT 2023\n"
+  #
+  # Ruby invokes the executable directly, with no shell and no shell expansion:
+  #
+  #   Open3.popen2e('doesnt_exist') { |i, o_and_e, t| o_and_e.gets } # Raises Errno::ENOENT
+  #
+  # If one or more +args+ is given, each is an argument or option
+  # to be passed to the executable:
+  #
+  #   Open3.popen2e('echo', 'C #') { |i, o_and_e, t| o_and_e.gets }
+  #   # => "C #\n"
+  #   Open3.popen2e('echo', 'hello', 'world') { |i, o_and_e, t| o_and_e.gets }
+  #   # => "hello world\n"
+  #
+  # Related:
+  #
+  # - Open3.popen2: Makes the standard input and standard output streams
+  #   of the child process available as separate streams,
+  #   with no access to the standard error stream.
+  # - Open3.popen3: Makes the standard input, standard output,
+  #   and standard error streams
+  #   of the child process available as separate streams.
   #
   def popen2e(*cmd, &block)
     if Hash === cmd.last
