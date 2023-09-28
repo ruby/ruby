@@ -6326,14 +6326,13 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          * match_failed:
          *   goto unmatched
          */
-        struct rb_ary_pattern_info *apinfo = RNODE_ARYPTN(node)->nd_apinfo;
-        const NODE *args = apinfo->pre_args;
-        const int pre_args_num = apinfo->pre_args ? rb_long2int(RNODE_LIST(apinfo->pre_args)->as.nd_alen) : 0;
-        const int post_args_num = apinfo->post_args ? rb_long2int(RNODE_LIST(apinfo->post_args)->as.nd_alen) : 0;
+        const NODE *args = RNODE_ARYPTN(node)->pre_args;
+        const int pre_args_num = RNODE_ARYPTN(node)->pre_args ? rb_long2int(RNODE_LIST(RNODE_ARYPTN(node)->pre_args)->as.nd_alen) : 0;
+        const int post_args_num = RNODE_ARYPTN(node)->post_args ? rb_long2int(RNODE_LIST(RNODE_ARYPTN(node)->post_args)->as.nd_alen) : 0;
 
         const int min_argc = pre_args_num + post_args_num;
-        const int use_rest_num = apinfo->rest_arg && (NODE_NAMED_REST_P(apinfo->rest_arg) ||
-                                                      (!NODE_NAMED_REST_P(apinfo->rest_arg) && post_args_num > 0));
+        const int use_rest_num = RNODE_ARYPTN(node)->rest_arg && (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg) ||
+                                                      (!NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg) && post_args_num > 0));
 
         LABEL *match_failed, *type_error, *deconstruct, *deconstructed;
         int i;
@@ -6357,10 +6356,10 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_INSN(ret, line_node, dup);
         ADD_SEND(ret, line_node, idLength, INT2FIX(0));
         ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
-        ADD_SEND(ret, line_node, apinfo->rest_arg ? idGE : idEq, INT2FIX(1)); // (1)
+        ADD_SEND(ret, line_node, RNODE_ARYPTN(node)->rest_arg ? idGE : idEq, INT2FIX(1)); // (1)
         if (in_single_pattern) {
             CHECK(iseq_compile_pattern_set_length_errmsg(iseq, ret, node,
-                                                         apinfo->rest_arg ? rb_fstring_lit("%p length mismatch (given %p, expected %p+)") :
+                                                         RNODE_ARYPTN(node)->rest_arg ? rb_fstring_lit("%p length mismatch (given %p, expected %p+)") :
                                                                             rb_fstring_lit("%p length mismatch (given %p, expected %p)"),
                                                          INT2FIX(min_argc), base_index + 1 /* (1) */));
         }
@@ -6374,8 +6373,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             args = RNODE_LIST(args)->nd_next;
         }
 
-        if (apinfo->rest_arg) {
-            if (NODE_NAMED_REST_P(apinfo->rest_arg)) {
+        if (RNODE_ARYPTN(node)->rest_arg) {
+            if (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg)) {
                 ADD_INSN(ret, line_node, dup);
                 ADD_INSN1(ret, line_node, putobject, INT2FIX(pre_args_num));
                 ADD_INSN1(ret, line_node, topn, INT2FIX(1));
@@ -6385,7 +6384,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 ADD_INSN1(ret, line_node, setn, INT2FIX(4));
                 ADD_SEND(ret, line_node, idAREF, INT2FIX(2)); // (3)
 
-                CHECK(iseq_compile_pattern_match(iseq, ret, apinfo->rest_arg, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (3) */, false));
+                CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_ARYPTN(node)->rest_arg, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (3) */, false));
             }
             else {
                 if (post_args_num > 0) {
@@ -6399,7 +6398,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             }
         }
 
-        args = apinfo->post_args;
+        args = RNODE_ARYPTN(node)->post_args;
         for (i = 0; i < post_args_num; i++) {
             ADD_INSN(ret, line_node, dup);
 
@@ -6487,9 +6486,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          * match_failed:
          *   goto unmatched
          */
-        struct rb_fnd_pattern_info *fpinfo = RNODE_FNDPTN(node)->nd_fpinfo;
-        const NODE *args = fpinfo->args;
-        const int args_num = fpinfo->args ? rb_long2int(RNODE_LIST(fpinfo->args)->as.nd_alen) : 0;
+        const NODE *args = RNODE_FNDPTN(node)->args;
+        const int args_num = RNODE_FNDPTN(node)->args ? rb_long2int(RNODE_LIST(RNODE_FNDPTN(node)->args)->as.nd_alen) : 0;
 
         LABEL *match_failed, *type_error, *deconstruct, *deconstructed;
         match_failed = NEW_LABEL(line);
@@ -6546,21 +6544,21 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 args = RNODE_LIST(args)->nd_next;
             }
 
-            if (NODE_NAMED_REST_P(fpinfo->pre_rest_arg)) {
+            if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->pre_rest_arg)) {
                 ADD_INSN1(ret, line_node, topn, INT2FIX(3));
                 ADD_INSN1(ret, line_node, putobject, INT2FIX(0));
                 ADD_INSN1(ret, line_node, topn, INT2FIX(2));
                 ADD_SEND(ret, line_node, idAREF, INT2FIX(2)); // (6)
-                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->pre_rest_arg, find_failed, in_single_pattern, in_alt_pattern, base_index + 4 /* (2), (3), (4), (6) */, false));
+                CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_FNDPTN(node)->pre_rest_arg, find_failed, in_single_pattern, in_alt_pattern, base_index + 4 /* (2), (3), (4), (6) */, false));
             }
-            if (NODE_NAMED_REST_P(fpinfo->post_rest_arg)) {
+            if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->post_rest_arg)) {
                 ADD_INSN1(ret, line_node, topn, INT2FIX(3));
                 ADD_INSN1(ret, line_node, topn, INT2FIX(1));
                 ADD_INSN1(ret, line_node, putobject, INT2FIX(args_num));
                 ADD_SEND(ret, line_node, idPLUS, INT2FIX(1));
                 ADD_INSN1(ret, line_node, topn, INT2FIX(3));
                 ADD_SEND(ret, line_node, idAREF, INT2FIX(2)); // (7)
-                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->post_rest_arg, find_failed, in_single_pattern, in_alt_pattern, base_index + 4 /* (2), (3),(4), (7) */, false));
+                CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_FNDPTN(node)->post_rest_arg, find_failed, in_single_pattern, in_alt_pattern, base_index + 4 /* (2), (3),(4), (7) */, false));
             }
             ADD_INSNL(ret, line_node, jump, find_succeeded);
 

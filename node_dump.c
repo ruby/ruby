@@ -1054,35 +1054,35 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("array pattern");
         ANN("format: [nd_pconst]([pre_args], ..., *[rest_arg], [post_args], ...)");
         F_NODE(nd_pconst, RNODE_ARYPTN, "constant");
-        F_NODE(nd_apinfo->pre_args, RNODE_ARYPTN, "pre arguments");
-        if (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->nd_apinfo->rest_arg)) {
-            F_NODE(nd_apinfo->rest_arg, RNODE_ARYPTN, "rest argument");
+        F_NODE(pre_args, RNODE_ARYPTN, "pre arguments");
+        if (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg)) {
+            F_NODE(rest_arg, RNODE_ARYPTN, "rest argument");
         }
         else {
-            F_MSG(nd_apinfo->rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+            F_MSG(rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
         LAST_NODE;
-        F_NODE(nd_apinfo->post_args, RNODE_ARYPTN, "post arguments");
+        F_NODE(post_args, RNODE_ARYPTN, "post arguments");
         return;
 
       case NODE_FNDPTN:
         ANN("find pattern");
         ANN("format: [nd_pconst](*[pre_rest_arg], args, ..., *[post_rest_arg])");
         F_NODE(nd_pconst, RNODE_FNDPTN, "constant");
-        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->nd_fpinfo->pre_rest_arg)) {
-            F_NODE(nd_fpinfo->pre_rest_arg, RNODE_FNDPTN, "pre rest argument");
+        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->pre_rest_arg)) {
+            F_NODE(pre_rest_arg, RNODE_FNDPTN, "pre rest argument");
         }
         else {
-            F_MSG(nd_fpinfo->pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+            F_MSG(pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
-        F_NODE(nd_fpinfo->args, RNODE_FNDPTN, "arguments");
+        F_NODE(args, RNODE_FNDPTN, "arguments");
 
         LAST_NODE;
-        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->nd_fpinfo->post_rest_arg)) {
-            F_NODE(nd_fpinfo->post_rest_arg, RNODE_FNDPTN, "post rest argument");
+        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->post_rest_arg)) {
+            F_NODE(post_rest_arg, RNODE_FNDPTN, "post rest argument");
         }
         else {
-            F_MSG(nd_fpinfo->post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+            F_MSG(post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
         return;
 

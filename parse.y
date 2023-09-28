@@ -981,9 +981,9 @@ static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_
 static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, NODE *nd_args, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
-static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
 static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
 
 #define NEW_SCOPE(a,b,loc) (NODE *)rb_node_scope_new(p,a,b,loc)
@@ -1083,9 +1083,9 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
 #define NEW_ATTRASGN(r,m,a,loc) (NODE *)rb_node_attrasgn_new(p,r,m,a,loc)
 #define NEW_LAMBDA(a,b,loc) (NODE *)rb_node_lambda_new(p,a,b,loc)
-#define NEW_ARYPTN(loc) (NODE *)rb_node_aryptn_new(p,loc)
+#define NEW_ARYPTN(pre,r,post,loc) (NODE *)rb_node_aryptn_new(p,pre,r,post,loc)
 #define NEW_HSHPTN(c,kw,kwrest,loc) (NODE *)rb_node_hshptn_new(p,c,kw,kwrest,loc)
-#define NEW_FNDPTN(loc) (NODE *)rb_node_fndptn_new(p,loc)
+#define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
 #endif
@@ -12068,11 +12068,13 @@ rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd
 }
 
 static rb_node_aryptn_t *
-rb_node_aryptn_new(struct parser_params *p, const YYLTYPE *loc)
+rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc)
 {
     rb_node_aryptn_t *n = NODE_NEWNODE(NODE_ARYPTN, rb_node_aryptn_t, loc);
     n->nd_pconst = 0;
-    n->nd_apinfo = 0;
+    n->pre_args = pre_args;
+    n->rest_arg = rest_arg;
+    n->post_args = post_args;
 
     return n;
 }
@@ -12089,11 +12091,13 @@ rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, N
 }
 
 static rb_node_fndptn_t *
-rb_node_fndptn_new(struct parser_params *p, const YYLTYPE *loc)
+rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc)
 {
     rb_node_fndptn_t *n = NODE_NEWNODE(NODE_FNDPTN, rb_node_fndptn_t, loc);
     n->nd_pconst = 0;
-    n->nd_fpinfo = 0;
+    n->pre_rest_arg = pre_rest_arg;
+    n->args = args;
+    n->post_rest_arg = post_rest_arg;
 
     return n;
 }
@@ -14381,17 +14385,15 @@ args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 static NODE*
 new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *aryptn, const YYLTYPE *loc)
 {
-    struct rb_ary_pattern_info *apinfo = RNODE_ARYPTN(aryptn)->nd_apinfo;
-
     RNODE_ARYPTN(aryptn)->nd_pconst = constant;
 
     if (pre_arg) {
         NODE *pre_args = NEW_LIST(pre_arg, loc);
-        if (apinfo->pre_args) {
-            apinfo->pre_args = list_concat(pre_args, apinfo->pre_args);
+        if (RNODE_ARYPTN(aryptn)->pre_args) {
+            RNODE_ARYPTN(aryptn)->pre_args = list_concat(pre_args, RNODE_ARYPTN(aryptn)->pre_args);
         }
         else {
-            apinfo->pre_args = pre_args;
+            RNODE_ARYPTN(aryptn)->pre_args = pre_args;
         }
     }
     return aryptn;
@@ -14401,20 +14403,14 @@ static NODE*
 new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc)
 {
     int saved_line = p->ruby_sourceline;
-    NODE *node = NEW_ARYPTN(loc);
-    struct rb_ary_pattern_info *apinfo = ZALLOC(struct rb_ary_pattern_info);
-    RNODE_ARYPTN(node)->nd_apinfo = apinfo;
-
-    apinfo->pre_args = pre_args;
 
     if (has_rest) {
-        apinfo->rest_arg = rest_arg ? rest_arg : NODE_SPECIAL_NO_NAME_REST;
+        rest_arg = rest_arg ? rest_arg : NODE_SPECIAL_NO_NAME_REST;
     }
     else {
-        apinfo->rest_arg = NULL;
+        rest_arg = NULL;
     }
-
-    apinfo->post_args = post_args;
+    NODE *node = NEW_ARYPTN(pre_args, rest_arg, post_args, loc);
 
     p->ruby_sourceline = saved_line;
     return node;
@@ -14432,13 +14428,10 @@ static NODE*
 new_find_pattern_tail(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc)
 {
     int saved_line = p->ruby_sourceline;
-    NODE *node = NEW_FNDPTN(loc);
-    struct rb_fnd_pattern_info *fpinfo = ZALLOC(struct rb_fnd_pattern_info);
-    RNODE_FNDPTN(node)->nd_fpinfo = fpinfo;
 
-    fpinfo->pre_rest_arg = pre_rest_arg ? pre_rest_arg : NODE_SPECIAL_NO_NAME_REST;
-    fpinfo->args = args;
-    fpinfo->post_rest_arg = post_rest_arg ? post_rest_arg : NODE_SPECIAL_NO_NAME_REST;
+    pre_rest_arg = pre_rest_arg ? pre_rest_arg : NODE_SPECIAL_NO_NAME_REST;
+    post_rest_arg = post_rest_arg ? post_rest_arg : NODE_SPECIAL_NO_NAME_REST;
+    NODE *node = NEW_FNDPTN(pre_rest_arg, args, post_rest_arg, loc);
 
     p->ruby_sourceline = saved_line;
     return node;
