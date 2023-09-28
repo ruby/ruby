@@ -1678,6 +1678,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
+#ifdef RUBY_THREAD_PTHREAD_H
     if (events && !th_has_dedicated_nt(th)) {
         VM_ASSERT(events == RB_WAITFD_IN || events == RB_WAITFD_OUT);
 
@@ -1685,6 +1686,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
         thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), NULL);
         RUBY_VM_CHECK_INTS_BLOCKING(ec);
     }
+#endif
 
     volatile VALUE val = Qundef; /* shouldn't be used */
     volatile int saved_errno = 0;
@@ -4277,6 +4279,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     wfd.fd = fd;
     wfd.busy = NULL;
 
+#ifdef RUBY_THREAD_PTHREAD_H
     if (!th->nt->dedicated) {
         rb_hrtime_t rel, *prel;
 
@@ -4292,6 +4295,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             return 0; // timeout
         }
     }
+#endif
 
     RB_VM_LOCK_ENTER();
     {

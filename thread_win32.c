@@ -896,12 +896,6 @@ rb_threadptr_sched_free(rb_thread_t *th)
 }
 
 static bool
-thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
-{
-    return false;
-}
-
-static bool
 vm_barrier_finish_p(rb_vm_t *vm)
 {
     RUBY_DEBUG_LOG("cnt:%u living:%u blocking:%u",

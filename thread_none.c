@@ -288,10 +288,4 @@ th_has_dedicated_nt(const rb_thread_t *th)
     return true;
 }
 
-static bool
-thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
-{
-    return false;
-}
-
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
