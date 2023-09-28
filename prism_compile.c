@@ -1439,29 +1439,61 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_HASH_NODE: {
-        pm_hash_node_t *hash_node = (pm_hash_node_t *) node;
-        pm_node_list_t elements = hash_node->elements;
+        pm_hash_node_t *cast = (pm_hash_node_t *) node;
+        pm_node_list_t elements = cast->elements;
 
-        if (elements.size == 1) {
-            assert(PM_NODE_TYPE_P(elements.nodes[0], PM_ASSOC_NODE));
-            pm_assoc_node_t *assoc_node = (pm_assoc_node_t *) elements.nodes[0];
+        // First, we're going to determine if everything within this hash is
+        // statically known. If it is, then we can create the hash now at
+        // compile-time instead of pushing everything onto the stack and
+        // creating it at run-time.
+        size_t static_nodes;
+        for (static_nodes = 0; static_nodes < elements.size; static_nodes++) {
+            if (!PM_NODE_TYPE_P(elements.nodes[static_nodes], PM_ASSOC_NODE)) break;
 
-            if (pm_static_node_literal_p(assoc_node->key) && pm_static_node_literal_p(assoc_node->value)) {
-                VALUE hash = rb_hash_new_with_size(1);
+            pm_assoc_node_t *cast = (pm_assoc_node_t *) elements.nodes[static_nodes];
+            if (!pm_static_node_literal_p(cast->key) || !pm_static_node_literal_p(cast->value)) break;
+        }
+
+        // If every node in the hash is static, then we can compile the entire
+        // hash now instead of later.
+        if (static_nodes == elements.size) {
+            // We're only going to compile this node if it's not popped. If it
+            // is popped, then we know we don't need to do anything since it's
+            // statically known.
+            if (!popped) {
+                VALUE array = rb_ary_hidden_new(static_nodes * 2);
+
+                for (size_t index = 0; index < elements.size; index++) {
+                    pm_assoc_node_t *cast = (pm_assoc_node_t *) elements.nodes[index];
+                    VALUE pair[2] = { pm_static_literal_value(cast->key), pm_static_literal_value(cast->value) };
+                    rb_ary_cat(array, pair, 2);
+                }
+
+                VALUE hash = rb_hash_new_with_size(elements.size);
+                rb_hash_bulk_insert(RARRAY_LEN(array), RARRAY_CONST_PTR(array), hash);
+
                 hash = rb_obj_hide(hash);
                 OBJ_FREEZE(hash);
                 ADD_INSN1(ret, &dummy_line_node, duphash, hash);
-                return;
+            }
+        } else {
+            // Here since we know there are possible side-effects inside the
+            // hash contents, we're going to build it entirely at runtime. We'll
+            // do this by pushing all of the key-value pairs onto the stack and
+            // then combining them with newhash.
+            //
+            // If this hash is popped, then this serves only to ensure we enact
+            // all side-effects (like method calls) that are contained within
+            // the hash contents.
+            for (size_t index = 0; index < elements.size; index++) {
+                PM_COMPILE(elements.nodes[index]);
+            }
+
+            if (!popped) {
+                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
             }
         }
 
-        for (size_t index = 0; index < elements.size; index++) {
-            PM_COMPILE(elements.nodes[index]);
-        }
-
-        if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
-        }
         return;
       }
       case PM_IF_NODE: {
