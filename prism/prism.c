@@ -5017,17 +5017,6 @@ peek(pm_parser_t *parser) {
     return peek_at(parser, parser->current.end);
 }
 
-// Get the next string of length len in the source starting from parser->current.end.
-// If the string extends beyond the end of the source, return the empty string ""
-static inline const uint8_t *
-peek_string(pm_parser_t *parser, size_t len) {
-    if (parser->current.end + len <= parser->end) {
-        return parser->current.end;
-    } else {
-        return (const uint8_t *) "";
-    }
-}
-
 // If the character to be read matches the given value, then returns true and
 // advanced the current pointer.
 static inline bool
@@ -6636,7 +6625,7 @@ parser_lex(pm_parser_t *parser) {
 
                 // = => =~ == === =begin
                 case '=':
-                    if (current_token_starts_line(parser) && memcmp(peek_string(parser, 5), "begin", 5) == 0 && pm_char_is_whitespace(peek_offset(parser, 5))) {
+                    if (current_token_starts_line(parser) && (parser->current.end + 5 <= parser->end) && memcmp(parser->current.end, "begin", 5) == 0 && pm_char_is_whitespace(peek_offset(parser, 5))) {
                         pm_token_type_t type = lex_embdoc(parser);
 
                         if (type == PM_TOKEN_EOF) {
