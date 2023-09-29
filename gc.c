@@ -3681,8 +3681,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
             break;
           case imemo_callinfo:
-            RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
-            break;
+            {
+                const struct rb_callinfo * ci = ((const struct rb_callinfo *)obj);
+                if (ci->kwarg) {
+                    ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
+                    if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
+                }
+                RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
+                break;
+            }
           case imemo_callcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
             break;

@@ -4327,6 +4327,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
             VALUE *keywords = kw_arg->keywords;
             int i = 0;
+            kw_arg->references = 0;
             kw_arg->keyword_len = len;
 
             *kw_arg_ptr = kw_arg;
@@ -7275,6 +7276,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
             fin = NEW_LABEL(line);
 
             kw_arg = rb_xmalloc_mul_add(2, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+            kw_arg->references = 0;
             kw_arg->keyword_len = 2;
             kw_arg->keywords[0] = ID2SYM(rb_intern("matchee"));
             kw_arg->keywords[1] = ID2SYM(rb_intern("key"));
@@ -10469,6 +10471,7 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
             size_t n = rb_callinfo_kwarg_bytes(len);
 
             kw_arg = xmalloc(n);
+            kw_arg->references = 0;
             kw_arg->keyword_len = len;
             for (i = 0; i < len; i++) {
                 VALUE kw = RARRAY_AREF(vkw_arg, i);
@@ -11957,6 +11960,7 @@ ibf_load_ci_entries(const struct ibf_load *load,
             int kwlen = (int)ibf_load_small_value(load, &reading_pos);
             if (kwlen > 0) {
                 kwarg = rb_xmalloc_mul_add(kwlen, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+                kwarg->references = 0;
                 kwarg->keyword_len = kwlen;
                 for (int j=0; j<kwlen; j++) {
                     VALUE keyword = ibf_load_small_value(load, &reading_pos);
