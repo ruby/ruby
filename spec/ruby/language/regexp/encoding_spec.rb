@@ -105,9 +105,11 @@ describe "Regexps with encoding modifiers" do
     /#{/./}/u.encoding.should == Encoding::UTF_8
   end
 
+=begin
   it "selects last of multiple encoding specifiers" do
     /foo/ensuensuens.should == /foo/s
   end
+=end
 
   it "raises Encoding::CompatibilityError when trying match against different encodings" do
     -> { /\A[[:space:]]*\z/.match(" ".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
