@@ -12025,8 +12025,6 @@ rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 {
     rb_node_defined_t *n = NODE_NEWNODE(NODE_DEFINED, rb_node_defined_t, loc);
     n->nd_head = nd_head;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
