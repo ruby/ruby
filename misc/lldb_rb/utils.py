@@ -146,7 +146,6 @@ class RbInspector(LLDBInterface):
                 self.output_string(val.GetValueForExpressionPath("->fstr").Cast(tRString))
 
             elif rval.is_type("RUBY_T_ARRAY"):
-                tRArray = self.target.FindFirstType("struct RArray").GetPointerType()
                 len = rval.ary_len()
                 ptr = rval.ary_ptr()
 
