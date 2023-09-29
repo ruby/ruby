@@ -280,4 +280,3 @@ class RbInspector(LLDBInterface):
             else:
                 print("Not-handled type %0#x" % rval.type, file=self.result)
                 print(val, file=self.result)
-

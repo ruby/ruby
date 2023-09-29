@@ -135,6 +135,3 @@ class RbObject(LLDBInterface):
             len = self.val.GetValueForExpressionPath("->as.heap.len")
 
         return len
-
-
-
