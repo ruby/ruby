@@ -159,9 +159,9 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     FileUtils.chmod 0o755, @gemhome
   end
 
-  def test_auto_user_install_unless_gem_home_writable
+  def test_auto_install_dir_unless_gem_home_writable
     if Process.uid.zero?
-      pend("test_auto_user_install_unless_gem_home_writable test skipped in root privilege")
+      pend("test_auto_install_dir_unless_gem_home_writable test skipped in root privilege")
       return
     end
 
@@ -174,14 +174,14 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     @cmd.handle_options %w[]
 
-    refute @cmd.options[:user_install]
+    assert_not_equal Gem.paths.home, Gem.user_dir
 
     FileUtils.chmod 0o755, @userhome
     FileUtils.chmod 0o000, @gemhome
 
     Gem.use_paths @gemhome, @userhome
 
-    @cmd.install_update_options.include?(:user_install)
+    assert_equal Gem.paths.home, Gem.user_dir
   ensure
     FileUtils.chmod 0o755, @gemhome
   end
