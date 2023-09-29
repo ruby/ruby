@@ -892,6 +892,9 @@ void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
     // free vm stack
+    CloseHandle(TH_SCHED(th)->lock);
+
+    ruby_xfree(th->nt);
     ruby_xfree(th->ec->vm_stack);
 }
 
