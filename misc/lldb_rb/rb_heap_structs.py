@@ -132,11 +132,12 @@ class RbObject(LLDBInterface):
         return len
 
     def bignum_len(self):
-        if self.flags & flUser2:
+        if self.flags & self.flUser2:
             len = ((self.flags &
               (self.flUser3 | self.flUser4 | self.flUser5)
               ) >> (self.flUshift + 3))
         else:
-            len = self.val.GetValueForExpressionPath("->as.heap.len")
+            len = (self.as_type("bignum").GetValueForExpressionPath("->as.heap.len").
+                   GetValueAsUnsigned())
 
         return len

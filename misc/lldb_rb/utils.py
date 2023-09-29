@@ -175,8 +175,6 @@ class RbInspector(LLDBInterface):
                 self._append_command_output("p *(struct RHash *) %0#x" % val.GetValueAsUnsigned())
 
             elif rval.is_type("RUBY_T_BIGNUM"):
-                tRBignum = self.target.FindFirstType("struct RBignum").GetPointerType()
-
                 sign = '-'
                 if (rval.flags & self.ruby_globals["RUBY_FL_USER1"]) != 0:
                     sign = '+'
@@ -188,9 +186,9 @@ class RbInspector(LLDBInterface):
                                                 % val.GetValueAsUnsigned())
                 else:
                     print("T_BIGNUM: sign=%s len=%d" % (sign, len), file=self.result)
-                    print(val.Dereference(), file=self.result)
+                    print(rval.as_type("bignum"), file=self.result)
                     self._append_command_output(
-                            "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" %
+                            "expression -Z %d -fx -- ((struct RBignum*)%d)->as.heap.digits" %
                             (len, val.GetValueAsUnsigned()))
 
             elif rval.is_type("RUBY_T_FLOAT"):
