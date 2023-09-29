@@ -516,7 +516,7 @@ module Open3
   # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
   #   and its string value is sent to the command's standard input:
   #
-  #     Open3.capture3('tee', :stdin_data => 'Foo')
+  #     Open3.capture3('tee', stdin_data: 'Foo')
   #     # => ["Foo", "", #<Process::Status: pid 2319575 exit 0>]
   #
   # - If entry <tt>options[:binmode]</tt> exists, the entry us removed
