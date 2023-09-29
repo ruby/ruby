@@ -176,14 +176,14 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     refute @cmd.options[:user_install]
 
-    FileUtils.chmod 0755, @userhome
-    FileUtils.chmod 0000, @gemhome
+    FileUtils.chmod 0o755, @userhome
+    FileUtils.chmod 0o000, @gemhome
 
     Gem.use_paths @gemhome, @userhome
 
     @cmd.install_update_options.include?(:user_install)
   ensure
-    FileUtils.chmod 0755, @gemhome
+    FileUtils.chmod 0o755, @gemhome
   end
 
   def test_vendor
