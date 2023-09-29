@@ -193,6 +193,24 @@ module Prism
       <%- end -%>
       inspector.to_str
     end
+
+    # Sometimes you want to check an instance of a node against a list of
+    # classes to see what kind of behavior to perform. Usually this is done by
+    # calling `[cls1, cls2].include?(node.class)` or putting the node into a
+    # case statement and doing `case node; when cls1; when cls2; end`. Both of
+    # these approaches are relatively slow because of the constant lookups,
+    # method calls, and/or array allocations.
+    #
+    # Instead, you can call #type, which will return to you a symbol that you
+    # can use for comparison. This is faster than the other approaches because
+    # it uses a single integer comparison, but also because if you're on CRuby
+    # you can take advantage of the fact that case statements with all symbol
+    # keys will use a jump table.
+    #
+    # def type: () -> Symbol
+    def type
+      :<%= node.human %>
+    end
   end
   <%- end -%>
   <%- flags.each_with_index do |flag, flag_index| -%>
