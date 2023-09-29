@@ -51,8 +51,6 @@
 #include <errno.h>
 #include <stdio.h>
 
-struct lex_context;
-
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/compilers.h"
@@ -1088,10 +1086,23 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 
 #endif
 
+/* This node is parse.y internal */
+typedef struct RNode_DEF_TEMP {
+    NODE node;
+
+    ID nd_vid;
+    ID nd_mid;
+    struct RNode *nd_head;
+    long nd_nth;
+    struct lex_context ctxt;
+} rb_node_def_temp_t;
+
+#define RNODE_DEF_TEMP(node) ((struct RNode_DEF_TEMP *)(node))
+
 static rb_node_break_t *rb_node_break_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc);
 static rb_node_next_t *rb_node_next_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc);
 static rb_node_redo_t *rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_def_temp_t *rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, VALUE nd_cval, const YYLTYPE *loc);
+static rb_node_def_temp_t *rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, struct lex_context ctxt, const YYLTYPE *loc);
 
 #define NEW_BREAK(s,loc) (NODE *)rb_node_break_new(p,s,loc)
 #define NEW_NEXT(s,loc) (NODE *)rb_node_next_new(p,s,loc)
@@ -1578,11 +1589,11 @@ restore_defun(struct parser_params *p, NODE *name)
 {
     /* See: def_name action */
     rb_node_def_temp_t *temp = RNODE_DEF_TEMP(name);
-    YYSTYPE c = {.val = temp->nd_cval};
+    struct lex_context ctxt = temp->ctxt;
     p->cur_arg = temp->nd_vid;
-    p->ctxt.in_def = c.ctxt.in_def;
-    p->ctxt.shareable_constant_value = c.ctxt.shareable_constant_value;
-    p->ctxt.in_rescue = c.ctxt.in_rescue;
+    p->ctxt.in_def = ctxt.in_def;
+    p->ctxt.shareable_constant_value = ctxt.shareable_constant_value;
+    p->ctxt.in_rescue = ctxt.in_rescue;
     p->max_numparam = (int)temp->nd_nth;
     numparam_pop(p, temp->nd_head);
     clear_block_exit(p, true);
@@ -2545,14 +2556,14 @@ def_name	: fname
                     {
                         ID fname = get_id($1);
                         ID cur_arg = p->cur_arg;
-                        YYSTYPE c = {.ctxt = p->ctxt};
+                        struct lex_context ctxt = p->ctxt;
                         numparam_name(p, fname);
                         NODE *save = numparam_push(p);
                         local_push(p, 0);
                         p->cur_arg = 0;
                         p->ctxt.in_def = 1;
                         p->ctxt.in_rescue = before_rescue;
-                        $<node>$ = NEW_DEF_TEMP(cur_arg, fname, save, p->max_numparam, c.val, &@$);
+                        $<node>$ = NEW_DEF_TEMP(cur_arg, fname, save, p->max_numparam, ctxt, &@$);
                     /*%%%*/
                     /*%
                         $$ = NEW_RIPPER(fname, get_value($1), $$, &NULL_LOC);
@@ -12177,14 +12188,14 @@ rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_def_temp_t *
-rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, VALUE nd_cval, const YYLTYPE *loc)
+rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, struct lex_context ctxt, const YYLTYPE *loc)
 {
     rb_node_def_temp_t *n = NODE_NEWNODE(NODE_DEF_TEMP, rb_node_def_temp_t, loc);
     n->nd_vid = nd_vid;
     n->nd_mid = nd_mid;
     n->nd_head = nd_head;
     n->nd_nth = nd_nth;
-    n->nd_cval = nd_cval;
+    n->ctxt = ctxt;
 
     return n;
 }
