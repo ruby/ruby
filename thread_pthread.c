@@ -2200,12 +2200,16 @@ rb_threadptr_sched_free(rb_thread_t *th)
     if (th->nt && th->ec && th_has_dedicated_nt(th)) {
         VM_ASSERT(th_has_dedicated_nt(th));
         ruby_xfree(th->sched.context_stack);
+        ruby_xfree(th->nt);
+        th->nt = NULL;
     }
     else {
         nt_free_stack(th->sched.context_stack);
     }
 #else
     ruby_xfree(th->sched.context_stack);
+    ruby_xfree(th->nt);
+    th->nt = NULL;
 #endif
 }
 
