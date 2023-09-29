@@ -839,16 +839,6 @@ typedef struct RNode_DEFS {
     struct RNode *nd_defn;
 } rb_node_defs_t;
 
-typedef struct RNode_DEF_TEMP {
-    NODE node;
-
-    ID nd_vid;
-    ID nd_mid;
-    struct RNode *nd_head;
-    long nd_nth;
-    VALUE nd_cval;
-} rb_node_def_temp_t;
-
 typedef struct RNode_ALIAS {
     NODE node;
 
@@ -1126,7 +1116,6 @@ typedef struct RNode_ERROR {
 #define RNODE_BLOCK_PASS(node) ((struct RNode_BLOCK_PASS *)(node))
 #define RNODE_DEFN(node) ((struct RNode_DEFN *)(node))
 #define RNODE_DEFS(node) ((struct RNode_DEFS *)(node))
-#define RNODE_DEF_TEMP(node) ((struct RNode_DEF_TEMP *)(node))
 #define RNODE_ALIAS(node) ((struct RNode_ALIAS *)(node))
 #define RNODE_VALIAS(node) ((struct RNode_VALIAS *)(node))
 #define RNODE_UNDEF(node) ((struct RNode_UNDEF *)(node))
