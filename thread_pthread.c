@@ -1063,7 +1063,6 @@ static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%d sched->readyq_cnt:%d", (int)th->serial, sched->readyq_cnt);
-    bool empty = false;
 
     thread_sched_lock(sched, th);
     {
@@ -1074,13 +1073,10 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
             thread_sched_wait_running_turn(sched, th, can_direct_transfer);
         }
         else {
-            empty = true;
             VM_ASSERT(sched->readyq_cnt == 0);
         }
     }
     thread_sched_unlock(sched, th);
-
-    if (empty) sleep(0); // make sure to pass to another native threads if available
 }
 
 void
@@ -2101,6 +2097,10 @@ native_thread_create_dedicated(rb_thread_t *th)
     void *vm_stack = ruby_xmalloc(vm_stack_word_size * sizeof(VALUE));
     rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
     th->sched.context_stack = vm_stack;
+
+    // setup
+    thread_sched_to_ready(TH_SCHED(th), th);
+
     return native_thread_create0(th->nt);
 }
 
@@ -2140,11 +2140,10 @@ nt_start(void *ptr)
             struct rb_thread_sched *sched = TH_SCHED(th);
 
             RUBY_DEBUG_LOG("on dedicated th:%u", rb_th_serial(th));
+            ruby_thread_set_native(th);
 
             thread_sched_lock(sched, th);
             {
-                ruby_thread_set_native(th);
-                thread_sched_to_ready_common(sched, th, true, false);
                 if (sched->running == th) {
                     thread_sched_add_running_thread(sched, th);
                 }
