@@ -956,9 +956,7 @@ typedef struct RNode_DEFINED {
 typedef struct RNode_POSTEXE {
     NODE node;
 
-    VALUE not_used;
     struct RNode *nd_body;
-    VALUE not_used2;
 } rb_node_postexe_t;
 
 typedef struct RNode_DSYM {
