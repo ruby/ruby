@@ -8022,7 +8022,7 @@ regx_options(struct parser_params *p)
     int kcode = 0;
     int kopt = 0;
     int options = 0;
-    int c, opt, kc;
+    int c, opt, kc, kprev = 0;
 
     newtok(p);
     while (c = nextc(p), ISALPHA(c)) {
@@ -8032,6 +8032,11 @@ regx_options(struct parser_params *p)
         else if (rb_char_to_option_kcode(c, &opt, &kc)) {
             if (kc >= 0) {
                 if (kc != rb_ascii8bit_encindex()) kcode = c;
+                if (kopt) {
+                    rb_warn2("`%c' encoding option overrides preceding `%c'",
+                             WARN_I(c), WARN_I(kprev));
+                }
+                kprev = c;
                 kopt = opt;
             }
             else {

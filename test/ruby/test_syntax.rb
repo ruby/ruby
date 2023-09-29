@@ -1242,6 +1242,15 @@ eom
     end
   end
 
+  def test_regexp_multiple_encoding_option
+    assert_warning(/`u'.*overrides.*`e'/) do
+      eval('//eu')
+    end
+    assert_warning(/`u'.*overrides.*`e'.*\n.*`s'.*overrides.*`u'/) do
+      eval('//eus')
+    end
+  end
+
   def test_alias_symbol
     bug8851 = '[ruby-dev:47681] [Bug #8851]'
     formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
