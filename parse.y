@@ -22,8 +22,6 @@
 #define YYLTYPE rb_code_location_t
 #define YYLTYPE_IS_DECLARED 1
 
-#ifdef UNIVERSAL_PARSER
-
 /* For Ripper */
 #ifdef RUBY_EXTCONF_H
 # include RUBY_EXTCONF_H
@@ -32,6 +30,9 @@
 #include "ruby/internal/config.h"
 
 #include <errno.h>
+
+#ifdef UNIVERSAL_PARSER
+
 #include "internal/ruby_parser.h"
 #include "parser_node.h"
 #include "universal_parser.c"
@@ -44,12 +45,6 @@
 #endif
 
 #else
-
-#include "ruby/internal/config.h"
-
-#include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
 
 #include "internal.h"
 #include "internal/compile.h"
