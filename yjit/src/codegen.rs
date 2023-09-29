@@ -4495,34 +4495,6 @@ fn jit_rb_int_equal(
     true
 }
 
-fn jit_rb_int_mul(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: *const VALUE,
-) -> bool {
-    if asm.ctx.two_fixnums_on_stack(jit) != Some(true) {
-        return false;
-    }
-    guard_two_fixnums(jit, asm, ocb);
-
-    // rb_fix_mul_fix may allocate memory for Bignum
-    jit_prepare_routine_call(jit, asm);
-
-    asm_comment!(asm, "Integer#*");
-    let obj = asm.stack_pop(1);
-    let recv = asm.stack_pop(1);
-    let ret = asm.ccall(rb_fix_mul_fix as *const u8, vec![recv, obj]);
-
-    let ret_opnd = asm.stack_push(Type::Unknown);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
 fn jit_rb_int_div(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -8773,7 +8745,6 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
             self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
 
-            self.yjit_reg_method(rb_cInteger, "*", jit_rb_int_mul);
             self.yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
             self.yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
             self.yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
