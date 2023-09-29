@@ -154,6 +154,10 @@ node_buffer_list_free(rb_ast_t *ast, node_buffer_list_t * nb)
         nbe = nbe->next;
         xfree(buf);
     }
+
+    /* The last node_buffer_elem_t is allocated in the node_buffer_t, so we
+     * only need to free the nodes. */
+    xfree(nbe->nodes);
 }
 
 struct rb_ast_local_table_link {
