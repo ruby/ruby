@@ -513,13 +513,13 @@ module Open3
   # The hash +options+ is passed to method Open3.popen3;
   # two options have local effect in method Open3.capture3:
   #
-  # - If entry <tt>options[:stdin_data]</tt> exists,
+  # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
   #   and its string value is sent to the command's standard input:
   #
   #     Open3.capture3('tee', :stdin_data => 'Foo')
   #     # => ["Foo", "", #<Process::Status: pid 2319575 exit 0>]
   #
-  # - If <tt>options[:binmode]</tt> exists,
+  # - If entry <tt>options[:binmode]</tt> exists, the entry us removed
   #   the internal streams are set to binary mode.
   #
   # The single required argument is one of the following:
