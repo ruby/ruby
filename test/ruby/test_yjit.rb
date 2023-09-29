@@ -1347,6 +1347,10 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_mult_overflow
+    assert_no_exits('0xfff_ffff_ffff_ffff * 0x10')
+  end
+
   private
 
   def code_gc_helpers
