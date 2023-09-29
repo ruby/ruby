@@ -495,7 +495,7 @@ module Open3
   # - Returns as +status+ a <tt>Process::Status</tt> object
   #   that represents the exit status of the child process.
   #
-  # With no block given, returns the array <tt>[stdin_s, stdout_a, status]</tt>:
+  # Returns the array <tt>[stdin_s, stdout_s, status]</tt>:
   #
   #   stdout_s, stderr_s, status = Open3.capture3('echo "Foo"')
   #   # => ["Foo\n", "", #<Process::Status: pid 2281954 exit 0>]
@@ -516,8 +516,8 @@ module Open3
   # - If entry <tt>options[:stdin_data]</tt> exists,
   #   and its string value is sent to the command's standard input:
   #
-  #     Open3.capture3('tee', {:stdin_data => 'Foo'})
-  #     # => ["Foo", "", #<Process::Status: pid 2283204 exit 0>]
+  #     Open3.capture3('tee', :stdin_data => 'Foo')
+  #     # => ["Foo", "", #<Process::Status: pid 2319575 exit 0>]
   #
   # - If <tt>options[:binmode]</tt> exists,
   #   the internal streams are set to binary mode.
