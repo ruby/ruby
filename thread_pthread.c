@@ -1063,6 +1063,7 @@ static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%d sched->readyq_cnt:%d", (int)th->serial, sched->readyq_cnt);
+    bool empty = false;
 
     thread_sched_lock(sched, th);
     {
@@ -1073,10 +1074,13 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
             thread_sched_wait_running_turn(sched, th, can_direct_transfer);
         }
         else {
+            empty = true;
             VM_ASSERT(sched->readyq_cnt == 0);
         }
     }
     thread_sched_unlock(sched, th);
+
+    if (empty) sleep(0); // make sure to pass to another native threads if available
 }
 
 void
