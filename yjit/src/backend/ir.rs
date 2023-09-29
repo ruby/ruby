@@ -447,6 +447,9 @@ pub enum Insn {
     /// Jump if overflow
     Jo(Target),
 
+    /// Jump if overflow in multiplication
+    JoMul(Target),
+
     /// Jump if zero
     Jz(Target),
 
@@ -590,6 +593,7 @@ impl Insn {
             Insn::Jne(_) => "Jne",
             Insn::Jnz(_) => "Jnz",
             Insn::Jo(_) => "Jo",
+            Insn::JoMul(_) => "JoMul",
             Insn::Jz(_) => "Jz",
             Insn::Label(_) => "Label",
             Insn::LeaLabel { .. } => "LeaLabel",
@@ -743,6 +747,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jne(_) |
             Insn::Jnz(_) |
             Insn::Jo(_) |
+            Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
@@ -843,6 +848,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jne(_) |
             Insn::Jnz(_) |
             Insn::Jo(_) |
+            Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
@@ -1859,6 +1865,10 @@ impl Assembler {
 
     pub fn jo(&mut self, target: Target) {
         self.push_insn(Insn::Jo(target));
+    }
+
+    pub fn jo_mul(&mut self, target: Target) {
+        self.push_insn(Insn::JoMul(target));
     }
 
     pub fn jz(&mut self, target: Target) {

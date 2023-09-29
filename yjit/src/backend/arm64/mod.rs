@@ -824,7 +824,6 @@ impl Assembler
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            let mut next_insn_idx = insn_idx + 1;
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -878,8 +877,9 @@ impl Assembler
                 },
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is jo (jump on overflow)
-                    match self.insns.get(insn_idx + 1) {
-                        Some(Insn::Jo(target)) => {
+                    match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
+                        (Some(Insn::JoMul(target)), _) |
+                        (Some(Insn::PosMarker(_)), Some(Insn::JoMul(target))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::SCRATCH0, left.into(), right.into());
 
@@ -895,9 +895,7 @@ impl Assembler
                             // If the high 64-bits are not all zeros or all ones,
                             // matching the sign bit, then we have an overflow
                             cmp(cb, Self::SCRATCH0, Self::SCRATCH1);
-                            emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb));
-
-                            next_insn_idx += 1;
+                            // Insn::JoMul will emit_conditional_jump::<{Condition::NE}>
                         }
                         _ => {
                             mul(cb, out.into(), left.into(), right.into());
@@ -1120,7 +1118,7 @@ impl Assembler
                 Insn::Je(target) | Insn::Jz(target) => {
                     emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(*target, self, ocb));
                 },
-                Insn::Jne(target) | Insn::Jnz(target) => {
+                Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
                     emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jl(target) => {
@@ -1197,7 +1195,7 @@ impl Assembler
                     return Err(());
                 }
             } else {
-                insn_idx = next_insn_idx;
+                insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
