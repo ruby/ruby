@@ -1584,11 +1584,10 @@ rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc)
     return dc->backtrace;
 }
 
-int
-rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
+static int
+thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *buff, int *lines)
 {
     int i;
-    const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *top = cfp;
     const rb_callable_method_entry_t *cme;
@@ -1648,6 +1647,20 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     }
 
     return i;
+}
+
+int
+rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return thread_profile_frames(ec, start, limit, buff, lines);
+}
+
+int
+rb_profile_thread_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines)
+{
+    rb_thread_t *th = rb_thread_ptr(thread);
+    return thread_profile_frames(th->ec, start, limit, buff, lines);
 }
 
 static const rb_iseq_t *
