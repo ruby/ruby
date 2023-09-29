@@ -258,16 +258,33 @@ module RubyVM::YJIT
       print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
       print_counters(stats, out: out, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')
       print_counters(stats, out: out, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')
-      print_counters(stats, out: out, prefix: 'leave_', prompt: 'leave exit reasons: ')
       print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
       print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
       print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
-      print_counters(stats, out: out, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
-      print_counters(stats, out: out, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
-      print_counters(stats, out: out, prefix: 'opt_aref_with_', prompt: 'opt_aref_with exit reasons: ')
-      print_counters(stats, out: out, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
+      %w[
+        branchif
+        branchnil
+        branchunless
+        definedivar
+        expandarray
+        jump
+        leave
+        objtostring
+        opt_aref
+        opt_aref_with
+        opt_aset
+        opt_case_dispatch
+        opt_div
+        opt_getconstant_path
+        opt_minus
+        opt_mod
+        opt_mult
+        opt_plus
+        setlocal
+      ].each do |insn|
+        print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
+      end
       print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
-      print_counters(stats, out: out, prefix: 'opt_getconstant_path_', prompt: 'opt_getconstant_path exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
 
       # Number of failed compiler invocations
@@ -381,15 +398,19 @@ module RubyVM::YJIT
       total
     end
 
-    def print_counters(counters, out:, prefix:, prompt:) # :nodoc:
-      out.puts(prompt)
+    def print_counters(counters, out:, prefix:, prompt:, optional: false) # :nodoc:
       counters = counters.filter { |key, _| key.start_with?(prefix) }
       counters.filter! { |_, value| value != 0 }
       counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
 
       if counters.empty?
-        out.puts("    (all relevant counters are zero)")
+        unless optional
+          out.puts(prompt)
+          out.puts("    (all relevant counters are zero)")
+        end
         return
+      else
+        out.puts(prompt)
       end
 
       counters = counters.to_a
