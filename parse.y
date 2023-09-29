@@ -11289,9 +11289,7 @@ rb_node_lambda_new(struct parser_params *p, NODE *nd_args, NODE *nd_body, const 
     /* Keep the order of node creation */
     NODE *scope = NEW_SCOPE(nd_args, nd_body, loc);
     rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, loc);
-    n->not_used = 0;
     n->nd_body = scope;
-    n->not_used2 = 0;
 
     return n;
 }

@@ -997,9 +997,7 @@ typedef struct RNode_ATTRASGN {
 typedef struct RNode_LAMBDA {
     NODE node;
 
-    VALUE not_used;
     struct RNode *nd_body;
-    VALUE not_used2;
 } rb_node_lambda_t;
 
 typedef struct RNode_ARYPTN {
