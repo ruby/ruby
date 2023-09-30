@@ -102,14 +102,6 @@ require_relative "csv/writer"
 
 # == \CSV
 #
-# === In a Hurry?
-#
-# If you are familiar with \CSV data and have a particular task in mind,
-# you may want to go directly to the:
-# - {Recipes for CSV}[doc/csv/recipes/recipes_rdoc.html].
-#
-# Otherwise, read on here, about the API: classes, methods, and constants.
-#
 # === \CSV Data
 #
 # \CSV (comma-separated values) data is a text representation of a table:
@@ -1323,8 +1315,8 @@ class CSV
     #
     # Arguments:
     # * Argument +path_or_io+ must be a file path or an \IO stream.
-    # * Argument +mode+, if given, must be a \File mode
-    #   See {Open Mode}[https://ruby-doc.org/core/IO.html#method-c-new-label-Open+Mode].
+    # * Argument +mode+, if given, must be a \File mode.
+    #   See {Access Modes}[rdoc-ref:File@Access+Modes].
     # * Arguments <tt>**options</tt> must be keyword options.
     #   See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     # * This method optionally accepts an additional <tt>:encoding</tt> option
@@ -1530,8 +1522,8 @@ class CSV
     #
     # * Argument +path+, if given, must be the path to a file.
     # :include: ../doc/csv/arguments/io.rdoc
-    # * Argument +mode+, if given, must be a \File mode
-    #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
+    # * Argument +mode+, if given, must be a \File mode.
+    #   See {Access Modes}[rdoc-ref:File@Access+Modes].
     # * Arguments <tt>**options</tt> must be keyword options.
     #   See {Options for Generating}[#class-CSV-label-Options+for+Generating].
     # * This method optionally accepts an additional <tt>:encoding</tt> option
