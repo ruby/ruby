@@ -898,7 +898,7 @@ rb_threadptr_sched_free(rb_thread_t *th)
 {
     CloseHandle(TH_SCHED(th)->lock);
     ruby_xfree(th->nt);
-    ruby_xfree(th->sched.vm_stack)
+    ruby_xfree(th->sched.vm_stack);
 }
 
 static bool
