@@ -754,7 +754,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     else if (nd_type_p(node, NODE_SCOPE)) {
         /* iseq type of top, method, class, block */
         iseq_set_local_table(iseq, RNODE_SCOPE(node)->nd_tbl);
-        iseq_set_arguments(iseq, ret, RNODE_SCOPE(node)->nd_args);
+        iseq_set_arguments(iseq, ret, (NODE *)RNODE_SCOPE(node)->nd_args);
 
         switch (ISEQ_BODY(iseq)->type) {
           case ISEQ_TYPE_BLOCK:
@@ -8294,7 +8294,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     rb_node_init(RNODE(&scope_node), NODE_SCOPE);
     scope_node.nd_tbl = tbl;
     scope_node.nd_body = mandatory_node(iseq, node);
-    scope_node.nd_args = RNODE(&args_node);
+    scope_node.nd_args = &args_node;
 
     rb_ast_body_t ast = {
         .root = RNODE(&scope_node),

@@ -644,7 +644,7 @@ node_children(rb_ast_t *ast, const NODE *node)
             for (i = 0; i < size; i++) {
                 rb_ary_push(locals, var_name(tbl->ids[i]));
             }
-            return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, RNODE_SCOPE(node)->nd_args), NEW_CHILD(ast, RNODE_SCOPE(node)->nd_body));
+            return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, (NODE *)RNODE_SCOPE(node)->nd_args), NEW_CHILD(ast, RNODE_SCOPE(node)->nd_body));
         }
       case NODE_ARYPTN:
         {

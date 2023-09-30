@@ -176,7 +176,7 @@ typedef struct RNode_SCOPE {
 
     rb_ast_id_table_t *nd_tbl;
     struct RNode *nd_body;
-    struct RNode *nd_args;
+    struct RNode_ARGS *nd_args;
 } rb_node_scope_t;
 
 typedef struct RNode_BLOCK {
