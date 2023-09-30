@@ -28,9 +28,9 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
   end
 
   ##
-  # Determines if current environment is eglible for update suggestion.
+  # Determines if current environment is eligible for update suggestion.
 
-  def eglible_for_update?
+  def eligible_for_update?
     # explicit opt-out
     return false if Gem.configuration[:prevent_update_suggestion]
     return false if ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"]
@@ -53,11 +53,11 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
 
     # compare current and latest version, this is the part where
     # latest rubygems spec is fetched from remote
-    (Gem.rubygems_version < Gem.latest_rubygems_version).tap do |eglible|
+    (Gem.rubygems_version < Gem.latest_rubygems_version).tap do |eligible|
       # store the time of last successful check into state file
       Gem.configuration.last_update_check = check_time
 
-      return eglible
+      return eligible
     end
   rescue StandardError # don't block install command on any problem
     false
