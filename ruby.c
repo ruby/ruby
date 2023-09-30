@@ -263,7 +263,7 @@ show_usage_line(const struct ruby_opt_message *m,
         }
         printf("%-*s%.*s\n", w + 2, "", desclen, desc);
     }
-    else {
+    else if (help || namelen > 1) {
         const int wrap = help && namelen + secondlen - 1 > w;
         printf("  %s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen-1, str,
                (wrap ? 0 : w - namelen + 1),
@@ -296,6 +296,8 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)\n"
             "(-00 for paragraph mode, -0777 for slurp mode)"),
+        M("",		   "-0=separator",	   "specify record separator as a string"),
+        M("",		   "-0:CODEPOINT,...",	   "specify record separator as codepoints list"),
         M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
         M("-c",		   "",			   "check syntax only"),
         M("-Cdirectory",   "",			   "cd to directory before executing your script"),
@@ -324,7 +326,6 @@ usage(const char *name, int help, int highlight, int columns)
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
-    STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 25);
 
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
@@ -575,8 +576,17 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
                                 ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
                                 Qnil);
 }
+
+static inline VALUE
+external_str_new_cstr(const char *p)
+{
+    VALUE str = rb_utf8_str_new_cstr(p);
+    str = str_conv_enc(str, NULL, rb_default_external_encoding());
+    return str;
+}
 #else
 # define str_conv_enc(str, from, to) (str)
+# define external_str_new_cstr rb_external_str_new_cstr
 #endif
 
 void ruby_init_loadpath(void);
@@ -1315,7 +1325,34 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
 {
     size_t numlen;
     int v;
-    char c;
+    char c[6];
+
+    switch (s[1]) {
+      case '=':
+        rb_rs = external_str_new_cstr(s + rb_strlen_lit("0="));
+        return 0;
+      case ':':
+        s += rb_strlen_lit("0:");
+        VALUE rs = rb_utf8_str_new(0, 0);
+        while (v = scan_hex(s, SIZE_MAX, &numlen), numlen) {
+            if (numlen > rb_strlen_lit("10ffff")) {
+                rb_raise(rb_eRuntimeError,
+                         "too long Unicode codepoint: %.*s%s",
+                         numlen > 20 ? 20 : (int)numlen, s,
+                         numlen > 20 ? "..." : "");
+            }
+            if (v > 0x10ffff) {
+                rb_raise(rb_eRuntimeError, "Unicode codepoint out of range: %x", v);
+            }
+            rb_str_cat(rs, c, rb_uv_to_utf8(c, v));
+            s += numlen;
+            while (ISSPACE(*s)) s++;
+            if (*s != ',' && *s != ':') break;
+            do s++; while (ISSPACE(*s));
+        }
+        rb_rs = rs;
+        return s;
+    }
 
     v = scan_oct(s, 4, &numlen);
     s += numlen;
@@ -1325,8 +1362,8 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
         rb_rs = rb_str_new2("");
     }
     else {
-        c = v & 0xff;
-        rb_rs = rb_str_new(&c, 1);
+        c[0] = v & 0xff;
+        rb_rs = rb_str_new(c, 1);
     }
     return s;
 }
@@ -2749,18 +2786,6 @@ set_arg0(VALUE val, ID id, VALUE *_)
         rb_raise(rb_eRuntimeError, "$0 not initialized");
 
     rb_progname = rb_str_new_frozen(ruby_setproctitle(val));
-}
-
-static inline VALUE
-external_str_new_cstr(const char *p)
-{
-#if UTF8_PATH
-    VALUE str = rb_utf8_str_new_cstr(p);
-    str = str_conv_enc(str, NULL, rb_default_external_encoding());
-    return str;
-#else
-    return rb_external_str_new_cstr(p);
-#endif
 }
 
 static void
