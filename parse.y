@@ -1050,7 +1050,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ARGSCAT(a,b,loc) (NODE *)rb_node_argscat_new(p,a,b,loc)
 #define NEW_ARGSPUSH(a,b,loc) (NODE *)rb_node_argspush_new(p,a,b,loc)
 #define NEW_SPLAT(a,loc) (NODE *)rb_node_splat_new(p,a,loc)
-#define NEW_BLOCK_PASS(b,loc) (NODE *)rb_node_block_pass_new(p,b,loc)
+#define NEW_BLOCK_PASS(b,loc) rb_node_block_pass_new(p,b,loc)
 #define NEW_DEFN(i,s,loc) (NODE *)rb_node_defn_new(p,i,s,loc)
 #define NEW_DEFS(r,i,s,loc) (NODE *)rb_node_defs_new(p,r,i,s,loc)
 #define NEW_ALIAS(n,o,loc) (NODE *)rb_node_alias_new(p,n,o,loc)
@@ -1210,7 +1210,7 @@ static rb_node_args_t *args_with_numbered(struct parser_params*,rb_node_args_t*,
 
 static VALUE negate_lit(struct parser_params*, VALUE);
 static NODE *ret_args(struct parser_params*,NODE*);
-static NODE *arg_blk_pass(NODE*,NODE*);
+static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
 static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*);
 static NODE *dsym_node(struct parser_params*,NODE*,const YYLTYPE*);
 
@@ -1842,6 +1842,7 @@ static int looking_at_eol_p(struct parser_params *p);
     rb_node_args_aux_t *node_args_aux;
     rb_node_opt_arg_t *node_opt_arg;
     rb_node_kw_arg_t *node_kw_arg;
+    rb_node_block_pass_t *node_block_pass;
     ID id;
     int num;
     st_table *tbl;
@@ -1930,7 +1931,9 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args
 %type <node_args> args_tail opt_args_tail block_args_tail opt_block_args_tail
-%type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
+%type <node> command_args aref_args
+%type <node_block_pass> opt_block_arg block_arg
+%type <node> var_ref var_lhs
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node_opt_arg> f_block_optarg f_block_opt
@@ -14188,14 +14191,14 @@ negate_lit(struct parser_params *p, VALUE lit)
 }
 
 static NODE *
-arg_blk_pass(NODE *node1, NODE *node2)
+arg_blk_pass(NODE *node1, rb_node_block_pass_t *node2)
 {
     if (node2) {
-        if (!node1) return node2;
-        RNODE_BLOCK_PASS(node2)->nd_head = node1;
+        if (!node1) return (NODE *)node2;
+        node2->nd_head = node1;
         nd_set_first_lineno(node2, nd_first_lineno(node1));
         nd_set_first_column(node2, nd_first_column(node1));
-        return node2;
+        return (NODE *)node2;
     }
     return node1;
 }
@@ -14883,7 +14886,7 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
 #endif
-    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
+    rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
     NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
