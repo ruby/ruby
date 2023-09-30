@@ -149,7 +149,7 @@ module Bundler
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
 
-      @missing_lockfile_dep = check_missing_lockfile_dep
+      check_lockfile
     end
 
     def gem_version_promoter
@@ -478,7 +478,7 @@ module Bundler
     private :sources
 
     def nothing_changed?
-      !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@missing_lockfile_dep && !@unlocking_bundler
+      !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@missing_lockfile_dep && !@unlocking_bundler && !@invalid_lockfile_dep
     end
 
     def no_resolve_needed?
@@ -630,6 +630,7 @@ module Bundler
         [@local_changes, "the gemspecs for git local gems changed"],
         [@missing_lockfile_dep, "your lock file is missing \"#{@missing_lockfile_dep}\""],
         [@unlocking_bundler, "an update to the version of Bundler itself was requested"],
+        [@invalid_lockfile_dep, "your lock file has an invalid dependency \"#{@invalid_lockfile_dep}\""],
       ].select(&:first).map(&:last).join(", ")
     end
 
@@ -684,24 +685,38 @@ module Bundler
       !sources_with_changes.each {|source| @unlock[:sources] << source.name }.empty?
     end
 
-    def check_missing_lockfile_dep
-      all_locked_specs = @locked_specs.map(&:name) << "bundler"
+    def check_lockfile
+      @invalid_lockfile_dep = nil
+      @missing_lockfile_dep = nil
 
-      missing = @locked_specs.select do |s|
-        s.dependencies.any? {|dep| !all_locked_specs.include?(dep.name) }
+      locked_names = @locked_specs.map(&:name)
+      missing = []
+      invalid = []
+
+      @locked_specs.each do |s|
+        s.dependencies.each do |dep|
+          next if dep.name == "bundler"
+
+          missing << s unless locked_names.include?(dep.name)
+          invalid << s if @locked_specs.none? {|spec| dep.matches_spec?(spec) }
+        end
       end
 
       if missing.any?
         @locked_specs.delete(missing)
 
-        return missing.first.name
+        @missing_lockfile_dep = missing.first.name
+      elsif !@dependency_changes
+        @missing_lockfile_dep = current_dependencies.find do |d|
+          @locked_specs[d.name].empty? && d.name != "bundler"
+        end&.name
       end
 
-      return if @dependency_changes
+      if invalid.any?
+        @locked_specs.delete(invalid)
 
-      current_dependencies.find do |d|
-        @locked_specs[d.name].empty? && d.name != "bundler"
-      end&.name
+        @invalid_lockfile_dep = invalid.first.name
+      end
     end
 
     def converge_paths

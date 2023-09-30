@@ -1101,4 +1101,47 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).to include("Could not find compatible versions")
     end
   end
+
+  context "when a lockfile has unmet dependencies, and the Gemfile has no resolution" do
+    before do
+      build_repo4 do
+        build_gem "aaa", "0.2.0" do |s|
+          s.add_dependency "zzz", "< 0.2.0"
+        end
+
+        build_gem "zzz", "0.2.0"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "aaa"
+        gem "zzz"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            aaa (0.2.0)
+              zzz (< 0.2.0)
+            zzz (0.2.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          aaa!
+          zzz!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "does not install, but raises a resolution error" do
+      bundle "install", :raise_on_error => false
+      expect(err).to include("Could not find compatible versions")
+    end
+  end
 end
