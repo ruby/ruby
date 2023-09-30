@@ -67,7 +67,7 @@
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, type, ann) \
-    COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, type(node)->name);}
+    COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, RNODE(type(node)->name));}
 
 #define F_NODE2(name, n, ann) \
     COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, n);}

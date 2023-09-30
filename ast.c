@@ -625,14 +625,14 @@ node_children(rb_ast_t *ast, const NODE *node)
             return rb_ary_new_from_args(10,
                                         INT2NUM(ainfo->pre_args_num),
                                         NEW_CHILD(ast, ainfo->pre_init),
-                                        NEW_CHILD(ast, ainfo->opt_args),
+                                        NEW_CHILD(ast, (NODE *)ainfo->opt_args),
                                         var_name(ainfo->first_post_arg),
                                         INT2NUM(ainfo->post_args_num),
                                         NEW_CHILD(ast, ainfo->post_init),
                                         (ainfo->rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA
                                             ? ID2SYM(rb_intern("NODE_SPECIAL_EXCESSIVE_COMMA"))
                                             : var_name(ainfo->rest_arg)),
-                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_args)),
+                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, (NODE *)ainfo->kw_args)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_rest_arg)),
                                         var_name(ainfo->block_arg));
         }

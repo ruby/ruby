@@ -743,14 +743,14 @@ typedef struct RNode_OPT_ARG {
     NODE node;
 
     struct RNode *nd_body;
-    struct RNode *nd_next;
+    struct RNode_OPT_ARG *nd_next;
 } rb_node_opt_arg_t;
 
 typedef struct RNode_KW_ARG {
     NODE node;
 
     struct RNode *nd_body;
-    struct RNode *nd_next;
+    struct RNode_KW_ARG *nd_next;
 } rb_node_kw_arg_t;
 
 typedef struct RNode_POSTARG {
@@ -1133,10 +1133,10 @@ struct rb_args_info {
     ID rest_arg;
     ID block_arg;
 
-    NODE *kw_args;
+    struct RNode_KW_ARG *kw_args;
     NODE *kw_rest_arg;
 
-    NODE *opt_args;
+    struct RNode_OPT_ARG *opt_args;
     unsigned int no_kwarg: 1;
     unsigned int ruby2_keywords: 1;
     unsigned int forwarding: 1;
