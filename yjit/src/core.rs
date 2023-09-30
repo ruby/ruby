@@ -450,8 +450,11 @@ pub struct Context {
     /// Bitmap of which stack temps are in a register
     reg_temps: RegTemps,
 
-    // Depth of this block in the sidechain (eg: inline-cache chain)
-    chain_depth: u8,
+    /// Fields packed into u8
+    /// - Lower 7 bits: Depth of this block in the sidechain (eg: inline-cache chain)
+    /// - Top bit: Whether this code is the target of a JIT-to-JIT Ruby return
+    ///   ([Self::is_return_landing])
+    chain_depth_return_landing: u8,
 
     // Local variable types we keep track of
     local_types: [Type; MAX_LOCAL_TYPES],
@@ -1402,7 +1405,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
 /// Produce a generic context when the block version limit is hit for a blockid
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
-    if ctx.chain_depth > 0 {
+    if ctx.get_chain_depth() > 0 {
         return ctx.clone();
     }
 
@@ -1610,6 +1613,9 @@ impl Context {
         generic_ctx.stack_size = self.stack_size;
         generic_ctx.sp_offset = self.sp_offset;
         generic_ctx.reg_temps = self.reg_temps;
+        if self.is_return_landing() {
+            generic_ctx.set_as_return_landing();
+        }
         generic_ctx
     }
 
@@ -1640,15 +1646,30 @@ impl Context {
     }
 
     pub fn get_chain_depth(&self) -> u8 {
-        self.chain_depth
+        self.chain_depth_return_landing & 0x7f
     }
 
     pub fn reset_chain_depth(&mut self) {
-        self.chain_depth = 0;
+        self.chain_depth_return_landing &= 0x80;
     }
 
     pub fn increment_chain_depth(&mut self) {
-        self.chain_depth += 1;
+        if self.get_chain_depth() == 0x7f {
+            panic!("max block version chain depth reached!");
+        }
+        self.chain_depth_return_landing += 1;
+    }
+
+    pub fn set_as_return_landing(&mut self) {
+        self.chain_depth_return_landing |= 0x80;
+    }
+
+    pub fn clear_return_landing(&mut self) {
+        self.chain_depth_return_landing &= 0x7f;
+    }
+
+    pub fn is_return_landing(&self) -> bool {
+        self.chain_depth_return_landing & 0x80 > 0
     }
 
     /// Get an operand for the adjusted stack pointer address
@@ -1845,13 +1866,17 @@ impl Context {
         let src = self;
 
         // Can only lookup the first version in the chain
-        if dst.chain_depth != 0 {
+        if dst.get_chain_depth() != 0 {
             return TypeDiff::Incompatible;
         }
 
         // Blocks with depth > 0 always produce new versions
         // Sidechains cannot overlap
-        if src.chain_depth != 0 {
+        if src.get_chain_depth() != 0 {
+            return TypeDiff::Incompatible;
+        }
+
+        if src.is_return_landing() != dst.is_return_landing() {
             return TypeDiff::Incompatible;
         }
 
@@ -2496,6 +2521,9 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let running_iseq = rb_cfp_get_iseq(cfp);
         let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_blockid.idx.into());
         let reconned_sp = original_interp_sp.offset(target_ctx.sp_offset.into());
+        // Unlike in the interpreter, our `leave` doesn't write to the caller's
+        // SP -- we do it in the returned-to code. Account for this difference.
+        let reconned_sp = reconned_sp.add(target_ctx.is_return_landing().into());
 
         assert_eq!(running_iseq, target_blockid.iseq as _, "each stub expects a particular iseq");
 
@@ -2632,10 +2660,16 @@ fn gen_branch_stub(
     asm.set_reg_temps(ctx.reg_temps);
     asm_comment!(asm, "branch stub hit");
 
+    if asm.ctx.is_return_landing() {
+        asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, C_RET_OPND);
+    }
+
     // Save caller-saved registers before C_ARG_OPNDS get clobbered.
     // Spill all registers for consistency with the trampoline.
-    for &reg in caller_saved_temp_regs().iter() {
-        asm.cpush(reg);
+    for &reg in caller_saved_temp_regs() {
+        asm.cpush(Opnd::Reg(reg));
     }
 
     // Spill temps to the VM stack as well for jit.peek_at_stack()
@@ -2676,7 +2710,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Since this trampoline is static, it allows code GC inside
     // branch_stub_hit() to free stubs without problems.
     asm_comment!(asm, "branch_stub_hit() trampoline");
-    let jump_addr = asm.ccall(
+    let stub_hit_ret = asm.ccall(
         branch_stub_hit as *mut u8,
         vec![
             C_ARG_OPNDS[0],
@@ -2684,14 +2718,20 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
             EC,
         ]
     );
+    let jump_addr = asm.load(stub_hit_ret);
 
     // Restore caller-saved registers for stack temps
-    for &reg in caller_saved_temp_regs().iter().rev() {
-        asm.cpop_into(reg);
+    for &reg in caller_saved_temp_regs().rev() {
+        asm.cpop_into(Opnd::Reg(reg));
     }
 
     // Jump to the address returned by the branch_stub_hit() call
     asm.jmp_opnd(jump_addr);
+
+    // HACK: popping into C_RET_REG clobbers the return value of branch_stub_hit() we need to jump
+    // to, so we need a scratch register to preserve it. This extends the live range of the C
+    // return register so we get something else for the return value.
+    let _ = asm.live_reg_opnd(stub_hit_ret);
 
     asm.compile(ocb, None);
 
@@ -2699,13 +2739,20 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
 }
 
 /// Return registers to be pushed and popped on branch_stub_hit.
-/// The return value may include an extra register for x86 alignment.
-fn caller_saved_temp_regs() -> Vec<Opnd> {
-    let mut regs = Assembler::get_temp_regs().to_vec();
-    if regs.len() % 2 == 1 {
-        regs.push(*regs.last().unwrap()); // x86 alignment
+fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
+    let temp_regs = Assembler::get_temp_regs().iter();
+    let len = temp_regs.len();
+    // The return value gen_leave() leaves in C_RET_REG
+    // needs to survive the branch_stub_hit() call.
+    let regs = temp_regs.chain(std::iter::once(&C_RET_REG));
+
+    // On x86_64, maintain 16-byte stack alignment
+    if cfg!(target_arch = "x86_64") && len % 2 == 0 {
+        static ONE_MORE: [Reg; 1] = [C_RET_REG];
+        regs.chain(ONE_MORE.iter())
+    } else {
+        regs.chain(&[])
     }
-    regs.iter().map(|&reg| Opnd::Reg(reg)).collect()
 }
 
 impl Assembler
@@ -2832,16 +2879,13 @@ pub fn defer_compilation(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
-    if asm.ctx.chain_depth != 0 {
+    if asm.ctx.get_chain_depth() != 0 {
         panic!("Double defer!");
     }
 
     let mut next_ctx = asm.ctx.clone();
 
-    if next_ctx.chain_depth == u8::MAX {
-        panic!("max block version chain depth reached!");
-    }
-    next_ctx.chain_depth += 1;
+    next_ctx.increment_chain_depth();
 
     let branch = new_pending_branch(jit, BranchGenFn::JumpToTarget0(Cell::new(BranchShape::Default)));
 
