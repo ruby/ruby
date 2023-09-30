@@ -107,6 +107,15 @@ RSpec.describe "Resolving" do
     end.to raise_error(Bundler::SolveFailure)
   end
 
+  it "does not try to re-resolve including prereleases if gems involved don't have prereleases" do
+    @index = a_unresolvable_child_index
+    dep "chef_app_error"
+    expect(Bundler.ui).not_to receive(:debug).with("Retrying resolution...", any_args)
+    expect do
+      resolve
+    end.to raise_error(Bundler::SolveFailure)
+  end
+
   it "raises an exception with the minimal set of conflicting dependencies" do
     @index = build_index do
       %w[0.9 1.0 2.0].each {|v| gem("a", v) }
