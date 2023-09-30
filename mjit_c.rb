@@ -585,9 +585,9 @@ module RubyVM::MJIT # :nodoc: all
       "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
       type: [CType::BitField.new(4, 0), 0],
       iseq_overload: [CType::BitField.new(1, 4), 4],
-      alias_count: [CType::BitField.new(27, 5), 5],
-      complemented_count: [CType::BitField.new(28, 0), 32],
-      no_redef_warning: [CType::BitField.new(1, 4), 60],
+      no_redef_warning: [CType::BitField.new(1, 5), 5],
+      aliased: [CType::BitField.new(1, 6), 6],
+      reference_count: [CType::BitField.new(28, 0), 32],
       body: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_method_definition_struct *)NULL)->body)"),
         iseq: self.rb_method_iseq_t,
