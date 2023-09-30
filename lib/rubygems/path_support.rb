@@ -24,13 +24,7 @@ class Gem::PathSupport
   # hashtable, or defaults to ENV, the system environment.
   #
   def initialize(env)
-    @home = env["GEM_HOME"] || Gem.default_dir
-
-    if File::ALT_SEPARATOR
-      @home = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
-    end
-
-    @home = expand(@home)
+    @home = default_home_dir(env)
 
     # If @home (aka Gem.paths.home) exists, but we can't write to it,
     # fall back to Gem.user_dir (the directory used for user installs).
@@ -53,6 +47,20 @@ class Gem::PathSupport
   end
 
   private
+
+  ##
+  # The default home directory.
+  # This function was broken out to accommodate tests in `bundler/spec/commands/doctor_spec.rb`.
+
+  def default_home_dir(env)
+    home = env["GEM_HOME"] || Gem.default_dir
+
+    if File::ALT_SEPARATOR
+      home = home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
+    end
+
+    expand(home)
+  end
 
   ##
   # Split the Gem search path (as reported by Gem.path).
