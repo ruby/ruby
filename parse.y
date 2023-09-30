@@ -1044,8 +1044,8 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ONCE(b,loc) (NODE *)rb_node_once_new(p,b,loc)
 #define NEW_ARGS(a,loc) (NODE *)rb_node_args_new(p,a,loc)
 #define NEW_ARGS_AUX(r,b,loc) (NODE *)rb_node_args_aux_new(p,r,b,loc)
-#define NEW_OPT_ARG(v,loc) (NODE *)rb_node_opt_arg_new(p,v,loc)
-#define NEW_KW_ARG(v,loc) (NODE *)rb_node_kw_arg_new(p,v,loc)
+#define NEW_OPT_ARG(v,loc) rb_node_opt_arg_new(p,v,loc)
+#define NEW_KW_ARG(v,loc) rb_node_kw_arg_new(p,v,loc)
 #define NEW_POSTARG(i,v,loc) (NODE *)rb_node_postarg_new(p,i,v,loc)
 #define NEW_ARGSCAT(a,b,loc) (NODE *)rb_node_argscat_new(p,a,b,loc)
 #define NEW_ARGSPUSH(a,b,loc) (NODE *)rb_node_argspush_new(p,a,b,loc)
@@ -1196,8 +1196,8 @@ static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {RNODE_ITER(b)->nd_iter = m; b->nd_loc = *loc; return b;}
 
 static bool args_info_empty_p(struct rb_args_info *args);
-static NODE *new_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
-static NODE *new_args_tail(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
+static NODE *new_args(struct parser_params*,NODE*,rb_node_opt_arg_t*,ID,NODE*,NODE*,const YYLTYPE*);
+static NODE *new_args_tail(struct parser_params*,rb_node_kw_arg_t*,ID,ID,const YYLTYPE*);
 static NODE *new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *aryptn, const YYLTYPE *loc);
 static NODE *new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static NODE *new_find_pattern(struct parser_params *p, NODE *constant, NODE *fndptn, const YYLTYPE *loc);
@@ -1205,7 +1205,7 @@ static NODE *new_find_pattern_tail(struct parser_params *p, NODE *pre_rest_arg, 
 static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
 static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
 
-static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
+static rb_node_kw_arg_t *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
 
 static VALUE negate_lit(struct parser_params*, VALUE);
@@ -1231,8 +1231,8 @@ static NODE *new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NOD
 
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
 
-static NODE *opt_arg_append(NODE*, NODE*);
-static NODE *kwd_append(NODE*, NODE*);
+static rb_node_opt_arg_t *opt_arg_append(rb_node_opt_arg_t*, rb_node_opt_arg_t*);
+static rb_node_kw_arg_t *kwd_append(rb_node_kw_arg_t*, rb_node_kw_arg_t*);
 
 static NODE *new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
 static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
@@ -1838,6 +1838,8 @@ static int looking_at_eol_p(struct parser_params *p);
 %union {
     VALUE val;
     NODE *node;
+    rb_node_opt_arg_t *node_opt_arg;
+    rb_node_kw_arg_t *node_kw_arg;
     ID id;
     int num;
     st_table *tbl;
@@ -1928,12 +1930,14 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
-%type <node> f_block_optarg f_block_opt
+%type <node_opt_arg> f_block_optarg f_block_opt
 %type <node> f_arglist f_opt_paren_args f_paren_args f_args f_arg f_arg_item
-%type <node> f_optarg f_marg f_marg_list f_margs f_rest_marg
+%type <node_opt_arg> f_optarg
+%type <node> f_marg f_marg_list f_margs f_rest_marg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
-%type <node> block_param opt_block_param block_param_def f_opt
-%type <node> f_kwarg f_kw f_block_kwarg f_block_kw
+%type <node> block_param opt_block_param block_param_def
+%type <node_opt_arg> f_opt
+%type <node_kw_arg> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
 %type <node> lambda f_larglist lambda_body brace_body do_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
@@ -12660,26 +12664,27 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
     return 0;
 }
 
-static NODE *
-opt_arg_append(NODE *opt_list, NODE *opt)
+static rb_node_opt_arg_t *
+opt_arg_append(rb_node_opt_arg_t *opt_list, rb_node_opt_arg_t *opt)
 {
-    NODE *opts = opt_list;
-    opts->nd_loc.end_pos = opt->nd_loc.end_pos;
+    rb_node_opt_arg_t *opts = opt_list;
+    RNODE(opts)->nd_loc.end_pos = RNODE(opt)->nd_loc.end_pos;
 
-    while (RNODE_OPT_ARG(opts)->nd_next) {
-        opts = RNODE_OPT_ARG(opts)->nd_next;
-        opts->nd_loc.end_pos = opt->nd_loc.end_pos;
+    while (opts->nd_next) {
+        opts = opts->nd_next;
+        RNODE(opts)->nd_loc.end_pos = RNODE(opt)->nd_loc.end_pos;
     }
-    RNODE_OPT_ARG(opts)->nd_next = opt;
+    opts->nd_next = opt;
 
     return opt_list;
 }
 
-static NODE *
-kwd_append(NODE *kwlist, NODE *kw)
+static rb_node_kw_arg_t *
+kwd_append(rb_node_kw_arg_t *kwlist, rb_node_kw_arg_t *kw)
 {
     if (kwlist) {
-        opt_arg_append(kwlist, kw);
+        /* Assume rb_node_kw_arg_t and rb_node_opt_arg_t has same structure */
+        opt_arg_append(RNODE_OPT_ARG(kwlist), RNODE_OPT_ARG(kw));
     }
     return kwlist;
 }
@@ -12776,7 +12781,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
     return node;
 }
 
-static NODE *
+static rb_node_kw_arg_t *
 new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc)
 {
     if (!k) return 0;
@@ -14203,7 +14208,7 @@ args_info_empty_p(struct rb_args_info *args)
 }
 
 static NODE*
-new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, NODE *post_args, NODE *tail, const YYLTYPE *loc)
+new_args(struct parser_params *p, NODE *pre_args, rb_node_opt_arg_t *opt_args, ID rest_arg, NODE *post_args, NODE *tail, const YYLTYPE *loc)
 {
     struct rb_args_info *args = RNODE_ARGS(tail)->nd_ainfo;
 
@@ -14238,7 +14243,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 }
 
 static NODE*
-new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, const YYLTYPE *kw_rest_loc)
+new_args_tail(struct parser_params *p, rb_node_kw_arg_t *kw_args, ID kw_rest_arg, ID block, const YYLTYPE *kw_rest_loc)
 {
     NODE *node = NEW_ARGS(0, &NULL_LOC);
     struct rb_args_info *args = ZALLOC(struct rb_args_info);
@@ -14257,21 +14262,21 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
          */
         ID kw_bits = internal_id(p), *required_kw_vars, *kw_vars;
         struct vtable *vtargs = p->lvtbl->args;
-        NODE *kwn = kw_args;
+        rb_node_kw_arg_t *kwn = kw_args;
 
         if (block) block = vtargs->tbl[vtargs->pos-1];
         vtable_pop(vtargs, !!block + !!kw_rest_arg);
         required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
         while (kwn) {
-            if (!NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(RNODE_KW_ARG(kwn)->nd_body)))
+            if (!NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(kwn->nd_body)))
                 --kw_vars;
             --required_kw_vars;
-            kwn = RNODE_KW_ARG(kwn)->nd_next;
+            kwn = kwn->nd_next;
         }
 
-        for (kwn = kw_args; kwn; kwn = RNODE_KW_ARG(kwn)->nd_next) {
-            ID vid = RNODE_LASGN(RNODE_KW_ARG(kwn)->nd_body)->nd_vid;
-            if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(RNODE_KW_ARG(kwn)->nd_body))) {
+        for (kwn = kw_args; kwn; kwn = kwn->nd_next) {
+            ID vid = RNODE_LASGN(kwn->nd_body)->nd_vid;
+            if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(kwn->nd_body))) {
                 *required_kw_vars++ = vid;
             }
             else {
