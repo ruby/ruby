@@ -24,19 +24,24 @@ class Gem::PathSupport
   # hashtable, or defaults to ENV, the system environment.
   #
   def initialize(env)
-    @home = default_home_dir(env)
+    # Current implementation of @home, which is exposed as `Gem.paths.home`:
+    # 1. If `env["GEM_HOME"]` is defined in the environment: `env["GEM_HOME"]`.
+    # 2. If `Gem.default_dir` is writable OR it does not exist and it's parent
+    #    directory is writable: `Gem.default_dir`.
+    # 3. Otherwise: `Gem.user_dir`.
 
-    # If @home (aka Gem.paths.home) exists, but we can't write to it,
-    # fall back to Gem.user_dir (the directory used for user installs).
-    if File.exist?(@home) && !File.writable?(@home)
-      warn "The default GEM_HOME (#{@home}) is not" \
-            " writable, so rubygems is falling back to installing" \
-            " under your home folder. To get rid of this warning" \
-            " permanently either fix your GEM_HOME folder permissions" \
-            " or add the following to your ~/.gemrc file:\n" \
-            "    gem: --install-dir #{Gem.user_dir}"
+    if env.key?("GEM_HOME")
+      @home = normalize_home_dir(env["GEM_HOME"])
+    elsif File.writable?(Gem.default_dir) || \
+          (!File.exist?(Gem.default_dir) && File.writable?(File.expand_path("..", Gem.default_dir)))
 
-      @home = Gem.user_dir
+      @home = normalize_home_dir(Gem.default_dir)
+    else
+      # If `GEM_HOME` is not set AND we can't use `Gem.default_dir`,
+      # default to a user installation and print a message about this.
+      puts "Defaulting to user installation because default GEM_HOME (#{Gem.default_dir}) is not writable."
+
+      @home = normalize_home_dir(Gem.user_dir)
     end
 
     @path = split_gem_path env["GEM_PATH"], @home
@@ -52,9 +57,7 @@ class Gem::PathSupport
   # The default home directory.
   # This function was broken out to accommodate tests in `bundler/spec/commands/doctor_spec.rb`.
 
-  def default_home_dir(env)
-    home = env["GEM_HOME"] || Gem.default_dir
-
+  def normalize_home_dir(home)
     if File::ALT_SEPARATOR
       home = home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
     end

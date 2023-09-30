@@ -165,6 +165,9 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       return
     end
 
+    orig_gem_home = ENV["GEM_HOME"]
+    ENV.delete("GEM_HOME")
+
     @spec = quick_gem "a" do |spec|
       util_make_exec spec
     end
@@ -179,11 +182,12 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     FileUtils.chmod 0o755, @userhome
     FileUtils.chmod 0o000, @gemhome
 
-    Gem.use_paths @gemhome, @userhome
+    Gem.use_paths nil, @userhome
 
     assert_equal Gem.paths.home, Gem.user_dir
   ensure
     FileUtils.chmod 0o755, @gemhome
+    ENV["GEM_HOME"] = orig_gem_home if orig_gem_home
   end
 
   def test_vendor

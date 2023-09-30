@@ -40,8 +40,9 @@ RSpec.describe "bundle doctor" do
       allow(File).to receive(:readable?).with(unwritable_file) { true }
 
       # The following 2 lines are for `Gem::PathSupport#initialize`.
-      allow(File).to receive(:exist?).with(Gem.paths.send(:default_home_dir))
-      allow(File).to receive(:writable?).with(Gem.paths.send(:default_home_dir))
+      allow(File).to receive(:exist?).with(Gem.default_dir)
+      allow(File).to receive(:writable?).with(Gem.default_dir)
+      allow(File).to receive(:writable?).with(File.expand_path("..", Gem.default_dir))
     end
 
     it "exits with no message if the installed gem has no C extensions" do
