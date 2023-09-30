@@ -19,7 +19,7 @@ class Gem::PathSupport
   attr_reader :spec_cache_dir # :nodoc:
 
   ##
-  # Whether or `Gem.paths.home` defaulted to a user install.
+  # Whether `Gem.paths.home` defaulted to a user install or not.
   attr_reader :auto_user_install
 
   ##
