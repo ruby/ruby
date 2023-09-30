@@ -11881,8 +11881,6 @@ static rb_node_args_t *
 rb_node_args_new(struct parser_params *p, struct rb_args_info *nd_ainfo, const YYLTYPE *loc)
 {
     rb_node_args_t *n = NODE_NEWNODE(NODE_ARGS, rb_node_args_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
     n->nd_ainfo = nd_ainfo;
 
     return n;
@@ -11903,7 +11901,6 @@ static rb_node_opt_arg_t *
 rb_node_opt_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 {
     rb_node_opt_arg_t *n = NODE_NEWNODE(NODE_OPT_ARG, rb_node_opt_arg_t, loc);
-    n->not_used = 0;
     n->nd_body = nd_body;
     n->nd_next = 0;
 
@@ -11914,7 +11911,6 @@ static rb_node_kw_arg_t *
 rb_node_kw_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 {
     rb_node_kw_arg_t *n = NODE_NEWNODE(NODE_KW_ARG, rb_node_kw_arg_t, loc);
-    n->not_used = 0;
     n->nd_body = nd_body;
     n->nd_next = 0;
 
@@ -11927,7 +11923,6 @@ rb_node_postarg_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const Y
     rb_node_postarg_t *n = NODE_NEWNODE(NODE_POSTARG, rb_node_postarg_t, loc);
     n->nd_1st = nd_1st;
     n->nd_2nd = nd_2nd;
-    n->not_used = 0;
 
     return n;
 }
@@ -11938,7 +11933,6 @@ rb_node_argscat_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const
     rb_node_argscat_t *n = NODE_NEWNODE(NODE_ARGSCAT, rb_node_argscat_t, loc);
     n->nd_head = nd_head;
     n->nd_body = nd_body;
-    n->not_used = 0;
 
     return n;
 }
@@ -11949,7 +11943,6 @@ rb_node_argspush_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, cons
     rb_node_argspush_t *n = NODE_NEWNODE(NODE_ARGSPUSH, rb_node_argspush_t, loc);
     n->nd_head = nd_head;
     n->nd_body = nd_body;
-    n->not_used = 0;
 
     return n;
 }
@@ -11959,8 +11952,6 @@ rb_node_splat_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 {
     rb_node_splat_t *n = NODE_NEWNODE(NODE_SPLAT, rb_node_splat_t, loc);
     n->nd_head = nd_head;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11971,7 +11962,6 @@ rb_node_block_pass_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *lo
     rb_node_block_pass_t *n = NODE_NEWNODE(NODE_BLOCK_PASS, rb_node_block_pass_t, loc);
     n->nd_head = 0;
     n->nd_body = nd_body;
-    n->not_used = 0;
 
     return n;
 }
