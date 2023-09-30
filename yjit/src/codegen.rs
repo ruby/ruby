@@ -444,6 +444,12 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
         asm_comment!(asm, "exit to interpreter on {}", insn_name(opcode as usize));
     }
 
+    if asm.ctx.is_return_landing() {
+        asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, C_RET_OPND);
+    }
+
     // Spill stack temps before returning to the interpreter
     asm.spill_temps();
 
@@ -636,13 +642,18 @@ fn gen_leave_exception(ocb: &mut OutlinedCb) -> CodePtr {
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
+    // gen_leave() leaves the return value in C_RET_OPND before coming here.
+    let ruby_ret_val = asm.live_reg_opnd(C_RET_OPND);
+
     // Every exit to the interpreter should be counted
     gen_counter_incr(&mut asm, Counter::leave_interp_return);
 
-    asm_comment!(asm, "increment SP of the caller");
-    let sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+    asm_comment!(asm, "push return value through cfp->sp");
+    let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+    let sp = asm.load(cfp_sp);
+    asm.mov(Opnd::mem(64, sp, 0), ruby_ret_val);
     let new_sp = asm.add(sp, SIZEOF_VALUE.into());
-    asm.mov(sp, new_sp);
+    asm.mov(cfp_sp, new_sp);
 
     asm_comment!(asm, "exit from exception");
     asm.cpop_into(SP);
@@ -870,6 +881,18 @@ pub fn gen_single_block(
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
         asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
+    }
+
+    if asm.ctx.is_return_landing() {
+        // Continuation of the end of gen_leave().
+        // Reload REG_SP for the current frame and transfer the return value
+        // to the stack top.
+        asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, C_RET_OPND);
+
+        asm.ctx.clear_return_landing();
     }
 
     // For each instruction to compile
@@ -6535,17 +6558,14 @@ fn gen_send_iseq(
     // The callee might change locals through Kernel#binding and other means.
     asm.ctx.clear_local_types();
 
-    // Pop arguments and receiver in return context, push the return value
-    // After the return, sp_offset will be 1. The codegen for leave writes
-    // the return value in case of JIT-to-JIT return.
+    // Pop arguments and receiver in return context and
+    // mark it as a continuation of gen_leave()
     let mut return_asm = Assembler::new();
     return_asm.ctx = asm.ctx.clone();
     return_asm.stack_pop(sp_offset.try_into().unwrap());
-    let return_val = return_asm.stack_push(Type::Unknown);
-    // The callee writes a return value on stack. Update reg_temps accordingly.
-    return_asm.ctx.dealloc_temp_reg(return_val.stack_idx());
-    return_asm.ctx.set_sp_offset(1);
+    return_asm.ctx.set_sp_offset(0); // We set SP on the caller's frame above
     return_asm.ctx.reset_chain_depth();
+    return_asm.ctx.set_as_return_landing();
 
     // Write the JIT return address on the callee frame
     gen_branch(
@@ -7745,15 +7765,15 @@ fn gen_leave(
     // Load the return value
     let retval_opnd = asm.stack_pop(1);
 
-    // Move the return value into the C return register for gen_leave_exit()
+    // Move the return value into the C return register
     asm.mov(C_RET_OPND, retval_opnd);
 
-    // Reload REG_SP for the caller and write the return value.
-    // Top of the stack is REG_SP[0] since the caller has sp_offset=1.
-    asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
-    asm.mov(Opnd::mem(64, SP, 0), C_RET_OPND);
-
-    // Jump to the JIT return address on the frame that was just popped
+    // Jump to the JIT return address on the frame that was just popped.
+    // There are a few possible jump targets:
+    //   - gen_leave_exit() and gen_leave_exception(), for C callers
+    //   - Return context set up by gen_send_iseq()
+    // We don't write the return value to stack memory like the interpreter here.
+    // Each jump target do it as necessary.
     let offset_to_jit_return =
         -(RUBY_SIZEOF_CONTROL_FRAME as i32) + RUBY_OFFSET_CFP_JIT_RETURN;
     asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
