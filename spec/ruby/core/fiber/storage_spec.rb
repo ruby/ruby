@@ -73,6 +73,20 @@ describe "Fiber.[]" do
       Fiber.new { Fiber[:life] }.resume.should be_nil
     end
   end
+
+  ruby_version_is "3.2.3" do
+    it "can use dynamically defined keys" do
+      key = :"#{self.class.name}#.#{self.object_id}"
+      Fiber.new { Fiber[key] = 42; Fiber[key] }.resume.should == 42
+    end
+
+    it "can't use invalid keys" do
+      invalid_keys = [Object.new, "Foo", 12]
+      invalid_keys.each do |key|
+        -> { Fiber[key] }.should raise_error(TypeError)
+      end
+    end
+  end
 end
 
 describe "Fiber.[]=" do
