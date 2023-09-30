@@ -100,7 +100,7 @@ RSpec.describe "Resolving" do
   end
 
   it "raises an exception if a child dependency is not resolved" do
-    @index = a_unresovable_child_index
+    @index = a_unresolvable_child_index
     dep "chef_app_error"
     expect do
       resolve
