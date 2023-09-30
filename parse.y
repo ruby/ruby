@@ -11620,7 +11620,6 @@ rb_node_op_asgn_or_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, c
     rb_node_op_asgn_or_t *n = NODE_NEWNODE(NODE_OP_ASGN_OR, rb_node_op_asgn_or_t, loc);
     n->nd_head = nd_head;
     n->nd_value = nd_value;
-    n->not_used = 0;
 
     return n;
 }
@@ -11631,7 +11630,6 @@ rb_node_op_asgn_and_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, 
     rb_node_op_asgn_and_t *n = NODE_NEWNODE(NODE_OP_ASGN_AND, rb_node_op_asgn_and_t, loc);
     n->nd_head = nd_head;
     n->nd_value = nd_value;
-    n->not_used = 0;
 
     return n;
 }
