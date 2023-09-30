@@ -519,7 +519,7 @@ module Open3
   #     Open3.capture3('tee', stdin_data: 'Foo')
   #     # => ["Foo", "", #<Process::Status: pid 2319575 exit 0>]
   #
-  # - If entry <tt>options[:binmode]</tt> exists, the entry us removed
+  # - If entry <tt>options[:binmode]</tt> exists, the entry is removed
   #   the internal streams are set to binary mode.
   #
   # The single required argument is one of the following:
@@ -604,34 +604,93 @@ module Open3
   end
   module_function :capture3
 
-  # Open3.capture2 captures the standard output of a command.
+  # :call-seq:
+  #   Open3.capture2([env, ] command_line, options = {}) -> [stdout_s, status]
+  #   Open3.capture2([env, ] exe_path, *args, options = {}) -> [stdout_s, status]
   #
-  #   stdout_str, status = Open3.capture2([env,] cmd... [, opts])
+  # Basically a wrapper for Open3.popen3 that:
   #
-  # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
+  # - Creates a child process, by calling Open3.popen3 with the given arguments
+  #   (except for certain entries in hash +options+; see below).
+  # - Returns as string +stdout+ the standard output of the child process.
+  # - Returns as +status+ a <tt>Process::Status</tt> object
+  #   that represents the exit status of the child process.
   #
-  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
+  # Returns the array <tt>[stdin_s, status]</tt>:
   #
-  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
+  #   stdout_s, status = Open3.capture2('echo "Foo"')
+  #   # => ["Foo\n", #<Process::Status: pid 2326047 exit 0>]
+  #
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  #
+  # Unlike Process.spawn, this method waits for the child process to exit
+  # before returning, so the caller need not do so.
+  #
+  # Argument +options+ is a hash of options for the new process;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # The hash +options+ is passed to method Open3.popen3;
+  # two options have local effect in method Open3.capture2:
+  #
+  # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
+  #   and its string value is sent to the command's standard input:
+  #
+  #     Open3.capture2('tee', stdin_data: 'Foo')
+  #     # => ["Foo", #<Process::Status: pid 2326087 exit 0>]
+  #
+  #   the internal streams are set to binary mode.
+  #
+  # The single required argument is one of the following:
+  #
+  # - +command_line+ if it is a string,
+  #   and if it begins with a shell reserved word or special built-in,
+  #   or if it contains one or more metacharacters.
+  # - +exe_path+ otherwise.
+  #
+  # <b>Argument +command_line+</b>
+  #
+  # \String argument +command_line+ is a command line to be passed to a shell;
+  # it must begin with a shell reserved word, begin with a special built-in,
+  # or contain meta characters:
+  #
+  #   Open3.capture2('if true; then echo "Foo"; fi') # Shell reserved word.
+  #   # => ["Foo\n", #<Process::Status: pid 2326131 exit 0>]
+  #   Open3.capture2('echo')                         # Built-in.
+  #   # => ["\n", #<Process::Status: pid 2326139 exit 0>]
+  #   Open3.capture2('date > date.tmp')              # Contains meta character.
+  #   # => ["", #<Process::Status: pid 2326174 exit 0>]
+  #
+  # The command line may also contain arguments and options for the command:
+  #
+  #   Open3.capture2('echo "Foo"')
+  #   # => ["Foo\n", #<Process::Status: pid 2326183 exit 0>]
+  #
+  # <b>Argument +exe_path+</b>
+  #
+  # Argument +exe_path+ is one of the following:
+  #
+  # - The string path to an executable to be called.
+  # - A 2-element array containing the path to an executable
+  #   and the string to be used as the name of the executing process.
   #
   # Example:
   #
-  #   # factor is a command for integer factorization.
-  #   o, s = Open3.capture2("factor", :stdin_data=>"42")
-  #   p o #=> "42: 2 3 7\n"
+  #   Open3.capture2('/usr/bin/date')
+  #   # => ["Fri Sep 29 01:00:39 PM CDT 2023\n", #<Process::Status: pid 2326222 exit 0>]
   #
-  #   # generate x**2 graph in png using gnuplot.
-  #   gnuplot_commands = <<"End"
-  #     set terminal png
-  #     plot x**2, "-" with lines
-  #     1 14
-  #     2 1
-  #     3 8
-  #     4 5
-  #     e
-  #   End
-  #   image, s = Open3.capture2("gnuplot", :stdin_data=>gnuplot_commands, :binmode=>true)
+  # Ruby invokes the executable directly, with no shell and no shell expansion:
+  #
+  #   Open3.capture2('doesnt_exist') # Raises Errno::ENOENT
+  #
+  # If one or more +args+ is given, each is an argument or option
+  # to be passed to the executable:
+  #
+  #   Open3.capture2('echo', 'C #')
+  #   # => ["C #\n", #<Process::Status: pid 2326267 exit 0>]
+  #   Open3.capture2('echo', 'hello', 'world')
+  #   # => ["hello world\n", #<Process::Status: pid 2326299 exit 0>]
   #
   def capture2(*cmd)
     if Hash === cmd.last
