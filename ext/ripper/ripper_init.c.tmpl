@@ -126,6 +126,20 @@ ripper_s_allocate(VALUE klass)
     return self;
 }
 
+static struct parser_params *
+ripper_parser_params(VALUE self, bool initialized)
+{
+    struct ripper *r;
+    struct parser_params *p;
+
+    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
+    p = r->p;
+    if (initialized && !rb_ruby_ripper_initialized_p(p)) {
+        rb_raise(rb_eArgError, "method called for uninitialized object");
+    }
+    return p;
+}
+
 /*
  *  call-seq:
  *    ripper.error?   -> Boolean
@@ -135,10 +149,9 @@ ripper_s_allocate(VALUE klass)
 static VALUE
 ripper_error_p(VALUE vparser)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(vparser, false);
 
-    TypedData_Get_Struct(vparser, struct ripper, &parser_data_type, r);
-    return RBOOL(rb_ruby_parser_error_p(r->p));
+    return RBOOL(rb_ruby_parser_error_p(p));
 }
 
 /*
@@ -150,10 +163,9 @@ ripper_error_p(VALUE vparser)
 static VALUE
 ripper_parser_end_seen_p(VALUE vparser)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(vparser, false);
 
-    TypedData_Get_Struct(vparser, struct ripper, &parser_data_type, r);
-    return RBOOL(rb_ruby_parser_end_seen_p(r->p));
+    return RBOOL(rb_ruby_parser_end_seen_p(p));
 }
 
 /*
@@ -165,10 +177,9 @@ ripper_parser_end_seen_p(VALUE vparser)
 static VALUE
 ripper_parser_encoding(VALUE vparser)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(vparser, false);
 
-    TypedData_Get_Struct(vparser, struct ripper, &parser_data_type, r);
-    return rb_ruby_parser_encoding(r->p);
+    return rb_ruby_parser_encoding(p);
 }
 
 /*
@@ -180,10 +191,9 @@ ripper_parser_encoding(VALUE vparser)
 static VALUE
 ripper_parser_get_yydebug(VALUE self)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(self, false);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    return RBOOL(rb_ruby_parser_get_yydebug(r->p));
+    return RBOOL(rb_ruby_parser_get_yydebug(p));
 }
 
 /*
@@ -195,10 +205,9 @@ ripper_parser_get_yydebug(VALUE self)
 static VALUE
 ripper_parser_set_yydebug(VALUE self, VALUE flag)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(self, false);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    rb_ruby_parser_set_yydebug(r->p, RTEST(flag));
+    rb_ruby_parser_set_yydebug(p, RTEST(flag));
     return flag;
 }
 
@@ -211,10 +220,9 @@ ripper_parser_set_yydebug(VALUE self, VALUE flag)
 static VALUE
 ripper_parser_get_debug_output(VALUE self)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(self, false);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    return rb_ruby_parser_debug_output(r->p);
+    return rb_ruby_parser_debug_output(p);
 }
 
 /*
@@ -226,10 +234,9 @@ ripper_parser_get_debug_output(VALUE self)
 static VALUE
 ripper_parser_set_debug_output(VALUE self, VALUE output)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(self, false);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    rb_ruby_parser_set_debug_output(r->p, output);
+    rb_ruby_parser_set_debug_output(p, output);
     return output;
 }
 
@@ -314,7 +321,6 @@ parser_dedent_string(VALUE self, VALUE input, VALUE width)
 static VALUE
 ripper_initialize(int argc, VALUE *argv, VALUE self)
 {
-    struct ripper *r;
     struct parser_params *p;
     VALUE src, fname, lineno;
     VALUE (*gets)(struct parser_params*,VALUE);
@@ -322,8 +328,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     const char *sourcefile;
     int sourceline;
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
+    p = ripper_parser_params(self, false);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
     if (RB_TYPE_P(src, T_FILE)) {
         gets = ripper_lex_io_get;
@@ -358,12 +363,8 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ripper_parse0(VALUE vparser)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(vparser, false);
 
-    TypedData_Get_Struct(vparser, struct ripper, &parser_data_type, r);
-    p = r->p;
-    // RB_GC_GUARD(vparser);
     rb_ruby_ripper_parse0(p);
     return rb_ruby_parser_result(p);
 }
@@ -371,10 +372,9 @@ ripper_parse0(VALUE vparser)
 static VALUE
 ripper_ensure(VALUE vparser)
 {
-    struct ripper *r;
+    struct parser_params *p = ripper_parser_params(vparser, false);
 
-    TypedData_Get_Struct(vparser, struct ripper, &parser_data_type, r);
-    rb_ruby_parser_set_parsing_thread(r->p, Qnil);
+    rb_ruby_parser_set_parsing_thread(p, Qnil);
     return Qnil;
 }
 
@@ -387,14 +387,9 @@ ripper_ensure(VALUE vparser)
 static VALUE
 ripper_parse(VALUE self)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(self, true);
+    VALUE result;
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
-    if (!rb_ruby_ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
     if (!NIL_P(rb_ruby_parser_parsing_thread(p))) {
         if (rb_ruby_parser_parsing_thread(p) == rb_thread_current())
             rb_raise(rb_eArgError, "Ripper#parse is not reentrant");
@@ -402,9 +397,10 @@ ripper_parse(VALUE self)
             rb_raise(rb_eArgError, "Ripper#parse is not multithread-safe");
     }
     rb_ruby_parser_set_parsing_thread(p, rb_thread_current());
-    rb_ensure(ripper_parse0, self, ripper_ensure, self);
+    result = rb_ensure(ripper_parse0, self, ripper_ensure, self);
+    RB_GC_GUARD(self);
 
-    return rb_ruby_parser_result(p);
+    return result;
 }
 
 /*
@@ -417,15 +413,9 @@ ripper_parse(VALUE self)
 static VALUE
 ripper_column(VALUE self)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(self, true);
     long col;
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
-    if (!rb_ruby_ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
     if (NIL_P(rb_ruby_parser_parsing_thread(p))) return Qnil;
     col = rb_ruby_ripper_column(p);
     return LONG2NUM(col);
@@ -440,14 +430,8 @@ ripper_column(VALUE self)
 static VALUE
 ripper_filename(VALUE self)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(self, true);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
-    if (!rb_ruby_ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
     return rb_ruby_parser_ruby_sourcefile_string(p);
 }
 
@@ -461,14 +445,8 @@ ripper_filename(VALUE self)
 static VALUE
 ripper_lineno(VALUE self)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(self, true);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
-    if (!rb_ruby_ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
     if (NIL_P(rb_ruby_parser_parsing_thread(p))) return Qnil;
     return INT2NUM(rb_ruby_parser_ruby_sourceline(p));
 }
@@ -482,14 +460,8 @@ ripper_lineno(VALUE self)
 static VALUE
 ripper_state(VALUE self)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(self, true);
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
-    if (!rb_ruby_ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
     if (NIL_P(rb_ruby_parser_parsing_thread(p))) return Qnil;
     return INT2NUM(rb_ruby_parser_lex_state(p));
 }
@@ -503,15 +475,9 @@ ripper_state(VALUE self)
 static VALUE
 ripper_token(VALUE self)
 {
-    struct ripper *r;
-    struct parser_params *p;
+    struct parser_params *p = ripper_parser_params(self, true);
     long pos, len;
 
-    TypedData_Get_Struct(self, struct ripper, &parser_data_type, r);
-    p = r->p;
-    if (!rb_ruby_ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
     if (NIL_P(rb_ruby_parser_parsing_thread(p))) return Qnil;
     pos = rb_ruby_ripper_column(p);
     len = rb_ruby_ripper_token_len(p);
