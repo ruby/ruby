@@ -469,7 +469,6 @@ struct parser_params {
     stack_type cmdarg_stack;
     int tokidx;
     int toksiz;
-    int tokline;
     int heredoc_end;
     int heredoc_indent;
     int heredoc_line_indent;
@@ -2640,7 +2639,6 @@ fcall		: operation
                     {
                     /*%%%*/
                         $$ = NEW_FCALL($1, 0, &@$);
-                        nd_set_line($$, p->tokline);
                     /*% %*/
                     /*% ripper: $1 %*/
                     }
@@ -7617,7 +7615,6 @@ static char*
 newtok(struct parser_params *p)
 {
     p->tokidx = 0;
-    p->tokline = p->ruby_sourceline;
     if (!p->tokenbuf) {
         p->toksiz = 60;
         p->tokenbuf = ALLOC_N(char, 60);
@@ -12613,7 +12610,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
         return node;
       case keyword__LINE__:
-        return NEW_LIT(INT2FIX(p->tokline), loc);
+        return NEW_LIT(INT2FIX(loc->beg_pos.lineno), loc);
       case keyword__ENCODING__:
         node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
