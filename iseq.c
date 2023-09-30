@@ -187,7 +187,11 @@ rb_iseq_free(const rb_iseq_t *iseq)
             ruby_xfree((void *)body->mark_bits.list);
         }
 
+        ruby_xfree(body->variable.original_iseq);
+
         if (body->param.keyword != NULL) {
+            if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
+                ruby_xfree((void *)body->param.keyword->table);
             ruby_xfree((void *)body->param.keyword->default_values);
             ruby_xfree((void *)body->param.keyword);
         }
