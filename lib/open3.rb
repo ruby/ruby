@@ -490,12 +490,12 @@ module Open3
   #
   # - Creates a child process, by calling Open3.popen3 with the given arguments
   #   (except for certain entries in hash +options+; see below).
-  # - Returns as strings +stdout+ and +stderr+ the standard output
+  # - Returns as strings +stdout_s+ and +stderr_s+ the standard output
   #   and standard error of the child process.
   # - Returns as +status+ a <tt>Process::Status</tt> object
   #   that represents the exit status of the child process.
   #
-  # Returns the array <tt>[stdin_s, stdout_s, status]</tt>:
+  # Returns the array <tt>[stdout_s, stderr_s, status]</tt>:
   #
   #   stdout_s, stderr_s, status = Open3.capture3('echo "Foo"')
   #   # => ["Foo\n", "", #<Process::Status: pid 2281954 exit 0>]
@@ -612,11 +612,11 @@ module Open3
   #
   # - Creates a child process, by calling Open3.popen3 with the given arguments
   #   (except for certain entries in hash +options+; see below).
-  # - Returns as string +stdout+ the standard output of the child process.
+  # - Returns as string +stdout_s+ the standard output of the child process.
   # - Returns as +status+ a <tt>Process::Status</tt> object
   #   that represents the exit status of the child process.
   #
-  # Returns the array <tt>[stdin_s, status]</tt>:
+  # Returns the array <tt>[stdout_s, status]</tt>:
   #
   #   stdout_s, status = Open3.capture2('echo "Foo"')
   #   # => ["Foo\n", #<Process::Status: pid 2326047 exit 0>]
@@ -638,6 +638,7 @@ module Open3
   #   and its string value is sent to the command's standard input:
   #
   #     Open3.capture2('tee', stdin_data: 'Foo')
+  #
   #     # => ["Foo", #<Process::Status: pid 2326087 exit 0>]
   #
   #   the internal streams are set to binary mode.
@@ -724,21 +725,94 @@ module Open3
   end
   module_function :capture2
 
-  # Open3.capture2e captures the standard output and the standard error of a command.
+  # :call-seq:
+  #   Open3.capture2e([env, ] command_line, options = {}) -> [stdout_and_stderr_s, status]
+  #   Open3.capture2e([env, ] exe_path, *args, options = {}) -> [stdout_and_stderr_s, status]
   #
-  #   stdout_and_stderr_str, status = Open3.capture2e([env,] cmd... [, opts])
+  # Basically a wrapper for Open3.popen3 that:
   #
-  # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
+  # - Creates a child process, by calling Open3.popen3 with the given arguments
+  #   (except for certain entries in hash +options+; see below).
+  # - Returns as string +stdout_and_stderr_s+ the merged standard output
+  #   and standard error of the child process.
+  # - Returns as +status+ a <tt>Process::Status</tt> object
+  #   that represents the exit status of the child process.
   #
-  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
+  # Returns the array <tt>[stdout_and_stderr_s, status]</tt>:
   #
-  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
+  #   stdout_and_stderr_s, status = Open3.capture2e('echo "Foo"')
+  #   # => ["Foo\n", #<Process::Status: pid 2371692 exit 0>]
+  #
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  #
+  # Unlike Process.spawn, this method waits for the child process to exit
+  # before returning, so the caller need not do so.
+  #
+  # Argument +options+ is a hash of options for the new process;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # The hash +options+ is passed to method Open3.popen3;
+  # two options have local effect in method Open3.capture2e:
+  #
+  # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
+  #   and its string value is sent to the command's standard input:
+  #
+  #     Open3.capture2e('tee', stdin_data: 'Foo')
+  #     # => ["Foo", #<Process::Status: pid 2371732 exit 0>]
+  #
+  #   the internal streams are set to binary mode.
+  #
+  # The single required argument is one of the following:
+  #
+  # - +command_line+ if it is a string,
+  #   and if it begins with a shell reserved word or special built-in,
+  #   or if it contains one or more metacharacters.
+  # - +exe_path+ otherwise.
+  #
+  # <b>Argument +command_line+</b>
+  #
+  # \String argument +command_line+ is a command line to be passed to a shell;
+  # it must begin with a shell reserved word, begin with a special built-in,
+  # or contain meta characters:
+  #
+  #   Open3.capture2e('if true; then echo "Foo"; fi') # Shell reserved word.
+  #   # => ["Foo\n", #<Process::Status: pid 2371740 exit 0>]
+  #   Open3.capture2e('echo')                         # Built-in.
+  #   # => ["\n", #<Process::Status: pid 2371774 exit 0>]
+  #   Open3.capture2e('date > date.tmp')              # Contains meta character.
+  #   # => ["", #<Process::Status: pid 2371812 exit 0>]
+  #
+  # The command line may also contain arguments and options for the command:
+  #
+  #   Open3.capture2e('echo "Foo"')
+  #   # => ["Foo\n", #<Process::Status: pid 2326183 exit 0>]
+  #
+  # <b>Argument +exe_path+</b>
+  #
+  # Argument +exe_path+ is one of the following:
+  #
+  # - The string path to an executable to be called.
+  # - A 2-element array containing the path to an executable
+  #   and the string to be used as the name of the executing process.
   #
   # Example:
   #
-  #   # capture make log
-  #   make_log, s = Open3.capture2e("make")
+  #   Open3.capture2e('/usr/bin/date')
+  #   # => ["Sat Sep 30 09:01:46 AM CDT 2023\n", #<Process::Status: pid 2371820 exit 0>]
+  #
+  # Ruby invokes the executable directly, with no shell and no shell expansion:
+  #
+  #   Open3.capture2e('doesnt_exist') # Raises Errno::ENOENT
+  #
+  # If one or more +args+ is given, each is an argument or option
+  # to be passed to the executable:
+  #
+  #   Open3.capture2e('echo', 'C #')
+  #   # => ["C #\n", #<Process::Status: pid 2371856 exit 0>]
+  #   Open3.capture2e('echo', 'hello', 'world')
+  #   # => ["hello world\n", #<Process::Status: pid 2371894 exit 0>]
   #
   def capture2e(*cmd)
     if Hash === cmd.last
