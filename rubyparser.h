@@ -278,8 +278,6 @@ typedef struct RNode_FOR_MASGN {
     NODE node;
 
     struct RNode *nd_var;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_for_masgn_t;
 
 /* RNode_BREAK, RNode_NEXT and RNode_RETURN should be same structure */
