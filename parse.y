@@ -11104,8 +11104,6 @@ rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc)
 {
     rb_node_for_masgn_t *n = NODE_NEWNODE(NODE_FOR_MASGN, rb_node_for_masgn_t, loc);
     n->nd_var = nd_var;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
