@@ -154,6 +154,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched)
     sched->lock = w32_mutex_create();
 }
 
+// per-ractor
 void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
@@ -629,6 +630,7 @@ thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     volatile HANDLE thread_id = th->nt->thread_id;
+    struct rb_native_thread *nt = th->nt;
 
     native_thread_init_stack(th);
     th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
@@ -645,6 +647,8 @@ thread_start_func_1(void *th_ptr)
 
     w32_close_handle(thread_id);
     RUBY_DEBUG_LOG("thread deleted th:%u", rb_th_serial(th));
+
+    ruby_xfree(nt);
     return 0;
 }
 
@@ -654,6 +658,7 @@ native_thread_create(rb_thread_t *th)
     // setup vm stack
     size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
     void *vm_stack = ruby_xmalloc(vm_stack_word_size * sizeof(VALUE));
+    th->sched.vm_stack = vm_stack;
     rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
 
     // setup nt
@@ -891,11 +896,9 @@ th_has_dedicated_nt(const rb_thread_t *th)
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
-    // free vm stack
     CloseHandle(TH_SCHED(th)->lock);
-
     ruby_xfree(th->nt);
-    ruby_xfree(th->ec->vm_stack);
+    ruby_xfree(th->sched.vm_stack)
 }
 
 static bool

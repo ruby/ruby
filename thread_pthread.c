@@ -2071,6 +2071,7 @@ static void
 native_thread_cleanup(struct rb_native_thread *nt)
 {
     RB_ALTSTACK_FREE(nt->altstack);
+    ruby_xfree(nt);
 }
 
 static struct rb_native_thread *
@@ -2095,6 +2096,7 @@ native_thread_create_dedicated(rb_thread_t *th)
     // vm stack
     size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
     void *vm_stack = ruby_xmalloc(vm_stack_word_size * sizeof(VALUE));
+    th->sched.malloc_stack = true;
     rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
     th->sched.context_stack = vm_stack;
 
@@ -2197,19 +2199,14 @@ void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
 #if USE_MN_THREADS
-    if (th->nt && th->ec && th_has_dedicated_nt(th)) {
-        VM_ASSERT(th_has_dedicated_nt(th));
+    if (th->sched.malloc_stack) {
         ruby_xfree(th->sched.context_stack);
-        ruby_xfree(th->nt);
-        th->nt = NULL;
     }
     else {
         nt_free_stack(th->sched.context_stack);
     }
 #else
     ruby_xfree(th->sched.context_stack);
-    ruby_xfree(th->nt);
-    th->nt = NULL;
 #endif
 }
 
