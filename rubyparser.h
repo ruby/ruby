@@ -316,9 +316,7 @@ typedef struct RNode_RETRY {
 typedef struct RNode_BEGIN {
     NODE node;
 
-    VALUE not_used;
     struct RNode *nd_body;
-    VALUE not_used2;
 } rb_node_begin_t;
 
 typedef struct RNode_RESCUE {

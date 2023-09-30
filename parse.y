@@ -11125,9 +11125,7 @@ static rb_node_begin_t *
 rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 {
     rb_node_begin_t *n = NODE_NEWNODE(NODE_BEGIN, rb_node_begin_t, loc);
-    n->not_used = 0;
     n->nd_body = nd_body;
-    n->not_used2 = 0;
 
     return n;
 }
