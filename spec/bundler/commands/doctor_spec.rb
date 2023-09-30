@@ -39,7 +39,7 @@ RSpec.describe "bundle doctor" do
       allow(File).to receive(:writable?).with(unwritable_file) { true }
       allow(File).to receive(:readable?).with(unwritable_file) { true }
 
-      # The following 2 lines are for `Gem::PathSupport#initialize`.
+      # The following lines are for `Gem::PathSupport#initialize`.
       allow(File).to receive(:exist?).with(Gem.default_dir)
       allow(File).to receive(:writable?).with(Gem.default_dir)
       allow(File).to receive(:writable?).with(File.expand_path("..", Gem.default_dir))
