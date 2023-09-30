@@ -56,10 +56,6 @@ class Gem::PathSupport
 
   private
 
-  ##
-  # The default home directory.
-  # This function was broken out to accommodate tests in `bundler/spec/commands/doctor_spec.rb`.
-
   def normalize_home_dir(home)
     if File::ALT_SEPARATOR
       home = home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
