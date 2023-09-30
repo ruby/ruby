@@ -19,6 +19,10 @@ class Gem::PathSupport
   attr_reader :spec_cache_dir # :nodoc:
 
   ##
+  # Whether or `Gem.paths.home` defaulted to a user install.
+  attr_reader :auto_user_install
+
+  ##
   #
   # Constructor. Takes a single argument which is to be treated like a
   # hashtable, or defaults to ENV, the system environment.
@@ -38,9 +42,8 @@ class Gem::PathSupport
       @home = normalize_home_dir(Gem.default_dir)
     else
       # If `GEM_HOME` is not set AND we can't use `Gem.default_dir`,
-      # default to a user installation and print a message about this.
-      puts "Defaulting to user installation because default GEM_HOME (#{Gem.default_dir}) is not writable."
-
+      # default to a user installation and set `@auto_user_install`.
+      @auto_user_install = true
       @home = normalize_home_dir(Gem.user_dir)
     end
 
