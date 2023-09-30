@@ -193,6 +193,13 @@ class Gem::Installer
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
       @plugins_dir = Gem.plugindir(gem_home)
+    end
+
+    if @gem_home == Gem.user_dir
+      # If we get here, then:
+      # 1. `--user-install` was specified, or
+      # 2. GEM_HOME was not writable, and `Gem::PathSupport` fell back to `Gem.user_dir`.
+
       check_that_user_bin_dir_is_in_path
     end
   end
