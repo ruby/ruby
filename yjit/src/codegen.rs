@@ -245,6 +245,7 @@ pub enum JCCKinds {
     JCC_JBE,
     JCC_JNA,
     JCC_JNAE,
+    JCC_JO_MUL,
 }
 
 #[inline(always)]
@@ -2025,6 +2026,7 @@ fn jit_chain_guard(
         JCC_JZ | JCC_JE => BranchGenFn::JZToTarget0,
         JCC_JBE | JCC_JNA => BranchGenFn::JBEToTarget0,
         JCC_JB | JCC_JNAE => BranchGenFn::JBToTarget0,
+        JCC_JO_MUL => BranchGenFn::JOMulToTarget0,
     };
 
     if (asm.ctx.get_chain_depth() as i32) < depth_limit {
@@ -3415,7 +3417,8 @@ fn gen_opt_mult(
         }
     };
 
-    if two_fixnums {
+    // Fallback to a method call if it overflows
+    if two_fixnums && asm.ctx.get_chain_depth() == 0 {
         if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_MULT) {
             return None;
         }
@@ -3432,7 +3435,7 @@ fn gen_opt_mult(
         let arg0_untag = asm.rshift(arg0, Opnd::UImm(1));
         let arg1_untag = asm.sub(arg1, Opnd::UImm(1));
         let out_val = asm.mul(arg0_untag, arg1_untag);
-        asm.jo(Target::side_exit(Counter::opt_mult_overflow));
+        jit_chain_guard(JCC_JO_MUL, jit, asm, ocb, 1, Counter::opt_mult_overflow);
         let out_val = asm.add(out_val, Opnd::UImm(1));
 
         // Push the output on the stack

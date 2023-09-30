@@ -493,6 +493,7 @@ pub enum BranchGenFn {
     JZToTarget0,
     JBEToTarget0,
     JBToTarget0,
+    JOMulToTarget0,
     JITReturn,
 }
 
@@ -549,6 +550,9 @@ impl BranchGenFn {
             BranchGenFn::JBToTarget0 => {
                 asm.jb(target0)
             }
+            BranchGenFn::JOMulToTarget0 => {
+                asm.jo_mul(target0)
+            }
             BranchGenFn::JITReturn => {
                 asm_comment!(asm, "update cfp->jit_return");
                 asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.unwrap_code_ptr().raw_ptr()));
@@ -566,6 +570,7 @@ impl BranchGenFn {
             BranchGenFn::JZToTarget0 |
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
+            BranchGenFn::JOMulToTarget0 |
             BranchGenFn::JITReturn => BranchShape::Default,
         }
     }
@@ -587,6 +592,7 @@ impl BranchGenFn {
             BranchGenFn::JZToTarget0 |
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
+            BranchGenFn::JOMulToTarget0 |
             BranchGenFn::JITReturn => {
                 assert_eq!(new_shape, BranchShape::Default);
             }
