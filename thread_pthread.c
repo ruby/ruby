@@ -1604,6 +1604,12 @@ Init_native_thread(rb_thread_t *main_th)
 #endif
     ruby_thread_set_native(main_th);
     native_thread_setup(main_th->nt);
+
+    // init tid
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    main_th->nt->tid = get_native_thread_id();
+#endif
+
     TH_SCHED(main_th)->running = main_th;
     main_th->has_dedicated_nt = 1;
 
@@ -2053,11 +2059,6 @@ native_thread_create0(struct rb_native_thread *nt)
 static void
 native_thread_setup(struct rb_native_thread *nt)
 {
-    // init tid
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-    nt->tid = get_native_thread_id();
-#endif
-
     // init cond
     rb_native_cond_initialize(&nt->cond.readyq);
     if (&nt->cond.readyq != &nt->cond.intr)
@@ -2092,6 +2093,7 @@ native_thread_create_dedicated(rb_thread_t *th)
     th->nt->vm = th->vm;
     th->nt->running_thread = th;
     th->nt->dedicated = 1;
+    native_thread_setup(th->nt);
 
     // vm stack
     size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
@@ -2126,11 +2128,15 @@ nt_start(void *ptr)
     struct rb_native_thread *nt = (struct rb_native_thread *)ptr;
     rb_vm_t *vm = nt->vm;
 
+    // init tid
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    nt->tid = get_native_thread_id();
+#endif
+
 #if USE_RUBY_DEBUG_LOG && defined(RUBY_NT_SERIAL)
     ruby_nt_serial = nt->serial;
 #endif
 
-    native_thread_setup(nt);
     coroutine_initialize_main(&nt->nt_context);
 
     RUBY_DEBUG_LOG("nt:%u", nt->serial);
