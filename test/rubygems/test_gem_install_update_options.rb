@@ -151,7 +151,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
       Gem.use_paths @gemhome, @userhome
 
-      assert_raise(Gem::FilePermissionError, Errno::EACCES) do
+      assert_raise(Gem::FilePermissionError) do
         Gem::Installer.at(@gem, @cmd.options).install
       end
     end
