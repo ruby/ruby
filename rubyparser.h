@@ -981,10 +981,6 @@ typedef struct RNode_FNDPTN {
 
 typedef struct RNode_ERROR {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_error_t;
 
 #define RNODE(obj)  ((struct RNode *)(obj))
