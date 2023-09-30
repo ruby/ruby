@@ -91,7 +91,7 @@ module TestIRB
     end
 
     def test_prompt_n_deprecation
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new))
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new)
 
       _, err = capture_output do
         irb.context.prompt_n = "foo"

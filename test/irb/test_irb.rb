@@ -738,7 +738,7 @@ module TestIRB
       workspace = IRB::WorkSpace.new(TOPLEVEL_BINDING.dup)
 
       IRB.conf[:VERBOSE] = false
-      IRB::Irb.new(workspace)
+      IRB::Irb.new(workspace, TestInputMethod.new)
     end
   end
 end

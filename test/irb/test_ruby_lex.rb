@@ -222,7 +222,7 @@ module TestIRB
       end
 
       IRB.conf[:VERBOSE] = false
-      IRB::Context.new(nil, workspace)
+      IRB::Context.new(nil, workspace, TestInputMethod.new)
     end
 
     def assert_indent_level(lines, expected, local_variables: [])
