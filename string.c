@@ -3298,6 +3298,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
           case ENC_CODERANGE_7BIT:
             // If RHS is 7bit we can do simple concatenation
             str_buf_cat4(str, RSTRING_PTR(str2), RSTRING_LEN(str2), true);
+            RB_GC_GUARD(str2);
             return str;
           case ENC_CODERANGE_VALID:
             // If RHS is valid, we can do simple concatenation if encodings are the same
@@ -3307,6 +3308,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
                 if (UNLIKELY(str_cr != ENC_CODERANGE_VALID)) {
                     ENC_CODERANGE_SET(str, RB_ENC_CODERANGE_AND(str_cr, str2_cr));
                 }
+                RB_GC_GUARD(str2);
                 return str;
             }
         }
