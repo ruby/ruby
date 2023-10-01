@@ -288,4 +288,33 @@ th_has_dedicated_nt(const rb_thread_t *th)
     return true;
 }
 
+void
+rb_add_running_thread(rb_thread_t *th){
+    // do nothing
+}
+
+void
+rb_del_running_thread(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_threadptr_sched_free(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
+void
+rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

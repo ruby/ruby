@@ -1539,6 +1539,7 @@ ruby_thread_set_native(rb_thread_t *th)
 }
 
 static void native_thread_setup(struct rb_native_thread *nt);
+static void native_thread_setup_on_thread(struct rb_native_thread *nt);
 
 void
 Init_native_thread(rb_thread_t *main_th)
@@ -1604,11 +1605,7 @@ Init_native_thread(rb_thread_t *main_th)
 #endif
     ruby_thread_set_native(main_th);
     native_thread_setup(main_th->nt);
-
-    // init tid
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-    main_th->nt->tid = get_native_thread_id();
-#endif
+    native_thread_setup_on_thread(main_th->nt);
 
     TH_SCHED(main_th)->running = main_th;
     main_th->has_dedicated_nt = 1;
@@ -2061,8 +2058,19 @@ native_thread_setup(struct rb_native_thread *nt)
 {
     // init cond
     rb_native_cond_initialize(&nt->cond.readyq);
-    if (&nt->cond.readyq != &nt->cond.intr)
-      rb_native_cond_initialize(&nt->cond.intr);
+
+    if (&nt->cond.readyq != &nt->cond.intr) {
+        rb_native_cond_initialize(&nt->cond.intr);
+    }
+}
+
+static void
+native_thread_setup_on_thread(struct rb_native_thread *nt)
+{
+    // init tid
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    nt->tid = get_native_thread_id();
+#endif
 
     // init signal handler
     RB_ALTSTACK_INIT(nt->altstack, nt->altstack);
@@ -2127,6 +2135,8 @@ nt_start(void *ptr)
 {
     struct rb_native_thread *nt = (struct rb_native_thread *)ptr;
     rb_vm_t *vm = nt->vm;
+
+    native_thread_setup_on_thread(nt);
 
     // init tid
 #ifdef RB_THREAD_T_HAS_NATIVE_ID

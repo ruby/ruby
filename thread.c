@@ -1495,7 +1495,11 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     }
 
     RUBY_DEBUG_LOG("end");
+
+#ifndef _WIN32
+    // GET_THREAD() clears WSAGetLastError()
     VM_ASSERT(th == GET_THREAD());
+#endif
 }
 
 void *
