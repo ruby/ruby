@@ -18,7 +18,7 @@
         │   │   ├── opening_loc: (1,4)-(1,6) = "do"
         │   │   └── closing_loc: (2,0)-(2,3) = "end"
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (4,0)-(6,3))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -48,7 +48,7 @@
         │   │   ├── opening_loc: (4,4)-(4,6) = "do"
         │   │   └── closing_loc: (6,0)-(6,3) = "end"
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (8,0)-(11,3))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -73,7 +73,7 @@
         │   │   ├── opening_loc: (8,4)-(8,6) = "do"
         │   │   └── closing_loc: (11,0)-(11,3) = "end"
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (13,0)-(14,3))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -104,7 +104,7 @@
         │   │   ├── opening_loc: (13,4)-(13,6) = "do"
         │   │   └── closing_loc: (14,0)-(14,3) = "end"
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (16,0)-(20,3))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -148,7 +148,7 @@
         │   │   ├── opening_loc: (16,12)-(16,14) = "do"
         │   │   └── closing_loc: (20,0)-(20,3) = "end"
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         └── @ CallNode (location: (22,0)-(26,3))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -180,8 +180,8 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "a"
+            │   │           └── name: :a
             │   ├── opening_loc: (22,12)-(22,14) = "do"
             │   └── closing_loc: (26,0)-(26,3) = "end"
             ├── flags: ∅
-            └── name: "foo"
+            └── name: :foo

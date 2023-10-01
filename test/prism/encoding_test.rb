@@ -39,28 +39,28 @@ module Prism
       CP1252
     ].each do |encoding|
       define_method "test_encoding_#{encoding}" do
-        result = Prism.parse("# encoding: #{encoding}\nident")
-        actual = result.value.statements.body.first.name.encoding
+        result = Prism.parse("# encoding: #{encoding}\n'string'")
+        actual = result.value.statements.body.first.unescaped.encoding
         assert_equal Encoding.find(encoding), actual
       end
     end
 
     def test_coding
-      result = Prism.parse("# coding: utf-8\nident")
-      actual = result.value.statements.body.first.name.encoding
+      result = Prism.parse("# coding: utf-8\n'string'")
+      actual = result.value.statements.body.first.unescaped.encoding
       assert_equal Encoding.find("utf-8"), actual
     end
 
     def test_coding_with_whitespace
-      result = Prism.parse("# coding \t \r  \v   :     \t \v    \r   ascii-8bit \nident")
-      actual = result.value.statements.body.first.name.encoding
+      result = Prism.parse("# coding \t \r  \v   :     \t \v    \r   ascii-8bit \n'string'")
+      actual = result.value.statements.body.first.unescaped.encoding
       assert_equal Encoding.find("ascii-8bit"), actual
     end
 
 
     def test_emacs_style
-      result = Prism.parse("# -*- coding: utf-8 -*-\nident")
-      actual = result.value.statements.body.first.name.encoding
+      result = Prism.parse("# -*- coding: utf-8 -*-\n'string'")
+      actual = result.value.statements.body.first.unescaped.encoding
       assert_equal Encoding.find("utf-8"), actual
     end
 
@@ -86,8 +86,8 @@ module Prism
         utf-8-mac
         utf-8-*
       ].each do |encoding|
-        result = Prism.parse("# coding: #{encoding}\nident")
-        actual = result.value.statements.body.first.name.encoding
+        result = Prism.parse("# coding: #{encoding}\n'string'")
+        actual = result.value.statements.body.first.unescaped.encoding
         assert_equal Encoding.find("utf-8"), actual
       end
     end

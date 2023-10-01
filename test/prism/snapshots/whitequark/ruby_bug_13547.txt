@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "meth"
+            │   └── name: :meth
             ├── call_operator_loc: ∅
             ├── message_loc: (1,4)-(1,6) = "[]"
             ├── opening_loc: (1,4)-(1,5) = "["
@@ -28,4 +28,4 @@
             │   ├── opening_loc: (1,7)-(1,8) = "{"
             │   └── closing_loc: (1,8)-(1,9) = "}"
             ├── flags: ∅
-            └── name: "[]"
+            └── name: :[]

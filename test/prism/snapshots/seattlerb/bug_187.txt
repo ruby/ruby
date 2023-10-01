@@ -30,7 +30,7 @@
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
             │           │           │   ├── flags: variable_call
-            │           │           │   └── name: "a"
+            │           │           │   └── name: :a
             │           │           ├── call_operator_loc: (2,1)-(2,2) = "."
             │           │           ├── message_loc: (2,2)-(2,3) = "b"
             │           │           ├── opening_loc: ∅
@@ -44,7 +44,7 @@
             │           │           │   ├── opening_loc: (2,4)-(2,6) = "do"
             │           │           │   └── closing_loc: (2,7)-(2,10) = "end"
             │           │           ├── flags: ∅
-            │           │           └── name: "b"
+            │           │           └── name: :b
             │           ├── locals: []
             │           ├── def_keyword_loc: (1,8)-(1,11) = "def"
             │           ├── operator_loc: ∅
@@ -55,4 +55,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "private"
+            └── name: :private

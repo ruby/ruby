@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,10)-(1,25))
             │       ├── keyword_loc: (1,10)-(1,14) = "when"
@@ -37,7 +37,7 @@
             │                   ├── closing_loc: ∅
             │                   ├── block: ∅
             │                   ├── flags: variable_call
-            │                   └── name: "bar"
+            │                   └── name: :bar
             ├── consequent:
             │   @ ElseNode (location: (1,27)-(1,40))
             │   ├── else_keyword_loc: (1,27)-(1,31) = "else"
@@ -53,7 +53,7 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "baz"
+            │   │           └── name: :baz
             │   └── end_keyword_loc: (1,37)-(1,40) = "end"
             ├── case_keyword_loc: (1,0)-(1,4) = "case"
             └── end_keyword_loc: (1,37)-(1,40) = "end"

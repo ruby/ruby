@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── right:
         │   │   @ ParenthesesNode (location: (1,7)-(1,19))
         │   │   ├── body:
@@ -41,7 +41,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: variable_call
-        │   │   │               └── name: "bar"
+        │   │   │               └── name: :bar
         │   │   ├── opening_loc: (1,7)-(1,8) = "("
         │   │   └── closing_loc: (1,18)-(1,19) = ")"
         │   └── operator_loc: (1,4)-(1,6) = "&&"
@@ -56,7 +56,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── right:
             │   @ ParenthesesNode (location: (3,7)-(3,19))
             │   ├── body:
@@ -83,7 +83,7 @@
             │   │               ├── closing_loc: ∅
             │   │               ├── block: ∅
             │   │               ├── flags: variable_call
-            │   │               └── name: "bar"
+            │   │               └── name: :bar
             │   ├── opening_loc: (3,7)-(3,8) = "("
             │   └── closing_loc: (3,18)-(3,19) = ")"
             └── operator_loc: (3,4)-(3,6) = "||"

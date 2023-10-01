@@ -39,7 +39,7 @@
         │   │   │           ├── closing_loc: (2,12)-(2,13) = ")"
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: ∅
-        │   │   │           └── name: "system"
+        │   │   │           └── name: :system
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (3,0)-(4,5))
         │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -96,7 +96,7 @@
         │   │           │   ├── closing_loc: (9,12)-(9,13) = ")"
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: ∅
-        │   │           │   └── name: "system"
+        │   │           │   └── name: :system
         │   │           ├── keyword_loc: (9,14)-(9,20) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (9,21)-(9,24))
@@ -142,7 +142,7 @@
             │           │   ├── closing_loc: (13,31)-(13,32) = ")"
             │           │   ├── block: ∅
             │           │   ├── flags: ∅
-            │           │   └── name: "system"
+            │           │   └── name: :system
             │           ├── keyword_loc: (13,33)-(13,39) = "rescue"
             │           └── rescue_expression:
             │               @ NilNode (location: (13,40)-(13,43))

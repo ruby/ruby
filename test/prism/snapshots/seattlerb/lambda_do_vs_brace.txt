@@ -21,7 +21,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "f"
+        │   └── name: :f
         ├── @ CallNode (location: (3,0)-(3,7))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -40,7 +40,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "f"
+        │   └── name: :f
         ├── @ CallNode (location: (5,0)-(5,13))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -64,7 +64,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "f"
+        │   └── name: :f
         └── @ CallNode (location: (7,0)-(7,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -88,4 +88,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

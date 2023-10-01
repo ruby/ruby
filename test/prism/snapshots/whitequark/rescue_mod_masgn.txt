@@ -26,7 +26,7 @@
                 │   ├── closing_loc: ∅
                 │   ├── block: ∅
                 │   ├── flags: variable_call
-                │   └── name: "meth"
+                │   └── name: :meth
                 ├── keyword_loc: (1,16)-(1,22) = "rescue"
                 └── rescue_expression:
                     @ ArrayNode (location: (1,23)-(1,29))

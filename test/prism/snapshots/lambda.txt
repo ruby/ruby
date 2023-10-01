@@ -66,7 +66,7 @@
         │   │   │   │           │       │           ├── closing_loc: ∅
         │   │   │   │           │       │           ├── block: ∅
         │   │   │   │           │       │           ├── flags: variable_call
-        │   │   │   │           │       │           └── name: "a"
+        │   │   │   │           │       │           └── name: :a
         │   │   │   │           │       └── closing_loc: (5,11)-(5,12) = "}"
         │   │   │   │           └── closing_loc: (5,12)-(5,13) = "\""
         │   │   │   ├── keyword_rest: ∅
@@ -104,7 +104,7 @@
         │   │   │   │           │   ├── closing_loc: ∅
         │   │   │   │           │   ├── block: ∅
         │   │   │   │           │   ├── flags: variable_call
-        │   │   │   │           │   └── name: "b"
+        │   │   │   │           │   └── name: :b
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── message_loc: (7,8)-(7,9) = "*"
         │   │   │   │           ├── opening_loc: ∅
@@ -116,7 +116,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: "*"
+        │   │   │   │           └── name: :*
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
         │   │   ├── locals: (length: 0)
@@ -148,7 +148,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bar"
+        │   │   │   │           └── name: :bar
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -185,7 +185,7 @@
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
             │   │   │           ├── flags: variable_call
-            │   │   │           └── name: "bar"
+            │   │   │           └── name: :bar
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

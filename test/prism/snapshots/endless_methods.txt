@@ -45,7 +45,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "A"
+        │   │           └── name: :A
         │   ├── locals: []
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
@@ -78,7 +78,7 @@
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
             │           │   ├── flags: ∅
-            │           │   └── name: "+"
+            │           │   └── name: :+
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (5,19)-(5,20) = "+"
             │           ├── opening_loc: ∅
@@ -90,7 +90,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "+"
+            │           └── name: :+
             ├── locals: []
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅

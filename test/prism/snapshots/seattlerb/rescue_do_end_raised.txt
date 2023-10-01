@@ -29,7 +29,7 @@
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
             │   │   │           ├── flags: variable_call
-            │   │   │           └── name: "raise"
+            │   │   │           └── name: :raise
             │   │   ├── rescue_clause: ∅
             │   │   ├── else_clause: ∅
             │   │   ├── ensure_clause:
@@ -48,4 +48,4 @@
             │   ├── opening_loc: (1,4)-(1,6) = "do"
             │   └── closing_loc: (5,0)-(5,3) = "end"
             ├── flags: ∅
-            └── name: "tap"
+            └── name: :tap

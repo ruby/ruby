@@ -88,7 +88,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "y"
+        │   │           └── name: :y
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (7,0)-(7,11))
         │   ├── keyword_loc: (7,0)-(7,5) = "yield"
@@ -120,7 +120,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "y"
+        │   │           └── name: :y
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (9,0)-(9,12))
         │   ├── keyword_loc: (9,0)-(9,5) = "yield"
@@ -152,7 +152,7 @@
         │   │           ├── closing_loc: (9,11)-(9,12) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "y"
+        │   │           └── name: :y
         │   └── rparen_loc: ∅
         └── @ YieldNode (location: (11,0)-(11,13))
             ├── keyword_loc: (11,0)-(11,5) = "yield"
@@ -181,7 +181,7 @@
             │           │                   │   ├── closing_loc: ∅
             │           │                   │   ├── block: ∅
             │           │                   │   ├── flags: variable_call
-            │           │                   │   └── name: "z"
+            │           │                   │   └── name: :z
             │           │                   ├── value:
             │           │                   │   @ IntegerNode (location: (11,11)-(11,12))
             │           │                   │   └── flags: decimal
@@ -189,5 +189,5 @@
             │           ├── closing_loc: (11,12)-(11,13) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "y"
+            │           └── name: :y
             └── rparen_loc: ∅

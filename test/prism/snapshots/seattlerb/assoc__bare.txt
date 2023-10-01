@@ -25,6 +25,6 @@
             │       │       ├── closing_loc: ∅
             │       │       ├── block: ∅
             │       │       ├── flags: ∅
-            │       │       └── name: "y"
+            │       │       └── name: :y
             │       └── operator_loc: ∅
             └── closing_loc: (1,5)-(1,6) = "}"

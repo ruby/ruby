@@ -26,6 +26,6 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
-            │   │   └── name: "c"
+            │   │   └── name: :c
             │   └── operator_loc: (1,6)-(1,7) = "="
             └── operator_loc: (1,2)-(1,3) = "="

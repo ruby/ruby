@@ -20,7 +20,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ RegularExpressionNode (location: (3,0)-(3,8))
         │   ├── opening_loc: (3,0)-(3,3) = "%r{"
         │   ├── content_loc: (3,3)-(3,6) = "abc"
@@ -72,7 +72,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bbb"
+        │   │   │   │           └── name: :bbb
         │   │   │   └── closing_loc: (9,10)-(9,11) = "}"
         │   │   └── @ StringNode (location: (9,11)-(9,15))
         │   │       ├── flags: ∅
@@ -109,11 +109,11 @@
         │   │   │   │   │           ├── closing_loc: ∅
         │   │   │   │   │           ├── block: ∅
         │   │   │   │   │           ├── flags: variable_call
-        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   │           └── name: :baz
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: ∅
-        │   │   │   │   └── name: "=~"
+        │   │   │   │   └── name: :=~
         │   │   │   └── locals: [:foo]
         │   │   └── @ LocalVariableReadNode (location: (11,23)-(11,26))
         │   │       ├── name: :foo
@@ -173,7 +173,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "=~"
+        │   └── name: :=~
         ├── @ RegularExpressionNode (location: (28,0)-(28,9))
         │   ├── opening_loc: (28,0)-(28,3) = "%r#"
         │   ├── content_loc: (28,3)-(28,8) = "pound"
@@ -203,7 +203,7 @@
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: variable_call
-            │       │           └── name: "bbb"
+            │       │           └── name: :bbb
             │       └── closing_loc: (30,10)-(30,11) = "}"
             ├── closing_loc: (30,11)-(30,13) = "/o"
             └── flags: once

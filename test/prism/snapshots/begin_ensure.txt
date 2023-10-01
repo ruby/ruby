@@ -17,7 +17,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause:
@@ -35,7 +35,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ BeginNode (location: (7,0)-(7,24))
@@ -52,7 +52,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause:
@@ -70,7 +70,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── end_keyword_loc: (7,21)-(7,24) = "end"
         │   └── end_keyword_loc: (7,21)-(7,24) = "end"
         ├── @ BeginNode (location: (9,0)-(11,4))
@@ -87,7 +87,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause:
@@ -105,7 +105,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── end_keyword_loc: (11,1)-(11,4) = "end"
         │   └── end_keyword_loc: (11,1)-(11,4) = "end"
         ├── @ BeginNode (location: (13,0)-(13,22))
@@ -122,7 +122,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause:
@@ -140,7 +140,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── end_keyword_loc: (13,19)-(13,22) = "end"
         │   └── end_keyword_loc: (13,19)-(13,22) = "end"
         └── @ BeginNode (location: (15,0)-(21,15))
@@ -226,19 +226,19 @@
             │           │           │           │   │           │   │           │   │           │   ├── opening_loc: (18,22)-(18,24) = "do"
             │           │           │           │   │           │   │           │   │           │   └── closing_loc: (19,4)-(19,7) = "end"
             │           │           │           │   │           │   │           │   │           ├── flags: ∅
-            │           │           │           │   │           │   │           │   │           └── name: "new"
+            │           │           │           │   │           │   │           │   │           └── name: :new
             │           │           │           │   │           │   │           │   └── end_keyword_loc: (20,2)-(20,5) = "end"
             │           │           │           │   │           │   │           └── end_keyword_loc: (20,2)-(20,5) = "end"
             │           │           │           │   │           │   ├── opening_loc: (15,40)-(15,42) = "do"
             │           │           │           │   │           │   └── closing_loc: (21,0)-(21,3) = "end"
             │           │           │           │   │           ├── flags: ∅
-            │           │           │           │   │           └── name: "new"
+            │           │           │           │   │           └── name: :new
             │           │           │           │   └── end_keyword_loc: (21,4)-(21,7) = "end"
             │           │           │           └── end_keyword_loc: (21,4)-(21,7) = "end"
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: ∅
-            │           │           └── name: "l"
+            │           │           └── name: :l
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅

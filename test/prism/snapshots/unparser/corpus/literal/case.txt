@@ -18,7 +18,7 @@
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       ├── block: ∅
         │   │   │   │       ├── flags: variable_call
-        │   │   │   │       └── name: "bar"
+        │   │   │   │       └── name: :bar
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (3,2)-(3,5))
         │   │   │       └── body: (length: 1)
@@ -31,7 +31,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: variable_call
-        │   │   │               └── name: "baz"
+        │   │   │               └── name: :baz
         │   │   └── @ WhenNode (location: (4,0)-(5,5))
         │   │       ├── keyword_loc: (4,0)-(4,4) = "when"
         │   │       ├── conditions: (length: 1)
@@ -44,7 +44,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "baz"
+        │   │       │       └── name: :baz
         │   │       └── statements:
         │   │           @ StatementsNode (location: (5,2)-(5,5))
         │   │           └── body: (length: 1)
@@ -57,7 +57,7 @@
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
         │   │                   ├── flags: variable_call
-        │   │                   └── name: "bar"
+        │   │                   └── name: :bar
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
@@ -72,7 +72,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 2)
         │   │   ├── @ WhenNode (location: (8,0)-(8,8))
         │   │   │   ├── keyword_loc: (8,0)-(8,4) = "when"
@@ -86,7 +86,7 @@
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       ├── block: ∅
         │   │   │   │       ├── flags: variable_call
-        │   │   │   │       └── name: "bar"
+        │   │   │   │       └── name: :bar
         │   │   │   └── statements: ∅
         │   │   └── @ WhenNode (location: (9,0)-(10,5))
         │   │       ├── keyword_loc: (9,0)-(9,4) = "when"
@@ -100,7 +100,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "baz"
+        │   │       │       └── name: :baz
         │   │       └── statements:
         │   │           @ StatementsNode (location: (10,2)-(10,5))
         │   │           └── body: (length: 1)
@@ -113,7 +113,7 @@
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
         │   │                   ├── flags: variable_call
-        │   │                   └── name: "bar"
+        │   │                   └── name: :bar
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (7,0)-(7,4) = "case"
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
@@ -128,7 +128,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 2)
         │   │   ├── @ WhenNode (location: (13,0)-(14,5))
         │   │   │   ├── keyword_loc: (13,0)-(13,4) = "when"
@@ -142,7 +142,7 @@
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       ├── block: ∅
         │   │   │   │       ├── flags: variable_call
-        │   │   │   │       └── name: "bar"
+        │   │   │   │       └── name: :bar
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (14,2)-(14,5))
         │   │   │       └── body: (length: 1)
@@ -155,7 +155,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: variable_call
-        │   │   │               └── name: "baz"
+        │   │   │               └── name: :baz
         │   │   └── @ WhenNode (location: (15,0)-(16,5))
         │   │       ├── keyword_loc: (15,0)-(15,4) = "when"
         │   │       ├── conditions: (length: 1)
@@ -168,7 +168,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "baz"
+        │   │       │       └── name: :baz
         │   │       └── statements:
         │   │           @ StatementsNode (location: (16,2)-(16,5))
         │   │           └── body: (length: 1)
@@ -181,7 +181,7 @@
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
         │   │                   ├── flags: variable_call
-        │   │                   └── name: "bar"
+        │   │                   └── name: :bar
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (12,0)-(12,4) = "case"
         │   └── end_keyword_loc: (17,0)-(17,3) = "end"
@@ -196,7 +196,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (19,0)-(20,8))
         │   │       ├── keyword_loc: (19,0)-(19,4) = "when"
@@ -210,7 +210,7 @@
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   ├── block: ∅
         │   │       │   │   ├── flags: variable_call
-        │   │       │   │   └── name: "bar"
+        │   │       │   │   └── name: :bar
         │   │       │   └── @ CallNode (location: (19,10)-(19,13))
         │   │       │       ├── receiver: ∅
         │   │       │       ├── call_operator_loc: ∅
@@ -220,7 +220,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "baz"
+        │   │       │       └── name: :baz
         │   │       └── statements:
         │   │           @ StatementsNode (location: (20,2)-(20,8))
         │   │           └── body: (length: 1)
@@ -243,7 +243,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (23,0)-(24,8))
         │   │       ├── keyword_loc: (23,0)-(23,4) = "when"
@@ -260,7 +260,7 @@
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
         │   │       │           ├── flags: variable_call
-        │   │       │           └── name: "bar"
+        │   │       │           └── name: :bar
         │   │       └── statements:
         │   │           @ StatementsNode (location: (24,2)-(24,8))
         │   │           └── body: (length: 1)
@@ -283,7 +283,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (27,0)-(28,5))
         │   │       ├── keyword_loc: (27,0)-(27,4) = "when"
@@ -297,7 +297,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "bar"
+        │   │       │       └── name: :bar
         │   │       └── statements:
         │   │           @ StatementsNode (location: (28,2)-(28,5))
         │   │           └── body: (length: 1)
@@ -310,7 +310,7 @@
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
         │   │                   ├── flags: variable_call
-        │   │                   └── name: "baz"
+        │   │                   └── name: :baz
         │   ├── consequent:
         │   │   @ ElseNode (location: (29,0)-(31,3))
         │   │   ├── else_keyword_loc: (29,0)-(29,4) = "else"
@@ -336,7 +336,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (33,0)-(33,15))
         │   │       ├── keyword_loc: (33,0)-(33,4) = "when"
@@ -355,7 +355,7 @@
         │   │       │           │   ├── closing_loc: ∅
         │   │       │           │   ├── block: ∅
         │   │       │           │   ├── flags: variable_call
-        │   │       │           │   └── name: "bar"
+        │   │       │           │   └── name: :bar
         │   │       │           ├── call_operator_loc: ∅
         │   │       │           ├── message_loc: (33,10)-(33,11) = "|"
         │   │       │           ├── opening_loc: ∅
@@ -371,11 +371,11 @@
         │   │       │           │           ├── closing_loc: ∅
         │   │       │           │           ├── block: ∅
         │   │       │           │           ├── flags: variable_call
-        │   │       │           │           └── name: "baz"
+        │   │       │           │           └── name: :baz
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
         │   │       │           ├── flags: ∅
-        │   │       │           └── name: "|"
+        │   │       │           └── name: :|
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
@@ -391,7 +391,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (36,0)-(36,15))
             │       ├── keyword_loc: (36,0)-(36,4) = "when"
@@ -410,7 +410,7 @@
             │       │           │   ├── closing_loc: ∅
             │       │           │   ├── block: ∅
             │       │           │   ├── flags: variable_call
-            │       │           │   └── name: "bar"
+            │       │           │   └── name: :bar
             │       │           ├── call_operator_loc: (36,9)-(36,10) = "."
             │       │           ├── message_loc: (36,10)-(36,13) = "baz"
             │       │           ├── opening_loc: ∅
@@ -422,7 +422,7 @@
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: ∅
-            │       │           └── name: "baz="
+            │       │           └── name: :baz=
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (35,0)-(35,4) = "case"

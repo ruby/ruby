@@ -74,7 +74,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "bar?"
+        │   │   └── name: :bar?
         │   ├── statements:
         │   │   @ StatementsNode (location: (11,0)-(11,10))
         │   │   └── body: (length: 1)
@@ -99,7 +99,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "foo"
+        │   │           └── name: :foo
         │   └── flags: ∅
         ├── @ WhileNode (location: (13,0)-(13,50))
         │   ├── keyword_loc: (13,0)-(13,5) = "while"
@@ -134,7 +134,7 @@
         │   │   │   │           │   ├── opening_loc: (13,27)-(13,29) = "do"
         │   │   │   │           │   └── closing_loc: (13,30)-(13,33) = "end"
         │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: "tap"
+        │   │   │   │           └── name: :tap
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -190,7 +190,7 @@
         │   │   │           │   │   ├── opening_loc: (15,24)-(15,26) = "do"
         │   │   │           │   │   └── closing_loc: (15,27)-(15,30) = "end"
         │   │   │           │   ├── flags: ∅
-        │   │   │           │   └── name: "tap"
+        │   │   │           │   └── name: :tap
         │   │   │           └── operator_loc: (15,18)-(15,19) = "="
         │   │   ├── end_keyword_loc: (15,32)-(15,35) = "end"
         │   │   └── name: :Foo
@@ -229,7 +229,7 @@
         │   │   │           │   ├── opening_loc: (17,25)-(17,27) = "do"
         │   │   │           │   └── closing_loc: (17,28)-(17,31) = "end"
         │   │   │           ├── flags: ∅
-        │   │   │           └── name: "tap"
+        │   │   │           └── name: :tap
         │   │   └── end_keyword_loc: (17,33)-(17,36) = "end"
         │   ├── statements:
         │   │   @ StatementsNode (location: (17,38)-(17,43))
@@ -271,7 +271,7 @@
             │   │           │   │   ├── opening_loc: (19,29)-(19,31) = "do"
             │   │           │   │   └── closing_loc: (19,32)-(19,35) = "end"
             │   │           │   ├── flags: ∅
-            │   │           │   └── name: "tap"
+            │   │           │   └── name: :tap
             │   │           └── operator_loc: (19,23)-(19,24) = "="
             │   └── end_keyword_loc: (19,37)-(19,40) = "end"
             ├── statements:

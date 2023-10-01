@@ -17,7 +17,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── rescue_clause: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

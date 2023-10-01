@@ -68,4 +68,4 @@
             │   ├── opening_loc: (1,4)-(1,6) = "do"
             │   └── closing_loc: (9,0)-(9,3) = "end"
             ├── flags: ∅
-            └── name: "tap"
+            └── name: :tap

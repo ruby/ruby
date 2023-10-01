@@ -12,7 +12,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (2,0)-(2,6))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -26,7 +26,7 @@
         │   ├── closing_loc: (2,5)-(2,6) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (4,0)-(4,15))
         │   ├── receiver:
         │   │   @ CallNode (location: (4,0)-(4,10))
@@ -42,7 +42,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "a"
+        │   │   │   │   └── name: :a
         │   │   │   ├── call_operator_loc: (4,1)-(4,2) = "."
         │   │   │   ├── message_loc: (4,2)-(4,5) = "==="
         │   │   │   ├── opening_loc: (4,5)-(4,6) = "("
@@ -58,11 +58,11 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "b"
+        │   │   │   │           └── name: :b
         │   │   │   ├── closing_loc: (4,7)-(4,8) = ")"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "==="
+        │   │   │   └── name: :===
         │   │   ├── call_operator_loc: (4,8)-(4,9) = "."
         │   │   ├── message_loc: (4,9)-(4,10) = "c"
         │   │   ├── opening_loc: ∅
@@ -70,7 +70,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "c"
+        │   │   └── name: :c
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (4,11)-(4,13) = "=="
         │   ├── opening_loc: ∅
@@ -86,11 +86,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "d"
+        │   │           └── name: :d
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "=="
+        │   └── name: :==
         └── @ CallNode (location: (6,0)-(6,15))
             ├── receiver:
             │   @ CallNode (location: (6,0)-(6,1))
@@ -102,7 +102,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: ∅
             ├── message_loc: (6,2)-(6,4) = "=="
             ├── opening_loc: ∅
@@ -122,7 +122,7 @@
             │           │   │   ├── closing_loc: ∅
             │           │   │   ├── block: ∅
             │           │   │   ├── flags: variable_call
-            │           │   │   └── name: "d"
+            │           │   │   └── name: :d
             │           │   ├── call_operator_loc: (6,6)-(6,7) = "."
             │           │   ├── message_loc: (6,7)-(6,8) = "c"
             │           │   ├── opening_loc: ∅
@@ -130,7 +130,7 @@
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
             │           │   ├── flags: ∅
-            │           │   └── name: "c"
+            │           │   └── name: :c
             │           ├── call_operator_loc: (6,8)-(6,9) = "."
             │           ├── message_loc: (6,9)-(6,12) = "==="
             │           ├── opening_loc: (6,12)-(6,13) = "("
@@ -146,12 +146,12 @@
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
-            │           │           └── name: "c"
+            │           │           └── name: :c
             │           ├── closing_loc: (6,14)-(6,15) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "==="
+            │           └── name: :===
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "=="
+            └── name: :==

@@ -22,11 +22,11 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "foo"
+            │   │           └── name: :foo
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "m"
+            │   └── name: :m
             ├── call_operator_loc: ∅
             ├── message_loc: (1,0)-(1,3) = "not"
             ├── opening_loc: ∅
@@ -34,4 +34,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "!"
+            └── name: :!

@@ -31,4 +31,4 @@
             ├── closing_loc: (1,18)-(1,19) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "foo"
+            └── name: :foo

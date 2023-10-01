@@ -49,7 +49,7 @@
             │       │   │   │           │   ├── opening_loc: (1,17)-(1,19) = "do"
             │       │   │   │           │   └── closing_loc: (4,1)-(4,4) = "end"
             │       │   │   │           ├── flags: ∅
-            │       │   │   │           └── name: "new"
+            │       │   │   │           └── name: :new
             │       │   │   ├── opening_loc: (1,6)-(1,7) = "("
             │       │   │   └── closing_loc: (4,4)-(4,5) = ")"
             │       │   ├── call_operator_loc: (4,5)-(4,6) = "."
@@ -59,7 +59,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: ∅
-            │       │   └── name: "new"
+            │       │   └── name: :new
             │       └── @ KeywordHashNode (location: (4,11)-(4,28))
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (4,11)-(4,28))
@@ -80,4 +80,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "mount"
+            └── name: :mount

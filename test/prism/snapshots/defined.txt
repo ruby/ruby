@@ -49,7 +49,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── right:
         │   │   │   @ CallNode (location: (5,17)-(5,20))
         │   │   │   ├── receiver: ∅
@@ -60,7 +60,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   └── operator_loc: (5,13)-(5,16) = "and"
         │   ├── rparen_loc: (5,20)-(5,21) = ")"
         │   └── keyword_loc: (5,0)-(5,8) = "defined?"

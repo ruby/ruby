@@ -22,7 +22,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
-            │   │   └── name: "bar"
+            │   │   └── name: :bar
             │   └── operator_loc: (1,4)-(1,5) = "&"
             ├── flags: ∅
-            └── name: "fun"
+            └── name: :fun

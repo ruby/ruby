@@ -26,4 +26,4 @@
             │   ├── opening_loc: (1,11)-(1,13) = "do"
             │   └── closing_loc: (3,0)-(3,3) = "end"
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

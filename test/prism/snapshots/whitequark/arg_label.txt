@@ -27,7 +27,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
@@ -59,7 +59,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── locals: []
         │   ├── def_keyword_loc: (4,0)-(4,3) = "def"
         │   ├── operator_loc: ∅
@@ -102,8 +102,8 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "a"
+            │   │           └── name: :a
             │   ├── opening_loc: (6,2)-(6,3) = "{"
             │   └── closing_loc: (6,11)-(6,12) = "}"
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

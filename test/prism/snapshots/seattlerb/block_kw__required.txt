@@ -35,4 +35,4 @@
             │   ├── opening_loc: (1,5)-(1,7) = "do"
             │   └── closing_loc: (1,13)-(1,16) = "end"
             ├── flags: ∅
-            └── name: "blah"
+            └── name: :blah

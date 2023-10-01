@@ -18,4 +18,4 @@
             ├── closing_loc: (1,4)-(1,5) = "]"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "[]"
+            └── name: :[]

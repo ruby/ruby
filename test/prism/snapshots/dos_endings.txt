@@ -29,7 +29,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "puts"
+        │   └── name: :puts
         ├── @ ArrayNode (location: (4,0)-(5,2))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (4,3)-(5,1))
@@ -85,9 +85,9 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "chop"
+            │   │           └── name: :chop
             │   ├── closing_loc: (17,19)-(17,20) = ")"
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "foo"
+            │   └── name: :foo
             └── operator_loc: (17,2)-(17,3) = "="

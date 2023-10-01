@@ -81,12 +81,12 @@
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
-            │           │           └── name: "bar"
+            │           │           └── name: :bar
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── closing_loc: (14,9)-(14,10) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "w"
+            └── name: :w

@@ -35,7 +35,7 @@
             │           │   ├── expression: ∅
             │           │   └── operator_loc: (1,16)-(1,17) = "&"
             │           ├── flags: ∅
-            │           └── name: "bar"
+            │           └── name: :bar
             ├── locals: [:&]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

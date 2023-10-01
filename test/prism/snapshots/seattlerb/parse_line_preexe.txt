@@ -16,7 +16,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── keyword_loc: (1,0)-(1,5) = "BEGIN"
             ├── opening_loc: (1,6)-(1,7) = "{"
             └── closing_loc: (3,0)-(3,1) = "}"

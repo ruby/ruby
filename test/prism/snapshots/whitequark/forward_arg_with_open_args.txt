@@ -36,7 +36,7 @@
         │   │           │           ├── closing_loc: (2,9)-(2,10) = ")"
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
-        │   │           │           └── name: "bar"
+        │   │           │           └── name: :bar
         │   │           ├── locals: [:"..."]
         │   │           ├── def_keyword_loc: (1,1)-(1,4) = "def"
         │   │           ├── operator_loc: ∅
@@ -79,7 +79,7 @@
         │   │           │           ├── closing_loc: (5,21)-(5,22) = ")"
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
-        │   │           │           └── name: "bar"
+        │   │           │           └── name: :bar
         │   │           ├── locals: [:"..."]
         │   │           ├── def_keyword_loc: (5,1)-(5,4) = "def"
         │   │           ├── operator_loc: ∅
@@ -140,7 +140,7 @@
         │   │           ├── closing_loc: (10,20)-(10,21) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (10,0)-(10,3) = "def"
         │   ├── operator_loc: ∅
@@ -179,7 +179,7 @@
         │   │           ├── closing_loc: (13,9)-(13,10) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:a, :"..."]
         │   ├── def_keyword_loc: (12,0)-(12,3) = "def"
         │   ├── operator_loc: ∅
@@ -218,7 +218,7 @@
         │   │           ├── closing_loc: (16,23)-(16,24) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:a, :"..."]
         │   ├── def_keyword_loc: (16,0)-(16,3) = "def"
         │   ├── operator_loc: ∅
@@ -293,7 +293,7 @@
         │   │           ├── closing_loc: (22,9)-(22,10) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:b, :"..."]
         │   ├── def_keyword_loc: (21,0)-(21,3) = "def"
         │   ├── operator_loc: ∅
@@ -337,7 +337,7 @@
         │   │           ├── closing_loc: (25,27)-(25,28) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:b, :"..."]
         │   ├── def_keyword_loc: (25,0)-(25,3) = "def"
         │   ├── operator_loc: ∅
@@ -376,7 +376,7 @@
             │           ├── closing_loc: (27,23)-(27,24) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "bar"
+            │           └── name: :bar
             ├── locals: [:a, :"..."]
             ├── def_keyword_loc: (27,0)-(27,3) = "def"
             ├── operator_loc: ∅

@@ -40,7 +40,7 @@
             │   │           │           ├── closing_loc: ∅
             │   │           │           ├── block: ∅
             │   │           │           ├── flags: variable_call
-            │   │           │           └── name: "a"
+            │   │           │           └── name: :a
             │   │           ├── closing_loc: (1,12)-(1,13) = ")"
             │   │           ├── block:
             │   │           │   @ BlockNode (location: (1,14)-(1,21))
@@ -50,8 +50,8 @@
             │   │           │   ├── opening_loc: (1,14)-(1,16) = "do"
             │   │           │   └── closing_loc: (1,18)-(1,21) = "end"
             │   │           ├── flags: ∅
-            │   │           └── name: "m"
+            │   │           └── name: :m
             │   ├── opening_loc: (1,7)-(1,8) = "{"
             │   └── closing_loc: (1,22)-(1,23) = "}"
             ├── flags: ∅
-            └── name: "let"
+            └── name: :let

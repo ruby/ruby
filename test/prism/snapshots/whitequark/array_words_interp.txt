@@ -28,7 +28,7 @@
         │   │       │       │           ├── closing_loc: ∅
         │   │       │       │           ├── block: ∅
         │   │       │       │           ├── flags: variable_call
-        │   │       │       │           └── name: "bar"
+        │   │       │       │           └── name: :bar
         │   │       │       └── closing_loc: (1,12)-(1,13) = "}"
         │   │       └── closing_loc: ∅
         │   ├── opening_loc: (1,0)-(1,3) = "%W["
@@ -58,7 +58,7 @@
             │       │   │   │           ├── closing_loc: ∅
             │       │   │   │           ├── block: ∅
             │       │   │   │           ├── flags: variable_call
-            │       │   │   │           └── name: "bar"
+            │       │   │   │           └── name: :bar
             │       │   │   └── closing_loc: (3,12)-(3,13) = "}"
             │       │   ├── @ StringNode (location: (3,13)-(3,16))
             │       │   │   ├── flags: ∅

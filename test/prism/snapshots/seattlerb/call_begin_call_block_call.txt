@@ -27,7 +27,7 @@
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
             │           │           │   ├── flags: variable_call
-            │           │           │   └── name: "b"
+            │           │           │   └── name: :b
             │           │           ├── call_operator_loc: (2,1)-(2,2) = "."
             │           │           ├── message_loc: (2,2)-(2,3) = "c"
             │           │           ├── opening_loc: ∅
@@ -41,7 +41,7 @@
             │           │           │   ├── opening_loc: (2,4)-(2,6) = "do"
             │           │           │   └── closing_loc: (2,7)-(2,10) = "end"
             │           │           ├── flags: ∅
-            │           │           └── name: "c"
+            │           │           └── name: :c
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅
@@ -49,4 +49,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "a"
+            └── name: :a

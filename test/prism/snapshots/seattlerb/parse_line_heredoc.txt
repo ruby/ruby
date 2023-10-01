@@ -23,7 +23,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "strip"
+        │   │   └── name: :strip
         │   └── operator_loc: (1,13)-(1,14) = "="
         └── @ CallNode (location: (4,6)-(4,17))
             ├── receiver: ∅
@@ -39,4 +39,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "puts"
+            └── name: :puts

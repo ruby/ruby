@@ -24,7 +24,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ IfNode (location: (4,0)-(6,3))
@@ -94,7 +94,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
@@ -130,7 +130,7 @@
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   ├── block: ∅
         │   │           │           │   ├── flags: variable_call
-        │   │           │           │   └── name: "bar"
+        │   │           │           │   └── name: :bar
         │   │           │           └── operator_loc: (22,6)-(22,7) = "="
         │   │           ├── consequent: ∅
         │   │           └── end_keyword_loc: ∅
@@ -168,7 +168,7 @@
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   ├── block: ∅
         │   │           │           │   ├── flags: variable_call
-        │   │           │           │   └── name: "bar"
+        │   │           │           │   └── name: :bar
         │   │           │           └── operator_loc: (26,6)-(26,7) = "="
         │   │           ├── consequent: ∅
         │   │           └── end_keyword_loc: ∅
@@ -186,7 +186,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── statements:
         │   │   @ StatementsNode (location: (29,2)-(29,11))
         │   │   └── body: (length: 1)
@@ -204,7 +204,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "bar"
+        │   │           │   └── name: :bar
         │   │           └── operator_loc: (29,6)-(29,7) = "="
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
@@ -246,7 +246,7 @@
             │   │   ├── opening_loc: (31,7)-(31,8) = "{"
             │   │   └── closing_loc: (33,0)-(33,1) = "}"
             │   ├── flags: ∅
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── statements:
             │   @ StatementsNode (location: (34,2)-(35,5))
             │   └── body: (length: 2)

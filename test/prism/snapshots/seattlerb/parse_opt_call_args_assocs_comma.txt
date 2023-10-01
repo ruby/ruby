@@ -26,4 +26,4 @@
             ├── closing_loc: (1,7)-(1,8) = "]"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "[]"
+            └── name: :[]

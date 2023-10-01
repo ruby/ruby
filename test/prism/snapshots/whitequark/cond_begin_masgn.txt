@@ -19,7 +19,7 @@
             │   │       │   ├── closing_loc: ∅
             │   │       │   ├── block: ∅
             │   │       │   ├── flags: variable_call
-            │   │       │   └── name: "bar"
+            │   │       │   └── name: :bar
             │   │       └── @ MultiWriteNode (location: (1,9)-(1,19))
             │   │           ├── targets: (length: 2)
             │   │           │   ├── @ LocalVariableTargetNode (location: (1,9)-(1,10))
@@ -41,7 +41,7 @@
             │   │               ├── closing_loc: ∅
             │   │               ├── block: ∅
             │   │               ├── flags: variable_call
-            │   │               └── name: "foo"
+            │   │               └── name: :foo
             │   ├── opening_loc: (1,3)-(1,4) = "("
             │   └── closing_loc: (1,19)-(1,20) = ")"
             ├── statements: ∅

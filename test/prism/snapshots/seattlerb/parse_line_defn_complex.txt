@@ -35,7 +35,7 @@
             │       │   ├── closing_loc: (2,5)-(2,6) = ")"
             │       │   ├── block: ∅
             │       │   ├── flags: ∅
-            │       │   └── name: "p"
+            │       │   └── name: :p
             │       ├── @ LocalVariableOperatorWriteNode (location: (3,2)-(3,8))
             │       │   ├── name_loc: (3,2)-(3,3) = "y"
             │       │   ├── operator_loc: (3,4)-(3,6) = "*="

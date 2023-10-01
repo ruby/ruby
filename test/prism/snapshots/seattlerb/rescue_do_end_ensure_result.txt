@@ -45,7 +45,7 @@
             │   │   ├── opening_loc: (1,5)-(1,7) = "do"
             │   │   └── closing_loc: (5,0)-(5,3) = "end"
             │   ├── flags: ∅
-            │   └── name: "proc"
+            │   └── name: :proc
             ├── call_operator_loc: (5,3)-(5,4) = "."
             ├── message_loc: (5,4)-(5,8) = "call"
             ├── opening_loc: ∅
@@ -53,4 +53,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "call"
+            └── name: :call

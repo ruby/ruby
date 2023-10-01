@@ -26,7 +26,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "assert"
+        │   └── name: :assert
         ├── @ CallNode (location: (3,0)-(3,11))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -44,11 +44,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "dogs"
+        │   │           └── name: :dogs
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "assert"
+        │   └── name: :assert
         └── @ CallNode (location: (5,0)-(5,26))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -91,9 +91,9 @@
             │                   │               │   ├── opening_loc: (5,16)-(5,18) = "do"
             │                   │               │   └── closing_loc: (5,19)-(5,22) = "end"
             │                   │               ├── flags: ∅
-            │                   │               └── name: "meth"
+            │                   │               └── name: :meth
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

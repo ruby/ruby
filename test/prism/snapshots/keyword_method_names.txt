@@ -61,7 +61,7 @@
         │   │           │           │   ├── opening_loc: (8,6)-(8,8) = "do"
         │   │           │           │   └── closing_loc: (9,2)-(9,5) = "end"
         │   │           │           ├── flags: ∅
-        │   │           │           └── name: "bar"
+        │   │           │           └── name: :bar
         │   │           ├── locals: []
         │   │           ├── def_keyword_loc: (7,8)-(7,11) = "def"
         │   │           ├── operator_loc: ∅
@@ -72,7 +72,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "private"
+        │   └── name: :private
         ├── @ DefNode (location: (12,0)-(13,3))
         │   ├── name: :m
         │   ├── name_loc: (12,4)-(12,5) = "m"

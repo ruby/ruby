@@ -22,7 +22,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "f"
+            │   └── name: :f
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (1,9)-(1,12) = "end"

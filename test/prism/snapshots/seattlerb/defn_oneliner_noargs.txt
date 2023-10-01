@@ -20,7 +20,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "system"
+            │           └── name: :system
             ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

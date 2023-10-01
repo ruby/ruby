@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── right: ∅
             ├── operator_loc: (1,1)-(1,4) = "..."
             └── flags: exclude_end

@@ -16,7 +16,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "b"
+        │   └── name: :b
         └── @ CallNode (location: (3,0)-(3,4))
             ├── receiver:
             │   @ ArrayNode (location: (3,0)-(3,2))
@@ -30,4 +30,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "b"
+            └── name: :b

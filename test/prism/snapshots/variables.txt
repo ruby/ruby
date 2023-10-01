@@ -64,7 +64,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ LocalVariableWriteNode (location: (19,0)-(19,7))
         │   ├── name: :abc
         │   ├── depth: 0
@@ -297,7 +297,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
-            │       │   └── name: "a"
+            │       │   └── name: :a
             │       ├── @ CallNode (location: (45,4)-(45,5))
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
@@ -307,7 +307,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
-            │       │   └── name: "b"
+            │       │   └── name: :b
             │       └── @ CallNode (location: (45,7)-(45,8))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
@@ -317,6 +317,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "c"
+            │           └── name: :c
             ├── opening_loc: (45,0)-(45,1) = "("
             └── closing_loc: (45,8)-(45,9) = ")"

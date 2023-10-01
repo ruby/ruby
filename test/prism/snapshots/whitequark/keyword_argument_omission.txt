@@ -32,7 +32,7 @@
             │               │   │       ├── closing_loc: ∅
             │               │   │       ├── block: ∅
             │               │   │       ├── flags: ∅
-            │               │   │       └── name: "a"
+            │               │   │       └── name: :a
             │               │   └── operator_loc: ∅
             │               └── @ AssocNode (location: (1,8)-(1,10))
             │                   ├── key:
@@ -53,9 +53,9 @@
             │                   │       ├── closing_loc: ∅
             │                   │       ├── block: ∅
             │                   │       ├── flags: ∅
-            │                   │       └── name: "b"
+            │                   │       └── name: :b
             │                   └── operator_loc: ∅
             ├── closing_loc: (1,10)-(1,11) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "foo"
+            └── name: :foo

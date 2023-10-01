@@ -28,8 +28,8 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "to_i"
+            │           └── name: :to_i
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "fun"
+            └── name: :fun

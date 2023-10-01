@@ -129,7 +129,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "exit_loop"
+        │   │   └── name: :exit_loop
         │   ├── statements:
         │   │   @ StatementsNode (location: (16,18)-(16,26))
         │   │   └── body: (length: 1)
@@ -154,7 +154,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── statements:
         │   │   @ StatementsNode (location: (19,5)-(19,8))
         │   │   └── body: (length: 1)
@@ -167,7 +167,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (20,0)-(20,3) = "end"
         ├── @ IfNode (location: (22,0)-(22,11))
@@ -182,7 +182,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "c"
+        │   │   └── name: :c
         │   ├── statements:
         │   │   @ StatementsNode (location: (22,0)-(22,6))
         │   │   └── body: (length: 1)
@@ -198,7 +198,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "b"
+        │   │           │   └── name: :b
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (22,0)-(22,1))
         │   │           │   └── body: (length: 1)
@@ -211,7 +211,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: variable_call
-        │   │           │           └── name: "a"
+        │   │           │           └── name: :a
         │   │           ├── consequent: ∅
         │   │           └── end_keyword_loc: ∅
         │   ├── consequent: ∅
@@ -252,12 +252,12 @@
         │   │           │                   │       ├── closing_loc: ∅
         │   │           │                   │       ├── block: ∅
         │   │           │                   │       ├── flags: ∅
-        │   │           │                   │       └── name: "b"
+        │   │           │                   │       └── name: :b
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── consequent:
         │   │   @ ElseNode (location: (26,0)-(27,3))
         │   │   ├── else_keyword_loc: (26,0)-(26,4) = "else"
@@ -278,7 +278,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "type"
+        │   │   │   └── name: :type
         │   │   ├── pattern:
         │   │   │   @ IntegerNode (location: (29,11)-(29,12))
         │   │   │   └── flags: decimal
@@ -299,7 +299,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "type"
+        │   │   │   │   └── name: :type
         │   │   │   ├── pattern:
         │   │   │   │   @ ConstantReadNode (location: (30,14)-(30,15))
         │   │   │   │   └── name: :B
@@ -346,7 +346,7 @@
             │           │   ├── opening_loc: (34,9)-(34,11) = "do"
             │           │   └── closing_loc: (35,2)-(35,5) = "end"
             │           ├── flags: ∅
-            │           └── name: "lambda"
+            │           └── name: :lambda
             ├── consequent:
             │   @ IfNode (location: (36,0)-(42,3))
             │   ├── if_keyword_loc: (36,0)-(36,5) = "elsif"
@@ -386,7 +386,7 @@
             │   │           │   ├── opening_loc: (37,9)-(37,11) = "do"
             │   │           │   └── closing_loc: (38,2)-(38,5) = "end"
             │   │           ├── flags: ∅
-            │   │           └── name: "lambda"
+            │   │           └── name: :lambda
             │   ├── consequent:
             │   │   @ ElseNode (location: (39,0)-(42,3))
             │   │   ├── else_keyword_loc: (39,0)-(39,4) = "else"
@@ -423,7 +423,7 @@
             │   │   │           │   ├── opening_loc: (40,9)-(40,11) = "do"
             │   │   │           │   └── closing_loc: (41,2)-(41,5) = "end"
             │   │   │           ├── flags: ∅
-            │   │   │           └── name: "lambda"
+            │   │   │           └── name: :lambda
             │   │   └── end_keyword_loc: (42,0)-(42,3) = "end"
             │   └── end_keyword_loc: (42,0)-(42,3) = "end"
             └── end_keyword_loc: (42,0)-(42,3) = "end"
