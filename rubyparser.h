@@ -453,7 +453,6 @@ typedef struct RNode_OP_CDECL {
     ID nd_aid;
 } rb_node_op_cdecl_t;
 
-/* RNode_CALL, RNode_OPCALL and RNode_QCALL should be same structure */
 typedef struct RNode_CALL {
     NODE node;
 
@@ -473,7 +472,6 @@ typedef struct RNode_OPCALL {
 typedef struct RNode_FCALL {
     NODE node;
 
-    VALUE not_used;
     ID nd_mid;
     struct RNode *nd_args;
 } rb_node_fcall_t;
@@ -481,9 +479,7 @@ typedef struct RNode_FCALL {
 typedef struct RNode_VCALL {
     NODE node;
 
-    VALUE not_used;
     ID nd_mid;
-    VALUE not_used2;
 } rb_node_vcall_t;
 
 typedef struct RNode_QCALL {
@@ -497,17 +493,11 @@ typedef struct RNode_QCALL {
 typedef struct RNode_SUPER {
     NODE node;
 
-    VALUE not_used;
-    VALUE not_used2;
     struct RNode *nd_args;
 } rb_node_super_t;
 
 typedef struct RNode_ZSUPER {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_zsuper_t;
 
 /*

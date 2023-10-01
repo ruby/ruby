@@ -11472,8 +11472,6 @@ static rb_node_super_t *
 rb_node_super_new(struct parser_params *p, NODE *nd_args, const YYLTYPE *loc)
 {
     rb_node_super_t *n = NODE_NEWNODE(NODE_SUPER, rb_node_super_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
     n->nd_args = nd_args;
 
     return n;
@@ -11483,9 +11481,6 @@ static rb_node_zsuper_t *
 rb_node_zsuper_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_zsuper_t *n = NODE_NEWNODE(NODE_ZSUPER, rb_node_zsuper_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
-    n->not_used3 = 0;
 
     return n;
 }
@@ -11860,7 +11855,6 @@ static rb_node_fcall_t *
 rb_node_fcall_new(struct parser_params *p, ID nd_mid, NODE *nd_args, const YYLTYPE *loc)
 {
     rb_node_fcall_t *n = NODE_NEWNODE(NODE_FCALL, rb_node_fcall_t, loc);
-    n->not_used = 0;
     n->nd_mid = nd_mid;
     n->nd_args = nd_args;
 
@@ -11882,9 +11876,7 @@ static rb_node_vcall_t *
 rb_node_vcall_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc)
 {
     rb_node_vcall_t *n = NODE_NEWNODE(NODE_VCALL, rb_node_vcall_t, loc);
-    n->not_used = 0;
     n->nd_mid = nd_mid;
-    n->not_used2 = 0;
 
     return n;
 }
