@@ -1360,30 +1360,107 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_unicode_age
-    assert_match(/^\p{Age=6.0}$/u, "\u261c")
-    assert_match(/^\p{Age=1.1}$/u, "\u261c")
-    assert_no_match(/^\P{age=6.0}$/u, "\u261c")
+    assert_unicode_age("\u261c", %w"6.0 1.1", [])
 
-    assert_match(/^\p{age=6.0}$/u, "\u31f6")
-    assert_match(/^\p{age=3.2}$/u, "\u31f6")
-    assert_no_match(/^\p{age=3.1}$/u, "\u31f6")
-    assert_no_match(/^\p{age=3.0}$/u, "\u31f6")
-    assert_no_match(/^\p{age=1.1}$/u, "\u31f6")
+    assert_unicode_age("\u31f6", %w"6.0 3.2", %w"3.1 3.0 1.1")
+    assert_unicode_age("\u2754", %w"6.0", %w"5.0 4.0 3.0 2.0 1.1")
 
-    assert_match(/^\p{age=6.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=5.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=4.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=3.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=2.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+    assert_unicode_age("\u32FF", %w"12.1", %w"12.0")
+  end
 
-    assert_no_match(/^\p{age=12.0}$/u, "\u32FF")
-    assert_match(/^\p{age=12.1}$/u, "\u32FF")
-    assert_no_match(/^\p{age=13.0}$/u, "\u{10570}")
-    assert_match(/^\p{age=14.0}$/u, "\u{10570}")
-    assert_match(/^\p{age=14.0}$/u, "\u9FFF")
-    assert_match(/^\p{age=14.0}$/u, "\u{2A6DF}")
-    assert_match(/^\p{age=14.0}$/u, "\u{2B738}")
+  def test_unicode_age_14_0
+    matches = %w"14.0"
+    unmatches = %w"13.0"
+    assert_unicode_age("\u{10570}", matches, unmatches)
+    assert_unicode_age("\u9FFF", matches, unmatches)
+    assert_unicode_age("\u{2A6DF}", matches, unmatches)
+    assert_unicode_age("\u{2B738}", matches, unmatches)
+  end
+
+  def test_unicode_age_15_0
+    matches = %w"15.0"
+    unmatches = %w"14.0"
+    assert_unicode_age("\u{0CF3}", matches, unmatches,
+                       "KANNADA SIGN COMBINING ANUSVARA ABOVE RIGHT")
+    assert_unicode_age("\u{0ECE}", matches, unmatches, "LAO YAMAKKAN")
+    assert_unicode_age("\u{10EFD}".."\u{10EFF}", matches, unmatches,
+                       "ARABIC SMALL LOW WORD SAKTA..ARABIC SMALL LOW WORD MADDA")
+    assert_unicode_age("\u{1123F}".."\u{11241}", matches, unmatches,
+                       "KHOJKI LETTER QA..KHOJKI VOWEL SIGN VOCALIC R")
+    assert_unicode_age("\u{11B00}".."\u{11B09}", matches, unmatches,
+                       "DEVANAGARI HEAD MARK..DEVANAGARI SIGN MINDU")
+    assert_unicode_age("\u{11F00}".."\u{11F10}", matches, unmatches,
+                       "KAWI SIGN CANDRABINDU..KAWI LETTER O")
+    assert_unicode_age("\u{11F12}".."\u{11F3A}", matches, unmatches,
+                       "KAWI LETTER KA..KAWI VOWEL SIGN VOCALIC R")
+    assert_unicode_age("\u{11F3E}".."\u{11F59}", matches, unmatches,
+                       "KAWI VOWEL SIGN E..KAWI DIGIT NINE")
+    assert_unicode_age("\u{1342F}", matches, unmatches,
+                       "EGYPTIAN HIEROGLYPH V011D")
+    assert_unicode_age("\u{13439}".."\u{1343F}", matches, unmatches,
+                       "EGYPTIAN HIEROGLYPH INSERT AT MIDDLE..EGYPTIAN HIEROGLYPH END WALLED ENCLOSURE")
+    assert_unicode_age("\u{13440}".."\u{13455}", matches, unmatches,
+                       "EGYPTIAN HIEROGLYPH MIRROR HORIZONTALLY..EGYPTIAN HIEROGLYPH MODIFIER DAMAGED")
+    assert_unicode_age("\u{1B132}", matches, unmatches, "HIRAGANA LETTER SMALL KO")
+    assert_unicode_age("\u{1B155}", matches, unmatches, "KATAKANA LETTER SMALL KO")
+    assert_unicode_age("\u{1D2C0}".."\u{1D2D3}", matches, unmatches,
+                       "KAKTOVIK NUMERAL ZERO..KAKTOVIK NUMERAL NINETEEN")
+    assert_unicode_age("\u{1DF25}".."\u{1DF2A}", matches, unmatches,
+                       "LATIN SMALL LETTER D WITH MID-HEIGHT LEFT HOOK..LATIN SMALL LETTER T WITH MID-HEIGHT LEFT HOOK")
+    assert_unicode_age("\u{1E030}".."\u{1E06D}", matches, unmatches,
+                       "MODIFIER LETTER CYRILLIC SMALL A..MODIFIER LETTER CYRILLIC SMALL STRAIGHT U WITH STROKE")
+    assert_unicode_age("\u{1E08F}", matches, unmatches,
+                       "COMBINING CYRILLIC SMALL LETTER BYELORUSSIAN-UKRAINIAN I")
+    assert_unicode_age("\u{1E4D0}".."\u{1E4F9}", matches, unmatches,
+                       "NAG MUNDARI LETTER O..NAG MUNDARI DIGIT NINE")
+    assert_unicode_age("\u{1F6DC}", matches, unmatches, "WIRELESS")
+    assert_unicode_age("\u{1F774}".."\u{1F776}", matches, unmatches,
+                       "LOT OF FORTUNE..LUNAR ECLIPSE")
+    assert_unicode_age("\u{1F77B}".."\u{1F77F}", matches, unmatches,
+                       "HAUMEA..ORCUS")
+    assert_unicode_age("\u{1F7D9}", matches, unmatches, "NINE POINTED WHITE STAR")
+    assert_unicode_age("\u{1FA75}".."\u{1FA77}", matches, unmatches,
+                       "LIGHT BLUE HEART..PINK HEART")
+    assert_unicode_age("\u{1FA87}".."\u{1FA88}", matches, unmatches,
+                       "MARACAS..FLUTE")
+    assert_unicode_age("\u{1FAAD}".."\u{1FAAF}", matches, unmatches,
+                       "FOLDING HAND FAN..KHANDA")
+    assert_unicode_age("\u{1FABB}".."\u{1FABD}", matches, unmatches,
+                       "HYACINTH..WING")
+    assert_unicode_age("\u{1FABF}", matches, unmatches, "GOOSE")
+    assert_unicode_age("\u{1FACE}".."\u{1FACF}", matches, unmatches,
+                       "MOOSE..DONKEY")
+    assert_unicode_age("\u{1FADA}".."\u{1FADB}", matches, unmatches,
+                       "GINGER ROOT..PEA POD")
+    assert_unicode_age("\u{1FAE8}", matches, unmatches, "SHAKING FACE")
+    assert_unicode_age("\u{1FAF7}".."\u{1FAF8}", matches, unmatches,
+                       "LEFTWARDS PUSHING HAND..RIGHTWARDS PUSHING HAND")
+    assert_unicode_age("\u{2B739}", matches, unmatches,
+                       "CJK UNIFIED IDEOGRAPH-2B739")
+    assert_unicode_age("\u{31350}".."\u{323AF}", matches, unmatches,
+                       "CJK UNIFIED IDEOGRAPH-31350..CJK UNIFIED IDEOGRAPH-323AF")
+  end
+
+  UnicodeAgeRegexps = Hash.new do |h, age|
+    h[age] = [/\A\p{age=#{age}}+\z/u, /\A\P{age=#{age}}+\z/u].freeze
+  end
+
+  def assert_unicode_age(char, matches, unmatches, mesg = nil)
+    if Range === char
+      char = char.to_a.join("")
+    end
+
+    matches.each do |age|
+      pos, neg = UnicodeAgeRegexps[age]
+      assert_match(pos, char, mesg)
+      assert_not_match(neg, char, mesg)
+    end
+
+    unmatches.each do |age|
+      pos, neg = UnicodeAgeRegexps[age]
+      assert_not_match(pos, char, mesg)
+      assert_match(neg, char, mesg)
+    end
   end
 
   MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
