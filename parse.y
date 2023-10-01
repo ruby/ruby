@@ -1818,15 +1818,15 @@ get_nd_args(struct parser_params *p, NODE *node)
 %define parse.error verbose
 %printer {
 #ifndef RIPPER
-    if ($$ == (NODE *)-1) {
+    if ((NODE *)$$ == (NODE *)-1) {
         rb_parser_printf(p, "NODE_SPECIAL");
     }
     else if ($$) {
-        rb_parser_printf(p, "%s", ruby_node_name(nd_type($$)));
+        rb_parser_printf(p, "%s", ruby_node_name(nd_type(RNODE($$))));
     }
 #else
 #endif
-} <node>
+} <node> <node_fcall> <node_args> <node_args_aux> <node_opt_arg> <node_kw_arg> <node_block_pass>
 %printer {
 #ifndef RIPPER
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str($$));
