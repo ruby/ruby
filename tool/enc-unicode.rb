@@ -166,7 +166,7 @@ def parse_scripts(data, categories)
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
         cps = []
-      elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
+      elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w+)/ =~ line
         current = $3
         $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
       end
@@ -221,7 +221,7 @@ def parse_age(data)
       ages << current
       last_constname = constname
       cps = []
-    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
+    elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\d+\.\d+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end
@@ -240,7 +240,7 @@ def parse_GraphemeBreakProperty(data)
       make_const(constname, cps, "Grapheme_Cluster_Break=#{current}")
       ages << current
       cps = []
-    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
+    elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end
@@ -252,7 +252,7 @@ def parse_block(data)
   cps = []
   blocks = []
   data_foreach('Blocks.txt') do |line|
-    if /^([0-9a-fA-F]+)\.\.([0-9a-fA-F]+);\s*(.*)/ =~ line
+    if /^(\h+)\.\.(\h+);\s*(.*)/ =~ line
       cps = ($1.to_i(16)..$2.to_i(16)).to_a
       constname = constantize_blockname($3)
       data[constname] = cps
