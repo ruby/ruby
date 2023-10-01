@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 2)
         │   │   ├── @ InNode (location: (2,0)-(4,4))
         │   │   │   ├── pattern:
@@ -80,7 +80,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "obj"
+        │   │   └── name: :obj
         │   ├── call_operator_loc: (10,3)-(10,4) = "."
         │   ├── message_loc: (10,4)-(10,7) = "set"
         │   ├── opening_loc: ∅
@@ -103,7 +103,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "set"
+        │   └── name: :set
         └── @ CallNode (location: (13,0)-(14,1))
             ├── receiver:
             │   @ CallNode (location: (13,0)-(13,3))
@@ -115,7 +115,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "obj"
+            │   └── name: :obj
             ├── call_operator_loc: (13,3)-(13,4) = "."
             ├── message_loc: (13,4)-(13,7) = "set"
             ├── opening_loc: ∅
@@ -138,4 +138,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "set"
+            └── name: :set

@@ -42,7 +42,7 @@
         │   │   │   │       ├── closing_loc: ∅
         │   │   │   │       ├── block: ∅
         │   │   │   │       ├── flags: ∅
-        │   │   │   │       └── name: "a"
+        │   │   │   │       └── name: :a
         │   │   │   └── operator_loc: ∅
         │   │   └── @ AssocNode (location: (3,5)-(3,7))
         │   │       ├── key:
@@ -63,7 +63,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: ∅
-        │   │       │       └── name: "b"
+        │   │       │       └── name: :b
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (3,7)-(3,8) = "}"
         └── @ HashNode (location: (5,0)-(5,7))
@@ -88,6 +88,6 @@
             │       │       ├── closing_loc: ∅
             │       │       ├── block: ∅
             │       │       ├── flags: ∅
-            │       │       └── name: "puts"
+            │       │       └── name: :puts
             │       └── operator_loc: ∅
             └── closing_loc: (5,6)-(5,7) = "}"

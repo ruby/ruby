@@ -20,7 +20,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         └── @ CallNode (location: (1,8)-(1,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -30,4 +30,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: variable_call
-            └── name: "b"
+            └── name: :b

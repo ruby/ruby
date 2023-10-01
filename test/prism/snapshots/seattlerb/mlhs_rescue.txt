@@ -26,7 +26,7 @@
                 │   ├── closing_loc: ∅
                 │   ├── block: ∅
                 │   ├── flags: variable_call
-                │   └── name: "f"
+                │   └── name: :f
                 ├── keyword_loc: (1,9)-(1,15) = "rescue"
                 └── rescue_expression:
                     @ IntegerNode (location: (1,16)-(1,18))

@@ -22,7 +22,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
-            │   │   └── name: "blk"
+            │   │   └── name: :blk
             │   └── operator_loc: (1,2)-(1,3) = "&"
             ├── flags: ∅
-            └── name: "x"
+            └── name: :x

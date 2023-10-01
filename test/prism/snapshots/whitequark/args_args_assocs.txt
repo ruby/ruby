@@ -20,7 +20,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "foo"
+        │   │       │   └── name: :foo
         │   │       └── @ KeywordHashNode (location: (1,9)-(1,18))
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,9)-(1,18))
@@ -37,7 +37,7 @@
         │   ├── closing_loc: (1,18)-(1,19) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "fun"
+        │   └── name: :fun
         └── @ CallNode (location: (3,0)-(3,24))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -55,7 +55,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
-            │       │   └── name: "foo"
+            │       │   └── name: :foo
             │       └── @ KeywordHashNode (location: (3,9)-(3,18))
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (3,9)-(3,18))
@@ -82,7 +82,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
-            │   │   └── name: "baz"
+            │   │   └── name: :baz
             │   └── operator_loc: (3,20)-(3,21) = "&"
             ├── flags: ∅
-            └── name: "fun"
+            └── name: :fun

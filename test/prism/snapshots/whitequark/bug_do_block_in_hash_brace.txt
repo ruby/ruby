@@ -42,7 +42,7 @@
         │   │           │   │   │   │   ├── opening_loc: (1,19)-(1,21) = "do"
         │   │           │   │   │   │   └── closing_loc: (1,22)-(1,25) = "end"
         │   │           │   │   │   ├── flags: ∅
-        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   │   └── name: :proc
         │   │           │   │   └── operator_loc: ∅
         │   │           │   └── @ AssocNode (location: (1,27)-(1,41))
         │   │           │       ├── key:
@@ -67,13 +67,13 @@
         │   │           │       │   │   ├── opening_loc: (1,35)-(1,37) = "do"
         │   │           │       │   │   └── closing_loc: (1,38)-(1,41) = "end"
         │   │           │       │   ├── flags: ∅
-        │   │           │       │   └── name: "proc"
+        │   │           │       │   └── name: :proc
         │   │           │       └── operator_loc: ∅
         │   │           └── closing_loc: (1,41)-(1,42) = "}"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "p"
+        │   └── name: :p
         ├── @ CallNode (location: (3,0)-(3,40))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -107,7 +107,7 @@
         │   │           │   │   │   │   ├── opening_loc: (3,17)-(3,19) = "do"
         │   │           │   │   │   │   └── closing_loc: (3,20)-(3,23) = "end"
         │   │           │   │   │   ├── flags: ∅
-        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   │   └── name: :proc
         │   │           │   │   └── operator_loc: (3,9)-(3,11) = "**"
         │   │           │   └── @ AssocNode (location: (3,25)-(3,39))
         │   │           │       ├── key:
@@ -132,13 +132,13 @@
         │   │           │       │   │   ├── opening_loc: (3,33)-(3,35) = "do"
         │   │           │       │   │   └── closing_loc: (3,36)-(3,39) = "end"
         │   │           │       │   ├── flags: ∅
-        │   │           │       │   └── name: "proc"
+        │   │           │       │   └── name: :proc
         │   │           │       └── operator_loc: ∅
         │   │           └── closing_loc: (3,39)-(3,40) = "}"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "p"
+        │   └── name: :p
         ├── @ CallNode (location: (5,0)-(5,43))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -178,7 +178,7 @@
         │   │           │   │   │   │   ├── opening_loc: (5,20)-(5,22) = "do"
         │   │           │   │   │   │   └── closing_loc: (5,23)-(5,26) = "end"
         │   │           │   │   │   ├── flags: ∅
-        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   │   └── name: :proc
         │   │           │   │   └── operator_loc: (5,12)-(5,14) = "=>"
         │   │           │   └── @ AssocNode (location: (5,28)-(5,42))
         │   │           │       ├── key:
@@ -203,13 +203,13 @@
         │   │           │       │   │   ├── opening_loc: (5,36)-(5,38) = "do"
         │   │           │       │   │   └── closing_loc: (5,39)-(5,42) = "end"
         │   │           │       │   ├── flags: ∅
-        │   │           │       │   └── name: "proc"
+        │   │           │       │   └── name: :proc
         │   │           │       └── operator_loc: ∅
         │   │           └── closing_loc: (5,42)-(5,43) = "}"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "p"
+        │   └── name: :p
         ├── @ CallNode (location: (7,0)-(7,40))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -249,7 +249,7 @@
         │   │           │   │   │   │   ├── opening_loc: (7,17)-(7,19) = "do"
         │   │           │   │   │   │   └── closing_loc: (7,20)-(7,23) = "end"
         │   │           │   │   │   ├── flags: ∅
-        │   │           │   │   │   └── name: "proc"
+        │   │           │   │   │   └── name: :proc
         │   │           │   │   └── operator_loc: ∅
         │   │           │   └── @ AssocNode (location: (7,25)-(7,39))
         │   │           │       ├── key:
@@ -274,13 +274,13 @@
         │   │           │       │   │   ├── opening_loc: (7,33)-(7,35) = "do"
         │   │           │       │   │   └── closing_loc: (7,36)-(7,39) = "end"
         │   │           │       │   ├── flags: ∅
-        │   │           │       │   └── name: "proc"
+        │   │           │       │   └── name: :proc
         │   │           │       └── operator_loc: ∅
         │   │           └── closing_loc: (7,39)-(7,40) = "}"
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "p"
+        │   └── name: :p
         └── @ CallNode (location: (9,0)-(9,52))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -314,7 +314,7 @@
             │           │   │   │   │   ├── opening_loc: (9,14)-(9,16) = "do"
             │           │   │   │   │   └── closing_loc: (9,17)-(9,20) = "end"
             │           │   │   │   ├── flags: ∅
-            │           │   │   │   └── name: "proc"
+            │           │   │   │   └── name: :proc
             │           │   │   ├── value:
             │           │   │   │   @ CallNode (location: (9,24)-(9,35))
             │           │   │   │   ├── receiver: ∅
@@ -331,7 +331,7 @@
             │           │   │   │   │   ├── opening_loc: (9,29)-(9,31) = "do"
             │           │   │   │   │   └── closing_loc: (9,32)-(9,35) = "end"
             │           │   │   │   ├── flags: ∅
-            │           │   │   │   └── name: "proc"
+            │           │   │   │   └── name: :proc
             │           │   │   └── operator_loc: (9,21)-(9,23) = "=>"
             │           │   └── @ AssocNode (location: (9,37)-(9,51))
             │           │       ├── key:
@@ -356,10 +356,10 @@
             │           │       │   │   ├── opening_loc: (9,45)-(9,47) = "do"
             │           │       │   │   └── closing_loc: (9,48)-(9,51) = "end"
             │           │       │   ├── flags: ∅
-            │           │       │   └── name: "proc"
+            │           │       │   └── name: :proc
             │           │       └── operator_loc: ∅
             │           └── closing_loc: (9,51)-(9,52) = "}"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "p"
+            └── name: :p

@@ -23,7 +23,7 @@
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
             │   │   │   ├── flags: ∅
-            │   │   │   └── name: "+"
+            │   │   │   └── name: :+
             │   │   └── @ SourceEncodingNode (location: (1,38)-(1,50))
             │   ├── opening_loc: (1,13)-(1,14) = "["
             │   └── closing_loc: (1,50)-(1,51) = "]"

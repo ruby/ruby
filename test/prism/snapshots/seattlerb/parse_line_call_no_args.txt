@@ -51,8 +51,8 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "+"
+            │   │           └── name: :+
             │   ├── opening_loc: (1,2)-(1,4) = "do"
             │   └── closing_loc: (3,0)-(3,3) = "end"
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

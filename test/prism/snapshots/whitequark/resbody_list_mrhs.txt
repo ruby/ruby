@@ -17,7 +17,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "meth"
+            │           └── name: :meth
             ├── rescue_clause:
             │   @ RescueNode (location: (1,13)-(1,39))
             │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
@@ -33,7 +33,7 @@
             │   │       ├── closing_loc: ∅
             │   │       ├── block: ∅
             │   │       ├── flags: variable_call
-            │   │       └── name: "foo"
+            │   │       └── name: :foo
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements:
@@ -48,7 +48,7 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "bar"
+            │   │           └── name: :bar
             │   └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

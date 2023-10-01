@@ -51,11 +51,11 @@
         │   │           ├── closing_loc: (7,6)-(7,7) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "gsub"
+        │   │           └── name: :gsub
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (10,0)-(13,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -89,7 +89,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (16,0)-(19,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -123,7 +123,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (22,0)-(25,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -157,7 +157,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (28,0)-(31,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -191,7 +191,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (35,0)-(38,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -229,7 +229,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (41,0)-(44,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -261,7 +261,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         └── @ CallNode (location: (48,0)-(51,2))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -298,4 +298,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "pp"
+            └── name: :pp

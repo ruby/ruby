@@ -37,7 +37,7 @@
             │           │           │   ├── opening_loc: (1,16)-(1,18) = "do"
             │           │           │   └── closing_loc: (1,21)-(1,24) = "end"
             │           │           ├── flags: ∅
-            │           │           └── name: "times"
+            │           │           └── name: :times
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅
@@ -45,4 +45,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "p"
+            └── name: :p

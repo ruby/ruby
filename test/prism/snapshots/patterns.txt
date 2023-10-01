@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ LocalVariableTargetNode (location: (1,7)-(1,10))
         │   │   ├── name: :bar
@@ -31,7 +31,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ IntegerNode (location: (2,7)-(2,8))
         │   │   └── flags: decimal
@@ -47,7 +47,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FloatNode (location: (3,7)-(3,10))
         │   └── operator_loc: (3,4)-(3,6) = "=>"
@@ -62,7 +62,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ImaginaryNode (location: (4,7)-(4,9))
         │   │   └── numeric:
@@ -80,7 +80,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RationalNode (location: (5,7)-(5,9))
         │   │   └── numeric:
@@ -98,7 +98,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SymbolNode (location: (6,7)-(6,11))
         │   │   ├── opening_loc: (6,7)-(6,8) = ":"
@@ -117,7 +117,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SymbolNode (location: (7,7)-(7,14))
         │   │   ├── opening_loc: (7,7)-(7,10) = "%s["
@@ -136,7 +136,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SymbolNode (location: (8,7)-(8,13))
         │   │   ├── opening_loc: (8,7)-(8,9) = ":\""
@@ -155,7 +155,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RegularExpressionNode (location: (9,7)-(9,12))
         │   │   ├── opening_loc: (9,7)-(9,8) = "/"
@@ -175,7 +175,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ XStringNode (location: (10,7)-(10,12))
         │   │   ├── opening_loc: (10,7)-(10,8) = "`"
@@ -194,7 +194,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ XStringNode (location: (11,7)-(11,14))
         │   │   ├── opening_loc: (11,7)-(11,10) = "%x["
@@ -213,7 +213,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (12,7)-(12,14))
         │   │   ├── elements: (length: 1)
@@ -236,7 +236,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (13,7)-(13,14))
         │   │   ├── elements: (length: 1)
@@ -259,7 +259,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (14,7)-(14,14))
         │   │   ├── elements: (length: 1)
@@ -283,7 +283,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (15,7)-(15,14))
         │   │   ├── elements: (length: 1)
@@ -307,7 +307,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ StringNode (location: (16,7)-(16,14))
         │   │   ├── flags: ∅
@@ -327,7 +327,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ StringNode (location: (17,7)-(17,14))
         │   │   ├── flags: ∅
@@ -347,7 +347,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ StringNode (location: (18,7)-(18,12))
         │   │   ├── flags: ∅
@@ -367,7 +367,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ NilNode (location: (19,7)-(19,10))
         │   └── operator_loc: (19,4)-(19,6) = "=>"
@@ -382,7 +382,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SelfNode (location: (20,7)-(20,11))
         │   └── operator_loc: (20,4)-(20,6) = "=>"
@@ -397,7 +397,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ TrueNode (location: (21,7)-(21,11))
         │   └── operator_loc: (21,4)-(21,6) = "=>"
@@ -412,7 +412,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FalseNode (location: (22,7)-(22,12))
         │   └── operator_loc: (22,4)-(22,6) = "=>"
@@ -427,7 +427,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SourceFileNode (location: (23,7)-(23,15))
         │   │   └── filepath: "patterns.txt"
@@ -443,7 +443,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SourceLineNode (location: (24,7)-(24,15))
         │   └── operator_loc: (24,4)-(24,6) = "=>"
@@ -458,7 +458,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SourceEncodingNode (location: (25,7)-(25,19))
         │   └── operator_loc: (25,4)-(25,6) = "=>"
@@ -473,7 +473,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ LambdaNode (location: (26,7)-(26,17))
         │   │   ├── locals: []
@@ -499,7 +499,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (28,7)-(28,13))
         │   │   ├── left:
@@ -522,7 +522,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (29,7)-(29,17))
         │   │   ├── left:
@@ -543,7 +543,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (30,7)-(30,15))
         │   │   ├── left:
@@ -570,7 +570,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (31,7)-(31,15))
         │   │   ├── left:
@@ -597,7 +597,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (32,7)-(32,19))
         │   │   ├── left:
@@ -626,7 +626,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (33,7)-(33,25))
         │   │   ├── left:
@@ -655,7 +655,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (34,7)-(34,23))
         │   │   ├── left:
@@ -684,7 +684,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (35,7)-(35,21))
         │   │   ├── left:
@@ -715,7 +715,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (36,7)-(36,21))
         │   │   ├── left:
@@ -744,7 +744,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (37,7)-(37,25))
         │   │   ├── left:
@@ -773,7 +773,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (38,7)-(38,25))
         │   │   ├── left:
@@ -810,7 +810,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (39,7)-(39,25))
         │   │   ├── left:
@@ -847,7 +847,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (40,7)-(40,25))
         │   │   ├── left:
@@ -886,7 +886,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (41,7)-(41,25))
         │   │   ├── left:
@@ -925,7 +925,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (42,7)-(42,25))
         │   │   ├── left:
@@ -956,7 +956,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (43,7)-(43,25))
         │   │   ├── left:
@@ -987,7 +987,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (44,7)-(44,21))
         │   │   ├── left:
@@ -1018,7 +1018,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (45,7)-(45,17))
         │   │   ├── left:
@@ -1039,7 +1039,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (46,7)-(46,19))
         │   │   ├── left:
@@ -1060,7 +1060,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (47,7)-(47,19))
         │   │   ├── left:
@@ -1081,7 +1081,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (48,7)-(48,21))
         │   │   ├── left:
@@ -1102,7 +1102,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (49,7)-(49,27))
         │   │   ├── left:
@@ -1125,7 +1125,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (50,7)-(50,27))
         │   │   ├── left:
@@ -1146,7 +1146,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (51,7)-(51,35))
         │   │   ├── left:
@@ -1167,7 +1167,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RangeNode (location: (52,7)-(52,31))
         │   │   ├── left:
@@ -1210,7 +1210,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (54,7)-(54,11))
         │   │   ├── variable:
@@ -1230,7 +1230,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (55,7)-(55,12))
         │   │   ├── variable:
@@ -1249,7 +1249,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (56,7)-(56,13))
         │   │   ├── variable:
@@ -1268,7 +1268,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (57,7)-(57,12))
         │   │   ├── variable:
@@ -1287,7 +1287,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedExpressionNode (location: (59,7)-(59,11))
         │   │   ├── expression:
@@ -1308,7 +1308,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedExpressionNode (location: (60,7)-(60,13))
         │   │   ├── expression:
@@ -1328,7 +1328,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ PinnedExpressionNode (location: (61,7)-(61,23))
         │   │   ├── expression:
@@ -1355,7 +1355,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "+"
+        │   │   │   └── name: :+
         │   │   ├── operator_loc: (61,7)-(61,8) = "^"
         │   │   ├── lparen_loc: (61,8)-(61,9) = "("
         │   │   └── rparen_loc: (61,22)-(61,23) = ")"
@@ -1371,7 +1371,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ConstantReadNode (location: (63,7)-(63,10))
         │   │   └── name: :Foo
@@ -1387,7 +1387,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (64,7)-(64,20))
         │   │   ├── parent:
@@ -1415,7 +1415,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (65,7)-(65,12))
         │   │   ├── parent: ∅
@@ -1435,7 +1435,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (66,7)-(66,22))
         │   │   ├── parent:
@@ -1467,7 +1467,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (68,7)-(68,12))
         │   │   ├── constant:
@@ -1490,7 +1490,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (69,7)-(69,13))
         │   │   ├── constant:
@@ -1515,7 +1515,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (70,7)-(70,19))
         │   │   ├── constant:
@@ -1544,7 +1544,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (71,7)-(71,15))
         │   │   ├── constant:
@@ -1570,7 +1570,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (72,7)-(72,21))
         │   │   ├── constant:
@@ -1602,7 +1602,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (73,7)-(73,21))
         │   │   ├── constant:
@@ -1634,7 +1634,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (74,7)-(74,27))
         │   │   ├── constant:
@@ -1672,7 +1672,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (76,7)-(76,12))
         │   │   ├── constant:
@@ -1695,7 +1695,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (77,7)-(77,13))
         │   │   ├── constant:
@@ -1720,7 +1720,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (78,7)-(78,19))
         │   │   ├── constant:
@@ -1749,7 +1749,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (79,7)-(79,17))
         │   │   ├── constant:
@@ -1781,7 +1781,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (80,7)-(80,15))
         │   │   ├── constant:
@@ -1807,7 +1807,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (81,7)-(81,21))
         │   │   ├── constant:
@@ -1839,7 +1839,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (82,7)-(82,21))
         │   │   ├── constant:
@@ -1871,7 +1871,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (83,7)-(83,27))
         │   │   ├── constant:
@@ -1909,7 +1909,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (85,7)-(85,11))
         │   │   ├── constant: ∅
@@ -1936,7 +1936,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (86,7)-(86,21))
         │   │   ├── constant: ∅
@@ -1969,7 +1969,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (87,7)-(87,21))
         │   │   ├── constant: ∅
@@ -2002,7 +2002,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (88,7)-(88,21))
         │   │   ├── constant: ∅
@@ -2035,7 +2035,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (89,7)-(89,22))
         │   │   ├── constant: ∅
@@ -2071,7 +2071,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (91,7)-(91,9))
         │   │   ├── constant: ∅
@@ -2092,7 +2092,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (92,7)-(92,17))
         │   │   ├── constant: ∅
@@ -2141,7 +2141,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (94,7)-(94,13))
         │   │   ├── constant: ∅
@@ -2168,7 +2168,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (95,7)-(95,23))
         │   │   ├── constant: ∅
@@ -2201,7 +2201,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (96,7)-(96,23))
         │   │   ├── constant: ∅
@@ -2234,7 +2234,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (97,7)-(97,23))
         │   │   ├── constant: ∅
@@ -2267,7 +2267,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (98,7)-(98,24))
         │   │   ├── constant: ∅
@@ -2303,7 +2303,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ LocalVariableTargetNode (location: (100,7)-(100,10))
         │   │   ├── name: :bar
@@ -2320,7 +2320,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ IntegerNode (location: (101,7)-(101,8))
         │   │   └── flags: decimal
@@ -2336,7 +2336,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FloatNode (location: (102,7)-(102,10))
         │   └── operator_loc: (102,4)-(102,6) = "in"
@@ -2351,7 +2351,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ImaginaryNode (location: (103,7)-(103,9))
         │   │   └── numeric:
@@ -2369,7 +2369,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RationalNode (location: (104,7)-(104,9))
         │   │   └── numeric:
@@ -2387,7 +2387,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SymbolNode (location: (105,7)-(105,11))
         │   │   ├── opening_loc: (105,7)-(105,8) = ":"
@@ -2406,7 +2406,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SymbolNode (location: (106,7)-(106,14))
         │   │   ├── opening_loc: (106,7)-(106,10) = "%s["
@@ -2425,7 +2425,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SymbolNode (location: (107,7)-(107,13))
         │   │   ├── opening_loc: (107,7)-(107,9) = ":\""
@@ -2444,7 +2444,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ RegularExpressionNode (location: (108,7)-(108,12))
         │   │   ├── opening_loc: (108,7)-(108,8) = "/"
@@ -2464,7 +2464,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ XStringNode (location: (109,7)-(109,12))
         │   │   ├── opening_loc: (109,7)-(109,8) = "`"
@@ -2483,7 +2483,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ XStringNode (location: (110,7)-(110,14))
         │   │   ├── opening_loc: (110,7)-(110,10) = "%x["
@@ -2502,7 +2502,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (111,7)-(111,14))
         │   │   ├── elements: (length: 1)
@@ -2525,7 +2525,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (112,7)-(112,14))
         │   │   ├── elements: (length: 1)
@@ -2548,7 +2548,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (113,7)-(113,14))
         │   │   ├── elements: (length: 1)
@@ -2572,7 +2572,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ ArrayNode (location: (114,7)-(114,14))
         │   │   ├── elements: (length: 1)
@@ -2596,7 +2596,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ StringNode (location: (115,7)-(115,14))
         │   │   ├── flags: ∅
@@ -2616,7 +2616,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ StringNode (location: (116,7)-(116,14))
         │   │   ├── flags: ∅
@@ -2636,7 +2636,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ StringNode (location: (117,7)-(117,12))
         │   │   ├── flags: ∅
@@ -2656,7 +2656,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ NilNode (location: (118,7)-(118,10))
         │   └── operator_loc: (118,4)-(118,6) = "in"
@@ -2671,7 +2671,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SelfNode (location: (119,7)-(119,11))
         │   └── operator_loc: (119,4)-(119,6) = "in"
@@ -2686,7 +2686,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ TrueNode (location: (120,7)-(120,11))
         │   └── operator_loc: (120,4)-(120,6) = "in"
@@ -2701,7 +2701,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ FalseNode (location: (121,7)-(121,12))
         │   └── operator_loc: (121,4)-(121,6) = "in"
@@ -2716,7 +2716,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SourceFileNode (location: (122,7)-(122,15))
         │   │   └── filepath: "patterns.txt"
@@ -2732,7 +2732,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SourceLineNode (location: (123,7)-(123,15))
         │   └── operator_loc: (123,4)-(123,6) = "in"
@@ -2747,7 +2747,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ SourceEncodingNode (location: (124,7)-(124,19))
         │   └── operator_loc: (124,4)-(124,6) = "in"
@@ -2762,7 +2762,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── pattern:
         │   │   @ LambdaNode (location: (125,7)-(125,17))
         │   │   ├── locals: []
@@ -2788,7 +2788,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (127,10)-(127,21))
         │   │       ├── pattern:
@@ -2812,7 +2812,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (128,10)-(128,19))
         │   │       ├── pattern:
@@ -2835,7 +2835,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (129,10)-(129,21))
         │   │       ├── pattern:
@@ -2857,7 +2857,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (130,10)-(130,20))
         │   │       ├── pattern:
@@ -2882,7 +2882,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (131,10)-(131,20))
         │   │       ├── pattern:
@@ -2907,7 +2907,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (132,10)-(132,22))
         │   │       ├── pattern:
@@ -2933,7 +2933,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (133,10)-(133,25))
         │   │       ├── pattern:
@@ -2959,7 +2959,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (134,10)-(134,24))
         │   │       ├── pattern:
@@ -2985,7 +2985,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (135,10)-(135,23))
         │   │       ├── pattern:
@@ -3012,7 +3012,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (136,10)-(136,23))
         │   │       ├── pattern:
@@ -3038,7 +3038,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (137,10)-(137,25))
         │   │       ├── pattern:
@@ -3064,7 +3064,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (138,10)-(138,25))
         │   │       ├── pattern:
@@ -3094,7 +3094,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (139,10)-(139,25))
         │   │       ├── pattern:
@@ -3124,7 +3124,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (140,10)-(140,25))
         │   │       ├── pattern:
@@ -3155,7 +3155,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (141,10)-(141,25))
         │   │       ├── pattern:
@@ -3186,7 +3186,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (142,10)-(142,25))
         │   │       ├── pattern:
@@ -3213,7 +3213,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (143,10)-(143,25))
         │   │       ├── pattern:
@@ -3240,7 +3240,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (144,10)-(144,23))
         │   │       ├── pattern:
@@ -3267,7 +3267,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (145,10)-(145,21))
         │   │       ├── pattern:
@@ -3289,7 +3289,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (146,10)-(146,22))
         │   │       ├── pattern:
@@ -3311,7 +3311,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (147,10)-(147,22))
         │   │       ├── pattern:
@@ -3333,7 +3333,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (148,10)-(148,23))
         │   │       ├── pattern:
@@ -3355,7 +3355,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (149,10)-(149,26))
         │   │       ├── pattern:
@@ -3378,7 +3378,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (150,10)-(150,26))
         │   │       ├── pattern:
@@ -3400,7 +3400,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (151,10)-(151,30))
         │   │       ├── pattern:
@@ -3422,7 +3422,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (152,10)-(152,28))
         │   │       ├── pattern:
@@ -3455,7 +3455,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (154,10)-(154,28))
         │   │       ├── pattern:
@@ -3490,7 +3490,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (155,10)-(155,26))
         │   │       ├── pattern:
@@ -3524,7 +3524,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (156,10)-(156,28))
         │   │       ├── pattern:
@@ -3557,7 +3557,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (157,10)-(157,27))
         │   │       ├── pattern:
@@ -3593,7 +3593,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (158,10)-(158,27))
         │   │       ├── pattern:
@@ -3629,7 +3629,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (159,10)-(159,29))
         │   │       ├── pattern:
@@ -3666,7 +3666,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (160,10)-(160,32))
         │   │       ├── pattern:
@@ -3703,7 +3703,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (161,10)-(161,31))
         │   │       ├── pattern:
@@ -3740,7 +3740,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (162,10)-(162,30))
         │   │       ├── pattern:
@@ -3778,7 +3778,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (163,10)-(163,30))
         │   │       ├── pattern:
@@ -3815,7 +3815,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (164,10)-(164,32))
         │   │       ├── pattern:
@@ -3852,7 +3852,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (165,10)-(165,32))
         │   │       ├── pattern:
@@ -3893,7 +3893,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (166,10)-(166,32))
         │   │       ├── pattern:
@@ -3934,7 +3934,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (167,10)-(167,32))
         │   │       ├── pattern:
@@ -3976,7 +3976,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (168,10)-(168,32))
         │   │       ├── pattern:
@@ -4018,7 +4018,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (169,10)-(169,32))
         │   │       ├── pattern:
@@ -4056,7 +4056,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (170,10)-(170,32))
         │   │       ├── pattern:
@@ -4094,7 +4094,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (171,10)-(171,30))
         │   │       ├── pattern:
@@ -4132,7 +4132,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (172,10)-(172,28))
         │   │       ├── pattern:
@@ -4165,7 +4165,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (173,10)-(173,29))
         │   │       ├── pattern:
@@ -4198,7 +4198,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (174,10)-(174,29))
         │   │       ├── pattern:
@@ -4231,7 +4231,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (175,10)-(175,30))
         │   │       ├── pattern:
@@ -4264,7 +4264,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (176,10)-(176,33))
         │   │       ├── pattern:
@@ -4298,7 +4298,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (177,10)-(177,33))
         │   │       ├── pattern:
@@ -4331,7 +4331,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (178,10)-(178,37))
         │   │       ├── pattern:
@@ -4364,7 +4364,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (179,10)-(179,35))
         │   │       ├── pattern:
@@ -4411,7 +4411,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "a"
+        │   │   │   └── name: :a
         │   │   ├── pattern:
         │   │   │   @ ArrayPatternNode (location: (181,8)-(181,10))
         │   │   │   ├── constant: ∅
@@ -4435,7 +4435,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (184,5)-(186,1))
         │   │   ├── constant: ∅
@@ -4459,7 +4459,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── pattern:
             │   @ HashPatternNode (location: (188,7)-(192,1))
             │   ├── constant:

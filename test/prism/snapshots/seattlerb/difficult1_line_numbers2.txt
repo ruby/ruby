@@ -27,7 +27,7 @@
         │   │       │   ├── closing_loc: (2,7)-(2,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "p"
+        │   │       │   └── name: :p
         │   │       ├── @ LocalVariableWriteNode (location: (3,2)-(3,7))
         │   │       │   ├── name: :b
         │   │       │   ├── depth: 0
@@ -50,7 +50,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "p"
+        │   │       │   └── name: :p
         │   │       └── @ LocalVariableWriteNode (location: (5,2)-(5,6))
         │   │           ├── name: :c
         │   │           ├── depth: 0
@@ -70,4 +70,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: variable_call
-            └── name: "a"
+            └── name: :a

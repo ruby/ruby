@@ -92,7 +92,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "bar?"
+            │   └── name: :bar?
             ├── statements:
             │   @ StatementsNode (location: (14,0)-(14,10))
             │   └── body: (length: 1)
@@ -117,6 +117,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── consequent: ∅
             └── end_keyword_loc: ∅

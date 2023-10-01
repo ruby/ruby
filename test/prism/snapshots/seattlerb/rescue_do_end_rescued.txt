@@ -29,7 +29,7 @@
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
             │   │   │           ├── flags: variable_call
-            │   │   │           └── name: "raise"
+            │   │   │           └── name: :raise
             │   │   ├── rescue_clause:
             │   │   │   @ RescueNode (location: (3,0)-(4,9))
             │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -73,4 +73,4 @@
             │   ├── opening_loc: (1,4)-(1,6) = "do"
             │   └── closing_loc: (9,0)-(9,3) = "end"
             ├── flags: ∅
-            └── name: "tap"
+            └── name: :tap

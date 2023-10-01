@@ -35,7 +35,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         └── @ DefNode (location: (3,0)-(3,34))
             ├── name: :foo
             ├── name_loc: (3,4)-(3,7) = "foo"
@@ -79,7 +79,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "raise"
+            │           └── name: :raise
             ├── locals: [:raise]
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅

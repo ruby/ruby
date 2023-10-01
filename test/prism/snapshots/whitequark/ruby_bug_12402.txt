@@ -26,14 +26,14 @@
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
         │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: "bar"
+        │   │   │           │   └── name: :bar
         │   │   │           ├── keyword_loc: (1,17)-(1,23) = "rescue"
         │   │   │           └── rescue_expression:
         │   │   │               @ NilNode (location: (1,24)-(1,27))
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "raise"
+        │   │   └── name: :raise
         │   ├── name: :foo
         │   ├── operator: :+
         │   └── depth: 0
@@ -60,11 +60,11 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bar"
+        │   │   │   │           └── name: :bar
         │   │   │   ├── closing_loc: (3,16)-(3,17) = ")"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "raise"
+        │   │   │   └── name: :raise
         │   │   ├── keyword_loc: (3,18)-(3,24) = "rescue"
         │   │   └── rescue_expression:
         │   │       @ NilNode (location: (3,25)-(3,28))
@@ -95,14 +95,14 @@
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
         │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: "bar"
+        │   │   │           │   └── name: :bar
         │   │   │           ├── keyword_loc: (5,16)-(5,22) = "rescue"
         │   │   │           └── rescue_expression:
         │   │   │               @ NilNode (location: (5,23)-(5,26))
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "raise"
+        │   │   └── name: :raise
         │   └── operator_loc: (5,4)-(5,5) = "="
         ├── @ LocalVariableWriteNode (location: (7,0)-(7,27))
         │   ├── name: :foo
@@ -128,11 +128,11 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bar"
+        │   │   │   │           └── name: :bar
         │   │   │   ├── closing_loc: (7,15)-(7,16) = ")"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "raise"
+        │   │   │   └── name: :raise
         │   │   ├── keyword_loc: (7,17)-(7,23) = "rescue"
         │   │   └── rescue_expression:
         │   │       @ NilNode (location: (7,24)-(7,27))
@@ -148,8 +148,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "C"
-        │   ├── write_name: "C="
+        │   ├── read_name: :C
+        │   ├── write_name: :C=
         │   ├── operator: :+
         │   ├── operator_loc: (9,6)-(9,8) = "+="
         │   └── value:
@@ -172,14 +172,14 @@
         │       │           │   ├── closing_loc: ∅
         │       │           │   ├── block: ∅
         │       │           │   ├── flags: variable_call
-        │       │           │   └── name: "bar"
+        │       │           │   └── name: :bar
         │       │           ├── keyword_loc: (9,19)-(9,25) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (9,26)-(9,29))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "raise"
+        │       └── name: :raise
         ├── @ CallOperatorWriteNode (location: (11,0)-(11,30))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (11,0)-(11,3))
@@ -191,8 +191,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "C"
-        │   ├── write_name: "C="
+        │   ├── read_name: :C
+        │   ├── write_name: :C=
         │   ├── operator: :+
         │   ├── operator_loc: (11,6)-(11,8) = "+="
         │   └── value:
@@ -215,11 +215,11 @@
         │       │   │           ├── closing_loc: ∅
         │       │   │           ├── block: ∅
         │       │   │           ├── flags: variable_call
-        │       │   │           └── name: "bar"
+        │       │   │           └── name: :bar
         │       │   ├── closing_loc: (11,18)-(11,19) = ")"
         │       │   ├── block: ∅
         │       │   ├── flags: ∅
-        │       │   └── name: "raise"
+        │       │   └── name: :raise
         │       ├── keyword_loc: (11,20)-(11,26) = "rescue"
         │       └── rescue_expression:
         │           @ NilNode (location: (11,27)-(11,30))
@@ -234,8 +234,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "m"
-        │   ├── write_name: "m="
+        │   ├── read_name: :m
+        │   ├── write_name: :m=
         │   ├── operator: :+
         │   ├── operator_loc: (13,6)-(13,8) = "+="
         │   └── value:
@@ -258,14 +258,14 @@
         │       │           │   ├── closing_loc: ∅
         │       │           │   ├── block: ∅
         │       │           │   ├── flags: variable_call
-        │       │           │   └── name: "bar"
+        │       │           │   └── name: :bar
         │       │           ├── keyword_loc: (13,19)-(13,25) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (13,26)-(13,29))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "raise"
+        │       └── name: :raise
         ├── @ CallOperatorWriteNode (location: (15,0)-(15,30))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (15,0)-(15,3))
@@ -277,8 +277,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "m"
-        │   ├── write_name: "m="
+        │   ├── read_name: :m
+        │   ├── write_name: :m=
         │   ├── operator: :+
         │   ├── operator_loc: (15,6)-(15,8) = "+="
         │   └── value:
@@ -301,11 +301,11 @@
         │       │   │           ├── closing_loc: ∅
         │       │   │           ├── block: ∅
         │       │   │           ├── flags: variable_call
-        │       │   │           └── name: "bar"
+        │       │   │           └── name: :bar
         │       │   ├── closing_loc: (15,18)-(15,19) = ")"
         │       │   ├── block: ∅
         │       │   ├── flags: ∅
-        │       │   └── name: "raise"
+        │       │   └── name: :raise
         │       ├── keyword_loc: (15,20)-(15,26) = "rescue"
         │       └── rescue_expression:
         │           @ NilNode (location: (15,27)-(15,30))
@@ -341,14 +341,14 @@
         │       │           │   ├── closing_loc: ∅
         │       │           │   ├── block: ∅
         │       │           │   ├── flags: variable_call
-        │       │           │   └── name: "bar"
+        │       │           │   └── name: :bar
         │       │           ├── keyword_loc: (17,21)-(17,27) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (17,28)-(17,31))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "raise"
+        │       └── name: :raise
         ├── @ ConstantPathOrWriteNode (location: (19,0)-(19,32))
         │   ├── target:
         │   │   @ ConstantPathNode (location: (19,0)-(19,6))
@@ -381,11 +381,11 @@
         │       │   │           ├── closing_loc: ∅
         │       │   │           ├── block: ∅
         │       │   │           ├── flags: variable_call
-        │       │   │           └── name: "bar"
+        │       │   │           └── name: :bar
         │       │   ├── closing_loc: (19,20)-(19,21) = ")"
         │       │   ├── block: ∅
         │       │   ├── flags: ∅
-        │       │   └── name: "raise"
+        │       │   └── name: :raise
         │       ├── keyword_loc: (19,22)-(19,28) = "rescue"
         │       └── rescue_expression:
         │           @ NilNode (location: (19,29)-(19,32))
@@ -400,8 +400,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "m"
-        │   ├── write_name: "m="
+        │   ├── read_name: :m
+        │   ├── write_name: :m=
         │   ├── operator: :+
         │   ├── operator_loc: (21,7)-(21,9) = "+="
         │   └── value:
@@ -424,14 +424,14 @@
         │       │           │   ├── closing_loc: ∅
         │       │           │   ├── block: ∅
         │       │           │   ├── flags: variable_call
-        │       │           │   └── name: "bar"
+        │       │           │   └── name: :bar
         │       │           ├── keyword_loc: (21,20)-(21,26) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (21,27)-(21,30))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "raise"
+        │       └── name: :raise
         ├── @ CallOperatorWriteNode (location: (23,0)-(23,31))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (23,0)-(23,3))
@@ -443,8 +443,8 @@
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "m"
-        │   ├── write_name: "m="
+        │   ├── read_name: :m
+        │   ├── write_name: :m=
         │   ├── operator: :+
         │   ├── operator_loc: (23,7)-(23,9) = "+="
         │   └── value:
@@ -467,11 +467,11 @@
         │       │   │           ├── closing_loc: ∅
         │       │   │           ├── block: ∅
         │       │   │           ├── flags: variable_call
-        │       │   │           └── name: "bar"
+        │       │   │           └── name: :bar
         │       │   ├── closing_loc: (23,19)-(23,20) = ")"
         │       │   ├── block: ∅
         │       │   ├── flags: ∅
-        │       │   └── name: "raise"
+        │       │   └── name: :raise
         │       ├── keyword_loc: (23,21)-(23,27) = "rescue"
         │       └── rescue_expression:
         │           @ NilNode (location: (23,28)-(23,31))
@@ -490,8 +490,8 @@
         │   │           └── flags: decimal
         │   ├── closing_loc: (25,5)-(25,6) = "]"
         │   ├── flags: ∅
-        │   ├── read_name: "[]"
-        │   ├── write_name: "[]="
+        │   ├── read_name: :[]
+        │   ├── write_name: :[]=
         │   ├── operator: :+
         │   ├── operator_loc: (25,7)-(25,9) = "+="
         │   └── value:
@@ -514,14 +514,14 @@
         │       │           │   ├── closing_loc: ∅
         │       │           │   ├── block: ∅
         │       │           │   ├── flags: variable_call
-        │       │           │   └── name: "bar"
+        │       │           │   └── name: :bar
         │       │           ├── keyword_loc: (25,20)-(25,26) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (25,27)-(25,30))
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "raise"
+        │       └── name: :raise
         └── @ CallOperatorWriteNode (location: (27,0)-(27,31))
             ├── receiver:
             │   @ LocalVariableReadNode (location: (27,0)-(27,3))
@@ -537,8 +537,8 @@
             │           └── flags: decimal
             ├── closing_loc: (27,5)-(27,6) = "]"
             ├── flags: ∅
-            ├── read_name: "[]"
-            ├── write_name: "[]="
+            ├── read_name: :[]
+            ├── write_name: :[]=
             ├── operator: :+
             ├── operator_loc: (27,7)-(27,9) = "+="
             └── value:
@@ -561,11 +561,11 @@
                 │   │           ├── closing_loc: ∅
                 │   │           ├── block: ∅
                 │   │           ├── flags: variable_call
-                │   │           └── name: "bar"
+                │   │           └── name: :bar
                 │   ├── closing_loc: (27,19)-(27,20) = ")"
                 │   ├── block: ∅
                 │   ├── flags: ∅
-                │   └── name: "raise"
+                │   └── name: :raise
                 ├── keyword_loc: (27,21)-(27,27) = "rescue"
                 └── rescue_expression:
                     @ NilNode (location: (27,28)-(27,31))

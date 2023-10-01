@@ -30,7 +30,7 @@
             │                   │   ├── closing_loc: ∅
             │                   │   ├── block: ∅
             │                   │   ├── flags: variable_call
-            │                   │   └── name: "m2"
+            │                   │   └── name: :m2
             │                   └── operator_loc: (1,6)-(1,8) = "=>"
             ├── closing_loc: ∅
             ├── block:
@@ -55,8 +55,8 @@
             │   │           │   ├── opening_loc: (1,21)-(1,23) = "do"
             │   │           │   └── closing_loc: (1,24)-(1,27) = "end"
             │   │           ├── flags: ∅
-            │   │           └── name: "m3"
+            │   │           └── name: :m3
             │   ├── opening_loc: (1,12)-(1,14) = "do"
             │   └── closing_loc: (1,29)-(1,32) = "end"
             ├── flags: ∅
-            └── name: "m1"
+            └── name: :m1

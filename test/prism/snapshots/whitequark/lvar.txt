@@ -12,4 +12,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: variable_call
-            └── name: "foo"
+            └── name: :foo

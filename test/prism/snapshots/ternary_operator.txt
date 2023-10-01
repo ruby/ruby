@@ -15,7 +15,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,4)-(1,5))
         │   │   └── body: (length: 1)
@@ -28,7 +28,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "b"
+        │   │           └── name: :b
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,6)-(1,9))
         │   │   ├── else_keyword_loc: (1,6)-(1,7) = ":"
@@ -44,7 +44,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "c"
+        │   │   │           └── name: :c
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         ├── @ IfNode (location: (3,0)-(3,27))
@@ -59,7 +59,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── statements:
         │   │   @ StatementsNode (location: (3,4)-(3,14))
         │   │   └── body: (length: 1)
@@ -75,7 +75,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "b"
+        │   │           │   └── name: :b
         │   │           ├── rparen_loc: ∅
         │   │           └── keyword_loc: (3,4)-(3,12) = "defined?"
         │   ├── consequent:
@@ -96,7 +96,7 @@
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
         │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: "c"
+        │   │   │           │   └── name: :c
         │   │   │           ├── rparen_loc: ∅
         │   │   │           └── keyword_loc: (3,17)-(3,25) = "defined?"
         │   │   └── end_keyword_loc: ∅
@@ -113,7 +113,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "empty?"
+        │   │   └── name: :empty?
         │   ├── statements:
         │   │   @ StatementsNode (location: (5,7)-(5,11))
         │   │   └── body: (length: 1)
@@ -139,7 +139,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "empty?"
+        │   │   └── name: :empty?
         │   ├── statements:
         │   │   @ StatementsNode (location: (7,7)-(7,12))
         │   │   └── body: (length: 1)
@@ -165,7 +165,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "empty?"
+        │   │   └── name: :empty?
         │   ├── statements:
         │   │   @ StatementsNode (location: (9,7)-(9,10))
         │   │   └── body: (length: 1)
@@ -191,7 +191,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "a?"
+        │   │   └── name: :a?
         │   ├── statements:
         │   │   @ StatementsNode (location: (11,3)-(11,6))
         │   │   └── body: (length: 1)
@@ -217,7 +217,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── statements:
         │   │   @ StatementsNode (location: (13,3)-(13,7))
         │   │   └── body: (length: 1)
@@ -230,7 +230,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "var1"
+        │   │           └── name: :var1
         │   ├── consequent:
         │   │   @ ElseNode (location: (13,8)-(13,14))
         │   │   ├── else_keyword_loc: (13,8)-(13,9) = ":"
@@ -246,7 +246,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "var2"
+        │   │   │           └── name: :var2
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         └── @ IfNode (location: (15,0)-(15,12))
@@ -261,7 +261,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "nil?"
+            │   └── name: :nil?
             ├── statements:
             │   @ StatementsNode (location: (15,5)-(15,10))
             │   └── body: (length: 1)

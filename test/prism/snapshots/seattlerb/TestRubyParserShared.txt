@@ -148,7 +148,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
-        │   │           │           └── name: "+"
+        │   │           │           └── name: :+
         │   │           ├── locals: [:a, :b]
         │   │           ├── def_keyword_loc: (52,2)-(52,5) = "def"
         │   │           ├── operator_loc: (52,10)-(52,11) = "."
@@ -239,7 +239,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
-        │   │           │           └── name: "+"
+        │   │           │           └── name: :+
         │   │           ├── locals: [:a, :b]
         │   │           ├── def_keyword_loc: (67,2)-(67,5) = "def"
         │   │           ├── operator_loc: ∅
@@ -329,4 +329,4 @@
             ├── closing_loc: (92,0)-(92,1) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "x"
+            └── name: :x

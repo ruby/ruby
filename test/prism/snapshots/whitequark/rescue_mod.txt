@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "meth"
+            │   └── name: :meth
             ├── keyword_loc: (1,5)-(1,11) = "rescue"
             └── rescue_expression:
                 @ CallNode (location: (1,12)-(1,15))
@@ -26,4 +26,4 @@
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: variable_call
-                └── name: "bar"
+                └── name: :bar

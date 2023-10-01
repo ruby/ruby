@@ -18,7 +18,7 @@
             │       │       ├── closing_loc: ∅
             │       │       ├── block: ∅
             │       │       ├── flags: variable_call
-            │       │       └── name: "foo"
+            │       │       └── name: :foo
             │       └── statements:
             │           @ StatementsNode (location: (1,16)-(1,21))
             │           └── body: (length: 1)

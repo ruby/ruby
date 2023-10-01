@@ -641,9 +641,9 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: read_name
-        type: string
+        type: constant
       - name: write_name
-        type: string
+        type: constant
       - name: operator_loc
         type: location
       - name: value
@@ -674,7 +674,7 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: name
-        type: string
+        type: constant
     comment: |
       Represents a method call, in all of the various forms that can take.
 
@@ -714,9 +714,9 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: read_name
-        type: string
+        type: constant
       - name: write_name
-        type: string
+        type: constant
       - name: operator
         type: constant
       - name: operator_loc
@@ -747,9 +747,9 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: read_name
-        type: string
+        type: constant
       - name: write_name
-        type: string
+        type: constant
       - name: operator_loc
         type: location
       - name: value

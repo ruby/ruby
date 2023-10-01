@@ -22,7 +22,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── rparen_loc: ∅
         │   └── keyword_loc: (3,0)-(3,8) = "defined?"
         └── @ DefinedNode (location: (5,0)-(5,13))
@@ -37,6 +37,6 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── rparen_loc: (5,12)-(5,13) = ")"
             └── keyword_loc: (5,0)-(5,8) = "defined?"

@@ -36,15 +36,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (1,7)-(1,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ IntegerNode (location: (1,10)-(1,11))
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
@@ -56,7 +56,7 @@
         │   │   ├── opening_loc: (1,12)-(1,14) = "do"
         │   │   └── closing_loc: (1,15)-(1,18) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (3,0)-(3,20))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -90,15 +90,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (3,7)-(3,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ FloatNode (location: (3,10)-(3,13))
         │   ├── closing_loc: ∅
         │   ├── block:
@@ -109,7 +109,7 @@
         │   │   ├── opening_loc: (3,14)-(3,16) = "do"
         │   │   └── closing_loc: (3,17)-(3,20) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (5,0)-(5,21))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -143,15 +143,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (5,7)-(5,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ ImaginaryNode (location: (5,10)-(5,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (5,10)-(5,13))
@@ -164,7 +164,7 @@
         │   │   ├── opening_loc: (5,15)-(5,17) = "do"
         │   │   └── closing_loc: (5,18)-(5,21) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (7,0)-(7,21))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -198,15 +198,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (7,7)-(7,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ RationalNode (location: (7,10)-(7,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (7,10)-(7,13))
@@ -219,7 +219,7 @@
         │   │   ├── opening_loc: (7,15)-(7,17) = "do"
         │   │   └── closing_loc: (7,18)-(7,21) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (9,0)-(9,19))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -253,15 +253,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (9,7)-(9,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ SymbolNode (location: (9,10)-(9,12))
         │   │           ├── opening_loc: (9,10)-(9,11) = ":"
         │   │           ├── value_loc: (9,11)-(9,12) = "e"
@@ -276,7 +276,7 @@
         │   │   ├── opening_loc: (9,13)-(9,15) = "do"
         │   │   └── closing_loc: (9,16)-(9,19) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (11,0)-(11,19))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -310,15 +310,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: (11,7)-(11,8) = ")"
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (11,8)-(11,9) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ IntegerNode (location: (11,11)-(11,12))
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
@@ -330,7 +330,7 @@
         │   │   ├── opening_loc: (11,13)-(11,15) = "do"
         │   │   └── closing_loc: (11,16)-(11,19) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (13,0)-(13,21))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -364,15 +364,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: (13,7)-(13,8) = ")"
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (13,8)-(13,9) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ FloatNode (location: (13,11)-(13,14))
         │   ├── closing_loc: ∅
         │   ├── block:
@@ -383,7 +383,7 @@
         │   │   ├── opening_loc: (13,15)-(13,17) = "do"
         │   │   └── closing_loc: (13,18)-(13,21) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (15,0)-(15,22))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -417,15 +417,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: (15,7)-(15,8) = ")"
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (15,8)-(15,9) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ ImaginaryNode (location: (15,11)-(15,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (15,11)-(15,14))
@@ -438,7 +438,7 @@
         │   │   ├── opening_loc: (15,16)-(15,18) = "do"
         │   │   └── closing_loc: (15,19)-(15,22) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (17,0)-(17,22))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -472,15 +472,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: (17,7)-(17,8) = ")"
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (17,8)-(17,9) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ RationalNode (location: (17,11)-(17,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (17,11)-(17,14))
@@ -493,7 +493,7 @@
         │   │   ├── opening_loc: (17,16)-(17,18) = "do"
         │   │   └── closing_loc: (17,19)-(17,22) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (19,0)-(19,20))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -527,15 +527,15 @@
         │   │       │   │           │           ├── closing_loc: ∅
         │   │       │   │           │           ├── block: ∅
         │   │       │   │           │           ├── flags: variable_call
-        │   │       │   │           │           └── name: "d"
+        │   │       │   │           │           └── name: :d
         │   │       │   │           ├── closing_loc: (19,7)-(19,8) = ")"
         │   │       │   │           ├── block: ∅
         │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: "c"
+        │   │       │   │           └── name: :c
         │   │       │   ├── closing_loc: (19,8)-(19,9) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ SymbolNode (location: (19,11)-(19,13))
         │   │           ├── opening_loc: (19,11)-(19,12) = ":"
         │   │           ├── value_loc: (19,12)-(19,13) = "e"
@@ -550,7 +550,7 @@
         │   │   ├── opening_loc: (19,14)-(19,16) = "do"
         │   │   └── closing_loc: (19,17)-(19,20) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (21,0)-(21,18))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -590,15 +590,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (21,3)-(21,4) = "{"
         │   │       │   │   └── closing_loc: (21,7)-(21,8) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ IntegerNode (location: (21,10)-(21,11))
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
@@ -610,7 +610,7 @@
         │   │   ├── opening_loc: (21,12)-(21,14) = "do"
         │   │   └── closing_loc: (21,15)-(21,18) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (23,0)-(23,20))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -650,15 +650,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (23,3)-(23,4) = "{"
         │   │       │   │   └── closing_loc: (23,7)-(23,8) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ FloatNode (location: (23,10)-(23,13))
         │   ├── closing_loc: ∅
         │   ├── block:
@@ -669,7 +669,7 @@
         │   │   ├── opening_loc: (23,14)-(23,16) = "do"
         │   │   └── closing_loc: (23,17)-(23,20) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (25,0)-(25,21))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -709,15 +709,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (25,3)-(25,4) = "{"
         │   │       │   │   └── closing_loc: (25,7)-(25,8) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ ImaginaryNode (location: (25,10)-(25,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (25,10)-(25,13))
@@ -730,7 +730,7 @@
         │   │   ├── opening_loc: (25,15)-(25,17) = "do"
         │   │   └── closing_loc: (25,18)-(25,21) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (27,0)-(27,21))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -770,15 +770,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (27,3)-(27,4) = "{"
         │   │       │   │   └── closing_loc: (27,7)-(27,8) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ RationalNode (location: (27,10)-(27,14))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (27,10)-(27,13))
@@ -791,7 +791,7 @@
         │   │   ├── opening_loc: (27,15)-(27,17) = "do"
         │   │   └── closing_loc: (27,18)-(27,21) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (29,0)-(29,19))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -831,15 +831,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: ∅
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (29,3)-(29,4) = "{"
         │   │       │   │   └── closing_loc: (29,7)-(29,8) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ SymbolNode (location: (29,10)-(29,12))
         │   │           ├── opening_loc: (29,10)-(29,11) = ":"
         │   │           ├── value_loc: (29,11)-(29,12) = "e"
@@ -854,7 +854,7 @@
         │   │   ├── opening_loc: (29,13)-(29,15) = "do"
         │   │   └── closing_loc: (29,16)-(29,19) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (31,0)-(31,19))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -894,15 +894,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: (31,7)-(31,8) = ")"
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (31,3)-(31,4) = "{"
         │   │       │   │   └── closing_loc: (31,8)-(31,9) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ IntegerNode (location: (31,11)-(31,12))
         │   │           └── flags: decimal
         │   ├── closing_loc: ∅
@@ -914,7 +914,7 @@
         │   │   ├── opening_loc: (31,13)-(31,15) = "do"
         │   │   └── closing_loc: (31,16)-(31,19) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (33,0)-(33,21))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -954,15 +954,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: (33,7)-(33,8) = ")"
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (33,3)-(33,4) = "{"
         │   │       │   │   └── closing_loc: (33,8)-(33,9) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ FloatNode (location: (33,11)-(33,14))
         │   ├── closing_loc: ∅
         │   ├── block:
@@ -973,7 +973,7 @@
         │   │   ├── opening_loc: (33,15)-(33,17) = "do"
         │   │   └── closing_loc: (33,18)-(33,21) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (35,0)-(35,22))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -1013,15 +1013,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: (35,7)-(35,8) = ")"
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (35,3)-(35,4) = "{"
         │   │       │   │   └── closing_loc: (35,8)-(35,9) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ ImaginaryNode (location: (35,11)-(35,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (35,11)-(35,14))
@@ -1034,7 +1034,7 @@
         │   │   ├── opening_loc: (35,16)-(35,18) = "do"
         │   │   └── closing_loc: (35,19)-(35,22) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ CallNode (location: (37,0)-(37,22))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -1074,15 +1074,15 @@
         │   │       │   │   │           │           ├── closing_loc: ∅
         │   │       │   │   │           │           ├── block: ∅
         │   │       │   │   │           │           ├── flags: variable_call
-        │   │       │   │   │           │           └── name: "d"
+        │   │       │   │   │           │           └── name: :d
         │   │       │   │   │           ├── closing_loc: (37,7)-(37,8) = ")"
         │   │       │   │   │           ├── block: ∅
         │   │       │   │   │           ├── flags: ∅
-        │   │       │   │   │           └── name: "c"
+        │   │       │   │   │           └── name: :c
         │   │       │   │   ├── opening_loc: (37,3)-(37,4) = "{"
         │   │       │   │   └── closing_loc: (37,8)-(37,9) = "}"
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "b"
+        │   │       │   └── name: :b
         │   │       └── @ RationalNode (location: (37,11)-(37,15))
         │   │           └── numeric:
         │   │               @ FloatNode (location: (37,11)-(37,14))
@@ -1095,7 +1095,7 @@
         │   │   ├── opening_loc: (37,16)-(37,18) = "do"
         │   │   └── closing_loc: (37,19)-(37,22) = "end"
         │   ├── flags: ∅
-        │   └── name: "a"
+        │   └── name: :a
         └── @ CallNode (location: (39,0)-(39,20))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -1135,15 +1135,15 @@
             │       │   │   │           │           ├── closing_loc: ∅
             │       │   │   │           │           ├── block: ∅
             │       │   │   │           │           ├── flags: variable_call
-            │       │   │   │           │           └── name: "d"
+            │       │   │   │           │           └── name: :d
             │       │   │   │           ├── closing_loc: (39,7)-(39,8) = ")"
             │       │   │   │           ├── block: ∅
             │       │   │   │           ├── flags: ∅
-            │       │   │   │           └── name: "c"
+            │       │   │   │           └── name: :c
             │       │   │   ├── opening_loc: (39,3)-(39,4) = "{"
             │       │   │   └── closing_loc: (39,8)-(39,9) = "}"
             │       │   ├── flags: ∅
-            │       │   └── name: "b"
+            │       │   └── name: :b
             │       └── @ SymbolNode (location: (39,11)-(39,13))
             │           ├── opening_loc: (39,11)-(39,12) = ":"
             │           ├── value_loc: (39,12)-(39,13) = "e"
@@ -1158,4 +1158,4 @@
             │   ├── opening_loc: (39,14)-(39,16) = "do"
             │   └── closing_loc: (39,17)-(39,20) = "end"
             ├── flags: ∅
-            └── name: "a"
+            └── name: :a

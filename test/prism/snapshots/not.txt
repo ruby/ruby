@@ -16,7 +16,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (1,0)-(1,3) = "not"
         │   │   ├── opening_loc: ∅
@@ -24,7 +24,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   ├── right:
         │   │   @ CallNode (location: (1,12)-(1,19))
         │   │   ├── receiver:
@@ -37,7 +37,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (1,12)-(1,15) = "not"
         │   │   ├── opening_loc: ∅
@@ -45,7 +45,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   └── operator_loc: (1,8)-(1,11) = "and"
         ├── @ CallNode (location: (3,0)-(3,16))
         │   ├── receiver:
@@ -60,7 +60,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── right:
         │   │   │   @ CallNode (location: (3,12)-(3,15))
         │   │   │   ├── receiver: ∅
@@ -71,7 +71,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   └── operator_loc: (3,8)-(3,11) = "and"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (3,0)-(3,3) = "not"
@@ -80,7 +80,7 @@
         │   ├── closing_loc: (3,15)-(3,16) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "!"
+        │   └── name: :!
         ├── @ CallNode (location: (5,0)-(5,7))
         │   ├── receiver:
         │   │   @ CallNode (location: (5,4)-(5,7))
@@ -92,7 +92,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (5,0)-(5,3) = "not"
         │   ├── opening_loc: ∅
@@ -100,7 +100,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "!"
+        │   └── name: :!
         ├── @ AndNode (location: (7,0)-(8,5))
         │   ├── left:
         │   │   @ CallNode (location: (7,0)-(7,7))
@@ -114,7 +114,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (7,0)-(7,3) = "not"
         │   │   ├── opening_loc: ∅
@@ -122,7 +122,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   ├── right:
         │   │   @ CallNode (location: (7,12)-(8,5))
         │   │   ├── receiver:
@@ -135,7 +135,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (7,12)-(7,15) = "not"
         │   │   ├── opening_loc: ∅
@@ -143,7 +143,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   └── operator_loc: (7,8)-(7,11) = "and"
         ├── @ AndNode (location: (11,0)-(13,5))
         │   ├── left:
@@ -158,7 +158,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (11,0)-(11,3) = "not"
         │   │   ├── opening_loc: ∅
@@ -166,7 +166,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   ├── right:
         │   │   @ CallNode (location: (12,4)-(13,5))
         │   │   ├── receiver:
@@ -179,7 +179,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (12,4)-(12,7) = "not"
         │   │   ├── opening_loc: ∅
@@ -187,7 +187,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   └── operator_loc: (11,8)-(11,11) = "and"
         ├── @ AndNode (location: (16,0)-(20,5))
         │   ├── left:
@@ -202,7 +202,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (16,0)-(16,3) = "not"
         │   │   ├── opening_loc: ∅
@@ -210,7 +210,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   ├── right:
         │   │   @ CallNode (location: (17,2)-(20,5))
         │   │   ├── receiver:
@@ -223,7 +223,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (17,2)-(17,5) = "not"
         │   │   ├── opening_loc: ∅
@@ -231,7 +231,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   └── operator_loc: (16,8)-(16,11) = "and"
         ├── @ CallNode (location: (22,0)-(25,1))
         │   ├── receiver:
@@ -244,7 +244,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (22,0)-(22,3) = "not"
         │   ├── opening_loc: (22,3)-(22,4) = "("
@@ -252,7 +252,7 @@
         │   ├── closing_loc: (25,0)-(25,1) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "!"
+        │   └── name: :!
         ├── @ CallNode (location: (27,0)-(33,3))
         │   ├── receiver:
         │   │   @ CallNode (location: (30,0)-(30,3))
@@ -264,7 +264,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (27,0)-(27,3) = "not"
         │   ├── opening_loc: (27,3)-(27,4) = "("
@@ -272,7 +272,7 @@
         │   ├── closing_loc: (33,2)-(33,3) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "!"
+        │   └── name: :!
         ├── @ CallNode (location: (35,0)-(35,14))
         │   ├── receiver:
         │   │   @ FlipFlopNode (location: (35,4)-(35,14))
@@ -286,7 +286,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── right:
         │   │   │   @ CallNode (location: (35,11)-(35,14))
         │   │   │   ├── receiver: ∅
@@ -297,7 +297,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "bar"
+        │   │   │   └── name: :bar
         │   │   ├── operator_loc: (35,8)-(35,10) = ".."
         │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
@@ -307,7 +307,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "!"
+        │   └── name: :!
         └── @ CallNode (location: (37,0)-(37,16))
             ├── receiver:
             │   @ ParenthesesNode (location: (37,4)-(37,16))
@@ -325,7 +325,7 @@
             │   │           │   ├── closing_loc: ∅
             │   │           │   ├── block: ∅
             │   │           │   ├── flags: variable_call
-            │   │           │   └── name: "foo"
+            │   │           │   └── name: :foo
             │   │           ├── right:
             │   │           │   @ CallNode (location: (37,12)-(37,15))
             │   │           │   ├── receiver: ∅
@@ -336,7 +336,7 @@
             │   │           │   ├── closing_loc: ∅
             │   │           │   ├── block: ∅
             │   │           │   ├── flags: variable_call
-            │   │           │   └── name: "bar"
+            │   │           │   └── name: :bar
             │   │           ├── operator_loc: (37,9)-(37,11) = ".."
             │   │           └── flags: ∅
             │   ├── opening_loc: (37,4)-(37,5) = "("
@@ -348,4 +348,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "!"
+            └── name: :!

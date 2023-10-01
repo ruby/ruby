@@ -16,7 +16,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
-            │   │   └── name: "a"
+            │   │   └── name: :a
             │   ├── call_operator_loc: (1,1)-(1,2) = "."
             │   ├── message_loc: (1,2)-(1,3) = "b"
             │   ├── opening_loc: ∅
@@ -32,7 +32,7 @@
             │   │           ├── closing_loc: (1,6)-(1,7) = ")"
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "c"
+            │   │           └── name: :c
             │   ├── closing_loc: ∅
             │   ├── block:
             │   │   @ BlockNode (location: (1,8)-(1,16))
@@ -50,11 +50,11 @@
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
             │   │   │           ├── flags: variable_call
-            │   │   │           └── name: "d"
+            │   │   │           └── name: :d
             │   │   ├── opening_loc: (1,8)-(1,10) = "do"
             │   │   └── closing_loc: (1,13)-(1,16) = "end"
             │   ├── flags: ∅
-            │   └── name: "b"
+            │   └── name: :b
             ├── call_operator_loc: (1,16)-(1,17) = "."
             ├── message_loc: (1,17)-(1,18) = "e"
             ├── opening_loc: ∅
@@ -91,8 +91,8 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "g"
+            │   │           └── name: :g
             │   ├── opening_loc: (1,19)-(1,21) = "do"
             │   └── closing_loc: (1,28)-(1,31) = "end"
             ├── flags: ∅
-            └── name: "e"
+            └── name: :e

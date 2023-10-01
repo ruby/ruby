@@ -56,7 +56,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "m"
+        │   └── name: :m
         └── @ CallNode (location: (3,0)-(3,19))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -109,4 +109,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "m"
+            └── name: :m

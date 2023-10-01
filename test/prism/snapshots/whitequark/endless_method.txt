@@ -54,7 +54,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "+"
+        │   │           └── name: :+
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
@@ -75,7 +75,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "obj"
+        │   │   └── name: :obj
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (5,16)-(5,18))
@@ -102,7 +102,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "obj"
+            │   └── name: :obj
             ├── parameters:
             │   @ ParametersNode (location: (7,12)-(7,13))
             │   ├── requireds: (length: 1)
@@ -133,7 +133,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "+"
+            │           └── name: :+
             ├── locals: [:x]
             ├── def_keyword_loc: (7,0)-(7,3) = "def"
             ├── operator_loc: (7,7)-(7,8) = "."

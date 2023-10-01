@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── keyword_loc: (1,4)-(1,10) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (1,11)-(1,14))
@@ -29,7 +29,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── keyword_loc: (3,4)-(3,10) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (4,0)-(4,3))
@@ -68,7 +68,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── keyword_loc: (12,4)-(12,10) = "rescue"
         │   └── rescue_expression:
         │       @ OrNode (location: (12,11)-(12,19))
@@ -89,7 +89,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── keyword_loc: (14,4)-(14,10) = "rescue"
         │   └── rescue_expression:
         │       @ IfNode (location: (14,11)-(14,22))
@@ -125,7 +125,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (16,10)-(16,19))
         │   │   ├── keyword_loc: (16,10)-(16,16) = "rescue"
@@ -142,7 +142,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
@@ -198,11 +198,11 @@
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: variable_call
-        │   │   │           │   │           └── name: "y"
+        │   │   │           │   │           └── name: :y
         │   │   │           │   ├── closing_loc: (19,7)-(19,8) = ")"
         │   │   │           │   ├── block: ∅
         │   │   │           │   ├── flags: ∅
-        │   │   │           │   └── name: "bar"
+        │   │   │           │   └── name: :bar
         │   │   │           ├── keyword_loc: (19,9)-(19,15) = "rescue"
         │   │   │           └── rescue_expression:
         │   │   │               @ CallNode (location: (19,16)-(19,40))
@@ -230,15 +230,15 @@
         │   │   │               │           ├── closing_loc: ∅
         │   │   │               │           ├── block: ∅
         │   │   │               │           ├── flags: ∅
-        │   │   │               │           └── name: "fail"
+        │   │   │               │           └── name: :fail
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: ∅
-        │   │   │               └── name: "ArgumentError"
+        │   │   │               └── name: :ArgumentError
         │   │   ├── opening_loc: (18,4)-(18,6) = "do"
         │   │   └── closing_loc: (20,0)-(20,3) = "end"
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ IfNode (location: (22,0)-(24,3))
         │   ├── if_keyword_loc: (22,0)-(22,2) = "if"
         │   ├── predicate:
@@ -258,7 +258,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "foo"
+        │   │   │   │   └── name: :foo
         │   │   │   ├── keyword_loc: (22,11)-(22,17) = "rescue"
         │   │   │   └── rescue_expression:
         │   │   │       @ NilNode (location: (22,18)-(22,21))
@@ -275,7 +275,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (24,0)-(24,3) = "end"
         ├── @ DefNode (location: (26,0)-(26,44))
@@ -304,7 +304,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "other_method"
+        │   │           └── name: :other_method
         │   ├── locals: []
         │   ├── def_keyword_loc: (26,0)-(26,3) = "def"
         │   ├── operator_loc: ∅
@@ -352,12 +352,12 @@
             │   │           │                   │       ├── closing_loc: ∅
             │   │           │                   │       ├── block: ∅
             │   │           │                   │       ├── flags: ∅
-            │   │           │                   │       └── name: "b"
+            │   │           │                   │       └── name: :b
             │   │           │                   └── operator_loc: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "a"
+            │   │           └── name: :a
             │   ├── rescue_clause:
             │   │   @ RescueNode (location: (30,0)-(30,6))
             │   │   ├── keyword_loc: (30,0)-(30,6) = "rescue"

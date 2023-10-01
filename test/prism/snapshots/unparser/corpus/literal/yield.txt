@@ -23,7 +23,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   └── rparen_loc: (2,7)-(2,8) = ")"
         └── @ YieldNode (location: (3,0)-(3,11))
             ├── keyword_loc: (3,0)-(3,5) = "yield"
@@ -40,7 +40,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
-            │       │   └── name: "a"
+            │       │   └── name: :a
             │       └── @ CallNode (location: (3,9)-(3,10))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
@@ -50,5 +50,5 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "b"
+            │           └── name: :b
             └── rparen_loc: (3,10)-(3,11) = ")"

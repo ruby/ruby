@@ -23,7 +23,7 @@
             │   │   ├── closing_loc: (1,7)-(1,8) = ")"
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
-            │   │   └── name: "b"
+            │   │   └── name: :b
             │   ├── keyword_loc: (1,9)-(1,15) = "rescue"
             │   └── rescue_expression:
             │       @ IntegerNode (location: (1,16)-(1,17))

@@ -44,4 +44,4 @@
             │   ├── opening_loc: (1,2)-(1,3) = "{"
             │   └── closing_loc: (1,17)-(1,18) = "}"
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

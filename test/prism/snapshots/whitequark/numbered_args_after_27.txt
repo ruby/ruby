@@ -29,7 +29,7 @@
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: ∅
-        │               └── name: "+"
+        │               └── name: :+
         ├── @ LambdaNode (location: (3,0)-(3,13))
         │   ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
         │   ├── operator_loc: (3,0)-(3,2) = "->"
@@ -56,7 +56,7 @@
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: ∅
-        │               └── name: "+"
+        │               └── name: :+
         ├── @ CallNode (location: (5,0)-(5,16))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -88,11 +88,11 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: ∅
-        │   │   │           └── name: "+"
+        │   │   │           └── name: :+
         │   │   ├── opening_loc: (5,2)-(5,4) = "do"
         │   │   └── closing_loc: (5,13)-(5,16) = "end"
         │   ├── flags: ∅
-        │   └── name: "m"
+        │   └── name: :m
         └── @ CallNode (location: (7,0)-(7,13))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -124,8 +124,8 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "+"
+            │   │           └── name: :+
             │   ├── opening_loc: (7,2)-(7,3) = "{"
             │   └── closing_loc: (7,12)-(7,13) = "}"
             ├── flags: ∅
-            └── name: "m"
+            └── name: :m

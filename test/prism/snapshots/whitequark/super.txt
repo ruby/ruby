@@ -18,7 +18,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "foo"
+        │   │           └── name: :foo
         │   ├── rparen_loc: ∅
         │   └── block: ∅
         ├── @ SuperNode (location: (3,0)-(3,7))
@@ -42,6 +42,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── rparen_loc: (5,9)-(5,10) = ")"
             └── block: ∅

@@ -21,7 +21,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "m"
+            │   └── name: :m
             ├── name: :foo
             ├── operator: :+
             └── depth: 0

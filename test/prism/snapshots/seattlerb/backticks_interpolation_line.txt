@@ -28,10 +28,10 @@
             │           │       │           ├── closing_loc: ∅
             │           │       │           ├── block: ∅
             │           │       │           ├── flags: variable_call
-            │           │       │           └── name: "y"
+            │           │       │           └── name: :y
             │           │       └── closing_loc: (1,6)-(1,7) = "}"
             │           └── closing_loc: (1,7)-(1,8) = "`"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "x"
+            └── name: :x

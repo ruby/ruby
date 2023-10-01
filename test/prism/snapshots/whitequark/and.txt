@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── right:
         │   │   @ CallNode (location: (1,7)-(1,10))
         │   │   ├── receiver: ∅
@@ -25,7 +25,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "bar"
+        │   │   └── name: :bar
         │   └── operator_loc: (1,4)-(1,6) = "&&"
         └── @ AndNode (location: (3,0)-(3,11))
             ├── left:
@@ -38,7 +38,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── right:
             │   @ CallNode (location: (3,8)-(3,11))
             │   ├── receiver: ∅
@@ -49,5 +49,5 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "bar"
+            │   └── name: :bar
             └── operator_loc: (3,4)-(3,7) = "and"

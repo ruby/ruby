@@ -43,7 +43,7 @@ module Prism
     end
 
     def test_array_pattern
-      results = scan("1 + 2", "CallNode[name: \"+\", receiver: IntegerNode, arguments: [IntegerNode]]")
+      results = scan("1 + 2", "CallNode[name: :+, receiver: IntegerNode, arguments: [IntegerNode]]")
 
       assert_equal 1, results.length
     end
@@ -75,7 +75,7 @@ module Prism
     end
 
     def test_hash_pattern_no_constant
-      results = scan("Foo + Bar + Baz", "{ name: \"+\" }")
+      results = scan("Foo + Bar + Baz", "{ name: :+ }")
 
       assert_equal 2, results.length
     end

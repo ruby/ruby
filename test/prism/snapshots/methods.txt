@@ -115,7 +115,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "b"
+        │   │   │   └── name: :b
         │   │   ├── opening_loc: (10,4)-(10,5) = "("
         │   │   └── closing_loc: (10,6)-(10,7) = ")"
         │   ├── parameters: ∅
@@ -142,7 +142,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "a"
+        │   │   │   └── name: :a
         │   │   ├── opening_loc: (13,4)-(13,5) = "("
         │   │   └── closing_loc: (13,6)-(13,7) = ")"
         │   ├── parameters: ∅
@@ -218,7 +218,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -911,7 +911,7 @@
         │   │           ├── closing_loc: (110,13)-(110,14) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "b"
+        │   │           └── name: :b
         │   ├── locals: [:*]
         │   ├── def_keyword_loc: (110,0)-(110,3) = "def"
         │   ├── operator_loc: ∅
@@ -948,7 +948,7 @@
         │   │           ├── closing_loc: (112,17)-(112,18) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "b"
+        │   │           └── name: :b
         │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (112,0)-(112,3) = "def"
         │   ├── operator_loc: ∅
@@ -989,7 +989,7 @@
         │   │           ├── closing_loc: (114,23)-(114,24) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "b"
+        │   │           └── name: :b
         │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (114,0)-(114,3) = "def"
         │   ├── operator_loc: ∅
@@ -1017,7 +1017,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "b"
+        │   │   │   │   └── name: :b
         │   │   │   └── operator_loc: (116,7)-(116,8) = "="
         │   │   ├── opening_loc: (116,4)-(116,5) = "("
         │   │   └── closing_loc: (116,10)-(116,11) = ")"
@@ -1115,7 +1115,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "b"
+        │   │   │   │   └── name: :b
         │   │   │   └── operator_loc: (128,7)-(128,8) = "="
         │   │   ├── opening_loc: (128,4)-(128,5) = "("
         │   │   └── closing_loc: (128,10)-(128,11) = ")"
@@ -1207,7 +1207,7 @@
         │   │           │       │           ├── closing_loc: (136,23)-(136,24) = ")"
         │   │           │       │           ├── block: ∅
         │   │           │       │           ├── flags: ∅
-        │   │           │       │           └── name: "b"
+        │   │           │       │           └── name: :b
         │   │           │       └── closing_loc: (136,24)-(136,25) = "}"
         │   │           └── closing_loc: (136,25)-(136,26) = "\""
         │   ├── locals: [:"..."]
@@ -1250,7 +1250,7 @@
         │   │           │               │   │   ├── closing_loc: ∅
         │   │           │               │   │   ├── block: ∅
         │   │           │               │   │   ├── flags: variable_call
-        │   │           │               │   │   └── name: "bar"
+        │   │           │               │   │   └── name: :bar
         │   │           │               │   └── operator_loc: (139,11)-(139,13) = "**"
         │   │           │               ├── @ AssocSplatNode (location: (139,18)-(139,23))
         │   │           │               │   ├── value:
@@ -1263,7 +1263,7 @@
         │   │           │               │   │   ├── closing_loc: ∅
         │   │           │               │   │   ├── block: ∅
         │   │           │               │   │   ├── flags: variable_call
-        │   │           │               │   │   └── name: "baz"
+        │   │           │               │   │   └── name: :baz
         │   │           │               │   └── operator_loc: (139,18)-(139,20) = "**"
         │   │           │               └── @ AssocSplatNode (location: (139,25)-(139,30))
         │   │           │                   ├── value:
@@ -1276,12 +1276,12 @@
         │   │           │                   │   ├── closing_loc: ∅
         │   │           │                   │   ├── block: ∅
         │   │           │                   │   ├── flags: variable_call
-        │   │           │                   │   └── name: "qux"
+        │   │           │                   │   └── name: :qux
         │   │           │                   └── operator_loc: (139,25)-(139,27) = "**"
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "merge"
+        │   │           └── name: :merge
         │   ├── locals: []
         │   ├── def_keyword_loc: (138,0)-(138,3) = "def"
         │   ├── operator_loc: ∅
@@ -1553,7 +1553,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "item"
+        │   │           │   └── name: :item
         │   │           ├── call_operator_loc: ∅
         │   │           ├── message_loc: (161,7)-(161,9) = ">>"
         │   │           ├── opening_loc: ∅
@@ -1575,11 +1575,11 @@
         │   │           │           │   ├── opening_loc: (161,12)-(161,13) = "{"
         │   │           │           │   └── closing_loc: (161,13)-(161,14) = "}"
         │   │           │           ├── flags: ∅
-        │   │           │           └── name: "a"
+        │   │           │           └── name: :a
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: ">>"
+        │   │           └── name: :>>
         │   ├── locals: [:a]
         │   ├── def_keyword_loc: (160,0)-(160,3) = "def"
         │   ├── operator_loc: ∅

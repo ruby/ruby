@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: ∅
             ├── message_loc: (1,1)-(1,9) = "[[1, 2]]"
             ├── opening_loc: (1,1)-(1,2) = "["
@@ -34,4 +34,4 @@
             ├── closing_loc: (1,8)-(1,9) = "]"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "[]="
+            └── name: :[]=

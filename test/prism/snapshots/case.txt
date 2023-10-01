@@ -50,7 +50,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: ∅
-        │   │   │               └── name: "puts"
+        │   │   │               └── name: :puts
         │   │   └── @ WhenNode (location: (5,32)-(5,53))
         │   │       ├── keyword_loc: (5,32)-(5,36) = "when"
         │   │       ├── conditions: (length: 1)
@@ -74,7 +74,7 @@
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
         │   │                   ├── flags: ∅
-        │   │                   └── name: "puts"
+        │   │                   └── name: :puts
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (5,0)-(5,4) = "case"
         │   └── end_keyword_loc: (5,55)-(5,58) = "end"
@@ -96,7 +96,7 @@
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
         │   │       │           ├── flags: variable_call
-        │   │       │           └── name: "foo"
+        │   │       │           └── name: :foo
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (7,0)-(7,4) = "case"
@@ -143,7 +143,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "this"
+        │   │   └── name: :this
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (15,11)-(15,31))
         │   │       ├── keyword_loc: (15,11)-(15,15) = "when"
@@ -173,7 +173,7 @@
         │   │       │       │   ├── closing_loc: ∅
         │   │       │       │   ├── block: ∅
         │   │       │       │   ├── flags: variable_call
-        │   │       │       │   └── name: "foo"
+        │   │       │       │   └── name: :foo
         │   │       │       ├── call_operator_loc: ∅
         │   │       │       ├── message_loc: (18,9)-(18,11) = "=="
         │   │       │       ├── opening_loc: ∅
@@ -189,11 +189,11 @@
         │   │       │       │           ├── closing_loc: ∅
         │   │       │       │           ├── block: ∅
         │   │       │       │           ├── flags: variable_call
-        │   │       │       │           └── name: "bar"
+        │   │       │       │           └── name: :bar
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: ∅
-        │   │       │       └── name: "=="
+        │   │       │       └── name: :==
         │   │       └── statements: ∅
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (17,0)-(17,4) = "case"
@@ -213,7 +213,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "a"
+        │   │       │       └── name: :a
         │   │       └── statements: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (23,0)-(25,3))
@@ -233,7 +233,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "type"
+        │   │   └── name: :type
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (28,3)-(28,10))
         │   │       ├── keyword_loc: (28,3)-(28,7) = "when"

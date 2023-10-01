@@ -28,7 +28,7 @@
         │   │           ├── closing_loc: (1,8)-(1,9) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "b"
+        │   │           └── name: :b
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,10)-(1,13))
         │   │   ├── else_keyword_loc: (1,10)-(1,11) = ":"
@@ -63,4 +63,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "a"
+            └── name: :a

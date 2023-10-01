@@ -83,7 +83,7 @@
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: ∅
-        │               └── name: "y"
+        │               └── name: :y
         ├── @ ReturnNode (location: (7,0)-(7,12))
         │   ├── keyword_loc: (7,0)-(7,6) = "return"
         │   └── arguments:
@@ -113,7 +113,7 @@
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: ∅
-        │               └── name: "y"
+        │               └── name: :y
         ├── @ ReturnNode (location: (9,0)-(9,13))
         │   ├── keyword_loc: (9,0)-(9,6) = "return"
         │   └── arguments:
@@ -143,7 +143,7 @@
         │               ├── closing_loc: (9,12)-(9,13) = ")"
         │               ├── block: ∅
         │               ├── flags: ∅
-        │               └── name: "y"
+        │               └── name: :y
         └── @ ReturnNode (location: (11,0)-(11,14))
             ├── keyword_loc: (11,0)-(11,6) = "return"
             └── arguments:
@@ -170,7 +170,7 @@
                         │                   │   ├── closing_loc: ∅
                         │                   │   ├── block: ∅
                         │                   │   ├── flags: variable_call
-                        │                   │   └── name: "z"
+                        │                   │   └── name: :z
                         │                   ├── value:
                         │                   │   @ IntegerNode (location: (11,12)-(11,13))
                         │                   │   └── flags: decimal
@@ -178,4 +178,4 @@
                         ├── closing_loc: (11,13)-(11,14) = ")"
                         ├── block: ∅
                         ├── flags: ∅
-                        └── name: "y"
+                        └── name: :y

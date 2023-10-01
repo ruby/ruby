@@ -46,7 +46,7 @@
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
             │           │   ├── flags: ∅
-            │           │   └── name: "+"
+            │           │   └── name: :+
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (4,4)-(4,5) = "+"
             │           ├── opening_loc: ∅
@@ -62,8 +62,8 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "+"
+            │           └── name: :+
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "p"
+            └── name: :p

@@ -27,11 +27,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "abs"
+        │   │           └── name: :abs
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         └── @ CallNode (location: (3,0)-(3,15))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -56,8 +56,8 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "abs"
+            │           └── name: :abs
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "meth"
+            └── name: :meth

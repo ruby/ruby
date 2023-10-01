@@ -24,4 +24,4 @@
             │   ├── opening_loc: (1,7)-(1,8) = "{"
             │   └── closing_loc: (1,8)-(1,9) = "}"
             ├── flags: ∅
-            └── name: "fun"
+            └── name: :fun

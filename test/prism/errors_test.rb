@@ -89,7 +89,7 @@ module Prism
             nil,
             nil,
             0,
-            "+"
+            :+
           )
         ]),
         Location(),
@@ -350,7 +350,7 @@ module Prism
         Location(),
         nil,
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a(**kwargs, *args)", [
@@ -368,7 +368,7 @@ module Prism
         Location(),
         BlockArgumentNode(expression("block"), Location()),
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a(&block, foo)", [
@@ -403,7 +403,7 @@ module Prism
         Location(),
         nil,
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a(foo: bar, *args)", [
@@ -454,7 +454,7 @@ module Prism
               Location()
             ),
             0,
-            "bar"
+            :bar
           )]
         ),
         [],
@@ -1016,7 +1016,7 @@ module Prism
           Location()
         ),
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a {|...|}", [
@@ -1176,7 +1176,7 @@ module Prism
 
     def test_invalid_message_name
       result = Prism.parse("+.@foo,+=foo")
-      assert_equal "", result.value.statements.body.first.write_name
+      assert_equal :"", result.value.statements.body.first.write_name
     end
 
     def test_invalid_operator_write_fcall

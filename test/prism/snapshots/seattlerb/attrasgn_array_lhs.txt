@@ -34,7 +34,7 @@
             │       │   │   ├── closing_loc: ∅
             │       │   │   ├── block: ∅
             │       │   │   ├── flags: variable_call
-            │       │   │   └── name: "from"
+            │       │   │   └── name: :from
             │       │   ├── right:
             │       │   │   @ CallNode (location: (1,21)-(1,23))
             │       │   │   ├── receiver: ∅
@@ -45,7 +45,7 @@
             │       │   │   ├── closing_loc: ∅
             │       │   │   ├── block: ∅
             │       │   │   ├── flags: variable_call
-            │       │   │   └── name: "to"
+            │       │   │   └── name: :to
             │       │   ├── operator_loc: (1,18)-(1,20) = ".."
             │       │   └── flags: ∅
             │       └── @ ArrayNode (location: (1,27)-(1,42))
@@ -73,4 +73,4 @@
             ├── closing_loc: (1,23)-(1,24) = "]"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "[]="
+            └── name: :[]=

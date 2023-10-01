@@ -13,8 +13,8 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── flags: ∅
-            ├── read_name: "B"
-            ├── write_name: "B="
+            ├── read_name: :B
+            ├── write_name: :B=
             ├── operator_loc: (1,4)-(1,7) = "||="
             └── value:
                 @ CallNode (location: (1,8)-(1,11))
@@ -30,4 +30,4 @@
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: ∅
-                └── name: "c"
+                └── name: :c

@@ -40,8 +40,8 @@
             │                       │   ├── opening_loc: (1,11)-(1,13) = "do"
             │                       │   └── closing_loc: (1,14)-(1,17) = "end"
             │                       ├── flags: ∅
-            │                       └── name: "g"
+            │                       └── name: :g
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

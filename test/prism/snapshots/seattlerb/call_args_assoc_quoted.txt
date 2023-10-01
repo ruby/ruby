@@ -32,7 +32,7 @@
         │   │                   │   │       │           ├── closing_loc: ∅
         │   │                   │   │       │           ├── block: ∅
         │   │                   │   │       │           ├── flags: variable_call
-        │   │                   │   │       │           └── name: "k"
+        │   │                   │   │       │           └── name: :k
         │   │                   │   │       └── closing_loc: (1,6)-(1,7) = "}"
         │   │                   │   └── closing_loc: (1,7)-(1,9) = "\":"
         │   │                   ├── value:
@@ -42,7 +42,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "x"
+        │   └── name: :x
         ├── @ CallNode (location: (3,0)-(3,8))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -67,7 +67,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "x"
+        │   └── name: :x
         └── @ CallNode (location: (5,0)-(5,8))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -92,4 +92,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "x"
+            └── name: :x

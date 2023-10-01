@@ -32,14 +32,14 @@
             │           │           │           ├── closing_loc: ∅
             │           │           │           ├── block: ∅
             │           │           │           ├── flags: variable_call
-            │           │           │           └── name: "bar"
+            │           │           │           └── name: :bar
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: ∅
-            │           │           └── name: "f"
+            │           │           └── name: :f
             │           ├── opening_loc: (1,4)-(1,5) = "("
             │           └── closing_loc: (1,10)-(1,11) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "fun"
+            └── name: :fun

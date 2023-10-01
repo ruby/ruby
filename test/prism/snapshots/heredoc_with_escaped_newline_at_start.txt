@@ -32,7 +32,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "gsub"
+        │   └── name: :gsub
         └── @ CallNode (location: (5,0)-(5,25))
             ├── receiver:
             │   @ StringNode (location: (5,0)-(5,9))
@@ -62,4 +62,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "gsub"
+            └── name: :gsub

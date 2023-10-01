@@ -76,11 +76,11 @@
             │       │   │           ├── closing_loc: ∅
             │       │   │           ├── block: ∅
             │       │   │           ├── flags: ∅
-            │       │   │           └── name: "new"
+            │       │   │           └── name: :new
             │       │   ├── closing_loc: (11,15)-(11,16) = ")"
             │       │   ├── block: ∅
             │       │   ├── flags: ∅
-            │       │   └── name: "include"
+            │       │   └── name: :include
             │       └── @ DefNode (location: (13,2)-(15,5))
             │           ├── name: :foo
             │           ├── name_loc: (13,6)-(13,9) = "foo"

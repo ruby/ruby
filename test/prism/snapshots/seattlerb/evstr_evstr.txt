@@ -20,7 +20,7 @@
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
             │   │   │           ├── flags: variable_call
-            │   │   │           └── name: "a"
+            │   │   │           └── name: :a
             │   │   └── closing_loc: (1,4)-(1,5) = "}"
             │   └── @ EmbeddedStatementsNode (location: (1,5)-(1,9))
             │       ├── opening_loc: (1,5)-(1,7) = "\#{"
@@ -36,6 +36,6 @@
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: variable_call
-            │       │           └── name: "b"
+            │       │           └── name: :b
             │       └── closing_loc: (1,8)-(1,9) = "}"
             └── closing_loc: (1,9)-(1,10) = "\""

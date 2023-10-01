@@ -738,7 +738,7 @@
         │   │       │   │       │   ├── closing_loc: ∅
         │   │       │   │       │   ├── block: ∅
         │   │       │   │       │   ├── flags: variable_call
-        │   │       │   │       │   └── name: "a"
+        │   │       │   │       │   └── name: :a
         │   │       │   │       ├── operator_loc: (90,4)-(90,5) = "^"
         │   │       │   │       ├── lparen_loc: (90,5)-(90,6) = "("
         │   │       │   │       └── rparen_loc: (90,7)-(90,8) = ")"

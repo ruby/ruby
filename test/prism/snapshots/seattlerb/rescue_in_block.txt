@@ -36,7 +36,7 @@
             │   │   │   │           ├── closing_loc: ∅
             │   │   │   │           ├── block: ∅
             │   │   │   │           ├── flags: variable_call
-            │   │   │   │           └── name: "stuff"
+            │   │   │   │           └── name: :stuff
             │   │   │   └── consequent: ∅
             │   │   ├── else_clause: ∅
             │   │   ├── ensure_clause: ∅
@@ -44,4 +44,4 @@
             │   ├── opening_loc: (1,5)-(1,7) = "do"
             │   └── closing_loc: (4,0)-(4,3) = "end"
             ├── flags: ∅
-            └── name: "blah"
+            └── name: :blah

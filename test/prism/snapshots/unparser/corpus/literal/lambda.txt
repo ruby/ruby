@@ -18,7 +18,7 @@
         │   │   ├── opening_loc: (1,7)-(1,8) = "{"
         │   │   └── closing_loc: (2,0)-(2,1) = "}"
         │   ├── flags: ∅
-        │   └── name: "lambda"
+        │   └── name: :lambda
         ├── @ CallNode (location: (3,0)-(5,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -56,7 +56,7 @@
         │   │   ├── opening_loc: (3,7)-(3,8) = "{"
         │   │   └── closing_loc: (5,0)-(5,1) = "}"
         │   ├── flags: ∅
-        │   └── name: "lambda"
+        │   └── name: :lambda
         ├── @ LambdaNode (location: (6,0)-(7,1))
         │   ├── locals: []
         │   ├── operator_loc: (6,0)-(6,2) = "->"

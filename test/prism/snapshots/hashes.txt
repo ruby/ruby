@@ -25,7 +25,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "a"
+        │   │   │   │   └── name: :a
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (6,7)-(6,8))
         │   │   │   │   ├── receiver: ∅
@@ -36,7 +36,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "b"
+        │   │   │   │   └── name: :b
         │   │   │   └── operator_loc: (6,4)-(6,6) = "=>"
         │   │   └── @ AssocNode (location: (6,10)-(6,16))
         │   │       ├── key:
@@ -49,7 +49,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "c"
+        │   │       │   └── name: :c
         │   │       ├── value:
         │   │       │   @ CallNode (location: (6,15)-(6,16))
         │   │       │   ├── receiver: ∅
@@ -60,7 +60,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "d"
+        │   │       │   └── name: :d
         │   │       └── operator_loc: (6,12)-(6,14) = "=>"
         │   └── closing_loc: (6,17)-(6,18) = "}"
         ├── @ HashNode (location: (8,0)-(8,15))
@@ -77,7 +77,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "a"
+        │   │   │   │   └── name: :a
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (8,7)-(8,8))
         │   │   │   │   ├── receiver: ∅
@@ -88,7 +88,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "b"
+        │   │   │   │   └── name: :b
         │   │   │   └── operator_loc: (8,4)-(8,6) = "=>"
         │   │   └── @ AssocSplatNode (location: (8,10)-(8,13))
         │   │       ├── value:
@@ -101,7 +101,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "c"
+        │   │       │   └── name: :c
         │   │       └── operator_loc: (8,10)-(8,12) = "**"
         │   └── closing_loc: (8,14)-(8,15) = "}"
         ├── @ HashNode (location: (10,0)-(16,5))
@@ -124,7 +124,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "b"
+        │   │   │   │   └── name: :b
         │   │   │   └── operator_loc: ∅
         │   │   └── @ AssocNode (location: (12,6)-(12,10))
         │   │       ├── key:
@@ -143,7 +143,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "d"
+        │   │       │   └── name: :d
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (16,4)-(16,5) = "}"
         ├── @ HashNode (location: (18,0)-(18,25))
@@ -166,7 +166,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "b"
+        │   │   │   │   └── name: :b
         │   │   │   └── operator_loc: ∅
         │   │   ├── @ AssocNode (location: (18,8)-(18,12))
         │   │   │   ├── key:
@@ -185,7 +185,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "d"
+        │   │   │   │   └── name: :d
         │   │   │   └── operator_loc: ∅
         │   │   ├── @ AssocSplatNode (location: (18,14)-(18,17))
         │   │   │   ├── value:
@@ -198,7 +198,7 @@
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: "e"
+        │   │   │   │   └── name: :e
         │   │   │   └── operator_loc: (18,14)-(18,16) = "**"
         │   │   └── @ AssocNode (location: (18,19)-(18,23))
         │   │       ├── key:
@@ -217,7 +217,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "g"
+        │   │       │   └── name: :g
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (18,24)-(18,25) = "}"
         ├── @ HashNode (location: (20,0)-(20,12))
@@ -242,7 +242,7 @@
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   ├── block: ∅
         │   │       │   │   ├── flags: ∅
-        │   │       │   │   └── name: "b?"
+        │   │       │   │   └── name: :b?
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── message_loc: (20,7)-(20,8) = "!"
         │   │       │   ├── opening_loc: ∅
@@ -250,7 +250,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
-        │   │       │   └── name: "!"
+        │   │       │   └── name: :!
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (20,11)-(20,12) = "}"
         ├── @ LocalVariableWriteNode (location: (22,0)-(22,5))
@@ -333,7 +333,7 @@
             │   │           │   │   │       ├── closing_loc: ∅
             │   │           │   │   │       ├── block: ∅
             │   │           │   │   │       ├── flags: ∅
-            │   │           │   │   │       └── name: "c"
+            │   │           │   │   │       └── name: :c
             │   │           │   │   └── operator_loc: ∅
             │   │           │   └── @ AssocNode (location: (25,16)-(25,18))
             │   │           │       ├── key:
@@ -352,4 +352,4 @@
             │   ├── opening_loc: (23,4)-(23,6) = "do"
             │   └── closing_loc: (26,0)-(26,3) = "end"
             ├── flags: ∅
-            └── name: "tap"
+            └── name: :tap

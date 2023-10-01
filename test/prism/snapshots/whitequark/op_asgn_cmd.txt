@@ -14,15 +14,15 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: (1,3)-(1,4) = "."
         │   ├── message_loc: (1,4)-(1,5) = "A"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "A"
-        │   ├── write_name: "A="
+        │   ├── read_name: :A
+        │   ├── write_name: :A=
         │   ├── operator: :+
         │   ├── operator_loc: (1,6)-(1,8) = "+="
         │   └── value:
@@ -43,11 +43,11 @@
         │       │           ├── closing_loc: ∅
         │       │           ├── block: ∅
         │       │           ├── flags: variable_call
-        │       │           └── name: "foo"
+        │       │           └── name: :foo
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "m"
+        │       └── name: :m
         ├── @ CallOperatorWriteNode (location: (3,0)-(3,14))
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
@@ -59,15 +59,15 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: (3,3)-(3,4) = "."
         │   ├── message_loc: (3,4)-(3,5) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "a"
-        │   ├── write_name: "a="
+        │   ├── read_name: :a
+        │   ├── write_name: :a=
         │   ├── operator: :+
         │   ├── operator_loc: (3,6)-(3,8) = "+="
         │   └── value:
@@ -88,11 +88,11 @@
         │       │           ├── closing_loc: ∅
         │       │           ├── block: ∅
         │       │           ├── flags: variable_call
-        │       │           └── name: "foo"
+        │       │           └── name: :foo
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: ∅
-        │       └── name: "m"
+        │       └── name: :m
         ├── @ ConstantPathOperatorWriteNode (location: (5,0)-(5,15))
         │   ├── target:
         │   │   @ ConstantPathNode (location: (5,0)-(5,6))
@@ -106,7 +106,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (5,5)-(5,6))
         │   │   │   └── name: :A
@@ -130,11 +130,11 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "foo"
+        │   │   │           └── name: :foo
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "m"
+        │   │   └── name: :m
         │   └── operator: :+
         └── @ CallOperatorWriteNode (location: (7,0)-(7,15))
             ├── receiver:
@@ -147,15 +147,15 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── call_operator_loc: (7,3)-(7,5) = "::"
             ├── message_loc: (7,5)-(7,6) = "a"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── flags: ∅
-            ├── read_name: "a"
-            ├── write_name: "a="
+            ├── read_name: :a
+            ├── write_name: :a=
             ├── operator: :+
             ├── operator_loc: (7,7)-(7,9) = "+="
             └── value:
@@ -176,8 +176,8 @@
                 │           ├── closing_loc: ∅
                 │           ├── block: ∅
                 │           ├── flags: variable_call
-                │           └── name: "foo"
+                │           └── name: :foo
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: ∅
-                └── name: "m"
+                └── name: :m

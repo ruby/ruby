@@ -35,7 +35,7 @@
             │           │           │   ├── opening_loc: (1,23)-(1,25) = "do"
             │           │           │   └── closing_loc: (1,26)-(1,29) = "end"
             │           │           ├── flags: ∅
-            │           │           └── name: "each"
+            │           │           └── name: :each
             │           ├── locals: []
             │           ├── def_keyword_loc: (1,4)-(1,7) = "def"
             │           ├── operator_loc: ∅
@@ -46,4 +46,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "bar"
+            └── name: :bar

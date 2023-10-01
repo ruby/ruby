@@ -23,7 +23,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "foo"
+        │   │           └── name: :foo
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (5,0)-(5,7))
         │   ├── keyword_loc: (5,0)-(5,5) = "yield"
@@ -45,5 +45,5 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "foo"
+            │           └── name: :foo
             └── rparen_loc: (7,9)-(7,10) = ")"

@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: (2,0)-(2,2) = "&."
             ├── message_loc: (2,2)-(2,3) = "b"
             ├── opening_loc: ∅
@@ -22,4 +22,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: safe_navigation
-            └── name: "b"
+            └── name: :b

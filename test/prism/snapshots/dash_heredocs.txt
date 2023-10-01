@@ -32,7 +32,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "+"
+        │   └── name: :+
         ├── @ InterpolatedXStringNode (location: (11,0)-(11,8))
         │   ├── opening_loc: (11,0)-(11,8) = "<<-`EOF`"
         │   ├── parts: (length: 3)
@@ -56,7 +56,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "b"
+        │   │   │   │           └── name: :b
         │   │   │   └── closing_loc: (13,3)-(13,4) = "}"
         │   │   └── @ StringNode (location: (13,4)-(13,0))
         │   │       ├── flags: ∅
@@ -100,7 +100,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "b"
+        │   │   │   │           └── name: :b
         │   │   │   └── closing_loc: (27,3)-(27,4) = "}"
         │   │   └── @ StringNode (location: (27,4)-(27,0))
         │   │       ├── flags: ∅
@@ -132,7 +132,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "b"
+        │   │   │   │           └── name: :b
         │   │   │   └── closing_loc: (32,3)-(32,4) = "}"
         │   │   └── @ StringNode (location: (32,4)-(32,0))
         │   │       ├── flags: ∅
@@ -206,7 +206,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "+"
+        │   └── name: :+
         └── @ CallNode (location: (57,0)-(57,11))
             ├── receiver:
             │   @ StringNode (location: (57,0)-(57,4))
@@ -248,4 +248,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "+"
+            └── name: :+
