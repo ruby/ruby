@@ -4952,18 +4952,24 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Argument +exe_path+ is one of the following:
  *
- *  - The string path to an executable to be called.
+ *  - The string path to an executable to be called:
+ *
+ *      spawn('/usr/bin/date') # Path to date on Unix-style system.
+ *      Process.wait
+ *
+ *    Output:
+ *
+ *      Thu Aug 31 10:06:48 AM CDT 2023
+ *
  *  - A 2-element array containing the path to an executable
- *    and the string to be used as the name of the executing process.
+ *    and the string to be used as the name of the executing process:
  *
- *  Example:
+ *      pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
+ *      p `ps -p #{pid} -o command=`
  *
- *    spawn('/usr/bin/date') # => 799198 # Path to date on Unix-style system.
- *    Process.wait           # => 799198
+ *    Output:
  *
- *  Output:
- *
- *    Thu Aug 31 10:06:48 AM CDT 2023
+ *      "Hello! 1\n"
  *
  *  Ruby invokes the executable directly, with no shell and no shell expansion.
  *
