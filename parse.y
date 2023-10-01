@@ -1783,6 +1783,34 @@ clear_block_exit(struct parser_params *p, bool error)
      (void)rb_warning0("`" tok "' at the end of line without an expression") : \
      (void)0)
 static int looking_at_eol_p(struct parser_params *p);
+
+#ifndef RIPPER
+static NODE *
+get_nd_args(struct parser_params *p, NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_CALL:
+        return RNODE_CALL(node)->nd_args;
+      case NODE_OPCALL:
+        return RNODE_OPCALL(node)->nd_args;
+      case NODE_FCALL:
+        return RNODE_FCALL(node)->nd_args;
+      case NODE_QCALL:
+        return RNODE_QCALL(node)->nd_args;
+      case NODE_VCALL:
+      case NODE_SUPER:
+      case NODE_ZSUPER:
+      case NODE_YIELD:
+      case NODE_RETURN:
+      case NODE_BREAK:
+      case NODE_NEXT:
+        return 0;
+      default:
+        compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
+        return 0;
+    }
+}
+#endif
 %}
 
 %expect 0
@@ -3867,7 +3895,7 @@ primary		: literal
                 | method_call brace_block
                     {
                     /*%%%*/
-                        block_dup_check(p, RNODE_FCALL($1)->nd_args, $2);
+                        block_dup_check(p, get_nd_args(p, $1), $2);
                         $$ = method_add_block(p, $1, $2, &@$);
                     /*% %*/
                     /*% ripper: method_add_block!($1, $2) %*/
@@ -4714,7 +4742,7 @@ block_call	: command do_block
                             compile_error(p, "block given to yield");
                         }
                         else {
-                            block_dup_check(p, RNODE_FCALL($1)->nd_args, $2);
+                            block_dup_check(p, get_nd_args(p, $1), $2);
                         }
                         $$ = method_add_block(p, $1, $2, &@$);
                         fixpos($$, $1);
