@@ -4958,12 +4958,15 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Example:
  *
- *    spawn('/usr/bin/date') # => 799198 # Path to date on Unix-style system.
- *    Process.wait           # => 799198
+ *    spawn('/usr/bin/date')                # Path to date on Unix-style system.
+ *    Process.wait
+ *    pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
+      p `ps -p #{pid} -o command=`
  *
  *  Output:
  *
  *    Thu Aug 31 10:06:48 AM CDT 2023
+ *    "Hello! 1\n"
  *
  *  Ruby invokes the executable directly, with no shell and no shell expansion.
  *
