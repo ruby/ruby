@@ -4965,7 +4965,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *    and the string to be used as the name of the executing process:
  *
  *      pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
-        p `ps -p #{pid} -o command=`
+ *      p `ps -p #{pid} -o command=`
  *
  *    Output:
  *
