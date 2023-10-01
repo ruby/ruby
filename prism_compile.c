@@ -986,7 +986,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_CALL_NODE: {
         pm_call_node_t *call_node = (pm_call_node_t *) node;
 
-        ID method_id = parse_string_symbol(&call_node->name);
+        ID method_id = pm_constant_id_lookup(compile_context, call_node->name);
         int flags = 0;
         int orig_argc = 0;
 
