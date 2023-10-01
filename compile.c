@@ -5420,9 +5420,9 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 static inline int
 private_recv_p(const NODE *node)
 {
-    if (nd_type_p(get_nd_recv(node), NODE_SELF)) {
-        NODE *self = get_nd_recv(node);
-        return RNODE_SELF(self)->nd_state != 0;
+    NODE *recv = get_nd_recv(node);
+    if (recv && nd_type_p(recv, NODE_SELF)) {
+        return RNODE_SELF(recv)->nd_state != 0;
     }
     return 0;
 }
