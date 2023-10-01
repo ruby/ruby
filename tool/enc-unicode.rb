@@ -597,7 +597,6 @@ if header
     IO.popen([*NAME2CTYPE, out: tmp], "w") {|f| output.show(f, *syms)}
   end while syms.pop
   fds.each(&:close)
-  ff = nil
   IO.popen(ifdef["USE_UNICODE_AGE_PROPERTIES", fds[1].path, fds[0].path], "r") {|age|
     IO.popen(ifdef["USE_UNICODE_PROPERTIES", fds[2].path, "-"], "r", in: age) {|f|
       ansi = false
@@ -608,7 +607,7 @@ if header
         line.sub!(/\/\*ANSI\*\//, '1') if ansi
         line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
                    'uniname2ctype_offset(\1), ')
-        if ff = (!ff ? /^(uniname2ctype_hash) /=~line : /^\}/!~line) # no line can match both, exclusive flip-flop
+        if line.start_with?("uniname2ctype_hash\s") ... line.start_with?("}")
           line.sub!(/^( *(?:register\s+)?(.*\S)\s+hval\s*=\s*)(?=len;)/, '\1(\2)')
         end
         puts line
