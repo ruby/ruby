@@ -721,6 +721,73 @@ validate_labels(rb_iseq_t *iseq, st_table *labels_table)
     st_free_table(labels_table);
 }
 
+static NODE *
+get_nd_recv(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_CALL:
+        return RNODE_CALL(node)->nd_recv;
+      case NODE_OPCALL:
+        return RNODE_OPCALL(node)->nd_recv;
+      case NODE_FCALL:
+        return 0;
+      case NODE_QCALL:
+        return RNODE_QCALL(node)->nd_recv;
+      case NODE_VCALL:
+        return 0;
+      case NODE_ATTRASGN:
+        return RNODE_ATTRASGN(node)->nd_recv;
+      case NODE_OP_ASGN1:
+        return RNODE_OP_ASGN1(node)->nd_recv;
+      case NODE_OP_ASGN2:
+        return RNODE_OP_ASGN2(node)->nd_recv;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static ID
+get_nd_mid(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_CALL:
+        return RNODE_CALL(node)->nd_mid;
+      case NODE_OPCALL:
+        return RNODE_OPCALL(node)->nd_mid;
+      case NODE_FCALL:
+        return RNODE_FCALL(node)->nd_mid;
+      case NODE_QCALL:
+        return RNODE_QCALL(node)->nd_mid;
+      case NODE_VCALL:
+        return RNODE_VCALL(node)->nd_mid;
+      case NODE_ATTRASGN:
+        return RNODE_ATTRASGN(node)->nd_mid;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static NODE *
+get_nd_args(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_CALL:
+        return RNODE_CALL(node)->nd_args;
+      case NODE_OPCALL:
+        return RNODE_OPCALL(node)->nd_args;
+      case NODE_FCALL:
+        return RNODE_FCALL(node)->nd_args;
+      case NODE_QCALL:
+        return RNODE_QCALL(node)->nd_args;
+      case NODE_VCALL:
+        return 0;
+      case NODE_ATTRASGN:
+        return RNODE_ATTRASGN(node)->nd_args;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 VALUE
 rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc)
 {
@@ -5353,8 +5420,8 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 static inline int
 private_recv_p(const NODE *node)
 {
-    if (nd_type_p(RNODE_CALL(node)->nd_recv, NODE_SELF)) {
-        NODE *self = RNODE_CALL(node)->nd_recv;
+    if (nd_type_p(get_nd_recv(node), NODE_SELF)) {
+        NODE *self = get_nd_recv(node);
         return RNODE_SELF(self)->nd_state != 0;
     }
     return 0;
@@ -5477,7 +5544,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             (type == NODE_CALL || type == NODE_OPCALL ||
              (type == NODE_ATTRASGN && !private_recv_p(node)));
 
-        if (RNODE_CALL(node)->nd_args || explicit_receiver) {
+        if (get_nd_args(node) || explicit_receiver) {
             if (!lfinish[1]) {
                 lfinish[1] = NEW_LABEL(line);
             }
@@ -5485,31 +5552,31 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 lfinish[2] = NEW_LABEL(line);
             }
         }
-        if (RNODE_CALL(node)->nd_args) {
-            defined_expr0(iseq, ret, RNODE_CALL(node)->nd_args, lfinish, Qfalse, false);
+        if (get_nd_args(node)) {
+            defined_expr0(iseq, ret, get_nd_args(node), lfinish, Qfalse, false);
             ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
         }
         if (explicit_receiver) {
-            defined_expr0(iseq, ret, RNODE_CALL(node)->nd_recv, lfinish, Qfalse, true);
-            switch (nd_type(RNODE_CALL(node)->nd_recv)) {
+            defined_expr0(iseq, ret, get_nd_recv(node), lfinish, Qfalse, true);
+            switch (nd_type(get_nd_recv(node))) {
               case NODE_CALL:
               case NODE_OPCALL:
               case NODE_VCALL:
               case NODE_FCALL:
               case NODE_ATTRASGN:
                 ADD_INSNL(ret, line_node, branchunless, lfinish[2]);
-                compile_call(iseq, ret, RNODE_CALL(node)->nd_recv, nd_type(RNODE_CALL(node)->nd_recv), line_node, 0, true);
+                compile_call(iseq, ret, get_nd_recv(node), nd_type(get_nd_recv(node)), line_node, 0, true);
                 break;
               default:
                 ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-                NO_CHECK(COMPILE(ret, "defined/recv", RNODE_CALL(node)->nd_recv));
+                NO_CHECK(COMPILE(ret, "defined/recv", get_nd_recv(node)));
                 break;
             }
             if (keep_result) {
                 ADD_INSN(ret, line_node, dup);
             }
             ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_METHOD),
-                      ID2SYM(RNODE_CALL(node)->nd_mid), PUSH_VAL(DEFINED_METHOD));
+                      ID2SYM(get_nd_mid(node)), PUSH_VAL(DEFINED_METHOD));
         }
         else {
             ADD_INSN(ret, line_node, putself);
@@ -5517,7 +5584,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 ADD_INSN(ret, line_node, dup);
             }
             ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_FUNC),
-                      ID2SYM(RNODE_CALL(node)->nd_mid), PUSH_VAL(DEFINED_METHOD));
+                      ID2SYM(get_nd_mid(node)), PUSH_VAL(DEFINED_METHOD));
         }
         return;
       }
@@ -8018,13 +8085,13 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     /* optimization shortcut
      *   "literal".freeze -> opt_str_freeze("literal")
      */
-    if (RNODE_CALL(node)->nd_recv && nd_type_p(RNODE_CALL(node)->nd_recv, NODE_STR) &&
-        (RNODE_CALL(node)->nd_mid == idFreeze || RNODE_CALL(node)->nd_mid == idUMinus) &&
-        RNODE_CALL(node)->nd_args == NULL &&
+    if (get_nd_recv(node) && nd_type_p(get_nd_recv(node), NODE_STR) &&
+        (get_nd_mid(node) == idFreeze || get_nd_mid(node) == idUMinus) &&
+        get_nd_args(node) == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = rb_fstring(RNODE_STR(RNODE_CALL(node)->nd_recv)->nd_lit);
-        if (RNODE_CALL(node)->nd_mid == idUMinus) {
+        VALUE str = rb_fstring(RNODE_STR(get_nd_recv(node))->nd_lit);
+        if (get_nd_mid(node) == idUMinus) {
             ADD_INSN2(ret, line_node, opt_str_uminus, str,
                       new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
         }
@@ -8041,14 +8108,14 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     /* optimization shortcut
      *   obj["literal"] -> opt_aref_with(obj, "literal")
      */
-    if (RNODE_CALL(node)->nd_mid == idAREF && !private_recv_p(node) && RNODE_CALL(node)->nd_args &&
-        nd_type_p(RNODE_CALL(node)->nd_args, NODE_LIST) && RNODE_LIST(RNODE_CALL(node)->nd_args)->as.nd_alen == 1 &&
-        nd_type_p(RNODE_LIST(RNODE_CALL(node)->nd_args)->nd_head, NODE_STR) &&
+    if (get_nd_mid(node) == idAREF && !private_recv_p(node) && get_nd_args(node) &&
+        nd_type_p(get_nd_args(node), NODE_LIST) && RNODE_LIST(get_nd_args(node))->as.nd_alen == 1 &&
+        nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_STR) &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = rb_fstring(RNODE_STR(RNODE_LIST(RNODE_CALL(node)->nd_args)->nd_head)->nd_lit);
-        CHECK(COMPILE(ret, "recv", RNODE_CALL(node)->nd_recv));
+        VALUE str = rb_fstring(RNODE_STR(RNODE_LIST(get_nd_args(node))->nd_head)->nd_lit);
+        CHECK(COMPILE(ret, "recv", get_nd_recv(node)));
         ADD_INSN2(ret, line_node, opt_aref_with, str,
                   new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
         RB_OBJ_WRITTEN(iseq, Qundef, str);
@@ -8319,7 +8386,7 @@ static int
 compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const NODE *line_node, int popped,
                               const rb_iseq_t *parent_block, LINK_ANCHOR *args, const char *builtin_func)
 {
-    NODE *args_node = RNODE_QCALL(node)->nd_args;
+    NODE *args_node = get_nd_args(node);
 
     if (parent_block != NULL) {
         COMPILE_ERROR(ERROR_ARGS_AT(line_node) "should not call builtins here.");
@@ -8422,7 +8489,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
      */
     DECL_ANCHOR(recv);
     DECL_ANCHOR(args);
-    ID mid = RNODE_CALL(node)->nd_mid;
+    ID mid = get_nd_mid(node);
     VALUE argc;
     unsigned int flag = 0;
     struct rb_callinfo_kwarg *keywords = NULL;
@@ -8501,7 +8568,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
     const char *builtin_func;
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
-        (builtin_func = iseq_builtin_function_name(type, RNODE_CALL(node)->nd_recv, mid)) != NULL) {
+        (builtin_func = iseq_builtin_function_name(type, get_nd_recv(node), mid)) != NULL) {
         return compile_builtin_function_call(iseq, ret, node, line_node, popped, parent_block, args, builtin_func);
     }
 
@@ -8511,16 +8578,16 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             int idx, level;
 
             if (mid == idCall &&
-                nd_type_p(RNODE_CALL(node)->nd_recv, NODE_LVAR) &&
-                iseq_block_param_id_p(iseq, RNODE_LVAR(RNODE_CALL(node)->nd_recv)->nd_vid, &idx, &level)) {
-                ADD_INSN2(recv, RNODE_CALL(node)->nd_recv, getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+                nd_type_p(get_nd_recv(node), NODE_LVAR) &&
+                iseq_block_param_id_p(iseq, RNODE_LVAR(get_nd_recv(node))->nd_vid, &idx, &level)) {
+                ADD_INSN2(recv, get_nd_recv(node), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
             }
             else if (private_recv_p(node)) {
                 ADD_INSN(recv, node, putself);
                 flag |= VM_CALL_FCALL;
             }
             else {
-                CHECK(COMPILE(recv, "recv", RNODE_CALL(node)->nd_recv));
+                CHECK(COMPILE(recv, "recv", get_nd_recv(node)));
             }
 
             if (type == NODE_QCALL) {
@@ -8534,7 +8601,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
     /* args */
     if (type != NODE_VCALL) {
-        argc = setup_args(iseq, args, RNODE_CALL(node)->nd_args, &flag, &keywords);
+        argc = setup_args(iseq, args, get_nd_args(node), &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
     else {
