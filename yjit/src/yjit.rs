@@ -94,7 +94,7 @@ pub extern "C" fn rb_yjit_threshold_hit(iseq: IseqPtr, total_calls: u64) -> bool
 
         // Reject ISEQs that don't get called often enough
         if num_calls > get_option!(cold_threshold) as u64 {
-            incr_counter!(iseq_entry_cold);
+            incr_counter!(cold_iseq_entry);
             return false;
         }
 

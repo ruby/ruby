@@ -201,7 +201,7 @@ macro_rules! make_counters {
 pub const DEFAULT_COUNTERS: [Counter; 8] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
-    Counter::iseq_entry_cold,
+    Counter::cold_iseq_entry,
     Counter::compiled_iseq_count,
     Counter::compiled_blockid_count,
     Counter::compiled_block_count,
@@ -442,7 +442,7 @@ make_counters! {
     binding_set,
 
     compiled_iseq_entry,
-    iseq_entry_cold,
+    cold_iseq_entry,
     compiled_iseq_count,
     compiled_blockid_count,
     compiled_block_count,
