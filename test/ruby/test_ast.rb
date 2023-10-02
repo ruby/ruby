@@ -312,11 +312,13 @@ class TestAst < Test::Unit::TestCase
     assert_invalid_parse(msg, "class C; yield; end")
     assert_invalid_parse(msg, "BEGIN {yield}")
     assert_invalid_parse(msg, "END {yield}")
+    assert_invalid_parse(msg, "-> {yield}")
 
     assert_invalid_parse(msg, "yield true")
     assert_invalid_parse(msg, "class C; yield true; end")
     assert_invalid_parse(msg, "BEGIN {yield true}")
     assert_invalid_parse(msg, "END {yield true}")
+    assert_invalid_parse(msg, "-> {yield true}")
 
     assert_parse("!defined?(yield)")
     assert_parse("class C; defined?(yield); end")

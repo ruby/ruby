@@ -4349,7 +4349,7 @@ k_return	: keyword_return
 
 k_yield 	: keyword_yield
                     {
-                        if (!p->ctxt.in_defined && !p->ctxt.in_def && !dyna_in_block(p))
+                        if (!p->ctxt.in_defined && !p->ctxt.in_def && !compile_for_eval)
                             yyerror1(&@1, "Invalid yield");
                     }
                 ;
