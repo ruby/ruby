@@ -1153,7 +1153,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_invalidate_cyclic_branch
-    assert_compiles(<<~'RUBY', result: 2)
+    assert_compiles(<<~'RUBY', result: 2, exits: { opt_plus: 1 })
       def foo
         i = 0
         while i < 2
@@ -1171,7 +1171,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_tracing_str_uplus
-    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok)
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1, definemethod: 1 })
       def str_uplus
         _ = 1
         _ = 2
@@ -1216,7 +1216,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_return_to_invalidated_block
     # [Bug #19463]
-    assert_compiles(<<~RUBY, result: [1, 1, :ugokanai])
+    assert_compiles(<<~RUBY, result: [1, 1, :ugokanai], exits: { definesmethod: 1, getlocal_WC_0: 1 })
       klass = Class.new do
         def self.lookup(hash, key) = hash[key]
 
@@ -1257,7 +1257,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_setivar_on_class
     # Bug in https://github.com/ruby/ruby/pull/8152
-    assert_compiles(<<~RUBY, result: :ok)
+    assert_compiles(<<~RUBY, result: :ok, exits: { opt_getconstant_path: 2 })
       class Base
         def self.or_equal
           @or_equal ||= Object.new
@@ -1280,7 +1280,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_nested_send
     #[Bug #19464]
-    assert_compiles(<<~RUBY, result: [:ok, :ok])
+    assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { opt_getconstant_path: 1, defineclass: 1 })
       klass = Class.new do
         class << self
           alias_method :my_send, :send
@@ -1318,7 +1318,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_io_reopen_clobbering_singleton_class
-    assert_compiles(<<~RUBY, result: [:ok, :ok])
+    assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { definesmethod: 1, opt_eq: 2 })
       def $stderr.to_i = :i
 
       def test = $stderr.to_i
@@ -1434,7 +1434,7 @@ class TestYJIT < Test::Unit::TestCase
       # barriers, cache misses.)
       if exits != :any &&
         exits != recorded_exits &&
-        !exits.all? { |k, v| v === recorded_exits[k] } # triple-equal checks range membership or integer equality
+        (exits.keys != recorded_exits.keys || !exits.all? { |k, v| v === recorded_exits[k] }) # triple-equal checks range membership or integer equality
         flunk "Expected #{exits.empty? ? "no" : exits.inspect} exits" \
           ", but got\n#{recorded_exits.inspect}"
       end
