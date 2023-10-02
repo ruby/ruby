@@ -28,6 +28,7 @@
 #include "ruby/debug.h"
 #include "ruby/util.h"
 #include "ruby/io.h"
+#include "vm_callinfo.h"
 #include "vm_core.h"
 
 RUBY_EXTERN const char ruby_hexdigits[];
@@ -429,6 +430,17 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append(dc, ", \"imemo_type\":\"");
         dump_append(dc, rb_imemo_name(imemo_type(obj)));
         dump_append(dc, "\"");
+
+        switch (imemo_type(obj)) {
+          case imemo_callinfo:
+            dump_append(dc, ", \"mid\":\"");
+            dump_append(dc, RSTRING_PTR(rb_id2str(vm_ci_mid((const struct rb_callinfo *)obj))));
+            dump_append(dc, "\"");
+            break;
+
+          default:
+            break;
+        }
         break;
 
       case T_SYMBOL:
