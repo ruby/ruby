@@ -46,6 +46,12 @@ pub fn yjit_enabled_p() -> bool {
     YJIT_ENABLED.load(Ordering::Acquire)
 }
 
+/// Make the call threshold available to C
+#[no_mangle]
+pub extern "C" fn rb_yjit_call_threshold() -> raw::c_ulong {
+    get_option!(call_threshold) as raw::c_ulong
+}
+
 // Counter to serve as a proxy for execution time, total number of calls
 static mut TOTAL_ENTRY_HITS: u64 = 0;
 
