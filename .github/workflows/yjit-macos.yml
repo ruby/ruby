@@ -1,4 +1,4 @@
-name: macOS
+name: YJIT macOS
 on:
   push:
     paths-ignore:
@@ -33,18 +33,18 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
-        os:
-          - macos-11
-          - macos-12
-        configure:
-          - ''
-          - '--enable-shared'
+        os: ['macos-13-xlarge'] # arm64 (M1)
+        include:
+          - test_task: ['check']
+            configure: '--enable-yjit=dev'
+            yjit_opts: '--yjit-call-threshold=1'
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      RUN_OPTS: ${{ matrix.yjit_opts }}
 
+    # arm64 (M1)
     runs-on: ${{ matrix.os }}
 
     if: >-
@@ -78,6 +78,9 @@ jobs:
 
       - run: make
 
+      - name: Enable YJIT through ENV
+        run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
+
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
@@ -101,7 +104,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
+          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }} ${{ matrix.yjit_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
