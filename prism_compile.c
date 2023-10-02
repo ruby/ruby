@@ -407,7 +407,6 @@ pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, 
         INIT_ANCHOR(then_seq);
         if (node_body) {
             pm_compile_node(iseq, (pm_node_t *)node_body, then_seq, src, popped, compile_context);
-            PM_POP_IF_POPPED;
         } else {
             PM_PUTNIL_UNLESS_POPPED;
         }
@@ -415,7 +414,6 @@ pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, 
         if (else_label->refcnt) {
             end_label = NEW_LABEL(line);
             ADD_INSNL(then_seq, &dummy_line_node, jump, end_label);
-            PM_POP_UNLESS_POPPED;
         }
         ADD_SEQ(ret, then_seq);
     }
@@ -426,7 +424,7 @@ pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, 
         DECL_ANCHOR(else_seq);
         INIT_ANCHOR(else_seq);
         if (node_else) {
-            pm_compile_node(iseq, (pm_node_t *)(((pm_else_node_t *)node_else)->statements), else_seq, src, popped, compile_context);
+            pm_compile_node(iseq, (pm_node_t *)node_else, else_seq, src, popped, compile_context);
         }
         else {
             PM_PUTNIL_UNLESS_POPPED;
@@ -1365,6 +1363,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         }
         return;
+      case PM_ELSE_NODE: {
+          pm_else_node_t *cast = (pm_else_node_t *)node;
+          PM_COMPILE((pm_node_t *)cast->statements);
+          return;
+      }
       case PM_FLIP_FLOP_NODE: {
         // TODO: The labels here are wrong, figure out why.....
         pm_flip_flop_node_t *flip_flop_node = (pm_flip_flop_node_t *)node;

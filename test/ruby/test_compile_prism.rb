@@ -338,6 +338,18 @@ module Prism
       test_prism_eval("false || 1")
     end
 
+    def test_IfNode
+      test_prism_eval("if true; 1; end")
+      test_prism_eval("1 if true")
+    end
+
+    def test_ElseNode
+      test_prism_eval("if false; 0; else; 1; end")
+      test_prism_eval("if true; 0; else; 1; end")
+      test_prism_eval("true ? 1 : 0")
+      test_prism_eval("false ? 0 : 1")
+    end
+
     ############################################################################
     #  Calls / arugments                                                       #
     ############################################################################
