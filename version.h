@@ -55,7 +55,9 @@
 #endif
 
 #if RUBY_PATCHLEVEL == -1
-# ifndef RUBY_PATCHLEVEL_STR
+# ifdef RUBY_PATCHLEVEL_NAME
+#  define RUBY_PATCHLEVEL_STR STRINGIZE(RUBY_PATCHLEVEL_NAME)
+# else
 #  define RUBY_PATCHLEVEL_STR "dev"
 # endif
 #elif defined RUBY_ABI_VERSION
