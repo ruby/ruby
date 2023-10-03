@@ -2076,12 +2076,6 @@ native_thread_setup_on_thread(struct rb_native_thread *nt)
     RB_ALTSTACK_INIT(nt->altstack, nt->altstack);
 }
 
-static void
-native_thread_cleanup(struct rb_native_thread *nt)
-{
-    RB_ALTSTACK_FREE(nt->altstack);
-}
-
 static struct rb_native_thread *
 native_thread_alloc(void)
 {
@@ -2200,7 +2194,6 @@ nt_start(void *ptr)
         }
     }
 
-    native_thread_cleanup(nt);
     return NULL;
 }
 
@@ -2216,14 +2209,16 @@ rb_threadptr_sched_free(rb_thread_t *th)
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
         ruby_xfree(th->sched.context_stack);
+        RB_ALTSTACK_FREE(th->nt->altstack);
         ruby_xfree(th->nt);
     }
     else {
         nt_free_stack(th->sched.context_stack);
-        // TODO: how to free nt?
+        // TODO: how to free nt and nt->altstack?
     }
 #else
     ruby_xfree(th->sched.context_stack);
+    RB_ALTSTACK_FREE(th->nt->altstack);
     ruby_xfree(th->nt);
 #endif
 }
