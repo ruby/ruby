@@ -26,8 +26,8 @@ describe "Process.times" do
       # If getrusage has precision beyond milliseconds, there will be
       # very likely at least one non-zero microsecond results when
       # repeating enough.
-      time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-      not ('%.6f' % time).end_with?('000')
+      time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID, :nanosecond)
+      not (time % 1_000_000) == 0
     end
   rescue Errno::EINVAL
     false
