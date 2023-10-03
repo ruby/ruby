@@ -374,7 +374,7 @@ flags:
   - name: StringFlags
     values:
       - name: FROZEN
-        comment: "frozen by virtue of a frozen_string_literal comment"
+        comment: "frozen by virtue of a `frozen_string_literal` comment"
 nodes:
   - name: AliasGlobalVariableNode
     fields:
