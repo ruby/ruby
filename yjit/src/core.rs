@@ -2302,7 +2302,6 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     // Commit or retry the entry
     if blockref.is_some() {
         // Regenerate the previous entry
-        assert!(!entry_ptr.is_null());
         let entryref = NonNull::<Entry>::new(entry_ptr as *mut Entry).expect("Entry should not be null");
         regenerate_entry(cb, &entryref, next_entry);
 
