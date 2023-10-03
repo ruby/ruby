@@ -124,11 +124,22 @@ module Bundler
     end
 
     def strict_rm_rf(dir)
-      Bundler.rm_rf dir
-    rescue StandardError => e
-      raise unless File.exist?(dir)
+      return unless File.exist?(dir)
 
-      raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
+      parent = File.dirname(dir)
+      parent_st = File.stat(parent)
+
+      if parent_st.world_writable? && !parent_st.sticky?
+        raise InsecureInstallPathError.new(parent)
+      end
+
+      begin
+        FileUtils.remove_entry_secure(dir)
+      rescue StandardError => e
+        raise unless File.exist?(dir)
+
+        raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
+      end
     end
   end
 end

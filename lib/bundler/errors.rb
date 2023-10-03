@@ -215,4 +215,19 @@ module Bundler
 
     status_code(36)
   end
+
+  class InsecureInstallPathError < BundlerError
+    def initialize(path)
+      @path = path
+    end
+
+    def message
+      "The installation path is insecure. Bundler cannot continue.\n" \
+      "#{@path} is world-writable (without sticky bit).\n" \
+      "Bundler cannot safely replace gems in world-writeable directories due to potential vulnerabilities.\n" \
+      "Please change the permissions of this directory or choose a different install path."
+    end
+
+    status_code(38)
+  end
 end

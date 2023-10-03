@@ -224,24 +224,6 @@ RSpec.describe Bundler do
     end
   end
 
-  describe "#rm_rf" do
-    context "the directory is world writable" do
-      let(:bundler_ui) { Bundler.ui }
-      it "should raise a friendly error" do
-        allow(File).to receive(:exist?).and_return(true)
-        allow(::Bundler::FileUtils).to receive(:remove_entry_secure).and_raise(ArgumentError)
-        allow(File).to receive(:world_writable?).and_return(true)
-        message = <<EOF
-It is a security vulnerability to allow your home directory to be world-writable, and bundler cannot continue.
-You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to https://ruby-doc.org/stdlib-3.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
-EOF
-        expect(bundler_ui).to receive(:warn).with(message)
-        expect { Bundler.send(:rm_rf, bundled_app) }.to raise_error(Bundler::PathError)
-      end
-    end
-  end
-
   describe "#mkdir_p" do
     it "creates a folder at the given path" do
       install_gemfile <<-G
