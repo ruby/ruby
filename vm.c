@@ -442,10 +442,11 @@ jit_compile_exception(rb_execution_context_t *ec)
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_exception == NULL) {
         body->jit_exception_calls++;
-        if (rb_yjit_threshold_hit(iseq, body->jit_exception_calls)) {
+        if (body->jit_exception_calls == rb_yjit_call_threshold()) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
+
     return body->jit_exception;
 }
 
