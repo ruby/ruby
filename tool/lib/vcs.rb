@@ -707,12 +707,31 @@ class VCS
                   range = b..b
                 end
                 case x
-                when %r[^s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\1(.*)\1]o
+                when %r[^s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\1(.*)\1([gr]+)?]o
                   wrong = $2
                   correct = $3
+                  if opt = $4 and opt.include?("r") # regexp
+                    wrong = Regexp.new(wrong)
+                    correct.gsub!(/(?<!\\)(?:\\\\)*\K(?:\\n)+/) {"\n" * ($&.size / 2)}
+                    sub = opt.include?("g") ? :gsub! : :sub!
+                  else
+                    sub = false
+                  end
                   range.each do |n|
-                    s[n][wrong] = correct
-                  rescue IndexError
+                    if sub
+                      ss = s[n].sub(/^#{sp}/, "") # un-indent for /^/
+                      if ss.__send__(sub, wrong, correct)
+                        s[n, 1] = ss.lines.map {|l| "#{sp}#{l}"}
+                        next
+                      end
+                    else
+                      begin
+                        s[n][wrong] = correct
+                      rescue IndexError
+                      else
+                        next
+                      end
+                    end
                     message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #{n}\n"]
                     from = [1, n-2].max
                     to = [s.size-1, n+2].min
