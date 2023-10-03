@@ -630,7 +630,6 @@ thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     volatile HANDLE thread_id = th->nt->thread_id;
-    struct rb_native_thread *nt = th->nt;
 
     native_thread_init_stack(th);
     th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
@@ -648,7 +647,6 @@ thread_start_func_1(void *th_ptr)
     w32_close_handle(thread_id);
     RUBY_DEBUG_LOG("thread deleted th:%u", rb_th_serial(th));
 
-    ruby_xfree(nt);
     return 0;
 }
 
@@ -896,6 +894,7 @@ th_has_dedicated_nt(const rb_thread_t *th)
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
+    ruby_xfree(th->nt);
     ruby_xfree(th->sched.vm_stack);
 }
 
