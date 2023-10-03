@@ -7836,6 +7836,7 @@ get_clk_tck(void)
  *    Process.times
  *    # => #<struct Process::Tms utime=55.122118, stime=35.533068, cutime=0.0, cstime=0.002846>
  *
+ *  The precision is platform-defined.
  */
 
 VALUE
