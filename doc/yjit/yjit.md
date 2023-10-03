@@ -165,7 +165,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
-- `--yjit-cold-threshold=N`: number of calls after which an ISEQ is considered cold and not
+- `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
 compiled, lower values mean less code is compiled (default 200000)
 - `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB in Ruby 3.2, 128 MiB in Ruby 3.3+)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
