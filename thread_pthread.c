@@ -2218,8 +2218,12 @@ rb_threadptr_sched_free(rb_thread_t *th)
     }
 #else
     ruby_xfree(th->sched.context_stack);
-    RB_ALTSTACK_FREE(th->nt->altstack);
-    ruby_xfree(th->nt);
+
+    struct rb_native_thread *nt = th->nt;
+    if (nt) { // TODO: not sure why nt is NULL
+        RB_ALTSTACK_FREE(nt->altstack);
+        ruby_xfree(nt);
+    }
 #endif
 }
 
