@@ -104,7 +104,7 @@ typedef struct pm_<%= node.human %> {
 <%- flags.each do |flag| -%>
 
 // <%= flag.name %>
-typedef enum {
+typedef enum pm_<%= flag.human %> {
     <%- flag.values.each.with_index(Prism::COMMON_FLAGS) do |value, index| -%>
     PM_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,
     <%- end -%>
