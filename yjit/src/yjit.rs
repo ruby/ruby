@@ -66,20 +66,8 @@ pub extern "C" fn rb_yjit_threshold_hit(iseq: IseqPtr, total_calls: u64) -> bool
 
     unsafe { TOTAL_ENTRY_HITS += 1; }
 
-    // Exit early if the threshold is not reached
-    if total_calls < call_threshold {
-        return false;
-    }
-
-    // We expect threshold 1 to compile everything immediately
-    // We need to compare for equality here because otherwise we
-    // can get a deaclock with ractors
-    if call_threshold < CALL_COUNT_INTERV {
-        return total_calls == call_threshold;
-    }
-
     // Record the number of calls at the beginning of the interval
-    if total_calls == call_threshold - CALL_COUNT_INTERV {
+    if total_calls + CALL_COUNT_INTERV == call_threshold {
         let payload = get_or_create_iseq_payload(iseq);
         let call_count = unsafe { TOTAL_ENTRY_HITS };
         payload.call_count_at_interv = call_count;
@@ -88,6 +76,11 @@ pub extern "C" fn rb_yjit_threshold_hit(iseq: IseqPtr, total_calls: u64) -> bool
     // Try to estimate the total time taken (total number of calls) to reach 20 calls to this ISEQ
     // This give us a ratio of how hot/cold this ISEQ is
     if total_calls == call_threshold {
+        // We expect threshold 1 to compile everything immediately
+        if call_threshold < CALL_COUNT_INTERV {
+            return true;
+        }
+
         let payload = get_or_create_iseq_payload(iseq);
         let call_count = unsafe { TOTAL_ENTRY_HITS };
         let num_calls = call_count - payload.call_count_at_interv;
