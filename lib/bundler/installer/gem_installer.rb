@@ -21,7 +21,7 @@ module Bundler
       raise
     rescue Errno::ENOSPC
       [false, out_of_space_message]
-    rescue Bundler::BundlerError, Gem::InstallError, Bundler::APIResponseInvalidDependenciesError => e
+    rescue Bundler::BundlerError, Gem::InstallError => e
       [false, specific_failure_message(e)]
     end
 
