@@ -562,54 +562,40 @@ typedef struct RNode_YIELD {
     VALUE not_used2;
 } rb_node_yield_t;
 
-/* RNode_LVAR and RNode_DVAR should be same structure */
 typedef struct RNode_LVAR {
     NODE node;
 
     ID nd_vid;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_lvar_t;
 
 typedef struct RNode_DVAR {
     NODE node;
 
     ID nd_vid;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_dvar_t;
 
-/* RNode_GVAR, RNode_IVAR, RNode_CONST and RNode_CVAR should be same structure */
 typedef struct RNode_GVAR {
     NODE node;
 
     ID nd_vid;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_gvar_t;
 
 typedef struct RNode_IVAR {
     NODE node;
 
     ID nd_vid;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_ivar_t;
 
 typedef struct RNode_CONST {
     NODE node;
 
     ID nd_vid;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_const_t;
 
 typedef struct RNode_CVAR {
     NODE node;
 
     ID nd_vid;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_cvar_t;
 
 typedef struct RNode_NTH_REF {

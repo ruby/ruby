@@ -11666,8 +11666,6 @@ rb_node_gvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
     rb_node_gvar_t *n = NODE_NEWNODE(NODE_GVAR, rb_node_gvar_t, loc);
     n->nd_vid = nd_vid;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11677,8 +11675,6 @@ rb_node_lvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
     rb_node_lvar_t *n = NODE_NEWNODE(NODE_LVAR, rb_node_lvar_t, loc);
     n->nd_vid = nd_vid;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11688,8 +11684,6 @@ rb_node_dvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
     rb_node_dvar_t *n = NODE_NEWNODE(NODE_DVAR, rb_node_dvar_t, loc);
     n->nd_vid = nd_vid;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11699,8 +11693,6 @@ rb_node_ivar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
     rb_node_ivar_t *n = NODE_NEWNODE(NODE_IVAR, rb_node_ivar_t, loc);
     n->nd_vid = nd_vid;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11710,8 +11702,6 @@ rb_node_const_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
     rb_node_const_t *n = NODE_NEWNODE(NODE_CONST, rb_node_const_t, loc);
     n->nd_vid = nd_vid;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
@@ -11721,8 +11711,6 @@ rb_node_cvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
     rb_node_cvar_t *n = NODE_NEWNODE(NODE_CVAR, rb_node_cvar_t, loc);
     n->nd_vid = nd_vid;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
