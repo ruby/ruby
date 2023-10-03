@@ -99,7 +99,7 @@ The following default gems are updated.
 * optparse 0.4.0.pre.1
 * prism 0.13.0
 * psych 5.1.0
-* reline 0.3.8
+* reline 0.3.9
 * stringio 3.0.9
 * strscan 3.0.7
 * syntax_suggest 1.1.0
