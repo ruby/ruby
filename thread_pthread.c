@@ -1617,10 +1617,6 @@ Init_native_thread(rb_thread_t *main_th)
     main_th->nt->vm = vm;
 }
 
-#ifndef USE_THREAD_CACHE
-#define USE_THREAD_CACHE 0
-#endif
-
 static void
 native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
 {
@@ -1689,13 +1685,6 @@ native_thread_destroy(rb_thread_t *th)
 
     if (&nt->cond.readyq != &nt->cond.intr)
       rb_native_cond_destroy(&nt->cond.intr);
-
-    /*
-     * prevent false positive from ruby_thread_has_gvl_p if that
-     * gets called from an interposing function wrapper
-     */
-    if (USE_THREAD_CACHE)
-        ruby_thread_set_native(0);
 }
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
