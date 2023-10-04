@@ -391,18 +391,6 @@ usage(const char *name, int help, int highlight, int columns)
         M("experimental", "",     "experimental features"),
         M("performance", "",      "performance issues"),
     };
-#if USE_YJIT
-    static const struct ruby_opt_message yjit_options[] = {
-        M("--yjit-stats",                    "", "Enable collecting YJIT statistics"),
-        M("--yjit-trace-exits",              "", "Record Ruby source location when exiting from generated code"),
-        M("--yjit-trace-exits-sample-rate",  "", "Trace exit locations only every Nth occurrence"),
-        M("--yjit-exec-mem-size=num",        "", "Size of executable memory block in MiB (default: 128)"),
-        M("--yjit-call-threshold=num",       "", "Number of calls to trigger JIT (default: 30)"),
-        M("--yjit-cold-threshold=num",       "", "Global call after which ISEQs not compiled (default: 200K)"),
-        M("--yjit-max-versions=num",         "", "Maximum number of versions per basic block (default: 4)"),
-        M("--yjit-greedy-versioning",        "", "Greedy versioning mode (default: disabled)"),
-    };
-#endif
 #if USE_RJIT
     extern const struct ruby_opt_message rb_rjit_option_messages[];
 #endif
@@ -434,8 +422,7 @@ usage(const char *name, int help, int highlight, int columns)
         SHOW(warn_categories[i]);
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
-    for (i = 0; i < numberof(yjit_options); ++i)
-        SHOW(yjit_options[i]);
+    rb_yjit_print_options(help, highlight, w, columns);
 #endif
 #if USE_RJIT
     printf("%s""RJIT options (experimental):%s\n", sb, se);
