@@ -1075,7 +1075,17 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_count
+    assert_equal 42, (1..42).count
+    assert_equal 41, (1...42).count
+    assert_equal 0, (42..1).count
+    assert_equal 0, (42...1).count
+    assert_equal 2**100, (1..2**100).count
+    assert_equal 6, (1...6.3).count
+    assert_equal 4, ('a'..'d').count
+    assert_equal 3, ('a'...'d').count
+
     assert_equal(Float::INFINITY, (1..).count)
+    assert_equal(Float::INFINITY, (..1).count)
   end
 
   def test_overlap?

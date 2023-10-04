@@ -607,6 +607,10 @@ double_as_int64(double d)
 static int
 is_integer_p(VALUE v)
 {
+    if (rb_integer_type_p(v)) {
+        return true;
+    }
+
     ID id_integer_p;
     VALUE is_int;
     CONST_ID(id_integer_p, "integer?");
@@ -2166,17 +2170,22 @@ range_count(int argc, VALUE *argv, VALUE range)
          * Infinity. Just let it loop. */
         return rb_call_super(argc, argv);
     }
-    else if (NIL_P(RANGE_END(range))) {
+
+    VALUE beg = RANGE_BEG(range), end = RANGE_END(range);
+
+    if (NIL_P(beg) || NIL_P(end)) {
         /* We are confident that the answer is Infinity. */
         return DBL2NUM(HUGE_VAL);
     }
-    else if (NIL_P(RANGE_BEG(range))) {
-        /* We are confident that the answer is Infinity. */
-        return DBL2NUM(HUGE_VAL);
+
+    if (is_integer_p(beg)) {
+        VALUE size = range_size(range);
+        if (!NIL_P(size)) {
+            return size;
+        }
     }
-    else {
-        return rb_call_super(argc, argv);
-    }
+
+    return rb_call_super(argc, argv);
 }
 
 static bool
