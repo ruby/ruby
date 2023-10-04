@@ -13388,8 +13388,8 @@ const_decl_path(struct parser_params *p, NODE **dest)
     if (!nd_type_p(n, NODE_CALL)) {
         const YYLTYPE *loc = &n->nd_loc;
         VALUE path;
-        if (RNODE_DASGN(n)->nd_vid) {
-             path = rb_id2str(RNODE_DASGN(n)->nd_vid);
+        if (RNODE_CDECL(n)->nd_vid) {
+             path = rb_id2str(RNODE_CDECL(n)->nd_vid);
         }
         else {
             n = RNODE_CDECL(n)->nd_else;
