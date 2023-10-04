@@ -747,7 +747,7 @@ get_nd_recv(const NODE *node)
 }
 
 static ID
-get_nd_mid(const NODE *node)
+get_node_call_nd_mid(const NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_CALL:
@@ -783,6 +783,19 @@ get_nd_args(const NODE *node)
         return 0;
       case NODE_ATTRASGN:
         return RNODE_ATTRASGN(node)->nd_args;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static ID
+get_node_colon_nd_mid(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_COLON2:
+        return RNODE_COLON2(node)->nd_mid;
+      case NODE_COLON3:
+        return RNODE_COLON3(node)->nd_mid;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -5404,7 +5417,7 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
         ADD_INSN1(ret, cpath, putobject, rb_cObject);
         return VM_DEFINECLASS_FLAG_SCOPED;
     }
-    else if (RNODE_COLON2(cpath)->nd_head) {
+    else if (nd_type_p(cpath, NODE_COLON2) && RNODE_COLON2(cpath)->nd_head) {
         /* Bar::Foo */
         NO_CHECK(COMPILE(ret, "nd_else->nd_head", RNODE_COLON2(cpath)->nd_head));
         return VM_DEFINECLASS_FLAG_SCOPED;
@@ -5576,7 +5589,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 ADD_INSN(ret, line_node, dup);
             }
             ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_METHOD),
-                      ID2SYM(get_nd_mid(node)), PUSH_VAL(DEFINED_METHOD));
+                      ID2SYM(get_node_call_nd_mid(node)), PUSH_VAL(DEFINED_METHOD));
         }
         else {
             ADD_INSN(ret, line_node, putself);
@@ -5584,7 +5597,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 ADD_INSN(ret, line_node, dup);
             }
             ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_FUNC),
-                      ID2SYM(get_nd_mid(node)), PUSH_VAL(DEFINED_METHOD));
+                      ID2SYM(get_node_call_nd_mid(node)), PUSH_VAL(DEFINED_METHOD));
         }
         return;
       }
@@ -8086,12 +8099,12 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
      *   "literal".freeze -> opt_str_freeze("literal")
      */
     if (get_nd_recv(node) && nd_type_p(get_nd_recv(node), NODE_STR) &&
-        (get_nd_mid(node) == idFreeze || get_nd_mid(node) == idUMinus) &&
+        (get_node_call_nd_mid(node) == idFreeze || get_node_call_nd_mid(node) == idUMinus) &&
         get_nd_args(node) == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
         VALUE str = rb_fstring(RNODE_STR(get_nd_recv(node))->nd_lit);
-        if (get_nd_mid(node) == idUMinus) {
+        if (get_node_call_nd_mid(node) == idUMinus) {
             ADD_INSN2(ret, line_node, opt_str_uminus, str,
                       new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
         }
@@ -8108,7 +8121,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     /* optimization shortcut
      *   obj["literal"] -> opt_aref_with(obj, "literal")
      */
-    if (get_nd_mid(node) == idAREF && !private_recv_p(node) && get_nd_args(node) &&
+    if (get_node_call_nd_mid(node) == idAREF && !private_recv_p(node) && get_nd_args(node) &&
         nd_type_p(get_nd_args(node), NODE_LIST) && RNODE_LIST(get_nd_args(node))->as.nd_alen == 1 &&
         nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_STR) &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
@@ -8489,7 +8502,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
      */
     DECL_ANCHOR(recv);
     DECL_ANCHOR(args);
-    ID mid = get_nd_mid(node);
+    ID mid = get_node_call_nd_mid(node);
     VALUE argc;
     unsigned int flag = 0;
     struct rb_callinfo_kwarg *keywords = NULL;
@@ -8909,7 +8922,7 @@ compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
                       ruby_node_name(nd_type(RNODE_OP_CDECL(node)->nd_head)));
         return COMPILE_NG;
     }
-    mid = RNODE_COLON2(RNODE_OP_CDECL(node)->nd_head)->nd_mid;
+    mid = get_node_colon_nd_mid(RNODE_OP_CDECL(node)->nd_head);
     /* cref */
     if (RNODE_OP_CDECL(node)->nd_aid == idOROP) {
         lassign = NEW_LABEL(line);
@@ -9658,7 +9671,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
                 ADD_INSN(ret, node, swap);
             }
 
-            ADD_INSN1(ret, node, setconstant, ID2SYM(RNODE_COLON2(RNODE_CDECL(node)->nd_else)->nd_mid));
+            ADD_INSN1(ret, node, setconstant, ID2SYM(get_node_colon_nd_mid(RNODE_CDECL(node)->nd_else)));
         }
         break;
       }
@@ -10013,14 +10026,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_CLASS:{
         const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(RNODE_CLASS(node)->nd_body,
-                                                     rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(RNODE_COLON2(RNODE_CLASS(node)->nd_cpath)->nd_mid))),
+                                                     rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(get_node_colon_nd_mid(RNODE_CLASS(node)->nd_cpath)))),
                                                      ISEQ_TYPE_CLASS, line);
         const int flags = VM_DEFINECLASS_TYPE_CLASS |
             (RNODE_CLASS(node)->nd_super ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
             compile_cpath(ret, iseq, RNODE_CLASS(node)->nd_cpath);
 
         CHECK(COMPILE(ret, "super", RNODE_CLASS(node)->nd_super));
-        ADD_INSN3(ret, node, defineclass, ID2SYM(RNODE_COLON2(RNODE_CLASS(node)->nd_cpath)->nd_mid), class_iseq, INT2FIX(flags));
+        ADD_INSN3(ret, node, defineclass, ID2SYM(get_node_colon_nd_mid(RNODE_CLASS(node)->nd_cpath)), class_iseq, INT2FIX(flags));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
 
         if (popped) {
@@ -10030,13 +10043,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_MODULE:{
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(RNODE_MODULE(node)->nd_body,
-                                                      rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(RNODE_COLON2(RNODE_MODULE(node)->nd_cpath)->nd_mid))),
+                                                      rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(get_node_colon_nd_mid(RNODE_MODULE(node)->nd_cpath)))),
                                                       ISEQ_TYPE_CLASS, line);
         const int flags = VM_DEFINECLASS_TYPE_MODULE |
             compile_cpath(ret, iseq, RNODE_MODULE(node)->nd_cpath);
 
         ADD_INSN (ret, node, putnil); /* dummy */
-        ADD_INSN3(ret, node, defineclass, ID2SYM(RNODE_COLON2(RNODE_MODULE(node)->nd_cpath)->nd_mid), module_iseq, INT2FIX(flags));
+        ADD_INSN3(ret, node, defineclass, ID2SYM(get_node_colon_nd_mid(RNODE_MODULE(node)->nd_cpath)), module_iseq, INT2FIX(flags));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)module_iseq);
 
         if (popped) {
