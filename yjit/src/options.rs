@@ -80,6 +80,7 @@ pub static mut OPTIONS: Options = Options {
     dump_iseq_disasm: None,
 };
 
+/// YJIT option descriptions for `ruby --help`.
 static YJIT_OPTIONS: [(&str, &str); 8] = [
     ("--yjit-stats",                    "Enable collecting YJIT statistics"),
     ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
