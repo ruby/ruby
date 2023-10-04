@@ -584,7 +584,7 @@ module TestIRB
 
       def assert_indent_level(lines, expected)
         code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
-        _tokens, opens, _ = @irb.scanner.check_code_state(code)
+        _tokens, opens, _ = @irb.scanner.check_code_state(code, local_variables: [])
         indent_level = @irb.scanner.calc_indent_level(opens)
         error_message = "Calculated the wrong number of indent level for:\n #{lines.join("\n")}"
         assert_equal(expected, indent_level, error_message)
