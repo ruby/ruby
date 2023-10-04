@@ -43,7 +43,7 @@ void rb_yjit_iseq_free(void *payload);
 void rb_yjit_before_ractor_spawn(void);
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
-void rb_yjit_show_usage(int help, int highlight, unsigned int w, int columns);
+void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
 
 #else
 // !USE_YJIT

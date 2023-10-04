@@ -244,16 +244,17 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     return Some(());
 }
 
-/// Print YJIT options for `ruby --help`.
+/// Print YJIT options for `ruby --help`. `width` is width of option parts, and
+/// `columns` is indent width of descriptions.
 #[no_mangle]
-pub extern "C" fn rb_yjit_show_usage(help: c_int, highlight: c_int, w: c_uint, columns: c_int) {
+pub extern "C" fn rb_yjit_show_usage(help: c_int, highlight: c_int, width: c_uint, columns: c_int) {
     for &(name, description) in YJIT_OPTIONS.iter() {
         extern "C" {
             fn ruby_show_usage_line(name: *const c_char, secondary: *const c_char, description: *const c_char,
-                                    help: c_int, highlight: c_int, w: c_uint, columns: c_int);
+                                    help: c_int, highlight: c_int, width: c_uint, columns: c_int);
         }
         let name = CString::new(name).unwrap();
         let description = CString::new(description).unwrap();
-        unsafe { ruby_show_usage_line(name.as_ptr(), null(), description.as_ptr(), help, highlight, w, columns) }
+        unsafe { ruby_show_usage_line(name.as_ptr(), null(), description.as_ptr(), help, highlight, width, columns) }
     }
 }
