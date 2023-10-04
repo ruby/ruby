@@ -244,14 +244,12 @@ static const char esc_none[] = "";
 #define USAGE_INDENT "  "       /* macro for concatenation */
 
 static void
-show_usage_line(const struct ruby_opt_message *m,
+show_usage_part(const char *str, const unsigned int namelen,
+                const char *str2, const unsigned int secondlen,
+                const char *desc,
                 int help, int highlight, unsigned int w, int columns)
 {
     static const int indent_width = (int)rb_strlen_lit(USAGE_INDENT);
-    const char *str = m->str;
-    const char *str2 = str + m->namelen;
-    const char *desc = str + m->namelen + m->secondlen;
-    const unsigned int namelen = m->namelen - 1, secondlen = m->secondlen - 1;
     const char *sb = highlight ? esc_bold : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
     unsigned int desclen = (unsigned int)strcspn(desc, "\n");
@@ -283,6 +281,27 @@ show_usage_line(const struct ruby_opt_message *m,
             printf("%-*s%.*s\n", w + indent_width, USAGE_INDENT, desclen, desc);
         }
     }
+}
+
+static void
+show_usage_line(const struct ruby_opt_message *m,
+                int help, int highlight, unsigned int w, int columns)
+{
+    const char *str = m->str;
+    const unsigned int namelen = m->namelen, secondlen = m->secondlen;
+    const char *desc = str + namelen + secondlen;
+    show_usage_part(str, namelen - 1, str + namelen, secondlen - 1, desc,
+                    help, highlight, w, columns);
+}
+
+void
+ruby_show_usage_line(const char *name, const char *secondary, const char *description,
+                     int help, int highlight, unsigned int w, int columns)
+{
+    unsigned int namelen = (unsigned int)strlen(name);
+    unsigned int secondlen = (secondary ? (unsigned int)strlen(secondary) : 0);
+    show_usage_part(name, namelen, secondary, secondlen,
+                    description, help, highlight, w, columns);
 }
 
 static void
