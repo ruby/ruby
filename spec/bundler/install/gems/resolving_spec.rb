@@ -425,6 +425,62 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
+      context "when adding a new gem that does not resolve under all locked platforms" do
+        before do
+          simulate_platform "x86_64-linux" do
+            build_repo4 do
+              build_gem "nokogiri", "1.14.0" do |s|
+                s.platform = "x86_64-linux"
+              end
+              build_gem "nokogiri", "1.14.0" do |s|
+                s.platform = "arm-linux"
+              end
+
+              build_gem "sorbet-static", "0.5.10696" do |s|
+                s.platform = "x86_64-linux"
+              end
+            end
+
+            lockfile <<~L
+              GEM
+                remote: #{file_uri_for(gem_repo4)}/
+                specs:
+                  nokogiri (1.14.0-arm-linux)
+                  nokogiri (1.14.0-x86_64-linux)
+
+              PLATFORMS
+                arm-linux
+                x86_64-linux
+
+              DEPENDENCIES
+                nokogiri
+
+              BUNDLED WITH
+                 #{Bundler::VERSION}
+            L
+
+            gemfile <<~G
+              source "#{file_uri_for(gem_repo4)}"
+
+              gem "nokogiri"
+              gem "sorbet-static"
+            G
+
+            bundle "lock", :raise_on_error => false
+          end
+        end
+
+        it "raises a proper error" do
+          nice_error = <<~E.strip
+            Could not find gems matching 'sorbet-static' valid for all resolution platforms (arm-linux, x86_64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+
+            The source contains the following gems matching 'sorbet-static':
+              * sorbet-static-0.5.10696-x86_64-linux
+          E
+          expect(err).to end_with(nice_error)
+        end
+      end
+
       it "gives a meaningful error on ruby version mismatches between dependencies" do
         build_repo4 do
           build_gem "requires-old-ruby" do |s|

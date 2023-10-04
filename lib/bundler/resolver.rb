@@ -248,8 +248,22 @@ module Bundler
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
       versions = results.group_by(&:version).reduce([]) do |groups, (version, specs)|
-        platform_specs = package.platforms.flat_map {|platform| select_best_platform_match(specs, platform) }
-        next groups if platform_specs.empty?
+        platform_specs = package.platforms.map {|platform| select_best_platform_match(specs, platform) }
+
+        # If package is a top-level dependency,
+        #   candidate is only valid if there are matching versions for all resolution platforms.
+        #
+        # If package is not a top-level deependency,
+        #   then it's not necessary that it has matching versions for all platforms, since it may have been introduced only as
+        #   a dependency for a platform specific variant, so it will only need to have a valid version for that platform.
+        #
+        if package.top_level?
+          next groups if platform_specs.any?(&:empty?)
+        else
+          next groups if platform_specs.all?(&:empty?)
+        end
+
+        platform_specs.flatten!
 
         ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
         groups << Resolver::Candidate.new(version, :specs => ruby_specs) if ruby_specs.any?
