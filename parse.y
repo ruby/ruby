@@ -11399,7 +11399,6 @@ rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLT
     rb_node_colon2_t *n = NODE_NEWNODE(NODE_COLON2, rb_node_colon2_t, loc);
     n->nd_head = nd_head;
     n->nd_mid = nd_mid;
-    n->not_used = 0;
 
     return n;
 }
@@ -11408,9 +11407,7 @@ static rb_node_colon3_t *
 rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc)
 {
     rb_node_colon3_t *n = NODE_NEWNODE(NODE_COLON3, rb_node_colon3_t, loc);
-    n->not_used = 0;
     n->nd_mid = nd_mid;
-    n->not_used2 = 0;
 
     return n;
 }
