@@ -607,7 +607,7 @@ double_as_int64(double d)
 static int
 is_integer_p(VALUE v)
 {
-    if (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) {
+    if (rb_integer_type_p(v)) {
         return true;
     }
 
