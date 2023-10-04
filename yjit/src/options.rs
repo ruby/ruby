@@ -1,5 +1,6 @@
-use std::ffi::CStr;
+use std::{ffi::{CStr, CString}, ptr::null};
 use crate::backend::current::TEMP_REGS;
+use std::os::raw::{c_char, c_int, c_uint};
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -78,6 +79,17 @@ pub static mut OPTIONS: Options = Options {
     verify_ctx: false,
     dump_iseq_disasm: None,
 };
+
+static YJIT_OPTIONS: [(&str, &str); 8] = [
+    ("--yjit-stats",                    "Enable collecting YJIT statistics"),
+    ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
+    ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
+    ("--yjit-exec-mem-size=num",        "Size of executable memory block in MiB (default: 128)"),
+    ("--yjit-call-threshold=num",       "Number of calls to trigger JIT (default: 30)"),
+    ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
+    ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
+    ("--yjit-greedy-versioning",        "Greedy versioning mode (default: disabled)"),
+];
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DumpDisasm {
@@ -230,4 +242,18 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
     // Option successfully parsed
     return Some(());
+}
+
+/// Print YJIT options for `ruby --help`.
+#[no_mangle]
+pub extern "C" fn rb_yjit_print_options(help: c_int, highlight: c_int, w: c_uint, columns: c_int) {
+    for &(name, description) in YJIT_OPTIONS.iter() {
+        extern "C" {
+            fn ruby_show_usage_line(name: *const c_char, secondary: *const c_char, description: *const c_char,
+                                    help: c_int, highlight: c_int, w: c_uint, columns: c_int);
+        }
+        let name = CString::new(name).unwrap();
+        let description = CString::new(description).unwrap();
+        unsafe { ruby_show_usage_line(name.as_ptr(), null(), description.as_ptr(), help, highlight, w, columns) }
+    }
 }
