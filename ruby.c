@@ -241,41 +241,46 @@ static const char esc_standout[] = "\n\033[1;7m";
 static const char esc_bold[] = "\033[1m";
 static const char esc_reset[] = "\033[0m";
 static const char esc_none[] = "";
+#define USAGE_INDENT "  "       /* macro for concatenation */
 
 static void
 show_usage_line(const struct ruby_opt_message *m,
                 int help, int highlight, unsigned int w, int columns)
 {
+    static const int indent_width = (int)rb_strlen_lit(USAGE_INDENT);
     const char *str = m->str;
-    const unsigned int namelen = m->namelen, secondlen = m->secondlen;
+    const char *str2 = str + m->namelen;
+    const char *desc = str + m->namelen + m->secondlen;
+    const unsigned int namelen = m->namelen - 1, secondlen = m->secondlen - 1;
     const char *sb = highlight ? esc_bold : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
-    const char *desc = str + namelen + secondlen;
     unsigned int desclen = (unsigned int)strcspn(desc, "\n");
-    if (help && (namelen > w) && (int)(namelen + secondlen) >= columns) {
-        printf("  %s" "%.*s" "%s\n", sb, namelen-1, str, se);
-        if (secondlen > 1) {
-            const int second_end = namelen+secondlen-1;
-            int n = namelen;
-            if (str[n] == ',') n++;
-            if (str[n] == ' ') n++;
-            printf("  %s" "%.*s" "%s\n", sb, second_end-n, str+n, se);
+    if (help && (namelen + 1 > w) && /* a padding space */
+        (int)(namelen + secondlen + indent_width) >= columns) {
+        printf(USAGE_INDENT "%s" "%.*s" "%s\n", sb, namelen, str, se);
+        if (secondlen > 0) {
+            const int second_end = secondlen;
+            int n = 0;
+            if (str2[n] == ',') n++;
+            if (str2[n] == ' ') n++;
+            printf(USAGE_INDENT "%s" "%.*s" "%s\n", sb, second_end-n, str2+n, se);
         }
-        printf("%-*s%.*s\n", w + 2, "", desclen, desc);
+        printf("%-*s%.*s\n", w + indent_width, USAGE_INDENT, desclen, desc);
     }
     else {
-        const int wrap = help && namelen + secondlen - 1 > w;
-        printf("  %s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen-1, str,
-               (wrap ? 0 : w - namelen + 1),
-               (help ? secondlen-1 : 0), str + namelen, se,
-               (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
+        const int wrap = help && namelen + secondlen >= w;
+        printf(USAGE_INDENT "%s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen, str,
+               (wrap ? 0 : w - namelen),
+               (help ? secondlen : 0), str2, se,
+               (wrap ? (int)(w + rb_strlen_lit("\n" USAGE_INDENT)) : 0),
+               (wrap ? "\n" USAGE_INDENT : ""),
                desclen, desc);
     }
     if (help) {
         while (desc[desclen]) {
-            desc += desclen + 1;
+            desc += desclen + rb_strlen_lit("\n");
             desclen = (unsigned int)strcspn(desc, "\n");
-            printf("%-*s%.*s\n", w + 2, "", desclen, desc);
+            printf("%-*s%.*s\n", w + indent_width, USAGE_INDENT, desclen, desc);
         }
     }
 }
