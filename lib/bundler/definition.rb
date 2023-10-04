@@ -452,8 +452,8 @@ module Bundler
       return if current_platform_locked?
 
       raise ProductionError, "Your bundle only supports platforms #{@platforms.map(&:to_s)} " \
-        "but your local platform is #{Bundler.local_platform}. " \
-        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{Bundler.local_platform}` and try again."
+        "but your local platform is #{local_platform}. " \
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{local_platform}` and try again."
     end
 
     def add_platform(platform)
@@ -600,7 +600,7 @@ module Bundler
 
     def current_platform_locked?
       @platforms.any? do |bundle_platform|
-        MatchPlatform.platforms_match?(bundle_platform, Bundler.local_platform)
+        MatchPlatform.platforms_match?(bundle_platform, local_platform)
       end
     end
 
@@ -958,7 +958,7 @@ module Bundler
 
     def remove_ruby_from_platforms_if_necessary!(dependencies)
       return if Bundler.frozen_bundle? ||
-                Bundler.local_platform == Gem::Platform::RUBY ||
+                local_platform == Gem::Platform::RUBY ||
                 !platforms.include?(Gem::Platform::RUBY) ||
                 (@new_platform && platforms.last == Gem::Platform::RUBY) ||
                 @path_changes ||
