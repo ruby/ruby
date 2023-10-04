@@ -246,7 +246,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
 /// Print YJIT options for `ruby --help`.
 #[no_mangle]
-pub extern "C" fn rb_yjit_print_options(help: c_int, highlight: c_int, w: c_uint, columns: c_int) {
+pub extern "C" fn rb_yjit_show_usage(help: c_int, highlight: c_int, w: c_uint, columns: c_int) {
     for &(name, description) in YJIT_OPTIONS.iter() {
         extern "C" {
             fn ruby_show_usage_line(name: *const c_char, secondary: *const c_char, description: *const c_char,

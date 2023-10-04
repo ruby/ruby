@@ -422,7 +422,7 @@ usage(const char *name, int help, int highlight, int columns)
         SHOW(warn_categories[i]);
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
-    rb_yjit_print_options(help, highlight, w, columns);
+    rb_yjit_show_usage(help, highlight, w, columns);
 #endif
 #if USE_RJIT
     printf("%s""RJIT options (experimental):%s\n", sb, se);
