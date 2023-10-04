@@ -826,15 +826,12 @@ typedef struct RNode_COLON2 {
 
     struct RNode *nd_head;
     ID nd_mid;
-    VALUE not_used;
 } rb_node_colon2_t;
 
 typedef struct RNode_COLON3 {
     NODE node;
 
-    VALUE not_used;
     ID nd_mid;
-    VALUE not_used2;
 } rb_node_colon3_t;
 
 /* RNode_DOT2, RNode_DOT3, RNode_FLIP2 and RNode_FLIP3 should be same structure */
