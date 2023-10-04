@@ -296,12 +296,12 @@ show_usage_line(const struct ruby_opt_message *m,
 
 void
 ruby_show_usage_line(const char *name, const char *secondary, const char *description,
-                     int help, int highlight, unsigned int w, int columns)
+                     int help, int highlight, unsigned int width, int columns)
 {
     unsigned int namelen = (unsigned int)strlen(name);
     unsigned int secondlen = (secondary ? (unsigned int)strlen(secondary) : 0);
     show_usage_part(name, namelen, secondary, secondlen,
-                    description, help, highlight, w, columns);
+                    description, help, highlight, width, columns);
 }
 
 static void
