@@ -2474,12 +2474,12 @@ static void
 close_invalidate_pair(int fds[2], const char *msg)
 {
     if (USE_EVENTFD && fds[0] == fds[1]) {
+        fds[1] = -1; // disable write port first
         close_invalidate(&fds[0], msg);
-        fds[1] = -1;
     }
     else {
-        close_invalidate(&fds[0], msg);
         close_invalidate(&fds[1], msg);
+        close_invalidate(&fds[0], msg);
     }
 }
 
@@ -2516,6 +2516,7 @@ setup_communication_pipe_internal(int pipes[2])
      */
 #if USE_EVENTFD && defined(EFD_NONBLOCK) && defined(EFD_CLOEXEC)
     pipes[0] = pipes[1] = eventfd(0, EFD_NONBLOCK|EFD_CLOEXEC);
+
     if (pipes[0] >= 0) {
         rb_update_max_fd(pipes[0]);
         return;
@@ -2851,6 +2852,7 @@ timer_thread_func(void *ptr)
         timer_thread_check_timeout(vm);
         ubf_wakeup_all_threads();
 
+        RUBY_DEBUG_LOG("system_working:%d", system_working);
         timer_thread_polling(vm);
     }
 
@@ -2888,7 +2890,7 @@ signal_communication_pipe(int fd)
         if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
     }
     else {
-        /* ignore wakeup */
+        // ignore wakeup
     }
 }
 
@@ -2968,7 +2970,9 @@ native_stop_timer_thread(void)
     stopped = --system_working <= 0;
 
     if (stopped) {
+        RUBY_DEBUG_LOG("wakeup send %d", timer_th.comm_fds[1]);
         timer_thread_wakeup_force();
+        RUBY_DEBUG_LOG("wakeup sent");
         pthread_join(timer_th.pthread_id, NULL);
     }
 

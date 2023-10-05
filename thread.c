@@ -4511,6 +4511,11 @@ consume_communication_pipe(int fd)
 
     while (1) {
         result = read(fd, buff, sizeof(buff));
+#if USE_EVENTFD
+        RUBY_DEBUG_LOG("resultf:%d buff:%lu", (int)result, (unsigned long)buff[0]);
+#else
+        RUBY_DEBUG_LOG("result:%d", (int)result);
+#endif
         if (result > 0) {
             ret = TRUE;
             if (USE_EVENTFD || result < (ssize_t)sizeof(buff)) {

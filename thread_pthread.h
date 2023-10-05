@@ -44,6 +44,7 @@ struct rb_thread_sched_item {
             thread_sched_waiting_timeout  = 0x01,
             thread_sched_waiting_io_read  = 0x02,
             thread_sched_waiting_io_write = 0x08,
+            thread_sched_waiting_io_force = 0x40, // ignore readable
         } flags;
 
         struct {

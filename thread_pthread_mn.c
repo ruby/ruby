@@ -552,7 +552,8 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     }
 
     if (flags & thread_sched_waiting_io_read) {
-        if (fd_readable_nonblock(fd)) {
+        if (!(flags & thread_sched_waiting_io_force) && fd_readable_nonblock(fd)) {
+            RUBY_DEBUG_LOG("fd_readable_nonblock");
             return false;
         }
         else {
@@ -562,7 +563,8 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     }
 
     if (flags & thread_sched_waiting_io_write) {
-        if (fd_writable_nonblock(fd)) {
+        if (!(flags & thread_sched_waiting_io_force) && fd_writable_nonblock(fd)) {
+            RUBY_DEBUG_LOG("fd_writable_nonblock");
             return false;
         }
         else {
@@ -676,7 +678,10 @@ static void
 timer_thread_setup_nm(void)
 {
     if ((timer_th.epoll_fd = epoll_create1(EPOLL_CLOEXEC)) == -1) rb_bug("epoll_create (errno:%d)", errno);
-    timer_thread_register_waiting(NULL, timer_th.comm_fds[0], thread_sched_waiting_io_read, NULL);
+    RUBY_DEBUG_LOG("comm_fds:%d/%d", timer_th.comm_fds[0], timer_th.comm_fds[1]);
+    RUBY_DEBUG_LOG("epoll_fd:%d", timer_th.epoll_fd);
+
+    timer_thread_register_waiting(NULL, timer_th.comm_fds[0], thread_sched_waiting_io_read | thread_sched_waiting_io_force, NULL);
 }
 
 /*
@@ -698,7 +703,7 @@ timer_thread_polling(rb_vm_t *vm)
 {
     int r = epoll_wait(timer_th.epoll_fd, timer_th.finished_events, EPOLL_EVENTS_MAX, timer_thread_set_timeout(vm));
 
-    RUBY_DEBUG_LOG("r:%d", r);
+    RUBY_DEBUG_LOG("r:%d errno:%d", r, errno);
 
     switch (r) {
       case 0: // timeout
