@@ -1373,6 +1373,13 @@ module Prism
       ]
     end
 
+    def test_shadow_args_in_block
+      source = "tap{|a;a|}"
+      assert_errors expression(source), source, [
+        ["Repeated parameter name", 7..8],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

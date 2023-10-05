@@ -9785,6 +9785,7 @@ parse_block_parameters(
     if ((opening->type != PM_TOKEN_NOT_PROVIDED) && accept1(parser, PM_TOKEN_SEMICOLON)) {
         do {
             expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_BLOCK_PARAM_LOCAL_VARIABLE);
+            pm_parser_parameter_name_check(parser, &parser->previous);
             pm_parser_local_add_token(parser, &parser->previous);
 
             pm_block_local_variable_node_t *local = pm_block_local_variable_node_create(parser, &parser->previous);
