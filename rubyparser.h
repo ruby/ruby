@@ -304,10 +304,6 @@ typedef struct RNode_REDO {
 
 typedef struct RNode_RETRY {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
 } rb_node_retry_t;
 
 typedef struct RNode_BEGIN {
@@ -549,8 +545,6 @@ typedef struct RNode_RETURN {
     NODE node;
 
     struct RNode *nd_stts;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_return_t;
 
 typedef struct RNode_YIELD {
