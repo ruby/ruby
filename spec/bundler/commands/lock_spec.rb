@@ -73,6 +73,12 @@ RSpec.describe "bundle lock" do
     bundle "lock --update"
 
     expect(read_lockfile).to eq(@lockfile)
+
+    lockfile @lockfile.gsub("2.3.2", "2.3.1")
+
+    bundle "lock --update", :env => { "BUNDLE_FROZEN" => "true" }
+
+    expect(read_lockfile).to eq(@lockfile)
   end
 
   it "does not fetch remote specs when using the --local option" do
