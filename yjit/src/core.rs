@@ -64,6 +64,10 @@ pub enum Type {
 
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp
+
+    // The context currently relies on types taking at most 4 bits (max value 15)
+    // to encode, so if we add any more, we will need to refactor the context,
+    // or we could remove HeapSymbol, which is currently unused.
 }
 
 // Default initialization
