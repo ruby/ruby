@@ -281,25 +281,21 @@ typedef struct RNode_FOR_MASGN {
 typedef struct RNode_BREAK {
     NODE node;
 
-    VALUE not_used;
+    struct RNode *nd_chain;
     struct RNode *nd_stts;
-    VALUE not_used2;
 } rb_node_break_t;
 
 typedef struct RNode_NEXT {
     NODE node;
 
-    VALUE not_used;
+    struct RNode *nd_chain;
     struct RNode *nd_stts;
-    VALUE not_used2;
 } rb_node_next_t;
 
 typedef struct RNode_REDO {
     NODE node;
 
-    VALUE not_used;
-    VALUE not_used2;
-    VALUE not_used3;
+    struct RNode *nd_chain;
 } rb_node_redo_t;
 
 typedef struct RNode_RETRY {
