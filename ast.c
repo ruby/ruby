@@ -416,9 +416,11 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_FOR_MASGN:
         return rb_ary_new_from_node_args(ast, 1, RNODE_FOR_MASGN(node)->nd_var);
       case NODE_BREAK:
-      case NODE_NEXT:
-      case NODE_RETURN:
         return rb_ary_new_from_node_args(ast, 1, RNODE_BREAK(node)->nd_stts);
+      case NODE_NEXT:
+        return rb_ary_new_from_node_args(ast, 1, RNODE_NEXT(node)->nd_stts);
+      case NODE_RETURN:
+        return rb_ary_new_from_node_args(ast, 1, RNODE_RETURN(node)->nd_stts);
       case NODE_REDO:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_RETRY:
