@@ -281,16 +281,16 @@ typedef struct RNode_FOR_MASGN {
 typedef struct RNode_BREAK {
     NODE node;
 
-    struct RNode *nd_stts;
     VALUE not_used;
+    struct RNode *nd_stts;
     VALUE not_used2;
 } rb_node_break_t;
 
 typedef struct RNode_NEXT {
     NODE node;
 
-    struct RNode *nd_stts;
     VALUE not_used;
+    struct RNode *nd_stts;
     VALUE not_used2;
 } rb_node_next_t;
 

@@ -294,19 +294,22 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("break statement");
         ANN("format: break [nd_stts]");
         ANN("example: break 1");
-        goto jump;
+        LAST_NODE;
+        F_NODE(nd_stts, RNODE_BREAK, "value");
+        return;
       case NODE_NEXT:
         ANN("next statement");
         ANN("format: next [nd_stts]");
         ANN("example: next 1");
-        goto jump;
+        LAST_NODE;
+        F_NODE(nd_stts, RNODE_NEXT, "value");
+        return;
       case NODE_RETURN:
         ANN("return statement");
         ANN("format: return [nd_stts]");
         ANN("example: return 1");
-      jump:
         LAST_NODE;
-        F_NODE(nd_stts, RNODE_BREAK, "value");
+        F_NODE(nd_stts, RNODE_RETURN, "value");
         return;
 
       case NODE_REDO:
