@@ -515,10 +515,6 @@ typedef struct RNode_LIST {
 
 typedef struct RNode_ZLIST {
     NODE node;
-
-    VALUE not_used;
-    VALUE not_used2; /* Used by p->exits */
-    VALUE not_used3; /* Used by p->exits */
 } rb_node_zlist_t;
 
 typedef struct RNode_VALUES {
