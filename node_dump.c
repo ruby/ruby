@@ -579,12 +579,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("list constructor");
         ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
         ANN("example: [1, 2, 3]");
-        goto ary;
-      case NODE_VALUES:
-        ANN("return arguments");
-        ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
-        ANN("example: return 1, 2, 3");
-      ary:
         dump_array(buf, indent, comment, node);
         return;
 

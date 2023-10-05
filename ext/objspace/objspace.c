@@ -434,7 +434,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ZSUPER);
                 COUNT_NODE(NODE_LIST);
                 COUNT_NODE(NODE_ZLIST);
-                COUNT_NODE(NODE_VALUES);
                 COUNT_NODE(NODE_HASH);
                 COUNT_NODE(NODE_RETURN);
                 COUNT_NODE(NODE_YIELD);

@@ -14142,13 +14142,8 @@ ret_args(struct parser_params *p, NODE *node)
 {
     if (node) {
         no_blockarg(p, node);
-        if (nd_type_p(node, NODE_LIST)) {
-            if (RNODE_LIST(node)->nd_next == 0) {
-                node = RNODE_LIST(node)->nd_head;
-            }
-            else {
-                nd_set_type(node, NODE_VALUES);
-            }
+        if (nd_type_p(node, NODE_LIST) && !RNODE_LIST(node)->nd_next) {
+            node = RNODE_LIST(node)->nd_head;
         }
     }
     return node;

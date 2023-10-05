@@ -507,7 +507,6 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_ZSUPER:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_LIST:
-      case NODE_VALUES:
         return dump_array(ast, RNODE_LIST(node));
       case NODE_ZLIST:
         return rb_ary_new_from_node_args(ast, 0);

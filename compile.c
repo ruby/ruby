@@ -9724,18 +9724,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-      case NODE_VALUES:{
-        const NODE *n = node;
-        if (popped) {
-            COMPILE_ERROR(ERROR_ARGS "NODE_VALUES: must not be popped");
-        }
-        while (n) {
-            CHECK(COMPILE(ret, "values item", RNODE_VALUES(n)->nd_head));
-            n = RNODE_VALUES(n)->nd_next;
-        }
-        ADD_INSN1(ret, node, newarray, INT2FIX(RNODE_VALUES(node)->nd_alen));
-        break;
-      }
       case NODE_HASH:
         CHECK(compile_hash(iseq, ret, node, FALSE, popped) >= 0);
         break;

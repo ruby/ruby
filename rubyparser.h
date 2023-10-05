@@ -71,7 +71,6 @@ enum node_type {
     NODE_ZSUPER,
     NODE_LIST,
     NODE_ZLIST,
-    NODE_VALUES,
     NODE_HASH,
     NODE_RETURN,
     NODE_YIELD,
@@ -986,7 +985,6 @@ typedef struct RNode_ERROR {
 #define RNODE_ZSUPER(node) ((struct RNode_ZSUPER *)(node))
 #define RNODE_LIST(node) ((struct RNode_LIST *)(node))
 #define RNODE_ZLIST(node) ((struct RNode_ZLIST *)(node))
-#define RNODE_VALUES(node) ((struct RNode_VALUES *)(node))
 #define RNODE_HASH(node) ((struct RNode_HASH *)(node))
 #define RNODE_RETURN(node) ((struct RNode_RETURN *)(node))
 #define RNODE_YIELD(node) ((struct RNode_YIELD *)(node))
