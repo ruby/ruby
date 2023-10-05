@@ -1080,6 +1080,12 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 
 #endif
 
+enum internal_node_type {
+    NODE_INTERNAL_ONLY = NODE_LAST,
+    NODE_DEF_TEMP,
+    NODE_INTERNAL_LAST
+};
+
 /* This node is parse.y internal */
 typedef struct RNode_DEF_TEMP {
     NODE node;
@@ -12160,7 +12166,7 @@ rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
 static rb_node_def_temp_t *
 rb_node_def_temp_new(struct parser_params *p, ID nd_vid, ID nd_mid, NODE *nd_head, long nd_nth, struct lex_context ctxt, const YYLTYPE *loc)
 {
-    rb_node_def_temp_t *n = NODE_NEWNODE(NODE_DEF_TEMP, rb_node_def_temp_t, loc);
+    rb_node_def_temp_t *n = NODE_NEWNODE((enum node_type)NODE_DEF_TEMP, rb_node_def_temp_t, loc);
     n->nd_vid = nd_vid;
     n->nd_mid = nd_mid;
     n->nd_head = nd_head;

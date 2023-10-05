@@ -131,7 +131,6 @@ enum node_type {
     NODE_HSHPTN,
     NODE_FNDPTN,
     NODE_ERROR,
-    NODE_DEF_TEMP,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
