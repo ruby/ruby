@@ -1083,6 +1083,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 enum internal_node_type {
     NODE_INTERNAL_ONLY = NODE_LAST,
     NODE_DEF_TEMP,
+    NODE_EXITS,
     NODE_INTERNAL_LAST
 };
 
@@ -1112,7 +1113,7 @@ static rb_node_def_temp_t *rb_node_def_temp_new(struct parser_params *p, ID nd_v
 /* Make a new internal node, which should not be appeared in the
  * result AST and does not have node_id and location. */
 static NODE* node_new_internal(struct parser_params *p, enum node_type type, size_t size, size_t alignment);
-#define NODE_NEW_INTERNAL(node_type, type) (type *)node_new_internal(p, node_type, sizeof(type), RUBY_ALIGNOF(type))
+#define NODE_NEW_INTERNAL(ndtype, type) (type *)node_new_internal(p, (enum node_type)(ndtype), sizeof(type), RUBY_ALIGNOF(type))
 
 static NODE *nd_set_loc(NODE *nd, const YYLTYPE *loc);
 
@@ -1707,6 +1708,14 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const rb_cod
 # define compile_error(p, ...) parser_compile_error(p, NULL, __VA_ARGS__)
 #endif
 
+typedef struct {
+    NODE node;
+
+    NODE *nd_chain; /* Assume NODE_BREAK, NODE_NEXT, NODE_REDO have nd_chain here */
+    NODE *nd_end;
+} rb_node_exits_t;
+#define RNODE_EXITS(node) ((rb_node_exits_t*)(node))
+
 static NODE *
 add_block_exit(struct parser_params *p, NODE *node)
 {
@@ -1723,9 +1732,8 @@ add_block_exit(struct parser_params *p, NODE *node)
     if (!p->ctxt.in_defined) {
         NODE *exits = p->exits;
         if (exits) {
-            /* Assume NODE_BREAK, NODE_NEXT, NODE_REDO has empty u3 (nd_next) */
-            RNODE_LIST(RNODE_LIST(exits)->as.nd_end)->nd_next = node;
-            RNODE_LIST(exits)->as.nd_end = node;
+            RNODE_EXITS(RNODE_EXITS(exits)->nd_end)->nd_chain = node;
+            RNODE_EXITS(exits)->nd_end = node;
         }
     }
     return node;
@@ -1735,11 +1743,9 @@ static NODE *
 init_block_exit(struct parser_params *p)
 {
     NODE *old = p->exits;
-    rb_node_zlist_t *exits = NODE_NEW_INTERNAL(NODE_ZLIST, rb_node_zlist_t); /* This has element */
-    exits->not_used = 0;
-    exits->not_used2 = 0;
-    exits->not_used3 = 0;
-    p->exits = RNODE_LIST(exits)->as.nd_end = (NODE *)exits;
+    rb_node_exits_t *exits = NODE_NEW_INTERNAL(NODE_EXITS, rb_node_exits_t);
+    exits->nd_chain = 0;
+    p->exits = exits->nd_end = RNODE(exits);
     return old;
 }
 
@@ -1763,7 +1769,7 @@ clear_block_exit(struct parser_params *p, bool error)
     NODE *exits = p->exits;
     if (!exits) return;
     if (error && !compile_for_eval) {
-        for (NODE *e = exits; (e = RNODE_LIST(e)->nd_next) != 0; ) {
+        for (NODE *e = exits; (e = RNODE_EXITS(e)->nd_chain) != 0; ) {
             switch (nd_type(e)) {
               case NODE_BREAK:
                 yyerror1(&e->nd_loc, "Invalid break");
@@ -1776,12 +1782,13 @@ clear_block_exit(struct parser_params *p, bool error)
                 break;
               default:
                 yyerror1(&e->nd_loc, "unexpected node");
-                break;
+                goto end_checks; /* no nd_chain */
             }
         }
+      end_checks:;
     }
-    RNODE_LIST(exits)->as.nd_end = exits;
-    RNODE_LIST(exits)->nd_next = 0;
+    RNODE_EXITS(exits)->nd_end = exits;
+    RNODE_EXITS(exits)->nd_chain = 0;
 }
 
 #define WARN_EOL(tok) \
@@ -12129,8 +12136,7 @@ rb_node_break_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc)
 {
     rb_node_break_t *n = NODE_NEWNODE(NODE_BREAK, rb_node_break_t, loc);
     n->nd_stts = nd_stts;
-    n->not_used = 0;
-    n->not_used2 = 0;
+    n->nd_chain = 0;
 
     return n;
 }
@@ -12140,8 +12146,7 @@ rb_node_next_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc)
 {
     rb_node_next_t *n = NODE_NEWNODE(NODE_NEXT, rb_node_next_t, loc);
     n->nd_stts = nd_stts;
-    n->not_used = 0;
-    n->not_used2 = 0;
+    n->nd_chain = 0;
 
     return n;
 }
@@ -12150,9 +12155,7 @@ static rb_node_redo_t *
 rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_redo_t *n = NODE_NEWNODE(NODE_REDO, rb_node_redo_t, loc);
-    n->not_used = 0;
-    n->not_used2 = 0;
-    n->not_used3 = 0;
+    n->nd_chain = 0;
 
     return n;
 }
