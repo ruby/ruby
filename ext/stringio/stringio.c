@@ -1602,6 +1602,13 @@ strio_pread(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eArgError, "negative string size (or size too big): %" PRIsVALUE, rb_len);
     }
 
+    if (len == 0) {
+        if (NIL_P(rb_buf)) {
+            return rb_str_new("", 0);
+        }
+        return rb_buf;
+    }
+
     if (offset < 0) {
         rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
     }
