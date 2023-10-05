@@ -42,11 +42,10 @@ endif
 
 yjit-libobj: $(YJIT_LIBOBJ)
 
-# Note, BSD handling is in yjit/not_gmake.mk
 YJIT_LIB_SYMBOLS = $(YJIT_LIBS:.a=).symbols
 $(YJIT_LIBOBJ): $(YJIT_LIBS)
 	$(ECHO) 'partial linking $(YJIT_LIBS) into $@'
-ifneq ($(findstring linux,$(target_os)),)
+ifneq ($(or $(findstring linux,$(target_os)),$(findstring bsd,$(target_os))),$(findstring dragonfly,$(target_os))),)
 	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
 	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)
 else ifneq ($(findstring darwin,$(target_os)),)
