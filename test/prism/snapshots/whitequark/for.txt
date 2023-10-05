@@ -32,7 +32,7 @@
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ LocalVariableReadNode (location: (1,18)-(1,19))
         │   │           │           ├── name: :a
-        │   │           │           └── depth: 0
+        │   │           │           └── depth: 1
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -70,7 +70,7 @@
             │           │   └── arguments: (length: 1)
             │           │       └── @ LocalVariableReadNode (location: (3,16)-(3,17))
             │           │           ├── name: :a
-            │           │           └── depth: 0
+            │           │           └── depth: 1
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

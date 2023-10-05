@@ -4863,10 +4863,30 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
         .previous = parser->current_scope,
         .closed = closed,
         .explicit_params = false,
-        .numbered_params = false
+        .numbered_params = false,
+        .transparent = false
     };
 
     pm_constant_id_list_init(&scope->locals);
+    parser->current_scope = scope;
+
+    return true;
+}
+
+// Allocate and initialize a new scope. Push it onto the scope stack.
+static bool
+pm_parser_scope_push_transparent(pm_parser_t *parser) {
+    pm_scope_t *scope = (pm_scope_t *) malloc(sizeof(pm_scope_t));
+    if (scope == NULL) return false;
+
+    *scope = (pm_scope_t) {
+        .previous = parser->current_scope,
+        .closed = false,
+        .explicit_params = false,
+        .numbered_params = false,
+        .transparent = true
+    };
+
     parser->current_scope = scope;
 
     return true;
@@ -4880,7 +4900,8 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
     int depth = 0;
 
     while (scope != NULL) {
-        if (pm_constant_id_list_includes(&scope->locals, constant_id)) return depth;
+        if (!scope->transparent &&
+                pm_constant_id_list_includes(&scope->locals, constant_id)) return depth;
         if (scope->closed) break;
 
         scope = scope->previous;
@@ -4893,8 +4914,12 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
 // Add a constant id to the local table of the current scope.
 static inline void
 pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
-    if (!pm_constant_id_list_includes(&parser->current_scope->locals, constant_id)) {
-        pm_constant_id_list_append(&parser->current_scope->locals, constant_id);
+    pm_scope_t *scope = parser->current_scope;
+    while (scope && scope->transparent) scope = scope->previous;
+
+    assert(scope != NULL);
+    if (!pm_constant_id_list_includes(&scope->locals, constant_id)) {
+        pm_constant_id_list_append(&scope->locals, constant_id);
     }
 }
 
@@ -12755,8 +12780,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             pm_statements_node_t *statements = NULL;
 
             if (!accept1(parser, PM_TOKEN_KEYWORD_END)) {
+                pm_parser_scope_push_transparent(parser);
                 statements = parse_statements(parser, PM_CONTEXT_FOR);
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM);
+                pm_parser_scope_pop(parser);
             }
 
             return (pm_node_t *) pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, &do_keyword, &parser->previous);

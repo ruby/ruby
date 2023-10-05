@@ -39,10 +39,10 @@
             │           │   └── arguments: (length: 2)
             │           │       ├── @ LocalVariableReadNode (location: (1,19)-(1,20))
             │           │       │   ├── name: :a
-            │           │       │   └── depth: 0
+            │           │       │   └── depth: 1
             │           │       └── @ LocalVariableReadNode (location: (1,22)-(1,23))
             │           │           ├── name: :b
-            │           │           └── depth: 0
+            │           │           └── depth: 1
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

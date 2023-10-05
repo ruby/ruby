@@ -293,6 +293,11 @@ typedef struct pm_scope {
     // This is necessary to determine if child blocks are allowed to use
     // numbered parameters.
     bool numbered_params;
+
+    // A transparent scope is a scope that cannot have locals set on itself.
+    // When a local is set on this scope, it will instead be set on the parent
+    // scope's local table.
+    bool transparent;
 } pm_scope_t;
 
 // This struct represents the overall parser. It contains a reference to the
