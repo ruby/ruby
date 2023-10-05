@@ -11504,7 +11504,6 @@ rb_node_match3_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const
     rb_node_match3_t *n = NODE_NEWNODE(NODE_MATCH3, rb_node_match3_t, loc);
     n->nd_recv = nd_recv;
     n->nd_value = nd_value;
-    n->not_used = 0;
 
     return n;
 }
