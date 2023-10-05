@@ -45,13 +45,11 @@ yjit-libobj: $(YJIT_LIBOBJ)
 YJIT_LIB_SYMBOLS = $(YJIT_LIBS:.a=).symbols
 $(YJIT_LIBOBJ): $(YJIT_LIBS)
 	$(ECHO) 'partial linking $(YJIT_LIBS) into $@'
-ifneq ($(or $(findstring linux,$(target_os)),$(findstring bsd,$(target_os)),$(findstring dragonfly,$(target_os))),)
-	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
-	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)
-else ifneq ($(findstring darwin,$(target_os)),)
+ifneq ($(findstring darwin,$(target_os)),)
 	$(Q) $(CC) -nodefaultlibs -r -o $@ -exported_symbols_list $(YJIT_LIB_SYMBOLS) $(YJIT_LIBS)
 else
-	false
+	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
+	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)
 endif
 
 # For Darwin only: a list of symbols that we want the glommed Rust static lib to export.
