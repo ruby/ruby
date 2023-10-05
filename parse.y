@@ -1718,7 +1718,7 @@ add_block_exit(struct parser_params *p, NODE *node)
       case NODE_BREAK: case NODE_NEXT: case NODE_REDO: break;
       default:
         compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
-        break;
+        return node;
     }
     if (!p->ctxt.in_defined) {
         NODE *exits = p->exits;
