@@ -22,6 +22,7 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
+    * Array.pack1 added for packing a single object without allocating an array. [[Bug #18573]]
     * Array#pack now raises ArgumentError for unknown directives. [[Bug #19150]]
 
 * Dir
@@ -185,6 +186,7 @@ changelog for details of the default gems or bundled gems.
 
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
+[Feature #18573]: https://bugs.ruby-lang.org/issues/18573
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150

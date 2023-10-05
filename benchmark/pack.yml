@@ -1,0 +1,8 @@
+prelude: |
+  fmt = 'c'
+  buffer = String.new(capacity: 1)
+benchmark:
+  pack: |
+    [1].pack(fmt, buffer: buffer)
+  pack1: |
+    Array.pack1(1, fmt, buffer: buffer)

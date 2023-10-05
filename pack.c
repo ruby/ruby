@@ -194,7 +194,7 @@ VALUE_to_float(VALUE obj)
 }
 
 static VALUE
-pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
+pack_pack(rb_execution_context_t *ec, VALUE unused, VALUE objects, VALUE fmt, VALUE buffer, VALUE isarray)
 {
     static const char nul10[] = "\0\0\0\0\0\0\0\0\0\0";
     static const char spc10[] = "          ";
@@ -208,6 +208,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     int natint;		/* native integer */
 #endif
     int integer_size, bigendian_p;
+    VALUE ary = isarray ? objects : Qnil;
 
     StringValue(fmt);
     rb_must_asciicompat(fmt);
@@ -227,9 +228,9 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define MORE_ITEM (idx < RARRAY_LEN(ary))
-#define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
-#define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define MORE_ITEM (idx < (isarray ? RARRAY_LEN(ary) : 1))
+#define THISFROM (MORE_ITEM ? (isarray ? RARRAY_AREF(ary, idx) : objects) : TOO_FEW)
+#define NEXTFROM (MORE_ITEM ? (isarray ? RARRAY_AREF(ary, idx++) : objects) : TOO_FEW)
 
     while (p < pend) {
         int explicit_endian = 0;
@@ -281,7 +282,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
         if (*p == '*') {	/* set data length */
             len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
-                : RARRAY_LEN(ary) - idx;
+                : (isarray ? RARRAY_LEN(ary): 1) - idx;
             p++;
         }
         else if (ISDIGIT(*p)) {

@@ -707,7 +707,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_iseq_builtin_to_a
     invokebuiltin = eval(EnvUtil.invoke_ruby(['-e', <<~EOS], '', true).first)
-      insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last
+      insns = RubyVM::InstructionSequence.of("".method(:unpack)).to_a.last
       p insns.find { |insn| insn.is_a?(Array) && insn[0] == :opt_invokebuiltin_delegate_leave }
     EOS
     assert_not_nil(invokebuiltin)

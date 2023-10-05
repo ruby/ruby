@@ -1,11 +1,20 @@
 class Array
   #  call-seq:
+  #    pack1(object, template, buffer: nil) -> string
+  #
+  #  Formats single +object+ into a binary string; returns that string.
+  #  See {Packed Data}[rdoc-ref:packed_data.rdoc].
+  def self.pack1(object, fmt, buffer: nil)
+    Primitive.pack_pack(object, fmt, buffer, false)
+  end
+
+  #  call-seq:
   #    pack(template, buffer: nil) -> string
   #
   #  Formats each element in +self+ into a binary string; returns that string.
   #  See {Packed Data}[rdoc-ref:packed_data.rdoc].
   def pack(fmt, buffer: nil)
-    Primitive.pack_pack(fmt, buffer)
+    Primitive.pack_pack(self, fmt, buffer, true)
   end
 end
 
