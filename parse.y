@@ -11238,8 +11238,6 @@ rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 {
     rb_node_yield_t *n = NODE_NEWNODE(NODE_YIELD, rb_node_yield_t, loc);
     n->nd_head = nd_head;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }

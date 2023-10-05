@@ -547,8 +547,6 @@ typedef struct RNode_YIELD {
     NODE node;
 
     struct RNode *nd_head;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_yield_t;
 
 typedef struct RNode_LVAR {
