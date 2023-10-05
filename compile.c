@@ -9216,7 +9216,7 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     ADD_SEQ(ret, val);
     ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
 
-    if (RNODE_MATCH2(node)->nd_args) {
+    if (nd_type_p(node, NODE_MATCH2) && RNODE_MATCH2(node)->nd_args) {
         compile_named_capture_assign(iseq, ret, RNODE_MATCH2(node)->nd_args);
     }
 

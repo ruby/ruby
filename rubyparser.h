@@ -614,7 +614,6 @@ typedef struct RNode_MATCH3 {
 
     struct RNode *nd_recv;
     struct RNode *nd_value;
-    VALUE not_used;
 } rb_node_match3_t;
 
 typedef struct RNode_LIT {
