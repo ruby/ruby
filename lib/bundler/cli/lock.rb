@@ -34,7 +34,7 @@ module Bundler
       end
       definition = Bundler.definition(update)
 
-      Bundler::CLI::Common.configure_gem_version_promoter(Bundler.definition, options) if options[:update]
+      Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 
       options["remove-platform"].each do |platform|
         definition.remove_platform(platform)
