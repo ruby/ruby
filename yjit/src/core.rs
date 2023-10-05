@@ -42,7 +42,7 @@ pub type IseqIdx = u16;
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub enum Type {
-    Unknown,
+    Unknown = 0,
     UnknownImm,
     UnknownHeap,
     Nil,
@@ -438,7 +438,8 @@ impl RegTemps {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Clone, Default, Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
+#[repr(packed)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u8,
@@ -454,7 +455,8 @@ pub struct Context {
     chain_depth: u8,
 
     // Local variable types we keep track of
-    local_types: [Type; MAX_LOCAL_TYPES],
+    // We store 8 local types, requiring 4 bits each, for a total of 32 bits
+    local_types: u32,
 
     // Type we track for self
     self_type: Type,
@@ -1690,7 +1692,7 @@ impl Context {
                     MapToLocal => {
                         let idx = mapping.get_local_idx();
                         assert!((idx as usize) < MAX_LOCAL_TYPES);
-                        return self.local_types[idx as usize];
+                        return self.get_local_type(idx.into());
                     }
                 }
             }
@@ -1698,8 +1700,14 @@ impl Context {
     }
 
     /// Get the currently tracked type for a local variable
-    pub fn get_local_type(&self, idx: usize) -> Type {
-        *self.local_types.get(idx).unwrap_or(&Type::Unknown)
+    pub fn get_local_type(&self, local_idx: usize) -> Type {
+        if local_idx >= MAX_LOCAL_TYPES {
+            return Type::Unknown
+        } else {
+            // Each type is stored in 4 bits
+            let type_bits = (self.local_types >> (4 * local_idx)) & 0b1111;
+            unsafe { transmute::<u8, Type>(type_bits as u8) }
+        }
     }
 
     /// Upgrade (or "learn") the type of an instruction operand
@@ -1735,7 +1743,9 @@ impl Context {
                     MapToLocal => {
                         let idx = mapping.get_local_idx() as usize;
                         assert!(idx < MAX_LOCAL_TYPES);
-                        self.local_types[idx].upgrade(opnd_type);
+                        let mut new_type = self.get_local_type(idx);
+                        new_type.upgrade(opnd_type);
+                        self.set_local_type(idx, new_type);
                     }
                 }
             }
@@ -1793,26 +1803,26 @@ impl Context {
 
     /// Set the type of a local variable
     pub fn set_local_type(&mut self, local_idx: usize, local_type: Type) {
-        let ctx = self;
-
         // If type propagation is disabled, store no types
         if get_option!(no_type_prop) {
             return;
         }
 
         if local_idx >= MAX_LOCAL_TYPES {
-            return;
+            return
         }
 
         // If any values on the stack map to this local we must detach them
-        for mapping in ctx.temp_mapping.iter_mut() {
-            *mapping = match mapping.get_kind() {
-                MapToStack => *mapping,
-                MapToSelf => *mapping,
+        for mapping_idx in 0..self.temp_mapping.len() {
+            let mapping = self.temp_mapping[mapping_idx];
+            self.temp_mapping[mapping_idx] = match mapping.get_kind() {
+                MapToStack => mapping,
+                MapToSelf => mapping,
                 MapToLocal => {
                     let idx = mapping.get_local_idx();
                     if idx as usize == local_idx {
-                        TempMapping::map_to_stack(ctx.local_types[idx as usize])
+                        let local_type = self.get_local_type(local_idx.into());
+                        TempMapping::map_to_stack(local_type)
                     } else {
                         TempMapping::map_to_local(idx)
                     }
@@ -1820,7 +1830,12 @@ impl Context {
             }
         }
 
-        ctx.local_types[local_idx] = local_type;
+        // Update the type bits
+        let type_bits = local_type as u32;
+        assert!(type_bits <= 0b1111);
+        let mask_bits = (0b1111 as u32) << (4 * local_idx);
+        let shifted_bits = type_bits << (4 * local_idx);
+        self.local_types = (self.local_types & !mask_bits) | shifted_bits;
     }
 
     /// Erase local variable type information
@@ -1828,15 +1843,17 @@ impl Context {
     pub fn clear_local_types(&mut self) {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
-        for mapping in self.temp_mapping.iter_mut() {
+
+        for mapping_idx in 0..self.temp_mapping.len() {
+            let mapping = self.temp_mapping[mapping_idx];
             if mapping.get_kind() == MapToLocal {
-                let idx = mapping.get_local_idx();
-                *mapping = TempMapping::map_to_stack(self.local_types[idx as usize]);
+                let local_idx = mapping.get_local_idx() as usize;
+                self.temp_mapping[mapping_idx] = TempMapping::map_to_stack(self.get_local_type(local_idx));
             }
         }
 
         // Clear the local types
-        self.local_types = [Type::default(); MAX_LOCAL_TYPES];
+        self.local_types = 0;
     }
 
     /// Compute a difference score for two context objects
@@ -1877,9 +1894,9 @@ impl Context {
         };
 
         // For each local type we track
-        for i in 0..src.local_types.len() {
-            let t_src = src.local_types[i];
-            let t_dst = dst.local_types[i];
+        for i in 0.. MAX_LOCAL_TYPES {
+            let t_src = src.get_local_type(i);
+            let t_dst = dst.get_local_type(i);
             diff += match t_src.diff(t_dst) {
                 TypeDiff::Compatible(diff) => diff,
                 TypeDiff::Incompatible => return TypeDiff::Incompatible,
@@ -3194,8 +3211,42 @@ mod tests {
     use crate::core::*;
 
     #[test]
+    fn type_size() {
+        // Check that we can store types in 4 bits,
+        // and all local types in 32 bits
+        assert_eq!(mem::size_of::<Type>(), 1);
+        assert!(Type::BlockParamProxy as usize <= 0b1111);
+        assert!(MAX_LOCAL_TYPES * 4 <= 32);
+    }
+
+    #[test]
     fn tempmapping_size() {
         assert_eq!(mem::size_of::<TempMapping>(), 1);
+    }
+
+    #[test]
+    fn local_types() {
+        let mut ctx = Context::default();
+
+        for i in 0..MAX_LOCAL_TYPES {
+            ctx.set_local_type(i, Type::Fixnum);
+            assert_eq!(ctx.get_local_type(i), Type::Fixnum);
+            ctx.set_local_type(i, Type::BlockParamProxy);
+            assert_eq!(ctx.get_local_type(i), Type::BlockParamProxy);
+        }
+
+        ctx.set_local_type(0, Type::Fixnum);
+        ctx.clear_local_types();
+        assert!(ctx.get_local_type(0) == Type::Unknown);
+
+        // Make sure we don't accidentally set bits incorrectly
+        let mut ctx = Context::default();
+        ctx.set_local_type(0, Type::Fixnum);
+        assert_eq!(ctx.get_local_type(0), Type::Fixnum);
+        ctx.set_local_type(2, Type::Fixnum);
+        ctx.set_local_type(1, Type::BlockParamProxy);
+        assert_eq!(ctx.get_local_type(0), Type::Fixnum);
+        assert_eq!(ctx.get_local_type(2), Type::Fixnum);
     }
 
     #[test]
@@ -3215,7 +3266,7 @@ mod tests {
 
     #[test]
     fn context_size() {
-        assert_eq!(mem::size_of::<Context>(), 21);
+        assert_eq!(mem::size_of::<Context>(), 17);
     }
 
     #[test]
