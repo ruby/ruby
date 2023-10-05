@@ -9223,6 +9223,7 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
                 pm_token_t name = parser->previous;
                 value = (pm_node_t *) pm_required_parameter_node_create(parser, &name);
+                pm_parser_parameter_name_check(parser, &name);
                 pm_parser_local_add_token(parser, &name);
             }
 
@@ -9233,6 +9234,7 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             pm_token_t name = parser->previous;
 
             param = (pm_node_t *) pm_required_parameter_node_create(parser, &name);
+            pm_parser_parameter_name_check(parser, &name);
             pm_parser_local_add_token(parser, &name);
         }
 

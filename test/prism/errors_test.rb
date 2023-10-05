@@ -1380,6 +1380,15 @@ module Prism
       ]
     end
 
+    def test_repeated_parameter_name_in_destructured_params
+      source = "def f(a, (b, (a))); end"
+      # In Ruby 3.0.x, `Ripper.sexp_raw` does not return `nil` for this case.
+      compare_ripper = RUBY_ENGINE == "ruby" && (RUBY_VERSION.split('.').map { |x| x.to_i } <=> [3, 1]) >= 1
+      assert_errors expression(source), source, [
+        ["Repeated parameter name", 14..15],
+      ], compare_ripper: compare_ripper
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
