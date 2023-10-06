@@ -1389,6 +1389,21 @@ module Prism
       ], compare_ripper: compare_ripper
     end
 
+    def test_assign_to_numbered_parameter
+      source = "
+        a in _1
+        a => _1
+        1 => a, _1
+        1 in a, _1
+      "
+      assert_errors expression(source), source, [
+        ["Token reserved for a numbered parameter", 14..16],
+        ["Token reserved for a numbered parameter", 30..32],
+        ["Token reserved for a numbered parameter", 49..51],
+        ["Token reserved for a numbered parameter", 68..70],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

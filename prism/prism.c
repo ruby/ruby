@@ -3444,10 +3444,19 @@ pm_local_variable_write_node_create(pm_parser_t *parser, pm_constant_id_t name, 
     return node;
 }
 
+static inline bool
+token_is_numbered_parameter(const uint8_t *start, const uint8_t *end) {
+    return (end - start == 2) && (start[0] == '_') && (start[1] != '0') && (pm_char_is_decimal_digit(start[1]));
+}
+
 // Allocate and initialize a new LocalVariableTargetNode node.
 static pm_local_variable_target_node_t *
 pm_local_variable_target_node_create(pm_parser_t *parser, const pm_token_t *name) {
     pm_local_variable_target_node_t *node = PM_ALLOC_NODE(parser, pm_local_variable_target_node_t);
+
+    if (token_is_numbered_parameter(name->start, name->end)) {
+        pm_parser_err_token(parser, name, PM_ERR_PARAMETER_NUMBERED_RESERVED);
+    }
 
     *node = (pm_local_variable_target_node_t) {
         {
@@ -4942,11 +4951,6 @@ static inline void
 pm_parser_local_add_owned(pm_parser_t *parser, const uint8_t *start, size_t length) {
     pm_constant_id_t constant_id = pm_parser_constant_id_owned(parser, start, length);
     if (constant_id != 0) pm_parser_local_add(parser, constant_id);
-}
-
-static inline bool
-token_is_numbered_parameter(const uint8_t *start, const uint8_t *end) {
-    return (end - start == 2) && (start[0] == '_') && (start[1] != '0') && (pm_char_is_decimal_digit(start[1]));
 }
 
 // Add a parameter name to the current scope and check whether the name of the
