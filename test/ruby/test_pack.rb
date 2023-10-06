@@ -1,6 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: false
 require 'test/unit'
+require 'rbconfig'
 
 class TestPack < Test::Unit::TestCase
   def test_pack
@@ -442,7 +443,6 @@ class TestPack < Test::Unit::TestCase
     assert_operator(4, :<=, [1].pack("L!").bytesize)
   end
 
-  require 'rbconfig'
   def test_pack_unpack_qQ
     s1 = [578437695752307201, -506097522914230529].pack("q*")
     s2 = [578437695752307201, 17940646550795321087].pack("Q*")
