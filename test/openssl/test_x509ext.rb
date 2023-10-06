@@ -66,8 +66,8 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     cp = ef.create_extension("certificatePolicies", "@certPolicies")
     assert_equal(false, cp.critical?)
     assert_equal("certificatePolicies", cp.oid)
-    assert_match(%r{2.23.140.1.2.1}, cp.value)
-    assert_match(%r{http://cps.example.com}, cp.value)
+    assert_include(cp.value, "2.23.140.1.2.1")
+    assert_include(cp.value, "http://cps.example.com")
   end
 
   def test_factory_create_extension_sn_ln
