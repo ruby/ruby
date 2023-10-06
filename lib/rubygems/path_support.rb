@@ -30,15 +30,12 @@ class Gem::PathSupport
   def initialize(env)
     # Current implementation of @home, which is exposed as `Gem.paths.home`:
     # 1. If `env["GEM_HOME"]` is defined in the environment: `env["GEM_HOME"]`.
-    # 2. If `Gem.default_dir` is writable OR it does not exist and it's parent
-    #    directory is writable: `Gem.default_dir`.
+    # 2. If `Gem.default_dir` is writable: `Gem.default_dir`.
     # 3. Otherwise: `Gem.user_dir`.
 
     if env.key?("GEM_HOME")
       @home = normalize_home_dir(env["GEM_HOME"])
-    elsif File.writable?(Gem.default_dir) || \
-          (!File.exist?(Gem.default_dir) && File.writable?(File.expand_path("..", Gem.default_dir)))
-
+    elsif File.writable?(Gem.default_dir)
       @home = normalize_home_dir(Gem.default_dir)
     else
       # If `GEM_HOME` is not set AND we can't use `Gem.default_dir`,
