@@ -669,6 +669,7 @@ pm_scope_node_init(pm_node_t *node, pm_scope_node_t *scope) {
     scope->base.location.start = node->location.start;
     scope->base.location.end = node->location.end;
 
+    scope->ast_node = node;
     scope->parameters = NULL;
     scope->body = NULL;
     pm_constant_id_list_init(&scope->locals);
