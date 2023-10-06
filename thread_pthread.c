@@ -583,6 +583,12 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
     }
     ractor_sched_unlock(vm, cr);
 
+    if (add_th && !del_th && UNLIKELY(vm->ractor.sync.lock_owner != NULL)) {
+        // it can be after barrier synchronization by another ractor
+        RB_VM_LOCK_ENTER();
+        RB_VM_LOCK_LEAVE();
+    }
+
     //RUBY_DEBUG_LOG("+:%u -:%u +ts:%u -ts:%u run:%u->%u",
     //               rb_th_serial(add_th), rb_th_serial(del_th),
     //               rb_th_serial(add_timeslice_th), rb_th_serial(del_timeslice_th),
