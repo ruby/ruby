@@ -50,18 +50,16 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     cdp = ef.create_extension("crlDistributionPoints", "@crlDistPts")
     assert_equal(false, cdp.critical?)
     assert_equal("crlDistributionPoints", cdp.oid)
-    assert_match(%{URI:http://www\.example\.com/crl}, cdp.value)
-    assert_match(
-      %r{URI:ldap://ldap\.example\.com/cn=ca\?certificateRevocationList;binary},
-      cdp.value)
+    assert_include(cdp.value, "URI:http://www.example.com/crl")
+    assert_include(cdp.value,
+      "URI:ldap://ldap.example.com/cn=ca?certificateRevocationList;binary")
 
     cdp = ef.create_extension("crlDistributionPoints", "critical, @crlDistPts")
     assert_equal(true, cdp.critical?)
     assert_equal("crlDistributionPoints", cdp.oid)
-    assert_match(%{URI:http://www.example.com/crl}, cdp.value)
-    assert_match(
-      %r{URI:ldap://ldap.example.com/cn=ca\?certificateRevocationList;binary},
-      cdp.value)
+    assert_include(cdp.value, "URI:http://www.example.com/crl")
+    assert_include(cdp.value,
+      "URI:ldap://ldap.example.com/cn=ca?certificateRevocationList;binary")
 
     cp = ef.create_extension("certificatePolicies", "@certPolicies")
     assert_equal(false, cp.critical?)
