@@ -276,12 +276,6 @@ native_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *e
     return rb_fd_select(n, readfds, writefds, exceptfds, timeout);
 }
 
-static VALUE
-rb_thread_start_unblock_thread(void)
-{
-    return Qfalse;
-}
-
 static bool
 th_has_dedicated_nt(const rb_thread_t *th)
 {

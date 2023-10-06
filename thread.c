@@ -1523,9 +1523,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
         if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
             vm->ubf_async_safe = 1;
         }
-        else {
-            ubf_th = rb_thread_start_unblock_thread();
-        }
     }
 
     BLOCKING_REGION(th, {

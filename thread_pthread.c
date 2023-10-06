@@ -2454,7 +2454,25 @@ rb_thread_wakeup_timer_thread(int sig)
 {
     // This function can be called from signal handlers so that
     // pthread_mutex_lock() should not be used.
+
+    // wakeup timer thread
     timer_thread_wakeup_force();
+
+    // interrupt main thread
+    rb_vm_t *vm = GET_VM();
+    rb_thread_t *main_th = vm->ractor.main_thread;
+
+    if (system_working > 0 && main_th) {
+        volatile rb_execution_context_t *main_th_ec = ACCESS_ONCE(rb_execution_context_t *, main_th->ec);
+
+        if (main_th_ec) {
+            RUBY_VM_SET_TRAP_INTERRUPT(main_th_ec);
+
+            if (vm->ubf_async_safe && main_th->unblock.func) {
+                (main_th->unblock.func)(main_th->unblock.arg);
+            }
+        }
+    }
 }
 
 #define CLOSE_INVALIDATE_PAIR(expr) \
@@ -3136,25 +3154,6 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 
     RUBY_DEBUG_LOG("wakeup");
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
-}
-
-static VALUE
-ubf_caller(void *ignore)
-{
-    rb_thread_sleep_forever();
-
-    return Qfalse;
-}
-
-/*
- * Called if and only if one thread is running, and
- * the unblock function is NOT async-signal-safe
- * This assumes USE_THREAD_CACHE is true for performance reasons
- */
-static VALUE
-rb_thread_start_unblock_thread(void)
-{
-    return rb_thread_create(ubf_caller, 0);
 }
 
 // thread internal event hooks (only for pthread)
