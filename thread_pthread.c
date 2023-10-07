@@ -2464,18 +2464,20 @@ rb_thread_wakeup_timer_thread(int sig)
     // wakeup timer thread
     timer_thread_wakeup_force();
 
-    // interrupt main thread
-    rb_vm_t *vm = GET_VM();
-    rb_thread_t *main_th = vm->ractor.main_thread;
+    if (system_working) {
+        // interrupt main thread
+        rb_vm_t *vm = GET_VM();
+        rb_thread_t *main_th = vm->ractor.main_thread;
 
-    if (system_working > 0 && main_th) {
-        volatile rb_execution_context_t *main_th_ec = ACCESS_ONCE(rb_execution_context_t *, main_th->ec);
+        if (main_th) {
+            volatile rb_execution_context_t *main_th_ec = ACCESS_ONCE(rb_execution_context_t *, main_th->ec);
 
-        if (main_th_ec) {
-            RUBY_VM_SET_TRAP_INTERRUPT(main_th_ec);
+            if (main_th_ec) {
+                RUBY_VM_SET_TRAP_INTERRUPT(main_th_ec);
 
-            if (vm->ubf_async_safe && main_th->unblock.func) {
-                (main_th->unblock.func)(main_th->unblock.arg);
+                if (vm->ubf_async_safe && main_th->unblock.func) {
+                    (main_th->unblock.func)(main_th->unblock.arg);
+                }
             }
         }
     }
