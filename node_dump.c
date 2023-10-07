@@ -401,7 +401,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_vid](lvar) = [nd_value]");
         ANN("example: x = foo");
         F_ID(nd_vid, RNODE_LASGN, "local variable");
-        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node))) {
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node)->nd_value)) {
             F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
         }
         else {
@@ -415,7 +415,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: x = nil; 1.times { x = foo }");
         ANN("example: 1.times { x = foo }");
         F_ID(nd_vid, RNODE_DASGN, "local variable");
-        if (NODE_REQUIRED_KEYWORD_P(RNODE_DASGN(node))) {
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_DASGN(node)->nd_value)) {
             F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
         }
         else {

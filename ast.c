@@ -461,7 +461,7 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_IASGN:
       case NODE_CVASGN:
       case NODE_GASGN:
-        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node))) {
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node)->nd_value)) {
             return rb_ary_new_from_args(2, var_name(RNODE_LASGN(node)->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
         }
         return rb_ary_new_from_args(2, var_name(RNODE_LASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_LASGN(node)->nd_value));
