@@ -999,7 +999,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
 #define NEW_AND(f,s,loc) (NODE *)rb_node_and_new(p,f,s,loc)
 #define NEW_OR(f,s,loc) (NODE *)rb_node_or_new(p,f,s,loc)
-#define NEW_MASGN(l,r,loc)   (NODE *)rb_node_masgn_new(p,l,r,loc)
+#define NEW_MASGN(l,r,loc)   rb_node_masgn_new(p,l,r,loc)
 #define NEW_LASGN(v,val,loc) (NODE *)rb_node_lasgn_new(p,v,val,loc)
 #define NEW_DASGN(v,val,loc) (NODE *)rb_node_dasgn_new(p,v,val,loc)
 #define NEW_GASGN(v,val,loc) (NODE *)rb_node_gasgn_new(p,v,val,loc)
@@ -1885,6 +1885,7 @@ get_nd_args(struct parser_params *p, NODE *node)
     rb_node_opt_arg_t *node_opt_arg;
     rb_node_kw_arg_t *node_kw_arg;
     rb_node_block_pass_t *node_block_pass;
+    rb_node_masgn_t *node_masgn;
     ID id;
     int num;
     st_table *tbl;
@@ -1983,7 +1984,8 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <node_args> f_arglist f_opt_paren_args f_paren_args f_args
 %type <node_args_aux> f_arg f_arg_item
 %type <node_opt_arg> f_optarg
-%type <node> f_marg f_marg_list f_margs f_rest_marg
+%type <node> f_marg f_marg_list f_rest_marg
+%type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
 %type <node_opt_arg> f_opt
@@ -1992,7 +1994,8 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
-%type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
+%type <node> mlhs_head mlhs_item mlhs_node mlhs_post
+%type <node_masgn> mlhs mlhs_basic mlhs_inner
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg p_rest
@@ -2378,7 +2381,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
                     /*%%%*/
                         value_expr($4);
-                        $$ = node_assign(p, $1, $4, $3, &@$);
+                        $$ = node_assign(p, (NODE *)$1, $4, $3, &@$);
                     /*% %*/
                     /*% ripper: massign!($1, $4) %*/
                     }
@@ -2398,14 +2401,14 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         $resbody = NEW_RESBODY(0, remove_begin($resbody), 0, &loc);
                         loc.beg_pos = @mrhs_arg.beg_pos;
                         $mrhs_arg = NEW_RESCUE($mrhs_arg, $resbody, 0, &loc);
-                        $$ = node_assign(p, $mlhs, $mrhs_arg, $lex_ctxt, &@$);
+                        $$ = node_assign(p, (NODE *)$mlhs, $mrhs_arg, $lex_ctxt, &@$);
                     /*% %*/
                     /*% ripper: massign!($1, rescue_mod!($4, $7)) %*/
                     }
                 | mlhs '=' lex_ctxt mrhs_arg
                     {
                     /*%%%*/
-                        $$ = node_assign(p, $1, $4, $3, &@$);
+                        $$ = node_assign(p, (NODE *)$1, $4, $3, &@$);
                     /*% %*/
                     /*% ripper: massign!($1, $4) %*/
                     }
@@ -2812,7 +2815,7 @@ mlhs_inner	: mlhs_basic
                 | tLPAREN mlhs_inner rparen
                     {
                     /*%%%*/
-                        $$ = NEW_MASGN(NEW_LIST($2, &@$), 0, &@$);
+                        $$ = NEW_MASGN(NEW_LIST((NODE *)$2, &@$), 0, &@$);
                     /*% %*/
                     /*% ripper: mlhs_paren!($2) %*/
                     }
@@ -2894,7 +2897,7 @@ mlhs_item	: mlhs_node
                 | tLPAREN mlhs_inner rparen
                     {
                     /*%%%*/
-                        $$ = $2;
+                        $$ = (NODE *)$2;
                     /*% %*/
                     /*% ripper: mlhs_paren!($2) %*/
                     }
@@ -4032,7 +4035,7 @@ primary		: literal
                             m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(internal_var, &@2), NO_LEX_CTXT, &@2);
                             break;
                           default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-                            m->nd_next = node_assign(p, NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, NO_LEX_CTXT, &@2);
+                            m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, NO_LEX_CTXT, &@2);
                         }
                         /* {|*internal_id| <m> = internal_id; ... } */
                         args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
@@ -4414,7 +4417,7 @@ f_marg		: f_norm_arg
                 | tLPAREN f_margs rparen
                     {
                     /*%%%*/
-                        $$ = $2;
+                        $$ = (NODE *)$2;
                     /*% %*/
                     /*% ripper: mlhs_paren!($2) %*/
                     }
@@ -6259,13 +6262,13 @@ f_arg_item	: f_arg_asgn
                         loc.end_pos = @2.beg_pos;
                         arg_var(p, tid);
                         if (dyna_in_block(p)) {
-                            RNODE_MASGN($2)->nd_value = NEW_DVAR(tid, &loc);
+                            $2->nd_value = NEW_DVAR(tid, &loc);
                         }
                         else {
-                            RNODE_MASGN($2)->nd_value = NEW_LVAR(tid, &loc);
+                            $2->nd_value = NEW_LVAR(tid, &loc);
                         }
                         $$ = NEW_ARGS_AUX(tid, 1, &NULL_LOC);
-                        $$->nd_next = $2;
+                        $$->nd_next = (NODE *)$2;
                     /*% %*/
                     /*% ripper: mlhs_paren!($2) %*/
                     }
