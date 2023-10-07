@@ -4860,8 +4860,6 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
     return node;
 }
 
-
-#undef PM_EMPTY_STRING
 #undef PM_ALLOC_NODE
 
 /******************************************************************************/
@@ -6099,6 +6097,7 @@ lex_question_mark(pm_parser_t *parser) {
 
     if (parser->current.end >= parser->end) {
         pm_parser_err_current(parser, PM_ERR_INCOMPLETE_QUESTION_MARK);
+        pm_string_shared_init(&parser->current_string, parser->current.start + 1, parser->current.end);
         return PM_TOKEN_CHARACTER_LITERAL;
     }
 
@@ -6112,6 +6111,8 @@ lex_question_mark(pm_parser_t *parser) {
     if (parser->current.start[1] == '\\') {
         lex_state_set(parser, PM_LEX_STATE_END);
         parser->current.end += pm_unescape_calculate_difference(parser, parser->current.start + 1, PM_UNESCAPE_ALL, true);
+        pm_string_shared_init(&parser->current_string, parser->current.start + 1, parser->current.end);
+        pm_unescape_manipulate_char_literal(parser, &parser->current_string, PM_UNESCAPE_ALL);
         return PM_TOKEN_CHARACTER_LITERAL;
     } else {
         size_t encoding_width = parser->encoding.char_width(parser->current.end, parser->end - parser->current.end);
@@ -6128,6 +6129,7 @@ lex_question_mark(pm_parser_t *parser) {
         ) {
             lex_state_set(parser, PM_LEX_STATE_END);
             parser->current.end += encoding_width;
+            pm_string_shared_init(&parser->current_string, parser->current.start + 1, parser->current.end);
             return PM_TOKEN_CHARACTER_LITERAL;
         }
     }
@@ -8074,17 +8076,6 @@ pm_symbol_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *openin
     pm_string_shared_init(&node->unescaped, content->start, content->end);
 
     pm_unescape_manipulate_string(parser, &node->unescaped, unescape_type);
-    return node;
-}
-
-static pm_string_node_t *
-pm_char_literal_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
-    pm_string_node_t *node = pm_string_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_char_literal(parser, &node->unescaped, unescape_type);
     return node;
 }
 
@@ -11763,16 +11754,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             content.start = content.start + 1;
 
             pm_token_t closing = not_provided(parser);
-            pm_node_t *node = (pm_node_t *) pm_char_literal_node_create_and_unescape(parser, &opening, &content, &closing, PM_UNESCAPE_ALL);
+            pm_string_node_t *node = (pm_string_node_t *) pm_string_node_create(parser, &opening, &content, &closing);
+            node->unescaped = parser->current_string;
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
                 pm_node_t *concat = parse_strings(parser);
-                return (pm_node_t *) pm_string_concat_node_create(parser, node, concat);
+                return (pm_node_t *) pm_string_concat_node_create(parser, (pm_node_t *) node, concat);
             }
 
-            return node;
+            return (pm_node_t *) node;
         }
         case PM_TOKEN_CLASS_VARIABLE: {
             parser_lex(parser);
@@ -14538,6 +14530,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .constant_pool = PM_CONSTANT_POOL_EMPTY,
         .newline_list = PM_NEWLINE_LIST_EMPTY,
         .integer_base = 0,
+        .current_string = PM_EMPTY_STRING,
         .command_start = true,
         .recovering = false,
         .encoding_changed = false,
@@ -14675,10 +14668,11 @@ pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, cons
     pm_parser_free(&parser);
 }
 
-#undef PM_LOCATION_NULL_VALUE
-#undef PM_LOCATION_TOKEN_VALUE
-#undef PM_LOCATION_NODE_VALUE
-#undef PM_LOCATION_NODE_BASE_VALUE
 #undef PM_CASE_KEYWORD
 #undef PM_CASE_OPERATOR
 #undef PM_CASE_WRITABLE
+#undef PM_EMPTY_STRING
+#undef PM_LOCATION_NODE_BASE_VALUE
+#undef PM_LOCATION_NODE_VALUE
+#undef PM_LOCATION_NULL_VALUE
+#undef PM_LOCATION_TOKEN_VALUE
