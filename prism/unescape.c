@@ -211,8 +211,7 @@ unescape(
             }
             return backslash + 2;
         // \nnn         octal bit pattern, where nnn is 1-3 octal digits ([0-7])
-        case '0': case '1': case '2': case '3': case '4':
-        case '5': case '6': case '7': case '8': case '9': {
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
             uint8_t value;
             const uint8_t *cursor = backslash + unescape_octal(backslash, &value, end);
 
