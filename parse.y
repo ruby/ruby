@@ -14279,7 +14279,7 @@ new_args_tail(struct parser_params *p, rb_node_kw_arg_t *kw_args, ID kw_rest_arg
         vtable_pop(vtargs, !!block + !!kw_rest_arg);
         required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
         while (kwn) {
-            if (!NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(kwn->nd_body)))
+            if (!NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(kwn->nd_body)->nd_value))
                 --kw_vars;
             --required_kw_vars;
             kwn = kwn->nd_next;
@@ -14287,7 +14287,7 @@ new_args_tail(struct parser_params *p, rb_node_kw_arg_t *kw_args, ID kw_rest_arg
 
         for (kwn = kw_args; kwn; kwn = kwn->nd_next) {
             ID vid = RNODE_LASGN(kwn->nd_body)->nd_vid;
-            if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(kwn->nd_body))) {
+            if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(kwn->nd_body)->nd_value)) {
                 *required_kw_vars++ = vid;
             }
             else {
