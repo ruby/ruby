@@ -2464,8 +2464,8 @@ rb_thread_wakeup_timer_thread(int sig)
     // wakeup timer thread
     timer_thread_wakeup_force();
 
+    // interrupt main thread if main thread is available
     if (system_working) {
-        // interrupt main thread
         rb_vm_t *vm = GET_VM();
         rb_thread_t *main_th = vm->ractor.main_thread;
 
