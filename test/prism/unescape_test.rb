@@ -5,160 +5,129 @@ require_relative "test_helper"
 return if Prism::BACKEND == :FFI
 
 module Prism
-  class UnescapeNoneTest < TestCase
-    def test_backslash
-      assert_unescape_none("\\")
+  class UnescapeTest < TestCase
+    module Context
+      class Base
+        attr_reader :left, :right
+    
+        def initialize(left, right)
+          @left = left
+          @right = right
+        end
+    
+        def name
+          "#{left}#{right}".delete("\n")
+        end
+    
+        private
+    
+        def code(escape)
+          "#{left}\\#{escape}#{right}".b
+        end
+    
+        def ruby(escape)
+          yield eval(code(escape))
+        rescue SyntaxError
+          :error
+        end
+    
+        def prism(escape)
+          result = Prism.parse(code(escape))
+    
+          if result.success?
+            yield result.value.statements.body.first
+          else
+            :error
+          end
+        end
+    
+        def `(command)
+          command
+        end
+      end
+    
+      class List < Base
+        def ruby_result(escape) = ruby(escape) { |value| value.first.to_s }
+        def prism_result(escape) = prism(escape) { |node| node.elements.first.unescaped }
+      end
+    
+      class Symbol < Base
+        def ruby_result(escape) = ruby(escape, &:to_s)
+        def prism_result(escape) = prism(escape, &:unescaped)
+      end
+    
+      class String < Base
+        def ruby_result(escape) = ruby(escape, &:itself)
+        def prism_result(escape) = prism(escape, &:unescaped)
+      end
+    
+      class RegExp < Base
+        def ruby_result(escape) = ruby(escape, &:source)
+        def prism_result(escape) = prism(escape, &:unescaped)
+      end
     end
 
-    def test_single_quote
-      assert_unescape_none("'")
+    ascii = (0...128).map(&:chr)
+    ascii8 = (128...256).map(&:chr)
+
+    octal = [*("0".."7")]
+    octal = octal.product(octal).map(&:join).concat(octal.product(octal).product(octal).map(&:join))
+
+    hex = [*("a".."f"), *("A".."F"), *("0".."9")]
+    hex = hex.map { |h| "x#{h}" }.concat(hex.product(hex).map { |h| "x#{h.join}" }).concat(["5", "6"].product(hex.sample(4)).product(hex.sample(4)).product(hex.sample(4)).map { |h| "u#{h.join}" })
+
+    hexes = [*("a".."f"), *("A".."F"), *("0".."9")]
+    hexes = ["5", "6"].product(hexes.sample(2)).product(hexes.sample(2)).product(hexes.sample(2)).map { |h| "u{00#{h.join}}" }
+
+    ctrls = ascii.grep(/[[:print:]]/).flat_map { |c| ["C-#{c}", "c#{c}", "M-#{c}", "M-\\C-#{c}", "M-\\c#{c}", "c\\M-#{c}"] }
+
+    contexts = [
+      Context::String.new("?", ""),
+      Context::String.new("'", "'"),
+      Context::String.new("\"", "\""),
+      Context::String.new("%q[", "]"),
+      Context::String.new("%Q[", "]"),
+      Context::String.new("%[", "]"),
+      Context::String.new("`", "`"),
+      Context::String.new("<<~H\n", "\nH"),
+      Context::String.new("<<~'H'\n", "\nH"),
+      Context::String.new("<<~\"H\"\n", "\nH"),
+      Context::String.new("<<~`H`\n", "\nH"),
+      Context::List.new("%w[", "]"),
+      Context::List.new("%W[", "]"),
+      Context::List.new("%i[", "]"),
+      Context::List.new("%I[", "]"),
+      Context::Symbol.new("%s[", "]"),
+      Context::Symbol.new(":'", "'"),
+      Context::Symbol.new(":\"", "\""),
+      Context::RegExp.new("/", "/"),
+      Context::RegExp.new("%r[", "]")
+    ]
+
+    escapes = [*ascii, *ascii8, *octal, *hex, *hexes, *ctrls]
+
+    contexts.each do |context|
+      escapes.each do |escape|
+        define_method(:"test_#{context.name}_#{escape.inspect}") do
+          assert_unescape(context, escape)
+        end
+      end
     end
 
     private
 
-    def assert_unescape_none(source)
-      assert_equal(source, Debug.unescape_none(source))
-    end
-  end
+    def assert_unescape(context, escape)
+      expected = context.ruby_result(escape)
+      actual = context.prism_result(escape)
 
-  class UnescapeMinimalTest < TestCase
-    def test_backslash
-      assert_unescape_minimal("\\", "\\\\")
-    end
-
-    def test_single_quote
-      assert_unescape_minimal("'", "\\'")
-    end
-
-    def test_single_char
-      assert_unescape_minimal("\\a", "\\a")
-    end
-
-    private
-
-    def assert_unescape_minimal(expected, source)
-      assert_equal(expected, Debug.unescape_minimal(source))
-    end
-  end
-
-  class UnescapeAllTest < TestCase
-    def test_backslash
-      assert_unescape_all("\\", "\\\\")
-    end
-
-    def test_single_quote
-      assert_unescape_all("'", "\\'")
-    end
-
-    def test_single_char
-      assert_unescape_all("\a", "\\a")
-      assert_unescape_all("\b", "\\b")
-      assert_unescape_all("\e", "\\e")
-      assert_unescape_all("\f", "\\f")
-      assert_unescape_all("\n", "\\n")
-      assert_unescape_all("\r", "\\r")
-      assert_unescape_all("\s", "\\s")
-      assert_unescape_all("\t", "\\t")
-      assert_unescape_all("\v", "\\v")
-    end
-
-    def test_octal
-      assert_unescape_all("\a", "\\7")
-      assert_unescape_all("#", "\\43")
-      assert_unescape_all("a", "\\141")
-    end
-
-    def test_hexadecimal
-      assert_unescape_all("\a", "\\x7")
-      assert_unescape_all("#", "\\x23")
-      assert_unescape_all("a", "\\x61")
-    end
-
-    def test_deletes
-      assert_unescape_all("\x7f", "\\c?")
-      assert_unescape_all("\x7f", "\\C-?")
-    end
-
-    def test_unicode_codepoint
-      assert_unescape_all("a", "\\u0061")
-      assert_unescape_all("Ā", "\\u0100", "UTF-8")
-      assert_unescape_all("က", "\\u1000", "UTF-8")
-      assert_unescape_all("တ", "\\u1010", "UTF-8")
-
-      assert_nil(unescape_all("\\uxxxx"))
-    end
-
-    def test_unicode_codepoints
-      assert_unescape_all("a", "\\u{61}")
-      assert_unescape_all("Ā", "\\u{0100}", "UTF-8")
-      assert_unescape_all("က", "\\u{1000}", "UTF-8")
-      assert_unescape_all("တ", "\\u{1010}", "UTF-8")
-      assert_unescape_all("𐀀", "\\u{10000}", "UTF-8")
-      assert_unescape_all("𐀐", "\\u{10010}", "UTF-8")
-      assert_unescape_all("aĀကတ𐀀𐀐", "\\u{ 61\s100\n1000\t1010\r10000\v10010 }", "UTF-8")
-
-      assert_nil(unescape_all("\\u{110000}"))
-      assert_nil(unescape_all("\\u{110000 110001 110002}"))
-    end
-
-    def test_control_characters
-      each_printable do |chr|
-        byte = eval("\"\\c#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\c#{chr}")
-
-        byte = eval("\"\\C-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\C-#{chr}")
+      message = -> do
+        "Expected #{context.name} to unescape #{escape.inspect} to #{expected.inspect}, but got #{actual.inspect}"
       end
-    end
 
-    def test_meta_characters
-      each_printable do |chr|
-        byte = eval("\"\\M-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\M-#{chr}")
-      end
-    end
-
-    def test_meta_control_characters
-      each_printable do |chr|
-        byte = eval("\"\\M-\\c#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\M-\\c#{chr}")
-
-        byte = eval("\"\\M-\\C-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\M-\\C-#{chr}")
-
-        byte = eval("\"\\c\\M-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\c\\M-#{chr}")
-      end
-    end
-
-    def test_escaping_normal_characters
-      assert_unescape_all("d", "\\d")
-      assert_unescape_all("g", "\\g")
-    end
-
-    def test_whitespace_escaping_string_list
-      assert_equal("a b", Debug.unescape_whitespace("a\\ b"))
-      assert_equal("a\tb", Debug.unescape_whitespace("a\\\tb"))
-      assert_equal("a\nb", Debug.unescape_whitespace("a\\\nb"))
-      assert_equal("a\nb", Debug.unescape_whitespace("a\\\r\nb"))
-    end
-
-    private
-
-    def unescape_all(source)
-      Debug.unescape_all(source)
-    end
-
-    def assert_unescape_all(expected, source, forced_encoding = nil)
-      result = unescape_all(source)
-      result.force_encoding(forced_encoding) if forced_encoding
-      assert_equal(expected, result)
-    end
-
-    def each_printable
-      (1..127).each do |ord|
-        chr = ord.chr
-        yield chr if chr.match?(/[[:print:]]/) && chr != " " && chr != "\\"
+      if expected == :error
+        assert_equal expected, actual, message
+      else
+        assert_equal expected.bytes, actual.bytes, message
       end
     end
   end
