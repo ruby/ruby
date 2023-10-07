@@ -457,14 +457,21 @@ node_children(rb_ast_t *ast, const NODE *node)
                                         no_name_rest());
         }
       case NODE_LASGN:
-      case NODE_DASGN:
-      case NODE_IASGN:
-      case NODE_CVASGN:
-      case NODE_GASGN:
         if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node)->nd_value)) {
             return rb_ary_new_from_args(2, var_name(RNODE_LASGN(node)->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
         }
         return rb_ary_new_from_args(2, var_name(RNODE_LASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_LASGN(node)->nd_value));
+      case NODE_DASGN:
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_DASGN(node)->nd_value)) {
+            return rb_ary_new_from_args(2, var_name(RNODE_DASGN(node)->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
+        }
+        return rb_ary_new_from_args(2, var_name(RNODE_DASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_DASGN(node)->nd_value));
+      case NODE_IASGN:
+        return rb_ary_new_from_args(2, var_name(RNODE_IASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_IASGN(node)->nd_value));
+      case NODE_CVASGN:
+        return rb_ary_new_from_args(2, var_name(RNODE_CVASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_CVASGN(node)->nd_value));
+      case NODE_GASGN:
+        return rb_ary_new_from_args(2, var_name(RNODE_GASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_GASGN(node)->nd_value));
       case NODE_CDECL:
         if (RNODE_CDECL(node)->nd_vid) {
             return rb_ary_new_from_args(2, ID2SYM(RNODE_CDECL(node)->nd_vid), NEW_CHILD(ast, RNODE_CDECL(node)->nd_value));
