@@ -801,6 +801,37 @@ get_node_colon_nd_mid(const NODE *node)
     }
 }
 
+static ID
+get_nd_vid(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LASGN:
+        return RNODE_LASGN(node)->nd_vid;
+      case NODE_DASGN:
+        return RNODE_DASGN(node)->nd_vid;
+      case NODE_IASGN:
+        return RNODE_IASGN(node)->nd_vid;
+      case NODE_CVASGN:
+        return RNODE_CVASGN(node)->nd_vid;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+
+static NODE *
+get_nd_value(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LASGN:
+        return RNODE_LASGN(node)->nd_value;
+      case NODE_DASGN:
+        return RNODE_DASGN(node)->nd_value;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 VALUE
 rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc)
 {
@@ -1904,7 +1935,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
     node = args->kw_args;
     while (node) {
-        const NODE *val_node = RNODE_LASGN(node->nd_body)->nd_value;
+        const NODE *val_node = get_nd_value(node->nd_body);
         VALUE dv;
 
         if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
@@ -5218,7 +5249,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
           case NODE_DASGN:
           case NODE_IASGN:
           case NODE_CVASGN:
-            MEMORY(RNODE_LASGN(ln)->nd_vid);
+            MEMORY(get_nd_vid(ln));
             break;
           default:
             return 0;
@@ -9351,7 +9382,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 {
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     LABEL *end_label = NEW_LABEL(nd_line(node));
-    const NODE *default_value = RNODE_DASGN(RNODE_KW_ARG(node)->nd_body)->nd_value;
+    const NODE *default_value = get_nd_value(RNODE_KW_ARG(node)->nd_body);
 
     if (default_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
         /* required argument. do nothing */
