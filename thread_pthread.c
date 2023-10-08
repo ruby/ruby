@@ -242,8 +242,8 @@ rb_native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, u
 // thread scheduling
 
 static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
-static void rb_thread_execute_hooks(rb_event_flag_t event);
-#define RB_INTERNAL_THREAD_HOOK(event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event); }
+static void rb_thread_execute_hooks(rb_thread_t *th, rb_event_flag_t event);
+#define RB_INTERNAL_THREAD_HOOK(th, event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(th, event); }
 
 static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 
@@ -471,7 +471,7 @@ thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_READY);
     if (sched->running) {
         VM_ASSERT(th->unblock.func == 0 &&
                   "we must not be in ubf_list and GVL readyq at the same time");
@@ -503,7 +503,7 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     // ready -> running
     sched->running = th;
 
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_RESUMED);
 
     if (!sched->timer) {
         /* Make sure that this thread is not currently the sigwait_thread before we
@@ -553,7 +553,7 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
     rb_native_mutex_lock(&sched->lock);
     thread_sched_to_waiting_common(sched, th);
     rb_native_mutex_unlock(&sched->lock);
@@ -562,7 +562,7 @@ thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_EXITED);
     thread_sched_to_waiting(sched, th);
 }
 
@@ -1110,7 +1110,7 @@ thread_start_func_1(void *th_ptr)
 
         native_thread_init(th->nt);
 
-        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED);
+        RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_STARTED);
 
         /* run */
 #if defined USE_NATIVE_THREAD_INIT
@@ -2280,7 +2280,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     int sigwait_fd = rb_sigwait_fd_get(th);
     rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
 
     if (sigwait_fd >= 0) {
         rb_native_mutex_lock(&th->interrupt_lock);
@@ -2442,7 +2442,7 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
 }
 
 static void
-rb_thread_execute_hooks(rb_event_flag_t event)
+rb_thread_execute_hooks(rb_thread_t *th, rb_event_flag_t event)
 {
     int r;
     if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
@@ -2451,9 +2451,12 @@ rb_thread_execute_hooks(rb_event_flag_t event)
 
     if (rb_internal_thread_event_hooks) {
         rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
+        rb_internal_thread_event_data_t *data = ALLOC_N(rb_internal_thread_event_data_t, 1);
+        data->thread = th->self;
+
         do {
             if (h->event & event) {
-                (*h->callback)(event, NULL, h->user_data);
+                (*h->callback)(event, data, h->user_data);
             }
         } while((h = h->next));
     }
