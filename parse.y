@@ -11879,9 +11879,7 @@ static rb_node_evstr_t *
 rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 {
     rb_node_evstr_t *n = NODE_NEWNODE(NODE_EVSTR, rb_node_evstr_t, loc);
-    n->not_used = 0;
     n->nd_body = nd_body;
-    n->not_used2 = 0;
 
     return n;
 }
