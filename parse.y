@@ -1087,6 +1087,19 @@ enum internal_node_type {
     NODE_INTERNAL_LAST
 };
 
+static const char *
+parser_node_name(int node)
+{
+    switch (node) {
+      case NODE_DEF_TEMP:
+        return "NODE_DEF_TEMP";
+      case NODE_EXITS:
+        return "NODE_EXITS";
+      default:
+        return ruby_node_name(node);
+    }
+}
+
 /* This node is parse.y internal */
 typedef struct RNode_DEF_TEMP {
     NODE node;
@@ -1726,7 +1739,7 @@ add_block_exit(struct parser_params *p, NODE *node)
     switch (nd_type(node)) {
       case NODE_BREAK: case NODE_NEXT: case NODE_REDO: break;
       default:
-        compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
+        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return node;
     }
     if (!p->ctxt.in_defined) {
@@ -1813,7 +1826,7 @@ get_nd_value(struct parser_params *p, NODE *node)
       case NODE_MASGN:
         return RNODE_MASGN(node)->nd_value;
       default:
-        compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
+        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -1844,7 +1857,7 @@ set_nd_value(struct parser_params *p, NODE *node, NODE *rhs)
         RNODE_CVASGN(node)->nd_value = rhs;
         break;
       default:
-        compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
+        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         break;
     }
 }
@@ -1866,7 +1879,7 @@ get_nd_vid(struct parser_params *p, NODE *node)
       case NODE_CVASGN:
         return RNODE_CVASGN(node)->nd_vid;
       default:
-        compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
+        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -1892,7 +1905,7 @@ get_nd_args(struct parser_params *p, NODE *node)
       case NODE_NEXT:
         return 0;
       default:
-        compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
+        compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -1908,7 +1921,7 @@ get_nd_args(struct parser_params *p, NODE *node)
         rb_parser_printf(p, "NODE_SPECIAL");
     }
     else if ($$) {
-        rb_parser_printf(p, "%s", ruby_node_name(nd_type(RNODE($$))));
+        rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE($$))));
     }
 #else
 #endif
@@ -12790,7 +12803,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(symbol)->nd_lit = rb_str_intern(RNODE_STR(symbol)->nd_lit));
         break;
       default:
-        compile_error(p, "unexpected node as symbol: %s", ruby_node_name(type));
+        compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
     }
     return list_append(p, symbols, symbol);
 }
