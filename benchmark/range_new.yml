@@ -1,0 +1,15 @@
+prelude: |
+  bignum = 10**100
+  require 'date'
+  date1, date2 = Date.new(2023, 1, 1), Date.new(2023, 12, 31)
+  time1, time2 = Time.at(0), Time.at(100)
+
+benchmark:
+  - Range.new(0, 5)
+  - Range.new(0, bignum)
+  - Range.new(0, 5.5)
+  - Range.new('a', 'z')
+  - Range.new(:a, :z)
+  - Range.new(0, nil)
+  - Range.new(date1, date2)
+  - Range.new(time1, time2)
