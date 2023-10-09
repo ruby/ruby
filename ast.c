@@ -499,11 +499,17 @@ node_children(rb_ast_t *ast, const NODE *node)
                                     ID2SYM(RNODE_OP_CDECL(node)->nd_aid),
                                     NEW_CHILD(ast, RNODE_OP_CDECL(node)->nd_value));
       case NODE_CALL:
-      case NODE_OPCALL:
-      case NODE_QCALL:
         return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_CALL(node)->nd_recv),
                                     ID2SYM(RNODE_CALL(node)->nd_mid),
                                     NEW_CHILD(ast, RNODE_CALL(node)->nd_args));
+      case NODE_OPCALL:
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_OPCALL(node)->nd_recv),
+                                    ID2SYM(RNODE_OPCALL(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_OPCALL(node)->nd_args));
+      case NODE_QCALL:
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_QCALL(node)->nd_recv),
+                                    ID2SYM(RNODE_QCALL(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_QCALL(node)->nd_args));
       case NODE_FCALL:
         return rb_ary_new_from_args(2, ID2SYM(RNODE_FCALL(node)->nd_mid),
                                     NEW_CHILD(ast, RNODE_FCALL(node)->nd_args));
