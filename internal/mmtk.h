@@ -93,6 +93,12 @@ typedef struct MMTk_RawVecOfObjRef {
 MMTk_Builder *mmtk_builder_default(void);
 
 /**
+ * Let the MMTKBuilder read options from environment variables,
+ * such as `MMTK_THREADS`.
+ */
+void mmtk_builder_read_env_var_settings(MMTk_Builder *builder);
+
+/**
  * Set the GC trigger to dynamically adjust heap size.
  */
 void mmtk_builder_set_dynamic_heap_size(MMTk_Builder *builder, size_t low, size_t high);

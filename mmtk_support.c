@@ -49,6 +49,22 @@ struct BumpPointer {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// Command line arguments
+////////////////////////////////////////////////////////////////////////////////
+
+const char *mmtk_pre_arg_plan = NULL;
+const char *mmtk_post_arg_plan = NULL;
+const char *mmtk_chosen_plan = NULL;
+size_t mmtk_pre_max_heap_size = 0;
+size_t mmtk_post_max_heap_size = 0;
+
+bool mmtk_max_heap_parse_error = false;
+size_t mmtk_max_heap_size = 0;
+
+// Use up to 80% of memory for the heap
+static const int rb_mmtk_heap_limit_percentage = 80;
+
+////////////////////////////////////////////////////////////////////////////////
 // Global and thread-local states.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -61,19 +77,8 @@ MMTk_RubyUpcalls ruby_upcalls;
 static uintptr_t mmtk_vo_bit_log_region_size;
 static uintptr_t mmtk_vo_bit_base_addr;
 
-const char *mmtk_pre_arg_plan = NULL;
-const char *mmtk_post_arg_plan = NULL;
-const char *mmtk_chosen_plan = NULL;
-size_t mmtk_pre_max_heap_size = 0;
-size_t mmtk_post_max_heap_size = 0;
-
-bool mmtk_max_heap_parse_error = false;
-size_t mmtk_max_heap_size = 0;
-
 bool obj_free_on_exit_started = false;
 
-// Use up to 80% of memory for the heap
-static const int rb_mmtk_heap_limit_percentage = 80;
 
 // DEBUG: Vanilla GC timing
 static struct gc_timing {
@@ -198,7 +203,8 @@ rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread)
     rb_mmtk_mutator_local.immix_bump_pointer = (struct BumpPointer*)((char*)mutator + mmtk_get_immix_bump_ptr_offset());
 }
 
-static size_t rb_mmtk_system_physical_memory(void)
+static size_t
+rb_mmtk_system_physical_memory(void)
 {
 #ifdef __linux__
     const long physical_pages = sysconf(_SC_PHYS_PAGES);
@@ -213,7 +219,8 @@ static size_t rb_mmtk_system_physical_memory(void)
 #endif
 }
 
-static size_t rb_mmtk_available_system_memory(void)
+static size_t
+rb_mmtk_available_system_memory(void)
 {
     /*
      * If we're in a container, we should use the maximum container memory,
@@ -225,38 +232,45 @@ static size_t rb_mmtk_available_system_memory(void)
     return rb_mmtk_system_physical_memory();
 }
 
-static void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min_size, size_t *max_size) {
+static void
+set_default_options(MMTk_Builder *mmtk_builder)
+{
+    mmtk_builder_set_plan(mmtk_builder, MMTK_DEFAULT_PLAN);
+
+    const size_t default_min = 1024 * 1024;
+    size_t default_max = rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
+    if (default_max < default_min) {
+        default_max = default_min;
+    }
+    mmtk_builder_set_dynamic_heap_size(mmtk_builder, default_min, default_max);
+}
+
+static void
+apply_cmdline_options(MMTk_Builder *mmtk_builder)
+{
+    if (mmtk_chosen_plan != NULL) {
+        mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
+    } 
+
     if (mmtk_max_heap_size > 0) {
-        *is_dynamic = false;
-        *min_size = 0;
-        *max_size = mmtk_max_heap_size;
-    } else {
-        const size_t default_min = 1024 * 1024;
-        size_t default_max = rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
-        if (default_max < default_min) {
-            default_max = default_min;
-        }
-        *is_dynamic = true;
-        *min_size = default_min;
-        *max_size = default_max;
+        mmtk_builder_set_fixed_heap_size(mmtk_builder, mmtk_max_heap_size);
     }
 }
 
 void
 rb_mmtk_main_thread_init(void)
 {
+    // (1) Create the builder, using MMTk's built-in defaults.
     MMTk_Builder *mmtk_builder = mmtk_builder_default();
 
-    mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
+    // (2) Override MMTK defaults with Ruby defaults.
+    set_default_options(mmtk_builder);
 
-    bool is_dynamic;
-    size_t min_size, max_size;
-    rb_mmtk_heap_limit(&is_dynamic, &min_size, &max_size);
-    if (is_dynamic) {
-        mmtk_builder_set_dynamic_heap_size(mmtk_builder, min_size, max_size);
-    } else {
-        mmtk_builder_set_fixed_heap_size(mmtk_builder, max_size);
-    }
+    // (3) Read MMTk environment options (e.g. MMTK_THREADS=100)
+    mmtk_builder_read_env_var_settings(mmtk_builder);
+
+    // (4) Apply cmdline or RUBYOPT options if set.
+    apply_cmdline_options(mmtk_builder);
 
 #if RACTOR_CHECK_MODE
     ruby_binding_options.ractor_check_mode = true;
@@ -1682,9 +1696,6 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
 
     if (mmtk_pre_arg_plan) {
         mmtk_chosen_plan = mmtk_pre_arg_plan;
-    }
-    else {
-        mmtk_chosen_plan = MMTK_DEFAULT_PLAN;
     }
 }
 
