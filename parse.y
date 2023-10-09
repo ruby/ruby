@@ -11207,7 +11207,6 @@ static rb_node_defn_t *
 rb_node_defn_new(struct parser_params *p, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc)
 {
     rb_node_defn_t *n = NODE_NEWNODE(NODE_DEFN, rb_node_defn_t, loc);
-    n->not_used = 0;
     n->nd_mid = nd_mid;
     n->nd_defn = nd_defn;
 

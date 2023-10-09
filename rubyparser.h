@@ -739,7 +739,6 @@ typedef struct RNode_BLOCK_PASS {
 typedef struct RNode_DEFN {
     NODE node;
 
-    VALUE not_used;
     ID nd_mid;
     struct RNode *nd_defn;
 } rb_node_defn_t;
