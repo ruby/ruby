@@ -1,0 +1,122 @@
+@ ProgramNode (location: (1,0)-(14,22))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(14,22))
+    └── body: (length: 7)
+        ├── @ UnlessNode (location: (1,0)-(1,19))
+        │   ├── keyword_loc: (1,0)-(1,6) = "unless"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (1,7)-(1,11))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (1,13)-(1,14))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (1,13)-(1,14))
+        │   │           └── flags: decimal
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (1,16)-(1,19) = "end"
+        ├── @ UnlessNode (location: (3,0)-(4,12))
+        │   ├── keyword_loc: (3,0)-(3,6) = "unless"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (3,7)-(3,11))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (4,0)-(4,1))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (4,0)-(4,1))
+        │   │           └── flags: decimal
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (4,2)-(4,12))
+        │   │   ├── else_keyword_loc: (4,2)-(4,6) = "else"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (4,7)-(4,8))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (4,7)-(4,8))
+        │   │   │           └── flags: decimal
+        │   │   └── end_keyword_loc: (4,9)-(4,12) = "end"
+        │   └── end_keyword_loc: (4,9)-(4,12) = "end"
+        ├── @ UnlessNode (location: (6,0)-(6,13))
+        │   ├── keyword_loc: (6,2)-(6,8) = "unless"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (6,9)-(6,13))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (6,0)-(6,1))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (6,0)-(6,1))
+        │   │           └── flags: decimal
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ UnlessNode (location: (8,0)-(8,17))
+        │   ├── keyword_loc: (8,6)-(8,12) = "unless"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (8,13)-(8,17))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (8,0)-(8,5))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (8,0)-(8,5))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (8,0)-(8,5) = "break"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ UnlessNode (location: (10,0)-(10,16))
+        │   ├── keyword_loc: (10,5)-(10,11) = "unless"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (10,12)-(10,16))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (10,0)-(10,4))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NextNode (location: (10,0)-(10,4))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (10,0)-(10,4) = "next"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ UnlessNode (location: (12,0)-(12,18))
+        │   ├── keyword_loc: (12,7)-(12,13) = "unless"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (12,14)-(12,18))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (12,0)-(12,6))
+        │   │   └── body: (length: 1)
+        │   │       └── @ ReturnNode (location: (12,0)-(12,6))
+        │   │           ├── keyword_loc: (12,0)-(12,6) = "return"
+        │   │           └── arguments: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        └── @ UnlessNode (location: (14,0)-(14,22))
+            ├── keyword_loc: (14,11)-(14,17) = "unless"
+            ├── predicate:
+            │   @ CallNode (location: (14,18)-(14,22))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (14,18)-(14,22) = "bar?"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: :bar?
+            ├── statements:
+            │   @ StatementsNode (location: (14,0)-(14,10))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (14,0)-(14,10))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (14,0)-(14,3) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (14,4)-(14,10))
+            │           │   └── arguments: (length: 2)
+            │           │       ├── @ SymbolNode (location: (14,4)-(14,6))
+            │           │       │   ├── opening_loc: (14,4)-(14,5) = ":"
+            │           │       │   ├── value_loc: (14,5)-(14,6) = "a"
+            │           │       │   ├── closing_loc: ∅
+            │           │       │   └── unescaped: "a"
+            │           │       └── @ SymbolNode (location: (14,8)-(14,10))
+            │           │           ├── opening_loc: (14,8)-(14,9) = ":"
+            │           │           ├── value_loc: (14,9)-(14,10) = "b"
+            │           │           ├── closing_loc: ∅
+            │           │           └── unescaped: "b"
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: :foo
+            ├── consequent: ∅
+            └── end_keyword_loc: ∅

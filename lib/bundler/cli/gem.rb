@@ -233,9 +233,7 @@ module Bundler
       end
 
       if use_git
-        Dir.chdir(target) do
-          `git add .`
-        end
+        IO.popen(%w[git add .], { :chdir => target }, &:read)
       end
 
       # Open gemspec in editor

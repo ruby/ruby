@@ -1,0 +1,209 @@
+@ ProgramNode (location: (1,0)-(88,6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(88,6))
+    └── body: (length: 18)
+        ├── @ StringNode (location: (1,0)-(1,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (1,0)-(1,6) = "<<~EOF"
+        │   ├── content_loc: (2,0)-(2,0) = "  a\n"
+        │   ├── closing_loc: (3,0)-(3,0) = "EOF\n"
+        │   └── unescaped: "a\n"
+        ├── @ StringNode (location: (5,0)-(5,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (5,0)-(5,6) = "<<~EOF"
+        │   ├── content_loc: (6,0)-(8,0) = "\ta\n  b\n\t\tc\n"
+        │   ├── closing_loc: (9,0)-(9,0) = "EOF\n"
+        │   └── unescaped: "\ta\nb\n\t\tc\n"
+        ├── @ InterpolatedStringNode (location: (11,0)-(11,6))
+        │   ├── opening_loc: (11,0)-(11,6) = "<<~EOF"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ EmbeddedStatementsNode (location: (12,2)-(12,6))
+        │   │   │   ├── opening_loc: (12,2)-(12,4) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (12,4)-(12,5))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (12,4)-(12,5))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (12,5)-(12,6) = "}"
+        │   │   └── @ StringNode (location: (12,6)-(12,0))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (12,6)-(12,0) = " a\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: " a\n"
+        │   └── closing_loc: (13,0)-(13,0) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (15,0)-(15,6))
+        │   ├── opening_loc: (15,0)-(15,6) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (16,0)-(16,4))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (16,0)-(16,4) = "  a "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a "
+        │   │   ├── @ EmbeddedStatementsNode (location: (16,4)-(16,8))
+        │   │   │   ├── opening_loc: (16,4)-(16,6) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (16,6)-(16,7))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (16,6)-(16,7))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (16,7)-(16,8) = "}"
+        │   │   └── @ StringNode (location: (16,8)-(16,0))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (16,8)-(16,0) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (17,0)-(17,0) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (19,0)-(19,6))
+        │   ├── opening_loc: (19,0)-(19,6) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (20,0)-(21,1))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (20,0)-(21,1) = "  a\n "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: " a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (21,1)-(21,5))
+        │   │   │   ├── opening_loc: (21,1)-(21,3) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (21,3)-(21,4))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (21,3)-(21,4))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (21,4)-(21,5) = "}"
+        │   │   └── @ StringNode (location: (21,5)-(21,0))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (21,5)-(21,0) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (22,0)-(22,0) = "EOF\n"
+        ├── @ InterpolatedStringNode (location: (24,0)-(24,6))
+        │   ├── opening_loc: (24,0)-(24,6) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (25,0)-(26,2))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (25,0)-(26,2) = "  a\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (26,2)-(26,6))
+        │   │   │   ├── opening_loc: (26,2)-(26,4) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (26,4)-(26,5))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (26,4)-(26,5))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (26,5)-(26,6) = "}"
+        │   │   └── @ StringNode (location: (26,6)-(26,0))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (26,6)-(26,0) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (27,0)-(27,0) = "EOF\n"
+        ├── @ StringNode (location: (29,0)-(29,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (29,0)-(29,6) = "<<~EOF"
+        │   ├── content_loc: (30,0)-(31,0) = "  a\n  b\n"
+        │   ├── closing_loc: (32,0)-(32,0) = "EOF\n"
+        │   └── unescaped: "a\nb\n"
+        ├── @ StringNode (location: (34,0)-(34,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (34,0)-(34,6) = "<<~EOF"
+        │   ├── content_loc: (35,0)-(36,0) = "  a\n   b\n"
+        │   ├── closing_loc: (37,0)-(37,0) = "EOF\n"
+        │   └── unescaped: "a\n b\n"
+        ├── @ StringNode (location: (39,0)-(39,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (39,0)-(39,6) = "<<~EOF"
+        │   ├── content_loc: (40,0)-(41,0) = "\t\t\ta\n\t\tb\n"
+        │   ├── closing_loc: (42,0)-(42,0) = "EOF\n"
+        │   └── unescaped: "\ta\nb\n"
+        ├── @ StringNode (location: (44,0)-(44,8))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (44,0)-(44,8) = "<<~'EOF'"
+        │   ├── content_loc: (45,0)-(45,0) = "  a \#{1}\n"
+        │   ├── closing_loc: (46,0)-(46,0) = "EOF\n"
+        │   └── unescaped: "a \#{1}\n"
+        ├── @ StringNode (location: (48,0)-(48,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (48,0)-(48,6) = "<<~EOF"
+        │   ├── content_loc: (49,0)-(50,0) = "\ta\n\t b\n"
+        │   ├── closing_loc: (51,0)-(51,0) = "EOF\n"
+        │   └── unescaped: "a\n b\n"
+        ├── @ StringNode (location: (53,0)-(53,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (53,0)-(53,6) = "<<~EOF"
+        │   ├── content_loc: (54,0)-(55,0) = "\t a\n\tb\n"
+        │   ├── closing_loc: (56,0)-(56,0) = "EOF\n"
+        │   └── unescaped: " a\nb\n"
+        ├── @ StringNode (location: (58,0)-(58,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (58,0)-(58,6) = "<<~EOF"
+        │   ├── content_loc: (59,0)-(60,0) = "  \ta\n        b\n"
+        │   ├── closing_loc: (61,0)-(61,0) = "EOF\n"
+        │   └── unescaped: "a\nb\n"
+        ├── @ StringNode (location: (63,0)-(63,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (63,0)-(63,6) = "<<~EOF"
+        │   ├── content_loc: (64,0)-(66,0) = "  a\n\n  b\n"
+        │   ├── closing_loc: (67,0)-(67,0) = "EOF\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (69,0)-(69,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (69,0)-(69,6) = "<<~EOF"
+        │   ├── content_loc: (70,0)-(72,0) = "  a\n\n  b\n"
+        │   ├── closing_loc: (73,0)-(73,0) = "EOF\n"
+        │   └── unescaped: "a\n\nb\n"
+        ├── @ StringNode (location: (75,0)-(75,6))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (75,0)-(75,6) = "<<~EOF"
+        │   ├── content_loc: (76,0)-(80,0) = "  a\n\n\n\n  b\n"
+        │   ├── closing_loc: (81,0)-(81,0) = "EOF\n"
+        │   └── unescaped: "a\n\n\n\nb\n"
+        ├── @ InterpolatedStringNode (location: (83,0)-(83,6))
+        │   ├── opening_loc: (83,0)-(83,6) = "<<~EOF"
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (84,0)-(85,2))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (84,0)-(85,2) = "\n  "
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (85,2)-(85,6))
+        │   │   │   ├── opening_loc: (85,2)-(85,4) = "\#{"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (85,4)-(85,5))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ IntegerNode (location: (85,4)-(85,5))
+        │   │   │   │           └── flags: decimal
+        │   │   │   └── closing_loc: (85,5)-(85,6) = "}"
+        │   │   └── @ StringNode (location: (85,6)-(85,0))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (85,6)-(85,0) = "a\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "a\n"
+        │   └── closing_loc: (86,0)-(86,0) = "    EOF\n"
+        └── @ InterpolatedStringNode (location: (88,0)-(88,6))
+            ├── opening_loc: (88,0)-(88,6) = "<<~EOT"
+            ├── parts: (length: 2)
+            │   ├── @ EmbeddedStatementsNode (location: (89,2)-(89,6))
+            │   │   ├── opening_loc: (89,2)-(89,4) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (89,4)-(89,5))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ IntegerNode (location: (89,4)-(89,5))
+            │   │   │           └── flags: decimal
+            │   │   └── closing_loc: (89,5)-(89,6) = "}"
+            │   └── @ StringNode (location: (89,6)-(90,0))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (89,6)-(90,0) = "\n\tb\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\n\tb\n"
+            └── closing_loc: (91,0)-(91,0) = "EOT\n"

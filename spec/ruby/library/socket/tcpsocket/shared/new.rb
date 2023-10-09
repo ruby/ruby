@@ -19,6 +19,9 @@ describe :tcpsocket_new, shared: true do
       -> {
         TCPSocket.send(@method, "192.0.2.1", 80, connect_timeout: 0)
       }.should raise_error(Errno::ETIMEDOUT)
+    rescue Errno::ENETUNREACH
+      # In the case all network interfaces down.
+      # raise_error cannot deal with multiple expected exceptions
     end
   end
 
@@ -27,6 +30,9 @@ describe :tcpsocket_new, shared: true do
       -> {
         TCPSocket.send(@method, "192.0.2.1", 80, connect_timeout: 0)
       }.should raise_error(IO::TimeoutError)
+    rescue Errno::ENETUNREACH
+      # In the case all network interfaces down.
+      # raise_error cannot deal with multiple expected exceptions
     end
   end
 

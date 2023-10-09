@@ -244,7 +244,6 @@ class BindingGenerator
             to_ruby = @ruby_fields.fetch(node.spelling, []).include?(field)
             if child.bitwidth > 0
               if bit_fields_end <= i # give up offsetof calculation for non-leading bit fields
-                binding.irb
                 raise "non-leading bit fields are not supported. consider including '#{field}' in skip_fields."
               end
               offsetof = node.offsetof.fetch(field)

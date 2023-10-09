@@ -111,7 +111,7 @@ module Bundler
       spec_file_name = "#{spec.join "-"}.gemspec"
 
       uri = Bundler::URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
-      if uri.scheme == "file"
+      spec = if uri.scheme == "file"
         path = Bundler.rubygems.correct_for_windows_path(uri.path)
         Bundler.safe_load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
@@ -119,6 +119,8 @@ module Bundler
       else
         Bundler.safe_load_marshal Bundler.rubygems.inflate(downloader.fetch(uri).body)
       end
+      raise MarshalError, "is #{spec.inspect}" unless spec.is_a?(Gem::Specification)
+      spec
     rescue MarshalError
       raise HTTPError, "Gemspec #{spec} contained invalid data.\n" \
         "Your network or your gem server is probably having issues right now."

@@ -1,9 +1,0 @@
-@ ProgramNode (location: (0...3))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (0...3))
-    └── body: (length: 1)
-        └── @ HashNode (location: (0...3))
-            ├── opening_loc: (0...1) = "{"
-            ├── elements: (length: 0)
-            └── closing_loc: (2...3) = "}"

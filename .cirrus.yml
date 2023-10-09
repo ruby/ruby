@@ -20,7 +20,7 @@ env:
   INIT_ENV:
 
 config_template: &CONFIG_TEMPLATE
-  only_if: changesInclude('.cirrus.yml', 'yjit.{c,h,rb}', 'yjit/**.{mk,rs,toml}')
+  only_if: changesInclude('.cirrus.yml', 'yjit.{c,h,rb}', 'yjit/**.{mk,rs,toml}', 'bootstraptest/test_yjit*.rb', 'test/ruby/test_yjit*.rb')
   skip: >-
     $CIRRUS_CHANGE_MESSAGE =~ '.*\[DOC\].*' ||
     $CIRRUS_PR_LABELS =~ '.*Documentation.*' ||

@@ -1,0 +1,40 @@
+@ ProgramNode (location: (1,0)-(1,29))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,29))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (1,0)-(1,29))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (1,7)-(1,11))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (1,7)-(1,11))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (1,7)-(1,11) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: :meth
+            ├── rescue_clause: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause:
+            │   @ EnsureNode (location: (1,13)-(1,29))
+            │   ├── ensure_keyword_loc: (1,13)-(1,19) = "ensure"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (1,21)-(1,24))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (1,21)-(1,24))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (1,21)-(1,24) = "bar"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: :bar
+            │   └── end_keyword_loc: (1,26)-(1,29) = "end"
+            └── end_keyword_loc: (1,26)-(1,29) = "end"

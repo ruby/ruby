@@ -197,6 +197,21 @@ module Bundler
       filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
     end
 
+    def relative_gemfile_path
+      relative_path_to(Bundler.default_gemfile)
+    end
+
+    def relative_lockfile_path
+      relative_path_to(Bundler.default_lockfile)
+    end
+
+    def relative_path_to(destination, from: pwd)
+      Pathname.new(destination).relative_path_from(from).to_s
+    rescue ArgumentError
+      # on Windows, if source and destination are on different drivers, there's no relative path from one to the other
+      destination
+    end
+
     private
 
     def validate_bundle_path

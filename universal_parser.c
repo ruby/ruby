@@ -113,8 +113,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define new_strterm p->config->new_strterm
 #define strterm_is_heredoc p->config->strterm_is_heredoc
-#define rb_imemo_tmpbuf_auto_free_pointer p->config->tmpbuf_auto_free_pointer
-#define rb_imemo_tmpbuf_set_ptr p->config->tmpbuf_set_ptr
 #define rb_imemo_tmpbuf_parser_heap p->config->tmpbuf_parser_heap
 
 #define compile_callback         p->config->compile_callback

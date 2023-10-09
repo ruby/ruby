@@ -414,6 +414,17 @@ endif
 .SECONDARY: update-unicode-ucd-emoji-files
 .SECONDARY: update-unicode-emoji-files
 
+ifneq ($(DOT_WAIT),)
+.NOTPARALLEL: update-unicode
+.NOTPARALLEL: update-unicode-files
+.NOTPARALLEL: update-unicode-auxiliary-files
+.NOTPARALLEL: update-unicode-ucd-emoji-files
+.NOTPARALLEL: update-unicode-emoji-files
+.NOTPARALLEL: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+.NOTPARALLEL: $(UNICODE_AUXILIARY_FILES)
+.NOTPARALLEL: $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
+endif
+
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
 else
@@ -518,7 +529,13 @@ matz: up
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk
 
-ifeq ($(DOT_WAIT),)
+
+# ripper_srcs makes all sources at once. invoking this target multiple
+# times in parallel means all sources will be built for the number of
+# sources times respectively.
+ifneq ($(DOT_WAIT),)
+.NOTPARALLEL: ripper_srcs
+else
 ripper_src =
 $(foreach r,$(RIPPER_SRCS),$(eval $(value r): | $(value ripper_src))\
 	$(eval ripper_src := $(value r)))

@@ -2,6 +2,7 @@
 
 require_relative "nop"
 require_relative "../source_finder"
+require_relative "../pager"
 require_relative "../color"
 
 module IRB
@@ -40,12 +41,16 @@ module IRB
       private
 
       def show_source(source)
-        puts
-        puts "#{bold("From")}: #{source.file}:#{source.first_line}"
-        puts
-        code = IRB::Color.colorize_code(File.read(source.file))
-        puts code.lines[(source.first_line - 1)...source.last_line].join
-        puts
+        file_content = IRB::Color.colorize_code(File.read(source.file))
+        code = file_content.lines[(source.first_line - 1)...source.last_line].join
+        content = <<~CONTENT
+
+          #{bold("From")}: #{source.file}:#{source.first_line}
+
+          #{code}
+        CONTENT
+
+        Pager.page_content(content)
       end
 
       def bold(str)

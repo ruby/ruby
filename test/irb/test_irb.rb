@@ -6,6 +6,11 @@ require_relative "helper"
 module TestIRB
   class InputTest < IntegrationTestCase
     def test_symbol_aliases_are_handled_correctly
+      write_rc <<~RUBY
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+      RUBY
+
       write_ruby <<~'RUBY'
         class Foo
         end
@@ -21,12 +26,11 @@ module TestIRB
     end
 
     def test_symbol_aliases_are_handled_correctly_with_singleline_mode
-      @irbrc = Tempfile.new('irbrc')
-      @irbrc.write <<~RUBY
+      write_rc <<~RUBY
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
         IRB.conf[:USE_SINGLELINE] = true
       RUBY
-      @irbrc.close
-      @envs['IRBRC'] = @irbrc.path
 
       write_ruby <<~'RUBY'
         class Foo
@@ -43,8 +47,6 @@ module TestIRB
       # Make sure it's tested in singleline mode
       assert_include output, "InputMethod: ReadlineInputMethod"
       assert_include output, "From: #{@ruby_file.path}:1"
-    ensure
-      @irbrc.unlink if @irbrc
     end
 
     def test_symbol_aliases_dont_affect_ruby_syntax
@@ -582,7 +584,7 @@ module TestIRB
 
       def assert_indent_level(lines, expected)
         code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
-        _tokens, opens, _ = @irb.scanner.check_code_state(code)
+        _tokens, opens, _ = @irb.scanner.check_code_state(code, local_variables: [])
         indent_level = @irb.scanner.calc_indent_level(opens)
         error_message = "Calculated the wrong number of indent level for:\n #{lines.join("\n")}"
         assert_equal(expected, indent_level, error_message)
@@ -736,7 +738,7 @@ module TestIRB
       workspace = IRB::WorkSpace.new(TOPLEVEL_BINDING.dup)
 
       IRB.conf[:VERBOSE] = false
-      IRB::Irb.new(workspace)
+      IRB::Irb.new(workspace, TestInputMethod.new)
     end
   end
 end

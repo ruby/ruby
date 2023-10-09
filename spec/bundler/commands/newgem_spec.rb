@@ -1427,7 +1427,9 @@ RSpec.describe "bundle gem" do
 
           task build: :compile
 
-          Rake::ExtensionTask.new("#{gem_name}") do |ext|
+          GEMSPEC = Gem::Specification.load("#{gem_name}.gemspec")
+
+          Rake::ExtensionTask.new("#{gem_name}", GEMSPEC) do |ext|
             ext.lib_dir = "lib/#{gem_name}"
           end
 
@@ -1485,7 +1487,9 @@ RSpec.describe "bundle gem" do
 
           task build: :compile
 
-          RbSys::ExtensionTask.new("#{gem_name}") do |ext|
+          GEMSPEC = Gem::Specification.load("#{gem_name}.gemspec")
+
+          RbSys::ExtensionTask.new("#{gem_name}", GEMSPEC) do |ext|
             ext.lib_dir = "lib/#{gem_name}"
           end
 

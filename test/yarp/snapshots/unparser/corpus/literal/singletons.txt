@@ -1,9 +1,0 @@
-@ ProgramNode (location: (0...19))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (0...19))
-    └── body: (length: 4)
-        ├── @ FalseNode (location: (0...5))
-        ├── @ NilNode (location: (6...9))
-        ├── @ SelfNode (location: (10...14))
-        └── @ TrueNode (location: (15...19))

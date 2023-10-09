@@ -144,7 +144,7 @@ jobs:
           - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
           - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
           - { name: 'coroutine=pthread',  env: { append_configure: '--with-coroutine=pthread' } }
-          - { name: disable-jit-support,  env: { append_configure: '--disable-jit-support' } }
+          - { name: disable-jit,          env: { append_configure: '--disable-yjit --disable-rjit' } }
           - { name: disable-dln,          env: { append_configure: '--disable-dln' } }
           - { name: enable-mkmf-verbose,  env: { append_configure: '--enable-mkmf-verbose' } }
           - { name: disable-rubygems,     env: { append_configure: '--disable-rubygems' } }
@@ -234,7 +234,7 @@ jobs:
       - run: id
         working-directory:
 
-      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -286,7 +286,7 @@ jobs:
         with:
           label: ${{ matrix.entry.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:

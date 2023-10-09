@@ -28,8 +28,10 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
   end
 
   def test_fips_mode_is_reentrant
-    OpenSSL.fips_mode = false
-    OpenSSL.fips_mode = false
+    assert_separately(["-ropenssl"], <<~"end;")
+      OpenSSL.fips_mode = false
+      OpenSSL.fips_mode = false
+    end;
   end
 
   def test_fips_mode_get_with_fips_mode_set

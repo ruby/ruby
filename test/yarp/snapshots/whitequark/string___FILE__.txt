@@ -1,7 +1,0 @@
-@ ProgramNode (location: (0...8))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (0...8))
-    └── body: (length: 1)
-        └── @ SourceFileNode (location: (0...8))
-            └── filepath: "whitequark/string___FILE__.txt"

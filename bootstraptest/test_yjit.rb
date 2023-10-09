@@ -1,5 +1,17 @@
 return if mmtk?
 
+# regression test for invokeblock iseq guard
+assert_equal 'ok', %q{
+  return :ok unless defined?(GC.compact)
+  def foo = yield
+  10.times do |i|
+    ret = eval("foo { #{i} }")
+    raise "failed at #{i}" unless ret == i
+    GC.compact
+  end
+  :ok
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
   # In faulty versions, the following happens:
@@ -4171,3 +4183,6 @@ assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 212
 
   [r1, r2, r3, r4, r5]
 }
+
+# Integer multiplication and overflow (minimized regression test from test-basic)
+assert_equal '8515157028618240000', %q{2128789257154560000 * 4}

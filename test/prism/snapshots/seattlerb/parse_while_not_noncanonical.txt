@@ -1,0 +1,49 @@
+@ ProgramNode (location: (1,0)-(3,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,3))
+    └── body: (length: 1)
+        └── @ WhileNode (location: (1,0)-(3,3))
+            ├── keyword_loc: (1,0)-(1,5) = "while"
+            ├── closing_loc: (3,0)-(3,3) = "end"
+            ├── predicate:
+            │   @ CallNode (location: (1,6)-(1,18))
+            │   ├── receiver:
+            │   │   @ CallNode (location: (1,10)-(1,18))
+            │   │   ├── receiver:
+            │   │   │   @ CallNode (location: (1,10)-(1,13))
+            │   │   │   ├── receiver: ∅
+            │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── message_loc: (1,10)-(1,13) = "var"
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── arguments: ∅
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   ├── block: ∅
+            │   │   │   ├── flags: variable_call
+            │   │   │   └── name: :var
+            │   │   ├── call_operator_loc: (1,13)-(1,14) = "."
+            │   │   ├── message_loc: (1,14)-(1,18) = "nil?"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: :nil?
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (1,6)-(1,9) = "not"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: :!
+            ├── statements:
+            │   @ StatementsNode (location: (2,2)-(2,7))
+            │   └── body: (length: 1)
+            │       └── @ StringNode (location: (2,2)-(2,7))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (2,2)-(2,3) = "'"
+            │           ├── content_loc: (2,3)-(2,6) = "foo"
+            │           ├── closing_loc: (2,6)-(2,7) = "'"
+            │           └── unescaped: "foo"
+            └── flags: ∅

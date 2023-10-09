@@ -1,0 +1,17 @@
+@ ProgramNode (location: (1,0)-(1,12))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,12))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,12))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (1,0)-(1,1) = "a"
+            ├── value:
+            │   @ StringNode (location: (1,4)-(1,12))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (1,4)-(1,12) = "<<~\"EOF\""
+            │   ├── content_loc: (2,0)-(3,0) = "        blah blah\n\t blah blah\n"
+            │   ├── closing_loc: (4,0)-(4,0) = "  EOF\n"
+            │   └── unescaped: "blah blah\n blah blah\n"
+            └── operator_loc: (1,2)-(1,3) = "="

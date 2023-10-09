@@ -3292,6 +3292,47 @@ class TestModule < Test::Unit::TestCase
     CODE
   end
 
+  def test_complemented_method_entry_memory_leak
+    # [Bug #19894] [Bug #19896]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        $c = Class.new do
+          def foo; end
+        end
+
+        $m = Module.new do
+          refine $c do
+            def foo; end
+          end
+        end
+
+        Class.new do
+          using $m
+
+          def initialize
+            o = $c.new
+            o.method(:foo).unbind
+          end
+        end.new
+      end
+      1_000.times(&code)
+    PREP
+      300_000.times(&code)
+    CODE
+  end
+
+  def test_module_clone_memory_leak
+    # [Bug #19901]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        Module.new.clone
+      end
+      1_000.times(&code)
+    PREP
+      1_000_000.times(&code)
+    CODE
+  end
+
   private
 
   def assert_top_method_is_private(method)

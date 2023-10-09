@@ -44,8 +44,7 @@ module IRB
 
     attr_reader :line_no
 
-    def initialize(context)
-      @context = context
+    def initialize
       @line_no = 1
       @prompt = nil
     end
@@ -116,9 +115,9 @@ module IRB
       interpolated
     end
 
-    def self.ripper_lex_without_warning(code, context: nil)
+    def self.ripper_lex_without_warning(code, local_variables: [])
       verbose, $VERBOSE = $VERBOSE, nil
-      lvars_code = generate_local_variables_assign_code(context&.local_variables || [])
+      lvars_code = generate_local_variables_assign_code(local_variables)
       original_code = code
       if lvars_code
         code = "#{lvars_code}\n#{code}"
@@ -152,14 +151,14 @@ module IRB
       @prompt&.call(ltype, indent_level, opens.any? || continue, @line_no + line_num_offset)
     end
 
-    def check_code_state(code)
-      tokens = self.class.ripper_lex_without_warning(code, context: @context)
+    def check_code_state(code, local_variables:)
+      tokens = self.class.ripper_lex_without_warning(code, local_variables: local_variables)
       opens = NestingParser.open_tokens(tokens)
-      [tokens, opens, code_terminated?(code, tokens, opens)]
+      [tokens, opens, code_terminated?(code, tokens, opens, local_variables: local_variables)]
     end
 
-    def code_terminated?(code, tokens, opens)
-      case check_code_syntax(code)
+    def code_terminated?(code, tokens, opens, local_variables:)
+      case check_code_syntax(code, local_variables: local_variables)
       when :unrecoverable_error
         true
       when :recoverable_error
@@ -180,7 +179,7 @@ module IRB
       @line_no += addition
     end
 
-    def assignment_expression?(code)
+    def assignment_expression?(code, local_variables:)
       # Try to parse the code and check if the last of possibly multiple
       # expressions is an assignment type.
 
@@ -190,7 +189,7 @@ module IRB
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
       verbose, $VERBOSE = $VERBOSE, nil
-      code = "#{RubyLex.generate_local_variables_assign_code(@context.local_variables) || 'nil;'}\n#{code}"
+      code = "#{RubyLex.generate_local_variables_assign_code(local_variables) || 'nil;'}\n#{code}"
       # Get the last node_type of the line. drop(1) is to ignore the local_variables_assign_code part.
       node_type = Ripper.sexp(code)&.dig(1)&.drop(1)&.dig(-1, 0)
       ASSIGNMENT_NODE_TYPES.include?(node_type)
@@ -222,8 +221,8 @@ module IRB
       false
     end
 
-    def check_code_syntax(code)
-      lvars_code = RubyLex.generate_local_variables_assign_code(@context.local_variables)
+    def check_code_syntax(code, local_variables:)
+      lvars_code = RubyLex.generate_local_variables_assign_code(local_variables)
       code = "#{lvars_code}\n#{code}"
 
       begin # check if parser error are available
@@ -455,8 +454,8 @@ module IRB
       end
     end
 
-    def check_termination_in_prev_line(code)
-      tokens = self.class.ripper_lex_without_warning(code, context: @context)
+    def check_termination_in_prev_line(code, local_variables:)
+      tokens = self.class.ripper_lex_without_warning(code, local_variables: local_variables)
       past_first_newline = false
       index = tokens.rindex do |t|
         # traverse first token before last line
@@ -486,7 +485,7 @@ module IRB
           tokens_without_last_line = tokens[0..index]
           code_without_last_line = tokens_without_last_line.map(&:tok).join
           opens_without_last_line = NestingParser.open_tokens(tokens_without_last_line)
-          if code_terminated?(code_without_last_line, tokens_without_last_line, opens_without_last_line)
+          if code_terminated?(code_without_last_line, tokens_without_last_line, opens_without_last_line, local_variables: local_variables)
             return last_line_tokens.map(&:tok).join
           end
         end

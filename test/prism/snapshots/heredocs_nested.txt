@@ -1,0 +1,33 @@
+@ ProgramNode (location: (1,0)-(1,7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,7))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (1,0)-(1,7))
+            ├── opening_loc: (1,0)-(1,7) = "<<~RUBY"
+            ├── parts: (length: 3)
+            │   ├── @ StringNode (location: (2,0)-(2,0))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (2,0)-(2,0) = "pre\n"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "pre\n"
+            │   ├── @ EmbeddedStatementsNode (location: (3,0)-(7,1))
+            │   │   ├── opening_loc: (3,0)-(3,2) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (4,0)-(4,6))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ StringNode (location: (4,0)-(4,6))
+            │   │   │           ├── flags: ∅
+            │   │   │           ├── opening_loc: (4,0)-(4,6) = "<<RUBY"
+            │   │   │           ├── content_loc: (5,0)-(5,0) = "  hello\n"
+            │   │   │           ├── closing_loc: (6,0)-(6,0) = "RUBY\n"
+            │   │   │           └── unescaped: "  hello\n"
+            │   │   └── closing_loc: (7,0)-(7,1) = "}"
+            │   └── @ StringNode (location: (7,1)-(8,0))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (7,1)-(8,0) = "\npost\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\npost\n"
+            └── closing_loc: (9,0)-(9,0) = "RUBY\n"

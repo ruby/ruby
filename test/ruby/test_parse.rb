@@ -476,7 +476,12 @@ class TestParse < Test::Unit::TestCase
       '(1+1; cond1..cond2)',
     ].each do |code|
       code = code.sub("cond1", "n==4").sub("cond2", "n==5")
-      assert_equal([4,5], eval("(1..9).select {|n| true if #{code}}"))
+      begin
+        $VERBOSE, verbose_bak = nil, $VERBOSE
+        assert_equal([4,5], eval("(1..9).select {|n| true if #{code}}"))
+      ensure
+        $VERBOSE = verbose_bak
+      end
     end
   end
 
@@ -661,6 +666,7 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error(':@@1', /is not allowed/)
     assert_syntax_error(':@', /is not allowed/)
     assert_syntax_error(':@1', /is not allowed/)
+    assert_syntax_error(':$01234', /is not allowed/)
   end
 
   def test_parse_string
@@ -995,7 +1001,12 @@ x = __ENCODING__
       '(1+1; /(?<a>.*)/)',
     ].each do |code|
       token = Random.bytes(4).unpack1("H*")
-      assert_equal(token, eval("#{code} =~ #{token.dump}; a"))
+      begin
+        $VERBOSE, verbose_bak = nil, $VERBOSE
+        assert_equal(token, eval("#{code} =~ #{token.dump}; a"))
+      ensure
+        $VERBOSE = verbose_bak
+      end
     end
   end
 
@@ -1478,8 +1489,8 @@ x = __ENCODING__
   end
 
   def test_ungettable_gvar
-    assert_syntax_error('$01234', /not valid to get/)
-    assert_syntax_error('"#$01234"', /not valid to get/)
+    assert_syntax_error('$01234', /not allowed/)
+    assert_syntax_error('"#$01234"', /not allowed/)
   end
 
 =begin
@@ -1494,7 +1505,12 @@ x = __ENCODING__
 
   def assert_parse_error(code, message)
     assert_raise_with_message(SyntaxError, message) do
-      RubyVM::AbstractSyntaxTree.parse(code)
+      $VERBOSE, verbose_bak = nil, $VERBOSE
+      begin
+        RubyVM::AbstractSyntaxTree.parse(code)
+      ensure
+        $VERBOSE = verbose_bak
+      end
     end
   end
 end

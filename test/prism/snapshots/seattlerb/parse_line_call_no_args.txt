@@ -1,0 +1,58 @@
+@ ProgramNode (location: (1,0)-(3,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,3))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(3,3))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (1,0)-(1,1) = "f"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (1,2)-(3,3))
+            │   ├── locals: [:x, :y]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (1,5)-(1,11))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (1,6)-(1,10))
+            │   │   │   ├── requireds: (length: 2)
+            │   │   │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │   │   │   │   └── name: :x
+            │   │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+            │   │   │   │       └── name: :y
+            │   │   │   ├── optionals: (length: 0)
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 0)
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (1,5)-(1,6) = "|"
+            │   │   └── closing_loc: (1,10)-(1,11) = "|"
+            │   ├── body:
+            │   │   @ StatementsNode (location: (2,2)-(2,7))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (2,2)-(2,7))
+            │   │           ├── receiver:
+            │   │           │   @ LocalVariableReadNode (location: (2,2)-(2,3))
+            │   │           │   ├── name: :x
+            │   │           │   └── depth: 0
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (2,4)-(2,5) = "+"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments:
+            │   │           │   @ ArgumentsNode (location: (2,6)-(2,7))
+            │   │           │   └── arguments: (length: 1)
+            │   │           │       └── @ LocalVariableReadNode (location: (2,6)-(2,7))
+            │   │           │           ├── name: :y
+            │   │           │           └── depth: 0
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: ∅
+            │   │           └── name: :+
+            │   ├── opening_loc: (1,2)-(1,4) = "do"
+            │   └── closing_loc: (3,0)-(3,3) = "end"
+            ├── flags: ∅
+            └── name: :f

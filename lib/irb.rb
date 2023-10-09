@@ -436,7 +436,7 @@ module IRB
       @context = Context.new(self, workspace, input_method)
       @context.workspace.load_commands_to_main
       @signal_status = :IN_IRB
-      @scanner = RubyLex.new(@context)
+      @scanner = RubyLex.new
     end
 
     # A hook point for `debug` command's breakpoint after :IRB_EXIT as well as its clean-up
@@ -610,7 +610,7 @@ module IRB
         # Accept any single-line input for symbol aliases or commands that transform args
         return code if single_line_command?(code)
 
-        tokens, opens, terminated = @scanner.check_code_state(code)
+        tokens, opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
         return code if terminated
 
         line_offset += 1
@@ -643,7 +643,8 @@ module IRB
       if command_class
         Statement::Command.new(code, command, arg, command_class)
       else
-        Statement::Expression.new(code, @scanner.assignment_expression?(code))
+        is_assignment_expression = @scanner.assignment_expression?(code, local_variables: @context.local_variables)
+        Statement::Expression.new(code, is_assignment_expression)
       end
     end
 
@@ -656,7 +657,7 @@ module IRB
       if @context.io.respond_to?(:check_termination)
         @context.io.check_termination do |code|
           if Reline::IOGate.in_pasting?
-            rest = @scanner.check_termination_in_prev_line(code)
+            rest = @scanner.check_termination_in_prev_line(code, local_variables: @context.local_variables)
             if rest
               Reline.delete_text
               rest.bytes.reverse_each do |c|
@@ -670,7 +671,7 @@ module IRB
             # Accept any single-line input for symbol aliases or commands that transform args
             next true if single_line_command?(code)
 
-            _tokens, _opens, terminated = @scanner.check_code_state(code)
+            _tokens, _opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
             terminated
           end
         end
@@ -678,7 +679,7 @@ module IRB
       if @context.io.respond_to?(:dynamic_prompt)
         @context.io.dynamic_prompt do |lines|
           lines << '' if lines.empty?
-          tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, context: @context)
+          tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, local_variables: @context.local_variables)
           line_results = IRB::NestingParser.parse_by_line(tokens)
           tokens_until_line = []
           line_results.map.with_index do |(line_tokens, _prev_opens, next_opens, _min_depth), line_num_offset|
@@ -698,7 +699,7 @@ module IRB
           next nil if !is_newline && lines[line_index]&.byteslice(0, byte_pointer)&.match?(/\A\s*\z/)
 
           code = lines[0..line_index].map { |l| "#{l}\n" }.join
-          tokens = RubyLex.ripper_lex_without_warning(code, context: @context)
+          tokens = RubyLex.ripper_lex_without_warning(code, local_variables: @context.local_variables)
           @scanner.process_indent_level(tokens, lines, line_index, is_newline)
         end
       end

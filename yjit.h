@@ -27,6 +27,7 @@
 // Expose these as declarations since we are building YJIT.
 bool rb_yjit_enabled_p(void);
 bool rb_yjit_compile_new_iseqs(void);
+unsigned long rb_yjit_call_threshold(void);
 bool rb_yjit_threshold_hit(const rb_iseq_t *const iseq, unsigned long total_calls);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
@@ -42,6 +43,7 @@ void rb_yjit_iseq_free(void *payload);
 void rb_yjit_before_ractor_spawn(void);
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
+void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
 
 #else
 // !USE_YJIT
@@ -49,6 +51,7 @@ void rb_yjit_tracing_invalidate_all(void);
 
 static inline bool rb_yjit_enabled_p(void) { return false; }
 static inline bool rb_yjit_compile_new_iseqs(void) { return false; }
+static inline unsigned long rb_yjit_call_threshold(void) { return 0; }
 static inline bool rb_yjit_threshold_hit(const rb_iseq_t *const iseq, unsigned long total_calls) { return false; }
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
 static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}

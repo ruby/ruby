@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'delegate'
 require 'timeout'
+require 'date'
 require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
@@ -624,6 +625,28 @@ class TestRange < Test::Unit::TestCase
     assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
   end
 
+  def test_eqq_unbounded_ruby_bug_19864
+    t1 = Date.today
+    t2 = t1 + 1
+    assert_equal(true, (..t1) === t1)
+    assert_equal(false, (..t1) === t2)
+    assert_equal(true, (..t2) === t1)
+    assert_equal(true, (..t2) === t2)
+    assert_equal(false, (...t1) === t1)
+    assert_equal(false, (...t1) === t2)
+    assert_equal(true, (...t2) === t1)
+    assert_equal(false, (...t2) === t2)
+
+    assert_equal(true, (t1..) === t1)
+    assert_equal(true, (t1..) === t2)
+    assert_equal(false, (t2..) === t1)
+    assert_equal(true, (t2..) === t2)
+    assert_equal(true, (t1...) === t1)
+    assert_equal(true, (t1...) === t2)
+    assert_equal(false, (t2...) === t1)
+    assert_equal(true, (t2...) === t2)
+  end
+
   def test_eqq_non_iteratable
     k = Class.new do
       include Comparable
@@ -1024,7 +1047,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
     assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+
+    assert_equal(bignum * 2 + 1, (0...).bsearch {|i| i > bignum * 2 })
     assert_equal(bignum * 2 + 1, (bignum...).bsearch {|i| i > bignum * 2 })
+    assert_equal(-bignum * 2 + 1, (...0).bsearch {|i| i > -bignum * 2 })
     assert_equal(-bignum * 2 + 1, (...-bignum).bsearch {|i| i > -bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
@@ -1049,6 +1075,79 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_count
+    assert_equal 42, (1..42).count
+    assert_equal 41, (1...42).count
+    assert_equal 0, (42..1).count
+    assert_equal 0, (42...1).count
+    assert_equal 2**100, (1..2**100).count
+    assert_equal 6, (1...6.3).count
+    assert_equal 4, ('a'..'d').count
+    assert_equal 3, ('a'...'d').count
+
     assert_equal(Float::INFINITY, (1..).count)
+    assert_equal(Float::INFINITY, (..1).count)
+  end
+
+  def test_overlap?
+    assert_not_operator(0..2, :overlap?, -2..-1)
+    assert_not_operator(0..2, :overlap?, -2...0)
+    assert_operator(0..2, :overlap?, -1..0)
+    assert_operator(0..2, :overlap?, 1..2)
+    assert_operator(0..2, :overlap?, 2..3)
+    assert_not_operator(0..2, :overlap?, 3..4)
+    assert_not_operator(0...2, :overlap?, 2..3)
+
+    assert_operator(..0, :overlap?, -1..0)
+    assert_operator(...0, :overlap?, -1..0)
+    assert_operator(..0, :overlap?, 0..1)
+    assert_operator(..0, :overlap?, ..1)
+    assert_not_operator(..0, :overlap?, 1..2)
+    assert_not_operator(...0, :overlap?, 0..1)
+
+    assert_not_operator(0.., :overlap?, -2..-1)
+    assert_not_operator(0.., :overlap?, ...0)
+    assert_operator(0.., :overlap?, -1..0)
+    assert_operator(0.., :overlap?, ..0)
+    assert_operator(0.., :overlap?, 0..1)
+    assert_operator(0.., :overlap?, 1..2)
+    assert_operator(0.., :overlap?, 1..)
+
+    assert_not_operator((1..3), :overlap?, ('a'..'d'))
+
+    assert_raise(TypeError) { (0..).overlap?(1) }
+    assert_raise(TypeError) { (0..).overlap?(nil) }
+
+    assert_operator((1..3), :overlap?, (2..4))
+    assert_operator((1...3), :overlap?, (2..3))
+    assert_operator((2..3), :overlap?, (1..2))
+    assert_operator((..3), :overlap?, (3..))
+    assert_operator((nil..nil), :overlap?, (3..))
+    assert_operator((nil...nil), :overlap?, (nil..))
+
+    assert_raise(TypeError) { (1..3).overlap?(1) }
+
+    assert_not_operator((1..2), :overlap?, (2...2))
+    assert_not_operator((2...2), :overlap?, (1..2))
+
+    assert_not_operator((4..1), :overlap?, (2..3))
+    assert_not_operator((4..1), :overlap?, (..3))
+    assert_not_operator((4..1), :overlap?, (2..))
+
+    assert_not_operator((1..4), :overlap?, (3..2))
+    assert_not_operator((..4), :overlap?, (3..2))
+    assert_not_operator((1..), :overlap?, (3..2))
+
+    assert_not_operator((4..5), :overlap?, (2..3))
+    assert_not_operator((4..5), :overlap?, (2...4))
+
+    assert_not_operator((1..2), :overlap?, (3..4))
+    assert_not_operator((1...3), :overlap?, (3..4))
+
+    assert_not_operator((4..5), :overlap?, (2..3))
+    assert_not_operator((4..5), :overlap?, (2...4))
+
+    assert_not_operator((1..2), :overlap?, (3..4))
+    assert_not_operator((1...3), :overlap?, (3..4))
+    assert_not_operator((...3), :overlap?, (3..))
   end
 end

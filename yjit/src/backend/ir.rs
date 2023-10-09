@@ -1,26 +1,20 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::From;
-use std::io::Write;
 use std::mem::take;
 use crate::codegen::{gen_outlined_exit, gen_counted_exit};
 use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
 use crate::virtualmem::{CodePtr};
-use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits, OutlinedCb};
-use crate::core::{Context, Type, TempMapping, RegTemps, MAX_REG_TEMPS, MAX_TEMP_TYPES};
+use crate::asm::{CodeBlock, OutlinedCb};
+use crate::core::{Context, RegTemps, MAX_REG_TEMPS};
 use crate::options::*;
 use crate::stats::*;
 
-#[cfg(target_arch = "x86_64")]
-use crate::backend::x86_64::*;
-
-#[cfg(target_arch = "aarch64")]
-use crate::backend::arm64::*;
+use crate::backend::current::*;
 
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
@@ -28,6 +22,7 @@ pub const SP: Opnd = _SP;
 
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
+pub use crate::backend::current::{Reg, C_RET_REG};
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -453,6 +448,9 @@ pub enum Insn {
     /// Jump if overflow
     Jo(Target),
 
+    /// Jump if overflow in multiplication
+    JoMul(Target),
+
     /// Jump if zero
     Jz(Target),
 
@@ -596,6 +594,7 @@ impl Insn {
             Insn::Jne(_) => "Jne",
             Insn::Jnz(_) => "Jnz",
             Insn::Jo(_) => "Jo",
+            Insn::JoMul(_) => "JoMul",
             Insn::Jz(_) => "Jz",
             Insn::Label(_) => "Label",
             Insn::LeaLabel { .. } => "LeaLabel",
@@ -749,6 +748,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jne(_) |
             Insn::Jnz(_) |
             Insn::Jo(_) |
+            Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
@@ -849,6 +849,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jne(_) |
             Insn::Jnz(_) |
             Insn::Jo(_) |
+            Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
@@ -955,6 +956,7 @@ pub struct SideExitContext {
     pub stack_size: u8,
     pub sp_offset: i8,
     pub reg_temps: RegTemps,
+    pub is_return_landing: bool,
 }
 
 impl SideExitContext {
@@ -965,6 +967,7 @@ impl SideExitContext {
             stack_size: ctx.get_stack_size(),
             sp_offset: ctx.get_sp_offset(),
             reg_temps: ctx.get_reg_temps(),
+            is_return_landing: ctx.is_return_landing(),
         };
         if cfg!(debug_assertions) {
             // Assert that we're not losing any mandatory metadata
@@ -979,6 +982,9 @@ impl SideExitContext {
         ctx.set_stack_size(self.stack_size);
         ctx.set_sp_offset(self.sp_offset);
         ctx.set_reg_temps(self.reg_temps);
+        if self.is_return_landing {
+            ctx.set_as_return_landing();
+        }
         ctx
     }
 }
@@ -1030,10 +1036,9 @@ impl Assembler
     }
 
     /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs() -> Vec<Reg> {
+    pub fn get_temp_regs() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
-        let mut regs = Self::TEMP_REGS.to_vec();
-        regs.drain(0..num_regs).collect()
+        &TEMP_REGS[0..num_regs]
     }
 
     /// Set a context for generating side exits
@@ -1866,6 +1871,10 @@ impl Assembler {
 
     pub fn jo(&mut self, target: Target) {
         self.push_insn(Insn::Jo(target));
+    }
+
+    pub fn jo_mul(&mut self, target: Target) {
+        self.push_insn(Insn::JoMul(target));
     }
 
     pub fn jz(&mut self, target: Target) {

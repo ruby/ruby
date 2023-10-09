@@ -1,0 +1,17 @@
+@ ProgramNode (location: (1,0)-(4,8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(4,8))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (1,0)-(1,7))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (1,0)-(1,7) = "<<-HERE"
+        │   ├── content_loc: (2,0)-(1,0) = ""
+        │   ├── closing_loc: (2,0)-(2,0) = "HERE\n"
+        │   └── unescaped: ""
+        └── @ StringNode (location: (4,0)-(4,8))
+            ├── flags: ∅
+            ├── opening_loc: (4,0)-(4,8) = "<<~THERE"
+            ├── content_loc: (5,0)-(13,0) = "  way over\n  <<HERE\n    not here\n  HERE\n\n  <<~BUT\\\n    but\n  BUT\n    there\n"
+            ├── closing_loc: (14,0)-(14,0) = "THERE\n"
+            └── unescaped: "way over\n<<HERE\n  not here\nHERE\n\n<<~BUT  but\nBUT\n  there\n"

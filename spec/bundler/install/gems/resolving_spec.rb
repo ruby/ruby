@@ -106,7 +106,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
     spec = Marshal.load(Bundler.rubygems.inflate(File.binread(path)))
     spec.dependencies.each do |d|
-      d.instance_variable_set(:@type, :fail)
+      d.instance_variable_set(:@type, "fail")
     end
     File.open(path, "wb") do |f|
       f.write Gem.deflate(Marshal.dump(spec))

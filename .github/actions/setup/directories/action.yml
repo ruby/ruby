@@ -29,6 +29,13 @@ inputs:
     description: >-
       If set to true, additionally runs `make up`.
 
+  dummy-files:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, creates dummy files in build dir.
+
 outputs: {} # nothing?
 
 runs:
@@ -110,3 +117,12 @@ runs:
         sudo chmod -R go-w /usr/share
         chmod -v go-w $HOME $HOME/.config || :
         sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+
+    - if: inputs.dummy-files == 'true'
+      shell: bash
+      working-directory: ${{ inputs.builddir }}
+      run: |
+        : Create dummy files in build dir
+        for basename in {a..z} {A..Z} {0..9} foo bar test zzz; do
+          echo > ${basename}.rb "raise %(do not load ${basename}.rb)"
+        done

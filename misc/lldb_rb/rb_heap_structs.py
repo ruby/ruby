@@ -108,11 +108,15 @@ class RbObject(LLDBInterface):
         else:
             return False
 
+    def as_type(self, type_name):
+        return self.val.Cast(self.tRValue.GetPointerType()).GetValueForExpressionPath("->as."+type_name)
+
     def ary_ptr(self):
+        rval = self.as_type("array")
         if self.flags & self.ruby_globals["RUBY_FL_USER1"]:
-            ptr = self.val.GetValueForExpressionPath("->as.ary")
+            ptr = rval.GetValueForExpressionPath("->as.ary")
         else:
-            ptr = self.val.GetValueForExpressionPath("->as.heap.ptr")
+            ptr = rval.GetValueForExpressionPath("->as.heap.ptr")
         return ptr
 
     def ary_len(self):
@@ -122,19 +126,18 @@ class RbObject(LLDBInterface):
                self.flUser7 | self.flUser8 | self.flUser9)
               ) >> (self.flUshift + 3))
         else:
-            len = self.val.GetValueForExpressionPath("->as.heap.len")
+            rval = self.as_type("array")
+            len = rval.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
 
         return len
 
     def bignum_len(self):
-        if self.flags & flUser2:
+        if self.flags & self.flUser2:
             len = ((self.flags &
               (self.flUser3 | self.flUser4 | self.flUser5)
               ) >> (self.flUshift + 3))
         else:
-            len = self.val.GetValueForExpressionPath("->as.heap.len")
+            len = (self.as_type("bignum").GetValueForExpressionPath("->as.heap.len").
+                   GetValueAsUnsigned())
 
         return len
-
-
-

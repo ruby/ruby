@@ -356,7 +356,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
-    return arg.succ_block->nd_next;
+    return RNODE_BLOCK(arg.succ_block)->nd_next;
 }
 
 static VALUE
@@ -566,8 +566,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->new_strterm = new_strterm;
     config->strterm_is_heredoc = strterm_is_heredoc;
-    config->tmpbuf_auto_free_pointer = rb_imemo_tmpbuf_auto_free_pointer;
-    config->tmpbuf_set_ptr = rb_imemo_tmpbuf_set_ptr;
     config->tmpbuf_parser_heap = tmpbuf_parser_heap;
     config->ast_new = ast_new;
 

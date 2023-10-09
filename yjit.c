@@ -798,13 +798,6 @@ rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
     cfp->sp = sp;
 }
 
-rb_iseq_t *
-rb_cfp_get_iseq(struct rb_control_frame_struct *cfp)
-{
-    // TODO(alan) could assert frame type here to make sure that it's a ruby frame with an iseq.
-    return (rb_iseq_t*)cfp->iseq;
-}
-
 VALUE
 rb_get_cfp_self(struct rb_control_frame_struct *cfp)
 {

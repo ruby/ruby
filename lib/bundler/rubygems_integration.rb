@@ -253,21 +253,23 @@ module Bundler
                             rescue GemfileNotFound
                               "inline Gemfile"
                             end
-              be = ::Gem::BUNDLED_GEMS::SINCE[name] > RUBY_VERSION ? "will be" : "is"
-              message = "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[name]}." \
-              " Add #{name} to your #{target_file}."
-              location = caller_locations(1,1)[0]&.path
-              if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
-                caller_gem = nil
-                Gem.path.each do |path|
-                  if location =~ %r{#{path}/gems/([\w\-\.]+)}
-                    caller_gem = $1
-                    break
+              if ::Gem::BUNDLED_GEMS::SINCE[name]
+                be = ::Gem::BUNDLED_GEMS::SINCE[name] > RUBY_VERSION ? "will be" : "is"
+                message = "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[name]}." \
+                " Add #{name} to your #{target_file}."
+                location = caller_locations(1,1)[0]&.path
+                if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
+                  caller_gem = nil
+                  Gem.path.each do |path|
+                    if location =~ %r{#{path}/gems/([\w\-\.]+)}
+                      caller_gem = $1
+                      break
+                    end
                   end
+                  message += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
                 end
-                message += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
+                warn message, :uplevel => 1
               end
-              warn message, :uplevel => 1
             end
           end
           kernel_class.send(:no_warning_require, file)
@@ -496,7 +498,9 @@ module Bundler
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
       string = fetcher.fetch_path(path)
-      Bundler.safe_load_marshal(string)
+      specs = Bundler.safe_load_marshal(string)
+      raise MarshalError, "Specs #{name} from #{remote} is expected to be an Array but was unexpected class #{specs.class}" unless specs.is_a?(Array)
+      specs
     rescue Gem::RemoteFetcher::FetchError
       # it's okay for prerelease to fail
       raise unless name == "prerelease_specs"

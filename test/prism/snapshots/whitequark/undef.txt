@@ -1,0 +1,36 @@
+@ ProgramNode (location: (1,0)-(1,27))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,27))
+    └── body: (length: 1)
+        └── @ UndefNode (location: (1,0)-(1,27))
+            ├── names: (length: 3)
+            │   ├── @ SymbolNode (location: (1,6)-(1,9))
+            │   │   ├── opening_loc: ∅
+            │   │   ├── value_loc: (1,6)-(1,9) = "foo"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "foo"
+            │   ├── @ SymbolNode (location: (1,11)-(1,15))
+            │   │   ├── opening_loc: (1,11)-(1,12) = ":"
+            │   │   ├── value_loc: (1,12)-(1,15) = "bar"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "bar"
+            │   └── @ InterpolatedSymbolNode (location: (1,17)-(1,27))
+            │       ├── opening_loc: (1,17)-(1,19) = ":\""
+            │       ├── parts: (length: 2)
+            │       │   ├── @ StringNode (location: (1,19)-(1,22))
+            │       │   │   ├── flags: ∅
+            │       │   │   ├── opening_loc: ∅
+            │       │   │   ├── content_loc: (1,19)-(1,22) = "foo"
+            │       │   │   ├── closing_loc: ∅
+            │       │   │   └── unescaped: "foo"
+            │       │   └── @ EmbeddedStatementsNode (location: (1,22)-(1,26))
+            │       │       ├── opening_loc: (1,22)-(1,24) = "\#{"
+            │       │       ├── statements:
+            │       │       │   @ StatementsNode (location: (1,24)-(1,25))
+            │       │       │   └── body: (length: 1)
+            │       │       │       └── @ IntegerNode (location: (1,24)-(1,25))
+            │       │       │           └── flags: decimal
+            │       │       └── closing_loc: (1,25)-(1,26) = "}"
+            │       └── closing_loc: (1,26)-(1,27) = "\""
+            └── keyword_loc: (1,0)-(1,5) = "undef"

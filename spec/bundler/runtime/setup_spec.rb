@@ -411,7 +411,7 @@ RSpec.describe "Bundler.setup" do
 
     it "provides a useful exception when the git repo is not checked out yet" do
       run "1", :raise_on_error => false
-      expect(err).to match(/the git source #{lib_path('rack-1.0.0')} is not yet checked out. Please run `bundle install`/i)
+      expect(err).to match(/the git source #{lib_path("rack-1.0.0")} is not yet checked out. Please run `bundle install`/i)
     end
 
     it "does not hit the git binary if the lockfile is available and up to date" do
@@ -498,7 +498,7 @@ RSpec.describe "Bundler.setup" do
 
       FileUtils.rm_rf(lib_path("local-rack"))
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
+      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path("local-rack").to_s)} does not exist/)
     end
 
     it "explodes if branch is not given on runtime" do
@@ -725,6 +725,27 @@ Gem::Specification.new do |s|
 end
         RUBY
       end
+    R
+
+    run <<-R
+      File.open(File.join(Gem.dir, "specifications", "broken-ext.gemspec"), "w") do |f|
+        f.write <<-RUBY
+# -*- encoding: utf-8 -*-
+# stub: broken-ext 1.0.0 ruby lib
+# stub: a.ext\\0b.ext
+
+Gem::Specification.new do |s|
+  s.name = "broken-ext"
+  s.version = "1.0.0"
+  raise "BROKEN GEMSPEC EXT"
+end
+        RUBY
+      end
+      # Need to write the gem.build_complete file,
+      # otherwise the full spec is loaded to check the installed_by_version
+      extensions_dir = Gem.default_ext_dir_for(Gem.dir) || File.join(Gem.dir, "extensions", Gem::Platform.local.to_s, Gem.extension_api_version)
+      Bundler::FileUtils.mkdir_p(File.join(extensions_dir, "broken-ext-1.0.0"))
+      File.open(File.join(extensions_dir, "broken-ext-1.0.0", "gem.build_complete"), "w") {}
     R
 
     run <<-R

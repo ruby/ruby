@@ -66,6 +66,15 @@
 # endif
 #endif
 
+#ifdef HAVE_MALLOC_TRIM
+# include <malloc.h>
+
+# ifdef __EMSCRIPTEN__
+/* malloc_trim is defined in emscripten/emmalloc.h on emscripten. */
+#  include <emscripten/emmalloc.h>
+# endif
+#endif
+
 #if !defined(PAGE_SIZE) && defined(HAVE_SYS_USER_H)
 /* LIST_HEAD conflicts with sys/queue.h on macOS */
 # include <sys/user.h>
@@ -694,6 +703,8 @@ typedef struct mark_stack {
 #define SIZE_POOL_EDEN_HEAP(size_pool) (&(size_pool)->eden_heap)
 #define SIZE_POOL_TOMB_HEAP(size_pool) (&(size_pool)->tomb_heap)
 
+typedef int (*gc_compact_compare_func)(const void *l, const void *r, void *d);
+
 typedef struct rb_heap_struct {
     struct heap_page *free_pages;
     struct ccan_list_head pages;
@@ -871,6 +882,9 @@ typedef struct rb_objspace {
         size_t moved_up_count_table[T_MASK];
         size_t moved_down_count_table[T_MASK];
         size_t total_moved;
+
+        /* This function will be used, if set, to sort the heap prior to compaction */
+        gc_compact_compare_func compare_func;
     } rcompactor;
 
     struct {
@@ -962,6 +976,7 @@ struct heap_page {
     short total_slots;
     short free_slots;
     short final_slots;
+    short pinned_slots;
     struct {
         unsigned int before_sweep : 1;
         unsigned int has_remembered_objects : 1;
@@ -1941,7 +1956,8 @@ rb_objspace_free(rb_objspace_t *objspace)
     }
     if (heap_pages_sorted) {
         size_t i;
-        for (i = 0; i < heap_allocated_pages; ++i) {
+        size_t total_heap_pages = heap_allocated_pages;
+        for (i = 0; i < total_heap_pages; ++i) {
             heap_page_free(objspace, heap_pages_sorted[i]);
         }
         free(heap_pages_sorted);
@@ -3845,12 +3861,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
 #endif
 
-        if (RHASH_ST_TABLE_P(obj)) {
-            st_table *tab = RHASH_ST_TABLE(obj);
-
-            free(tab->bins);
-            free(tab->entries);
-        }
+        rb_hash_free(obj);
         break;
       case T_REGEXP:
         if (RANY(obj)->as.regexp.ptr) {
@@ -3998,8 +4009,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
             break;
           case imemo_callinfo:
-            RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
-            break;
+            {
+                const struct rb_callinfo * ci = ((const struct rb_callinfo *)obj);
+                if (ci->kwarg) {
+                    ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
+                    if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
+                }
+                RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
+                break;
+            }
           case imemo_callcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
             break;
@@ -6094,11 +6112,26 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
 __attribute__((noinline))
 #endif
+
+#if GC_CAN_COMPILE_COMPACTION
+static void gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func);
+static int compare_pinned_slots(const void *left, const void *right, void *d);
+#endif
+
 static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
     objspace->rincgc.pooled_slots = 0;
+
+#if GC_CAN_COMPILE_COMPACTION
+    if (objspace->flags.during_compacting) {
+        gc_sort_heap_by_compare_func(
+            objspace,
+            objspace->rcompactor.compare_func ? objspace->rcompactor.compare_func : compare_pinned_slots
+        );
+    }
+#endif
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -7285,7 +7318,10 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
     GC_ASSERT(is_markable_object(obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
         if (LIKELY(during_gc)) {
-            MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+            if (!MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj)) {
+                GET_HEAP_PAGE(obj)->pinned_slots++;
+                MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+            }
         }
     }
 }
@@ -8322,7 +8358,7 @@ check_children_i(const VALUE child, void *ptr)
     if (check_rvalue_consistency_force(child, FALSE) != 0) {
         fprintf(stderr, "check_children_i: %s has error (referenced from %s)",
                 obj_info(child), obj_info(data->parent));
-        rb_print_backtrace(); /* C backtrace will help to debug */
+        rb_print_backtrace(stderr); /* C backtrace will help to debug */
 
         data->err_count++;
     }
@@ -9671,7 +9707,7 @@ rb_gc_register_address(VALUE *addr)
     if (0 && !SPECIAL_CONST_P(obj)) {
         rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
                 rb_obj_class(obj));
-        rb_print_backtrace();
+        rb_print_backtrace(stderr);
     }
 }
 
@@ -10340,6 +10376,10 @@ rb_gc_prepare_heap(void)
     rb_objspace_each_objects(gc_set_candidate_object_i, NULL);
     gc_start_internal(NULL, Qtrue, Qtrue, Qtrue, Qtrue, Qtrue);
     free_empty_pages();
+
+#if defined(HAVE_MALLOC_TRIM) && !defined(RUBY_ALTERNATIVE_MALLOC_HEADER)
+    malloc_trim(0);
+#endif
 }
 
 static int
@@ -10513,6 +10553,18 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
 
 #if GC_CAN_COMPILE_COMPACTION
 static int
+compare_pinned_slots(const void *left, const void *right, void *dummy)
+{
+    struct heap_page *left_page;
+    struct heap_page *right_page;
+
+    left_page = *(struct heap_page * const *)left;
+    right_page = *(struct heap_page * const *)right;
+
+    return left_page->pinned_slots - right_page->pinned_slots;
+}
+
+static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
     struct heap_page *left_page;
@@ -10525,7 +10577,7 @@ compare_free_slots(const void *left, const void *right, void *dummy)
 }
 
 static void
-gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
+gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func)
 {
     for (int j = 0; j < SIZE_POOL_COUNT; j++) {
         rb_size_pool_t *size_pool = &size_pools[j];
@@ -10545,7 +10597,7 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 
         /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
          * head of the list, so empty pages will end up at the start of the heap */
-        ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
+        ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_func, NULL);
 
         /* Reset the eden heap */
         ccan_list_head_init(&SIZE_POOL_EDEN_HEAP(size_pool)->pages);
@@ -11621,7 +11673,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
         }
 
         if (RTEST(toward_empty)) {
-            gc_sort_heap_by_empty_slots(objspace);
+            objspace->rcompactor.compare_func = compare_free_slots;
         }
     }
     RB_VM_LOCK_LEAVE();
@@ -11631,6 +11683,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL, TRUE);
 
+    objspace->rcompactor.compare_func = NULL;
     return gc_compact_stats(self);
 }
 #else
@@ -14452,7 +14505,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                 {
                     const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
 
-                    APPEND_F(":%s (%s%s%s%s) type:%s alias:%d owner:%p defined_class:%p",
+                    APPEND_F(":%s (%s%s%s%s) type:%s aliased:%d owner:%p defined_class:%p",
                              rb_id2name(me->called_id),
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PUBLIC ?  "pub" :
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE ? "pri" : "pro",
@@ -14460,7 +14513,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                              METHOD_ENTRY_CACHED(me) ? ",cc" : "",
                              METHOD_ENTRY_INVALIDATED(me) ? ",inv" : "",
                              me->def ? rb_method_type_name(me->def->type) : "NULL",
-                             me->def ? me->def->alias_count : -1,
+                             me->def ? me->def->aliased : -1,
                              (void *)me->owner, // obj_info(me->owner),
                              (void *)me->defined_class); //obj_info(me->defined_class)));
 

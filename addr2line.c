@@ -144,7 +144,7 @@ void *alloca();
 #define DW_LNE_define_file              0x03
 #define DW_LNE_set_discriminator        0x04  /* DWARF4 */
 
-#define kprintf(...) fprintf(stderr, "" __VA_ARGS__)
+#define kprintf(...) fprintf(errout, "" __VA_ARGS__)
 
 typedef struct line_info {
     const char *dirname;
@@ -254,7 +254,7 @@ sleb128(const char **p)
 }
 
 static const char *
-get_nth_dirname(unsigned long dir, const char *p)
+get_nth_dirname(unsigned long dir, const char *p, FILE *errout)
 {
     if (!dir--) {
 	return "";
@@ -271,10 +271,14 @@ get_nth_dirname(unsigned long dir, const char *p)
     return p;
 }
 
-static const char *parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t *obj, const char **out_path, uint64_t *out_directory_index);
+static const char *parse_ver5_debug_line_header(
+    const char *p, int idx, uint8_t format,
+    obj_info_t *obj, const char **out_path,
+    uint64_t *out_directory_index, FILE *errout);
 
 static void
-fill_filename(int file, uint8_t format, uint16_t version, const char *include_directories, const char *filenames, line_info_t *line, obj_info_t *obj)
+fill_filename(int file, uint8_t format, uint16_t version, const char *include_directories,
+              const char *filenames, line_info_t *line, obj_info_t *obj, FILE *errout)
 {
     int i;
     const char *p = filenames;
@@ -283,9 +287,9 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
     if (version >= 5) {
         const char *path;
         uint64_t directory_index = -1;
-        parse_ver5_debug_line_header(filenames, file, format, obj, &path, &directory_index);
+        parse_ver5_debug_line_header(filenames, file, format, obj, &path, &directory_index, errout);
         line->filename = path;
-        parse_ver5_debug_line_header(include_directories, (int)directory_index, format, obj, &path, NULL);
+        parse_ver5_debug_line_header(include_directories, (int)directory_index, format, obj, &path, NULL, errout);
         line->dirname = path;
     }
     else {
@@ -307,7 +311,7 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
 
             if (i == file) {
                 line->filename = filename;
-                line->dirname = get_nth_dirname(dir, include_directories);
+                line->dirname = get_nth_dirname(dir, include_directories, errout);
             }
         }
     }
@@ -316,7 +320,7 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
 static void
 fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
 	  uint8_t format, uint16_t version, const char *include_directories, const char *filenames,
-	  obj_info_t *obj, line_info_t *lines, int offset)
+	  obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
 {
     int i;
     addr += obj->base_addr - obj->vmaddr;
@@ -325,7 +329,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
 	/* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
 	if (addr < a && a < addr + 100) {
-	    fill_filename(file, format, version, include_directories, filenames, &lines[i], obj);
+	    fill_filename(file, format, version, include_directories, filenames, &lines[i], obj, errout);
 	    lines[i].line = line;
 	}
     }
@@ -350,7 +354,7 @@ struct LineNumberProgramHeader {
 };
 
 static int
-parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgramHeader *header)
+parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgramHeader *header, FILE *errout)
 {
     const char *p = *pp;
     header->unit_length = *(uint32_t *)p;
@@ -396,7 +400,7 @@ parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgr
 
     if (header->version >= 5) {
         header->include_directories = p;
-        p = parse_ver5_debug_line_header(p, -1, header->format, obj, NULL, NULL);
+        p = parse_ver5_debug_line_header(p, -1, header->format, obj, NULL, NULL, errout);
         header->filenames = p;
     }
     else {
@@ -423,7 +427,7 @@ parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgr
 
 static int
 parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
-		obj_info_t *obj, line_info_t *lines, int offset)
+		obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
 {
     const char *p = (const char *)*debug_line;
     struct LineNumberProgramHeader header;
@@ -440,7 +444,7 @@ parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
     /* int epilogue_begin = 0; */
     /* unsigned int isa = 0; */
 
-    if (parse_debug_line_header(obj, &p, &header))
+    if (parse_debug_line_header(obj, &p, &header, errout))
         return -1;
     is_stmt = header.default_is_stmt;
 
@@ -451,7 +455,7 @@ parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
                   header.version,                                   \
                   header.include_directories,                       \
                   header.filenames,                                 \
-		  obj, lines, offset);				    \
+		  obj, lines, offset, errout);                      \
 	/*basic_block = prologue_end = epilogue_begin = 0;*/	    \
     } while (0)
 
@@ -551,11 +555,11 @@ parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
 static int
 parse_debug_line(int num_traces, void **traces,
 		 const char *debug_line, unsigned long size,
-		 obj_info_t *obj, line_info_t *lines, int offset)
+		 obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
 {
     const char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
-	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset))
+	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset, errout))
 	    return -1;
     }
     if (debug_line != debug_line_end) {
@@ -568,7 +572,7 @@ parse_debug_line(int num_traces, void **traces,
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
-	   obj_info_t **objp, line_info_t *lines, int offset);
+	   obj_info_t **objp, line_info_t *lines, int offset, FILE *errout);
 
 static void
 append_obj(obj_info_t **objp)
@@ -596,7 +600,7 @@ append_obj(obj_info_t **objp)
 // check the path pattern of "/usr/lib/debug/usr/bin/ruby.debug"
 static void
 follow_debuglink(const char *debuglink, int num_traces, void **traces,
-		 obj_info_t **objp, line_info_t *lines, int offset)
+		 obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
     static const char global_debug_dir[] = "/usr/lib/debug";
     const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
@@ -622,13 +626,13 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
     o2 = *objp;
     o2->base_addr = o1->base_addr;
     o2->path = o1->path;
-    fill_lines(num_traces, traces, 0, objp, lines, offset);
+    fill_lines(num_traces, traces, 0, objp, lines, offset, errout);
 }
 
 // check the path pattern of "/usr/lib/debug/.build-id/ab/cdef1234.debug"
 static void
 follow_debuglink_build_id(const char *build_id, size_t build_id_size, int num_traces, void **traces,
-                          obj_info_t **objp, line_info_t *lines, int offset)
+                          obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
     static const char global_debug_dir[] = "/usr/lib/debug/.build-id/";
     const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
@@ -653,7 +657,7 @@ follow_debuglink_build_id(const char *build_id, size_t build_id_size, int num_tr
     o2 = *objp;
     o2->base_addr = o1->base_addr;
     o2->path = o1->path;
-    fill_lines(num_traces, traces, 0, objp, lines, offset);
+    fill_lines(num_traces, traces, 0, objp, lines, offset, errout);
 }
 #endif
 
@@ -1079,13 +1083,13 @@ di_read_debug_abbrev_cu(DebugInfoReader *reader)
 }
 
 static int
-di_read_debug_line_cu(DebugInfoReader *reader)
+di_read_debug_line_cu(DebugInfoReader *reader, FILE *errout)
 {
     const char *p;
     struct LineNumberProgramHeader header;
 
     p = (const char *)reader->debug_line_cu_end;
-    if (parse_debug_line_header(reader->obj, &p, &header))
+    if (parse_debug_line_header(reader->obj, &p, &header, errout))
         return -1;
 
     reader->debug_line_cu_end = (char *)header.cu_end;
@@ -1186,7 +1190,7 @@ debug_info_reader_read_addr_value_member(DebugInfoReader *reader, DebugInfoValue
 
 
 static bool
-debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
+debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v, FILE *errout)
 {
     switch (form) {
       case DW_FORM_addr:
@@ -1369,7 +1373,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
 
 /* find abbrev in current compilation unit */
 static const char *
-di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
+di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number, FILE *errout)
 {
     const char *p;
     if (abbrev_number < ABBREV_TABLE_SIZE) {
@@ -1394,7 +1398,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
 
 #if 0
 static void
-hexdump0(const unsigned char *p, size_t n)
+hexdump0(const unsigned char *p, size_t n, FILE *errout)
 {
     size_t i;
     kprintf("     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
@@ -1415,10 +1419,10 @@ hexdump0(const unsigned char *p, size_t n)
         kprintf("\n");
     }
 }
-#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
+#define hexdump(p,n,e) hexdump0((const unsigned char *)p, n, e)
 
 static void
-div_inspect(DebugInfoValue *v)
+div_inspect(DebugInfoValue *v, FILE *errout)
 {
     switch (v->type) {
       case VAL_uint:
@@ -1432,14 +1436,14 @@ div_inspect(DebugInfoValue *v)
         break;
       case VAL_data:
         kprintf("%d: type:%d size:%" PRIxSIZE " v:\n",__LINE__,v->type,v->size);
-        hexdump(v->as.ptr, 16);
+        hexdump(v->as.ptr, 16, errout);
         break;
     }
 }
 #endif
 
 static DIE *
-di_read_die(DebugInfoReader *reader, DIE *die)
+di_read_die(DebugInfoReader *reader, DIE *die, FILE *errout)
 {
     uint64_t abbrev_number = uleb128(&reader->p);
     if (abbrev_number == 0) {
@@ -1447,7 +1451,7 @@ di_read_die(DebugInfoReader *reader, DIE *die)
         return NULL;
     }
 
-    if (!(reader->q = di_find_abbrev(reader, abbrev_number))) return NULL;
+    if (!(reader->q = di_find_abbrev(reader, abbrev_number, errout))) return NULL;
 
     die->pos = reader->p - reader->obj->debug_info.ptr - 1;
     die->tag = (int)uleb128(&reader->q); /* tag */
@@ -1459,26 +1463,26 @@ di_read_die(DebugInfoReader *reader, DIE *die)
 }
 
 static DebugInfoValue *
-di_read_record(DebugInfoReader *reader, DebugInfoValue *vp)
+di_read_record(DebugInfoReader *reader, DebugInfoValue *vp, FILE *errout)
 {
     uint64_t at = uleb128(&reader->q);
     uint64_t form = uleb128(&reader->q);
     if (!at || !form) return NULL;
     vp->at = at;
     vp->form = form;
-    if (!debug_info_reader_read_value(reader, form, vp)) return NULL;
+    if (!debug_info_reader_read_value(reader, form, vp, errout)) return NULL;
     return vp;
 }
 
 static bool
-di_skip_records(DebugInfoReader *reader)
+di_skip_records(DebugInfoReader *reader, FILE *errout)
 {
     for (;;) {
         DebugInfoValue v = {{0}};
         uint64_t at = uleb128(&reader->q);
         uint64_t form = uleb128(&reader->q);
         if (!at || !form) return true;
-        if (!debug_info_reader_read_value(reader, form, &v)) return false;
+        if (!debug_info_reader_read_value(reader, form, &v, errout)) return false;
     }
 }
 
@@ -1491,7 +1495,8 @@ typedef struct addr_header {
 } addr_header_t;
 
 static bool
-addr_header_init(obj_info_t *obj, addr_header_t *header) {
+addr_header_init(obj_info_t *obj, addr_header_t *header, FILE *errout)
+{
     const char *p = obj->debug_addr.ptr;
 
     header->ptr = p;
@@ -1536,7 +1541,8 @@ typedef struct rnglists_header {
 } rnglists_header_t;
 
 static bool
-rnglists_header_init(obj_info_t *obj, rnglists_header_t *header) {
+rnglists_header_init(obj_info_t *obj, rnglists_header_t *header, FILE *errout)
+{
     const char *p = obj->debug_rnglists.ptr;
 
     if (!p) return true;
@@ -1603,7 +1609,7 @@ ranges_set(ranges_t *ptr, DebugInfoValue *v, addr_header_t *addr_header, uint64_
 }
 
 static uint64_t
-read_dw_form_addr(DebugInfoReader *reader, const char **ptr)
+read_dw_form_addr(DebugInfoReader *reader, const char **ptr, FILE *errout)
 {
     const char *p = *ptr;
     *ptr = p + reader->address_size;
@@ -1615,7 +1621,7 @@ read_dw_form_addr(DebugInfoReader *reader, const char **ptr)
 }
 
 static uintptr_t
-ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_header_t *rnglists_header)
+ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_header_t *rnglists_header, FILE *errout)
 {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
@@ -1668,15 +1674,15 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_h
                     to = (uintptr_t)base + uleb128(&p);
                     break;
                   case DW_RLE_base_address:
-                    base = read_dw_form_addr(reader, &p);
+                    base = read_dw_form_addr(reader, &p, errout);
                     base_valid = true;
                     break;
                   case DW_RLE_start_end:
-                    from = (uintptr_t)read_dw_form_addr(reader, &p);
-                    to = (uintptr_t)read_dw_form_addr(reader, &p);
+                    from = (uintptr_t)read_dw_form_addr(reader, &p, errout);
+                    to = (uintptr_t)read_dw_form_addr(reader, &p, errout);
                     break;
                   case DW_RLE_start_length:
-                    from = (uintptr_t)read_dw_form_addr(reader, &p);
+                    from = (uintptr_t)read_dw_form_addr(reader, &p, errout);
                     to = from + uleb128(&p);
                     break;
                 }
@@ -1710,7 +1716,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_h
 
 #if 0
 static void
-ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
+ranges_inspect(DebugInfoReader *reader, ranges_t *ptr, FILE *errout)
 {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
@@ -1740,7 +1746,7 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
 #endif
 
 static int
-di_read_cu(DebugInfoReader *reader)
+di_read_cu(DebugInfoReader *reader, FILE *errout)
 {
     uint64_t unit_length;
     uint16_t version;
@@ -1775,15 +1781,15 @@ di_read_cu(DebugInfoReader *reader)
 
     reader->level = 0;
     di_read_debug_abbrev_cu(reader);
-    if (di_read_debug_line_cu(reader)) return -1;
+    if (di_read_debug_line_cu(reader, errout)) return -1;
 
     do {
         DIE die;
 
-        if (!di_read_die(reader, &die)) continue;
+        if (!di_read_die(reader, &die, errout)) continue;
 
         if (die.tag != DW_TAG_compile_unit) {
-            if (!di_skip_records(reader)) return -1;
+            if (!di_skip_records(reader, errout)) return -1;
             break;
         }
 
@@ -1795,7 +1801,7 @@ di_read_cu(DebugInfoReader *reader)
         /* enumerate abbrev */
         for (;;) {
             DebugInfoValue v = {{0}};
-            if (!di_read_record(reader, &v)) break;
+            if (!di_read_record(reader, &v, errout)) break;
             switch (v.at) {
               case DW_AT_low_pc:
                 // clang may output DW_AT_addr_base after DW_AT_low_pc.
@@ -1821,7 +1827,7 @@ di_read_cu(DebugInfoReader *reader)
             case VAL_addr:
                 {
                     addr_header_t header = {0};
-                    if (!addr_header_init(reader->obj, &header)) return -1;
+                    if (!addr_header_init(reader->obj, &header, errout)) return -1;
                     reader->current_low_pc = read_addr(&header, reader->current_addr_base, low_pc.as.addr_idx);
                 }
                 break;
@@ -1832,7 +1838,7 @@ di_read_cu(DebugInfoReader *reader)
 }
 
 static void
-read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_origin, line_info_t *line)
+read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_origin, line_info_t *line, FILE *errout)
 {
     const char *p = reader->p;
     const char *q = reader->q;
@@ -1857,12 +1863,12 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
       default:
         goto finish;
     }
-    if (!di_read_die(reader, &die)) goto finish;
+    if (!di_read_die(reader, &die, errout)) goto finish;
 
     /* enumerate abbrev */
     for (;;) {
         DebugInfoValue v = {{0}};
-        if (!di_read_record(reader, &v)) break;
+        if (!di_read_record(reader, &v, errout)) break;
         switch (v.at) {
           case DW_AT_name:
             line->sname = get_cstr_value(&v);
@@ -1878,25 +1884,26 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
 
 static bool
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
-         line_info_t *lines, int offset) {
+                line_info_t *lines, int offset, FILE *errout)
+{
 
     addr_header_t addr_header = {0};
-    if (!addr_header_init(reader->obj, &addr_header)) return false;
+    if (!addr_header_init(reader->obj, &addr_header, errout)) return false;
 
     rnglists_header_t rnglists_header = {0};
-    if (!rnglists_header_init(reader->obj, &rnglists_header)) return false;
+    if (!rnglists_header_init(reader->obj, &rnglists_header, errout)) return false;
 
     while (reader->p < reader->cu_end) {
         DIE die;
         ranges_t ranges = {0};
         line_info_t line = {0};
 
-        if (!di_read_die(reader, &die)) continue;
+        if (!di_read_die(reader, &die, errout)) continue;
         /* kprintf("%d:%tx: <%d>\n",__LINE__,die.pos,reader->level,die.tag); */
 
         if (die.tag != DW_TAG_subprogram && die.tag != DW_TAG_inlined_subroutine) {
           skip_die:
-            if (!di_skip_records(reader)) return false;
+            if (!di_skip_records(reader, errout)) return false;
             continue;
         }
 
@@ -1904,15 +1911,15 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         for (;;) {
             DebugInfoValue v = {{0}};
             /* ptrdiff_t pos = reader->p - reader->p0; */
-            if (!di_read_record(reader, &v)) break;
+            if (!di_read_record(reader, &v, errout)) break;
             /* kprintf("\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form); */
-            /* div_inspect(&v); */
+            /* div_inspect(&v, errout); */
             switch (v.at) {
               case DW_AT_name:
                 line.sname = get_cstr_value(&v);
                 break;
               case DW_AT_call_file:
-                fill_filename((int)v.as.uint64, reader->debug_line_format, reader->debug_line_version, reader->debug_line_directories, reader->debug_line_files, &line, reader->obj);
+                fill_filename((int)v.as.uint64, reader->debug_line_format, reader->debug_line_version, reader->debug_line_directories, reader->debug_line_files, &line, reader->obj, errout);
                 break;
               case DW_AT_call_line:
                 line.line = (int)v.as.uint64;
@@ -1928,16 +1935,16 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 /* 1 or 3 */
                 break; /* goto skip_die; */
               case DW_AT_abstract_origin:
-                read_abstract_origin(reader, v.form, v.as.uint64, &line);
+                read_abstract_origin(reader, v.form, v.as.uint64, &line, errout);
                 break; /* goto skip_die; */
             }
         }
-        /* ranges_inspect(reader, &ranges); */
+        /* ranges_inspect(reader, &ranges, errout); */
         /* kprintf("%d:%tx: %x ",__LINE__,diepos,die.tag); */
         for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
-            uintptr_t saddr = ranges_include(reader, &ranges, offset, &rnglists_header);
+            uintptr_t saddr = ranges_include(reader, &ranges, offset, &rnglists_header, errout);
             if (saddr == UINTPTR_MAX) return false;
             if (saddr) {
                 /* kprintf("%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
@@ -1976,7 +1983,10 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
 //
 // It records DW_LNCT_path and DW_LNCT_directory_index at the index "idx".
 static const char *
-parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t *obj, const char **out_path, uint64_t *out_directory_index) {
+parse_ver5_debug_line_header(const char *p, int idx, uint8_t format,
+                             obj_info_t *obj, const char **out_path,
+                             uint64_t *out_directory_index, FILE *errout)
+{
     int i, j;
     int entry_format_count = *(uint8_t *)p++;
     const char *entry_format = p;
@@ -1996,7 +2006,7 @@ parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t 
             DebugInfoValue v = {{0}};
             unsigned long dw_lnct = uleb128(&format);
             unsigned long dw_form = uleb128(&format);
-            if (!debug_info_reader_read_value(&reader, dw_form, &v)) return 0;
+            if (!debug_info_reader_read_value(&reader, dw_form, &v, errout)) return 0;
             if (dw_lnct == 1 /* DW_LNCT_path */ && v.type == VAL_cstr && out_path)
                 *out_path = v.as.ptr + v.off;
             if (dw_lnct == 2 /* DW_LNCT_directory_index */ && v.type == VAL_uint && out_directory_index)
@@ -2041,7 +2051,7 @@ fail:
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
-	   obj_info_t **objp, line_info_t *lines, int offset)
+	   obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
     int i, j;
     char *shstr;
@@ -2202,8 +2212,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         i = 0;
         while (reader.p < reader.pend) {
             /* kprintf("%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
-            if (di_read_cu(&reader)) goto use_symtab;
-            if (!debug_info_read(&reader, num_traces, traces, lines, offset))
+            if (di_read_cu(&reader, errout)) goto use_symtab;
+            if (!debug_info_read(&reader, num_traces, traces, lines, offset, errout))
                 goto use_symtab;
         }
     }
@@ -2244,14 +2254,14 @@ use_symtab:
 	if (gnu_debuglink_shdr && check_debuglink) {
 	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
 			     num_traces, traces,
-			     objp, lines, offset);
+			     objp, lines, offset, errout);
 	}
         if (note_gnu_build_id && check_debuglink) {
             ElfW(Nhdr) *nhdr = (ElfW(Nhdr)*) (file + note_gnu_build_id->sh_offset);
             const char *build_id = (char *)(nhdr + 1) + nhdr->n_namesz;
             follow_debuglink_build_id(build_id, nhdr->n_descsz,
 			       num_traces, traces,
-			       objp, lines, offset);
+                               objp, lines, offset, errout);
         }
 	goto finish;
     }
@@ -2259,7 +2269,7 @@ use_symtab:
     if (parse_debug_line(num_traces, traces,
             obj->debug_line.ptr,
             obj->debug_line.size,
-            obj, lines, offset) == -1)
+            obj, lines, offset, errout) == -1)
         goto fail;
 
 finish:
@@ -2271,7 +2281,7 @@ fail:
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
-        obj_info_t **objp, line_info_t *lines, int offset)
+        obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
 # ifdef __LP64__
 #  define LP(x) x##_64
@@ -2472,8 +2482,8 @@ found_mach_header:
         DebugInfoReader reader;
         debug_info_reader_init(&reader, obj);
         while (reader.p < reader.pend) {
-            if (di_read_cu(&reader)) goto fail;
-            if (!debug_info_read(&reader, num_traces, traces, lines, offset))
+            if (di_read_cu(&reader, errout)) goto fail;
+            if (!debug_info_read(&reader, num_traces, traces, lines, offset, errout))
                 goto fail;
         }
     }
@@ -2481,7 +2491,7 @@ found_mach_header:
     if (parse_debug_line(num_traces, traces,
             obj->debug_line.ptr,
             obj->debug_line.size,
-            obj, lines, offset) == -1)
+            obj, lines, offset, errout) == -1)
         goto fail;
 
     return dladdr_fbase;
@@ -2494,7 +2504,7 @@ fail:
 #if defined(__FreeBSD__) || defined(__DragonFly__)
 # include <sys/sysctl.h>
 #endif
-/* ssize_t main_exe_path(void)
+/* ssize_t main_exe_path(FILE *errout)
  *
  * store the path of the main executable to `binary_filename`,
  * and returns strlen(binary_filename).
@@ -2502,7 +2512,7 @@ fail:
  */
 #if defined(__linux__) || defined(__NetBSD__)
 static ssize_t
-main_exe_path(void)
+main_exe_path(FILE *errout)
 {
 # if defined(__linux__)
 #  define PROC_SELF_EXE "/proc/self/exe"
@@ -2516,7 +2526,7 @@ main_exe_path(void)
 }
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
 static ssize_t
-main_exe_path(void)
+main_exe_path(FILE *errout)
 {
     int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
     size_t len = PATH_MAX;
@@ -2530,7 +2540,7 @@ main_exe_path(void)
 }
 #elif defined(HAVE_LIBPROC_H)
 static ssize_t
-main_exe_path(void)
+main_exe_path(FILE *errout)
 {
     int len = proc_pidpath(getpid(), binary_filename, PATH_MAX);
     if (len == 0) return 0;
@@ -2542,7 +2552,7 @@ main_exe_path(void)
 #endif
 
 static void
-print_line0(line_info_t *line, void *address)
+print_line0(line_info_t *line, void *address, FILE *errout)
 {
     uintptr_t addr = (uintptr_t)address;
     uintptr_t d = addr - line->saddr;
@@ -2583,16 +2593,16 @@ print_line0(line_info_t *line, void *address)
 }
 
 static void
-print_line(line_info_t *line, void *address)
+print_line(line_info_t *line, void *address, FILE *errout)
 {
-    print_line0(line, address);
+    print_line0(line, address, errout);
     if (line->next) {
-        print_line(line->next, NULL);
+        print_line(line->next, NULL, errout);
     }
 }
 
 void
-rb_dump_backtrace_with_lines(int num_traces, void **traces)
+rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout)
 {
     int i;
     /* async-signal unsafe */
@@ -2604,14 +2614,14 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 #ifdef HAVE_MAIN_EXE_PATH
     char *main_path = NULL; /* used on printing backtrace */
     ssize_t len;
-    if ((len = main_exe_path()) > 0) {
+    if ((len = main_exe_path(errout)) > 0) {
 	main_path = (char *)alloca(len + 1);
 	if (main_path) {
 	    uintptr_t addr;
 	    memcpy(main_path, binary_filename, len+1);
 	    append_obj(&obj);
 	    obj->path = main_path;
-	    addr = fill_lines(num_traces, traces, 1, &obj, lines, -1);
+	    addr = fill_lines(num_traces, traces, 1, &obj, lines, -1, errout);
 	    if (addr != (uintptr_t)-1) {
 		dladdr_fbases[0] = (void *)addr;
 	    }
@@ -2648,7 +2658,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
                 lines[i].saddr = (uintptr_t)info.dli_saddr;
             }
 	    strlcpy(binary_filename, path, PATH_MAX);
-	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
+	    if (fill_lines(num_traces, traces, 1, &obj, lines, i, errout) == (uintptr_t)-1)
 		break;
 	}
 next_line:
@@ -2657,7 +2667,7 @@ next_line:
 
     /* output */
     for (i = 0; i < num_traces; i++) {
-        print_line(&lines[i], traces[i]);
+        print_line(&lines[i], traces[i], errout);
 
 	/* FreeBSD's backtrace may show _start and so on */
 	if (lines[i].sname && strcmp("main", lines[i].sname) == 0)

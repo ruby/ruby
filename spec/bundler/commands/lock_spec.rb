@@ -289,6 +289,47 @@ RSpec.describe "bundle lock" do
     end
   end
 
+  context "conservative updates when minor update adds a new dependency" do
+    before do
+      build_repo4 do
+        build_gem "sequel", "5.71.0"
+        build_gem "sequel", "5.72.0" do |s|
+          s.add_dependency "bigdecimal", ">= 0"
+        end
+        build_gem "bigdecimal", %w[1.4.4 3.1.4]
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'sequel'
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            sequel (5.71.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          sequel
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    end
+
+    it "adds the latest version of the new dependency" do
+      bundle "lock --minor --update sequel"
+
+      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-3.1.4].sort)
+    end
+  end
+
   it "updates the bundler version in the lockfile to the latest bundler version" do
     build_repo4 do
       build_gem "bundler", "55"
