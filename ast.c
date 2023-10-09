@@ -528,13 +528,17 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_YIELD:
         return rb_ary_new_from_node_args(ast, 1, RNODE_YIELD(node)->nd_head);
       case NODE_LVAR:
-      case NODE_DVAR:
         return rb_ary_new_from_args(1, var_name(RNODE_LVAR(node)->nd_vid));
+      case NODE_DVAR:
+        return rb_ary_new_from_args(1, var_name(RNODE_DVAR(node)->nd_vid));
       case NODE_IVAR:
-      case NODE_CONST:
-      case NODE_CVAR:
-      case NODE_GVAR:
         return rb_ary_new_from_args(1, ID2SYM(RNODE_IVAR(node)->nd_vid));
+      case NODE_CONST:
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_CONST(node)->nd_vid));
+      case NODE_CVAR:
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_CVAR(node)->nd_vid));
+      case NODE_GVAR:
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_GVAR(node)->nd_vid));
       case NODE_NTH_REF:
         snprintf(name, sizeof(name), "$%ld", RNODE_NTH_REF(node)->nd_nth);
         return rb_ary_new_from_args(1, ID2SYM(rb_intern(name)));
