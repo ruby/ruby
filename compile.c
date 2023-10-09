@@ -4890,7 +4890,7 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
       case NODE_FALSE:
         return Qfalse;
       case NODE_STR:
-        return rb_fstring(RNODE_LIT(node)->nd_lit);
+        return rb_fstring(RNODE_STR(node)->nd_lit);
     }
     return Qundef;
 }
