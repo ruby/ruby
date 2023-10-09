@@ -601,6 +601,23 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful message", bundler: "3"
   end
 
+  context "bundle plugin install --local_git" do
+    before do
+      build_git "foo" do |s|
+        s.write "plugins.rb"
+      end
+    end
+
+    it "prints a deprecation warning", bundler: "< 3" do
+      bundle "plugin install foo --local_git #{lib_path("foo-1.0")}"
+
+      expect(out).to include("Installed plugin foo")
+      expect(deprecations).to include "--local_git is deprecated, use --git"
+    end
+
+    pending "fails with a helpful message", bundler: "3"
+  end
+
   describe "deprecating rubocop", :readline do
     context "bundle gem --rubocop" do
       before do
