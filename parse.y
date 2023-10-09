@@ -1106,7 +1106,7 @@ typedef struct RNode_DEF_TEMP {
 
     /* for NODE_DEFN/NODE_DEFS */
 #ifndef RIPPER
-    struct RNode *nd_recv;
+    struct RNode *nd_def;
     ID nd_mid;
 #else
     VALUE nd_recv;
@@ -2572,7 +2572,8 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         restore_defun(p, $head);
                     /*%%%*/
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        $$ = NEW_DEFN($head->nd_mid, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFN($$)->nd_defn = $bodystmt;
                     /*% %*/
                     /*% ripper[$bodystmt]: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: def!($head->nd_mid, $args, $bodystmt) %*/
@@ -2584,7 +2585,8 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         restore_defun(p, $head);
                     /*%%%*/
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        $$ = NEW_DEFS($head->nd_recv, $head->nd_mid, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% %*/
                     /*% ripper[$bodystmt]: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: defs!($head->nd_recv, $head->dot_or_colon, $head->nd_mid, $args, $bodystmt) %*/
@@ -2714,6 +2716,7 @@ defn_head	: k_def def_name
                         $$ = $k_def;
                         $$->nd_mid = $def_name;
                     /*%%%*/
+                        $$->nd_def = NEW_DEFN($def_name, 0, &@$);
                     /*%
                         add_mark_object(p, $def_name);
                     %*/
@@ -2729,12 +2732,12 @@ defs_head	: k_def singleton dot_or_colon
                     {
                         SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
                         $$ = $k_def;
-                        $$->nd_recv = $singleton;
                         $$->nd_mid = $def_name;
                     /*%%%*/
+                        $$->nd_def = NEW_DEFS($singleton, $def_name, 0, &@$);
                     /*%
-                        add_mark_object(p, $singleton);
                         add_mark_object(p, $def_name);
+                        $$->nd_recv = add_mark_object(p, $singleton);
                         $$->dot_or_colon = add_mark_object(p, $dot_or_colon);
                     %*/
                     }
@@ -3509,7 +3512,8 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         restore_defun(p, $head);
                     /*%%%*/
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        $$ = NEW_DEFN($head->nd_mid, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFN($$)->nd_defn = $bodystmt;
                     /*% %*/
                     /*% ripper[$bodystmt]: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: def!($head->nd_mid, $args, $bodystmt) %*/
@@ -3521,7 +3525,8 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         restore_defun(p, $head);
                     /*%%%*/
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        $$ = NEW_DEFS($head->nd_recv, $head->nd_mid, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% %*/
                     /*% ripper[$bodystmt]: bodystmt!($bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: defs!($head->nd_recv, $head->dot_or_colon, $head->nd_mid, $args, $bodystmt) %*/
@@ -4203,7 +4208,8 @@ primary		: literal
                         restore_defun(p, $head);
                     /*%%%*/
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        $$ = NEW_DEFN($head->nd_mid, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFN($$)->nd_defn = $bodystmt;
                     /*% %*/
                     /*% ripper: def!($head->nd_mid, $args, $bodystmt) %*/
                         local_pop(p);
@@ -4221,7 +4227,8 @@ primary		: literal
                         restore_defun(p, $head);
                     /*%%%*/
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        $$ = NEW_DEFS($head->nd_recv, $head->nd_mid, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% %*/
                     /*% ripper: defs!($head->nd_recv, $head->dot_or_colon, $head->nd_mid, $args, $bodystmt) %*/
                         local_pop(p);
@@ -12250,7 +12257,7 @@ rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc)
     n->nd_mid = Qnil;
     n->dot_or_colon = Qnil;
 #else
-    n->nd_recv = 0;
+    n->nd_def = 0;
     n->nd_mid = 0;
 #endif
 
