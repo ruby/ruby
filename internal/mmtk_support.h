@@ -10,7 +10,7 @@
 #include "ruby/ruby.h"
 #include "internal/mmtk.h"
 
-#define MMTK_DEFAULT_PLAN "MarkSweep"
+#define MMTK_DEFAULT_PLAN "Immix"
 
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
 #define MMTK_ALLOCATION_SEMANTICS_LOS 1
