@@ -260,8 +260,8 @@ module Bundler
       true
     end
 
-    def lock(opts = {})
-      @definition.lock(Bundler.default_lockfile, opts[:preserve_unknown_sections])
+    def lock
+      @definition.lock(Bundler.default_lockfile)
     end
   end
 end
