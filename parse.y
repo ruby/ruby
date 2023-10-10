@@ -288,6 +288,7 @@ struct lex_context {
 };
 
 typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
+typedef struct RNode_EXITS rb_node_exits_t;
 
 #if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
@@ -485,7 +486,7 @@ struct parser_params {
     rb_encoding *enc;
     token_info *token_info;
     VALUE case_labels;
-    NODE *exits;
+    rb_node_exits_t *exits;
 
     VALUE debug_buffer;
     VALUE debug_output;
@@ -1599,9 +1600,9 @@ rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
 #endif /* RIPPER */
 
 static NODE *add_block_exit(struct parser_params *p, NODE *node);
-static NODE *init_block_exit(struct parser_params *p);
-static NODE *allow_block_exit(struct parser_params *p);
-static void restore_block_exit(struct parser_params *p, NODE *exits);
+static rb_node_exits_t *init_block_exit(struct parser_params *p);
+static rb_node_exits_t *allow_block_exit(struct parser_params *p);
+static void restore_block_exit(struct parser_params *p, rb_node_exits_t *exits);
 static void clear_block_exit(struct parser_params *p, bool error);
 
 static void
@@ -1728,12 +1729,13 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const rb_cod
 # define compile_error(p, ...) parser_compile_error(p, NULL, __VA_ARGS__)
 #endif
 
-typedef struct {
+struct RNode_EXITS {
     NODE node;
 
     NODE *nd_chain; /* Assume NODE_BREAK, NODE_NEXT, NODE_REDO have nd_chain here */
     NODE *nd_end;
-} rb_node_exits_t;
+};
+
 #define RNODE_EXITS(node) ((rb_node_exits_t*)(node))
 
 static NODE *
@@ -1750,35 +1752,36 @@ add_block_exit(struct parser_params *p, NODE *node)
         return node;
     }
     if (!p->ctxt.in_defined) {
-        NODE *exits = p->exits;
+        rb_node_exits_t *exits = p->exits;
         if (exits) {
-            RNODE_EXITS(RNODE_EXITS(exits)->nd_end)->nd_chain = node;
-            RNODE_EXITS(exits)->nd_end = node;
+            RNODE_EXITS(exits->nd_end)->nd_chain = node;
+            exits->nd_end = node;
         }
     }
     return node;
 }
 
-static NODE *
+static rb_node_exits_t *
 init_block_exit(struct parser_params *p)
 {
-    NODE *old = p->exits;
+    rb_node_exits_t *old = p->exits;
     rb_node_exits_t *exits = NODE_NEW_INTERNAL(NODE_EXITS, rb_node_exits_t);
     exits->nd_chain = 0;
-    p->exits = exits->nd_end = RNODE(exits);
+    exits->nd_end = RNODE(exits);
+    p->exits = exits;
     return old;
 }
 
-static NODE *
+static rb_node_exits_t *
 allow_block_exit(struct parser_params *p)
 {
-    NODE *exits = p->exits;
+    rb_node_exits_t *exits = p->exits;
     p->exits = 0;
     return exits;
 }
 
 static void
-restore_block_exit(struct parser_params *p, NODE *exits)
+restore_block_exit(struct parser_params *p, rb_node_exits_t *exits)
 {
     p->exits = exits;
 }
@@ -1786,10 +1789,10 @@ restore_block_exit(struct parser_params *p, NODE *exits)
 static void
 clear_block_exit(struct parser_params *p, bool error)
 {
-    NODE *exits = p->exits;
+    rb_node_exits_t *exits = p->exits;
     if (!exits) return;
     if (error && !compile_for_eval) {
-        for (NODE *e = exits; (e = RNODE_EXITS(e)->nd_chain) != 0; ) {
+        for (NODE *e = RNODE(exits); (e = RNODE_EXITS(e)->nd_chain) != 0; ) {
             switch (nd_type(e)) {
               case NODE_BREAK:
                 yyerror1(&e->nd_loc, "Invalid break");
@@ -1807,8 +1810,8 @@ clear_block_exit(struct parser_params *p, bool error)
         }
       end_checks:;
     }
-    RNODE_EXITS(exits)->nd_end = exits;
-    RNODE_EXITS(exits)->nd_chain = 0;
+    exits->nd_end = RNODE(exits);
+    exits->nd_chain = 0;
 }
 
 #define WARN_EOL(tok) \
@@ -1980,6 +1983,7 @@ get_nd_args(struct parser_params *p, NODE *node)
     rb_node_block_pass_t *node_block_pass;
     rb_node_masgn_t *node_masgn;
     rb_node_def_temp_t *node_def_temp;
+    rb_node_exits_t *node_exits;
     ID id;
     int num;
     st_table *tbl;
@@ -2062,6 +2066,7 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 /*ripper*/ %type <node_def_temp> defn_head defs_head k_def
+/*ripper*/ %type <node_exits> block_open k_while k_until k_for allow_exits
 %type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
@@ -2262,11 +2267,11 @@ top_stmt	: stmt
                     }
                 ;
 
-block_open	: '{' {$<node>$ = init_block_exit(p);};
+block_open	: '{' {$$ = init_block_exit(p);};
 
 begin_block	: block_open top_compstmt '}'
                     {
-                        restore_block_exit(p, $<node>1);
+                        restore_block_exit(p, $block_open);
                     /*%%%*/
                         p->eval_tree_begin = block_append(p, p->eval_tree_begin,
                                                           NEW_BEGIN($2, &@$));
@@ -2353,9 +2358,12 @@ stmt_or_begin	: stmt
                     }
                 ;
 
+allow_exits	: {$$ = allow_block_exit(p);};
+
 k_END		: keyword_END lex_ctxt
                     {
                         $$ = $2;
+                        p->ctxt.in_rescue = before_rescue;
                     };
 
 stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
@@ -2451,17 +2459,12 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     /*% %*/
                     /*% ripper: rescue_mod!($1, $4) %*/
                     }
-                | k_END
-                    {
-                        $<node>$ = allow_block_exit(p);
-                        p->ctxt.in_rescue = before_rescue;
-                    }[exits]
-                  '{' compstmt '}'
+                | k_END allow_exits '{' compstmt '}'
                     {
                         if (p->ctxt.in_def) {
                             rb_warn0("END in method; use at_exit");
                         }
-                        restore_block_exit(p, $<node>exits);
+                        restore_block_exit(p, $allow_exits);
                         p->ctxt = $k_END;
                     /*%%%*/
                         {
@@ -4039,7 +4042,7 @@ primary		: literal
                   compstmt
                   k_end
                     {
-                        restore_block_exit(p, $<node>1);
+                        restore_block_exit(p, $1);
                     /*%%%*/
                         $$ = NEW_WHILE(cond(p, $2, &@2), $3, 1, &@$);
                         fixpos($$, $2);
@@ -4050,7 +4053,7 @@ primary		: literal
                   compstmt
                   k_end
                     {
-                        restore_block_exit(p, $<node>1);
+                        restore_block_exit(p, $1);
                     /*%%%*/
                         $$ = NEW_UNTIL(cond(p, $2, &@2), $3, 1, &@$);
                         fixpos($$, $2);
@@ -4101,7 +4104,7 @@ primary		: literal
                   compstmt
                   k_end
                     {
-                        restore_block_exit(p, $<node>1);
+                        restore_block_exit(p, $1);
                     /*%%%*/
                         /*
                          *  for a, b, c in e
@@ -4312,9 +4315,9 @@ k_unless	: keyword_unless
                     }
                 ;
 
-k_while		: keyword_while
+k_while		: keyword_while allow_exits
                     {
-                        $<node>$ = allow_block_exit(p);
+                        $$ = $allow_exits;
                         token_info_push(p, "while", &@$);
                     /*%%%*/
                         push_end_expect_token_locations(p, &@1.beg_pos);
@@ -4322,9 +4325,9 @@ k_while		: keyword_while
                     }
                 ;
 
-k_until		: keyword_until
+k_until		: keyword_until allow_exits
                     {
-                        $<node>$ = allow_block_exit(p);
+                        $$ = $allow_exits;
                         token_info_push(p, "until", &@$);
                     /*%%%*/
                         push_end_expect_token_locations(p, &@1.beg_pos);
@@ -4341,9 +4344,9 @@ k_case		: keyword_case
                     }
                 ;
 
-k_for		: keyword_for
+k_for		: keyword_for allow_exits
                     {
-                        $<node>$ = allow_block_exit(p);
+                        $$ = $allow_exits;
                         token_info_push(p, "for", &@$);
                     /*%%%*/
                         push_end_expect_token_locations(p, &@1.beg_pos);
@@ -4774,9 +4777,7 @@ lambda		: tLAMBDA[dyna]
                     {
                         $<node>$ = numparam_push(p);
                     }[numparam]
-                    {
-                        $<node>$ = allow_block_exit(p);
-                    }[exits]
+                    allow_exits
                   f_larglist[args]
                     {
                         CMDARG_PUSH(0);
@@ -4786,7 +4787,7 @@ lambda		: tLAMBDA[dyna]
                         int max_numparam = p->max_numparam;
                         p->lex.lpar_beg = $<num>lpar;
                         p->max_numparam = $<num>max_numparam;
-                        restore_block_exit(p, $<node>exits);
+                        restore_block_exit(p, $allow_exits);
                         CMDARG_POP();
                         $args = args_with_numbered(p, $args, max_numparam);
                     /*%%%*/
@@ -4983,9 +4984,7 @@ brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
                     {
                         $<node>$ = numparam_push(p);
                     }[numparam]
-                    {
-                        $<node>$ = allow_block_exit(p);
-                    }[exits]
+                    allow_exits
                   opt_block_param[args] compstmt
                     {
                         int max_numparam = p->max_numparam;
@@ -4995,7 +4994,7 @@ brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
                         $$ = NEW_ITER($args, $compstmt, &@$);
                     /*% %*/
                     /*% ripper: brace_block!($args, $compstmt) %*/
-                        restore_block_exit(p, $<node>exits);
+                        restore_block_exit(p, $allow_exits);
                         numparam_pop(p, $<node>numparam);
                         dyna_pop(p, $<vars>dyna);
                     }
@@ -5010,9 +5009,7 @@ do_body 	: {$<vars>$ = dyna_push(p);}[dyna]
                         $<node>$ = numparam_push(p);
                         CMDARG_PUSH(0);
                     }[numparam]
-                    {
-                        $<node>$ = allow_block_exit(p);
-                    }[exits]
+                    allow_exits
                   opt_block_param[args] bodystmt
                     {
                         int max_numparam = p->max_numparam;
@@ -5023,7 +5020,7 @@ do_body 	: {$<vars>$ = dyna_push(p);}[dyna]
                     /*% %*/
                     /*% ripper: do_block!($args, $bodystmt) %*/
                         CMDARG_POP();
-                        restore_block_exit(p, $<node>exits);
+                        restore_block_exit(p, $allow_exits);
                         numparam_pop(p, $<node>numparam);
                         dyna_pop(p, $<vars>dyna);
                     }
