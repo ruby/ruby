@@ -5985,7 +5985,7 @@ string_content	: tSTRING_CONTENT
                         p->heredoc_indent = $<num>indent;
                         p->heredoc_line_indent = -1;
                     /*%%%*/
-                        if ($compstmt) $compstmt->flags &= ~NODE_FL_NEWLINE;
+                        if ($compstmt) nd_unset_fl_newline($compstmt);
                         $$ = new_evstr(p, $compstmt, &@$);
                     /*% %*/
                     /*% ripper: string_embexpr!($compstmt) %*/
@@ -8790,7 +8790,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 
     while (str_node) {
         VALUE lit = RNODE_LIT(str_node)->nd_lit;
-        if (str_node->flags & NODE_FL_NEWLINE) {
+        if (nd_fl_newline(str_node)) {
             dedent_string(p, lit, indent);
         }
         if (!prev_lit) {
@@ -9097,7 +9097,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
               flush_str:
                 set_yylval_str(str);
 #ifndef RIPPER
-                if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+                if (bol) nd_set_fl_newline(yylval.node);
 #endif
                 flush_string_content(p, enc);
                 return tSTRING_CONTENT;
@@ -9122,7 +9122,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
 #ifndef RIPPER
-    if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+    if (bol) nd_set_fl_newline(yylval.node);
 #endif
     return tSTRING_CONTENT;
 }
@@ -12275,7 +12275,7 @@ newline_node(NODE *node)
 {
     if (node) {
         node = remove_begin(node);
-        node->flags |= NODE_FL_NEWLINE;
+        nd_set_fl_newline(node);
     }
     return node;
 }
@@ -13963,7 +13963,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
      (reduce_nodes(p, &type(node)->n1), body = &type(node)->n2, 1))
 
     while (node) {
-        int newline = (int)(node->flags & NODE_FL_NEWLINE);
+        int newline = (int)(nd_fl_newline(node));
         switch (nd_type(node)) {
           end:
           case NODE_NIL:
@@ -13971,11 +13971,11 @@ reduce_nodes(struct parser_params *p, NODE **body)
             return;
           case NODE_RETURN:
             *body = node = RNODE_RETURN(node)->nd_stts;
-            if (newline && node) node->flags |= NODE_FL_NEWLINE;
+            if (newline && node) nd_set_fl_newline(node);
             continue;
           case NODE_BEGIN:
             *body = node = RNODE_BEGIN(node)->nd_body;
-            if (newline && node) node->flags |= NODE_FL_NEWLINE;
+            if (newline && node) nd_set_fl_newline(node);
             continue;
           case NODE_BLOCK:
             body = &RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head;
@@ -14005,7 +14005,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
             return;
         }
         node = *body;
-        if (newline && node) node->flags |= NODE_FL_NEWLINE;
+        if (newline && node) nd_set_fl_newline(node);
     }
 
 #undef subnodes
