@@ -9534,7 +9534,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         /* ignore */
     }
     else {
-        if (node->flags & NODE_FL_NEWLINE) {
+        if (nd_fl_newline(node)) {
             int event = RUBY_EVENT_LINE;
             ISEQ_COMPILE_DATA(iseq)->last_line = line;
             if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
