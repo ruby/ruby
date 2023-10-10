@@ -203,6 +203,11 @@ Init_native_thread(rb_thread_t *main_th)
                    main_th->nt->interrupt_event);
 }
 
+void
+ruby_mn_threads_params(void)
+{
+}
+
 static int
 w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 {
