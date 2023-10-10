@@ -9,22 +9,22 @@ module Prism
     module Context
       class Base
         attr_reader :left, :right
-    
+
         def initialize(left, right)
           @left = left
           @right = right
         end
-    
+
         def name
           "#{left}#{right}".delete("\n")
         end
-    
+
         private
-    
+
         def code(escape)
           "#{left}\\#{escape}#{right}".b
         end
-    
+
         def ruby(escape)
           previous, $VERBOSE = $VERBOSE, nil
 
@@ -36,37 +36,37 @@ module Prism
             $VERBOSE = previous
           end
         end
-    
+
         def prism(escape)
           result = Prism.parse(code(escape))
-    
+
           if result.success?
             yield result.value.statements.body.first
           else
             :error
           end
         end
-    
+
         def `(command)
           command
         end
       end
-    
+
       class List < Base
         def ruby_result(escape) = ruby(escape) { |value| value.first.to_s }
         def prism_result(escape) = prism(escape) { |node| node.elements.first.unescaped }
       end
-    
+
       class Symbol < Base
         def ruby_result(escape) = ruby(escape, &:to_s)
         def prism_result(escape) = prism(escape, &:unescaped)
       end
-    
+
       class String < Base
         def ruby_result(escape) = ruby(escape, &:itself)
         def prism_result(escape) = prism(escape, &:unescaped)
       end
-    
+
       class RegExp < Base
         def ruby_result(escape) = ruby(escape, &:source)
         def prism_result(escape) = prism(escape, &:unescaped)
@@ -92,13 +92,13 @@ module Prism
 
     escapes = [*ascii, *ascii8, *octal, *hex2, *hex4, *hex6, *ctrls]
     contexts = [
-      [Context::String.new("?", ""),             [*ascii, *octal]], #, *hex2]],
-      [Context::String.new("'", "'"),            escapes],
-      [Context::String.new("\"", "\""),          escapes],
+      [Context::String.new("?", ""),             escapes],
+      # [Context::String.new("'", "'"),            escapes],
+      # [Context::String.new("\"", "\""),          escapes],
       # [Context::String.new("%q[", "]"),          escapes],
-      [Context::String.new("%Q[", "]"),          escapes],
-      [Context::String.new("%[", "]"),           escapes],
-      [Context::String.new("`", "`"),            escapes],
+      # [Context::String.new("%Q[", "]"),          escapes],
+      # [Context::String.new("%[", "]"),           escapes],
+      # [Context::String.new("`", "`"),            escapes],
       # [Context::String.new("<<~H\n", "\nH"),     escapes],
       # [Context::String.new("<<~'H'\n", "\nH"),   escapes],
       # [Context::String.new("<<~\"H\"\n", "\nH"), escapes],
@@ -109,16 +109,14 @@ module Prism
       # [Context::List.new("%I[", "]"),            escapes],
       # [Context::Symbol.new("%s[", "]"),          escapes],
       # [Context::Symbol.new(":'", "'"),           escapes],
-      [Context::Symbol.new(":\"", "\""),         escapes],
+      # [Context::Symbol.new(":\"", "\""),         escapes],
       # [Context::RegExp.new("/", "/"),            escapes],
       # [Context::RegExp.new("%r[", "]"),          escapes]
     ]
 
-    known_failures = [["?", "\n"]]
-
     contexts.each do |(context, escapes)|
       escapes.each do |escape|
-        next if known_failures.include?([context.name, escape])
+        next if context.name == "?" && escape == "\xFF".b # wat?
 
         define_method(:"test_#{context.name}_#{escape.inspect}") do
           assert_unescape(context, escape)

@@ -455,8 +455,8 @@ unescape(
 // \c\M-x         same as above
 // \c? or \C-?    delete, ASCII 7Fh (DEL)
 //
-static void
-pm_unescape_manipulate_string_or_char_literal(pm_parser_t *parser, pm_string_t *string, pm_unescape_type_t unescape_type, bool expect_single_codepoint) {
+PRISM_EXPORTED_FUNCTION void
+pm_unescape_manipulate_string(pm_parser_t *parser, pm_string_t *string, pm_unescape_type_t unescape_type) {
     if (unescape_type == PM_UNESCAPE_NONE) {
         // If we're not unescaping then we can reference the source directly.
         return;
@@ -529,12 +529,7 @@ pm_unescape_manipulate_string_or_char_literal(pm_parser_t *parser, pm_string_t *
                 // handle all of the different unescapes.
                 assert(unescape_type == PM_UNESCAPE_ALL);
 
-                uint8_t flags = PM_UNESCAPE_FLAG_NONE;
-                if (expect_single_codepoint) {
-                    flags |= PM_UNESCAPE_FLAG_EXPECT_SINGLE;
-                }
-
-                cursor = unescape(parser, dest, &dest_length, backslash, end, flags, &parser->error_list);
+                cursor = unescape(parser, dest, &dest_length, backslash, end, PM_UNESCAPE_FLAG_NONE, &parser->error_list);
                 break;
         }
 
@@ -562,21 +557,11 @@ pm_unescape_manipulate_string_or_char_literal(pm_parser_t *parser, pm_string_t *
     pm_string_owned_init(string, allocated, dest_length + ((size_t) (end - cursor)));
 }
 
-PRISM_EXPORTED_FUNCTION void
-pm_unescape_manipulate_string(pm_parser_t *parser, pm_string_t *string, pm_unescape_type_t unescape_type) {
-    pm_unescape_manipulate_string_or_char_literal(parser, string, unescape_type, false);
-}
-
-void
-pm_unescape_manipulate_char_literal(pm_parser_t *parser, pm_string_t *string, pm_unescape_type_t unescape_type) {
-    pm_unescape_manipulate_string_or_char_literal(parser, string, unescape_type, true);
-}
-
 // This function is similar to pm_unescape_manipulate_string, except it doesn't
 // actually perform any string manipulations. Instead, it calculates how long
 // the unescaped character is, and returns that value
 size_t
-pm_unescape_calculate_difference(pm_parser_t *parser, const uint8_t *backslash, pm_unescape_type_t unescape_type, bool expect_single_codepoint) {
+pm_unescape_calculate_difference(pm_parser_t *parser, const uint8_t *backslash, pm_unescape_type_t unescape_type) {
     assert(unescape_type != PM_UNESCAPE_NONE);
 
     if (backslash + 1 >= parser->end) {
@@ -605,12 +590,7 @@ pm_unescape_calculate_difference(pm_parser_t *parser, const uint8_t *backslash, 
             // handle all of the different unescapes.
             assert(unescape_type == PM_UNESCAPE_ALL);
 
-            uint8_t flags = PM_UNESCAPE_FLAG_NONE;
-            if (expect_single_codepoint) {
-                flags |= PM_UNESCAPE_FLAG_EXPECT_SINGLE;
-            }
-
-            const uint8_t *cursor = unescape(parser, NULL, 0, backslash, parser->end, flags, NULL);
+            const uint8_t *cursor = unescape(parser, NULL, 0, backslash, parser->end, PM_UNESCAPE_FLAG_NONE, NULL);
             assert(cursor > backslash);
 
             return (size_t) (cursor - backslash);
