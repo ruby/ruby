@@ -35,7 +35,6 @@ typedef enum {
 
 // Unescape the contents of the given token into the given string using the given unescape mode.
 PRISM_EXPORTED_FUNCTION void pm_unescape_manipulate_string(pm_parser_t *parser, pm_string_t *string, pm_unescape_type_t unescape_type);
-void pm_unescape_manipulate_char_literal(pm_parser_t *parser, pm_string_t *string, pm_unescape_type_t unescape_type);
 
 // Accepts a source string and a type of unescaping and returns the unescaped version.
 // The caller must pm_string_free(result); after calling this function.
@@ -43,6 +42,6 @@ PRISM_EXPORTED_FUNCTION bool pm_unescape_string(const uint8_t *start, size_t len
 
 // Returns the number of bytes that encompass the first escape sequence in the
 // given string.
-size_t pm_unescape_calculate_difference(pm_parser_t *parser, const uint8_t *value, pm_unescape_type_t unescape_type, bool expect_single_codepoint);
+size_t pm_unescape_calculate_difference(pm_parser_t *parser, const uint8_t *value, pm_unescape_type_t unescape_type);
 
 #endif

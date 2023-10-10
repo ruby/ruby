@@ -6215,8 +6215,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             return;
         }
         case 'x': {
-            uint8_t byte = peek(parser);
             parser->current.end++;
+            uint8_t byte = peek(parser);
 
             if (pm_char_is_hexadecimal_digit(byte)) {
                 uint8_t value = escape_hexadecimal_digit(byte);
@@ -6239,7 +6239,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             parser->current.end++;
 
             if (
-                (parser->current.end + 4 < parser->end) &&
+                (parser->current.end + 4 <= parser->end) &&
                 pm_char_is_hexadecimal_digit(parser->current.end[0]) &&
                 pm_char_is_hexadecimal_digit(parser->current.end[1]) &&
                 pm_char_is_hexadecimal_digit(parser->current.end[2]) &&
@@ -6250,12 +6250,13 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 parser->current.end += 4;
             } else if (peek(parser) == '{') {
                 const uint8_t *unicode_codepoints_start = parser->current.end - 2;
+
                 parser->current.end++;
+                parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
 
                 const uint8_t *extra_codepoints_start = NULL;
                 int codepoints_count = 0;
 
-                parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
                 while ((parser->current.end < parser->end) && (*parser->current.end != '}')) {
                     const uint8_t *unicode_start = parser->current.end;
                     size_t hexadecimal_length = pm_strspn_hexadecimal_digit(parser->current.end, parser->end - parser->current.end);
@@ -6303,7 +6304,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             switch (peeked) {
                 case '?':
                     parser->current.end++;
-                    pm_buffer_append_u8(buffer, escape_byte(0x7f, flags | PM_ESCAPE_FLAG_CONTROL));
+                    pm_buffer_append_u8(buffer, escape_byte(0x7f, flags));
                     return;
                 case '\\':
                     if (flags & PM_ESCAPE_FLAG_CONTROL) {
@@ -6336,7 +6337,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             switch (peeked) {
                 case '?':
                     parser->current.end++;
-                    pm_buffer_append_u8(buffer, escape_byte(0x7f, flags | PM_ESCAPE_FLAG_CONTROL));
+                    pm_buffer_append_u8(buffer, escape_byte(0x7f, flags));
                     return;
                 case '\\':
                     if (flags & PM_ESCAPE_FLAG_CONTROL) {
@@ -6366,28 +6367,24 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             parser->current.end++;
             uint8_t peeked = peek(parser);
 
-            switch (peeked) {
-                case '?':
-                    parser->current.end++;
-                    pm_buffer_append_u8(buffer, escape_byte(0x7f, flags | PM_ESCAPE_FLAG_META));
+            if (peeked == '\\') {
+                if (flags & PM_ESCAPE_FLAG_META) {
+                    pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
                     return;
-                case '\\':
-                    if (flags & PM_ESCAPE_FLAG_META) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
-                        return;
-                    }
-                    parser->current.end++;
-                    escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_META);
-                    return;
-                default:
-                    if (!char_is_ascii_printable(peeked)) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
-                        return;
-                    }
-                    parser->current.end++;
-                    pm_buffer_append_u8(buffer, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
-                    return;
+                }
+                parser->current.end++;
+                escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_META);
+                return;
             }
+
+            if (!char_is_ascii_printable(peeked)) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                return;
+            }
+
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+            return;
         }
         default: {
             if (parser->current.end < parser->end) {
@@ -7873,7 +7870,7 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
                     pm_unescape_type_t unescape_type = lex_mode->as.list.interpolation ? PM_UNESCAPE_ALL : PM_UNESCAPE_MINIMAL;
-                    size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
+                    size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type);
                     if (difference == 0) {
                         // we're at the end of the file
                         breakpoint = NULL;
@@ -8010,7 +8007,7 @@ parser_lex(pm_parser_t *parser) {
                 // literally. In this case we'll skip past the next character
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
-                    size_t difference = pm_unescape_calculate_difference(parser, breakpoint, PM_UNESCAPE_ALL, false);
+                    size_t difference = pm_unescape_calculate_difference(parser, breakpoint, PM_UNESCAPE_ALL);
                     if (difference == 0) {
                         // we're at the end of the file
                         breakpoint = NULL;
@@ -8165,7 +8162,7 @@ parser_lex(pm_parser_t *parser) {
                         // literally. In this case we'll skip past the next character and
                         // find the next breakpoint.
                         pm_unescape_type_t unescape_type = parser->lex_modes.current->as.string.interpolation ? PM_UNESCAPE_ALL : PM_UNESCAPE_MINIMAL;
-                        size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
+                        size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type);
                         if (difference == 0) {
                             // we're at the end of the file
                             breakpoint = NULL;
@@ -8341,7 +8338,7 @@ parser_lex(pm_parser_t *parser) {
                             breakpoint += eol_length;
                         } else {
                             pm_unescape_type_t unescape_type = (quote == PM_HEREDOC_QUOTE_SINGLE) ? PM_UNESCAPE_MINIMAL : PM_UNESCAPE_ALL;
-                            size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
+                            size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type);
                             if (difference == 0) {
                                 // we're at the end of the file
                                 breakpoint = NULL;
