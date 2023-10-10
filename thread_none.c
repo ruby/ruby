@@ -42,7 +42,7 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 void
-rb_thread_sched_init(struct rb_thread_sched *sched)
+rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
