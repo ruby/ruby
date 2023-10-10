@@ -44,7 +44,6 @@ jobs:
           key: downloaded-cache
       - name: Install libraries
         run: |
-          brew upgrade
           brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
         working-directory: src
       - name: Set ENV
