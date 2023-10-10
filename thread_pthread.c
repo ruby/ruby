@@ -60,6 +60,8 @@ static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 static const void *const condattr_monotonic = NULL;
 #endif
 
+#include COROUTINE_H
+
 #ifndef HAVE_SYS_EPOLL_H
 #define HAVE_SYS_EPOLL_H 0
 #else
@@ -842,7 +844,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                     thread_sched_set_lock_owner(sched, NULL);
                     {
                         rb_ractor_set_current_ec(th->ractor, NULL);
-                        coroutine_transfer(&th->sched.context, &nt->nt_context);
+                        coroutine_transfer(th->sched.context, nt->nt_context);
                     }
                     thread_sched_set_lock_owner(sched, th);
                 }
@@ -1103,7 +1105,7 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
 
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
-    coroutine_transfer(current_cont, &next_th->sched.context);
+    coroutine_transfer(current_cont, next_th->sched.context);
 }
 
 static void
@@ -1112,7 +1114,7 @@ thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th)
     struct rb_native_thread *nt = cth->nt;
     native_thread_assign(NULL, cth);
     RUBY_DEBUG_LOG("th:%u->%u on nt:%d", rb_th_serial(cth), rb_th_serial(next_th), nt->serial);
-    thread_sched_switch0(&cth->sched.context, next_th, nt);
+    thread_sched_switch0(cth->sched.context, next_th, nt);
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -2075,6 +2077,12 @@ static struct rb_native_thread *
 native_thread_alloc(void)
 {
     struct rb_native_thread *nt = ZALLOC(struct rb_native_thread);
+
+#if USE_MN_THREADS
+    nt->nt_context = ruby_xmalloc(sizeof(struct coroutine_context));
+    fprintf(stderr, "nt:%p\n", nt);
+#endif
+
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t nt_serial = 2;
     nt->serial = RUBY_ATOMIC_FETCH_ADD(nt_serial, 1);
@@ -2090,6 +2098,8 @@ native_thread_create_dedicated(rb_thread_t *th)
     th->nt->running_thread = th;
     th->nt->dedicated = 1;
     native_thread_setup(th->nt);
+
+    fprintf(stderr, "nt:%p\n", th->nt);
 
     // vm stack
     size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
@@ -2135,9 +2145,11 @@ nt_start(void *ptr)
     ruby_nt_serial = nt->serial;
 #endif
 
-    coroutine_initialize_main(&nt->nt_context);
-
     RUBY_DEBUG_LOG("nt:%u", nt->serial);
+
+    if (!nt->dedicated) {
+        coroutine_initialize_main(nt->nt_context);
+    }
 
     while (1) {
         if (nt->dedicated) {
@@ -2174,7 +2186,7 @@ nt_start(void *ptr)
 
                     if (next_th && next_th->nt == NULL) {
                         RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
-                        thread_sched_switch0(&nt->nt_context, next_th, nt);
+                        thread_sched_switch0(nt->nt_context, next_th, nt);
                     }
                     else {
                         RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
@@ -2205,11 +2217,17 @@ rb_threadptr_sched_free(rb_thread_t *th)
     if (th->sched.malloc_stack) {
         ruby_xfree(th->sched.context_stack);
         RB_ALTSTACK_FREE(th->nt->altstack);
+        ruby_xfree(th->nt->nt_context);
         ruby_xfree(th->nt);
     }
     else {
         nt_free_stack(th->sched.context_stack);
         // TODO: how to free nt and nt->altstack?
+    }
+
+    if (th->sched.context) {
+        ruby_xfree(th->sched.context);
+        VM_ASSERT((th->sched.context = NULL) == NULL);
     }
 #else
     ruby_xfree(th->sched.context_stack);

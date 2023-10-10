@@ -14,8 +14,6 @@
 #include <pthread_np.h>
 #endif
 
-#include COROUTINE_H
-
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
@@ -64,7 +62,7 @@ struct rb_thread_sched_item {
 
     bool malloc_stack;
     void *context_stack;
-    struct coroutine_context context;
+    struct coroutine_context *context;
 };
 
 struct rb_native_thread {
@@ -98,7 +96,7 @@ struct rb_native_thread {
     void *altstack;
 #endif
 
-    struct coroutine_context nt_context;
+    struct coroutine_context *nt_context;
     int dedicated;
 
     size_t machine_stack_maxsize;

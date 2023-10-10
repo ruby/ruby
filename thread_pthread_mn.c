@@ -360,6 +360,8 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
     rb_native_mutex_lock(&vm->ractor.sched.lock);
     {
         unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
+        if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads) snt_cnt++; // do not need snt for main ractor
+
         if (((int)snt_cnt < MINIMUM_SNT) ||
             (snt_cnt < vm->ractor.cnt  &&
              snt_cnt < vm->ractor.sched.max_cpu)) {
@@ -429,7 +431,7 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
         // switch to the next Ractor
         rb_ractor_set_current_ec(th->ractor, NULL);
         native_thread_assign(NULL, th);
-        coroutine_transfer(self, &nt->nt_context);
+        coroutine_transfer(self, nt->nt_context);
     }
     rb_bug("unreachable");
 }
@@ -451,12 +453,13 @@ native_thread_create_shared(rb_thread_t *th)
 
     // setup machine stack
     size_t machine_stack_size = vm->default_params.thread_machine_stack_size - sizeof(struct nt_machine_stack_footer);
-    coroutine_initialize(&th->sched.context, co_start, machine_stack, machine_stack_size);
+    coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
     th->ec->machine.stack_start = (void *)((uintptr_t)machine_stack + machine_stack_size);
     th->ec->machine.stack_maxsize = machine_stack_size; // TODO
 
     th->sched.context_stack = machine_stack;
-    th->sched.context.argument = th;
+    th->sched.context->argument = th;
+    th->sched.context = ruby_xmalloc(sizeof(struct coroutine_context));
 
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
     thread_sched_to_ready(TH_SCHED(th), th);
