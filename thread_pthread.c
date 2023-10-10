@@ -1121,6 +1121,7 @@ thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th)
     thread_sched_switch0(cth->sched.context, next_th, nt);
 }
 
+#if VM_CHECK_MODE > 0
 RBIMPL_ATTR_MAYBE_UNUSED()
 static unsigned int
 grq_size(rb_vm_t *vm, rb_ractor_t *cr)
@@ -1138,6 +1139,7 @@ grq_size(rb_vm_t *vm, rb_ractor_t *cr)
     }
     return i;
 }
+#endif
 
 static void
 ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
