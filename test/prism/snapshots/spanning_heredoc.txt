@@ -73,10 +73,10 @@
         │   │       └── @ InterpolatedStringNode (location: (10,9)-(13,2))
         │   │           ├── opening_loc: (10,9)-(10,10) = "\""
         │   │           ├── parts: (length: 2)
-        │   │           │   ├── @ StringNode (location: (10,10)-(10,0))
+        │   │           │   ├── @ StringNode (location: (10,10)-(10,12))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (10,10)-(10,0) = "d\\\n"
+        │   │           │   │   ├── content_loc: (10,10)-(10,12) = "d\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "d"
         │   │           │   └── @ StringNode (location: (13,0)-(13,1))
@@ -107,10 +107,10 @@
         │   │       └── @ InterpolatedStringNode (location: (16,9)-(19,2))
         │   │           ├── opening_loc: (16,9)-(16,12) = "%q["
         │   │           ├── parts: (length: 2)
-        │   │           │   ├── @ StringNode (location: (16,12)-(16,0))
+        │   │           │   ├── @ StringNode (location: (16,12)-(16,14))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (16,12)-(16,0) = "f\\\n"
+        │   │           │   │   ├── content_loc: (16,12)-(16,14) = "f\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "f\\\n"
         │   │           │   └── @ StringNode (location: (19,0)-(19,1))
@@ -141,10 +141,10 @@
         │   │       └── @ InterpolatedStringNode (location: (22,9)-(25,2))
         │   │           ├── opening_loc: (22,9)-(22,12) = "%Q["
         │   │           ├── parts: (length: 2)
-        │   │           │   ├── @ StringNode (location: (22,12)-(22,0))
+        │   │           │   ├── @ StringNode (location: (22,12)-(22,14))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (22,12)-(22,0) = "h\\\n"
+        │   │           │   │   ├── content_loc: (22,12)-(22,14) = "h\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "h"
         │   │           │   └── @ StringNode (location: (25,0)-(25,1))
@@ -179,7 +179,7 @@
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── content_loc: (28,12)-(28,14) = "j\\"
         │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │   └── unescaped: "j"
+        │   │           │   │   └── unescaped: "j\n"
         │   │           │   └── @ StringNode (location: (31,0)-(31,1))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
@@ -216,7 +216,7 @@
         │   │           │       │   │   ├── opening_loc: ∅
         │   │           │       │   │   ├── content_loc: (35,12)-(35,14) = "l\\"
         │   │           │       │   │   ├── closing_loc: ∅
-        │   │           │       │   │   └── unescaped: "l"
+        │   │           │       │   │   └── unescaped: "l\n"
         │   │           │       │   └── @ StringNode (location: (38,0)-(38,1))
         │   │           │       │       ├── flags: ∅
         │   │           │       │       ├── opening_loc: ∅
@@ -250,7 +250,7 @@
         │   │           │   │   ├── opening_loc: ∅
         │   │           │   │   ├── value_loc: (41,12)-(41,14) = "n\\"
         │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │   └── unescaped: "n"
+        │   │           │   │   └── unescaped: "n\n"
         │   │           │   └── @ SymbolNode (location: (44,0)-(44,1))
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── value_loc: (44,0)-(44,1) = "n"
@@ -278,18 +278,18 @@
             │       │   └── unescaped: "o\n"
             │       └── @ ArrayNode (location: (48,9)-(51,2))
             │           ├── elements: (length: 1)
-            │           │   └── @ InterpolatedSymbolNode (location: (48,12)-(51,1))
+            │           │   └── @ InterpolatedSymbolNode (location: (48,12)-(48,14))
             │           │       ├── opening_loc: ∅
             │           │       ├── parts: (length: 2)
             │           │       │   ├── @ SymbolNode (location: (48,12)-(48,14))
             │           │       │   │   ├── opening_loc: ∅
             │           │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
             │           │       │   │   ├── closing_loc: ∅
-            │           │       │   │   └── unescaped: "p"
-            │           │       │   └── @ StringNode (location: (51,0)-(51,1))
+            │           │       │   │   └── unescaped: "p\n"
+            │           │       │   └── @ StringNode (location: (48,12)-(48,14))
             │           │       │       ├── flags: ∅
             │           │       │       ├── opening_loc: ∅
-            │           │       │       ├── content_loc: (51,0)-(51,1) = "p"
+            │           │       │       ├── content_loc: (48,12)-(48,14) = "p\\"
             │           │       │       ├── closing_loc: ∅
             │           │       │       └── unescaped: "p"
             │           │       └── closing_loc: ∅

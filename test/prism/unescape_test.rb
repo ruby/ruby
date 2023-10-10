@@ -95,11 +95,11 @@ module Prism
 
     contexts = [
       [Context::String.new("?", ""),             escapes],
-      # [Context::String.new("'", "'"),            escapes],
-      # [Context::String.new("\"", "\""),          escapes],
-      # [Context::String.new("%q[", "]"),          escapes],
-      # [Context::String.new("%Q[", "]"),          escapes],
-      # [Context::String.new("%[", "]"),           escapes],
+      [Context::String.new("'", "'"),            escapes],
+      [Context::String.new("\"", "\""),          escapes],
+      [Context::String.new("%q[", "]"),          escapes],
+      [Context::String.new("%Q[", "]"),          escapes],
+      [Context::String.new("%[", "]"),           escapes],
       # [Context::String.new("`", "`"),            escapes],
       # [Context::String.new("<<~H\n", "\nH"),     escapes],
       # [Context::String.new("<<~'H'\n", "\nH"),   escapes],
