@@ -965,11 +965,11 @@ rb_thread_create(VALUE (*fn)(void *), void *arg)
 }
 
 VALUE
-rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc)
+rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
 {
     struct thread_create_params params = {
         .type = thread_invoke_type_ractor_proc,
-        .g = g,
+        .g = r,
         .args = args,
         .proc = proc,
     };

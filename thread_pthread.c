@@ -1088,11 +1088,13 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 void
-rb_thread_sched_init(struct rb_thread_sched *sched)
+rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
     rb_native_mutex_initialize(&sched->lock_);
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
+
+    if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
 }
 
 static void
@@ -1460,7 +1462,7 @@ static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
     current_fork_gen++;
-    rb_thread_sched_init(sched);
+    rb_thread_sched_init(sched, true);
     rb_thread_t *th =  GET_THREAD();
     rb_vm_t *vm = GET_VM();
 

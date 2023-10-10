@@ -1994,7 +1994,7 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 }
 #endif
 
-void rb_thread_sched_init(struct rb_thread_sched *);
+void rb_thread_sched_init(struct rb_thread_sched *, bool atfork);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
@@ -2018,7 +2018,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 #endif
 
     // thread management
-    rb_thread_sched_init(&r->threads.sched);
+    rb_thread_sched_init(&r->threads.sched, false);
     rb_ractor_living_threads_init(r);
 
     // naming
