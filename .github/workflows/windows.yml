@@ -175,7 +175,7 @@ jobs:
 
       - run: nmake test-all
         env:
-          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }} --job-status=normal -v
         timeout-minutes: 60
 
       - uses: ./.github/actions/slack
