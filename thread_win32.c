@@ -654,7 +654,7 @@ static int
 native_thread_create(rb_thread_t *th)
 {
     // setup nt
-    const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
+    const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
     th->nt = ZALLOC(struct rb_native_thread);
     th->nt->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 

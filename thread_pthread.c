@@ -2020,7 +2020,7 @@ native_thread_create0(struct rb_native_thread *nt)
     int err = 0;
     pthread_attr_t attr;
 
-    const size_t stack_size = nt->vm->default_params.thread_machine_stack_size + nt->vm->default_params.thread_vm_stack_size;
+    const size_t stack_size = nt->vm->default_params.thread_machine_stack_size;
     const size_t space = space_size(stack_size);
 
     nt->machine_stack_maxsize = stack_size - space;
