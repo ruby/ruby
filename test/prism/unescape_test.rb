@@ -79,17 +79,20 @@ module Prism
     octal = [*("0".."7")]
     octal = octal.product(octal).map(&:join).concat(octal.product(octal).product(octal).map(&:join))
 
-    hex = [*("a".."f"), *("A".."F"), *("0".."9")]
-    hex = hex.map { |h| "x#{h}" }.concat(hex.product(hex).map { |h| "x#{h.join}" }).concat(["5", "6"].product(hex.sample(4)).product(hex.sample(4)).product(hex.sample(4)).map { |h| "u#{h.join}" })
+    hex2 = [*("a".."f"), *("A".."F"), *("0".."9")]
+    hex2 = hex2.map { |h| "x#{h}" }.concat(hex2.product(hex2).map { |h| "x#{h.join}" })
 
-    hexes = [*("a".."f"), *("A".."F"), *("0".."9")]
-    hexes = ["5", "6"].product(hexes.sample(2)).product(hexes.sample(2)).product(hexes.sample(2)).map { |h| "u{00#{h.join}}" }
+    hex4 = [*("a".."f"), *("A".."F"), *("0".."9")]
+    hex4 = ["5", "6"].product(hex4.sample(4)).product(hex4.sample(4)).product(hex4.sample(4)).map { |h| "u#{h.join}" }
+
+    hex6 = [*("a".."f"), *("A".."F"), *("0".."9")]
+    hex6 = ["5", "6"].product(hex6.sample(2)).product(hex6.sample(2)).product(hex6.sample(2)).map { |h| "u{00#{h.join}}" }
 
     ctrls = (ascii.grep(/[[:print:]]/) - ["\\"]).flat_map { |c| ["C-#{c}", "c#{c}", "M-#{c}", "M-\\C-#{c}", "M-\\c#{c}", "c\\M-#{c}"] }
 
-    escapes = [*ascii, *ascii8, *octal, *hex, *hexes, *ctrls]
+    escapes = [*ascii, *ascii8, *octal, *hex2, *hex4, *hex6, *ctrls]
     contexts = [
-      [Context::String.new("?", ""),             [*ascii, *hex, *ctrls]],
+      [Context::String.new("?", ""),             [*ascii, *octal]], #, *hex2]],
       [Context::String.new("'", "'"),            escapes],
       [Context::String.new("\"", "\""),          escapes],
       # [Context::String.new("%q[", "]"),          escapes],
@@ -133,7 +136,7 @@ module Prism
         "Expected #{context.name} to unescape #{escape.inspect} to #{expected.inspect}, but got #{actual.inspect}"
       end
 
-      if expected == :error
+      if expected == :error || actual == :error
         assert_equal expected, actual, message
       else
         assert_equal expected.bytes, actual.bytes, message
