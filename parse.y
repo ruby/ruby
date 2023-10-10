@@ -287,6 +287,8 @@ struct lex_context {
     BITFIELD(enum rescue_context, in_rescue, 2);
 };
 
+typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
+
 #if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
 // lex_context' changed" notes.  `struct lex_context` is file scope,
@@ -1101,7 +1103,7 @@ parser_node_name(int node)
 }
 
 /* This node is parse.y internal */
-typedef struct RNode_DEF_TEMP {
+struct RNode_DEF_TEMP {
     NODE node;
 
     /* for NODE_DEFN/NODE_DEFS */
@@ -1120,7 +1122,7 @@ typedef struct RNode_DEF_TEMP {
         NODE *numparam_save;
         struct lex_context ctxt;
     } save;
-} rb_node_def_temp_t;
+};
 
 #define RNODE_DEF_TEMP(node) ((struct RNode_DEF_TEMP *)(node))
 
@@ -1977,7 +1979,7 @@ get_nd_args(struct parser_params *p, NODE *node)
     rb_node_kw_arg_t *node_kw_arg;
     rb_node_block_pass_t *node_block_pass;
     rb_node_masgn_t *node_masgn;
-    struct RNode_DEF_TEMP *node_def_temp;
+    rb_node_def_temp_t *node_def_temp;
     ID id;
     int num;
     st_table *tbl;
