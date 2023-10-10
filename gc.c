@@ -157,6 +157,68 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
+
+static size_t malloc_offset = 0;
+#if defined(HAVE_MALLOC_USABLE_SIZE)
+static size_t
+gc_compute_malloc_offset(void)
+{
+    // Different allocators use different metadata storage strategies which result in different
+    // ideal sizes.
+    // For instance malloc(64) will waste 8B with glibc, but waste 0B with jemalloc.
+    // But malloc(56) will waste 0B with glibc, but waste 8B with jemalloc.
+    // So we try allocating 64, 56 and 48 bytes and select the first offset that doesn't
+    // waste memory.
+    // This was tested on Linux with glibc 2.35 and jemalloc 5, and for both it result in
+    // no wasted memory.
+    size_t offset = 0;
+    for (offset = 0; offset <= 16; offset += 8) {
+        size_t allocated = (64 - offset);
+        void *test_ptr = malloc(allocated);
+        size_t wasted = malloc_usable_size(test_ptr) - allocated;
+        free(test_ptr);
+
+        if (wasted == 0) {
+            return offset;
+        }
+    }
+    return 0;
+}
+#else
+static size_t
+gc_compute_malloc_offset(void)
+{
+    // If we don't have malloc_usable_size, we use powers of 2.
+    return 0;
+}
+#endif
+
+size_t
+rb_malloc_grow_capa(size_t current, size_t type_size)
+{
+    size_t current_capacity = current;
+    if (current_capacity < 4) {
+        current_capacity = 4;
+    }
+    current_capacity *= type_size;
+
+    // We double the current capacity.
+    size_t new_capacity = (current_capacity * 2);
+
+    // And round up to the next power of 2 if it's not already one.
+    if (rb_popcount64(new_capacity) != 1) {
+        new_capacity = (size_t)(1 << (64 - nlz_int64(new_capacity)));
+    }
+
+    new_capacity -= malloc_offset;
+    new_capacity /= type_size;
+    if (current > new_capacity) {
+        rb_bug("rb_malloc_grow_capa: current_capacity=%zu, new_capacity=%zu, malloc_offset=%zu", current, new_capacity, malloc_offset);
+    }
+    RUBY_ASSERT(new_capacity > current);
+    return new_capacity;
+}
+
 static inline struct rbimpl_size_mul_overflow_tag
 size_add_overflow(size_t x, size_t y)
 {
@@ -13979,6 +14041,8 @@ void
 Init_GC(void)
 {
 #undef rb_intern
+    malloc_offset = gc_compute_malloc_offset();
+
     VALUE rb_mObjSpace;
     VALUE rb_mProfiler;
     VALUE gc_constants;

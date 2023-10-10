@@ -418,19 +418,21 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 }
 
 static inline rb_shape_t *
-rb_shape_transition_shape_capa_create(rb_shape_t* shape, uint32_t new_capacity)
+rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
 {
+    RUBY_ASSERT(new_capacity < (size_t)MAX_IVARS);
+
     ID edge_name = rb_make_temporary_id(new_capacity);
     bool dont_care;
     rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true, false);
-    new_shape->capacity = new_capacity;
+    new_shape->capacity = (uint32_t)new_capacity;
     return new_shape;
 }
 
 rb_shape_t *
 rb_shape_transition_shape_capa(rb_shape_t* shape)
 {
-    return rb_shape_transition_shape_capa_create(shape, shape->capacity * 2);
+  return rb_shape_transition_shape_capa_create(shape, rb_malloc_grow_capa(shape->capacity, sizeof(VALUE)));
 }
 
 bool
@@ -833,7 +835,7 @@ Init_default_shapes(void)
 
     // Shapes by size pool
     for (int i = 1; i < SIZE_POOL_COUNT; i++) {
-        uint32_t capa = (uint32_t)((rb_size_pool_slot_size(i) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+        size_t capa = ((rb_size_pool_slot_size(i) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         rb_shape_t * new_shape = rb_shape_transition_shape_capa_create(root, capa);
         new_shape->type = SHAPE_INITIAL_CAPACITY;
         new_shape->size_pool_index = i;
