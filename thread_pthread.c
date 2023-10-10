@@ -2080,7 +2080,6 @@ native_thread_alloc(void)
 
 #if USE_MN_THREADS
     nt->nt_context = ruby_xmalloc(sizeof(struct coroutine_context));
-    fprintf(stderr, "nt:%p\n", nt);
 #endif
 
 #if USE_RUBY_DEBUG_LOG
@@ -2098,8 +2097,6 @@ native_thread_create_dedicated(rb_thread_t *th)
     th->nt->running_thread = th;
     th->nt->dedicated = 1;
     native_thread_setup(th->nt);
-
-    fprintf(stderr, "nt:%p\n", th->nt);
 
     // vm stack
     size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
