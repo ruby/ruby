@@ -70,11 +70,6 @@ static mut YJIT_EXIT_LOCATIONS: Option<YjitExitLocations> = None;
 impl YjitExitLocations {
     /// Initialize the yjit exit locations
     pub fn init() {
-        // Return if the stats feature is disabled
-        if !cfg!(feature = "stats") {
-            return;
-        }
-
         // Return if --yjit-trace-exits isn't enabled
         if !get_option!(gen_trace_exits) {
             return;
@@ -121,11 +116,6 @@ impl YjitExitLocations {
     pub fn gc_mark_raw_samples() {
         // Return if YJIT is not enabled
         if !yjit_enabled_p() {
-            return;
-        }
-
-        // Return if the stats feature is disabled
-        if !cfg!(feature = "stats") {
             return;
         }
 
@@ -538,7 +528,6 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, context: VALU
 /// to be enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    #[cfg(feature = "stats")]
     if get_option!(gen_trace_exits) {
         return Qtrue;
     }
@@ -552,11 +541,6 @@ pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
 pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
-        return Qnil;
-    }
-
-    // Return if the stats feature is disabled
-    if !cfg!(feature = "stats") {
         return Qnil;
     }
 
@@ -713,11 +697,6 @@ pub extern "C" fn rb_yjit_record_exit_stack(_exit_pc: *const VALUE)
 {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
-        return;
-    }
-
-    // Return if the stats feature is disabled
-    if !cfg!(feature = "stats") {
         return;
     }
 
