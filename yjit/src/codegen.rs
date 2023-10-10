@@ -2202,7 +2202,7 @@ fn gen_get_ivar(
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
         let shape = rb_shape_get_shape_by_id(shape_id);
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u8 = 0;
         if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
         } else {
@@ -2388,7 +2388,7 @@ fn gen_setinstancevariable(
     let ivar_index = if !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
         let shape = unsafe { rb_shape_get_shape_by_id(shape_id) };
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u8 = 0;
         if unsafe { rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
         } else {
@@ -2655,7 +2655,7 @@ fn gen_definedivar(
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
         let shape = rb_shape_get_shape_by_id(shape_id);
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u8 = 0;
         rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index)
     };
 
