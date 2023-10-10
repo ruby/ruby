@@ -30,7 +30,7 @@
                 ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
                 nd_first_lineno(node), nd_first_column(node), \
                 nd_last_lineno(node), nd_last_column(node), \
-                (node->flags & NODE_FL_NEWLINE ? "*" : ""))
+                (nd_fl_newline(node) ? "*" : ""))
 #define A_FIELD_HEADER(len, name, term) \
     rb_str_catf(buf, "+- %.*s:"term, (len), (name))
 #define D_FIELD_HEADER(len, name, term) (A_INDENT, A_FIELD_HEADER(len, name, term))
