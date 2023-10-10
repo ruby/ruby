@@ -1143,7 +1143,7 @@ static void
 ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 {
     struct rb_thread_sched *sched = &r->threads.sched;
-    rb_ractor_t *cr = GET_RACTOR();
+    rb_ractor_t *cr = NULL; // timer thread can call this function
 
     VM_ASSERT(sched->running != NULL);
     VM_ASSERT(sched->running->nt == NULL);
