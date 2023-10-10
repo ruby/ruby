@@ -388,7 +388,7 @@ pub fn block_assumptions_free(blockref: BlockRef) {
     }
 }
 
-/// Callback from the opt_setinlinecache instruction in the interpreter.
+/// Callback from the opt_getconstant_path instruction in the interpreter.
 /// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 /// using the new value in the constant cache.
 #[no_mangle]
@@ -407,7 +407,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
         return;
     };
 
-    if !unsafe { (*(*ic).entry).ic_cref }.is_null() || unsafe { rb_yjit_multi_ractor_p() } {
+    if unsafe { rb_yjit_multi_ractor_p() } {
         // We can't generate code in these situations, so no need to invalidate.
         // See gen_opt_getinlinecache.
         return;

@@ -476,6 +476,25 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_getconstant_path_slowpath_invalidation
+    assert_compiles(<<~RUBY, exits: { opt_getconstant_path: 1 }, result: [1, 1], call_threshold: 1)
+      class A
+        FOO = 1
+        class << self
+          def foo
+            _foo = nil
+            FOO
+          end
+        end
+      end
+
+      result = []
+      result << A.foo # exit and then invalidate
+      result << A.foo # should not exit
+      result
+    RUBY
+  end
+
   def test_string_interpolation
     assert_compiles(<<~'RUBY', insns: %i[objtostring anytostring concatstrings], result: "foobar", call_threshold: 2)
       def make_str(foo, bar)
