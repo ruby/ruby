@@ -1220,6 +1220,7 @@ static NODE *literal_concat(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_evstr(struct parser_params*,NODE*,const YYLTYPE*);
 static NODE *new_dstr(struct parser_params*,NODE*,const YYLTYPE*);
 static NODE *evstr2dstr(struct parser_params*,NODE*);
+static NODE *lit2match(struct parser_params*, NODE*);
 static NODE *splat_array(NODE*);
 static void mark_lvar_used(struct parser_params *p, NODE *rhs);
 
@@ -12521,6 +12522,26 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
     return head;
 }
 
+static void
+nd_copy_flag(NODE *new_node, NODE *old_node)
+{
+    if (nd_fl_newline(old_node)) nd_set_fl_newline(new_node);
+    nd_set_line(new_node, nd_line(old_node));
+    new_node->nd_loc = old_node->nd_loc;
+    new_node->node_id = old_node->node_id;
+}
+
+static NODE *
+lit2match(struct parser_params *p, NODE *node)
+{
+    NODE *new_node = (NODE *)NODE_NEW_INTERNAL(NODE_MATCH, rb_node_match_t);
+    nd_copy_flag(new_node, node);
+    RNODE_MATCH(new_node)->nd_lit = RNODE_LIT(node)->nd_lit;
+    RNODE_LIT(node)->nd_lit = 0;
+
+    return new_node;
+}
+
 static NODE *
 evstr2dstr(struct parser_params *p, NODE *node)
 {
@@ -14135,7 +14156,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_LIT:
         if (RB_TYPE_P(RNODE_LIT(node)->nd_lit, T_REGEXP)) {
             if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ")
-            nd_set_type(node, NODE_MATCH);
+            node = lit2match(p, node);
         }
         else if (RNODE_LIT(node)->nd_lit == Qtrue ||
                  RNODE_LIT(node)->nd_lit == Qfalse) {
