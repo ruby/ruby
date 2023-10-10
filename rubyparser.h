@@ -586,13 +586,10 @@ typedef struct RNode_BACK_REF {
     long nd_nth;
 } rb_node_back_ref_t;
 
-/* RNode_MATCH, RNode_LIT, RNode_STR and RNode_XSTR should be same structure */
 typedef struct RNode_MATCH {
     NODE node;
 
     VALUE nd_lit;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_match_t;
 
 typedef struct RNode_MATCH2 {
@@ -610,6 +607,7 @@ typedef struct RNode_MATCH3 {
     struct RNode *nd_value;
 } rb_node_match3_t;
 
+/* RNode_LIT, RNode_STR and RNode_XSTR should be same structure */
 typedef struct RNode_LIT {
     NODE node;
 
