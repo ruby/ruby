@@ -13597,29 +13597,28 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                         break;
                     }
                     case PM_TOKEN_STRING_CONTENT: {
+                        parser_lex(parser);
+                        pm_token_t opening = not_provided(parser);
+                        pm_token_t closing = not_provided(parser);
+                        pm_string_node_t *string = (pm_string_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+
                         if (current == NULL) {
                             // If we hit content and the current node is NULL, then this is
                             // the first string content we've seen. In that case we're going
                             // to create a new string node and set that to the current.
-                            current = parse_string_part(parser);
+                            current = (pm_node_t *) string;
                         } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
                             // If we hit string content and the current node is an
                             // interpolated string, then we need to append the string content
                             // to the list of child nodes.
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, part);
+                            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, (pm_node_t *) string);
                         } else if (PM_NODE_TYPE_P(current, PM_STRING_NODE)) {
                             // If we hit string content and the current node is a string node,
                             // then we need to convert the current node into an interpolated
                             // string and add the string content to the list of child nodes.
-                            pm_token_t opening = not_provided(parser);
-                            pm_token_t closing = not_provided(parser);
-                            pm_interpolated_string_node_t *interpolated =
-                                pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
+                            pm_interpolated_string_node_t *interpolated = pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
                             pm_interpolated_string_node_append(interpolated, current);
-
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_string_node_append(interpolated, part);
+                            pm_interpolated_string_node_append(interpolated, (pm_node_t *) string);
                             current = (pm_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");
