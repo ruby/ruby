@@ -13387,8 +13387,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 pm_token_t opening = not_provided(parser);
                 pm_token_t closing = not_provided(parser);
 
-                pm_node_t *symbol = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_MINIMAL);
-                pm_array_node_elements_append(array, symbol);
+                pm_symbol_node_t *symbol = (pm_symbol_node_t *) pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
+                symbol->unescaped = parser->current_string;
+
+                pm_array_node_elements_append(array, (pm_node_t *) symbol);
             }
 
             expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_I_LOWER_TERM);

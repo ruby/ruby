@@ -40,7 +40,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (13,3)-(14,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\\\nb"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (13,0)-(13,3) = "%i{"
         │   └── closing_loc: (14,1)-(14,2) = "}"
         ├── @ StringNode (location: (16,0)-(17,2))
