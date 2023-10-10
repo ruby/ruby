@@ -171,9 +171,9 @@ module RubyVM::RJIT # :nodoc: all
       me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
     end
 
-    def rb_shape_transition_shape_capa(shape, new_capacity)
+    def rb_shape_transition_shape_capa(shape)
       _shape = shape.to_i
-      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_transition_shape_capa((rb_shape_t *)NUM2SIZET(_shape), NUM2UINT(new_capacity)))'
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_transition_shape_capa((rb_shape_t *)NUM2SIZET(_shape)))'
       rb_shape_t.new(shape_addr)
     end
 
