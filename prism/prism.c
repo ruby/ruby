@@ -6387,6 +6387,13 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             pm_buffer_append_u8(buffer, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
             return;
         }
+        case '\r': {
+            if (peek_offset(parser, 1) == '\n') {
+                parser->current.end += 2;
+                pm_buffer_append_u8(buffer, '\n');
+                return;
+            }
+        }
         default: {
             if (parser->current.end < parser->end) {
                 pm_buffer_append_u8(buffer, *parser->current.end++);
@@ -7918,10 +7925,11 @@ parser_lex(pm_parser_t *parser) {
                             parser->current.end++;
                             break;
                         case '\r':
-                            pm_buffer_append_u8(&buffer, '\r');
                             parser->current.end++;
-
-                            if (peek(parser) != '\n') break;
+                            if (peek(parser) != '\n') {
+                                pm_buffer_append_u8(&buffer, '\r');
+                                break;
+                            }
                         /* fallthrough */
                         case '\n':
                             pm_buffer_append_u8(&buffer, '\n');
@@ -13438,25 +13446,34 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                             // the first string content we've seen. In that case we're going
                             // to create a new string node and set that to the current.
                             parser_lex(parser);
-                            current = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+
+                            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
+                            symbol->unescaped = parser->current_string;
+
+                            current = (pm_node_t *) symbol;
                         } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
                             // If we hit string content and the current node is an
                             // interpolated string, then we need to append the string content
                             // to the list of child nodes.
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_symbol_node_append((pm_interpolated_symbol_node_t *) current, part);
+                            parser_lex(parser);
+
+                            pm_string_node_t *string = pm_string_node_create(parser, &opening, &parser->previous, &closing);
+                            string->unescaped = parser->current_string;
+
+                            pm_interpolated_symbol_node_append((pm_interpolated_symbol_node_t *) current, (pm_node_t *) string);
                         } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
                             // If we hit string content and the current node is a string node,
                             // then we need to convert the current node into an interpolated
                             // string and add the string content to the list of child nodes.
-                            pm_token_t opening = not_provided(parser);
-                            pm_token_t closing = not_provided(parser);
-                            pm_interpolated_symbol_node_t *interpolated =
-                                pm_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
+                            parser_lex(parser);
+
+                            pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
                             pm_interpolated_symbol_node_append(interpolated, current);
 
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_symbol_node_append(interpolated, part);
+                            pm_string_node_t *string = pm_string_node_create(parser, &opening, &parser->previous, &closing);
+                            string->unescaped = parser->current_string;
+
+                            pm_interpolated_symbol_node_append(interpolated, (pm_node_t *) string);
                             current = (pm_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");

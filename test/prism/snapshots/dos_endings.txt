@@ -36,7 +36,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (4,3)-(5,1) = "a\\\r\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (4,0)-(4,3) = "%I{"
         │   └── closing_loc: (5,1)-(5,2) = "}"
         ├── @ StringNode (location: (7,0)-(7,4))

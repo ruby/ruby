@@ -75,6 +75,7 @@ module Prism
 
     ascii = (0...128).map(&:chr)
     ascii8 = (128...256).map(&:chr)
+    newlines = ["\r\n"]
 
     octal = [*("0".."7")]
     octal = octal.product(octal).map(&:join).concat(octal.product(octal).product(octal).map(&:join))
@@ -90,7 +91,8 @@ module Prism
 
     ctrls = (ascii.grep(/[[:print:]]/) - ["\\"]).flat_map { |c| ["C-#{c}", "c#{c}", "M-#{c}", "M-\\C-#{c}", "M-\\c#{c}", "c\\M-#{c}"] }
 
-    escapes = [*ascii, *ascii8, *octal, *hex2, *hex4, *hex6, *ctrls]
+    escapes = [*ascii, *ascii8, *newlines, *octal, *hex2, *hex4, *hex6, *ctrls]
+
     contexts = [
       [Context::String.new("?", ""),             escapes],
       # [Context::String.new("'", "'"),            escapes],
@@ -106,7 +108,7 @@ module Prism
       [Context::List.new("%w[", "]"),            escapes],
       [Context::List.new("%W[", "]"),            escapes],
       [Context::List.new("%i[", "]"),            escapes],
-      # [Context::List.new("%I[", "]"),            escapes],
+      [Context::List.new("%I[", "]"),            escapes],
       # [Context::Symbol.new("%s[", "]"),          escapes],
       # [Context::Symbol.new(":'", "'"),           escapes],
       # [Context::Symbol.new(":\"", "\""),         escapes],

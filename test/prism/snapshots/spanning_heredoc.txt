@@ -285,7 +285,7 @@
             │           │       │   │   ├── opening_loc: ∅
             │           │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
             │           │       │   │   ├── closing_loc: ∅
-            │           │       │   │   └── unescaped: "p\\"
+            │           │       │   │   └── unescaped: "p"
             │           │       │   └── @ StringNode (location: (51,0)-(51,1))
             │           │       │       ├── flags: ∅
             │           │       │       ├── opening_loc: ∅
