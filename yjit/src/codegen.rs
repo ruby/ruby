@@ -2403,7 +2403,6 @@ fn gen_setinstancevariable(
         let shape = comptime_receiver.shape_of();
 
         let current_capacity = unsafe { (*shape).capacity };
-        let new_capacity = current_capacity * 2;
 
         // If the object doesn't have the capacity to store the IV,
         // then we'll need to allocate it.
@@ -2416,7 +2415,7 @@ fn gen_setinstancevariable(
             // We need to add an extended table to the object
             // First, create an outgoing transition that increases the
             // capacity
-            Some(unsafe { rb_shape_transition_shape_capa(shape, new_capacity) })
+            Some(unsafe { rb_shape_transition_shape_capa(shape) })
         } else {
             None
         };
@@ -2429,7 +2428,7 @@ fn gen_setinstancevariable(
 
         let new_shape_id = unsafe { rb_shape_id(dest_shape) };
         let needs_extension = if needs_extension {
-            Some((current_capacity, new_capacity))
+            Some((current_capacity, unsafe { (*dest_shape).capacity }))
         } else {
             None
         };
