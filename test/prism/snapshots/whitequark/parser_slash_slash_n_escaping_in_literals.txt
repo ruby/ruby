@@ -31,7 +31,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (10,3)-(11,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (10,0)-(10,3) = "%W{"
         │   └── closing_loc: (11,1)-(11,2) = "}"
         ├── @ ArrayNode (location: (13,0)-(14,2))

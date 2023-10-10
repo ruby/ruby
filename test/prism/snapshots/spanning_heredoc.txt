@@ -216,7 +216,7 @@
         │   │           │       │   │   ├── opening_loc: ∅
         │   │           │       │   │   ├── content_loc: (35,12)-(35,14) = "l\\"
         │   │           │       │   │   ├── closing_loc: ∅
-        │   │           │       │   │   └── unescaped: "l\\"
+        │   │           │       │   │   └── unescaped: "l"
         │   │           │       │   └── @ StringNode (location: (38,0)-(38,1))
         │   │           │       │       ├── flags: ∅
         │   │           │       │       ├── opening_loc: ∅
