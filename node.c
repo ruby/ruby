@@ -339,6 +339,8 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 
     switch (nd_type(node)) {
       case NODE_MATCH:
+        rb_gc_mark_movable(RNODE_MATCH(node)->nd_lit);
+        break;
       case NODE_LIT:
       case NODE_STR:
       case NODE_XSTR:
@@ -362,6 +364,8 @@ update_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 
     switch (nd_type(node)) {
       case NODE_MATCH:
+        RNODE_MATCH(node)->nd_lit = rb_gc_location(RNODE_MATCH(node)->nd_lit);
+        break;
       case NODE_LIT:
       case NODE_STR:
       case NODE_XSTR:
