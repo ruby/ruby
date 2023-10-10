@@ -6064,7 +6064,7 @@ lex_interpolation(pm_parser_t *parser, const uint8_t *pound) {
     }
 }
 
-// static const uint8_t PM_ESCAPE_FLAG_NONE = 0x0;
+static const uint8_t PM_ESCAPE_FLAG_NONE = 0x0;
 static const uint8_t PM_ESCAPE_FLAG_CONTROL = 0x1;
 static const uint8_t PM_ESCAPE_FLAG_META = 0x2;
 static const uint8_t PM_ESCAPE_FLAG_SINGLE = 0x4;
@@ -7915,12 +7915,13 @@ parser_lex(pm_parser_t *parser) {
                         case '\v':
                         case '\\':
                             pm_buffer_append_u8(&buffer, peeked);
+                            parser->current.end++;
                             break;
                         case '\r':
                             pm_buffer_append_u8(&buffer, '\r');
-                            if (peek_offset(parser, 1) != '\n') break;
-
                             parser->current.end++;
+
+                            if (peek(parser) != '\n') break;
                         /* fallthrough */
                         case '\n':
                             pm_buffer_append_u8(&buffer, '\n');
@@ -7936,18 +7937,24 @@ parser_lex(pm_parser_t *parser) {
                                 pm_newline_list_append(&parser->newline_list, parser->current.end);
                             }
 
+                            parser->current.end++;
                             break;
                         default:
-                            if (peeked != lex_mode->as.list.incrementor && peeked != lex_mode->as.list.terminator) {
+                            if (peeked == lex_mode->as.list.incrementor || peeked == lex_mode->as.list.terminator) {
+                                pm_buffer_append_u8(&buffer, peeked);
+                                parser->current.end++;
+                            } else if (lex_mode->as.list.interpolation) {
+                                escape_read(parser, &buffer, PM_ESCAPE_FLAG_NONE);
+                            } else {
                                 pm_buffer_append_u8(&buffer, '\\');
+                                pm_buffer_append_u8(&buffer, peeked);
+                                parser->current.end++;
                             }
-                            pm_buffer_append_u8(&buffer, peeked);
+
                             break;
                     }
 
-                    parser->current.end++;
                     buffer_cursor = parser->current.end;
-
                     breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
@@ -13600,7 +13607,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                         parser_lex(parser);
                         pm_token_t opening = not_provided(parser);
                         pm_token_t closing = not_provided(parser);
-                        pm_string_node_t *string = (pm_string_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+
+                        pm_string_node_t *string = (pm_string_node_t *) pm_string_node_create(parser, &opening, &parser->previous, &closing);
+                        string->unescaped = parser->current_string;
 
                         if (current == NULL) {
                             // If we hit content and the current node is NULL, then this is
