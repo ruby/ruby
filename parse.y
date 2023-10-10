@@ -1835,6 +1835,10 @@ get_nd_value(struct parser_params *p, NODE *node)
         return RNODE_DASGN(node)->nd_value;
       case NODE_MASGN:
         return RNODE_MASGN(node)->nd_value;
+      case NODE_CVASGN:
+        return RNODE_CVASGN(node)->nd_value;
+      case NODE_CDECL:
+        return RNODE_CDECL(node)->nd_value;
       default:
         compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
@@ -14044,6 +14048,8 @@ assign_in_cond(struct parser_params *p, NODE *node)
       case NODE_DASGN:
       case NODE_GASGN:
       case NODE_IASGN:
+      case NODE_CVASGN:
+      case NODE_CDECL:
         break;
 
       default:
