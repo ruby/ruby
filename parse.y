@@ -2108,8 +2108,11 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var def_name
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
 %type <tbl>  p_lparen p_lbracket
+/* ripper */ %type <num>  max_numparam
+/* ripper */ %type <node> numparam
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
+
 /* escaped chars, should be ignored otherwise */
 %token <id> '\\'	"backslash"
 %token tSP		"escaped space"
@@ -4763,6 +4766,17 @@ bvar		: tIDENTIFIER
                     }
                 ;
 
+max_numparam	:   {
+                        $$ = p->max_numparam;
+                        p->max_numparam = 0;
+                    }
+                ;
+
+numparam	:   {
+                        $$ = numparam_push(p);
+                    }
+                ;
+
 lambda		: tLAMBDA[dyna]
                     {
                         token_info_push(p, "->", &@1);
@@ -4770,14 +4784,7 @@ lambda		: tLAMBDA[dyna]
                         $<num>$ = p->lex.lpar_beg;
                         p->lex.lpar_beg = p->lex.paren_nest;
                     }[lpar]
-                    {
-                        $<num>$ = p->max_numparam;
-                        p->max_numparam = 0;
-                    }[max_numparam]
-                    {
-                        $<node>$ = numparam_push(p);
-                    }[numparam]
-                    allow_exits
+                  max_numparam numparam allow_exits
                   f_larglist[args]
                     {
                         CMDARG_PUSH(0);
@@ -4786,7 +4793,7 @@ lambda		: tLAMBDA[dyna]
                     {
                         int max_numparam = p->max_numparam;
                         p->lex.lpar_beg = $<num>lpar;
-                        p->max_numparam = $<num>max_numparam;
+                        p->max_numparam = $max_numparam;
                         restore_block_exit(p, $allow_exits);
                         CMDARG_POP();
                         $args = args_with_numbered(p, $args, max_numparam);
@@ -4800,7 +4807,7 @@ lambda		: tLAMBDA[dyna]
                         }
                     /*% %*/
                     /*% ripper: lambda!($args, $body) %*/
-                        numparam_pop(p, $<node>numparam);
+                        numparam_pop(p, $numparam);
                         dyna_pop(p, $<vars>dyna);
                     }
                 ;
@@ -4977,43 +4984,31 @@ brace_block	: '{' brace_body '}'
                 ;
 
 brace_body	: {$<vars>$ = dyna_push(p);}[dyna]
-                    {
-                        $<num>$ = p->max_numparam;
-                        p->max_numparam = 0;
-                    }[max_numparam]
-                    {
-                        $<node>$ = numparam_push(p);
-                    }[numparam]
-                    allow_exits
+                  max_numparam numparam allow_exits
                   opt_block_param[args] compstmt
                     {
                         int max_numparam = p->max_numparam;
-                        p->max_numparam = $<num>max_numparam;
+                        p->max_numparam = $max_numparam;
                         $args = args_with_numbered(p, $args, max_numparam);
                     /*%%%*/
                         $$ = NEW_ITER($args, $compstmt, &@$);
                     /*% %*/
                     /*% ripper: brace_block!($args, $compstmt) %*/
                         restore_block_exit(p, $allow_exits);
-                        numparam_pop(p, $<node>numparam);
+                        numparam_pop(p, $numparam);
                         dyna_pop(p, $<vars>dyna);
                     }
                 ;
 
-do_body 	: {$<vars>$ = dyna_push(p);}[dyna]
-                    {
-                        $<num>$ = p->max_numparam;
-                        p->max_numparam = 0;
-                    }[max_numparam]
-                    {
-                        $<node>$ = numparam_push(p);
+do_body 	:   {
+                        $<vars>$ = dyna_push(p);
                         CMDARG_PUSH(0);
-                    }[numparam]
-                    allow_exits
+                    }[dyna]
+                  max_numparam numparam allow_exits
                   opt_block_param[args] bodystmt
                     {
                         int max_numparam = p->max_numparam;
-                        p->max_numparam = $<num>max_numparam;
+                        p->max_numparam = $max_numparam;
                         $args = args_with_numbered(p, $args, max_numparam);
                     /*%%%*/
                         $$ = NEW_ITER($args, $bodystmt, &@$);
@@ -5021,7 +5016,7 @@ do_body 	: {$<vars>$ = dyna_push(p);}[dyna]
                     /*% ripper: do_block!($args, $bodystmt) %*/
                         CMDARG_POP();
                         restore_block_exit(p, $allow_exits);
-                        numparam_pop(p, $<node>numparam);
+                        numparam_pop(p, $numparam);
                         dyna_pop(p, $<vars>dyna);
                     }
                 ;
