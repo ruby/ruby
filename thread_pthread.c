@@ -1094,7 +1094,9 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
 
+#if USE_MN_THREADS
     if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
+#endif
 }
 
 static void
