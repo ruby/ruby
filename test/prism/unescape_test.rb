@@ -105,7 +105,7 @@ module Prism
       # [Context::String.new("<<~`H`\n", "\nH"),   escapes],
       [Context::List.new("%w[", "]"),            escapes],
       # [Context::List.new("%W[", "]"),            escapes],
-      # [Context::List.new("%i[", "]"),            escapes],
+      [Context::List.new("%i[", "]"),            escapes],
       # [Context::List.new("%I[", "]"),            escapes],
       # [Context::Symbol.new("%s[", "]"),          escapes],
       # [Context::Symbol.new(":'", "'"),           escapes],
