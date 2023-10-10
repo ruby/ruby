@@ -453,13 +453,13 @@ native_thread_create_shared(rb_thread_t *th)
 
     // setup machine stack
     size_t machine_stack_size = vm->default_params.thread_machine_stack_size - sizeof(struct nt_machine_stack_footer);
-    coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
     th->ec->machine.stack_start = (void *)((uintptr_t)machine_stack + machine_stack_size);
     th->ec->machine.stack_maxsize = machine_stack_size; // TODO
-
     th->sched.context_stack = machine_stack;
-    th->sched.context->argument = th;
+
     th->sched.context = ruby_xmalloc(sizeof(struct coroutine_context));
+    coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
+    th->sched.context->argument = th;
 
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
     thread_sched_to_ready(TH_SCHED(th), th);
