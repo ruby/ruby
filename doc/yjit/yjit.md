@@ -250,7 +250,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
   - Avoid classes that wrap objects if you can
   - Avoid methods that just call another method, trivial one liner methods
 - Try to write code so that the same variables always have the same type
-- Use `while` loops if you can, instead of C methods like `Integer#times` and `Array#each`
+- Use `while` loops if you can, instead of C methods like `Array#each`
   - This is not idiomatic Ruby, but could help in hot methods
 - CRuby method calls are costly. Avoid things such as methods that only return a value from a hash or return a constant.
 
