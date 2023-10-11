@@ -2260,8 +2260,6 @@ rb_threadptr_remove(rb_thread_t *th)
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
-    fprintf(stderr, "rb_threadptr_sched_free th:%p\n", th);
-
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
         ruby_xfree(th->sched.context_stack);
