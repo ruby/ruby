@@ -34,12 +34,12 @@ jobs:
     strategy:
       matrix:
         test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
-        os:
-          - macos-11
-          - macos-12
-        configure:
-          - ''
-          - '--enable-shared'
+        # specifying everything else with `include` to avoid redundant tests
+        include:
+          - os: macos-11
+            configure: ''
+          - os: macos-12
+            configure: '--enable-shared'
       fail-fast: false
 
     env:
@@ -102,7 +102,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }}
+          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
