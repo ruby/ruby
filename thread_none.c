@@ -316,4 +316,16 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     // do nothing
 }
 
+void
+rb_threadptr_remove(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_thread_sched_mark_zombies(rb_vm_t *vm)
+{
+    // do nothing
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

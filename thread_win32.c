@@ -897,6 +897,18 @@ rb_threadptr_sched_free(rb_thread_t *th)
     ruby_xfree(th->sched.vm_stack);
 }
 
+void
+rb_threadptr_remove(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_thread_sched_mark_zombies(rb_vm_t *vm)
+{
+    // do nothing
+}
+
 static bool
 vm_barrier_finish_p(rb_vm_t *vm)
 {

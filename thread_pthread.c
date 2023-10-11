@@ -2289,6 +2289,22 @@ rb_threadptr_sched_free(rb_thread_t *th)
 #endif
 }
 
+void
+rb_thread_sched_mark_zombies(rb_vm_t *vm)
+{
+    if (!ccan_list_empty(&vm->ractor.sched.zombie_threads)) {
+        rb_thread_t *zombie_th, *next_zombie_th;
+        ccan_list_for_each_safe(&vm->ractor.sched.zombie_threads, zombie_th, next_zombie_th, sched.node.zombie_threads) {
+            if (zombie_th->sched.finished) {
+                ccan_list_del_init(&zombie_th->sched.node.zombie_threads);
+            }
+            else {
+                rb_gc_mark(zombie_th->self);
+            }
+        }
+    }
+}
+
 static int
 native_thread_create(rb_thread_t *th)
 {

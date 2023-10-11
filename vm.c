@@ -2814,6 +2814,8 @@ vm_mark_negative_cme(VALUE val, void *dmy)
     return ID_TABLE_CONTINUE;
 }
 
+void rb_thread_sched_mark_zombies(rb_vm_t *vm);
+
 void
 rb_vm_mark(void *ptr)
 {
@@ -2885,18 +2887,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
-        if (!ccan_list_empty(&vm->ractor.sched.zombie_threads)) {
-            rb_thread_t *zombie_th, *next_zombie_th;
-            ccan_list_for_each_safe(&vm->ractor.sched.zombie_threads, zombie_th, next_zombie_th, sched.node.zombie_threads) {
-                if (zombie_th->sched.finished) {
-                    ccan_list_del_init(&zombie_th->sched.node.zombie_threads);
-                }
-                else {
-                    rb_gc_mark(zombie_th->self);
-                }
-            }
-        }
-
+        rb_thread_sched_mark_zombies(vm);
         rb_rjit_mark();
     }
 
