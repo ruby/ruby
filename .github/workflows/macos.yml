@@ -34,11 +34,12 @@ jobs:
     strategy:
       matrix:
         test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
-        os: [macos-12]
+        os: ['macos-12']
         configure: ['--enable-shared']
         # specifying other jobs with `include` to avoid redundant tests
         include:
-          - os: macos-11
+          - test_task: 'check'
+            os: 'macos-11'
             configure: ''
       fail-fast: false
 
