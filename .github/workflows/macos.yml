@@ -40,6 +40,9 @@ jobs:
           - test_task: 'check'
             os: 'macos-12'
             configure: '--enable-shared'
+          - test_task: 'check'
+            os: 'macos-arm-oss'
+            configure: ''
       fail-fast: false
 
     env:
