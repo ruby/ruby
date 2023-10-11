@@ -1074,7 +1074,7 @@ SRC
   def find_library(lib, func, *paths, &b)
     dir_config(lib)
     lib = with_config(lib+'lib', lib)
-    paths = paths.flat_map {|path| path.split(File::PATH_SEPARATOR)}
+    paths = paths.flat_map {|path| path.nil? ? [] : path.split(File::PATH_SEPARATOR)}
     checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
       libpath = $LIBPATH
       libs = append_library($libs, lib)
