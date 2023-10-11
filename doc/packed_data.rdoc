@@ -222,7 +222,7 @@ for one element in the input or output array.
     s.unpack('j*')
     # => [67305985, -50462977]
 
-- <tt>'j'</tt> - Pointer-width unsigned integer, native-endian
+- <tt>'J'</tt> - Pointer-width unsigned integer, native-endian
   (like C <tt>uintptr_t</tt>):
 
     s = [67305985, 4244504319].pack('J*')
