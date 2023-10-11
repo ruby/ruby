@@ -285,6 +285,12 @@ static const char *dlf_type_names[] = {
     "func",
 };
 
+#ifdef MAX_PATH
+#define DEBUG_LOG_MAX_PATH (MAX_PATH-1)
+#else
+#define DEBUG_LOG_MAX_PATH 255
+#endif
+
 static struct {
     char *mem;
     unsigned int cnt;
@@ -292,6 +298,7 @@ static struct {
     unsigned int filters_num;
     bool show_pid;
     rb_nativethread_lock_t lock;
+    char output_file[DEBUG_LOG_MAX_PATH+1];
     FILE *output;
 } debug_log;
 
@@ -393,7 +400,39 @@ setup_debug_log(void)
         }
         else {
             ruby_debug_log_mode |= ruby_debug_log_file;
-            if ((debug_log.output = fopen(log_config, "w")) == NULL) {
+
+            // pid extension with %p
+            unsigned long len = strlen(log_config);
+
+            for (unsigned long i=0, j=0; i<len; i++) {
+                const char c = log_config[i];
+
+                if (c == '%') {
+                    i++;
+                    switch (log_config[i]) {
+                      case '%':
+                        debug_log.output_file[j++] = '%';
+                        break;
+                      case 'p':
+                        snprintf(debug_log.output_file + j, DEBUG_LOG_MAX_PATH - j, "%d", getpid());
+                        j = strlen(debug_log.output_file);
+                        break;
+                      default:
+                        fprintf(stderr, "can not parse RUBY_DEBUG_LOG filename: %s\n", log_config);
+                        exit(1);
+                    }
+                }
+                else {
+                    debug_log.output_file[j++] = c;
+                }
+
+                if (j >= DEBUG_LOG_MAX_PATH) {
+                    fprintf(stderr, "RUBY_DEBUG_LOG=%s is too long\n", log_config);
+                    exit(1);
+                }
+            }
+
+            if ((debug_log.output = fopen(debug_log.output_file, "w")) == NULL) {
                 fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
                 exit(1);
             }
