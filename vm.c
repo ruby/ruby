@@ -370,6 +370,45 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
 #if USE_RJIT || USE_YJIT
+// Counter to serve as a proxy for execution time, total number of calls
+static uint64_t total_entry_hits = 0;
+
+// Number of calls used to estimate how hot an ISEQ is
+#define CALL_COUNT_INTERV 20u
+
+/// Test whether we are ready to compile an ISEQ or not
+static inline bool
+rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
+{
+    total_entry_hits += 1;
+
+    // Record the number of calls at the beginning of the interval
+    if (entry_calls + CALL_COUNT_INTERV == rb_yjit_call_threshold) {
+        iseq->body->calls_at_interv = total_entry_hits;
+    }
+
+    // Try to estimate the total time taken (total number of calls) to reach 20 calls to this ISEQ
+    // This give us a ratio of how hot/cold this ISEQ is
+    if (entry_calls == rb_yjit_call_threshold) {
+        // We expect threshold 1 to compile everything immediately
+        if (rb_yjit_call_threshold < CALL_COUNT_INTERV) {
+            return true;
+        }
+
+        uint64_t num_calls = total_entry_hits - iseq->body->calls_at_interv;
+
+        // Reject ISEQs that don't get called often enough
+        if (num_calls > rb_yjit_cold_threshold) {
+            rb_yjit_incr_counter("cold_iseq_entry");
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 // Generate JIT code that supports the following kinds of ISEQ entries:
 //   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
 //     called by a C method). The current frame has VM_FRAME_FLAG_FINISH.
@@ -442,7 +481,7 @@ jit_compile_exception(rb_execution_context_t *ec)
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_exception == NULL) {
         body->jit_exception_calls++;
-        if (body->jit_exception_calls == rb_yjit_call_threshold()) {
+        if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
