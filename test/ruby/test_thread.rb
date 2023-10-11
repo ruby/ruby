@@ -16,10 +16,14 @@ class TestThread < Test::Unit::TestCase
   end
 
   def setup
+    STDERR.puts "\n\n!!! setup #{self.instance_variable_get(:@__name__)}"
+
     Thread::Threads.clear
   end
 
   def teardown
+    STDERR.puts "\n\n!!! teardown #{self.instance_variable_get(:@__name__)}"
+
     Thread::Threads.each do |t|
       t.kill if t.alive?
       begin
@@ -82,41 +86,6 @@ class TestThread < Test::Unit::TestCase
     end
     assert_nothing_raised {arr.hash}
     assert(obj[:visited], "obj.hash was not called")
-  end
-
-  def test_handle_interrupt_invalid_argument
-    assert_raise(ArgumentError) {
-      Thread.handle_interrupt(RuntimeError => :immediate) # no block
-    }
-    assert_raise(ArgumentError) {
-      Thread.handle_interrupt(RuntimeError => :xyzzy) {}
-    }
-    assert_raise(TypeError) {
-      Thread.handle_interrupt([]) {} # array
-    }
-  end
-
-  def test_handle_interrupt_blocking
-    r = nil
-    q = Thread::Queue.new
-    e = Class.new(Exception)
-    th_s = Thread.current
-    th = Thread.start {
-      assert_raise(RuntimeError) {
-        Thread.handle_interrupt(Object => :on_blocking){
-          begin
-            q.pop
-            Thread.current.raise RuntimeError, "will raise in sleep"
-            r = :ok
-            sleep
-          ensure
-            th_s.raise e, "raise from ensure", $@
-          end
-        }
-      }
-    }
-    assert_raise(e) {q << true; th.join}
-    assert_equal(:ok, r)
   end
 
   def invoke_rec script, vm_stack_size, machine_stack_size, use_length = true

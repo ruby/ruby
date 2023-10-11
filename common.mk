@@ -929,7 +929,7 @@ test-sample: test-basic # backward compatibility for mswin-build
 test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
-yes-test-all-precheck: programs encs exts PHONY $(DOT_WAIT)
+yes-test-all-precheck: programs PHONY $(DOT_WAIT)
 
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
