@@ -525,7 +525,7 @@ struct rb_iseq_constant_body {
     // YJIT stores some data on each iseq.
     void *yjit_payload;
     // Used to estimate how frequently this ISEQ gets called
-    uint64_t calls_at_interv;
+    uint64_t yjit_calls_at_interv;
 #endif
 };
 
