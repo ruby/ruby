@@ -408,6 +408,8 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 
     return false;
 }
+#else
+#define rb_yjit_threshold_hit(iseq, entry_calls) false
 #endif
 
 #if USE_RJIT || USE_YJIT
@@ -437,10 +439,8 @@ jit_compile(rb_execution_context_t *ec)
                 rb_yjit_compile_iseq(iseq, ec, false);
             }
         }
-        else { // rb_rjit_call_p
-            if (body->jit_entry_calls == rb_rjit_call_threshold()) {
-                rb_rjit_compile(iseq);
-            }
+        else if (body->jit_entry_calls == rb_rjit_call_threshold()) {
+            rb_rjit_compile(iseq);
         }
     }
     return body->jit_entry;
