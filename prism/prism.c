@@ -11381,6 +11381,7 @@ static inline pm_node_t *
 parse_strings(pm_parser_t *parser) {
     assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
     pm_node_t *result = NULL;
+    bool state_is_arg_labeled = lex_state_p(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
         pm_node_t *node = NULL;
@@ -11437,7 +11438,7 @@ parse_strings(pm_parser_t *parser) {
 
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
                 node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-            } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
+            } else if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
                 node = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
             } else {
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
@@ -11471,7 +11472,7 @@ parse_strings(pm_parser_t *parser) {
                     }
                 }
 
-                if (accept1(parser, PM_TOKEN_LABEL_END)) {
+                if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
                     node = (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
                 } else {
                     expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
