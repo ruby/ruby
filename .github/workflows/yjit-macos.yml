@@ -33,7 +33,7 @@ jobs:
   make:
     strategy:
       matrix:
-        os: ['macos-13-xlarge'] # arm64 (M1)
+        os: ['macos-arm-oss']
         include:
           - test_task: ['check']
             configure: '--enable-yjit=dev'
