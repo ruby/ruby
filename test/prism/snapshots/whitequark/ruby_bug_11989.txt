@@ -16,7 +16,7 @@
             │           ├── opening_loc: (1,2)-(1,8) = "<<~\"E\""
             │           ├── content_loc: (2,0)-(2,0) = "  x\\n   y\n"
             │           ├── closing_loc: (3,0)-(3,0) = "E\n"
-            │           └── unescaped: "x\n   y\n"
+            │           └── unescaped: "x\n y\n"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

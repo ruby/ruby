@@ -114,7 +114,7 @@
         │   ├── opening_loc: (51,0)-(51,9) = "<<-'HERE'"
         │   ├── content_loc: (52,0)-(53,0) = "a\\\nb\n"
         │   ├── closing_loc: (54,0)-(54,0) = "HERE\n"
-        │   └── unescaped: "a\\\nb\n"
+        │   └── unescaped: "ab\n"
         ├── @ XStringNode (location: (56,0)-(56,9))
         │   ├── opening_loc: (56,0)-(56,9) = "<<-`HERE`"
         │   ├── content_loc: (57,0)-(58,0) = "a\\\nb\n"
