@@ -8228,8 +8228,7 @@ parser_lex(pm_parser_t *parser) {
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
-            pm_buffer_t buffer = (pm_buffer_t) { .value = NULL, .length = 0, .capacity = 0 };
-            const uint8_t *buffer_cursor = NULL;
+            pm_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
                 // If we hit the incrementor, then we'll increment then nesting and
@@ -8256,14 +8255,7 @@ parser_lex(pm_parser_t *parser) {
                     // then we need to return that content as string content first.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
-
-                        if (buffer_cursor == NULL) {
-                            pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-                        } else {
-                            pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (parser->current.end - buffer_cursor));
-                            pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
-                        }
-
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -8300,14 +8292,7 @@ parser_lex(pm_parser_t *parser) {
                     } else {
                         parser->current.end = breakpoint + 1;
                         parser_flush_heredoc_end(parser);
-
-                        if (buffer_cursor == NULL) {
-                            pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-                        } else {
-                            pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (parser->current.end - buffer_cursor));
-                            pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
-                        }
-
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
                 }
@@ -8319,14 +8304,8 @@ parser_lex(pm_parser_t *parser) {
                         break;
                     case '\\': {
                         // Here we hit escapes.
-                        if (buffer_cursor == NULL) {
-                            pm_buffer_init_capacity(&buffer, 16);
-                            pm_buffer_append_bytes(&buffer, parser->current.start, (size_t) (breakpoint - parser->current.start));
-                        } else {
-                            pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (breakpoint - buffer_cursor));
-                        }
-
                         parser->current.end = breakpoint + 1;
+                        pm_token_buffer_escape(parser, &token_buffer);
 
                         // If we've hit the end of the file, then break out of
                         // the loop by setting the breakpoint to NULL.
@@ -8338,23 +8317,23 @@ parser_lex(pm_parser_t *parser) {
                         uint8_t peeked = peek(parser);
                         switch (peeked) {
                             case '\\':
-                                pm_buffer_append_u8(&buffer, '\\');
+                                pm_token_buffer_push(&token_buffer, '\\');
                                 parser->current.end++;
                                 break;
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
                                     if (!lex_mode->as.string.interpolation) {
-                                        pm_buffer_append_u8(&buffer, '\\');
+                                        pm_token_buffer_push(&token_buffer, '\\');
                                     }
-                                    pm_buffer_append_u8(&buffer, '\r');
+                                    pm_token_buffer_push(&token_buffer, '\r');
                                     break;
                                 }
                             /* fallthrough */
                             case '\n':
                                 if (!lex_mode->as.string.interpolation) {
-                                    pm_buffer_append_u8(&buffer, '\\');
-                                    pm_buffer_append_u8(&buffer, '\n');
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push(&token_buffer, '\n');
                                 }
 
                                 if (parser->heredoc_end) {
@@ -8362,7 +8341,7 @@ parser_lex(pm_parser_t *parser) {
                                     // flush the heredoc and continue parsing after
                                     // heredoc_end.
                                     parser_flush_heredoc_end(parser);
-                                    pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
+                                    pm_token_buffer_copy(parser, &token_buffer);
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 } else {
                                     // ... else track the newline.
@@ -8373,23 +8352,23 @@ parser_lex(pm_parser_t *parser) {
                                 break;
                             default:
                                 if (lex_mode->as.string.incrementor != '\0' && peeked == lex_mode->as.string.incrementor) {
-                                    pm_buffer_append_u8(&buffer, peeked);
+                                    pm_token_buffer_push(&token_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.terminator != '\0' && peeked == lex_mode->as.string.terminator) {
-                                    pm_buffer_append_u8(&buffer, peeked);
+                                    pm_token_buffer_push(&token_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.interpolation) {
-                                    escape_read(parser, &buffer, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                                 } else {
-                                    pm_buffer_append_u8(&buffer, '\\');
-                                    pm_buffer_append_u8(&buffer, peeked);
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push(&token_buffer, peeked);
                                     parser->current.end++;
                                 }
 
                                 break;
                         }
 
-                        buffer_cursor = parser->current.end;
+                        token_buffer.cursor = parser->current.end;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
@@ -8406,12 +8385,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (type == PM_TOKEN_STRING_CONTENT) {
-                            if (buffer_cursor == NULL) {
-                                pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-                            } else {
-                                pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (parser->current.end - buffer_cursor));
-                                pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
-                            }
+                            pm_token_buffer_flush(parser, &token_buffer);
                         }
 
                         LEX(type);
