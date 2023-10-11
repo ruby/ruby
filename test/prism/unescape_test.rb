@@ -67,6 +67,20 @@ module Prism
         def prism_result(escape) = prism(escape, &:unescaped)
       end
 
+      class Heredoc < Base
+        def ruby_result(escape) = ruby(escape, &:itself)
+        def prism_result(escape)
+          prism(escape) do |node|
+            case node.type
+            when :interpolated_string_node, :interpolated_x_string_node
+              node.parts.flat_map(&:unescaped).join
+            else
+              node.unescaped
+            end
+          end
+        end
+      end
+
       class RegExp < Base
         def ruby_result(escape) = ruby(escape, &:source)
         def prism_result(escape) = prism(escape, &:unescaped)
@@ -94,30 +108,30 @@ module Prism
     escapes = [*ascii, *ascii8, *newlines, *octal, *hex2, *hex4, *hex6, *ctrls]
 
     contexts = [
-      [Context::String.new("?", ""),             escapes],
-      [Context::String.new("'", "'"),            escapes],
-      [Context::String.new("\"", "\""),          escapes],
-      [Context::String.new("%q[", "]"),          escapes],
-      [Context::String.new("%Q[", "]"),          escapes],
-      [Context::String.new("%[", "]"),           escapes],
-      [Context::String.new("`", "`"),            escapes],
-      [Context::String.new("%x[", "]"),          escapes],
-      [Context::String.new("<<H\n", "\nH"),      escapes],
-      [Context::String.new("<<'H'\n", "\nH"),    escapes],
-      [Context::String.new("<<\"H\"\n", "\nH"),  escapes],
-      [Context::String.new("<<`H`\n", "\nH"),    escapes],
+      [Context::String.new("?", ""),              escapes],
+      [Context::String.new("'", "'"),             escapes],
+      [Context::String.new("\"", "\""),           escapes],
+      [Context::String.new("%q[", "]"),           escapes],
+      [Context::String.new("%Q[", "]"),           escapes],
+      [Context::String.new("%[", "]"),            escapes],
+      [Context::String.new("`", "`"),             escapes],
+      [Context::String.new("%x[", "]"),           escapes],
+      [Context::String.new("<<H\n", "\nH"),       escapes],
+      [Context::String.new("<<'H'\n", "\nH"),     escapes],
+      [Context::String.new("<<\"H\"\n", "\nH"),   escapes],
+      [Context::String.new("<<`H`\n", "\nH"),     escapes],
       [Context::String.new("<<-H\n", "\nH"),      escapes],
       [Context::String.new("<<-'H'\n", "\nH"),    escapes],
       [Context::String.new("<<-\"H\"\n", "\nH"),  escapes],
       [Context::String.new("<<-`H`\n", "\nH"),    escapes],
-      # [Context::String.new("<<~H\n", "\nH"),     escapes],
-      # [Context::String.new("<<~'H'\n", "\nH"),   escapes],
-      # [Context::String.new("<<~\"H\"\n", "\nH"), escapes],
-      # [Context::String.new("<<~`H`\n", "\nH"),   escapes],
-      [Context::List.new("%w[", "]"),            escapes],
-      [Context::List.new("%W[", "]"),            escapes],
-      [Context::List.new("%i[", "]"),            escapes],
-      [Context::List.new("%I[", "]"),            escapes],
+      [Context::Heredoc.new("<<~H\n", "\nH"),     escapes],
+      [Context::Heredoc.new("<<~'H'\n", "\nH"),   escapes],
+      [Context::Heredoc.new("<<~\"H\"\n", "\nH"), escapes],
+      [Context::Heredoc.new("<<~`H`\n", "\nH"),   escapes],
+      [Context::List.new("%w[", "]"),             escapes],
+      [Context::List.new("%W[", "]"),             escapes],
+      [Context::List.new("%i[", "]"),             escapes],
+      [Context::List.new("%I[", "]"),             escapes],
       # [Context::Symbol.new("%s[", "]"),          escapes],
       # [Context::Symbol.new(":'", "'"),           escapes],
       # [Context::Symbol.new(":\"", "\""),         escapes],
