@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 require_relative "plugin/api"
 
 module Bundler
@@ -27,7 +25,7 @@ module Bundler
       @sources = {}
       @commands = {}
       @hooks_by_event = Hash.new {|h, k| h[k] = [] }
-      @loaded_plugin_names = Set.new
+      @loaded_plugin_names = []
     end
 
     reset!
