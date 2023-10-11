@@ -8482,6 +8482,7 @@ parser_lex(pm_parser_t *parser) {
 
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
             pm_token_buffer_t token_buffer = { 0 };
+            bool was_escaped_newline = false;
 
             while (breakpoint != NULL) {
                 switch (*breakpoint) {
@@ -8509,6 +8510,7 @@ parser_lex(pm_parser_t *parser) {
                         // content. Then, the next time a token is lexed, it will match
                         // again and return the end of the heredoc.
                         if (
+                            !was_escaped_newline &&
                             (start + ident_length <= parser->end) &&
                             (memcmp(start, ident_start, ident_length) == 0)
                         ) {
@@ -8550,6 +8552,9 @@ parser_lex(pm_parser_t *parser) {
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
+                                    if (quote == PM_HEREDOC_QUOTE_SINGLE) {
+                                        pm_token_buffer_push(&token_buffer, '\\');
+                                    }
                                     pm_token_buffer_push(&token_buffer, '\r');
                                     break;
                                 }
@@ -8559,25 +8564,19 @@ parser_lex(pm_parser_t *parser) {
                                 // to leave the escaped newline in place so that
                                 // it can be removed later when we dedent the
                                 // heredoc.
-                                if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                                if (quote == PM_HEREDOC_QUOTE_SINGLE || lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
                                     pm_token_buffer_push(&token_buffer, '\\');
                                     pm_token_buffer_push(&token_buffer, '\n');
                                 }
 
-                                if (parser->heredoc_end) {
-                                    // ... if we are on the same line as a heredoc,
-                                    // flush the heredoc and continue parsing after
-                                    // heredoc_end.
-                                    parser_flush_heredoc_end(parser);
-                                    pm_token_buffer_copy(parser, &token_buffer);
-                                    LEX(PM_TOKEN_STRING_CONTENT);
-                                } else {
-                                    // ... else track the newline.
-                                    pm_newline_list_append(&parser->newline_list, parser->current.end);
+                                token_buffer.cursor = parser->current.end + 1;
+                                breakpoint = parser->current.end;
+
+                                if (quote != PM_HEREDOC_QUOTE_SINGLE) {
+                                    was_escaped_newline = true;
                                 }
 
-                                parser->current.end++;
-                                break;
+                                continue;
                             default:
                                 if (quote == PM_HEREDOC_QUOTE_SINGLE) {
                                     pm_token_buffer_push(&token_buffer, '\\');
@@ -8616,6 +8615,8 @@ parser_lex(pm_parser_t *parser) {
                     default:
                         assert(false && "unreachable");
                 }
+
+                was_escaped_newline = false;
             }
 
             // If we've hit the end of the string, then this is an unterminated
