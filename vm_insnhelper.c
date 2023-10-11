@@ -5846,8 +5846,8 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     rb_rjit_constant_ic_update(iseq, ic, pos);
 }
 
-static VALUE
-vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
+VALUE
+rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
 {
     VALUE val;
     const ID *segments = ic->segments;
@@ -5865,12 +5865,6 @@ vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const re
         vm_ic_update(GET_ISEQ(), ic, val, GET_EP(), GET_PC() - 2);
     }
     return val;
-}
-
-VALUE
-rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
-{
-    return vm_opt_getconstant_path(ec, reg_cfp, ic);
 }
 
 static VALUE

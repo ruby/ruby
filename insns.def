@@ -260,7 +260,7 @@ opt_getconstant_path
 (VALUE val)
 // attr bool leaf = false; /* may autoload or raise */
 {
-    val = vm_opt_getconstant_path(ec, GET_CFP(), ic);
+    val = rb_vm_opt_getconstant_path(ec, GET_CFP(), ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
