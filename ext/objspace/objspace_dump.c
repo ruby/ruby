@@ -436,9 +436,8 @@ dump_object(VALUE obj, struct dump_config *dc)
           case imemo_callinfo:
             mid = vm_ci_mid((const struct rb_callinfo *)obj);
             if (mid != 0) {
-                dump_append(dc, ", \"mid\":\"");
-                dump_append(dc, rb_id2name(mid));
-                dump_append(dc, "\"");
+                dump_append(dc, ", \"mid\":");
+                dump_append_string_value(dc, rb_id2str(mid));
             }
             break;
 
