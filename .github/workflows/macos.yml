@@ -33,14 +33,13 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
-        os: ['macos-12']
-        configure: ['--enable-shared']
-        # specifying other jobs with `include` to avoid redundant tests
         include:
           - test_task: 'check'
             os: 'macos-11'
             configure: ''
+          - test_task: 'check'
+            os: 'macos-12'
+            configure: '--enable-shared'
       fail-fast: false
 
     env:
