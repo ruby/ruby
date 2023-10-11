@@ -8623,17 +8623,6 @@ pm_string_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *openin
     return node;
 }
 
-static pm_x_string_node_t *
-pm_xstring_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
-    pm_x_string_node_t *node = pm_xstring_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_string(parser, &node->unescaped, PM_UNESCAPE_ALL);
-    return node;
-}
-
 // These are the various precedence rules. Because we are using a Pratt parser,
 // they are named binding power to represent the manner in which nodes are bound
 // together in the stack.
@@ -12503,82 +12492,86 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 pm_token_t content = parse_strings_empty_content(parser->previous.start);
 
                 if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-                    node = (pm_node_t *) pm_xstring_node_create_and_unescape(parser, &opening, &content, &parser->previous);
+                    node = (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_EMPTY_STRING);
                 } else {
-                    node = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_NONE);
+                    node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_EMPTY_STRING);
                 }
 
                 node->location.end = opening.end;
-            } else if ((part = parse_string_part(parser)) == NULL) {
-                // If we get here, then we tried to find something in the
-                // heredoc but couldn't actually parse anything, so we'll just
-                // return a missing node.
-                node = (pm_node_t *) pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
-            } else if (PM_NODE_TYPE_P(part, PM_STRING_NODE) && match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
-                // If we get here, then the part that we parsed was plain string
-                // content and we're at the end of the heredoc, so we can return
-                // just a string node with the heredoc opening and closing as
-                // its opening and closing.
-                pm_string_node_t *cast = (pm_string_node_t *) part;
-
-                cast->opening_loc = PM_LOCATION_TOKEN_VALUE(&opening);
-                cast->closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->current);
-                cast->base.location = cast->opening_loc;
-
-                if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-                    assert(sizeof(pm_string_node_t) == sizeof(pm_x_string_node_t));
-                    cast->base.type = PM_X_STRING_NODE;
-                }
-
-                lex_state_set(parser, PM_LEX_STATE_END);
-                expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
-
-                node = (pm_node_t *) cast;
-
-                if (indent == PM_HEREDOC_INDENT_TILDE) {
-                    int common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, -1);
-                    parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, common_whitespace, quote);
-                }
             } else {
-                // If we get here, then we have multiple parts in the heredoc,
-                // so we'll need to create an interpolated string node to hold
-                // them all.
-                pm_node_list_t parts = PM_EMPTY_NODE_LIST;
-                pm_node_list_append(&parts, part);
+                part = parse_string_part(parser);
 
-                while (!match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
-                    if ((part = parse_string_part(parser)) != NULL) {
-                        pm_node_list_append(&parts, part);
+                if (part == NULL) {
+                    // If we get here, then we tried to find something in the
+                    // heredoc but couldn't actually parse anything, so we'll just
+                    // return a missing node.
+                    node = (pm_node_t *) pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
+                } else if (PM_NODE_TYPE_P(part, PM_STRING_NODE) && match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
+                    // If we get here, then the part that we parsed was plain string
+                    // content and we're at the end of the heredoc, so we can return
+                    // just a string node with the heredoc opening and closing as
+                    // its opening and closing.
+                    pm_string_node_t *cast = (pm_string_node_t *) part;
+
+                    cast->opening_loc = PM_LOCATION_TOKEN_VALUE(&opening);
+                    cast->closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->current);
+                    cast->base.location = cast->opening_loc;
+
+                    if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                        assert(sizeof(pm_string_node_t) == sizeof(pm_x_string_node_t));
+                        cast->base.type = PM_X_STRING_NODE;
                     }
-                }
-
-                // Now that we have all of the parts, create the correct type of
-                // interpolated node.
-                if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-                    pm_interpolated_x_string_node_t *cast = pm_interpolated_xstring_node_create(parser, &opening, &opening);
-                    cast->parts = parts;
 
                     lex_state_set(parser, PM_LEX_STATE_END);
                     expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
 
-                    pm_interpolated_xstring_node_closing_set(cast, &parser->previous);
-                    cast->base.location = cast->opening_loc;
                     node = (pm_node_t *) cast;
+
+                    if (indent == PM_HEREDOC_INDENT_TILDE) {
+                        int common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, -1);
+                        parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, common_whitespace, quote);
+                    }
                 } else {
-                    pm_interpolated_string_node_t *cast = pm_interpolated_string_node_create(parser, &opening, &parts, &opening);
+                    // If we get here, then we have multiple parts in the heredoc,
+                    // so we'll need to create an interpolated string node to hold
+                    // them all.
+                    pm_node_list_t parts = PM_EMPTY_NODE_LIST;
+                    pm_node_list_append(&parts, part);
 
-                    lex_state_set(parser, PM_LEX_STATE_END);
-                    expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+                    while (!match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
+                        if ((part = parse_string_part(parser)) != NULL) {
+                            pm_node_list_append(&parts, part);
+                        }
+                    }
 
-                    pm_interpolated_string_node_closing_set(cast, &parser->previous);
-                    cast->base.location = cast->opening_loc;
-                    node = (pm_node_t *) cast;
-                }
+                    // Now that we have all of the parts, create the correct type of
+                    // interpolated node.
+                    if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                        pm_interpolated_x_string_node_t *cast = pm_interpolated_xstring_node_create(parser, &opening, &opening);
+                        cast->parts = parts;
 
-                // If this is a heredoc that is indented with a ~, then we need
-                // to dedent each line by the common leading whitespace.
-                if (indent == PM_HEREDOC_INDENT_TILDE) {
-                    parse_heredoc_dedent(parser, node, quote);
+                        lex_state_set(parser, PM_LEX_STATE_END);
+                        expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+
+                        pm_interpolated_xstring_node_closing_set(cast, &parser->previous);
+                        cast->base.location = cast->opening_loc;
+                        node = (pm_node_t *) cast;
+                    } else {
+                        pm_interpolated_string_node_t *cast = pm_interpolated_string_node_create(parser, &opening, &parts, &opening);
+
+                        lex_state_set(parser, PM_LEX_STATE_END);
+                        expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+
+                        pm_interpolated_string_node_closing_set(cast, &parser->previous);
+                        cast->base.location = cast->opening_loc;
+                        node = (pm_node_t *) cast;
+                    }
+
+                    // If this is a heredoc that is indented with a ~, then we need
+                    // to dedent each line by the common leading whitespace.
+                    if (indent == PM_HEREDOC_INDENT_TILDE) {
+                        parse_heredoc_dedent(parser, node, quote);
+                    }
                 }
             }
 
