@@ -33,6 +33,9 @@ struct rb_thread_sched_item {
         // connected to vm->ractor.sched.running_threads
         // locked by vm->ractor.sched.lock
         struct ccan_list_node running_threads;
+
+        // connected to vm->ractor.sched.zombie_threads
+        struct ccan_list_node zombie_threads;
     } node;
 
     // this data should be protected by timer_th.waiting_lock
@@ -60,6 +63,7 @@ struct rb_thread_sched_item {
         struct ccan_list_node node;
     } waiting_reason;
 
+    bool finished;
     bool malloc_stack;
     void *context_stack;
     struct coroutine_context *context;

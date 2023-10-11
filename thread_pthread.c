@@ -2237,8 +2237,31 @@ static void nt_free_stack(void *mstack);
 #endif
 
 void
+rb_threadptr_remove(rb_thread_t *th)
+{
+#if USE_MN_THREADS
+    if (th->sched.malloc_stack) {
+        // dedicated
+        return;
+    }
+    else {
+        rb_vm_t *vm = th->vm;
+        th->sched.finished = false;
+
+        RB_VM_LOCK_ENTER();
+        {
+            ccan_list_add(&vm->ractor.sched.zombie_threads, &th->sched.node.zombie_threads);
+        }
+        RB_VM_LOCK_LEAVE();
+    }
+#endif
+}
+
+void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
+    fprintf(stderr, "rb_threadptr_sched_free th:%p\n", th);
+
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
         ruby_xfree(th->sched.context_stack);
@@ -2255,6 +2278,8 @@ rb_threadptr_sched_free(rb_thread_t *th)
         ruby_xfree(th->sched.context);
         VM_ASSERT((th->sched.context = NULL) == NULL);
     }
+
+    th->nt = NULL;
 #else
     ruby_xfree(th->sched.context_stack);
 

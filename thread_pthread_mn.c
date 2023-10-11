@@ -420,17 +420,19 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
     bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
 
     rb_thread_t *next_th = sched->running;
+    struct rb_native_thread *nt = th->nt;
+    native_thread_assign(NULL, th);
+    rb_ractor_set_current_ec(th->ractor, NULL);
+
     if (!has_ready_ractor && next_th && !next_th->nt) {
         // switch to the next thread
         thread_sched_set_lock_owner(sched, NULL);
-        rb_ractor_set_current_ec(th->ractor, NULL);
-        thread_sched_switch(th, next_th);
+        thread_sched_switch0(th->sched.context, next_th, nt);
+        th->sched.finished = true;
     }
     else {
-        struct rb_native_thread *nt = th->nt;
         // switch to the next Ractor
-        rb_ractor_set_current_ec(th->ractor, NULL);
-        native_thread_assign(NULL, th);
+        th->sched.finished = true;
         coroutine_transfer(self, nt->nt_context);
     }
     rb_bug("unreachable");

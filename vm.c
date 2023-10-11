@@ -2885,6 +2885,18 @@ rb_vm_mark(void *ptr)
             }
         }
 
+        if (!ccan_list_empty(&vm->ractor.sched.zombie_threads)) {
+            rb_thread_t *zombie_th, *next_zombie_th;
+            ccan_list_for_each_safe(&vm->ractor.sched.zombie_threads, zombie_th, next_zombie_th, sched.node.zombie_threads) {
+                if (zombie_th->sched.finished) {
+                    ccan_list_del_init(&zombie_th->sched.node.zombie_threads);
+                }
+                else {
+                    rb_gc_mark(zombie_th->self);
+                }
+            }
+        }
+
         rb_rjit_mark();
     }
 

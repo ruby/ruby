@@ -2273,12 +2273,16 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
     }
 }
 
+void rb_threadptr_remove(rb_thread_t *th);
+
 void
 rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
     VM_ASSERT(cr == GET_RACTOR());
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
     ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
+
+    rb_threadptr_remove(th);
 
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
