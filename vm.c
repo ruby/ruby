@@ -369,7 +369,7 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
-#if USE_RJIT || USE_YJIT
+#if USE_YJIT
 // Counter to serve as a proxy for execution time, total number of calls
 static uint64_t yjit_total_entry_hits = 0;
 
@@ -408,7 +408,9 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 
     return false;
 }
+#endif
 
+#if USE_RJIT || USE_YJIT
 // Generate JIT code that supports the following kinds of ISEQ entries:
 //   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
 //     called by a C method). The current frame has VM_FRAME_FLAG_FINISH.
