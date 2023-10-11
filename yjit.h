@@ -50,7 +50,7 @@ void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns
 // !USE_YJIT
 // In these builds, YJIT could never be turned on. Provide dummy implementations.
 
-void rb_yjit_incr_counter(const char *counter_name) {}
+static inline void rb_yjit_incr_counter(const char *counter_name) {}
 static inline bool rb_yjit_enabled_p(void) { return false; }
 static inline bool rb_yjit_compile_new_iseqs(void) { return false; }
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
