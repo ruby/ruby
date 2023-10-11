@@ -6641,6 +6641,57 @@ parser_flush_heredoc_end(pm_parser_t *parser) {
     parser->heredoc_end = NULL;
 }
 
+// When we're lexing certain types (strings, symbols, lists, etc.) we have
+// string content associated with the tokens. For example:
+//
+//     "foo"
+//
+// In this case, the string content is foo. Since there is no escaping, there's
+// no need to track additional information and the token can be returned as
+// normal. However, if we have escape sequences:
+//
+//     "foo\n"
+//
+// then the bytes in the string are "f", "o", "o", "\", "n", but we want to
+// provide out consumers with the string content "f", "o", "o", "\n". In these
+// cases, when we find the first escape sequence, we initialize a pm_buffer_t
+// to keep track of the string content. Then in the parser, it will
+// automatically attach the string content to the node that it belongs to.
+typedef struct {
+    pm_buffer_t buffer;
+    const uint8_t *cursor;
+} pm_token_buffer_t;
+
+// When we're about to return from lexing the current token, we need to flush
+// all of the content that we have pushed into the buffer into the current
+// string. If we haven't pushed anything into the buffer, this means that we
+// never found an escape sequence, so we can directly reference the bounds of
+// the current string. Either way, at the return of this function it is expected
+// that parser->current_string is established in such a way that it can be
+// attached to a node.
+static void
+pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    if (token_buffer->cursor == NULL) {
+        pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
+    } else {
+        pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
+        pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer->buffer.value, token_buffer->buffer.length);
+    }
+}
+
+// When we've found an escape sequence, we need to copy everything up to this
+// point into the buffer because we're about to provide a string that has
+// different content than a direct slice of the source.
+static void
+pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    if (token_buffer->cursor == NULL) {
+        pm_buffer_init_capacity(&token_buffer->buffer, 16);
+        pm_buffer_append_bytes(&token_buffer->buffer, parser->current.start, (size_t) (parser->current.end - parser->current.start));
+    } else {
+        pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
+    }
+}
+
 // This is a convenience macro that will set the current token type, call the
 // lex callback, and then return from the parser_lex function.
 #define LEX(token_type) parser->current.type = token_type; parser_lex_callback(parser); return
@@ -7850,8 +7901,7 @@ parser_lex(pm_parser_t *parser) {
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
-            pm_buffer_t buffer = (pm_buffer_t) { .value = NULL, .length = 0, .capacity = 0 };
-            const uint8_t *buffer_cursor = NULL;
+            pm_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
@@ -7864,14 +7914,7 @@ parser_lex(pm_parser_t *parser) {
                 // now, so we can return an element of the list.
                 if (pm_char_is_whitespace(*breakpoint)) {
                     parser->current.end = breakpoint;
-
-                    if (buffer_cursor == NULL) {
-                        pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-                    } else {
-                        pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (parser->current.end - buffer_cursor));
-                        pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
-                    }
-
+                    pm_token_buffer_flush(parser, &token_buffer);
                     LEX(PM_TOKEN_STRING_CONTENT);
                 }
 
@@ -7890,14 +7933,7 @@ parser_lex(pm_parser_t *parser) {
                     // past content, then we can return a list node.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
-
-                        if (buffer_cursor == NULL) {
-                            pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-                        } else {
-                            pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (parser->current.end - buffer_cursor));
-                            pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
-                        }
-
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -7913,14 +7949,9 @@ parser_lex(pm_parser_t *parser) {
                 // literally. In this case we'll skip past the next character
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
-                    if (buffer_cursor == NULL) {
-                        pm_buffer_init_capacity(&buffer, 16);
-                        pm_buffer_append_bytes(&buffer, parser->current.start, (size_t) (breakpoint - parser->current.start));
-                    } else {
-                        pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (breakpoint - buffer_cursor));
-                    }
-
-                    parser->current.end = breakpoint + 1;
+                    parser->current.end = breakpoint;
+                    pm_token_buffer_escape(parser, &token_buffer);
+                    parser->current.end++;
 
                     // If we've hit the end of the file, then break out of the
                     // loop by setting the breakpoint to NULL.
@@ -7936,25 +7967,25 @@ parser_lex(pm_parser_t *parser) {
                         case '\t':
                         case '\v':
                         case '\\':
-                            pm_buffer_append_u8(&buffer, peeked);
+                            pm_buffer_append_u8(&token_buffer.buffer, peeked);
                             parser->current.end++;
                             break;
                         case '\r':
                             parser->current.end++;
                             if (peek(parser) != '\n') {
-                                pm_buffer_append_u8(&buffer, '\r');
+                                pm_buffer_append_u8(&token_buffer.buffer, '\r');
                                 break;
                             }
                         /* fallthrough */
                         case '\n':
-                            pm_buffer_append_u8(&buffer, '\n');
+                            pm_buffer_append_u8(&token_buffer.buffer, '\n');
 
                             if (parser->heredoc_end) {
                                 // ... if we are on the same line as a heredoc,
                                 // flush the heredoc and continue parsing after
                                 // heredoc_end.
                                 parser_flush_heredoc_end(parser);
-                                pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
+                                pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer.buffer.value, token_buffer.buffer.length);
                                 LEX(PM_TOKEN_STRING_CONTENT);
                             } else {
                                 // ... else track the newline.
@@ -7965,20 +7996,20 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         default:
                             if (peeked == lex_mode->as.list.incrementor || peeked == lex_mode->as.list.terminator) {
-                                pm_buffer_append_u8(&buffer, peeked);
+                                pm_buffer_append_u8(&token_buffer.buffer, peeked);
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
-                                escape_read(parser, &buffer, PM_ESCAPE_FLAG_NONE);
+                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                             } else {
-                                pm_buffer_append_u8(&buffer, '\\');
-                                pm_buffer_append_u8(&buffer, peeked);
+                                pm_buffer_append_u8(&token_buffer.buffer, '\\');
+                                pm_buffer_append_u8(&token_buffer.buffer, peeked);
                                 parser->current.end++;
                             }
 
                             break;
                     }
 
-                    buffer_cursor = parser->current.end;
+                    token_buffer.cursor = parser->current.end;
                     breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
@@ -7997,12 +8028,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (type == PM_TOKEN_STRING_CONTENT) {
-                        if (buffer_cursor == NULL) {
-                            pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-                        } else {
-                            pm_buffer_append_bytes(&buffer, buffer_cursor, (size_t) (parser->current.end - buffer_cursor));
-                            pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
-                        }
+                        pm_token_buffer_flush(parser, &token_buffer);
                     }
 
                     LEX(type);
