@@ -371,9 +371,11 @@ $(bundled-gem-revision): \
 	| $(srcdir)/.bundle/.timestamp $(srcdir)/gems/src/$(1)/.git
 	$(ECHO) Update $(1) to $(3)
 	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
-	    $(GIT) fetch origin $(3) && \
-	    $(GIT) checkout --detach $(3) && \
-	:
+	    if [ `$(GIT) rev-parse HEAD` != $(3) ]; then \
+	        $(GIT) fetch origin $(3) && \
+	        $(GIT) checkout --detach $(3) && \
+	        :; \
+	    fi
 	echo $(3) | $(IFCHANGE) $$(@) -
 
 # The repository of minitest does not include minitest.gemspec because it uses hoe.
