@@ -35,7 +35,7 @@ jobs:
       matrix:
         os: ['macos-arm-oss']
         include:
-          - test_task: ['check']
+          - test_task: 'check'
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1'
       fail-fast: false
