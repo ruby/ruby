@@ -14064,12 +14064,13 @@ enum cond_type {
     COND_IN_FF
 };
 
-#define SWITCH_BY_COND_TYPE(t, w, arg) \
+#define SWITCH_BY_COND_TYPE(t, w, arg) do { \
     switch (t) { \
       case COND_IN_OP: break; \
       case COND_IN_COND: rb_##w##0(arg "literal in condition"); break; \
       case COND_IN_FF: rb_##w##0(arg "literal in flip-flop"); break; \
-    }
+    } \
+} while (0)
 
 static NODE *cond0(struct parser_params*,NODE*,enum cond_type,const YYLTYPE*);
 
@@ -14101,11 +14102,11 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
-        SWITCH_BY_COND_TYPE(type, warn, "string ")
+        SWITCH_BY_COND_TYPE(type, warn, "string ");
         break;
 
       case NODE_DREGX:
-        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ")
+        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ");
 
         return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 
@@ -14129,12 +14130,12 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 
       case NODE_DSYM:
       warn_symbol:
-        SWITCH_BY_COND_TYPE(type, warning, "symbol ")
+        SWITCH_BY_COND_TYPE(type, warning, "symbol ");
         break;
 
       case NODE_LIT:
         if (RB_TYPE_P(RNODE_LIT(node)->nd_lit, T_REGEXP)) {
-            if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ")
+            if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ");
             nd_set_type(node, NODE_MATCH);
         }
         else if (RNODE_LIT(node)->nd_lit == Qtrue ||
@@ -14145,7 +14146,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
             goto warn_symbol;
         }
         else {
-            SWITCH_BY_COND_TYPE(type, warning, "")
+            SWITCH_BY_COND_TYPE(type, warning, "");
         }
       default:
         break;
