@@ -4820,9 +4820,10 @@ pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
     return node;
 }
 
-// Allocate and initialize a new XStringNode node.
+// Allocate and initialize a new XStringNode node with the given unescaped
+// string.
 static pm_x_string_node_t *
-pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+pm_xstring_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *unescaped) {
     pm_x_string_node_t *node = PM_ALLOC_NODE(parser, pm_x_string_node_t);
 
     *node = (pm_x_string_node_t) {
@@ -4836,10 +4837,16 @@ pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .content_loc = PM_LOCATION_TOKEN_VALUE(content),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .unescaped = PM_EMPTY_STRING
+        .unescaped = *unescaped
     };
 
     return node;
+}
+
+// Allocate and initialize a new XStringNode node.
+static inline pm_x_string_node_t *
+pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+    return pm_xstring_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
 }
 
 // Allocate a new YieldNode node.
@@ -13941,34 +13948,46 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             pm_interpolated_x_string_node_t *node;
 
             if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                // In this case we've hit string content so we know the string at least
-                // has something in it. We'll need to check if the following token is
-                // the end (in which case we can return a plain string) or if it's not
-                // then it has interpolation.
+                // In this case we've hit string content so we know the string
+                // at least has something in it. We'll need to check if the
+                // following token is the end (in which case we can return a
+                // plain string) or if it's not then it has interpolation.
+                pm_string_t unescaped = parser->current_string;
                 pm_token_t content = parser->current;
                 parser_lex(parser);
 
                 if (accept1(parser, PM_TOKEN_STRING_END)) {
-                    return (pm_node_t *) pm_xstring_node_create_and_unescape(parser, &opening, &content, &parser->previous);
+                    return (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
                 }
 
-                // If we get here, then we have interpolation so we'll need to create
-                // a string node with interpolation.
+                // If we get here, then we have interpolation so we'll need to
+                // create a string node with interpolation.
                 node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
 
                 pm_token_t opening = not_provided(parser);
                 pm_token_t closing = not_provided(parser);
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
+
                 pm_interpolated_xstring_node_append(node, part);
             } else {
-                // If the first part of the body of the string is not a string content,
-                // then we have interpolation and we need to create an interpolated
-                // string node.
+                // If the first part of the body of the string is not a string
+                // content, then we have interpolation and we need to create an
+                // interpolated string node.
                 node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
             }
 
             while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-                pm_node_t *part = parse_string_part(parser);
+                pm_node_t *part = NULL;
+
+                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                    pm_token_t opening = not_provided(parser);
+                    pm_token_t closing = not_provided(parser);
+                    part = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
+                    parser_lex(parser);
+                } else {
+                    part = parse_string_part(parser);
+                }
+
                 if (part != NULL) {
                     pm_interpolated_xstring_node_append(node, part);
                 }
