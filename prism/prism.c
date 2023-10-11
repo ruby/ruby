@@ -8582,12 +8582,17 @@ parser_lex(pm_parser_t *parser) {
                             }
                         }
 
-                        if (
-                            lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE &&
-                            (lex_mode->as.heredoc.common_whitespace > whitespace) &&
-                            peek_at(parser, start) != '\n'
-                        ) {
-                            lex_mode->as.heredoc.common_whitespace = whitespace;
+                        if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                            if ((lex_mode->as.heredoc.common_whitespace > whitespace) && peek_at(parser, start) != '\n') {
+                                lex_mode->as.heredoc.common_whitespace = whitespace;
+                            }
+
+                            parser->current.end = breakpoint + 1;
+
+                            if (!was_escaped_newline) {
+                                pm_token_buffer_flush(parser, &token_buffer);
+                                LEX(PM_TOKEN_STRING_CONTENT);
+                            }
                         }
 
                         // Otherwise we hit a newline and it wasn't followed by
@@ -8613,45 +8618,46 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         uint8_t peeked = peek(parser);
-                        switch (peeked) {
-                            case '\r':
-                                parser->current.end++;
-                                if (peek(parser) != '\n') {
-                                    if (quote == PM_HEREDOC_QUOTE_SINGLE) {
+                        if (quote == PM_HEREDOC_QUOTE_SINGLE) {
+                            switch (peeked) {
+                                case '\r':
+                                    parser->current.end++;
+                                    if (peek(parser) != '\n') {
                                         pm_token_buffer_push(&token_buffer, '\\');
+                                        pm_token_buffer_push(&token_buffer, '\r');
+                                        break;
                                     }
-                                    pm_token_buffer_push(&token_buffer, '\r');
-                                    break;
-                                }
-                            /* fallthrough */
-                            case '\n':
-                                // If this is a dedenting heredoc then we need
-                                // to leave the escaped newline in place so that
-                                // it can be removed later when we dedent the
-                                // heredoc.
-                                if (quote == PM_HEREDOC_QUOTE_SINGLE || lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                                /* fallthrough */
+                                case '\n':
                                     pm_token_buffer_push(&token_buffer, '\\');
                                     pm_token_buffer_push(&token_buffer, '\n');
-                                }
-
-                                token_buffer.cursor = parser->current.end + 1;
-                                breakpoint = parser->current.end;
-
-                                if (quote != PM_HEREDOC_QUOTE_SINGLE) {
-                                    was_escaped_newline = true;
-                                }
-
-                                continue;
-                            default:
-                                if (quote == PM_HEREDOC_QUOTE_SINGLE) {
+                                    token_buffer.cursor = parser->current.end + 1;
+                                    breakpoint = parser->current.end;
+                                    continue;
+                                default:
+                                    parser->current.end++;
                                     pm_token_buffer_push(&token_buffer, '\\');
                                     pm_token_buffer_push(&token_buffer, peeked);
+                                    break;
+                            }
+                        } else {
+                            switch (peeked) {
+                                case '\r':
                                     parser->current.end++;
-                                } else {
+                                    if (peek(parser) != '\n') {
+                                        pm_token_buffer_push(&token_buffer, '\r');
+                                        break;
+                                    }
+                                /* fallthrough */
+                                case '\n':
+                                    was_escaped_newline = true;
+                                    token_buffer.cursor = parser->current.end + 1;
+                                    breakpoint = parser->current.end;
+                                    continue;
+                                default:
                                     escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
-                                }
-
-                                break;
+                                    break;
+                            }
                         }
 
                         token_buffer.cursor = parser->current.end;
@@ -11147,9 +11153,8 @@ parse_method_definition_name(pm_parser_t *parser) {
     }
 }
 
-static pm_string_t *
-parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool dedent_node, size_t common_whitespace, pm_heredoc_quote_t quote)
-{
+static void
+parse_heredoc_dedent_string(pm_string_t *string, size_t common_whitespace) {
     // Get a reference to the string struct that is being held by the string
     // node. This is the value we're going to actually manipulate.
     pm_string_ensure_owned(string);
@@ -11158,80 +11163,37 @@ parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool 
     // destination to move bytes into. We'll also use it for bounds checking
     // since we don't require that these strings be null terminated.
     size_t dest_length = pm_string_length(string);
-    uint8_t *source_start = (uint8_t *) string->source;
-
-    const uint8_t *source_cursor = source_start;
+    const uint8_t *source_cursor = (uint8_t *) string->source;
     const uint8_t *source_end = source_cursor + dest_length;
 
     // We're going to move bytes backward in the string when we get leading
     // whitespace, so we'll maintain a pointer to the current position in the
     // string that we're writing to.
-    uint8_t *dest_cursor = source_start;
+    size_t trimmed_whitespace = 0;
 
-    while (source_cursor < source_end) {
-        // If we need to dedent the next element within the heredoc or the next
-        // line within the string node, then we'll do it here.
-        if (dedent_node) {
-            size_t trimmed_whitespace = 0;
-
-            // While we haven't reached the amount of common whitespace that we need
-            // to trim and we haven't reached the end of the string, we'll keep
-            // trimming whitespace. Trimming in this context means skipping over
-            // these bytes such that they aren't copied into the new string.
-            while ((source_cursor < source_end) && pm_char_is_inline_whitespace(*source_cursor) && trimmed_whitespace < common_whitespace) {
-                if (*source_cursor == '\t') {
-                    trimmed_whitespace = (trimmed_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
-                    if (trimmed_whitespace > common_whitespace) break;
-                } else {
-                    trimmed_whitespace++;
-                }
-
-                source_cursor++;
-                dest_length--;
-            }
+    // While we haven't reached the amount of common whitespace that we need to
+    // trim and we haven't reached the end of the string, we'll keep trimming
+    // whitespace. Trimming in this context means skipping over these bytes such
+    // that they aren't copied into the new string.
+    while ((source_cursor < source_end) && pm_char_is_inline_whitespace(*source_cursor) && trimmed_whitespace < common_whitespace) {
+        if (*source_cursor == '\t') {
+            trimmed_whitespace = (trimmed_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
+            if (trimmed_whitespace > common_whitespace) break;
+        } else {
+            trimmed_whitespace++;
         }
 
-        // At this point we have dedented all that we need to, so we need to find
-        // the next newline.
-        const uint8_t *breakpoint = next_newline(source_cursor, source_end - source_cursor);
-
-        if (breakpoint == NULL) {
-            // If there isn't another newline, then we can just move the rest of the
-            // string and break from the loop.
-            memmove(dest_cursor, source_cursor, (size_t) (source_end - source_cursor));
-            break;
-        }
-
-        // Otherwise, we need to move everything including the newline, and
-        // then set the dedent_node flag to true.
-        if (breakpoint < source_end) breakpoint++;
-        memmove(dest_cursor, source_cursor, (size_t) (breakpoint - source_cursor));
-        dest_cursor += (breakpoint - source_cursor);
-        source_cursor = breakpoint;
-        dedent_node = true;
+        source_cursor++;
+        dest_length--;
     }
 
-    // We only want to write this node into the list if it has any content.
+    memmove((uint8_t *) string->source, source_cursor, (size_t) (source_end - source_cursor));
     string->length = dest_length;
-
-    if (dest_length != 0) {
-        pm_unescape_manipulate_string(parser, string, (quote == PM_HEREDOC_QUOTE_SINGLE) ? PM_UNESCAPE_MINIMAL : PM_UNESCAPE_ALL);
-    }
-    return string;
 }
 
 // Take a heredoc node that is indented by a ~ and trim the leading whitespace.
 static void
-parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_quote_t quote, size_t common_whitespace)
-{
-    pm_node_list_t *nodes;
-
-    if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-        nodes = &((pm_interpolated_x_string_node_t *) heredoc_node)->parts;
-    } else {
-        nodes = &((pm_interpolated_string_node_t *) heredoc_node)->parts;
-    }
-
+parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_whitespace) {
     // The next node should be dedented if it's the first node in the list or if
     // if follows a string node.
     bool dedent_next = true;
@@ -11254,7 +11216,10 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_qu
         }
 
         pm_string_node_t *string_node = ((pm_string_node_t *) node);
-        parse_heredoc_dedent_single_node(parser, &string_node->unescaped, dedent_next, common_whitespace, quote);
+        if (dedent_next) {
+            parse_heredoc_dedent_string(&string_node->unescaped, common_whitespace);
+        }
+
         if (string_node->unescaped.length == 0) {
             pm_node_destroy(parser, node);
         } else {
@@ -12574,12 +12539,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                         cast->base.type = PM_X_STRING_NODE;
                     }
 
-                    node = (pm_node_t *) cast;
-
-                    if (indent == PM_HEREDOC_INDENT_TILDE && (lex_mode->as.heredoc.common_whitespace != (size_t) -1) && (lex_mode->as.heredoc.common_whitespace != 0)) {
-                        parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, lex_mode->as.heredoc.common_whitespace, quote);
+                    size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
+                    if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
+                        parse_heredoc_dedent_string(&cast->unescaped, common_whitespace);
                     }
 
+                    node = (pm_node_t *) cast;
                     lex_state_set(parser, PM_LEX_STATE_END);
                     expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
                 } else {
@@ -12629,8 +12594,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
                     // If this is a heredoc that is indented with a ~, then we need
                     // to dedent each line by the common leading whitespace.
-                    if (indent == PM_HEREDOC_INDENT_TILDE && (lex_mode->as.heredoc.common_whitespace != (size_t) -1) && (lex_mode->as.heredoc.common_whitespace != 0)) {
-                        parse_heredoc_dedent(parser, node, quote, lex_mode->as.heredoc.common_whitespace);
+                    size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
+                    if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
+                        pm_node_list_t *nodes;
+                        if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                            nodes = &((pm_interpolated_x_string_node_t *) node)->parts;
+                        } else {
+                            nodes = &((pm_interpolated_string_node_t *) node)->parts;
+                        }
+
+                        parse_heredoc_dedent(parser, nodes, common_whitespace);
                     }
                 }
             }
