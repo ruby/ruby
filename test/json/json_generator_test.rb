@@ -397,7 +397,7 @@ EOT
 
       Module.send(:alias_method, :included_orig, :included)
       Module.send(:remove_method, :included)
-      Module.define_method(:included) do |base|
+      Module.send(:define_method, :included) do |base|
         included_orig(base)
         included = true
       end
