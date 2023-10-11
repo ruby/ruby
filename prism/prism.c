@@ -6662,6 +6662,21 @@ typedef struct {
     const uint8_t *cursor;
 } pm_token_buffer_t;
 
+// Push the given byte into the token buffer.
+static inline void
+pm_token_buffer_push(pm_token_buffer_t *token_buffer, uint8_t byte) {
+    pm_buffer_append_u8(&token_buffer->buffer, byte);
+}
+
+// When we're about to return from lexing the current token and we know for sure
+// that we have found an escape sequence, this function is called to copy the
+// contents of the token buffer into the current string on the parser so that it
+// can be attached to the correct node.
+static inline void
+pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer->buffer.value, token_buffer->buffer.length);
+}
+
 // When we're about to return from lexing the current token, we need to flush
 // all of the content that we have pushed into the buffer into the current
 // string. If we haven't pushed anything into the buffer, this means that we
@@ -6675,21 +6690,28 @@ pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
         pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
     } else {
         pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
-        pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer->buffer.value, token_buffer->buffer.length);
+        pm_token_buffer_copy(parser, token_buffer);
     }
 }
 
 // When we've found an escape sequence, we need to copy everything up to this
 // point into the buffer because we're about to provide a string that has
 // different content than a direct slice of the source.
+//
+// It is expected that the parser's current token end will be pointing at one
+// byte past the backslash that starts the escape sequence.
 static void
 pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    const uint8_t *start;
     if (token_buffer->cursor == NULL) {
         pm_buffer_init_capacity(&token_buffer->buffer, 16);
-        pm_buffer_append_bytes(&token_buffer->buffer, parser->current.start, (size_t) (parser->current.end - parser->current.start));
+        start = parser->current.start;
     } else {
-        pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
+        start = token_buffer->cursor;
     }
+
+    const uint8_t *end = parser->current.end - 1;
+    pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
 }
 
 // This is a convenience macro that will set the current token type, call the
@@ -7949,9 +7971,8 @@ parser_lex(pm_parser_t *parser) {
                 // literally. In this case we'll skip past the next character
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
-                    parser->current.end = breakpoint;
+                    parser->current.end = breakpoint + 1;
                     pm_token_buffer_escape(parser, &token_buffer);
-                    parser->current.end++;
 
                     // If we've hit the end of the file, then break out of the
                     // loop by setting the breakpoint to NULL.
@@ -7967,25 +7988,25 @@ parser_lex(pm_parser_t *parser) {
                         case '\t':
                         case '\v':
                         case '\\':
-                            pm_buffer_append_u8(&token_buffer.buffer, peeked);
+                            pm_token_buffer_push(&token_buffer, peeked);
                             parser->current.end++;
                             break;
                         case '\r':
                             parser->current.end++;
                             if (peek(parser) != '\n') {
-                                pm_buffer_append_u8(&token_buffer.buffer, '\r');
+                                pm_token_buffer_push(&token_buffer, '\r');
                                 break;
                             }
                         /* fallthrough */
                         case '\n':
-                            pm_buffer_append_u8(&token_buffer.buffer, '\n');
+                            pm_token_buffer_push(&token_buffer, '\n');
 
                             if (parser->heredoc_end) {
                                 // ... if we are on the same line as a heredoc,
                                 // flush the heredoc and continue parsing after
                                 // heredoc_end.
                                 parser_flush_heredoc_end(parser);
-                                pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer.buffer.value, token_buffer.buffer.length);
+                                pm_token_buffer_copy(parser, &token_buffer);
                                 LEX(PM_TOKEN_STRING_CONTENT);
                             } else {
                                 // ... else track the newline.
@@ -7996,13 +8017,13 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         default:
                             if (peeked == lex_mode->as.list.incrementor || peeked == lex_mode->as.list.terminator) {
-                                pm_buffer_append_u8(&token_buffer.buffer, peeked);
+                                pm_token_buffer_push(&token_buffer, peeked);
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
                                 escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                             } else {
-                                pm_buffer_append_u8(&token_buffer.buffer, '\\');
-                                pm_buffer_append_u8(&token_buffer.buffer, peeked);
+                                pm_token_buffer_push(&token_buffer, '\\');
+                                pm_token_buffer_push(&token_buffer, peeked);
                                 parser->current.end++;
                             }
 
