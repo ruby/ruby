@@ -164,6 +164,8 @@ class TestThread < Test::Unit::TestCase
         t = Thread.new{sleep 0}
         t.raise Interrupt
         Thread.pass # allow t to finish
+        n = Thread.list.size
+        raise "#{n} > 1000" if n > 1000
       end
     _end
   end
