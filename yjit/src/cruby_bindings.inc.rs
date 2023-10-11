@@ -801,7 +801,7 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u32;
+pub type attr_index_t = u8;
 pub type shape_id_t = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -809,7 +809,7 @@ pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
     pub next_iv_index: attr_index_t,
-    pub capacity: u32,
+    pub capacity: attr_index_t,
     pub type_: u8,
     pub size_pool_index: u8,
     pub parent_id: shape_id_t,

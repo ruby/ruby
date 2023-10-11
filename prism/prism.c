@@ -695,6 +695,11 @@ pm_scope_node_init(pm_node_t *node, pm_scope_node_t *scope) {
             scope->locals = cast->locals;
             break;
         }
+        case PM_FOR_NODE: {
+            pm_for_node_t *cast = (pm_for_node_t *)node;
+            scope->body = (pm_node_t *)cast->statements;
+            break;
+        }
         case PM_LAMBDA_NODE: {
             pm_lambda_node_t *cast = (pm_lambda_node_t *) node;
             if (cast->parameters) scope->parameters = cast->parameters->parameters;
