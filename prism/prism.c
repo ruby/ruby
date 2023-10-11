@@ -7264,7 +7264,8 @@ parser_lex(pm_parser_t *parser) {
                                         .ident_length = ident_length,
                                         .next_start = parser->current.end,
                                         .quote = quote,
-                                        .indent = indent
+                                        .indent = indent,
+                                        .common_whitespace = (size_t) -1
                                     }
                                 });
 
@@ -8434,8 +8435,30 @@ parser_lex(pm_parser_t *parser) {
             // terminator, then we need to return the ending of the heredoc.
             if (current_token_starts_line(parser)) {
                 const uint8_t *start = parser->current.start;
-                if (lex_mode->as.heredoc.indent != PM_HEREDOC_INDENT_NONE) {
-                    start += pm_strspn_inline_whitespace(start, parser->end - start);
+                size_t whitespace = 0;
+
+                switch (lex_mode->as.heredoc.indent) {
+                    case PM_HEREDOC_INDENT_NONE:
+                        // Do nothing, we can't match a terminator with
+                        // indentation and there's no need to calculate common
+                        // whitespace.
+                        break;
+                    case PM_HEREDOC_INDENT_DASH:
+                        // Skip past inline whitespace.
+                        start += pm_strspn_inline_whitespace(start, parser->end - start);
+                        break;
+                    case PM_HEREDOC_INDENT_TILDE:
+                        // Skip past inline whitespace and calculate common
+                        // whitespace.
+                        while (start < parser->end && pm_char_is_inline_whitespace(*start)) {
+                            if (*start == '\t') {
+                                whitespace = (whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
+                            } else {
+                                whitespace++;
+                            }
+                            start++;
+                        }
+                        break;
                 }
 
                 if ((start + ident_length <= parser->end) && (memcmp(start, ident_start, ident_length) == 0)) {
@@ -8467,6 +8490,14 @@ parser_lex(pm_parser_t *parser) {
                         }
                         LEX(PM_TOKEN_HEREDOC_END);
                     }
+                }
+
+                if (
+                    lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE &&
+                    (lex_mode->as.heredoc.common_whitespace > whitespace) &&
+                    peek_at(parser, start) != '\n'
+                ) {
+                    lex_mode->as.heredoc.common_whitespace = whitespace;
                 }
             }
 
@@ -8500,21 +8531,47 @@ parser_lex(pm_parser_t *parser) {
 
                         pm_newline_list_append(&parser->newline_list, breakpoint);
 
+                        // If we have a - or ~ heredoc, then we can match after
+                        // some leading whitespace.
                         const uint8_t *start = breakpoint + 1;
-                        if (lex_mode->as.heredoc.indent != PM_HEREDOC_INDENT_NONE) {
-                            start += pm_strspn_inline_whitespace(start, parser->end - start);
+                        size_t whitespace = 0;
+
+                        switch (lex_mode->as.heredoc.indent) {
+                            case PM_HEREDOC_INDENT_NONE:
+                                // Do nothing, we can't match a terminator with
+                                // indentation and there's no need to calculate
+                                // common whitespace.
+                                break;
+                            case PM_HEREDOC_INDENT_DASH:
+                                // Skip past inline whitespace.
+                                start += pm_strspn_inline_whitespace(start, parser->end - start);
+                                break;
+                            case PM_HEREDOC_INDENT_TILDE:
+                                // Skip past inline whitespace and calculate common
+                                // whitespace.
+                                while (start < parser->end && pm_char_is_inline_whitespace(*start)) {
+                                    if (*start == '\t') {
+                                        whitespace = (whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
+                                    } else {
+                                        whitespace++;
+                                    }
+                                    start++;
+                                }
+                                break;
                         }
 
-                        // If we have hit a newline that is followed by a valid terminator,
-                        // then we need to return the content of the heredoc here as string
-                        // content. Then, the next time a token is lexed, it will match
-                        // again and return the end of the heredoc.
+                        // If we have hit a newline that is followed by a valid
+                        // terminator, then we need to return the content of the
+                        // heredoc here as string content. Then, the next time a
+                        // token is lexed, it will match again and return the
+                        // end of the heredoc.
                         if (
                             !was_escaped_newline &&
                             (start + ident_length <= parser->end) &&
                             (memcmp(start, ident_start, ident_length) == 0)
                         ) {
-                            // Heredoc terminators must be followed by a newline, CRLF, or EOF to be valid.
+                            // Heredoc terminators must be followed by a
+                            // newline, CRLF, or EOF to be valid.
                             if (
                                 start + ident_length == parser->end ||
                                 match_eol_at(parser, start + ident_length)
@@ -8525,8 +8582,16 @@ parser_lex(pm_parser_t *parser) {
                             }
                         }
 
-                        // Otherwise we hit a newline and it wasn't followed by a
-                        // terminator, so we can continue parsing.
+                        if (
+                            lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE &&
+                            (lex_mode->as.heredoc.common_whitespace > whitespace) &&
+                            peek_at(parser, start) != '\n'
+                        ) {
+                            lex_mode->as.heredoc.common_whitespace = whitespace;
+                        }
+
+                        // Otherwise we hit a newline and it wasn't followed by
+                        // a terminator, so we can continue parsing.
                         breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     }
@@ -11082,75 +11147,8 @@ parse_method_definition_name(pm_parser_t *parser) {
     }
 }
 
-static int
-parse_heredoc_common_whitespace_for_single_node(pm_parser_t *parser, pm_node_t *node, int common_whitespace)
-{
-    const pm_location_t *content_loc = &((pm_string_node_t *) node)->content_loc;
-    int cur_whitespace;
-    const uint8_t *cur_char = content_loc->start;
-
-    while (cur_char && cur_char < content_loc->end) {
-        // Any empty newlines aren't included in the minimum whitespace
-        // calculation.
-        size_t eol_length;
-        while ((eol_length = match_eol_at(parser, cur_char))) {
-            cur_char += eol_length;
-        }
-
-        if (cur_char == content_loc->end) break;
-
-        cur_whitespace = 0;
-
-        while (pm_char_is_inline_whitespace(*cur_char) && cur_char < content_loc->end) {
-            if (cur_char[0] == '\t') {
-                cur_whitespace = (cur_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
-            } else {
-                cur_whitespace++;
-            }
-            cur_char++;
-        }
-
-        // If we hit a newline, then we have encountered a line that
-        // contains only whitespace, and it shouldn't be considered in
-        // the calculation of common leading whitespace.
-        eol_length = match_eol_at(parser, cur_char);
-        if (eol_length) {
-            cur_char += eol_length;
-            continue;
-        }
-
-        if (cur_whitespace < common_whitespace || common_whitespace == -1) {
-            common_whitespace = cur_whitespace;
-        }
-
-        cur_char = next_newline(cur_char + 1, parser->end - (cur_char + 1));
-        if (cur_char) cur_char++;
-    }
-    return common_whitespace;
-}
-
-// Calculate the common leading whitespace for each line in a heredoc.
-static int
-parse_heredoc_common_whitespace(pm_parser_t *parser, pm_node_list_t *nodes) {
-    int common_whitespace = -1;
-
-    for (size_t index = 0; index < nodes->size; index++) {
-        pm_node_t *node = nodes->nodes[index];
-        if (!PM_NODE_TYPE_P(node, PM_STRING_NODE)) continue;
-
-        // If the previous node wasn't a string node, we don't want to trim
-        // whitespace. This could happen after an interpolated expression or
-        // variable.
-        if (index == 0 || PM_NODE_TYPE_P(nodes->nodes[index - 1], PM_STRING_NODE)) {
-            common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, common_whitespace);
-        }
-    }
-
-    return common_whitespace;
-}
-
 static pm_string_t *
-parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool dedent_node, int common_whitespace, pm_heredoc_quote_t quote)
+parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool dedent_node, size_t common_whitespace, pm_heredoc_quote_t quote)
 {
     // Get a reference to the string struct that is being held by the string
     // node. This is the value we're going to actually manipulate.
@@ -11174,7 +11172,7 @@ parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool 
         // If we need to dedent the next element within the heredoc or the next
         // line within the string node, then we'll do it here.
         if (dedent_node) {
-            int trimmed_whitespace = 0;
+            size_t trimmed_whitespace = 0;
 
             // While we haven't reached the amount of common whitespace that we need
             // to trim and we haven't reached the end of the string, we'll keep
@@ -11224,7 +11222,7 @@ parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool 
 
 // Take a heredoc node that is indented by a ~ and trim the leading whitespace.
 static void
-parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_quote_t quote)
+parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_quote_t quote, size_t common_whitespace)
 {
     pm_node_list_t *nodes;
 
@@ -11233,11 +11231,6 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_qu
     } else {
         nodes = &((pm_interpolated_string_node_t *) heredoc_node)->parts;
     }
-
-    // First, calculate how much common whitespace we need to trim. If there is
-    // none or it's 0, then we can return early.
-    int common_whitespace;
-    if ((common_whitespace = parse_heredoc_common_whitespace(parser, nodes)) <= 0) return;
 
     // The next node should be dedented if it's the first node in the list or if
     // if follows a string node.
@@ -12525,9 +12518,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
         case PM_TOKEN_HEREDOC_START: {
             // Here we have found a heredoc. We'll parse it and add it to the
             // list of strings.
-            assert(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
-            pm_heredoc_quote_t quote = parser->lex_modes.current->as.heredoc.quote;
-            pm_heredoc_indent_t indent = parser->lex_modes.current->as.heredoc.indent;
+            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+            assert(lex_mode->mode == PM_LEX_HEREDOC);
+            pm_heredoc_quote_t quote = lex_mode->as.heredoc.quote;
+            pm_heredoc_indent_t indent = lex_mode->as.heredoc.indent;
 
             parser_lex(parser);
             pm_token_t opening = parser->previous;
@@ -12580,15 +12574,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                         cast->base.type = PM_X_STRING_NODE;
                     }
 
-                    lex_state_set(parser, PM_LEX_STATE_END);
-                    expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
-
                     node = (pm_node_t *) cast;
 
-                    if (indent == PM_HEREDOC_INDENT_TILDE) {
-                        int common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, -1);
-                        parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, common_whitespace, quote);
+                    if (indent == PM_HEREDOC_INDENT_TILDE && (lex_mode->as.heredoc.common_whitespace != (size_t) -1) && (lex_mode->as.heredoc.common_whitespace != 0)) {
+                        parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, lex_mode->as.heredoc.common_whitespace, quote);
                     }
+
+                    lex_state_set(parser, PM_LEX_STATE_END);
+                    expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
                 } else {
                     // If we get here, then we have multiple parts in the heredoc,
                     // so we'll need to create an interpolated string node to hold
@@ -12636,8 +12629,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
                     // If this is a heredoc that is indented with a ~, then we need
                     // to dedent each line by the common leading whitespace.
-                    if (indent == PM_HEREDOC_INDENT_TILDE) {
-                        parse_heredoc_dedent(parser, node, quote);
+                    if (indent == PM_HEREDOC_INDENT_TILDE && (lex_mode->as.heredoc.common_whitespace != (size_t) -1) && (lex_mode->as.heredoc.common_whitespace != 0)) {
+                        parse_heredoc_dedent(parser, node, quote, lex_mode->as.heredoc.common_whitespace);
                     }
                 }
             }

@@ -173,6 +173,11 @@ typedef struct pm_lex_mode {
             // This is the pointer to the character where lexing should resume
             // once the heredoc has been completely processed.
             const uint8_t *next_start;
+
+            // This is used to track the amount of common whitespace on each
+            // line so that we know how much to dedent each line in the case of
+            // a tilde heredoc.
+            size_t common_whitespace;
         } heredoc;
     } as;
 
