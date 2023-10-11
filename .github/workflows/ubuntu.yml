@@ -36,7 +36,7 @@ jobs:
         test_task: [check]
         arch: ['']
         configure: ['cppflags=-DVM_CHECK_MODE']
-        # specifying everything else with `include` to avoid redundant tests
+        # specifying other jobs with `include` to avoid redundant tests
         include:
           - test_task: check
             arch: i686
