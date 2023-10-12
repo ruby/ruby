@@ -68,6 +68,7 @@ module Gem::BUNDLED_GEMS
     EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
   end
 
+  # for Bundler environment especially Bundler.setup.
   def self.warning?(name)
     name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
@@ -76,7 +77,7 @@ module Gem::BUNDLED_GEMS
     return if find_gem(caller&.absolute_path)
     return if WARNED[name]
     WARNED[name] = true
-    msg = if gem == true
+    if gem == true
       gem = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     elsif gem
       return if WARNED[gem]
@@ -84,11 +85,14 @@ module Gem::BUNDLED_GEMS
       "#{name} is found in #{gem}"
     else
       return
-    end
-    msg += " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}."
+    end + build_message(gem)
+  end
+
+  def self.build_message(gem)
+    msg = " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}."
 
     if defined?(Bundler)
-      msg += " Add #{name} to your Gemfile."
+      msg += " Add #{gem} to your Gemfile."
       location = caller_locations(2,2)[0]&.path
       if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
@@ -105,16 +109,16 @@ module Gem::BUNDLED_GEMS
     msg
   end
 
-  bundled_gems = self
-
-  define_method(:find_unresolved_default_spec) do |name|
-    if msg = bundled_gems.warning?(name)
-      warn msg, uplevel: 1
-    end
-    super(name)
-  end
-
   freeze
 end
 
-Gem.singleton_class.prepend Gem::BUNDLED_GEMS
+# for RubyGems without Bundler environment.
+# If loading library is not part of the default gems and the bundled gems, warn it.
+class LoadError
+  def message
+    if Gem::BUNDLED_GEMS::SINCE[path]
+      warn path + Gem::BUNDLED_GEMS.build_message(path)
+    end
+    super
+  end
+end
