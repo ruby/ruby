@@ -1622,13 +1622,16 @@ ruby_mn_threads_params(void)
     bool enable_mn_threads;
 
     if (mn_threads_cstr && (enable_mn_threads = atoi(mn_threads_cstr) > 0)) {
-        if (RTEST(ruby_verbose)) {
 #if USE_MN_THREADS
+        if (RTEST(ruby_verbose)) {
             fprintf(stderr, "RUBY_MN_THREADS = %s (default: 0)\n", mn_threads_cstr);
-#else
-            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implmeented on this executable.", mn_threads_cstr);
-#endif
         }
+#else
+        enable_mn_threads = false;
+        if (RTEST(ruby_verbose)) {
+            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implmeented on this executable.", mn_threads_cstr);
+        }
+#endif
     }
     else {
         enable_mn_threads = false; // default: off on main Ractor
