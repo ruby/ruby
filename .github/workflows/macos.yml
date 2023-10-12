@@ -8,12 +8,7 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
+    # paths-ignore is disabled for running status check
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -108,6 +103,15 @@ jobs:
           label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+  status:
+    if: ${{ always() }}
+    runs-on: macos-latest
+    name: status check
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:
