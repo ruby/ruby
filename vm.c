@@ -16,6 +16,7 @@
 #include "internal/compile.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/encoding.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/inits.h"
@@ -25,6 +26,7 @@
 #include "internal/ruby_parser.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
+#include "internal/transcode.h"
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
@@ -2055,6 +2057,13 @@ short ruby_vm_redefined_flag[BOP_LAST_];
 static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
+void
+rb_free_vm_opt_tables(void)
+{
+    st_free_table(vm_opt_method_def_table);
+    st_free_table(vm_opt_mid_table);
+}
+
 static int
 vm_redefinition_check_flag(VALUE klass)
 {
@@ -2973,6 +2982,9 @@ free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
     return ST_DELETE;
 }
 
+void rb_free_loaded_features_index(rb_vm_t *vm);
+void rb_objspace_free_objects(void *objspace);
+
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
@@ -2980,13 +2992,57 @@ ruby_vm_destruct(rb_vm_t *vm)
 
     if (vm) {
         rb_thread_t *th = vm->ractor.main_thread;
-        struct rb_objspace *objspace = vm->objspace;
-        vm->ractor.main_thread = NULL;
+        VALUE *stack = th->ec->vm_stack;
+        if (rb_free_on_exit) {
+            rb_free_default_rand_key();
+            rb_free_encoded_insn_data();
+            rb_free_global_enc_table();
+            rb_free_loaded_builtin_table();
 
-        if (th) {
-            rb_fiber_reset_root_local_storage(th);
-            thread_free(th);
+            rb_free_shared_fiber_pool();
+            rb_free_static_symid_str();
+            rb_free_transcoder_table();
+            rb_free_vm_opt_tables();
+            rb_free_warning();
+            rb_free_rb_global_tbl();
+            rb_free_loaded_features_index(vm);
+            rb_ractor_t *r = vm->ractor.main_ractor;
+            xfree(r->sync.recv_queue.baskets);
+            xfree(r->sync.takers_queue.baskets);
+
+            rb_id_table_free(vm->negative_cme_table);
+            st_free_table(vm->overloaded_cme_table);
+
+            rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
+
+            rb_shape_t *cursor = rb_shape_get_root_shape();
+            rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
+            while (cursor < end) {
+                // 0x1 == SINGLE_CHILD_P
+                if (cursor->edges && !(((uintptr_t)cursor->edges) & 0x1))
+                    rb_id_table_free(cursor->edges);
+                cursor += 1;
+            }
+
+            xfree(GET_SHAPE_TREE());
+
+            st_free_table(vm->static_ext_inits);
+            st_free_table(vm->ensure_rollback_table);
+
+            ruby_xfree(vm->postponed_job_buffer);
+            st_free_table(vm->defined_module_hash);
+
+            rb_id_table_free(vm->constant_cache);
         }
+        else {
+            if (th) {
+                rb_fiber_reset_root_local_storage(th);
+                thread_free(th);
+            }
+        }
+
+        struct rb_objspace *objspace = vm->objspace;
+
         rb_vm_living_threads_init(vm);
         ruby_vm_run_at_exit_hooks(vm);
         if (vm->loading_table) {
@@ -3000,6 +3056,15 @@ ruby_vm_destruct(rb_vm_t *vm)
         }
         RB_ALTSTACK_FREE(vm->main_altstack);
         if (objspace) {
+            if (rb_free_on_exit) {
+                rb_objspace_free_objects(objspace);
+                rb_free_generic_iv_tbl_();
+                if (th) {
+                    xfree(th->ractor);
+                    xfree(stack);
+                    ruby_mimfree(th);
+                }
+            }
             rb_objspace_free(objspace);
         }
         rb_native_mutex_destroy(&vm->workqueue_lock);
@@ -4197,6 +4262,8 @@ rb_ruby_debug_ptr(void)
     rb_ractor_t *cr = GET_RACTOR();
     return &cr->debug;
 }
+
+bool rb_free_on_exit = false;
 
 /* iseq.c */
 VALUE rb_insn_operand_intern(const rb_iseq_t *iseq,

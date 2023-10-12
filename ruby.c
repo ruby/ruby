@@ -1754,6 +1754,11 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
                            "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
+    if (getenv("RUBY_FREE_ON_EXIT")) {
+        rb_warn("Free on exit is experimental and may be unstable");
+        rb_free_on_exit = true;
+    }
+
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)

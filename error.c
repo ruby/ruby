@@ -2693,6 +2693,14 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
 
 static st_table *syserr_tbl;
 
+void
+rb_free_warning(void)
+{
+    st_free_table(warning_categories.id2enum);
+    st_free_table(warning_categories.enum2id);
+    st_free_table(syserr_tbl);
+}
+
 static VALUE
 set_syserr(int n, const char *name)
 {

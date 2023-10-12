@@ -438,6 +438,33 @@ struct rb_global_entry {
     bool ractor_local;
 };
 
+static enum rb_id_table_iterator_result
+free_global_entry_i(ID key, VALUE val, void *arg)
+{
+    struct rb_global_entry *entry = (struct rb_global_entry *)val;
+    if (entry->var->counter == 1) {
+        ruby_xfree(entry->var);
+    }
+    else {
+        entry->var->counter--;
+    }
+    ruby_xfree(entry);
+    return ID_TABLE_DELETE;
+}
+
+void
+rb_free_rb_global_tbl(void)
+{
+    rb_id_table_foreach(rb_global_tbl, free_global_entry_i, 0);
+    rb_id_table_free(rb_global_tbl);
+}
+
+void
+rb_free_generic_iv_tbl_(void)
+{
+    st_free_table(generic_iv_tbl_);
+}
+
 static struct rb_global_entry*
 rb_find_global_entry(ID id)
 {

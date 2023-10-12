@@ -4583,6 +4583,35 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 bool rb_obj_is_main_ractor(VALUE gv);
 
 void
+rb_objspace_free_objects(rb_objspace_t *objspace)
+{
+    for (size_t i = 0; i < heap_allocated_pages; i++) {
+        struct heap_page *page = heap_pages_sorted[i];
+        short stride = page->slot_size;
+
+        uintptr_t p = (uintptr_t)page->start;
+        uintptr_t pend = p + page->total_slots * stride;
+        for (; p < pend; p += stride) {
+            VALUE vp = (VALUE)p;
+            switch (BUILTIN_TYPE(vp)) {
+              case T_DATA: {
+                if (rb_obj_is_mutex(vp) || rb_obj_is_thread(vp)) {
+                    rb_data_free(objspace, vp);
+                }
+                break;
+              }
+              case T_ARRAY:
+                obj_free(objspace, vp);
+                break;
+              default:
+                break;
+            }
+        }
+    }
+}
+
+
+void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
     size_t i;
@@ -4648,7 +4677,14 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                     make_io_zombie(objspace, vp);
                 }
                 break;
+              case T_SYMBOL:
+              case T_ARRAY:
+              case T_NONE:
+                break;
               default:
+                if (rb_free_on_exit) {
+                    obj_free(objspace, vp);
+                }
                 break;
             }
             if (poisoned) {
