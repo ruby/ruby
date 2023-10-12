@@ -6370,16 +6370,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         extra_codepoints_start = unicode_start;
                     }
 
-                    uint32_t value = escape_unicode(unicode_start, hexadecimal_length);
-
-                    if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                        if (codepoints_count == 1) {
-                            pm_buffer_append_bytes(buffer, (const uint8_t *) "\\u{", 3);
-                        } else {
-                            pm_buffer_append_u8(buffer, ' ');
-                        }
-                        pm_buffer_append_bytes(buffer, unicode_start, hexadecimal_length);
-                    } else {
+                    if (!(flags & PM_ESCAPE_FLAG_REGEXP)) {
+                        uint32_t value = escape_unicode(unicode_start, hexadecimal_length);
                         escape_write_unicode(parser, buffer, unicode_start, parser->current.end, value);
                     }
 
@@ -6393,12 +6385,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
 
                 if (peek(parser) == '}') {
                     parser->current.end++;
-
-                    if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                        pm_buffer_append_u8(buffer, '}');
-                    }
                 } else {
                     pm_parser_err(parser, unicode_codepoints_start, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE_TERM);
+                }
+
+                if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                    pm_buffer_append_bytes(buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
                 }
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_UNICODE);
@@ -6508,6 +6500,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 return;
             }
         }
+        /* fallthrough */
         default: {
             if (parser->current.end < parser->end) {
                 pm_buffer_append_u8(buffer, *parser->current.end++);

@@ -131,11 +131,11 @@ module Prism
       (0...256).each do |ord|
         # I think this might be a bug in Ruby.
         next if context.name == "?" && ord == 0xFF
-        
+
         # We don't currently support scanning for the number of capture groups
         # to validate backreferences so these are all going to fail.
         next if (context.name == "//" || context.name.start_with?("%r")) && ord.chr.start_with?(/\d/)
-        
+
         # \a \b \c ...
         assert_unescape(context, ord.chr)
       end
@@ -162,8 +162,12 @@ module Prism
       # \u0000 \u0001 \u0002 ...
       assert_unescape(context, "u#{["5"].concat(hex.sample(3)).join}")
 
-      # \u{00  00} ...
-      assert_unescape(context, "u{00#{["5"].concat(hex.sample(3)).join} \t\v 00#{["5"].concat(hex.sample(3)).join}}")
+      # The behavior of whitespace in the middle of these escape sequences
+      # changed in Ruby 3.3.0, so we only want to test against latest.
+      if RUBY_VERSION >= "3.3.0"
+        # \u{00  00} ...
+        assert_unescape(context, "u{00#{["5"].concat(hex.sample(3)).join} \t\v 00#{["5"].concat(hex.sample(3)).join}}")
+      end
 
       (0...128).each do |ord|
         chr = ord.chr

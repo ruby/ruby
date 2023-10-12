@@ -136,7 +136,7 @@ module Prism
   # This represents a field on a node that is a location.
   class LocationField < Field
     def semantic_field?
-      options[:semantic_field] || false
+      false
     end
 
     def rbs_class
@@ -151,7 +151,7 @@ module Prism
   # This represents a field on a node that is a location that is optional.
   class OptionalLocationField < Field
     def semantic_field?
-      options[:semantic_field] || false
+      false
     end
 
     def rbs_class
