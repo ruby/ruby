@@ -4508,8 +4508,6 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
 
             assert((label.end - label.start) >= 0);
             pm_string_shared_init(&node->unescaped, label.start, label.end);
-
-            pm_unescape_manipulate_string(parser, &node->unescaped, PM_UNESCAPE_ALL);
             break;
         }
         case PM_TOKEN_MISSING: {
