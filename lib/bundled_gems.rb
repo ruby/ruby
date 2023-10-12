@@ -102,7 +102,7 @@ module Gem::BUNDLED_GEMS
             break
           end
         end
-        msg += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
+        msg += " Also contact author of #{caller_gem} to add #{gem} into its gemspec."
       end
     else
       msg += " Install #{gem} from RubyGems."
