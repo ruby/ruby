@@ -243,9 +243,7 @@ module Bundler
 
       [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
-        kernel_class.send(:define_method, :require) do |file|
-          file = File.path(file)
-          name = file.tr("/", "-")
+        kernel_class.send(:define_method, :require) do |name|
           if message = ::Gem::BUNDLED_GEMS.warning?(name)
             message += " Add #{name} to your Gemfile."
             location = caller_locations(1,1)[0]&.path
@@ -261,7 +259,7 @@ module Bundler
             end
             warn message, :uplevel => 1
           end
-          kernel_class.send(:no_warning_require, file)
+          kernel_class.send(:no_warning_require, name)
         end
         if kernel_class == ::Kernel
           kernel_class.send(:private, :require)
