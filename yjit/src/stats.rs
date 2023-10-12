@@ -567,6 +567,21 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
     }
 }
 
+/// Increment a counter by name from the CRuby side
+/// Warning: this is not fast because it requires a hash lookup, so don't use in tight loops
+#[no_mangle]
+pub extern "C" fn rb_yjit_incr_counter(counter_name: *const std::os::raw::c_char) {
+    use std::ffi::CStr;
+
+    if !get_option!(gen_stats) {
+        return;
+    }
+
+    let counter_name = unsafe { CStr::from_ptr(counter_name).to_str().unwrap() };
+    let counter_ptr = get_counter_ptr(counter_name);
+    unsafe { *counter_ptr += 1 };
+}
+
 /// Export all YJIT statistics as a Ruby hash.
 fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
     // If YJIT is not enabled, return Qnil
