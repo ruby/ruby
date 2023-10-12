@@ -369,6 +369,12 @@ module Prism
       test_prism_eval("class B::D < A::C; end")
     end
 
+    def test_ModuleNode
+      test_prism_eval("module M; end")
+      test_prism_eval("module M::N; end")
+      test_prism_eval("module ::O; end")
+    end
+
     def test_ParenthesesNode
       test_prism_eval("()")
       test_prism_eval("(1)")

@@ -1998,7 +1998,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
 
         const int flags = VM_DEFINECLASS_TYPE_MODULE |
-            pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, popped, compile_context);
+            pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, false, compile_context);
 
         ADD_INSN(ret, &dummy_line_node, putnil);
         ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
