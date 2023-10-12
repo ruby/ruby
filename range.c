@@ -2386,6 +2386,19 @@ empty_region_p(VALUE beg, VALUE end, int excl)
  *    (1..2).overlap?(3..4)      # => false
  *    (1...3).overlap?(3..4)     # => false
  *
+ *  This method assumes that there is no minimum value because
+ *  Ruby lacks a standard method for determining minimum values.
+ *  This assumption is invalid.
+ *  For example, there is no value smaller than +-Float::INFINITY+,
+ *  making +(...-Float::INFINITY)+ an empty set.
+ *  Consequently, +(...-Float::INFINITY)+ has no elements in common with itself,
+ *  yet +(...-Float::INFINITY).overlap?((...-Float::INFINITY))+ returns
+ *  true due to this assumption.
+ *  In general, if +r = (...minimum); r.overlap?(r)+ returns +true+,
+ *  where +minimum+ is a value that no value is smaller than.
+ *  Such values include +-Float::INFINITY+, +[]+, +""+, and
+ *  classes without subclasses.
+ *
  *  Related: Range#cover?.
  */
 
