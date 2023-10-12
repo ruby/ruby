@@ -6813,6 +6813,40 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
 }
 
+// Effectively the same thing as pm_strspn_inline_whitespace, but in the case of
+// a tilde heredoc expands out tab characters to the nearest tab boundaries.
+static inline size_t
+pm_heredoc_strspn_inline_whitespace(pm_parser_t *parser, const uint8_t **cursor, pm_heredoc_indent_t indent) {
+    size_t whitespace = 0;
+
+    switch (indent) {
+        case PM_HEREDOC_INDENT_NONE:
+            // Do nothing, we can't match a terminator with
+            // indentation and there's no need to calculate common
+            // whitespace.
+            break;
+        case PM_HEREDOC_INDENT_DASH:
+            // Skip past inline whitespace.
+            *cursor += pm_strspn_inline_whitespace(*cursor, parser->end - *cursor);
+            break;
+        case PM_HEREDOC_INDENT_TILDE:
+            // Skip past inline whitespace and calculate common
+            // whitespace.
+            while (*cursor < parser->end && pm_char_is_inline_whitespace(**cursor)) {
+                if (**cursor == '\t') {
+                    whitespace = (whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
+                } else {
+                    whitespace++;
+                }
+                (*cursor)++;
+            }
+
+            break;
+    }
+
+    return whitespace;
+}
+
 // This is a convenience macro that will set the current token type, call the
 // lex callback, and then return from the parser_lex function.
 #define LEX(token_type) parser->current.type = token_type; parser_lex_callback(parser); return
@@ -8562,31 +8596,7 @@ parser_lex(pm_parser_t *parser) {
             // terminator, then we need to return the ending of the heredoc.
             if (current_token_starts_line(parser)) {
                 const uint8_t *start = parser->current.start;
-                size_t whitespace = 0;
-
-                switch (lex_mode->as.heredoc.indent) {
-                    case PM_HEREDOC_INDENT_NONE:
-                        // Do nothing, we can't match a terminator with
-                        // indentation and there's no need to calculate common
-                        // whitespace.
-                        break;
-                    case PM_HEREDOC_INDENT_DASH:
-                        // Skip past inline whitespace.
-                        start += pm_strspn_inline_whitespace(start, parser->end - start);
-                        break;
-                    case PM_HEREDOC_INDENT_TILDE:
-                        // Skip past inline whitespace and calculate common
-                        // whitespace.
-                        while (start < parser->end && pm_char_is_inline_whitespace(*start)) {
-                            if (*start == '\t') {
-                                whitespace = (whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
-                            } else {
-                                whitespace++;
-                            }
-                            start++;
-                        }
-                        break;
-                }
+                size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
 
                 if ((start + ident_length <= parser->end) && (memcmp(start, ident_start, ident_length) == 0)) {
                     bool matched = true;
@@ -8661,31 +8671,7 @@ parser_lex(pm_parser_t *parser) {
                         // If we have a - or ~ heredoc, then we can match after
                         // some leading whitespace.
                         const uint8_t *start = breakpoint + 1;
-                        size_t whitespace = 0;
-
-                        switch (lex_mode->as.heredoc.indent) {
-                            case PM_HEREDOC_INDENT_NONE:
-                                // Do nothing, we can't match a terminator with
-                                // indentation and there's no need to calculate
-                                // common whitespace.
-                                break;
-                            case PM_HEREDOC_INDENT_DASH:
-                                // Skip past inline whitespace.
-                                start += pm_strspn_inline_whitespace(start, parser->end - start);
-                                break;
-                            case PM_HEREDOC_INDENT_TILDE:
-                                // Skip past inline whitespace and calculate common
-                                // whitespace.
-                                while (start < parser->end && pm_char_is_inline_whitespace(*start)) {
-                                    if (*start == '\t') {
-                                        whitespace = (whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
-                                    } else {
-                                        whitespace++;
-                                    }
-                                    start++;
-                                }
-                                break;
-                        }
+                        size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
 
                         // If we have hit a newline that is followed by a valid
                         // terminator, then we need to return the content of the
@@ -12384,16 +12370,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             content.start = content.start + 1;
 
             pm_token_t closing = not_provided(parser);
-            pm_string_node_t *node = (pm_string_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
+            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
                 pm_node_t *concat = parse_strings(parser);
-                return (pm_node_t *) pm_string_concat_node_create(parser, (pm_node_t *) node, concat);
+                return (pm_node_t *) pm_string_concat_node_create(parser, node, concat);
             }
 
-            return (pm_node_t *) node;
+            return node;
         }
         case PM_TOKEN_CLASS_VARIABLE: {
             parser_lex(parser);
@@ -12620,16 +12606,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 pm_node_list_append(&parts, part);
 
                 while (!match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
-                    if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                        pm_token_t opening = not_provided(parser);
-                        pm_token_t closing = not_provided(parser);
-                        part = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
-                        parser_lex(parser);
-                    } else {
-                        part = parse_string_part(parser);
-                    }
-
-                    if (part != NULL) {
+                    if ((part = parse_string_part(parser)) != NULL) {
                         pm_node_list_append(&parts, part);
                     }
                 }
