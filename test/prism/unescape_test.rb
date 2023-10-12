@@ -108,40 +108,50 @@ module Prism
     escapes = [*ascii, *ascii8, *newlines, *octal, *hex2, *hex4, *hex6, *ctrls]
 
     contexts = [
-      [Context::String.new("?", ""),              escapes],
-      [Context::String.new("'", "'"),             escapes],
-      [Context::String.new("\"", "\""),           escapes],
-      [Context::String.new("%q[", "]"),           escapes],
-      [Context::String.new("%Q[", "]"),           escapes],
-      [Context::String.new("%[", "]"),            escapes],
-      [Context::String.new("`", "`"),             escapes],
-      [Context::String.new("%x[", "]"),           escapes],
-      [Context::String.new("<<H\n", "\nH"),       escapes],
-      [Context::String.new("<<'H'\n", "\nH"),     escapes],
-      [Context::String.new("<<\"H\"\n", "\nH"),   escapes],
-      [Context::String.new("<<`H`\n", "\nH"),     escapes],
-      [Context::String.new("<<-H\n", "\nH"),      escapes],
-      [Context::String.new("<<-'H'\n", "\nH"),    escapes],
-      [Context::String.new("<<-\"H\"\n", "\nH"),  escapes],
-      [Context::String.new("<<-`H`\n", "\nH"),    escapes],
-      [Context::Heredoc.new("<<~H\n", "\nH"),     escapes],
-      [Context::Heredoc.new("<<~'H'\n", "\nH"),   escapes],
-      [Context::Heredoc.new("<<~\"H\"\n", "\nH"), escapes],
-      [Context::Heredoc.new("<<~`H`\n", "\nH"),   escapes],
-      [Context::List.new("%w[", "]"),             escapes],
-      [Context::List.new("%W[", "]"),             escapes],
-      [Context::List.new("%i[", "]"),             escapes],
-      [Context::List.new("%I[", "]"),             escapes],
-      [Context::Symbol.new("%s[", "]"),           escapes],
-      [Context::Symbol.new(":'", "'"),            escapes],
-      [Context::Symbol.new(":\"", "\""),          escapes],
-      # [Context::RegExp.new("/", "/"),            escapes],
-      # [Context::RegExp.new("%r[", "]"),          escapes]
+      Context::String.new("?", ""),
+      Context::String.new("'", "'"),
+      Context::String.new("\"", "\""),
+      Context::String.new("%q[", "]"),
+      Context::String.new("%Q[", "]"),
+      Context::String.new("%[", "]"),
+      Context::String.new("`", "`"),
+      Context::String.new("%x[", "]"),
+      Context::String.new("<<H\n", "\nH"),
+      Context::String.new("<<'H'\n", "\nH"),
+      Context::String.new("<<\"H\"\n", "\nH"),
+      Context::String.new("<<`H`\n", "\nH"),
+      Context::String.new("<<-H\n", "\nH"),
+      Context::String.new("<<-'H'\n", "\nH"),
+      Context::String.new("<<-\"H\"\n", "\nH"),
+      Context::String.new("<<-`H`\n", "\nH"),
+      Context::Heredoc.new("<<~H\n", "\nH"),
+      Context::Heredoc.new("<<~'H'\n", "\nH"),
+      Context::Heredoc.new("<<~\"H\"\n", "\nH"),
+      Context::Heredoc.new("<<~`H`\n", "\nH"),
+      Context::List.new("%w[", "]"),
+      Context::List.new("%w<", ">"),
+      Context::List.new("%W[", "]"),
+      Context::List.new("%i[", "]"),
+      Context::List.new("%I[", "]"),
+      Context::Symbol.new("%s[", "]"),
+      Context::Symbol.new(":'", "'"),
+      Context::Symbol.new(":\"", "\""),
+      Context::RegExp.new("/", "/"),
+      Context::RegExp.new("%r[", "]"),
+      Context::RegExp.new("%r<", ">"),
+      Context::RegExp.new("%r{", "}"),
+      Context::RegExp.new("%r(", ")"),
+      Context::RegExp.new("%r|", "|"),
     ]
 
-    contexts.each do |(context, escapes)|
+    contexts.each do |context|
       escapes.each do |escape|
-        next if context.name == "?" && escape == "\xFF".b # wat?
+        # I think this might be a bug in Ruby.
+        next if context.name == "?" && escape == "\xFF".b
+
+        # We don't currently support scanning for the number of capture groups,
+        # so these are all going to fail.
+        next if (context.name == "//" || context.name.start_with?("%r")) && escape.start_with?(/\d/)
 
         define_method(:"test_#{context.name}_#{escape.inspect}") do
           assert_unescape(context, escape)
