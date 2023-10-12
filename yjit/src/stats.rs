@@ -267,6 +267,8 @@ make_counters! {
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
+    send_iseq_clobbering_block_arg,
+    send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_only_keywords,
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
