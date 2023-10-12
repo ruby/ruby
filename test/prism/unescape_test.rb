@@ -87,86 +87,115 @@ module Prism
       end
     end
 
-    ascii = (0...128).map(&:chr)
-    ascii8 = (128...256).map(&:chr)
-    newlines = ["\r\n"]
-
-    octal = [*("0".."7")]
-    octal = octal.product(octal).map(&:join).concat(octal.product(octal).product(octal).map(&:join))
-
-    hex2 = [*("a".."f"), *("A".."F"), *("0".."9")]
-    hex2 = hex2.map { |h| "x#{h}" }.concat(hex2.product(hex2).map { |h| "x#{h.join}" })
-
-    hex4 = [*("a".."f"), *("A".."F"), *("0".."9")]
-    hex4 = ["5", "6"].product(hex4.sample(4)).product(hex4.sample(4)).product(hex4.sample(4)).map { |h| "u#{h.join}" }
-
-    hex6 = [*("a".."f"), *("A".."F"), *("0".."9")]
-    hex6 = ["5", "6"].product(hex6.sample(2)).product(hex6.sample(2)).product(hex6.sample(2)).map { |h| "u{00#{h.join}}" }
-
-    ctrls = (ascii.grep(/[[:print:]]/) - ["\\"]).flat_map { |c| ["C-#{c}", "c#{c}", "M-#{c}", "M-\\C-#{c}", "M-\\c#{c}", "c\\M-#{c}"] }
-
-    escapes = [*ascii, *ascii8, *newlines, *octal, *hex2, *hex4, *hex6, *ctrls]
-
-    contexts = [
-      Context::String.new("?", ""),
-      Context::String.new("'", "'"),
-      Context::String.new("\"", "\""),
-      Context::String.new("%q[", "]"),
-      Context::String.new("%Q[", "]"),
-      Context::String.new("%[", "]"),
-      Context::String.new("`", "`"),
-      Context::String.new("%x[", "]"),
-      Context::String.new("<<H\n", "\nH"),
-      Context::String.new("<<'H'\n", "\nH"),
-      Context::String.new("<<\"H\"\n", "\nH"),
-      Context::String.new("<<`H`\n", "\nH"),
-      Context::String.new("<<-H\n", "\nH"),
-      Context::String.new("<<-'H'\n", "\nH"),
-      Context::String.new("<<-\"H\"\n", "\nH"),
-      Context::String.new("<<-`H`\n", "\nH"),
-      Context::Heredoc.new("<<~H\n", "\nH"),
-      Context::Heredoc.new("<<~'H'\n", "\nH"),
-      Context::Heredoc.new("<<~\"H\"\n", "\nH"),
-      Context::Heredoc.new("<<~`H`\n", "\nH"),
-      Context::List.new("%w[", "]"),
-      Context::List.new("%w<", ">"),
-      Context::List.new("%W[", "]"),
-      Context::List.new("%i[", "]"),
-      Context::List.new("%I[", "]"),
-      Context::Symbol.new("%s[", "]"),
-      Context::Symbol.new(":'", "'"),
-      Context::Symbol.new(":\"", "\""),
-      Context::RegExp.new("/", "/"),
-      Context::RegExp.new("%r[", "]"),
-      Context::RegExp.new("%r<", ">"),
-      Context::RegExp.new("%r{", "}"),
-      Context::RegExp.new("%r(", ")"),
-      Context::RegExp.new("%r|", "|"),
-    ]
-
-    contexts.each do |context|
-      escapes.each do |escape|
-        # I think this might be a bug in Ruby.
-        next if context.name == "?" && escape == "\xFF".b
-
-        # We don't currently support scanning for the number of capture groups,
-        # so these are all going to fail.
-        next if (context.name == "//" || context.name.start_with?("%r")) && escape.start_with?(/\d/)
-
-        define_method(:"test_#{context.name}_#{escape.inspect}") do
-          assert_unescape(context, escape)
-        end
-      end
-    end
+    def test_char; assert_context(Context::String.new("?", "")); end
+    def test_sqte; assert_context(Context::String.new("'", "'")); end
+    def test_dqte; assert_context(Context::String.new("\"", "\"")); end
+    def test_lwrq; assert_context(Context::String.new("%q[", "]")); end
+    def test_uprq; assert_context(Context::String.new("%Q[", "]")); end
+    def test_dstr; assert_context(Context::String.new("%[", "]")); end
+    def test_xstr; assert_context(Context::String.new("`", "`")); end
+    def test_lwrx; assert_context(Context::String.new("%x[", "]")); end
+    def test_h0_1; assert_context(Context::String.new("<<H\n", "\nH")); end
+    def test_h0_2; assert_context(Context::String.new("<<'H'\n", "\nH")); end
+    def test_h0_3; assert_context(Context::String.new("<<\"H\"\n", "\nH")); end
+    def test_h0_4; assert_context(Context::String.new("<<`H`\n", "\nH")); end
+    def test_hd_1; assert_context(Context::String.new("<<-H\n", "\nH")); end
+    def test_hd_2; assert_context(Context::String.new("<<-'H'\n", "\nH")); end
+    def test_hd_3; assert_context(Context::String.new("<<-\"H\"\n", "\nH")); end
+    def test_hd_4; assert_context(Context::String.new("<<-`H`\n", "\nH")); end
+    def test_ht_1; assert_context(Context::Heredoc.new("<<~H\n", "\nH")); end
+    def test_ht_2; assert_context(Context::Heredoc.new("<<~'H'\n", "\nH")); end
+    def test_ht_3; assert_context(Context::Heredoc.new("<<~\"H\"\n", "\nH")); end
+    def test_ht_4; assert_context(Context::Heredoc.new("<<~`H`\n", "\nH")); end
+    def test_pw_1; assert_context(Context::List.new("%w[", "]")); end
+    def test_pw_2; assert_context(Context::List.new("%w<", ">")); end
+    def test_uprw; assert_context(Context::List.new("%W[", "]")); end
+    def test_lwri; assert_context(Context::List.new("%i[", "]")); end
+    def test_upri; assert_context(Context::List.new("%I[", "]")); end
+    def test_lwrs; assert_context(Context::Symbol.new("%s[", "]")); end
+    def test_sym1; assert_context(Context::Symbol.new(":'", "'")); end
+    def test_sym2; assert_context(Context::Symbol.new(":\"", "\"")); end
+    def test_reg1; assert_context(Context::RegExp.new("/", "/")); end
+    def test_reg2; assert_context(Context::RegExp.new("%r[", "]")); end
+    def test_reg3; assert_context(Context::RegExp.new("%r<", ">")); end
+    def test_reg4; assert_context(Context::RegExp.new("%r{", "}")); end
+    def test_reg5; assert_context(Context::RegExp.new("%r(", ")")); end
+    def test_reg6; assert_context(Context::RegExp.new("%r|", "|")); end
 
     private
+
+    def assert_context(context)
+      octal = [*("0".."7")]
+      hex = [*("a".."f"), *("A".."F"), *("0".."9")]
+
+      (0...256).each do |ord|
+        # I think this might be a bug in Ruby.
+        next if context.name == "?" && ord == 0xFF
+        
+        # We don't currently support scanning for the number of capture groups
+        # to validate backreferences so these are all going to fail.
+        next if (context.name == "//" || context.name.start_with?("%r")) && ord.chr.start_with?(/\d/)
+        
+        # \a \b \c ...
+        assert_unescape(context, ord.chr)
+      end
+
+      # \\r\n
+      assert_unescape(context, "\r\n")
+
+      # We don't currently support scanning for the number of capture groups to
+      # validate backreferences so these are all going to fail.
+      if context.name != "//" && !context.name.start_with?("%r")
+        # \00 \01 \02 ...
+        octal.product(octal).each { |digits| assert_unescape(context, digits.join) }
+
+        # \000 \001 \002 ...
+        octal.product(octal).product(octal).each { |digits| assert_unescape(context, digits.join) }
+      end
+
+      # \x0 \x1 \x2 ...
+      hex.each { |digit| assert_unescape(context, "x#{digit}") }
+
+      # \x00 \x01 \x02 ...
+      hex.product(hex).each { |digits| assert_unescape(context, "x#{digits.join}") }
+
+      # \u0000 \u0001 \u0002 ...
+      assert_unescape(context, "u#{["5"].concat(hex.sample(3)).join}")
+
+      # \u{00  00} ...
+      assert_unescape(context, "u{00#{["5"].concat(hex.sample(3)).join} \t\v 00#{["5"].concat(hex.sample(3)).join}}")
+
+      (0...128).each do |ord|
+        chr = ord.chr
+        next if chr == "\\" || !chr.match?(/[[:print:]]/)
+
+        # \C-a \C-b \C-c ...
+        assert_unescape(context, "C-#{chr}")
+
+        # \ca \cb \cc ...
+        assert_unescape(context, "c#{chr}")
+
+        # \M-a \M-b \M-c ...
+        assert_unescape(context, "M-#{chr}")
+
+        # \M-\C-a \M-\C-b \M-\C-c ...
+        assert_unescape(context, "M-\\C-#{chr}")
+
+        # \M-\ca \M-\cb \M-\cc ...
+        assert_unescape(context, "M-\\c#{chr}")
+
+        # \c\M-a \c\M-b \c\M-c ...
+        assert_unescape(context, "c\\M-#{chr}")
+      end
+    end
 
     def assert_unescape(context, escape)
       expected = context.ruby_result(escape)
       actual = context.prism_result(escape)
 
       message = -> do
-        "Expected #{context.name} to unescape #{escape.inspect} to #{expected.inspect}, but got #{actual.inspect}"
+        "Expected #{context.name} to unescape #{escape.inspect} to " \
+          "#{expected.inspect}, but got #{actual.inspect}"
       end
 
       if expected == :error || actual == :error
