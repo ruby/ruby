@@ -612,8 +612,6 @@ typedef struct RNode_LIT {
     NODE node;
 
     VALUE nd_lit;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_lit_t;
 
 typedef struct RNode_STR {
