@@ -6279,15 +6279,15 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             return;
         }
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
-            uint8_t value = *parser->current.end - '0';
+            uint8_t value = (uint8_t) (*parser->current.end - '0');
             parser->current.end++;
 
             if (pm_char_is_octal_digit(peek(parser))) {
-                value = (uint8_t) ((value << 3) | (*parser->current.end - '0'));
+                value = ((uint8_t) (value << 3)) | ((uint8_t) (*parser->current.end - '0'));
                 parser->current.end++;
 
                 if (pm_char_is_octal_digit(peek(parser))) {
-                    value = (uint8_t) ((value << 3) | (*parser->current.end - '0'));
+                    value = ((uint8_t) (value << 3)) | ((uint8_t) (*parser->current.end - '0'));
                     parser->current.end++;
                 }
             }
@@ -6400,8 +6400,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
         }
         case 'c': {
             parser->current.end++;
-            uint8_t peeked = peek(parser);
+            if (parser->current.end == parser->end) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                return;
+            }
 
+            uint8_t peeked = peek(parser);
             switch (peeked) {
                 case '?': {
                     parser->current.end++;
@@ -6436,8 +6440,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             }
 
             parser->current.end++;
-            uint8_t peeked = peek(parser);
+            if (parser->current.end == parser->end) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                return;
+            }
 
+            uint8_t peeked = peek(parser);
             switch (peeked) {
                 case '?': {
                     parser->current.end++;
@@ -6472,8 +6480,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             }
 
             parser->current.end++;
-            uint8_t peeked = peek(parser);
+            if (parser->current.end == parser->end) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                return;
+            }
 
+            uint8_t peeked = peek(parser);
             if (peeked == '\\') {
                 if (flags & PM_ESCAPE_FLAG_META) {
                     pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
@@ -8073,7 +8085,8 @@ parser_lex(pm_parser_t *parser) {
                     // If this terminator doesn't actually close the list, then
                     // we need to continue on past it.
                     if (lex_mode->as.list.nesting > 0) {
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         lex_mode->as.list.nesting--;
                         continue;
                     }
@@ -8099,7 +8112,6 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
                     parser->current.end = breakpoint + 1;
-                    pm_token_buffer_escape(parser, &token_buffer);
 
                     // If we've hit the end of the file, then break out of the
                     // loop by setting the breakpoint to NULL.
@@ -8108,7 +8120,9 @@ parser_lex(pm_parser_t *parser) {
                         continue;
                     }
 
+                    pm_token_buffer_escape(parser, &token_buffer);
                     uint8_t peeked = peek(parser);
+
                     switch (peeked) {
                         case ' ':
                         case '\f':
@@ -8185,13 +8199,19 @@ parser_lex(pm_parser_t *parser) {
                 // If we've hit the incrementor, then we need to skip past it
                 // and find the next breakpoint.
                 assert(*breakpoint == lex_mode->as.list.incrementor);
-                breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                parser->current.end = breakpoint + 1;
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                 lex_mode->as.list.nesting++;
                 continue;
             }
 
-            // If we were unable to find a breakpoint, then this token hits the end of
-            // the file.
+            if (parser->current.end > parser->current.start) {
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
+
+            // If we were unable to find a breakpoint, then this token hits the
+            // end of the file.
             LEX(PM_TOKEN_EOF);
         }
         case PM_LEX_REGEXP: {
@@ -8223,7 +8243,8 @@ parser_lex(pm_parser_t *parser) {
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
                 if (*breakpoint == '\0') {
-                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    parser->current.end = breakpoint + 1;
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
 
@@ -8244,7 +8265,8 @@ parser_lex(pm_parser_t *parser) {
                     if (lex_mode->as.regexp.terminator != '\n') {
                         // If the terminator is not a newline, then we can set
                         // the next breakpoint and continue.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         continue;
                     }
                 }
@@ -8253,7 +8275,8 @@ parser_lex(pm_parser_t *parser) {
                 // token to return.
                 if (*breakpoint == lex_mode->as.regexp.terminator) {
                     if (lex_mode->as.regexp.nesting > 0) {
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         lex_mode->as.regexp.nesting--;
                         continue;
                     }
@@ -8282,9 +8305,17 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
                     parser->current.end = breakpoint + 1;
-                    pm_token_buffer_escape(parser, &token_buffer);
 
+                    // If we've hit the end of the file, then break out of the
+                    // loop by setting the breakpoint to NULL.
+                    if (parser->current.end == parser->end) {
+                        breakpoint = NULL;
+                        continue;
+                    }
+
+                    pm_token_buffer_escape(parser, &token_buffer);
                     uint8_t peeked = peek(parser);
+
                     switch (peeked) {
                         case '\r':
                             parser->current.end++;
@@ -8357,13 +8388,19 @@ parser_lex(pm_parser_t *parser) {
                 // If we've hit the incrementor, then we need to skip past it
                 // and find the next breakpoint.
                 assert(*breakpoint == lex_mode->as.regexp.incrementor);
-                breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                parser->current.end = breakpoint + 1;
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                 lex_mode->as.regexp.nesting++;
                 continue;
             }
 
-            // At this point, the breakpoint is NULL which means we were unable to
-            // find anything before the end of the file.
+            if (parser->current.end > parser->current.start) {
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
+
+            // If we were unable to find a breakpoint, then this token hits the
+            // end of the file.
             LEX(PM_TOKEN_EOF);
         }
         case PM_LEX_STRING: {
@@ -8397,7 +8434,8 @@ parser_lex(pm_parser_t *parser) {
                 // continue lexing.
                 if (lex_mode->as.string.incrementor != '\0' && *breakpoint == lex_mode->as.string.incrementor) {
                     lex_mode->as.string.nesting++;
-                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    parser->current.end = breakpoint + 1;
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
 
@@ -8408,7 +8446,8 @@ parser_lex(pm_parser_t *parser) {
                     // If this terminator doesn't actually close the string, then we need
                     // to continue on past it.
                     if (lex_mode->as.string.nesting > 0) {
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         lex_mode->as.string.nesting--;
                         continue;
                     }
@@ -8449,7 +8488,8 @@ parser_lex(pm_parser_t *parser) {
                 if (*breakpoint == '\n') {
                     if (parser->heredoc_end == NULL) {
                         pm_newline_list_append(&parser->newline_list, breakpoint);
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         continue;
                     } else {
                         parser->current.end = breakpoint + 1;
@@ -8462,12 +8502,12 @@ parser_lex(pm_parser_t *parser) {
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     case '\\': {
                         // Here we hit escapes.
                         parser->current.end = breakpoint + 1;
-                        pm_token_buffer_escape(parser, &token_buffer);
 
                         // If we've hit the end of the file, then break out of
                         // the loop by setting the breakpoint to NULL.
@@ -8476,7 +8516,9 @@ parser_lex(pm_parser_t *parser) {
                             continue;
                         }
 
+                        pm_token_buffer_escape(parser, &token_buffer);
                         uint8_t peeked = peek(parser);
+
                         switch (peeked) {
                             case '\\':
                                 pm_token_buffer_push(&token_buffer, '\\');
@@ -8557,9 +8599,13 @@ parser_lex(pm_parser_t *parser) {
                 }
             }
 
+            if (parser->current.end > parser->current.start) {
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
+
             // If we've hit the end of the string, then this is an unterminated
             // string. In that case we'll return the EOF token.
-            parser->current.end = parser->end;
             LEX(PM_TOKEN_EOF);
         }
         case PM_LEX_HEREDOC: {
@@ -8649,7 +8695,8 @@ parser_lex(pm_parser_t *parser) {
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     case '\n': {
                         if (parser->heredoc_end != NULL && (parser->heredoc_end > breakpoint)) {
@@ -8703,7 +8750,8 @@ parser_lex(pm_parser_t *parser) {
 
                         // Otherwise we hit a newline and it wasn't followed by
                         // a terminator, so we can continue parsing.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
                     case '\\': {
@@ -8714,7 +8762,6 @@ parser_lex(pm_parser_t *parser) {
                         // newline so that we can still potentially find the
                         // terminator of the heredoc.
                         parser->current.end = breakpoint + 1;
-                        pm_token_buffer_escape(parser, &token_buffer);
 
                         // If we've hit the end of the file, then break out of
                         // the loop by setting the breakpoint to NULL.
@@ -8723,7 +8770,9 @@ parser_lex(pm_parser_t *parser) {
                             continue;
                         }
 
+                        pm_token_buffer_escape(parser, &token_buffer);
                         uint8_t peeked = peek(parser);
+
                         if (quote == PM_HEREDOC_QUOTE_SINGLE) {
                             switch (peeked) {
                                 case '\r':
@@ -8796,9 +8845,14 @@ parser_lex(pm_parser_t *parser) {
                 was_escaped_newline = false;
             }
 
+            if (parser->current.end > parser->current.start) {
+                parser->current.end = parser->end;
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
+
             // If we've hit the end of the string, then this is an unterminated
             // heredoc. In that case we'll return the EOF token.
-            parser->current.end = parser->end;
             LEX(PM_TOKEN_EOF);
         }
     }
