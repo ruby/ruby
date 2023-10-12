@@ -8730,17 +8730,6 @@ pm_regular_expression_node_create_and_unescape(pm_parser_t *parser, const pm_tok
     return node;
 }
 
-static pm_symbol_node_t *
-pm_symbol_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
-    pm_symbol_node_t *node = pm_symbol_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_string(parser, &node->unescaped, unescape_type);
-    return node;
-}
-
 static pm_string_node_t *
 pm_string_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
     pm_string_node_t *node = pm_string_node_create(parser, opening, content, closing);
@@ -11019,8 +11008,10 @@ parse_undef_argument(pm_parser_t *parser) {
 
             pm_token_t opening = not_provided(parser);
             pm_token_t closing = not_provided(parser);
+            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
 
-            return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+            pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+            return (pm_node_t *) symbol;
         }
         case PM_TOKEN_SYMBOL_BEGIN: {
             pm_lex_mode_t lex_mode = *parser->lex_modes.current;
@@ -11053,8 +11044,10 @@ parse_alias_argument(pm_parser_t *parser, bool first) {
             parser_lex(parser);
             pm_token_t opening = not_provided(parser);
             pm_token_t closing = not_provided(parser);
+            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
 
-            return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+            pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+            return (pm_node_t *) symbol;
         }
         case PM_TOKEN_SYMBOL_BEGIN: {
             pm_lex_mode_t lex_mode = *parser->lex_modes.current;
@@ -11986,10 +11979,10 @@ parse_strings(pm_parser_t *parser) {
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
                 node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
             } else if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
-                node = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             } else {
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
-                node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &parser->previous);
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             }
         } else if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
             // In this case we've hit string content so we know the string
@@ -12001,10 +11994,10 @@ parse_strings(pm_parser_t *parser) {
             parser_lex(parser);
 
             if (match1(parser, PM_TOKEN_STRING_END)) {
-                node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &parser->current);
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
                 parser_lex(parser);
             } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             } else {
                 // If we get here, then we have interpolation so we'll need
                 // to create a string or symbol node with interpolation.
@@ -13910,7 +13903,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 };
 
                 parser_lex(parser);
-                return (pm_node_t *) pm_regular_expression_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                return (pm_node_t *) pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
             }
 
             pm_interpolated_regular_expression_node_t *node;
