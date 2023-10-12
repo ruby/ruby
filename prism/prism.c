@@ -10946,7 +10946,15 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
         }
 
         // Now we can parse the first part of the symbol.
-        pm_node_t *part = parse_string_part(parser);
+        pm_node_t *part;
+        if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+            pm_token_t opening = not_provided(parser);
+            pm_token_t closing = not_provided(parser);
+            part = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
+            parser_lex(parser);
+        } else {
+            part = parse_string_part(parser);
+        }
 
         // If we got a string part, then it's possible that we could transform
         // what looks like an interpolated symbol into a regular symbol.
@@ -10963,7 +10971,16 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
         if (part) pm_node_list_append(&node_list, part);
 
         while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-            if ((part = parse_string_part(parser)) != NULL) {
+            if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                pm_token_t opening = not_provided(parser);
+                pm_token_t closing = not_provided(parser);
+                part = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
+                parser_lex(parser);
+            } else {
+                part = parse_string_part(parser);
+            }
+
+            if (part != NULL) {
                 pm_node_list_append(&node_list, part);
             }
         }
