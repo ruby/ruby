@@ -47,6 +47,7 @@ module Prism
         @constant_pool = nil
 
         @source = source
+        define_load_node_lambdas unless RUBY_ENGINE == 'ruby'
       end
 
       def load_encoding
@@ -194,32 +195,68 @@ module Prism
         load_constant(index - 1) if index != 0
       end
 
-      def load_node
-        type = io.getbyte
-        location = load_location
+      if RUBY_ENGINE == 'ruby'
+        def load_node
+          type = io.getbyte
+          location = load_location
 
-        case type
-        <%- nodes.each_with_index do |node, index| -%>
-        when <%= index + 1 %> then
-          <%- if node.needs_serialized_length? -%>
-          load_serialized_length
-          <%- end -%>
-          <%= node.name %>.new(<%= (node.fields.map { |field|
-            case field
-            when Prism::NodeField then "load_node"
-            when Prism::OptionalNodeField then "load_optional_node"
-            when Prism::StringField then "load_string"
-            when Prism::NodeListField then "Array.new(load_varint) { load_node }"
-            when Prism::ConstantField then "load_required_constant"
-            when Prism::OptionalConstantField then "load_optional_constant"
-            when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
-            when Prism::LocationField then "load_location"
-            when Prism::OptionalLocationField then "load_optional_location"
-            when Prism::UInt32Field, Prism::FlagsField then "load_varint"
-            else raise
-            end
-          } + ["location"]).join(", ") -%>)
-          <%- end -%>
+          case type
+          <%- nodes.each_with_index do |node, index| -%>
+          when <%= index + 1 %> then
+            <%- if node.needs_serialized_length? -%>
+            load_serialized_length
+            <%- end -%>
+            <%= node.name %>.new(<%= (node.fields.map { |field|
+              case field
+              when Prism::NodeField then "load_node"
+              when Prism::OptionalNodeField then "load_optional_node"
+              when Prism::StringField then "load_string"
+              when Prism::NodeListField then "Array.new(load_varint) { load_node }"
+              when Prism::ConstantField then "load_required_constant"
+              when Prism::OptionalConstantField then "load_optional_constant"
+              when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
+              when Prism::LocationField then "load_location"
+              when Prism::OptionalLocationField then "load_optional_location"
+              when Prism::UInt32Field, Prism::FlagsField then "load_varint"
+              else raise
+              end
+            } + ["location"]).join(", ") -%>)
+            <%- end -%>
+          end
+        end
+      else
+        def load_node
+          type = io.getbyte
+          @load_node_lambdas[type].call
+        end
+
+        def define_load_node_lambdas
+          @load_node_lambdas = [
+            nil,
+            <%- nodes.each do |node| -%>
+            -> {
+              location = load_location
+              <%- if node.needs_serialized_length? -%>
+              load_serialized_length
+              <%- end -%>
+              <%= node.name %>.new(<%= (node.fields.map { |field|
+                case field
+                when Prism::NodeField then "load_node"
+                when Prism::OptionalNodeField then "load_optional_node"
+                when Prism::StringField then "load_string"
+                when Prism::NodeListField then "Array.new(load_varint) { load_node }"
+                when Prism::ConstantField then "load_required_constant"
+                when Prism::OptionalConstantField then "load_optional_constant"
+                when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
+                when Prism::LocationField then "load_location"
+                when Prism::OptionalLocationField then "load_optional_location"
+                when Prism::UInt32Field, Prism::FlagsField then "load_varint"
+                else raise
+                end
+              } + ["location"]).join(", ") -%>)
+            },
+            <%- end -%>
+          ]
         end
       end
     end
