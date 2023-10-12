@@ -116,8 +116,20 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
 /// stack management
 
+static int
+get_sysconf_page_size(void)
+{
+    static long page_size = 0;
+
+    if (UNLIKELY(page_size == 0)) {
+        page_size = sysconf(_SC_PAGESIZE);
+        VM_ASSERT(page_size < INT_MAX);
+    }
+    return (int)page_size;
+}
+
 #define MSTACK_CHUNK_SIZE (512 * 1024 * 1024) // 512MB
-#define MSTACK_PAGE_SIZE 4096
+#define MSTACK_PAGE_SIZE get_sysconf_page_size()
 #define MSTACK_CHUNK_PAGE_NUM (MSTACK_CHUNK_SIZE / MSTACK_PAGE_SIZE - 1) // 1 is start redzone
 
 // 512MB chunk
