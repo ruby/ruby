@@ -360,6 +360,13 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
     return ST_DELETE;
 }
 
+void
+rb_free_loaded_features_index(rb_vm_t *vm)
+{
+    st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
+    st_free_table(vm->loaded_features_index);
+}
+
 static st_table *
 get_loaded_features_index(rb_vm_t *vm)
 {

@@ -18700,6 +18700,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/compar.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compile.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/cont.h
+vm.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 vm.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm.$(OBJEXT): $(top_srcdir)/internal/eval.h
 vm.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -18721,6 +18722,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm.$(OBJEXT): $(top_srcdir)/internal/struct.h
 vm.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 vm.$(OBJEXT): $(top_srcdir)/internal/thread.h
+vm.$(OBJEXT): $(top_srcdir)/internal/transcode.h
 vm.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm.$(OBJEXT): $(top_srcdir)/internal/warnings.h

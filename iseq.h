@@ -329,6 +329,8 @@ VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
 
 attr_index_t rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq);
 
+void rb_free_encoded_insn_data(void);
+
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_ISEQ_H */
