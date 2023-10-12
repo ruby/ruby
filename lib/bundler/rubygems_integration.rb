@@ -247,12 +247,7 @@ module Bundler
           file = File.path(file)
           name = file.tr("/", "-")
           if message = ::Gem::BUNDLED_GEMS.warning?(name)
-            target_file = begin
-              Bundler.default_gemfile.basename
-            rescue GemfileNotFound
-              "inline Gemfile"
-            end
-            message += " Add #{name} to your #{target_file}."
+            message += " Add #{name} to your Gemfile."
             location = caller_locations(1,1)[0]&.path
             if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
               caller_gem = nil
