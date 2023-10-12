@@ -4448,9 +4448,10 @@ pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
     return node;
 }
 
-// Allocate a new SymbolNode node.
+// Allocate and initialize a new SymbolNode node with the given unescaped
+// string.
 static pm_symbol_node_t *
-pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
+pm_symbol_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing, const pm_string_t *unescaped) {
     pm_symbol_node_t *node = PM_ALLOC_NODE(parser, pm_symbol_node_t);
 
     *node = (pm_symbol_node_t) {
@@ -4465,10 +4466,16 @@ pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_t
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .value_loc = PM_LOCATION_TOKEN_VALUE(value),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
-        .unescaped = PM_EMPTY_STRING
+        .unescaped = *unescaped
     };
 
     return node;
+}
+
+// Allocate a new SymbolNode node.
+static inline pm_symbol_node_t *
+pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
+    return pm_symbol_node_create_unescaped(parser, opening, value, closing, &PM_EMPTY_STRING);
 }
 
 // Allocate and initialize a new SymbolNode node from a label.
@@ -10909,7 +10916,6 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
 
     if (lex_mode->mode != PM_LEX_STRING) {
         if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
-        pm_token_t symbol;
 
         switch (parser->current.type) {
             case PM_TOKEN_IDENTIFIER:
@@ -10922,21 +10928,21 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
             case PM_TOKEN_BACK_REFERENCE:
             case PM_CASE_KEYWORD:
                 parser_lex(parser);
-                symbol = parser->previous;
                 break;
             case PM_CASE_OPERATOR:
                 lex_state_set(parser, next_state == PM_LEX_STATE_NONE ? PM_LEX_STATE_ENDFN : next_state);
                 parser_lex(parser);
-                symbol = parser->previous;
                 break;
             default:
                 expect2(parser, PM_TOKEN_IDENTIFIER, PM_TOKEN_METHOD_NAME, PM_ERR_SYMBOL_INVALID);
-                symbol = parser->previous;
                 break;
         }
 
         pm_token_t closing = not_provided(parser);
-        return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &symbol, &closing, PM_UNESCAPE_ALL);
+        pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
+
+        pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+        return (pm_node_t *) symbol;
     }
 
     if (lex_mode->as.string.interpolation) {
@@ -10947,7 +10953,7 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
 
             pm_token_t content = not_provided(parser);
             pm_token_t closing = parser->previous;
-            return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &closing, PM_UNESCAPE_NONE);
+            return (pm_node_t *) pm_symbol_node_create(parser, &opening, &content, &closing);
         }
 
         // Now we can parse the first part of the symbol.
@@ -10980,18 +10986,23 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
     }
 
     pm_token_t content;
-    if (accept1(parser, PM_TOKEN_STRING_CONTENT)) {
-        content = parser->previous;
+    pm_string_t unescaped;
+
+    if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+        content = parser->current;
+        unescaped = parser->current_string;
+        parser_lex(parser);
     } else {
         content = (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = parser->previous.end, .end = parser->previous.end };
+        pm_string_shared_init(&unescaped, content.start, content.end);
     }
 
     if (next_state != PM_LEX_STATE_NONE) {
         lex_state_set(parser, next_state);
     }
-    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
 
-    return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
+    return (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
 }
 
 // Parse an argument to undef which can either be a bare word, a
