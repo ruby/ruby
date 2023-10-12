@@ -104,6 +104,8 @@ module Gem::BUNDLED_GEMS
         end
         msg += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
       end
+    else
+      msg += " Install #{gem} from RubyGems."
     end
 
     msg
