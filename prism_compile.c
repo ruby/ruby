@@ -1757,7 +1757,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE(elements.nodes[index]);
         }
 
-        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
+        }
         return;
       }
       case PM_LAMBDA_NODE: {
