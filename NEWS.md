@@ -60,6 +60,10 @@ Note: We're only listing outstanding class updates.
 
     * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
 
+* Range
+
+    * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
+
 * Refinement
 
     * Add Refinement#target as an alternative of Refinement#refined_class.
@@ -185,6 +189,7 @@ changelog for details of the default gems or bundled gems.
 
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
+[Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
