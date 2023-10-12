@@ -245,18 +245,6 @@ module Bundler
         kernel_class.send(:alias_method, :no_warning_require, :require)
         kernel_class.send(:define_method, :require) do |name|
           if message = ::Gem::BUNDLED_GEMS.warning?(name)
-            message += " Add #{name} to your Gemfile."
-            location = caller_locations(1,1)[0]&.path
-            if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
-              caller_gem = nil
-              Gem.path.each do |path|
-                if location =~ %r{#{path}/gems/([\w\-\.]+)}
-                  caller_gem = $1
-                  break
-                end
-              end
-              message += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
-            end
             warn message, :uplevel => 1
           end
           kernel_class.send(:no_warning_require, name)
