@@ -7852,7 +7852,7 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
     p->lex.pcur += numlen;
     if (p->lex.strterm == NULL ||
         (strterm_is_heredoc((VALUE)p->lex.strterm)) ||
-        (p->lex.strterm->u.literal.u1.func != str_regexp)) {
+        (p->lex.strterm->u.literal.func != str_regexp)) {
         if (wide ? (numlen == 0 || numlen > 6) : (numlen < 4))  {
             literal_flush(p, p->lex.pcur);
             yyerror0("invalid Unicode escape");
@@ -7908,7 +7908,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
     if (regexp_literal) { tokadd(p, '\\'); tokadd(p, 'u'); }
 
     if (peek(p, open_brace)) {  /* handle \u{...} form */
-        if (regexp_literal && p->lex.strterm->u.literal.u1.func == str_regexp) {
+        if (regexp_literal && p->lex.strterm->u.literal.func == str_regexp) {
             /*
              * Skip parsing validation code and copy bytes as-is until term or
              * closing brace, in order to correctly handle extended regexps where
@@ -8567,9 +8567,9 @@ parser_string_term(struct parser_params *p, int func)
 static enum yytokentype
 parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
 {
-    int func = (int)quote->u1.func;
-    int term = (int)quote->u3.term;
-    int paren = (int)quote->u2.paren;
+    int func = (int)quote->func;
+    int term = (int)quote->term;
+    int paren = (int)quote->paren;
     int c, space = 0;
     rb_encoding *enc = p->enc;
     rb_encoding *base_enc = 0;
@@ -8587,12 +8587,12 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
         space = 1;
     }
     if (func & STR_FUNC_LIST) {
-        quote->u1.func &= ~STR_FUNC_LIST;
+        quote->func &= ~STR_FUNC_LIST;
         space = 1;
     }
-    if (c == term && !quote->u0.nest) {
+    if (c == term && !quote->nest) {
         if (func & STR_FUNC_QWORDS) {
-            quote->u1.func |= STR_FUNC_TERM;
+            quote->func |= STR_FUNC_TERM;
             pushback(p, c); /* dispatch the term at tSTRING_END */
             add_delayed_token(p, p->lex.ptok, p->lex.pcur, __LINE__);
             return ' ';
@@ -8612,7 +8612,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
         c = nextc(p);
     }
     pushback(p, c);
-    if (tokadd_string(p, func, term, paren, &quote->u0.nest,
+    if (tokadd_string(p, func, term, paren, &quote->nest,
                       &enc, &base_enc) == -1) {
         if (p->eofp) {
 #ifndef RIPPER
@@ -8633,7 +8633,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
             else {
                 unterminated_literal("unterminated string meets end of file");
             }
-            quote->u1.func |= STR_FUNC_TERM;
+            quote->func |= STR_FUNC_TERM;
         }
     }
 
