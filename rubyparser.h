@@ -638,8 +638,6 @@ typedef struct RNode_XSTR {
     NODE node;
 
     VALUE nd_lit;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_xstr_t;
 
 typedef struct RNode_DXSTR {
