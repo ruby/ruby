@@ -552,7 +552,7 @@ class Set
     block_given? or return enum_for(__method__) { size }
     # @hash.delete_if should be faster, but using it breaks the order
     # of enumeration in subclasses.
-    select { |o| yield o }.each { |o| @hash.delete(o) }
+    each { |o| @hash.delete(o) if yield(o) }
     self
   end
 
