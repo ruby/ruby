@@ -4,28 +4,28 @@
 #include "internal/gc.h"
 
 #if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
+
 #define SIZEOF_SHAPE_T 4
 #define SHAPE_IN_BASIC_FLAGS 1
 typedef uint32_t attr_index_t;
-#else
-#define SIZEOF_SHAPE_T 2
-#define SHAPE_IN_BASIC_FLAGS 0
-typedef uint16_t attr_index_t;
-#endif
-
-#define MAX_IVARS (attr_index_t)(-1)
-
-#if SIZEOF_SHAPE_T == 4
 typedef uint32_t shape_id_t;
 typedef uint32_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 32
 # define SHAPE_BUFFER_SIZE 0x80000
+
 #else
+
+#define SIZEOF_SHAPE_T 2
+#define SHAPE_IN_BASIC_FLAGS 0
+typedef uint16_t attr_index_t;
 typedef uint16_t shape_id_t;
 typedef uint16_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 16
 # define SHAPE_BUFFER_SIZE 0x8000
+
 #endif
+
+#define MAX_IVARS (attr_index_t)(-1)
 
 # define SHAPE_MASK (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
 # define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
@@ -33,7 +33,7 @@ typedef uint16_t redblack_id_t;
 # define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 # define SHAPE_MAX_VARIATIONS 8
-# define SHAPE_MAX_NUM_IVS 80
+# define SHAPE_MAX_NUM_IVS (SHAPE_BUFFER_SIZE - 1)
 
 # define MAX_SHAPE_ID SHAPE_BUFFER_SIZE
 # define INVALID_SHAPE_ID SHAPE_MASK
