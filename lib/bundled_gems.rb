@@ -116,7 +116,7 @@ end
 # If loading library is not part of the default gems and the bundled gems, warn it.
 class LoadError
   def message
-    if Gem::BUNDLED_GEMS::SINCE[path]
+    if Gem::BUNDLED_GEMS::SINCE[path] && !Gem::BUNDLED_GEMS::WARNED[path]
       warn path + Gem::BUNDLED_GEMS.build_message(path)
     end
     super
