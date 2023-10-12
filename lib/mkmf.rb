@@ -1792,7 +1792,8 @@ SRC
   # application.
   #
   def dir_config(target, idefault=nil, ldefault=nil)
-    if conf = $config_dirs[target]
+    key = [target, idefault, ldefault].compact.join("\0")
+    if conf = $config_dirs[key]
       return conf
     end
 
@@ -1826,7 +1827,7 @@ SRC
     end
     $LIBPATH = ldirs | $LIBPATH
 
-    $config_dirs[target] = [idir, ldir]
+    $config_dirs[key] = [idir, ldir]
   end
 
   # Returns compile/link information about an installed library in a tuple of <code>[cflags,
