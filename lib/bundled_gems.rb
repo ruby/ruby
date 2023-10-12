@@ -76,7 +76,7 @@ module Gem::BUNDLED_GEMS
     return if find_gem(caller&.absolute_path)
     return if WARNED[name]
     WARNED[name] = true
-    if gem == true
+    msg = if gem == true
       gem = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     elsif gem
       return if WARNED[gem]
@@ -84,7 +84,25 @@ module Gem::BUNDLED_GEMS
       "#{name} is found in #{gem}"
     else
       return
-    end + " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}"
+    end
+    msg += " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}."
+
+    if defined?(Bundler)
+      msg += " Add #{name} to your Gemfile."
+      location = caller_locations(2,2)[0]&.path
+      if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
+        caller_gem = nil
+        Gem.path.each do |path|
+          if location =~ %r{#{path}/gems/([\w\-\.]+)}
+            caller_gem = $1
+            break
+          end
+        end
+        msg += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
+      end
+    end
+
+    msg
   end
 
   bundled_gems = self
