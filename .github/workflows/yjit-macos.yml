@@ -1,4 +1,4 @@
-name: macOS
+name: YJIT macOS Arm64
 on:
   push:
     paths-ignore:
@@ -35,20 +35,18 @@ jobs:
       matrix:
         include:
           - test_task: 'check'
-            os: 'macos-11'
-            configure: ''
+            configure: '--enable-yjit'
+            yjit_opts: '--yjit'
           - test_task: 'check'
-            os: 'macos-12'
-            configure: '--enable-shared'
-          - test_task: 'check'
-            os: 'macos-arm-oss'
-            configure: ''
+            configure: '--enable-yjit=dev'
+            yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx'
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      RUN_OPTS: ${{ matrix.yjit_opts }}
 
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-arm-oss
 
     if: >-
       ${{!(false
@@ -82,6 +80,9 @@ jobs:
 
       - run: make
 
+      - name: Enable YJIT through ENV
+        run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
+
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
@@ -105,7 +106,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
+          label: ${{ matrix.test_task }} ${{ matrix.configure }} ${{ matrix.yjit_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
