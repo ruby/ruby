@@ -1054,7 +1054,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node, src, false, compile_context);
 
         if (class_node->superclass) {
-            PM_COMPILE(class_node->superclass);
+            PM_COMPILE_NOT_POPPED(class_node->superclass);
         }
         else {
             ADD_INSN(ret, &dummy_line_node, putnil);

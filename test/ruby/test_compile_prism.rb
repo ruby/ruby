@@ -362,6 +362,13 @@ module Prism
     # Scopes/statements                                                        #
     ############################################################################
 
+    def test_ClassNode
+      test_prism_eval("class A; end")
+      test_prism_eval("class B < A; end")
+      test_prism_eval("class A::C; end")
+      test_prism_eval("class B::D < A::C; end")
+    end
+
     def test_ParenthesesNode
       test_prism_eval("()")
       test_prism_eval("(1)")
