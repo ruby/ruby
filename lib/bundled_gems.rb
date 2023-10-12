@@ -69,6 +69,7 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name)
+    name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
     return unless gem = find_gem(path)
     caller = caller_locations(3, 3).find {|c| c&.absolute_path}
