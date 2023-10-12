@@ -3171,7 +3171,7 @@ rb_nativethread_self(void)
     return pthread_self();
 }
 
-#ifndef HAVE_PPOLL
+#if defined(USE_POLL) && !defined(HAVE_PPOLL)
 /* TODO: don't ignore sigmask */
 static int
 ruby_ppoll(struct pollfd *fds, nfds_t nfds,
