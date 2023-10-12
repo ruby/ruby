@@ -1025,6 +1025,7 @@ typedef struct rb_thread_struct {
     rb_nativethread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
+    VALUE sleeping_mutex;
     struct rb_mutex_struct *keeping_mutexes;
 
     struct rb_waiting_list *join_list;

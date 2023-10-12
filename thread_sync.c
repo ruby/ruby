@@ -8,6 +8,39 @@ static VALUE rb_eClosedQueueError;
 /* Mutex */
 typedef struct rb_mutex_struct {
     rb_fiber_t *fiber;
+    /**
+     *  The "reservation" system for mutexes is essentially designed to prevent the following
+     *  scenario:
+     *    - Thread A holds a mutex
+     *    - Threads B and C are waiting for that mutex, via a call to ConditionVariable#wait
+     *    - Thread A does some work
+     *    - Thread A then calls ConditionVariable#signal and releses the mutex
+     *    - In signaling the condvar, thread A marks thread B as runnable.
+     *    - Before yielding the GVL, thread A then goes and re-acquires the mutex and does some
+     *      more work
+     *    - When thread B gets to run, it will find that the mutex it was waiting on is actually
+     *      still held by thread A (since it re-acquired it).
+     *    - Thread B then blocks waiting for the mutex again, but it gets put on the _end_ of the
+     *      wait queue for the mutex.
+     *    - When thread A signals the condvar again, thread C will be woken up instead of thread B.
+     *  In pathalogical cases with three threads trying to share a resource, it's possible for
+     *  the mutex to "ping-pong" between two of those threads, whilst a third thread gets totally
+     *  shut out.
+     *
+     *  To fix this, we make the thread signaling the condition variable mark the associated mutex
+     *  as "reserved" for the thread that it's waking up. This means when thread A goes to
+     *  re-acquire the mutex, it will not be able to do so (since it's reserved for thread B) and
+     *  will go to sleep instead.
+     *
+     *  Also, note the following:
+     *    - This is a weak reference; if a thread dies whilst it has a mutex reservation, the
+     *      reservation fails open and other threads are allowed to claim the mutex. The mutex
+     *      does not hold a strong reference preventing the Thread object from getting cleaned up
+     *      (if the reserved_for_thread VALUE gets gc'd, the GC will set it to Qundef)
+     *    - At the moment, this is a thread, not a fiber, because this reservation functionaltiy
+     *      is not implemented for nonblocking fibers with fibre-scheduler.
+     */
+    VALUE reserved_for_thread;
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -38,25 +71,41 @@ struct queue_sleep_arg {
 
 #define MUTEX_ALLOW_TRAP FL_USER1
 
+static rb_mutex_t * mutex_ptr(VALUE obj);
+static bool mutex_has_live_reservation_p(rb_mutex_t *mutex);
+static bool mutex_reservation_can_have_p(rb_mutex_t *mutex, rb_thread_t *for_thread);
+/* needs to be VALUE, not rb_mutex_t, so it can update the reservation through the write-barrier */
+static bool mutex_reserve_if_available(VALUE mutex_value, rb_thread_t *for_thread);
+
 static void
 sync_wakeup(struct ccan_list_head *head, long max)
 {
     struct sync_waiter *cur = 0, *next;
+    long woken = 0;
 
     ccan_list_for_each_safe(head, cur, next, node) {
-        ccan_list_del_init(&cur->node);
-
         if (cur->th->status != THREAD_KILLED) {
             if (cur->th->scheduler != Qnil && cur->fiber) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+                ccan_list_del_init(&cur->node);
+                woken++;
+            } else {
+                bool do_wake =
+                    /* always wake when doing broadcasts; we _want_ spurious wakeups of every thread. */
+                    max > 1 ||
+                    /* thread is not in a call to Mutex#sleep (could be e.g. in a Queue) */
+                    !RB_TEST(cur->th->sleeping_mutex) ||
+                    /* Thread is in Mutex#sleep, and we successfully reserved the mutex for that thread */
+                    mutex_reserve_if_available(cur->th->sleeping_mutex, cur->th);
+                if (do_wake) {
+                    rb_threadptr_interrupt(cur->th);
+                    cur->th->status = THREAD_RUNNABLE;
+                    ccan_list_del_init(&cur->node);
+                    woken++;
+                }
             }
-            else {
-                rb_threadptr_interrupt(cur->th);
-                cur->th->status = THREAD_RUNNABLE;
-            }
-
-            if (--max == 0) return;
         }
+        if (woken >= max) return;
     }
 }
 
@@ -103,8 +152,19 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fib
  *
  */
 
-#define mutex_mark ((void(*)(void*))0)
+static void
+mutex_mark(void *ptr)
+{
+    rb_mutex_t *mutex = (rb_mutex_t *)ptr;
+    rb_gc_mark_weak(&mutex->reserved_for_thread);
+}
 
+static void
+mutex_compact(void *ptr)
+{
+    rb_mutex_t *mutex = (rb_mutex_t *)ptr;
+    mutex->reserved_for_thread = rb_gc_location(mutex->reserved_for_thread);
+}
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
 {
@@ -140,7 +200,7 @@ mutex_memsize(const void *ptr)
 
 static const rb_data_type_t mutex_data_type = {
     "mutex",
-    {mutex_mark, mutex_free, mutex_memsize,},
+    {mutex_mark, mutex_free, mutex_memsize, mutex_compact},
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -169,6 +229,7 @@ mutex_alloc(VALUE klass)
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
 
     ccan_list_head_init(&mutex->waitq);
+    mutex->reserved_for_thread = Qundef;
     return obj;
 }
 
@@ -236,6 +297,37 @@ mutex_locked(rb_thread_t *th, VALUE self)
     rb_mutex_t *mutex = mutex_ptr(self);
 
     thread_mutex_insert(th, mutex);
+    RB_OBJ_WRITE(self, &mutex->reserved_for_thread, Qundef);
+}
+
+static bool
+mutex_has_live_reservation_p(rb_mutex_t *mutex)
+{
+    return !RB_UNDEF_P(mutex->reserved_for_thread) &&
+        RB_TEST(mutex->reserved_for_thread) &&
+        RB_TEST(rb_thread_alive_p(mutex->reserved_for_thread));
+}
+
+static bool
+mutex_reservation_can_have_p(rb_mutex_t *mutex, rb_thread_t *for_thread)
+{
+    if (mutex_has_live_reservation_p(mutex)) {
+        return RB_TEST(rb_obj_equal(mutex->reserved_for_thread, for_thread->self));
+    } else {
+        return true;
+    }
+}
+
+static bool
+mutex_reserve_if_available(VALUE mutex_value, rb_thread_t *th)
+{
+    rb_mutex_t *mutex = mutex_ptr(mutex_value);
+    if (mutex_has_live_reservation_p(mutex)) {
+        return RB_TEST(rb_obj_equal(mutex->reserved_for_thread, th->self));
+    } else {
+        RB_OBJ_WRITE(mutex_value, &mutex->reserved_for_thread, th->self);
+        return true;
+    }
 }
 
 /*
@@ -251,12 +343,13 @@ rb_mutex_trylock(VALUE self)
     rb_mutex_t *mutex = mutex_ptr(self);
 
     if (mutex->fiber == 0) {
-        rb_fiber_t *fiber = GET_EC()->fiber_ptr;
         rb_thread_t *th = GET_THREAD();
-        mutex->fiber = fiber;
-
-        mutex_locked(th, self);
-        return Qtrue;
+        /* Don't allow the thread to take the mutex if it's reserved for someone else */
+        if (mutex_reservation_can_have_p(mutex, th)) {
+            mutex->fiber = GET_EC()->fiber_ptr;
+            mutex_locked(th, self);
+            return Qtrue;
+        }
     }
 
     return Qfalse;
@@ -322,12 +415,12 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
-                if (!mutex->fiber) {
+                if (!mutex->fiber && mutex_reservation_can_have_p(mutex, th)) {
                     mutex->fiber = fiber;
                 }
             }
             else {
-                if (!th->vm->thread_ignore_deadlock && rb_fiber_threadptr(mutex->fiber) == th) {
+                if (!th->vm->thread_ignore_deadlock && mutex->fiber && rb_fiber_threadptr(mutex->fiber) == th) {
                     rb_raise(rb_eThreadError, "deadlock; lock already owned by another fiber belonging to the same thread");
                 }
 
@@ -361,7 +454,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 ccan_list_del(&sync_waiter.node);
 
-                if (!mutex->fiber) {
+                if (!mutex->fiber && mutex_reservation_can_have_p(mutex, th)) {
                     mutex->fiber = fiber;
                 }
 
@@ -401,6 +494,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 static VALUE
 mutex_lock_uninterruptible(VALUE self)
 {
+    GET_THREAD()->sleeping_mutex = Qnil;
     return do_mutex_lock(self, 0);
 }
 
@@ -448,24 +542,27 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
     thread_mutex_remove(th, mutex);
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
-        ccan_list_del_init(&cur->node);
-
         if (cur->th->scheduler != Qnil && cur->fiber) {
             rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            ccan_list_del_init(&cur->node);
             return NULL;
         }
         else {
-            switch (cur->th->status) {
-                case THREAD_RUNNABLE: /* from someone else calling Thread#run */
-                case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
-                rb_threadptr_interrupt(cur->th);
-                return NULL;
-                case THREAD_STOPPED: /* probably impossible */
-                rb_bug("unexpected THREAD_STOPPED");
-                case THREAD_KILLED:
-                /* not sure about this, possible in exit GC? */
-                rb_bug("unexpected THREAD_KILLED");
-                continue;
+            if (mutex_reservation_can_have_p(mutex, cur->th)) {
+                /* mutex is not reserved for someone else */
+                ccan_list_del_init(&cur->node);
+                switch (cur->th->status) {
+                    case THREAD_RUNNABLE: /* from someone else calling Thread#run */
+                    case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
+                    rb_threadptr_interrupt(cur->th);
+                    return NULL;
+                    case THREAD_STOPPED: /* probably impossible */
+                    rb_bug("unexpected THREAD_STOPPED");
+                    case THREAD_KILLED:
+                    /* not sure about this, possible in exit GC? */
+                    rb_bug("unexpected THREAD_KILLED");
+                    continue;
+                }
             }
         }
     }
@@ -562,6 +659,17 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
         mutex_lock_uninterruptible(self);
     }
     else {
+        /**
+         *  We need to record the mutex we're waiting on _directly_ on the thread like this.
+         *  ConditionVariable#wait only requires that the mutex passed in responds to #sleep
+         *  and the like; it does _not_ require that the object is actually really a T_DATA
+         *  for a real Mutex. This is excercised in the tests for the Mutex_m module.
+         *
+         *  So, in order to get access to the reservation field, we need to cheat and stash
+         *  the _real_ mutex we're blocked on in a thread variable. Then, it can be read from
+         *  inside sync_wakeup().
+         */
+        GET_THREAD()->sleeping_mutex = self;
         if (NIL_P(timeout)) {
             rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
         }

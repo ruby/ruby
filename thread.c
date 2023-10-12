@@ -3294,7 +3294,7 @@ rb_thread_status(VALUE thread)
  *  See also #stop? and #status.
  */
 
-static VALUE
+VALUE
 rb_thread_alive_p(VALUE thread)
 {
     return RBOOL(!thread_finished(rb_thread_ptr(thread)));
