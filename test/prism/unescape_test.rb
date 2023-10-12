@@ -133,7 +133,7 @@ module Prism
       [Context::List.new("%i[", "]"),             escapes],
       [Context::List.new("%I[", "]"),             escapes],
       [Context::Symbol.new("%s[", "]"),           escapes],
-      # [Context::Symbol.new(":'", "'"),           escapes],
+      [Context::Symbol.new(":'", "'"),            escapes],
       # [Context::Symbol.new(":\"", "\""),         escapes],
       # [Context::RegExp.new("/", "/"),            escapes],
       # [Context::RegExp.new("%r[", "]"),          escapes]
