@@ -2436,13 +2436,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
             ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
-            PM_COMPILE(undef_node->names.nodes[index]);
+            PM_COMPILE_NOT_POPPED(undef_node->names.nodes[index]);
 
             ADD_SEND(ret, &dummy_line_node, id_core_undef_method, INT2NUM(2));
 
             if (index < undef_node->names.size - 1)
                 ADD_INSN(ret, &dummy_line_node, pop);
         }
+
+        PM_POP_IF_POPPED;
 
         return;
       }
