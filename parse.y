@@ -7912,7 +7912,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
              * does its own validation and will catch any issues.
              */
             tokadd(p, open_brace);
-            while (++p->lex.pcur < p->lex.pend) {
+            while (!lex_eol_ptr_p(p, ++p->lex.pcur)) {
                 int c = peekc(p);
                 if (c == close_brace) {
                     tokadd(p, c);
@@ -7922,7 +7922,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                 else if (c == term) {
                     break;
                 }
-                if (c == '\\' && p->lex.pcur + 1 < p->lex.pend) {
+                if (c == '\\' && !lex_eol_n_p(p, 1)) {
                     tokadd(p, c);
                     c = *++p->lex.pcur;
                 }
