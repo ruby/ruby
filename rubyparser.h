@@ -591,8 +591,6 @@ typedef struct RNode_MATCH {
     NODE node;
 
     VALUE nd_lit;
-    VALUE not_used;
-    VALUE not_used2;
 } rb_node_match_t;
 
 typedef struct RNode_MATCH2 {
