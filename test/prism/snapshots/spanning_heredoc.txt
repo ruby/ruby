@@ -28,10 +28,10 @@
         │   │           │       ├── @ InterpolatedRegularExpressionNode (location: (4,13)-(7,2))
         │   │           │       │   ├── opening_loc: (4,13)-(4,14) = "/"
         │   │           │       │   ├── parts: (length: 2)
-        │   │           │       │   │   ├── @ StringNode (location: (4,14)-(4,0))
+        │   │           │       │   │   ├── @ StringNode (location: (4,14)-(4,16))
         │   │           │       │   │   │   ├── flags: ∅
         │   │           │       │   │   │   ├── opening_loc: ∅
-        │   │           │       │   │   │   ├── content_loc: (4,14)-(4,0) = "b\\\n"
+        │   │           │       │   │   │   ├── content_loc: (4,14)-(4,16) = "b\\"
         │   │           │       │   │   │   ├── closing_loc: ∅
         │   │           │       │   │   │   └── unescaped: "b"
         │   │           │       │   │   └── @ StringNode (location: (7,0)-(7,1))
