@@ -136,7 +136,7 @@ module Prism
       source = "<<-END + /b\nEND\n"
 
       assert_errors expression(source), source, [
-        ["Expected a closing delimiter for the regular expression", 10..10]
+        ["Expected a closing delimiter for the regular expression", 16..16]
       ]
     end
 

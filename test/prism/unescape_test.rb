@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-return if Prism::BACKEND == :FFI
+return if RUBY_VERSION < "3.1.0" || Prism::BACKEND == :FFI
 
 module Prism
   class UnescapeTest < TestCase
@@ -53,22 +53,40 @@ module Prism
       end
 
       class List < Base
-        def ruby_result(escape) = ruby(escape) { |value| value.first.to_s }
-        def prism_result(escape) = prism(escape) { |node| node.elements.first.unescaped }
+        def ruby_result(escape)
+          ruby(escape) { |value| value.first.to_s }
+        end
+
+        def prism_result(escape)
+          prism(escape) { |node| node.elements.first.unescaped }
+        end
       end
 
       class Symbol < Base
-        def ruby_result(escape) = ruby(escape, &:to_s)
-        def prism_result(escape) = prism(escape, &:unescaped)
+        def ruby_result(escape)
+          ruby(escape, &:to_s)
+        end
+
+        def prism_result(escape)
+          prism(escape, &:unescaped)
+        end
       end
 
       class String < Base
-        def ruby_result(escape) = ruby(escape, &:itself)
-        def prism_result(escape) = prism(escape, &:unescaped)
+        def ruby_result(escape)
+          ruby(escape, &:itself)
+        end
+
+        def prism_result(escape)
+          prism(escape, &:unescaped)
+        end
       end
 
       class Heredoc < Base
-        def ruby_result(escape) = ruby(escape, &:itself)
+        def ruby_result(escape)
+          ruby(escape, &:itself)
+        end
+
         def prism_result(escape)
           prism(escape) do |node|
             case node.type
@@ -82,8 +100,13 @@ module Prism
       end
 
       class RegExp < Base
-        def ruby_result(escape) = ruby(escape, &:source)
-        def prism_result(escape) = prism(escape, &:unescaped)
+        def ruby_result(escape)
+          ruby(escape, &:source)
+        end
+
+        def prism_result(escape)
+          prism(escape, &:unescaped)
+        end
       end
     end
 
