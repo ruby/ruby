@@ -22,7 +22,7 @@ module IRB # :nodoc:
     #
     # Same as <code>IRB.CurrentContext.exit</code>.
     def irb_exit(ret = 0)
-      irb_context&.exit(ret)
+      irb_context.exit(ret)
     end
 
     # Displays current configuration.

@@ -733,9 +733,13 @@ module TestIRB
 
     private
 
+    def build_binding
+      Object.new.instance_eval { binding }
+    end
+
     def build_irb
       IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(TOPLEVEL_BINDING.dup)
+      workspace = IRB::WorkSpace.new(build_binding)
 
       IRB.conf[:VERBOSE] = false
       IRB::Irb.new(workspace, TestInputMethod.new)

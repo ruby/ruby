@@ -6,15 +6,6 @@ require_relative "helper"
 
 module TestIRB
   class CompletionTest < TestCase
-    def setup
-      # make sure require completion candidates are not cached
-      IRB::BaseCompletor.class_variable_set(:@@files_from_load_path, nil)
-    end
-
-    def teardown
-      IRB.conf[:MAIN_CONTEXT] = nil
-    end
-
     def completion_candidates(target, bind)
       IRB::RegexpCompletor.new.completion_candidates('', target, '', bind: bind)
     end
