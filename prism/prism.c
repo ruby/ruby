@@ -5221,7 +5221,7 @@ next_newline(const uint8_t *cursor, ptrdiff_t length) {
 // Here we're going to check if this is a "magic" comment, and perform whatever
 // actions are necessary for it here.
 static void
-parser_lex_magic_comment_encoding(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
 
     // First, we're going to call out to a user-defined callback if one was
@@ -5301,10 +5301,58 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser, const uint8_t *start, con
     pm_parser_err(parser, start, end, PM_ERR_INVALID_ENCODING_MAGIC_COMMENT);
 }
 
+// Look for a specific pattern of "coding" and potentially set the encoding on
+// the parser.
+static void
+parser_lex_magic_comment_encoding(pm_parser_t *parser) {
+    const uint8_t *cursor = parser->current.start + 1;
+    const uint8_t *end = parser->current.end;
+
+    bool separator = false;
+    while (true) {
+        if (end - cursor <= 6) return;
+        switch (cursor[6]) {
+            case 'C': case 'c': cursor += 6; continue;
+            case 'O': case 'o': cursor += 5; continue;
+            case 'D': case 'd': cursor += 4; continue;
+            case 'I': case 'i': cursor += 3; continue;
+            case 'N': case 'n': cursor += 2; continue;
+            case 'G': case 'g': cursor += 1; continue;
+            case '=': case ':':
+                separator = true;
+                cursor += 6;
+                break;
+            default:
+                cursor += 6;
+                if (pm_char_is_whitespace(*cursor)) break;
+                continue;
+        }
+        if (pm_strncasecmp(cursor - 6, (const uint8_t *) "coding", 6) == 0) break;
+        separator = false;
+    }
+
+    while (true) {
+        do {
+            if (++cursor >= end) return;
+        } while (pm_char_is_whitespace(*cursor));
+
+        if (separator) break;
+        if (*cursor != '=' && *cursor != ':') return;
+
+        separator = true;
+        cursor++;
+    }
+
+    const uint8_t *value_start = cursor;
+    while ((*cursor == '-' || *cursor == '_' || parser->encoding.alnum_char(cursor, 1)) && ++cursor < end);
+
+    parser_lex_magic_comment_encoding_value(parser, value_start, cursor);
+}
+
 // Check if this is a magic comment that includes the frozen_string_literal
 // pragma. If it does, set that field on the parser.
 static void
-parser_lex_magic_comment_frozen_string_literal(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+parser_lex_magic_comment_frozen_string_literal_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     if (start + 4 <= end && pm_strncasecmp(start, (const uint8_t *) "true", 4) == 0) {
         parser->frozen_string_literal = true;
     }
@@ -5335,10 +5383,13 @@ parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor
 //
 //     %r"([^\\s\'\":;]+)\\s*:\\s*(\"(?:\\\\.|[^\"])*\"|[^\"\\s;]+)[\\s;]*"
 //
-static inline void
+// It returns true if it consumes the entire comment. Otherwise it returns
+// false.
+static inline bool
 parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
     const uint8_t *start = parser->current.start + 1;
     const uint8_t *end = parser->current.end;
+    if (end - start <= 7) return false;
 
     const uint8_t *cursor;
     bool indicator = false;
@@ -5352,7 +5403,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         } else {
             // If we have a start marker but not an end marker, then we cannot
             // have a magic comment.
-            return;
+            return false;
         }
     }
 
@@ -5365,17 +5416,17 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         const uint8_t *key_end = cursor;
         while (cursor < end && pm_char_is_whitespace(*cursor)) cursor++;
-        if (cursor == end) return;
+        if (cursor == end) break;
 
         if (*cursor == ':') {
             cursor++;
         } else {
-            if (!indicator) return;
+            if (!indicator) return false;
             continue;
         }
 
         while (cursor < end && pm_char_is_whitespace(*cursor)) cursor++;
-        if (cursor == end) return;
+        if (cursor == end) break;
 
         const uint8_t *value_start;
         const uint8_t *value_end;
@@ -5396,7 +5447,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             while (cursor < end && (*cursor == ';' || pm_char_is_whitespace(*cursor))) cursor++;
         } else {
             while (cursor < end && pm_char_is_whitespace(*cursor)) cursor++;
-            if (cursor != end) return;
+            if (cursor != end) return false;
         }
 
         // Here, we need to do some processing on the key to swap out dashes for
@@ -5409,7 +5460,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         } else {
             size_t width = (size_t) (key_end - key_start);
             uint8_t *buffer = malloc(width);
-            if (buffer == NULL) return;
+            if (buffer == NULL) break;
 
             memcpy(buffer, key_start, width);
             buffer[dash - key_start] = '_';
@@ -5423,25 +5474,25 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         // Finally, we can start checking the key against the list of known
         // magic comment keys, and potentially change state based on that.
-        const char *key_source = (const char *) pm_string_source(&key);
+        const uint8_t *key_source = pm_string_source(&key);
         const size_t key_length = pm_string_length(&key);
 
         // We only want to attempt to compare against encoding comments if it's
         // the first line in the file (or the second in the case of a shebang).
         if (parser->current.start == parser->encoding_comment_start) {
             if (
-                (key_length == 8 && strncasecmp(key_source, "encoding", 8) == 0) ||
-                (key_length == 6 && strncasecmp(key_source, "coding", 6) == 0)
+                (key_length == 8 && pm_strncasecmp(key_source, (const uint8_t *) "encoding", 8) == 0) ||
+                (key_length == 6 && pm_strncasecmp(key_source, (const uint8_t *) "coding", 6) == 0)
             ) {
-                parser_lex_magic_comment_encoding(parser, value_start, value_end);
+                parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
             }
         }
 
         // We only want to handle frozen string literal comments if it's before
         // any semantic tokens have been seen.
         if (!semantic_token_seen) {
-            if (key_length == 21 && strncasecmp(key_source, "frozen_string_literal", 21) == 0) {
-                parser_lex_magic_comment_frozen_string_literal(parser, value_start, value_end);
+            if (key_length == 21 && pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
+                parser_lex_magic_comment_frozen_string_literal_value(parser, value_start, value_end);
             }
         }
 
@@ -5459,6 +5510,8 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
         }
     }
+
+    return true;
 }
 
 /******************************************************************************/
@@ -7061,7 +7114,15 @@ parser_lex(pm_parser_t *parser) {
 
                     // Here, parse the comment to see if it's a magic comment
                     // and potentially change state on the parser.
-                    parser_lex_magic_comment(parser, semantic_token_seen);
+                    if (!parser_lex_magic_comment(parser, semantic_token_seen) && (parser->current.start == parser->encoding_comment_start)) {
+                        ptrdiff_t length = parser->current.end - parser->current.start;
+
+                        // If we didn't find a magic comment within the first
+                        // pass and we're at the start of the file, then we need
+                        // to do another pass to potentially find other patterns
+                        // for encoding comments.
+                        if (length >= 10) parser_lex_magic_comment_encoding(parser);
+                    }
 
                     lexed_comment = true;
                 }

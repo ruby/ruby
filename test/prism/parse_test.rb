@@ -4,6 +4,21 @@ require_relative "test_helper"
 
 module Prism
   class ParseTest < TestCase
+    # A subclass of Ripper that extracts out magic comments.
+    class MagicCommentRipper < Ripper
+      attr_reader :magic_comments
+
+      def initialize(*)
+        super
+        @magic_comments = []
+      end
+
+      def on_magic_comment(key, value)
+        @magic_comments << [key, value]
+        super
+      end
+    end
+
     # When we pretty-print the trees to compare against the snapshots, we want to
     # be certain that we print with the same external encoding. This is because
     # methods like Symbol#inspect take into account external encoding and it could
@@ -158,6 +173,17 @@ module Prism
             end
           rescue SyntaxError
             raise ArgumentError, "Test file has invalid syntax #{filepath}"
+          end
+
+          # Next, check that we get the correct number of magic comments when
+          # lexing with ripper.
+          expected = MagicCommentRipper.new(source).tap(&:parse).magic_comments
+          actual = result.magic_comments
+
+          assert_equal expected.length, actual.length
+          expected.zip(actual).each do |(expected_key, expected_value), magic_comment|
+            assert_equal expected_key, magic_comment.key
+            assert_equal expected_value, magic_comment.value
           end
         end
       end
