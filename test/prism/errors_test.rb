@@ -1404,6 +1404,20 @@ module Prism
       ]
     end
 
+    def test_symbol_in_keyword_parameter
+      source = "def foo(x:'y':); end"
+      assert_errors expression(source), source, [
+        ["Expected a closing delimiter for the string literal", 14..14],
+      ]
+    end
+
+    def test_symbol_in_hash
+      source = "{x:'y':}"
+      assert_errors expression(source), source, [
+        ["Expected a closing delimiter for the string literal", 7..7],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

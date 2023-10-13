@@ -8583,8 +8583,10 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
                     pm_parser_local_add_location(parser, message.start, message.end);
                     pm_node_destroy(parser, target);
 
+                    uint32_t depth = 0;
+                    for (pm_scope_t *scope = parser->current_scope; scope && scope->transparent; depth++, scope = scope->previous);
                     const pm_token_t name = { .type = PM_TOKEN_IDENTIFIER, .start = message.start, .end = message.end };
-                    target = (pm_node_t *) pm_local_variable_read_node_create(parser, &name, 0);
+                    target = (pm_node_t *) pm_local_variable_read_node_create(parser, &name, depth);
 
                     assert(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
                     target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
@@ -11379,6 +11381,7 @@ static inline pm_node_t *
 parse_strings(pm_parser_t *parser) {
     assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
     pm_node_t *result = NULL;
+    bool state_is_arg_labeled = lex_state_p(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
         pm_node_t *node = NULL;
@@ -11435,7 +11438,7 @@ parse_strings(pm_parser_t *parser) {
 
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
                 node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
-            } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
+            } else if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
                 node = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
             } else {
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
@@ -11469,7 +11472,7 @@ parse_strings(pm_parser_t *parser) {
                     }
                 }
 
-                if (accept1(parser, PM_TOKEN_LABEL_END)) {
+                if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
                     node = (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
                 } else {
                     expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
@@ -12746,6 +12749,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
             pm_token_t for_keyword = parser->previous;
             pm_node_t *index;
+            pm_parser_scope_push_transparent(parser);
 
             // First, parse out the first index expression.
             if (accept1(parser, PM_TOKEN_USTAR)) {
@@ -12771,6 +12775,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 index = parse_target(parser, index);
             }
 
+            pm_parser_scope_pop(parser);
             pm_do_loop_stack_push(parser, true);
 
             expect1(parser, PM_TOKEN_KEYWORD_IN, PM_ERR_FOR_IN);

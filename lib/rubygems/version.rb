@@ -388,31 +388,21 @@ class Gem::Version
     0
   end
 
+  # remove trailing zeros segments before first letter or at the end of the version
   def canonical_segments
     @canonical_segments ||= begin
-      numeric_segments, string_segments = _split_segments
-      canonical_segments = []
-
-      seen_non_zero = false
-      string_segments.reverse_each do |segment|
-        if seen_non_zero || (seen_non_zero = (segment != 0))
-          canonical_segments << segment
-        end
-      end
-      seen_non_zero = false
-      numeric_segments.reverse_each do |segment|
-        if seen_non_zero || (seen_non_zero = (segment != 0))
-          canonical_segments << segment
-        end
-      end
-
-      canonical_segments.reverse!
-      canonical_segments.freeze
+      # remove trailing 0 segments, using dot or letter as anchor
+      # may leave a trailing dot which will be ignored by partition_segments
+      canonical_version = @version.sub(/(?<=[a-zA-Z.])[.0]+\z/, "")
+      # remove 0 segments before the first letter in a prerelease version
+      canonical_version.sub!(/(?<=\.|\A)[0.]+(?=[a-zA-Z])/, "") if prerelease?
+      partition_segments(canonical_version)
     end
   end
 
   def freeze
     prerelease?
+    _segments
     canonical_segments
     super
   end
@@ -423,16 +413,12 @@ class Gem::Version
     # segments is lazy so it can pick up version values that come from
     # old marshaled versions, which don't go through marshal_load.
     # since this version object is cached in @@all, its @segments should be frozen
-
-    @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map! do |s|
-      /^\d+$/.match?(s) ? s.to_i : -s
-    end.freeze
+    @segments ||= partition_segments(@version)
   end
 
-  def _split_segments
-    string_start = _segments.index {|s| s.is_a?(String) }
-    string_segments = segments
-    numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
-    [numeric_segments, string_segments]
+  def partition_segments(ver)
+    ver.scan(/\d+|[a-z]+/i).map! do |s|
+      /\A\d/.match?(s) ? s.to_i : -s
+    end.freeze
   end
 end
