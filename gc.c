@@ -7066,7 +7066,6 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
         rb_ast_mark(&RANY(obj)->as.imemo.ast);
         return;
       case imemo_parser_strterm:
-        rb_strterm_mark(obj);
         return;
       case imemo_callinfo:
         return;
