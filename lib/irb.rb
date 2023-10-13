@@ -437,6 +437,7 @@ module IRB
       @context.workspace.load_commands_to_main
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
+      @line_no = 1
     end
 
     # A hook point for `debug` command's breakpoint after :IRB_EXIT as well as its clean-up
@@ -454,7 +455,7 @@ module IRB
       workspace = IRB::WorkSpace.new(binding)
       context.workspace = workspace
       context.workspace.load_commands_to_main
-      scanner.increase_line_no(1)
+      @line_no += 1
 
       # When users run:
       # 1. Debugging commands, like `step 2`
@@ -476,7 +477,7 @@ module IRB
       end
 
       if input&.include?("\n")
-        scanner.increase_line_no(input.count("\n") - 1)
+        @line_no += input.count("\n") - 1
       end
 
       input
@@ -513,34 +514,38 @@ module IRB
     # The lexer used by this irb session
     attr_accessor :scanner
 
+    private def generate_prompt(opens, continue, line_offset)
+      ltype = @scanner.ltype_from_open_tokens(opens)
+      indent = @scanner.calc_indent_level(opens)
+      continue = opens.any? || continue
+      line_no = @line_no + line_offset
+
+      if ltype
+        f = @context.prompt_s
+      elsif continue
+        f = @context.prompt_c
+      else
+        f = @context.prompt_i
+      end
+      f = "" unless f
+      if @context.prompting?
+        p = format_prompt(f, ltype, indent, line_no)
+      else
+        p = ""
+      end
+      if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
+        unless ltype
+          prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
+          ind = format_prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
+            indent * 2 - p.size
+          p += " " * ind if ind > 0
+        end
+      end
+      p
+    end
+
     # Evaluates input for this session.
     def eval_input
-      @scanner.set_prompt do
-        |ltype, indent, continue, line_no|
-        if ltype
-          f = @context.prompt_s
-        elsif continue
-          f = @context.prompt_c
-        else
-          f = @context.prompt_i
-        end
-        f = "" unless f
-        if @context.prompting?
-          @context.io.prompt = p = prompt(f, ltype, indent, line_no)
-        else
-          @context.io.prompt = p = ""
-        end
-        if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
-          unless ltype
-            prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
-            ind = prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
-              indent * 2 - p.size
-            @context.io.prompt = p + " " * ind if ind > 0
-          end
-        end
-        @context.io.prompt
-      end
-
       configure_io
 
       each_top_level_statement do |statement, line_no|
@@ -572,8 +577,9 @@ module IRB
       end
     end
 
-    def read_input
+    def read_input(prompt)
       signal_status(:IN_INPUT) do
+        @context.io.prompt = prompt
         if l = @context.io.gets
           print l if @context.verbose?
         else
@@ -591,16 +597,16 @@ module IRB
     end
 
     def readmultiline
-      @scanner.save_prompt_to_context_io([], false, 0)
+      prompt = generate_prompt([], false, 0)
 
       # multiline
-      return read_input if @context.io.respond_to?(:check_termination)
+      return read_input(prompt) if @context.io.respond_to?(:check_termination)
 
       # nomultiline
       code = ''
       line_offset = 0
       loop do
-        line = read_input
+        line = read_input(prompt)
         unless line
           return code.empty? ? nil : code
         end
@@ -615,7 +621,7 @@ module IRB
 
         line_offset += 1
         continue = @scanner.should_continue?(tokens)
-        @scanner.save_prompt_to_context_io(opens, continue, line_offset)
+        prompt = generate_prompt(opens, continue, line_offset)
       end
     end
 
@@ -625,9 +631,9 @@ module IRB
         break unless code
 
         if code != "\n"
-          yield build_statement(code), @scanner.line_no
+          yield build_statement(code), @line_no
         end
-        @scanner.increase_line_no(code.count("\n"))
+        @line_no += code.count("\n")
       rescue RubyLex::TerminateLineInput
       end
     end
@@ -688,7 +694,7 @@ module IRB
               tokens_until_line << token if token != tokens_until_line.last
             end
             continue = @scanner.should_continue?(tokens_until_line)
-            @scanner.prompt(next_opens, continue, line_num_offset)
+            generate_prompt(next_opens, continue, line_num_offset)
           end
         end
       end
@@ -874,7 +880,7 @@ module IRB
       end
     end
 
-    def truncate_prompt_main(str) # :nodoc:
+    private def truncate_prompt_main(str) # :nodoc:
       str = str.tr(CONTROL_CHARACTERS_PATTERN, ' ')
       if str.size <= PROMPT_MAIN_TRUNCATE_LENGTH
         str
@@ -883,9 +889,8 @@ module IRB
       end
     end
 
-    def prompt(prompt, ltype, indent, line_no) # :nodoc:
-      p = prompt.dup
-      p.gsub!(/%([0-9]+)?([a-zA-Z])/) do
+    private def format_prompt(format, ltype, indent, line_no) # :nodoc:
+      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
         case $2
         when "N"
           @context.irb_name
@@ -919,7 +924,6 @@ module IRB
           "%"
         end
       end
-      p
     end
 
     def output_value(omit = false) # :nodoc:

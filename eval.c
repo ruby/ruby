@@ -2110,3 +2110,21 @@ Init_eval(void)
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");
 }
+
+int
+rb_errno(void)
+{
+    return *rb_orig_errno_ptr();
+}
+
+void
+rb_errno_set(int e)
+{
+    *rb_orig_errno_ptr() = e;
+}
+
+int *
+rb_errno_ptr(void)
+{
+    return rb_orig_errno_ptr();
+}

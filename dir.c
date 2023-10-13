@@ -805,7 +805,7 @@ dir_read(VALUE dir)
     struct dirent *dp;
 
     GetDIR(dir, dirp);
-    errno = 0;
+    rb_errno_set(0);
     if ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
         return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
@@ -1723,7 +1723,7 @@ nogvl_opendir_at(void *ptr)
             /* fallthrough*/
           case 0:
             if (fd >= 0) close(fd);
-            errno = e;
+            rb_errno_set(e);
         }
     }
 #else  /* !USE_OPENDIR_AT */

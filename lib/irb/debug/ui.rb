@@ -4,8 +4,7 @@ require 'debug/console'
 module IRB
   module Debug
     class UI < DEBUGGER__::UI_Base
-      def initialize(thread, irb)
-        @thread = thread
+      def initialize(irb)
         @irb = irb
       end
 
@@ -56,7 +55,7 @@ module IRB
 
       def readline _
         setup_interrupt do
-          tc = DEBUGGER__::SESSION.get_thread_client(@thread)
+          tc = DEBUGGER__::SESSION.instance_variable_get(:@tc)
           cmd = @irb.debug_readline(tc.current_frame.binding || TOPLEVEL_BINDING)
 
           case cmd

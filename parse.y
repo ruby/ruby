@@ -1835,6 +1835,10 @@ get_nd_value(struct parser_params *p, NODE *node)
         return RNODE_DASGN(node)->nd_value;
       case NODE_MASGN:
         return RNODE_MASGN(node)->nd_value;
+      case NODE_CVASGN:
+        return RNODE_CVASGN(node)->nd_value;
+      case NODE_CDECL:
+        return RNODE_CDECL(node)->nd_value;
       default:
         compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
@@ -5985,7 +5989,7 @@ string_content	: tSTRING_CONTENT
                         p->heredoc_indent = $<num>indent;
                         p->heredoc_line_indent = -1;
                     /*%%%*/
-                        if ($compstmt) $compstmt->flags &= ~NODE_FL_NEWLINE;
+                        if ($compstmt) nd_unset_fl_newline($compstmt);
                         $$ = new_evstr(p, $compstmt, &@$);
                     /*% %*/
                     /*% ripper: string_embexpr!($compstmt) %*/
@@ -7911,9 +7915,9 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
              * invalid unicode escapes are allowed in comments. The regexp parser
              * does its own validation and will catch any issues.
              */
-            int c = *p->lex.pcur;
-            tokadd(p, c);
-            for (c = *++p->lex.pcur; p->lex.pcur < p->lex.pend; c = *++p->lex.pcur) {
+            tokadd(p, open_brace);
+            while (!lex_eol_ptr_p(p, ++p->lex.pcur)) {
+                int c = peekc(p);
                 if (c == close_brace) {
                     tokadd(p, c);
                     ++p->lex.pcur;
@@ -7922,7 +7926,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                 else if (c == term) {
                     break;
                 }
-                if (c == '\\' && p->lex.pcur + 1 < p->lex.pend) {
+                if (c == '\\' && !lex_eol_n_p(p, 1)) {
                     tokadd(p, c);
                     c = *++p->lex.pcur;
                 }
@@ -8310,7 +8314,7 @@ tokadd_string(struct parser_params *p,
             --*nest;
         }
         else if ((func & STR_FUNC_EXPAND) && c == '#' && !lex_eol_p(p)) {
-            int c2 = *p->lex.pcur;
+            unsigned char c2 = *p->lex.pcur;
             if (c2 == '$' || c2 == '@' || c2 == '{') {
                 pushback(p, c);
                 break;
@@ -8790,7 +8794,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 
     while (str_node) {
         VALUE lit = RNODE_LIT(str_node)->nd_lit;
-        if (str_node->flags & NODE_FL_NEWLINE) {
+        if (nd_fl_newline(str_node)) {
             dedent_string(p, lit, indent);
         }
         if (!prev_lit) {
@@ -9097,7 +9101,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
               flush_str:
                 set_yylval_str(str);
 #ifndef RIPPER
-                if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+                if (bol) nd_set_fl_newline(yylval.node);
 #endif
                 flush_string_content(p, enc);
                 return tSTRING_CONTENT;
@@ -9122,7 +9126,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
 #ifndef RIPPER
-    if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+    if (bol) nd_set_fl_newline(yylval.node);
 #endif
     return tSTRING_CONTENT;
 }
@@ -9916,7 +9920,7 @@ parse_qmark(struct parser_params *p, int space_seen)
             enc = rb_utf8_encoding();
             tokadd_utf8(p, &enc, -1, 0, 0);
         }
-        else if (!lex_eol_p(p) && !(c = *p->lex.pcur, ISASCII(c))) {
+        else if (!ISASCII(c = peekc(p))) {
             nextc(p);
             if (tokadd_mbchar(p, c) == -1) return 0;
         }
@@ -12275,7 +12279,7 @@ newline_node(NODE *node)
 {
     if (node) {
         node = remove_begin(node);
-        node->flags |= NODE_FL_NEWLINE;
+        nd_set_fl_newline(node);
     }
     return node;
 }
@@ -13963,7 +13967,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
      (reduce_nodes(p, &type(node)->n1), body = &type(node)->n2, 1))
 
     while (node) {
-        int newline = (int)(node->flags & NODE_FL_NEWLINE);
+        int newline = (int)(nd_fl_newline(node));
         switch (nd_type(node)) {
           end:
           case NODE_NIL:
@@ -13971,11 +13975,11 @@ reduce_nodes(struct parser_params *p, NODE **body)
             return;
           case NODE_RETURN:
             *body = node = RNODE_RETURN(node)->nd_stts;
-            if (newline && node) node->flags |= NODE_FL_NEWLINE;
+            if (newline && node) nd_set_fl_newline(node);
             continue;
           case NODE_BEGIN:
             *body = node = RNODE_BEGIN(node)->nd_body;
-            if (newline && node) node->flags |= NODE_FL_NEWLINE;
+            if (newline && node) nd_set_fl_newline(node);
             continue;
           case NODE_BLOCK:
             body = &RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head;
@@ -14005,7 +14009,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
             return;
         }
         node = *body;
-        if (newline && node) node->flags |= NODE_FL_NEWLINE;
+        if (newline && node) nd_set_fl_newline(node);
     }
 
 #undef subnodes
@@ -14044,6 +14048,8 @@ assign_in_cond(struct parser_params *p, NODE *node)
       case NODE_DASGN:
       case NODE_GASGN:
       case NODE_IASGN:
+      case NODE_CVASGN:
+      case NODE_CDECL:
         break;
 
       default:
