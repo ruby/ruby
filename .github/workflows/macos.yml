@@ -29,16 +29,9 @@ jobs:
   make:
     strategy:
       matrix:
-        include:
-          - test_task: 'check'
-            os: 'macos-11'
-            configure: ''
-          - test_task: 'check'
-            os: 'macos-12'
-            configure: '--enable-shared'
-          - test_task: 'check'
-            os: 'macos-arm-oss'
-            configure: ''
+        test_task: ['check']
+        configure: ['']
+        os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
       fail-fast: false
 
     env:

@@ -45,7 +45,8 @@ jobs:
     runs-on: macos-arm-oss
 
     if: >-
-      ${{!(false
+      ${{github.repository == 'ruby/ruby' &&
+      !(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
