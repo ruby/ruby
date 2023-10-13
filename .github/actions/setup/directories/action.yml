@@ -36,12 +36,6 @@ inputs:
     description: >-
       If set to true, creates dummy files in build dir.
 
-  token:
-    required: false
-    default: ''
-    description: >-
-      A GitHub token to checkout the repository
-
 outputs: {} # nothing?
 
 runs:
@@ -76,7 +70,6 @@ runs:
     - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       with:
         path: ${{ inputs.srcdir }}
-        token: ${{ inputs.token }}
 
     - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
       with:
