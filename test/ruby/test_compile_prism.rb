@@ -364,10 +364,16 @@ module Prism
     ############################################################################
 
     def test_ClassNode
-      test_prism_eval("class A; end")
-      test_prism_eval("class B < A; end")
-      test_prism_eval("class A::C; end")
-      test_prism_eval("class B::D < A::C; end")
+      test_prism_eval("class PrismClassA; end")
+      test_prism_eval("class PrismClassA; end; class PrismClassB < PrismClassA; end")
+      test_prism_eval("class PrismClassA; end; class PrismClassA::PrismClassC; end")
+      test_prism_eval(<<-HERE
+        class PrismClassA; end
+        class PrismClassA::PrismClassC; end
+        class PrismClassB; end
+        class PrismClassB::PrismClassD < PrismClassA::PrismClassC; end
+      HERE
+      )
     end
 
     def test_ModuleNode
@@ -386,9 +392,21 @@ module Prism
     ############################################################################
 
     def test_UndefNode
-      test_prism_eval("def a; end; undef a")
-      test_prism_eval("def a; end; def b; end; undef a, b")
-      test_prism_eval("def abc1; end; undef :'abc#{1}'")
+      test_prism_eval("def prism_undef_node_1; end; undef prism_undef_node_1")
+      test_prism_eval(<<-HERE
+        def prism_undef_node_2
+        end
+        def prism_undef_node_3
+        end
+        undef prism_undef_node_2, prism_undef_node_3
+      HERE
+      )
+      test_prism_eval(<<-HERE
+        def prism_undef_node_4
+        end
+        undef :'prism_undef_node_#{4}'
+      HERE
+      )
     end
 
 
