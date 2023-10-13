@@ -549,7 +549,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   end
 
   def make_srcfile(frozen_string_literal: nil)
-    filename = "bootstraptest.#{self.path}_#{self.lineno}_#{self.id}.rb"
+    filename = File.join(Dir.pwd, "btest.#{self.path}_L#{self.lineno}_N#{self.id}.rb")
     File.open(filename, 'w') {|f|
       f.puts "#frozen_string_literal:true" if frozen_string_literal
       f.puts "GC.stress = true" if $stress
