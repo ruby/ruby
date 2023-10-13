@@ -29,6 +29,14 @@ inputs:
     description: >-
       If set to true, additionally runs `make up`.
 
+  checkout:
+    required: false
+    type: boolean
+    default: true
+    description: >-
+      If set to '' (false), skip running actions/checkout. This is useful when
+      you don't want to overwrite a GitHub token that is already set up.
+
   dummy-files:
     required: false
     type: boolean
