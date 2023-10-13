@@ -5,8 +5,6 @@ require "fileutils"
 require "yaml"
 
 module Prism
-  COMMON_FLAGS = 2
-
   SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
 
   JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"

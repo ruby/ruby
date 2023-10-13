@@ -176,7 +176,7 @@ pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding) {
                     argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);
                     <%- when Prism::FlagsField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-                    argv[<%= index %>] = ULONG2NUM(node->flags >> <%= Prism::COMMON_FLAGS %>);
+                    argv[<%= index %>] = ULONG2NUM(node->flags & ~PM_NODE_FLAG_COMMON_MASK);
                     <%- else -%>
                     <%- raise -%>
                     <%- end -%>
