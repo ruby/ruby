@@ -147,6 +147,27 @@ pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buf
 }
 
 static void
+pm_serialize_magic_comment(pm_parser_t *parser, pm_magic_comment_t *magic_comment, pm_buffer_t *buffer) {
+    // serialize key location
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(magic_comment->key_start - parser->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(magic_comment->key_length));
+
+    // serialize value location
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(magic_comment->value_start - parser->start));
+    pm_buffer_append_u32(buffer, pm_ptrdifft_to_u32(magic_comment->value_length));
+}
+
+static void
+pm_serialize_magic_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
+    pm_buffer_append_u32(buffer, pm_sizet_to_u32(pm_list_size(list)));
+
+    pm_magic_comment_t *magic_comment;
+    for (magic_comment = (pm_magic_comment_t *) list->head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
+        pm_serialize_magic_comment(parser, magic_comment, buffer);
+    }
+}
+
+static void
 pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
     // serialize message
     size_t message_length = strlen(diagnostic->message);
@@ -180,6 +201,7 @@ void
 pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_serialize_encoding(&parser->encoding, buffer);
     pm_serialize_comment_list(parser, &parser->comment_list, buffer);
+    pm_serialize_magic_comment_list(parser, &parser->magic_comment_list, buffer);
     pm_serialize_diagnostic_list(parser, &parser->error_list, buffer);
     pm_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
 
@@ -268,6 +290,7 @@ pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_bu
 
     pm_serialize_encoding(&parser.encoding, buffer);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
+    pm_serialize_magic_comment_list(&parser, &parser.magic_comment_list, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
 

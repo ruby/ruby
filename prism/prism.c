@@ -5456,6 +5456,16 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         // When we're done, we want to free the string in case we had to
         // allocate memory for it.
         pm_string_free(&key);
+
+        // Allocate a new magic comment node to append to the parser's list.
+        pm_magic_comment_t *magic_comment;
+        if ((magic_comment = (pm_magic_comment_t *) malloc(sizeof(pm_magic_comment_t))) != NULL) {
+            magic_comment->key_start = key_start;
+            magic_comment->value_start = value_start;
+            magic_comment->key_length = (uint32_t) key_length;
+            magic_comment->value_length = (uint32_t) (value_end - value_start);
+            pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
+        }
     }
 }
 
@@ -15270,6 +15280,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .next_start = NULL,
         .heredoc_end = NULL,
         .comment_list = PM_LIST_EMPTY,
+        .magic_comment_list = PM_LIST_EMPTY,
         .warning_list = PM_LIST_EMPTY,
         .error_list = PM_LIST_EMPTY,
         .current_scope = NULL,
@@ -15364,6 +15375,19 @@ pm_comment_list_free(pm_list_t *list) {
     }
 }
 
+// Free all of the memory associated with the magic comment list.
+static inline void
+pm_magic_comment_list_free(pm_list_t *list) {
+    pm_list_node_t *node, *next;
+
+    for (node = list->head; node != NULL; node = next) {
+        next = node->next;
+
+        pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) node;
+        free(magic_comment);
+    }
+}
+
 // Free any memory associated with the given parser.
 PRISM_EXPORTED_FUNCTION void
 pm_parser_free(pm_parser_t *parser) {
@@ -15371,6 +15395,7 @@ pm_parser_free(pm_parser_t *parser) {
     pm_diagnostic_list_free(&parser->error_list);
     pm_diagnostic_list_free(&parser->warning_list);
     pm_comment_list_free(&parser->comment_list);
+    pm_magic_comment_list_free(&parser->magic_comment_list);
     pm_constant_pool_free(&parser->constant_pool);
     pm_newline_list_free(&parser->newline_list);
 
