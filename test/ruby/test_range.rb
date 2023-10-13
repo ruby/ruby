@@ -983,26 +983,38 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_size
-    assert_equal 42, (1..42).size
-    assert_equal 41, (1...42).size
-    assert_equal 6, (1...6.3).size
-    assert_equal 5, (1.1...6).size
-    assert_equal 3, (1..3r).size
-    assert_equal 2, (1...3r).size
-    assert_equal 3, (1..3.1r).size
-    assert_equal 3, (1...3.1r).size
-    assert_equal 42, (1..42).each.size
-    assert_nil ("a"..."z").size
-    assert_nil ("a"...).size
-    assert_nil (..."z").size    # [Bug #18983]
-    assert_nil (nil...nil).size # [Bug #18983]
+    Enumerator.product([:to_i, :to_f, :to_r].repeated_permutation(2), [1, 10], [5, 5.5], [true, false]) do |(m1, m2), beg, ende, exclude_end|
+      r = Range.new(beg.send(m1), ende.send(m2), exclude_end)
+      iterable = true
+      yielded = []
+      begin
+        r.each { yielded << _1 }
+      rescue TypeError
+        iterable = false
+      end
 
-    assert_equal Float::INFINITY, (1...).size
-    assert_equal Float::INFINITY, (1.0...).size
-    assert_equal Float::INFINITY, (...1).size
-    assert_equal Float::INFINITY, (...1.0).size
-    assert_nil ("a"...).size
-    assert_nil (..."z").size
+      if iterable
+        assert_equal(yielded.size, r.size, "failed on #{r}")
+        assert_equal(yielded.size, r.each.size, "failed on #{r}")
+      else
+        assert_raise(TypeError, "failed on #{r}") { r.size }
+        assert_raise(TypeError, "failed on #{r}") { r.each.size }
+      end
+    end
+
+    assert_nil ("a"..."z").size
+
+    assert_equal Float::INFINITY, (1..).size
+    assert_raise(TypeError) { (1.0..).size }
+    assert_raise(TypeError) { (1r..).size }
+    assert_nil ("a"..).size
+
+    assert_raise(TypeError) { (..1).size }
+    assert_raise(TypeError) { (..1.0).size }
+    assert_raise(TypeError) { (..1r).size }
+    assert_raise(TypeError) { (..'z').size }
+
+    assert_raise(TypeError) { (nil...nil).size }
   end
 
   def test_bsearch_typechecks_return_values
