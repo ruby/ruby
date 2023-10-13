@@ -8756,6 +8756,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     if (p->eofp) p->lex.nextline = Qnil;
     p->eofp = 0;
     xfree(term);
+    rb_ast_delete_mark_object(p->ast, line);
 }
 
 static int
