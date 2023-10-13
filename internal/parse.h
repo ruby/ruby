@@ -23,9 +23,9 @@ struct rb_iseq_struct;          /* in vm_core.h */
 /* structs for managing terminator of string literal and heredocment */
 typedef struct rb_strterm_literal_struct {
     long nest;
-    long func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
-    long paren;	    /* '(' of `%q(...)` */
-    long term;	    /* ')' of `%q(...)` */
+    int func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
+    int paren;	    /* '(' of `%q(...)` */
+    int term;	    /* ')' of `%q(...)` */
 } rb_strterm_literal_t;
 
 typedef struct rb_strterm_heredoc_struct {
