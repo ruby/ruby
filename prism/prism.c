@@ -5461,7 +5461,8 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         // Here, we need to do some processing on the key to swap out dashes for
         // underscores. We only need to do this if there _is_ a dash in the key.
         pm_string_t key;
-        const uint8_t *dash = pm_memchr(key_start, '-', (size_t) (key_end - key_start), parser->encoding_changed, &parser->encoding);
+        const size_t key_length = (size_t) (key_end - key_start);
+        const uint8_t *dash = pm_memchr(key_start, '-', (size_t) key_length, parser->encoding_changed, &parser->encoding);
 
         if (dash == NULL) {
             pm_string_shared_init(&key, key_start, key_end);
@@ -5483,7 +5484,6 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         // Finally, we can start checking the key against the list of known
         // magic comment keys, and potentially change state based on that.
         const uint8_t *key_source = pm_string_source(&key);
-        const size_t key_length = pm_string_length(&key);
 
         // We only want to attempt to compare against encoding comments if it's
         // the first line in the file (or the second in the case of a shebang).
@@ -5510,7 +5510,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         // Allocate a new magic comment node to append to the parser's list.
         pm_magic_comment_t *magic_comment;
-        if ((magic_comment = (pm_magic_comment_t *) malloc(sizeof(pm_magic_comment_t))) != NULL) {
+        if ((magic_comment = (pm_magic_comment_t *) calloc(sizeof(pm_magic_comment_t), 1)) != NULL) {
             magic_comment->key_start = key_start;
             magic_comment->value_start = value_start;
             magic_comment->key_length = (uint32_t) key_length;
@@ -6782,7 +6782,7 @@ parser_lex_callback(pm_parser_t *parser) {
 // Return a new comment node of the specified type.
 static inline pm_comment_t *
 parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
-    pm_comment_t *comment = (pm_comment_t *) malloc(sizeof(pm_comment_t));
+    pm_comment_t *comment = (pm_comment_t *) calloc(sizeof(pm_comment_t), 1);
     if (comment == NULL) return NULL;
 
     *comment = (pm_comment_t) {

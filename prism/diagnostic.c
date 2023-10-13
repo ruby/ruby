@@ -265,7 +265,7 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
 // Append an error to the given list of diagnostic.
 bool
 pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) malloc(sizeof(pm_diagnostic_t));
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) { .start = start, .end = end, .message = pm_diagnostic_message(diag_id) };
