@@ -818,7 +818,7 @@ module Prism
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
 
-      ParseResult.new(tokens, result.comments, result.errors, result.warnings, [])
+      ParseResult.new(tokens, result.comments, result.magic_comments, result.errors, result.warnings, [])
     end
   end
 

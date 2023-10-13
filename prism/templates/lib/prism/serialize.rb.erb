@@ -55,9 +55,10 @@ module Prism
 
       def load_metadata
         comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        magic_comments = load_varint.times.map { MagicComment.new(load_location, load_location) }
         errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
         warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
-        [comments, errors, warnings]
+        [comments, magic_comments, errors, warnings]
       end
 
       def load_tokens
@@ -76,14 +77,14 @@ module Prism
       def load_tokens_result
         tokens = load_tokens
         encoding = load_encoding
-        comments, errors, warnings = load_metadata
+        comments, magic_comments, errors, warnings = load_metadata
 
         if encoding != @encoding
           tokens.each { |token,| token.value.force_encoding(encoding) }
         end
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-        Prism::ParseResult.new(tokens, comments, errors, warnings, @source)
+        Prism::ParseResult.new(tokens, comments, magic_comments, errors, warnings, @source)
       end
 
       def load_nodes
@@ -97,17 +98,17 @@ module Prism
         @encoding = load_encoding
         @input = input.force_encoding(@encoding).freeze
 
-        comments, errors, warnings = load_metadata
+        comments, magic_comments, errors, warnings = load_metadata
 
         @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
 
-        [load_node, comments, errors, warnings]
+        [load_node, comments, magic_comments, errors, warnings]
       end
 
       def load_result
-        node, comments, errors, warnings = load_nodes
-        Prism::ParseResult.new(node, comments, errors, warnings, @source)
+        node, comments, magic_comments, errors, warnings = load_nodes
+        Prism::ParseResult.new(node, comments, magic_comments, errors, warnings, @source)
       end
 
       private

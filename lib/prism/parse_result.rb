@@ -137,7 +137,7 @@ module Prism
     end
 
     def self.null
-      new(0, 0)
+      new(nil, 0, 0)
     end
   end
 
@@ -163,6 +163,32 @@ module Prism
 
     def inspect
       "#<Prism::Comment @type=#{@type.inspect} @location=#{@location.inspect}>"
+    end
+  end
+
+  # This represents a magic comment that was encountered during parsing.
+  class MagicComment
+    attr_reader :key_loc, :value_loc
+
+    def initialize(key_loc, value_loc)
+      @key_loc = key_loc
+      @value_loc = value_loc
+    end
+
+    def key
+      key_loc.slice
+    end
+
+    def value
+      value_loc.slice
+    end
+
+    def deconstruct_keys(keys)
+      { key_loc: key_loc, value_loc: value_loc }
+    end
+
+    def inspect
+      "#<Prism::MagicComment @key=#{key.inspect} @value=#{value.inspect}>"
     end
   end
 
@@ -206,18 +232,19 @@ module Prism
   # the AST, any comments that were encounters, and any errors that were
   # encountered.
   class ParseResult
-    attr_reader :value, :comments, :errors, :warnings, :source
+    attr_reader :value, :comments, :magic_comments, :errors, :warnings, :source
 
-    def initialize(value, comments, errors, warnings, source)
+    def initialize(value, comments, magic_comments, errors, warnings, source)
       @value = value
       @comments = comments
+      @magic_comments = magic_comments
       @errors = errors
       @warnings = warnings
       @source = source
     end
 
     def deconstruct_keys(keys)
-      { value: value, comments: comments, errors: errors, warnings: warnings }
+      { value: value, comments: comments, magic_comments: magic_comments, errors: errors, warnings: warnings }
     end
 
     def success?
