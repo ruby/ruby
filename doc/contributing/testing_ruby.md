@@ -85,7 +85,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-all TESTS=--help
     ```
 
-    If we would like to run both the `test/` and `bootstraptest/` test suites, we can run
+    If we would like to run the `test/`, `bootstraptest/` and `spec/` test suites (the `spec/` is explained in a later section), we can run
 
     ```
     make check
