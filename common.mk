@@ -15302,7 +15302,6 @@ ruby.$(OBJEXT): $(top_srcdir)/prism/pack.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/parser.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/prism.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/regexp.h
-ruby.$(OBJEXT): $(top_srcdir)/prism/unescape.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
