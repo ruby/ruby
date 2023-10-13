@@ -36,7 +36,6 @@ typedef struct rb_strterm_heredoc_struct {
     uint8_t quote;
     uint8_t func;
 } rb_strterm_heredoc_t;
-STATIC_ASSERT(rb_strterm_heredoc_t, sizeof(rb_strterm_heredoc_t) <= 4 * SIZEOF_VALUE);
 
 #define HERETERM_LENGTH_MAX UINT_MAX
 
