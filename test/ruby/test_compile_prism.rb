@@ -167,7 +167,8 @@ module Prism
     end
 
     def test_ConstantPathWriteNode
-      # test_prism_eval("Prism::YCT = 1")
+      test_prism_eval("Prism::ConstantPathWriteNode= 1")
+      test_prism_eval("::ConstantPathWriteNode = 1")
     end
 
     def test_GlobalVariableTargetNode

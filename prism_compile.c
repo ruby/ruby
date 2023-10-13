@@ -940,7 +940,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         // TODO: Not sure this is accurate, look at FLUSH_CHUNK in the compiler
-        ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
+        }
 
         PM_POP_IF_POPPED;
         return;
@@ -1202,13 +1204,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_CONSTANT_PATH_WRITE_NODE: {
         pm_constant_path_write_node_t *constant_path_write_node = (pm_constant_path_write_node_t*) node;
-        PM_COMPILE(constant_path_write_node->value);
-        PM_DUP_UNLESS_POPPED;
-
-        ID constant_var_name = parse_location_symbol(&constant_path_write_node->target->base.location);
-
-        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_var_name));
+        if (constant_path_write_node->target->parent) {
+            PM_COMPILE_NOT_POPPED((pm_node_t *)constant_path_write_node->target->parent);
+        }
+        else {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
+        }
+        PM_COMPILE_NOT_POPPED(constant_path_write_node->value);
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+        }
+        ADD_INSN(ret, &dummy_line_node, swap);
+        VALUE constant_name = ID2SYM(pm_constant_id_lookup(compile_context,
+                    ((pm_constant_read_node_t *)constant_path_write_node->target->child)->name));
+        ADD_INSN1(ret, &dummy_line_node, setconstant, constant_name);
         return;
       }
       case PM_CONSTANT_READ_NODE: {
