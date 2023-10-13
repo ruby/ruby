@@ -168,10 +168,8 @@ dump_append_c(struct dump_config *dc, unsigned char c)
 }
 
 static void
-dump_append_ref(struct dump_config *dc, VALUE ref)
+dump_append_ptr(struct dump_config *dc, VALUE ref)
 {
-    RUBY_ASSERT(ref > 0);
-
     char buffer[roomof(sizeof(VALUE) * CHAR_BIT, 4) + rb_strlen_lit("\"0x\"")];
     char *buffer_start, *buffer_end;
 
@@ -186,6 +184,14 @@ dump_append_ref(struct dump_config *dc, VALUE ref)
     *--buffer_start = '"';
     buffer_append(dc, buffer_start, buffer_end - buffer_start);
 }
+
+static void
+dump_append_ref(struct dump_config *dc, VALUE ref)
+{
+    RUBY_ASSERT(ref > 0);
+    dump_append_ptr(dc, ref);
+}
+
 
 static void
 dump_append_string_value(struct dump_config *dc, VALUE obj)
@@ -438,6 +444,20 @@ dump_object(VALUE obj, struct dump_config *dc)
             if (mid != 0) {
                 dump_append(dc, ", \"mid\":");
                 dump_append_string_value(dc, rb_id2str(mid));
+            }
+            break;
+
+          case imemo_callcache:
+            mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
+            if (mid != 0) {
+                dump_append(dc, ", \"called_id\":");
+                dump_append_string_value(dc, rb_id2str(mid));
+
+                VALUE klass = ((const struct rb_callcache *)obj)->klass;
+                if (klass != 0) {
+                    dump_append(dc, ", \"receiver_class\":");
+                    dump_append_ref(dc, klass);
+                }
             }
             break;
 
