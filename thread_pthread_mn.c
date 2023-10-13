@@ -562,7 +562,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
         flags |= thread_sched_waiting_timeout;
     }
 
-    __uint32_t epoll_events = 0;
+    uint32_t epoll_events = 0;
     if (flags & thread_sched_waiting_timeout) {
         VM_ASSERT(rel != NULL);
         abs = rb_hrtime_add(rb_hrtime_now(), *rel);
