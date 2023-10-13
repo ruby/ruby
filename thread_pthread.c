@@ -71,10 +71,9 @@ static const void *const condattr_monotonic = NULL;
 #endif
 
 #ifndef USE_MN_THREADS
-  #if defined(__EMSCRIPTEN__) || defined(COROUTINE_PTHREAD_CONTEXT) || defined(NON_SCALAR_THREAD_ID)
+  #if defined(__EMSCRIPTEN__) || defined(COROUTINE_PTHREAD_CONTEXT)
     // on __EMSCRIPTEN__ provides epoll* declarations, but no implementations.
     // on COROUTINE_PTHREAD_CONTEXT, it doesn't worth to use it.
-    // on NON_SCALAR_THREAD_ID, now we can not debug issues on x390s/Ubuntu so skip it.
     #define USE_MN_THREADS 0
   #elif HAVE_SYS_EPOLL_H
     #include <sys/epoll.h>
