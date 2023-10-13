@@ -68,17 +68,17 @@ module Gem::BUNDLED_GEMS
     EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
   end
 
-  # for Bundler environment especially Bundler.setup.
   def self.warning?(name)
     name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
     return unless gem = find_gem(path)
     caller = caller_locations(3, 3).find {|c| c&.absolute_path}
     return if find_gem(caller&.absolute_path)
+    name = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
-      gem = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
+      gem = name
     elsif gem
       return if WARNED[gem]
       WARNED[gem] = true
