@@ -1835,6 +1835,10 @@ get_nd_value(struct parser_params *p, NODE *node)
         return RNODE_DASGN(node)->nd_value;
       case NODE_MASGN:
         return RNODE_MASGN(node)->nd_value;
+      case NODE_CVASGN:
+        return RNODE_CVASGN(node)->nd_value;
+      case NODE_CDECL:
+        return RNODE_CDECL(node)->nd_value;
       default:
         compile_error(p, "unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
@@ -7911,9 +7915,9 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
              * invalid unicode escapes are allowed in comments. The regexp parser
              * does its own validation and will catch any issues.
              */
-            int c = *p->lex.pcur;
-            tokadd(p, c);
-            for (c = *++p->lex.pcur; p->lex.pcur < p->lex.pend; c = *++p->lex.pcur) {
+            tokadd(p, open_brace);
+            while (!lex_eol_ptr_p(p, ++p->lex.pcur)) {
+                int c = peekc(p);
                 if (c == close_brace) {
                     tokadd(p, c);
                     ++p->lex.pcur;
@@ -7922,7 +7926,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                 else if (c == term) {
                     break;
                 }
-                if (c == '\\' && p->lex.pcur + 1 < p->lex.pend) {
+                if (c == '\\' && !lex_eol_n_p(p, 1)) {
                     tokadd(p, c);
                     c = *++p->lex.pcur;
                 }
@@ -8310,7 +8314,7 @@ tokadd_string(struct parser_params *p,
             --*nest;
         }
         else if ((func & STR_FUNC_EXPAND) && c == '#' && !lex_eol_p(p)) {
-            int c2 = *p->lex.pcur;
+            unsigned char c2 = *p->lex.pcur;
             if (c2 == '$' || c2 == '@' || c2 == '{') {
                 pushback(p, c);
                 break;
@@ -9916,7 +9920,7 @@ parse_qmark(struct parser_params *p, int space_seen)
             enc = rb_utf8_encoding();
             tokadd_utf8(p, &enc, -1, 0, 0);
         }
-        else if (!lex_eol_p(p) && !(c = *p->lex.pcur, ISASCII(c))) {
+        else if (!ISASCII(c = peekc(p))) {
             nextc(p);
             if (tokadd_mbchar(p, c) == -1) return 0;
         }
@@ -14044,6 +14048,8 @@ assign_in_cond(struct parser_params *p, NODE *node)
       case NODE_DASGN:
       case NODE_GASGN:
       case NODE_IASGN:
+      case NODE_CVASGN:
+      case NODE_CDECL:
         break;
 
       default:

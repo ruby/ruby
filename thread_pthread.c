@@ -70,11 +70,18 @@ static const void *const condattr_monotonic = NULL;
 // #define HAVE_SYS_EPOLL_H 0
 #endif
 
-#if HAVE_SYS_EPOLL_H && !defined(COROUTINE_PTHREAD_CONTEXT)
-  #include <sys/epoll.h>
-  #define USE_MN_THREADS 1
-#else
-  #define USE_MN_THREADS 0
+#ifndef USE_MN_THREADS
+  #if defined(__EMSCRIPTEN__) || defined(COROUTINE_PTHREAD_CONTEXT) || defined(NON_SCALAR_THREAD_ID)
+    // on __EMSCRIPTEN__ provides epoll* declarations, but no implementations.
+    // on COROUTINE_PTHREAD_CONTEXT, it doesn't worth to use it.
+    // on NON_SCALAR_THREAD_ID, now we can not debug issues on x390s/Ubuntu so skip it.
+    #define USE_MN_THREADS 0
+  #elif HAVE_SYS_EPOLL_H
+    #include <sys/epoll.h>
+    #define USE_MN_THREADS 1
+  #else
+    #define USE_MN_THREADS 0
+  #endif
 #endif
 
 // native thread wrappers
@@ -1622,13 +1629,16 @@ ruby_mn_threads_params(void)
     bool enable_mn_threads;
 
     if (mn_threads_cstr && (enable_mn_threads = atoi(mn_threads_cstr) > 0)) {
-        if (RTEST(ruby_verbose)) {
 #if USE_MN_THREADS
+        if (RTEST(ruby_verbose)) {
             fprintf(stderr, "RUBY_MN_THREADS = %s (default: 0)\n", mn_threads_cstr);
-#else
-            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implmeented on this executable.", mn_threads_cstr);
-#endif
         }
+#else
+        enable_mn_threads = false;
+        if (RTEST(ruby_verbose)) {
+            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implmeented on this executable.", mn_threads_cstr);
+        }
+#endif
     }
     else {
         enable_mn_threads = false; // default: off on main Ractor
@@ -1714,14 +1724,19 @@ native_thread_assign(struct rb_native_thread *nt, rb_thread_t *th)
 }
 
 static void
-native_thread_destroy(rb_thread_t *th)
+native_thread_destroy(struct rb_native_thread *nt)
 {
-    struct rb_native_thread *nt = th->nt;
+    if (nt) {
+        rb_native_cond_destroy(&nt->cond.readyq);
 
-    rb_native_cond_destroy(&nt->cond.readyq);
+        if (&nt->cond.readyq != &nt->cond.intr) {
+            rb_native_cond_destroy(&nt->cond.intr);
+        }
 
-    if (&nt->cond.readyq != &nt->cond.intr)
-      rb_native_cond_destroy(&nt->cond.intr);
+        RB_ALTSTACK_FREE(nt->altstack);
+        ruby_xfree(nt->nt_context);
+        ruby_xfree(nt);
+    }
 }
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
@@ -2106,6 +2121,7 @@ static struct rb_native_thread *
 native_thread_alloc(void)
 {
     struct rb_native_thread *nt = ZALLOC(struct rb_native_thread);
+    native_thread_setup(nt);
 
 #if USE_MN_THREADS
     nt->nt_context = ruby_xmalloc(sizeof(struct coroutine_context));
@@ -2125,7 +2141,6 @@ native_thread_create_dedicated(rb_thread_t *th)
     th->nt->vm = th->vm;
     th->nt->running_thread = th;
     th->nt->dedicated = 1;
-    native_thread_setup(th->nt);
 
     // vm stack
     size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
@@ -2262,10 +2277,9 @@ rb_threadptr_sched_free(rb_thread_t *th)
 {
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
+        // has dedicated
         ruby_xfree(th->sched.context_stack);
-        RB_ALTSTACK_FREE(th->nt->altstack);
-        ruby_xfree(th->nt->nt_context);
-        ruby_xfree(th->nt);
+        native_thread_destroy(th->nt);
     }
     else {
         nt_free_stack(th->sched.context_stack);
@@ -2276,17 +2290,12 @@ rb_threadptr_sched_free(rb_thread_t *th)
         ruby_xfree(th->sched.context);
         VM_ASSERT((th->sched.context = NULL) == NULL);
     }
-
-    th->nt = NULL;
 #else
     ruby_xfree(th->sched.context_stack);
-
-    struct rb_native_thread *nt = th->nt;
-    if (nt) { // TODO: not sure why nt is NULL
-        RB_ALTSTACK_FREE(nt->altstack);
-        ruby_xfree(nt);
-    }
+    native_thread_destroy(th->nt);
 #endif
+
+    th->nt = NULL;
 }
 
 void

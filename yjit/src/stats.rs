@@ -267,6 +267,8 @@ make_counters! {
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
+    send_iseq_clobbering_block_arg,
+    send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_only_keywords,
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
@@ -402,7 +404,6 @@ make_counters! {
     opt_case_dispatch_megamorphic,
 
     opt_getconstant_path_ic_miss,
-    opt_getconstant_path_no_ic_entry,
     opt_getconstant_path_multi_ractor,
 
     expandarray_splat,

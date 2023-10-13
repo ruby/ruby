@@ -8,12 +8,8 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -49,7 +45,8 @@ jobs:
     runs-on: macos-arm-oss
 
     if: >-
-      ${{!(false
+      ${{github.repository == 'ruby/ruby' &&
+      !(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
