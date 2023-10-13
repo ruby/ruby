@@ -8573,9 +8573,9 @@ parser_string_term(struct parser_params *p, int func)
 static enum yytokentype
 parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
 {
-    int func = (int)quote->func;
-    int term = (int)quote->term;
-    int paren = (int)quote->paren;
+    int func = quote->func;
+    int term = quote->term;
+    int paren = quote->paren;
     int c, space = 0;
     rb_encoding *enc = p->enc;
     rb_encoding *base_enc = 0;
