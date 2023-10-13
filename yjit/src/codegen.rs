@@ -6043,48 +6043,7 @@ fn gen_send_iseq(
         }
     }
 
-    // We will not have None from here. You can use stack_pop / stack_pop.
-
-    match block_arg_type {
-        Some(Type::Nil) => {
-            // We have a nil block arg, so let's pop it off the args
-            asm.stack_pop(1);
-        }
-        Some(Type::BlockParamProxy) => {
-            // We don't need the actual stack value
-            asm.stack_pop(1);
-        }
-        Some(Type::TProc) => {
-            // Place the proc as the block handler. We do this early because
-            // the block arg being at the top of the stack gets in the way of
-            // rest param handling later. Also, since there are C calls that
-            // come later, we can't hold this value in a register and place it
-            // near the end when we push a new control frame.
-            asm_comment!(asm, "guard block arg is a proc");
-            // Simple predicate, no need for jit_prepare_routine_call().
-            let is_proc = asm.ccall(rb_obj_is_proc as _, vec![asm.stack_opnd(0)]);
-            asm.cmp(is_proc, Qfalse.into());
-            jit_chain_guard(
-                JCC_JE,
-                jit,
-                asm,
-                ocb,
-                SEND_MAX_DEPTH,
-                Counter::guard_send_block_arg_type,
-            );
-
-            let proc = asm.stack_pop(1);
-            let callee_ep = -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1;
-            let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
-            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
-            asm.store(callee_specval, proc);
-        }
-        None => {
-            // Nothing to do
-        }
-        _ => unreachable!(),
-    }
-
+    // Shortcut for special `Primitive.attr! :leaf` builtins
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
     let builtin_func = if builtin_func_raw.is_null() { None } else { Some(builtin_func_raw) };
@@ -6093,6 +6052,18 @@ fn gen_send_iseq(
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm_comment!(asm, "inlined leaf builtin");
+
+            // We pop the block arg without using it because:
+            //  - the builtin is leaf, so it promises to not `yield`.
+            //  - no leaf builtins have block param at the time of writing, and
+            //    adding one requires interpreter changes to support.
+            if block_arg_type.is_some() {
+                if iseq_has_block_param {
+                    gen_counter_incr(asm, Counter::send_iseq_leaf_builtin_block_arg_block_param);
+                    return None;
+                }
+                asm.stack_pop(1);
+            }
 
             // Skip this if it doesn't trigger GC
             if builtin_attrs & BUILTIN_ATTR_NO_GC == 0 {
@@ -6134,6 +6105,51 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
+
+    match block_arg_type {
+        Some(Type::Nil) => {
+            // We have a nil block arg, so let's pop it off the args
+            asm.stack_pop(1);
+        }
+        Some(Type::BlockParamProxy) => {
+            // We don't need the actual stack value
+            asm.stack_pop(1);
+        }
+        Some(Type::TProc) => {
+            // Place the proc as the block handler. We do this early because
+            // the block arg being at the top of the stack gets in the way of
+            // rest param handling later. Also, since there are C calls that
+            // come later, we can't hold this value in a register and place it
+            // near the end when we push a new control frame.
+            asm_comment!(asm, "guard block arg is a proc");
+            // Simple predicate, no need for jit_prepare_routine_call().
+            let is_proc = asm.ccall(rb_obj_is_proc as _, vec![asm.stack_opnd(0)]);
+            asm.cmp(is_proc, Qfalse.into());
+            jit_chain_guard(
+                JCC_JE,
+                jit,
+                asm,
+                ocb,
+                SEND_MAX_DEPTH,
+                Counter::guard_send_block_arg_type,
+            );
+
+            let callee_ep = -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1;
+            let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
+            if callee_specval < 0 {
+                // Can't write to sp[-n] since that's where the arguments are
+                gen_counter_incr(asm, Counter::send_iseq_clobbering_block_arg);
+                return None;
+            }
+            let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
+            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
+            asm.store(callee_specval, proc);
+        }
+        None => {
+            // Nothing to do
+        }
+        _ => unreachable!(),
+    }
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if let Some(array_length) = splat_array_length {
