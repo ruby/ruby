@@ -618,6 +618,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->hash_new       = rb_hash_new;
     config->hash_aset      = rb_hash_aset;
     config->hash_lookup    = rb_hash_lookup;
+    config->hash_delete    = rb_hash_delete;
     config->ident_hash_new = rb_ident_hash_new;
 
     config->int2fix = int2fix;
