@@ -12826,7 +12826,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         break;
       case NODE_STR:
         nd_set_type(symbol, NODE_LIT);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(symbol)->nd_lit = rb_str_intern(RNODE_STR(symbol)->nd_lit));
+        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(symbol)->nd_lit = rb_str_intern(RNODE_LIT(symbol)->nd_lit));
         break;
       default:
         compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
@@ -12852,7 +12852,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
             VALUE src = RNODE_STR(node)->nd_lit;
             nd_set_type(node, NODE_LIT);
             nd_set_loc(node, loc);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(node)->nd_lit = reg_compile(p, src, options));
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit = reg_compile(p, src, options));
         }
         break;
       default:
@@ -12892,7 +12892,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
         if (!RNODE_DREGX(node)->nd_next) {
             VALUE src = RNODE_DREGX(node)->nd_lit;
             nd_set_type(node, NODE_LIT);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_DREGX(node)->nd_lit = reg_compile(p, src, options));
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit = reg_compile(p, src, options));
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);
@@ -13595,7 +13595,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_STR:
         lit = rb_fstring(RNODE_STR(value)->nd_lit);
         nd_set_type(value, NODE_LIT);
-        RB_OBJ_WRITE(p->ast, &RNODE_STR(value)->nd_lit, lit);
+        RB_OBJ_WRITE(p->ast, &RNODE_LIT(value)->nd_lit, lit);
         return value;
 
       case NODE_ZLIST:
