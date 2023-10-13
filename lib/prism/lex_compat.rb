@@ -440,28 +440,21 @@ module Prism
 
             while index < max_index
               token = tokens[index]
+              results << token
               index += 1
 
               case token.event
               when :on_embexpr_beg, :on_heredoc_beg
                 embexpr_balance += 1
-                results << token
               when :on_embexpr_end, :on_heredoc_end
                 embexpr_balance -= 1
-                results << token
               when :on_tstring_content
                 if embexpr_balance == 0
-                  results << token
-
                   while index < max_index && tokens[index].event == :on_tstring_content
                     token.value << tokens[index].value
                     index += 1
                   end
-                else
-                  results << token
                 end
-              else
-                results << token
               end
             end
 
