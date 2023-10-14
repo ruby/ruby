@@ -139,11 +139,6 @@ ruby_mn_threads_params(void)
 {
 }
 
-static void
-native_thread_destroy(rb_thread_t *th)
-{
-}
-
 void
 ruby_init_stack(volatile VALUE *addr)
 {

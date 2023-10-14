@@ -2834,7 +2834,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
         }
         if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
         result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
-        if (!excl || RTEST(rb_funcall(rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step)), cmp, 1, to))) {
+        if (!excl || RTEST(rb_funcall(to, cmp, 1, rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step))))) {
             result = rb_funcall(result, '+', 1, INT2FIX(1));
         }
         return result;

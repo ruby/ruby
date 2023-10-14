@@ -623,11 +623,13 @@ native_thread_init_stack(rb_thread_t *th)
     (void *)InterlockedExchange((long *)(t), (long)(v))
 #endif
 static void
-native_thread_destroy(rb_thread_t *th)
+native_thread_destroy(struct rb_native_thread *nt)
 {
-    HANDLE intr = InterlockedExchangePointer(&th->nt->interrupt_event, 0);
-    RUBY_DEBUG_LOG("close handle intr:%p, thid:%p\n", intr, th->nt->thread_id);
-    w32_close_handle(intr);
+    if (nt) {
+        HANDLE intr = InterlockedExchangePointer(&nt->interrupt_event, 0);
+        RUBY_DEBUG_LOG("close handle intr:%p, thid:%p\n", intr, nt->thread_id);
+        w32_close_handle(intr);
+    }
 }
 
 static unsigned long __stdcall
@@ -893,6 +895,7 @@ th_has_dedicated_nt(const rb_thread_t *th)
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
+    native_thread_destroy(th->nt);
     ruby_xfree(th->nt);
     ruby_xfree(th->sched.vm_stack);
 }

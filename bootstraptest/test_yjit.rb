@@ -1,3 +1,15 @@
+# regression test for callee block handler overlapping with arguments
+assert_equal '3', %q{
+  def foo(_req, *args) = args.last
+
+  def call_foo = foo(0, 1, 2, 3, &->{})
+
+  call_foo
+}
+
+# call leaf builtin with a block argument
+assert_equal '0', "0.abs(&nil)"
+
 # regression test for invokeblock iseq guard
 assert_equal 'ok', %q{
   return :ok unless defined?(GC.compact)

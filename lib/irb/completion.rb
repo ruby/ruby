@@ -132,24 +132,22 @@ module IRB
           break
         end
       end
-      result = []
-      if tok && tok.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
-        case tok.tok
-        when 'require'
-          result = retrieve_files_to_require_from_load_path.select { |path|
-            path.start_with?(actual_target)
-          }.map { |path|
-            quote + path
-          }
-        when 'require_relative'
-          result = retrieve_files_to_require_relative_from_current_dir.select { |path|
-            path.start_with?(actual_target)
-          }.map { |path|
-            quote + path
-          }
-        end
+      return unless tok&.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
+
+      case tok.tok
+      when 'require'
+        retrieve_files_to_require_from_load_path.select { |path|
+          path.start_with?(actual_target)
+        }.map { |path|
+          quote + path
+        }
+      when 'require_relative'
+        retrieve_files_to_require_relative_from_current_dir.select { |path|
+          path.start_with?(actual_target)
+        }.map { |path|
+          quote + path
+        }
       end
-      result
     end
 
     def completion_candidates(preposing, target, postposing, bind:)
