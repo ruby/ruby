@@ -1048,7 +1048,7 @@ XXX
   # Shows option summary.
   #
   Officious['help'] = proc do |parser|
-    Switch::NoArgument.new do |arg|
+    Switch::NoArgument.new(nil, nil, ["-h"], ["--help"]) do |arg|
       puts parser.help
       exit
     end
@@ -1473,7 +1473,7 @@ XXX
           default_style = default_style.guess(arg = a)
           default_pattern, conv = search(:atype, o) unless default_pattern
         end
-        ldesc << "--[no-]#{q}"
+        ldesc << "--#{q}" << "--no-#{q}"
         (o = q.downcase).tr!('_', '-')
         long << o
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
@@ -1649,7 +1649,7 @@ XXX
           opt.tr!('_', '-')
           begin
             sw, = complete(:long, opt, true)
-            if require_exact && !sw.long.include?(arg)
+            if require_exact && !sw.long.include?("--#{opt}")
               throw :terminate, arg unless raise_unknown
               raise InvalidOption, arg
             end

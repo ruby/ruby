@@ -88,9 +88,9 @@ class TestOptionParser < Test::Unit::TestCase
     end
 
     @opt.require_exact = true
-    %w(--zrs -F -Ffoo).each do |arg|
+    [%w(--zrs foo), %w(--zrs=foo), %w(-F foo), %w(-Ffoo)].each do |args|
       result = {}
-      @opt.parse([arg, 'foo'], into: result)
+      @opt.parse(args, into: result)
       assert_equal({zrs: 'foo'}, result)
     end
 
@@ -99,6 +99,14 @@ class TestOptionParser < Test::Unit::TestCase
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zrs foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zr foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo))}
+
+    @opt.def_option('-f', '--[no-]foo', 'foo') {|arg| @foo = arg}
+    @opt.parse(%w[-f])
+    assert_equal(true, @foo)
+    @opt.parse(%w[--foo])
+    assert_equal(true, @foo)
+    @opt.parse(%w[--no-foo])
+    assert_equal(false, @foo)
   end
 
   def test_raise_unknown
