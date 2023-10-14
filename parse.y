@@ -11849,8 +11849,6 @@ rb_node_str_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
 {
     rb_node_str_t *n = NODE_NEWNODE(NODE_STR, rb_node_str_t, loc);
     n->nd_lit = nd_lit;
-    n->not_used = 0;
-    n->not_used2 = 0;
 
     return n;
 }
