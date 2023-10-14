@@ -8813,7 +8813,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
         }
 
         str_node = 0;
-        while ((node = RNODE_LIST(prev_node = node)->nd_next) != 0) {
+        while ((nd_type_p(node, NODE_LIST) || nd_type_p(node, NODE_DSTR)) && (node = RNODE_LIST(prev_node = node)->nd_next) != 0) {
           next_str:
             if (!nd_type_p(node, NODE_LIST)) break;
             if ((str_node = RNODE_LIST(node)->nd_head) != 0) {
