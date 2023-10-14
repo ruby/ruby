@@ -4364,6 +4364,10 @@ AS_IF([test "${universal_binary-no}" = yes ], [
         arch="${target_cpu}-${target_os}"
     ])
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
+
+    AS_IF([test "$arch" = "s390x-linux"], [
+       AC_DEFINE_UNQUOTED(USE_MN_THREADS, 0)
+    ])
 ])
 
 unset sitearch
