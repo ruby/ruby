@@ -268,12 +268,14 @@ module TestIRB
 
   class DeprecatedInputCompletorTest < TestCase
     def setup
+      save_encodings
       @verbose, $VERBOSE = $VERBOSE, nil
       IRB.init_config(nil)
       IRB.conf[:MAIN_CONTEXT] = IRB::Context.new(IRB::WorkSpace.new(binding))
     end
 
     def teardown
+      restore_encodings
       $VERBOSE = @verbose
     end
 
