@@ -32,17 +32,14 @@ module IRB
           end
           DEBUGGER__::CONFIG.set_config
           configure_irb_for_debugger(irb)
-          thread = Thread.current
 
-          DEBUGGER__.initialize_session{ IRB::Debug::UI.new(thread, irb) }
+          DEBUGGER__.initialize_session{ IRB::Debug::UI.new(irb) }
         end
 
         # When debug session was previously started but not by IRB
         if defined?(DEBUGGER__::SESSION) && !irb.context.with_debugger
           configure_irb_for_debugger(irb)
-          thread = Thread.current
-
-          DEBUGGER__::SESSION.reset_ui(IRB::Debug::UI.new(thread, irb))
+          DEBUGGER__::SESSION.reset_ui(IRB::Debug::UI.new(irb))
         end
 
         # Apply patches to debug gem so it skips IRB frames

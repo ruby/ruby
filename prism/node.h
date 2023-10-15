@@ -33,6 +33,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
 // declare them here to avoid generating them.
 typedef struct pm_scope_node {
     pm_node_t base;
+    pm_node_t *ast_node;
     struct pm_parameters_node *parameters;
     pm_node_t *body;
     pm_constant_id_list_t locals;

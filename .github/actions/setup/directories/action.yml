@@ -29,6 +29,14 @@ inputs:
     description: >-
       If set to true, additionally runs `make up`.
 
+  checkout:
+    required: false
+    type: boolean
+    default: true
+    description: >-
+      If set to '' (false), skip running actions/checkout. This is useful when
+      you don't want to overwrite a GitHub token that is already set up.
+
   dummy-files:
     required: false
     type: boolean
@@ -67,7 +75,8 @@ runs:
         git config --global advice.detachedHead 0
         git config --global init.defaultBranch garbage
 
-    - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+    - if: inputs.checkout
+      uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       with:
         path: ${{ inputs.srcdir }}
 

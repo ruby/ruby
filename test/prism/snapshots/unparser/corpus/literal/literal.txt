@@ -545,7 +545,7 @@
         │   ├── opening_loc: (50,0)-(50,1) = "/"
         │   ├── content_loc: (50,1)-(50,27) = "[^-+',.\\/:@[:alnum:]\\[\\]]+"
         │   ├── closing_loc: (50,27)-(50,28) = "/"
-        │   ├── unescaped: "[^-+',./:@[:alnum:][]]+"
+        │   ├── unescaped: "[^-+',./:@[:alnum:]\\[\\]]+"
         │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (51,0)-(51,12))
         │   ├── opening_loc: (51,0)-(51,1) = "/"
@@ -606,19 +606,19 @@
         │   ├── opening_loc: (54,0)-(54,1) = "/"
         │   ├── content_loc: (54,1)-(54,3) = "\\n"
         │   ├── closing_loc: (54,3)-(54,4) = "/"
-        │   ├── unescaped: "\n"
+        │   ├── unescaped: "\\n"
         │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (55,0)-(55,4))
         │   ├── opening_loc: (55,0)-(55,1) = "/"
         │   ├── content_loc: (55,1)-(55,3) = "\\n"
         │   ├── closing_loc: (55,3)-(55,4) = "/"
-        │   ├── unescaped: "\n"
+        │   ├── unescaped: "\\n"
         │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (56,0)-(56,5))
         │   ├── opening_loc: (56,0)-(56,1) = "/"
         │   ├── content_loc: (56,1)-(56,3) = "\\n"
         │   ├── closing_loc: (56,3)-(56,5) = "/x"
-        │   ├── unescaped: "\n"
+        │   ├── unescaped: "\\n"
         │   └── flags: extended
         ├── @ RegularExpressionNode (location: (57,0)-(57,7))
         │   ├── opening_loc: (57,0)-(57,1) = "/"

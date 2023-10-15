@@ -2,6 +2,18 @@ use std::{ffi::{CStr, CString}, ptr::null};
 use crate::backend::current::TEMP_REGS;
 use std::os::raw::{c_char, c_int, c_uint};
 
+// This option is exposed to the C side a a global variable for performance, see vm.c
+// Number of method calls after which to start generating code
+// Threshold==1 means compile on first execution
+#[no_mangle]
+static mut rb_yjit_call_threshold: u64 = 30;
+
+// This option is exposed to the C side a a global variable for performance, see vm.c
+// Number of execution requests after which a method is no longer
+// considered hot. Raising this results in more generated code.
+#[no_mangle]
+static mut rb_yjit_cold_threshold: u64 = 200_000;
+
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
@@ -9,14 +21,6 @@ pub struct Options {
     // Size of the executable memory block to allocate in bytes
     // Note that the command line argument is expressed in MiB and not bytes
     pub exec_mem_size: usize,
-
-    // Number of method calls after which to start generating code
-    // Threshold==1 means compile on first execution
-    pub call_threshold: usize,
-
-    // Number of execution requests after which a method is no longer
-    // considered hot. Raising this results in more generated code.
-    pub cold_threshold: usize,
 
     // Generate versions greedily until the limit is hit
     pub greedy_versioning: bool,
@@ -63,8 +67,6 @@ pub struct Options {
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
     exec_mem_size: 128 * 1024 * 1024,
-    call_threshold: 30,
-    cold_threshold: 200_000,
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
@@ -155,14 +157,14 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("call-threshold", _) => match opt_val.parse() {
-            Ok(n) => unsafe { OPTIONS.call_threshold = n },
+            Ok(n) => unsafe { rb_yjit_call_threshold = n },
             Err(_) => {
                 return None;
             }
         },
 
         ("cold-threshold", _) => match opt_val.parse() {
-            Ok(n) => unsafe { OPTIONS.cold_threshold = n },
+            Ok(n) => unsafe { rb_yjit_cold_threshold = n },
             Err(_) => {
                 return None;
             }

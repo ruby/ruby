@@ -15,7 +15,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (4,3)-(5,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (4,0)-(4,3) = "%I{"
         │   └── closing_loc: (5,1)-(5,2) = "}"
         ├── @ StringNode (location: (7,0)-(8,2))
@@ -31,7 +31,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (10,3)-(11,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (10,0)-(10,3) = "%W{"
         │   └── closing_loc: (11,1)-(11,2) = "}"
         ├── @ ArrayNode (location: (13,0)-(14,2))
@@ -40,7 +40,7 @@
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (13,3)-(14,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "a\\\nb"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (13,0)-(13,3) = "%i{"
         │   └── closing_loc: (14,1)-(14,2) = "}"
         ├── @ StringNode (location: (16,0)-(17,2))
@@ -59,7 +59,7 @@
         │   ├── opening_loc: (22,0)-(22,3) = "%s{"
         │   ├── value_loc: (22,3)-(23,1) = "a\\\nb"
         │   ├── closing_loc: (23,1)-(23,2) = "}"
-        │   └── unescaped: "ab"
+        │   └── unescaped: "a\\\nb"
         ├── @ ArrayNode (location: (25,0)-(26,2))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (25,3)-(26,1))
@@ -102,7 +102,7 @@
         │   ├── opening_loc: (43,0)-(43,2) = ":'"
         │   ├── value_loc: (43,2)-(44,1) = "a\\\nb"
         │   ├── closing_loc: (44,1)-(44,2) = "'"
-        │   └── unescaped: "ab"
+        │   └── unescaped: "a\\\nb"
         ├── @ StringNode (location: (46,0)-(46,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (46,0)-(46,9) = "<<-\"HERE\""

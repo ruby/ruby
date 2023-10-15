@@ -93,6 +93,7 @@ rb_node_buffer_new(void)
 #define Qtrue ast->node_buffer->config->qtrue
 #define NIL_P ast->node_buffer->config->nil_p
 #define rb_hash_aset ast->node_buffer->config->hash_aset
+#define rb_hash_delete ast->node_buffer->config->hash_delete
 #define RB_OBJ_WRITE(old, slot, young) ast->node_buffer->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
 #endif
 
@@ -456,6 +457,13 @@ rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
         RB_OBJ_WRITE(ast, &ast->node_buffer->mark_hash, rb_ident_hash_new());
     }
     rb_hash_aset(ast->node_buffer->mark_hash, obj, Qtrue);
+}
+
+void
+rb_ast_delete_mark_object(rb_ast_t *ast, VALUE obj)
+{
+    if (NIL_P(ast->node_buffer->mark_hash)) return;
+    rb_hash_delete(ast->node_buffer->mark_hash, obj);
 }
 
 VALUE

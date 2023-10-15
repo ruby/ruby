@@ -42,13 +42,6 @@ module IRB
       end
     end
 
-    attr_reader :line_no
-
-    def initialize
-      @line_no = 1
-      @prompt = nil
-    end
-
     def self.compile_with_errors_suppressed(code, line_no: 1)
       begin
         result = yield code, line_no
@@ -64,10 +57,6 @@ module IRB
         result = yield code, line_no
       end
       result
-    end
-
-    def set_prompt(&block)
-      @prompt = block
     end
 
     ERROR_TOKENS = [
@@ -145,12 +134,6 @@ module IRB
       $VERBOSE = verbose
     end
 
-    def prompt(opens, continue, line_num_offset)
-      ltype = ltype_from_open_tokens(opens)
-      indent_level = calc_indent_level(opens)
-      @prompt&.call(ltype, indent_level, opens.any? || continue, @line_no + line_num_offset)
-    end
-
     def check_code_state(code, local_variables:)
       tokens = self.class.ripper_lex_without_warning(code, local_variables: local_variables)
       opens = NestingParser.open_tokens(tokens)
@@ -168,15 +151,6 @@ module IRB
       when :valid
         !should_continue?(tokens)
       end
-    end
-
-    def save_prompt_to_context_io(opens, continue, line_num_offset)
-      # Implicitly saves prompt string to `@context.io.prompt`. This will be used in the next `@input.call`.
-      prompt(opens, continue, line_num_offset)
-    end
-
-    def increase_line_no(addition)
-      @line_no += addition
     end
 
     def assignment_expression?(code, local_variables:)

@@ -28,7 +28,7 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (3,0)-(4,1) = "e\\\nf"
             │   │   ├── closing_loc: ∅
-            │   │   └── unescaped: "ef"
+            │   │   └── unescaped: "e\nf"
             │   ├── @ StringNode (location: (5,0)-(5,2))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅

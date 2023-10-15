@@ -26,36 +26,36 @@ You can install, uninstall, and list plugin(s) with this command to extend funct
 .SS "install"
 Install the given plugin(s)\.
 .
-.IP "\(bu" 4
-\fBbundle plugin install bundler\-graph\fR: Install bundler\-graph gem from RubyGems\.org\. The global source, specified in source in Gemfile is ignored\.
+.TP
+\fBbundle plugin install bundler\-graph\fR
+Install bundler\-graph gem from globally configured sources (defaults to RubyGems\.org)\. The global source, specified in source in Gemfile is ignored\.
 .
-.IP "\(bu" 4
-\fBbundle plugin install bundler\-graph \-\-source https://example\.com\fR: Install bundler\-graph gem from example\.com\. The global source, specified in source in Gemfile is not considered\.
+.TP
+\fBbundle plugin install bundler\-graph \-\-source https://example\.com\fR
+Install bundler\-graph gem from example\.com\. The global source, specified in source in Gemfile is not considered\.
 .
-.IP "\(bu" 4
-\fBbundle plugin install bundler\-graph \-\-version 0\.2\.1\fR: You can specify the version of the gem via \fB\-\-version\fR\.
+.TP
+\fBbundle plugin install bundler\-graph \-\-version 0\.2\.1\fR
+You can specify the version of the gem via \fB\-\-version\fR\.
 .
-.IP "\(bu" 4
-\fBbundle plugin install bundler\-graph \-\-git https://github\.com/rubygems/bundler\-graph\fR: Install bundler\-graph gem from Git repository\. \fB\-\-git\fR can be replaced with \fB\-\-local\-git\fR\. You cannot use both \fB\-\-git\fR and \fB\-\-local\-git\fR\. You can use standard Git URLs like:
+.TP
+\fBbundle plugin install bundler\-graph \-\-git https://github\.com/rubygems/bundler\-graph\fR
+Install bundler\-graph gem from Git repository\. \fB\-\-git\fR can be replaced with \fB\-\-local\-git\fR\. You cannot use both \fB\-\-git\fR and \fB\-\-local\-git\fR\. You can use standard Git URLs like:
 .
-.IP "\(bu" 4
+.IP
 \fBssh://[user@]host\.xz[:port]/path/to/repo\.git\fR
 .
-.IP "\(bu" 4
+.br
 \fBhttp[s]://host\.xz[:port]/path/to/repo\.git\fR
 .
-.IP "\(bu" 4
+.br
 \fB/path/to/repo\fR
 .
-.IP "\(bu" 4
+.br
 \fBfile:///path/to/repo\fR
-.
-.IP "" 0
 .
 .IP
 When you specify \fB\-\-git\fR/\fB\-\-local\-git\fR, you can use \fB\-\-branch\fR or \fB\-\-ref\fR to specify any branch, tag, or commit hash (revision) to use\. When you specify both, only the latter is used\.
-.
-.IP "" 0
 .
 .SS "uninstall"
 Uninstall the plugin(s) specified in PLUGINS\.

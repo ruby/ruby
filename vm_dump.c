@@ -836,6 +836,9 @@ rb_print_backtrace(FILE *errout)
 }
 
 #ifdef HAVE_LIBPROCSTAT
+struct procstat;
+struct kinfo_proc;
+static void procstat_vm(struct procstat *, struct kinfo_proc *, FILE *);
 #include "missing/procstat_vm.c"
 #endif
 

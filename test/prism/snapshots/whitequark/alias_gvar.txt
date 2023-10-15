@@ -9,6 +9,7 @@
         │   │   └── name: :$a
         │   ├── old_name:
         │   │   @ BackReferenceReadNode (location: (1,9)-(1,11))
+        │   │   └── name: :$+
         │   └── keyword_loc: (1,0)-(1,5) = "alias"
         └── @ AliasGlobalVariableNode (location: (3,0)-(3,11))
             ├── new_name:

@@ -2,163 +2,233 @@
 
 require_relative "test_helper"
 
-return if Prism::BACKEND == :FFI
+return if RUBY_VERSION < "3.1.0" || Prism::BACKEND == :FFI
 
 module Prism
-  class UnescapeNoneTest < TestCase
-    def test_backslash
-      assert_unescape_none("\\")
-    end
+  class UnescapeTest < TestCase
+    module Context
+      class Base
+        attr_reader :left, :right
 
-    def test_single_quote
-      assert_unescape_none("'")
-    end
+        def initialize(left, right)
+          @left = left
+          @right = right
+        end
 
-    private
+        def name
+          "#{left}#{right}".delete("\n")
+        end
 
-    def assert_unescape_none(source)
-      assert_equal(source, Debug.unescape_none(source))
-    end
-  end
+        private
 
-  class UnescapeMinimalTest < TestCase
-    def test_backslash
-      assert_unescape_minimal("\\", "\\\\")
-    end
+        def code(escape)
+          "#{left}\\#{escape}#{right}".b
+        end
 
-    def test_single_quote
-      assert_unescape_minimal("'", "\\'")
-    end
+        def ruby(escape)
+          previous, $VERBOSE = $VERBOSE, nil
 
-    def test_single_char
-      assert_unescape_minimal("\\a", "\\a")
-    end
+          begin
+            yield eval(code(escape))
+          rescue SyntaxError
+            :error
+          ensure
+            $VERBOSE = previous
+          end
+        end
 
-    private
+        def prism(escape)
+          result = Prism.parse(code(escape))
 
-    def assert_unescape_minimal(expected, source)
-      assert_equal(expected, Debug.unescape_minimal(source))
-    end
-  end
+          if result.success?
+            yield result.value.statements.body.first
+          else
+            :error
+          end
+        end
 
-  class UnescapeAllTest < TestCase
-    def test_backslash
-      assert_unescape_all("\\", "\\\\")
-    end
+        def `(command)
+          command
+        end
+      end
 
-    def test_single_quote
-      assert_unescape_all("'", "\\'")
-    end
+      class List < Base
+        def ruby_result(escape)
+          ruby(escape) { |value| value.first.to_s }
+        end
 
-    def test_single_char
-      assert_unescape_all("\a", "\\a")
-      assert_unescape_all("\b", "\\b")
-      assert_unescape_all("\e", "\\e")
-      assert_unescape_all("\f", "\\f")
-      assert_unescape_all("\n", "\\n")
-      assert_unescape_all("\r", "\\r")
-      assert_unescape_all("\s", "\\s")
-      assert_unescape_all("\t", "\\t")
-      assert_unescape_all("\v", "\\v")
-    end
+        def prism_result(escape)
+          prism(escape) { |node| node.elements.first.unescaped }
+        end
+      end
 
-    def test_octal
-      assert_unescape_all("\a", "\\7")
-      assert_unescape_all("#", "\\43")
-      assert_unescape_all("a", "\\141")
-    end
+      class Symbol < Base
+        def ruby_result(escape)
+          ruby(escape, &:to_s)
+        end
 
-    def test_hexadecimal
-      assert_unescape_all("\a", "\\x7")
-      assert_unescape_all("#", "\\x23")
-      assert_unescape_all("a", "\\x61")
-    end
+        def prism_result(escape)
+          prism(escape, &:unescaped)
+        end
+      end
 
-    def test_deletes
-      assert_unescape_all("\x7f", "\\c?")
-      assert_unescape_all("\x7f", "\\C-?")
-    end
+      class String < Base
+        def ruby_result(escape)
+          ruby(escape, &:itself)
+        end
 
-    def test_unicode_codepoint
-      assert_unescape_all("a", "\\u0061")
-      assert_unescape_all("Ā", "\\u0100", "UTF-8")
-      assert_unescape_all("က", "\\u1000", "UTF-8")
-      assert_unescape_all("တ", "\\u1010", "UTF-8")
+        def prism_result(escape)
+          prism(escape, &:unescaped)
+        end
+      end
 
-      assert_nil(unescape_all("\\uxxxx"))
-    end
+      class Heredoc < Base
+        def ruby_result(escape)
+          ruby(escape, &:itself)
+        end
 
-    def test_unicode_codepoints
-      assert_unescape_all("a", "\\u{61}")
-      assert_unescape_all("Ā", "\\u{0100}", "UTF-8")
-      assert_unescape_all("က", "\\u{1000}", "UTF-8")
-      assert_unescape_all("တ", "\\u{1010}", "UTF-8")
-      assert_unescape_all("𐀀", "\\u{10000}", "UTF-8")
-      assert_unescape_all("𐀐", "\\u{10010}", "UTF-8")
-      assert_unescape_all("aĀကတ𐀀𐀐", "\\u{ 61\s100\n1000\t1010\r10000\v10010 }", "UTF-8")
+        def prism_result(escape)
+          prism(escape) do |node|
+            case node.type
+            when :interpolated_string_node, :interpolated_x_string_node
+              node.parts.flat_map(&:unescaped).join
+            else
+              node.unescaped
+            end
+          end
+        end
+      end
 
-      assert_nil(unescape_all("\\u{110000}"))
-      assert_nil(unescape_all("\\u{110000 110001 110002}"))
-    end
+      class RegExp < Base
+        def ruby_result(escape)
+          ruby(escape, &:source)
+        end
 
-    def test_control_characters
-      each_printable do |chr|
-        byte = eval("\"\\c#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\c#{chr}")
-
-        byte = eval("\"\\C-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\C-#{chr}")
+        def prism_result(escape)
+          prism(escape, &:unescaped)
+        end
       end
     end
 
-    def test_meta_characters
-      each_printable do |chr|
-        byte = eval("\"\\M-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\M-#{chr}")
-      end
-    end
-
-    def test_meta_control_characters
-      each_printable do |chr|
-        byte = eval("\"\\M-\\c#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\M-\\c#{chr}")
-
-        byte = eval("\"\\M-\\C-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\M-\\C-#{chr}")
-
-        byte = eval("\"\\c\\M-#{chr}\"").bytes.first
-        assert_unescape_all(byte.chr, "\\c\\M-#{chr}")
-      end
-    end
-
-    def test_escaping_normal_characters
-      assert_unescape_all("d", "\\d")
-      assert_unescape_all("g", "\\g")
-    end
-
-    def test_whitespace_escaping_string_list
-      assert_equal("a b", Debug.unescape_whitespace("a\\ b"))
-      assert_equal("a\tb", Debug.unescape_whitespace("a\\\tb"))
-      assert_equal("a\nb", Debug.unescape_whitespace("a\\\nb"))
-      assert_equal("a\nb", Debug.unescape_whitespace("a\\\r\nb"))
-    end
+    def test_char; assert_context(Context::String.new("?", "")); end
+    def test_sqte; assert_context(Context::String.new("'", "'")); end
+    def test_dqte; assert_context(Context::String.new("\"", "\"")); end
+    def test_lwrq; assert_context(Context::String.new("%q[", "]")); end
+    def test_uprq; assert_context(Context::String.new("%Q[", "]")); end
+    def test_dstr; assert_context(Context::String.new("%[", "]")); end
+    def test_xstr; assert_context(Context::String.new("`", "`")); end
+    def test_lwrx; assert_context(Context::String.new("%x[", "]")); end
+    def test_h0_1; assert_context(Context::String.new("<<H\n", "\nH")); end
+    def test_h0_2; assert_context(Context::String.new("<<'H'\n", "\nH")); end
+    def test_h0_3; assert_context(Context::String.new("<<\"H\"\n", "\nH")); end
+    def test_h0_4; assert_context(Context::String.new("<<`H`\n", "\nH")); end
+    def test_hd_1; assert_context(Context::String.new("<<-H\n", "\nH")); end
+    def test_hd_2; assert_context(Context::String.new("<<-'H'\n", "\nH")); end
+    def test_hd_3; assert_context(Context::String.new("<<-\"H\"\n", "\nH")); end
+    def test_hd_4; assert_context(Context::String.new("<<-`H`\n", "\nH")); end
+    def test_ht_1; assert_context(Context::Heredoc.new("<<~H\n", "\nH")); end
+    def test_ht_2; assert_context(Context::Heredoc.new("<<~'H'\n", "\nH")); end
+    def test_ht_3; assert_context(Context::Heredoc.new("<<~\"H\"\n", "\nH")); end
+    def test_ht_4; assert_context(Context::Heredoc.new("<<~`H`\n", "\nH")); end
+    def test_pw_1; assert_context(Context::List.new("%w[", "]")); end
+    def test_pw_2; assert_context(Context::List.new("%w<", ">")); end
+    def test_uprw; assert_context(Context::List.new("%W[", "]")); end
+    def test_lwri; assert_context(Context::List.new("%i[", "]")); end
+    def test_upri; assert_context(Context::List.new("%I[", "]")); end
+    def test_lwrs; assert_context(Context::Symbol.new("%s[", "]")); end
+    def test_sym1; assert_context(Context::Symbol.new(":'", "'")); end
+    def test_sym2; assert_context(Context::Symbol.new(":\"", "\"")); end
+    def test_reg1; assert_context(Context::RegExp.new("/", "/")); end
+    def test_reg2; assert_context(Context::RegExp.new("%r[", "]")); end
+    def test_reg3; assert_context(Context::RegExp.new("%r<", ">")); end
+    def test_reg4; assert_context(Context::RegExp.new("%r{", "}")); end
+    def test_reg5; assert_context(Context::RegExp.new("%r(", ")")); end
+    def test_reg6; assert_context(Context::RegExp.new("%r|", "|")); end
 
     private
 
-    def unescape_all(source)
-      Debug.unescape_all(source)
-    end
+    def assert_context(context)
+      octal = [*("0".."7")]
+      hex = [*("a".."f"), *("A".."F"), *("0".."9")]
 
-    def assert_unescape_all(expected, source, forced_encoding = nil)
-      result = unescape_all(source)
-      result.force_encoding(forced_encoding) if forced_encoding
-      assert_equal(expected, result)
-    end
+      (0...256).each do |ord|
+        # I think this might be a bug in Ruby.
+        next if context.name == "?" && ord == 0xFF
 
-    def each_printable
-      (1..127).each do |ord|
+        # We don't currently support scanning for the number of capture groups
+        # to validate backreferences so these are all going to fail.
+        next if (context.name == "//" || context.name.start_with?("%r")) && ord.chr.start_with?(/\d/)
+
+        # \a \b \c ...
+        assert_unescape(context, ord.chr)
+      end
+
+      # \\r\n
+      assert_unescape(context, "\r\n")
+
+      # We don't currently support scanning for the number of capture groups to
+      # validate backreferences so these are all going to fail.
+      if context.name != "//" && !context.name.start_with?("%r")
+        # \00 \01 \02 ...
+        octal.product(octal).each { |digits| assert_unescape(context, digits.join) }
+
+        # \000 \001 \002 ...
+        octal.product(octal).product(octal).each { |digits| assert_unescape(context, digits.join) }
+      end
+
+      # \x0 \x1 \x2 ...
+      hex.each { |digit| assert_unescape(context, "x#{digit}") }
+
+      # \x00 \x01 \x02 ...
+      hex.product(hex).each { |digits| assert_unescape(context, "x#{digits.join}") }
+
+      # \u0000 \u0001 \u0002 ...
+      assert_unescape(context, "u#{["5"].concat(hex.sample(3)).join}")
+
+      # The behavior of whitespace in the middle of these escape sequences
+      # changed in Ruby 3.3.0, so we only want to test against latest.
+      if RUBY_VERSION >= "3.3.0"
+        # \u{00  00} ...
+        assert_unescape(context, "u{00#{["5"].concat(hex.sample(3)).join} \t\v 00#{["5"].concat(hex.sample(3)).join}}")
+      end
+
+      (0...128).each do |ord|
         chr = ord.chr
-        yield chr if chr.match?(/[[:print:]]/) && chr != " " && chr != "\\"
+        next if chr == "\\" || !chr.match?(/[[:print:]]/)
+
+        # \C-a \C-b \C-c ...
+        assert_unescape(context, "C-#{chr}")
+
+        # \ca \cb \cc ...
+        assert_unescape(context, "c#{chr}")
+
+        # \M-a \M-b \M-c ...
+        assert_unescape(context, "M-#{chr}")
+
+        # \M-\C-a \M-\C-b \M-\C-c ...
+        assert_unescape(context, "M-\\C-#{chr}")
+
+        # \M-\ca \M-\cb \M-\cc ...
+        assert_unescape(context, "M-\\c#{chr}")
+
+        # \c\M-a \c\M-b \c\M-c ...
+        assert_unescape(context, "c\\M-#{chr}")
+      end
+    end
+
+    def assert_unescape(context, escape)
+      expected = context.ruby_result(escape)
+      actual = context.prism_result(escape)
+
+      message = -> do
+        "Expected #{context.name} to unescape #{escape.inspect} to " \
+          "#{expected.inspect}, but got #{actual.inspect}"
+      end
+
+      if expected == :error || actual == :error
+        assert_equal expected, actual, message
+      else
+        assert_equal expected.bytes, actual.bytes, message
       end
     end
   end

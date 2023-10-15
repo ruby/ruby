@@ -27,7 +27,7 @@ struct rb_native_thread {
 };
 
 struct rb_thread_sched_item {
-    char dmy;
+    void *vm_stack;
 };
 
 struct rb_thread_sched {

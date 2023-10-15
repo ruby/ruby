@@ -935,7 +935,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_ASSOC_SPLAT_NODE: {
         pm_assoc_splat_node_t *assoc_splat_node = (pm_assoc_splat_node_t *)node;
-        PM_COMPILE(assoc_splat_node->value);
+        if (assoc_splat_node->value) {
+            PM_COMPILE(assoc_splat_node->value);
+        }
 
         // TODO: Not sure this is accurate, look at FLUSH_CHUNK in the compiler
         ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
@@ -965,7 +967,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_BLOCK_ARGUMENT_NODE: {
         pm_block_argument_node_t *block_argument_node = (pm_block_argument_node_t *) node;
-        PM_COMPILE(block_argument_node->expression);
+        if (block_argument_node->expression) {
+            PM_COMPILE(block_argument_node->expression);
+        }
         return;
       }
       case PM_BREAK_NODE: {
@@ -1054,7 +1058,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node, src, false, compile_context);
 
         if (class_node->superclass) {
-            PM_COMPILE(class_node->superclass);
+            PM_COMPILE_NOT_POPPED(class_node->superclass);
         }
         else {
             ADD_INSN(ret, &dummy_line_node, putnil);
@@ -1190,7 +1194,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_CONSTANT_PATH_TARGET_NODE: {
         pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *)node;
 
-        PM_COMPILE(cast->parent);
+        if (cast->parent) {
+            PM_COMPILE(cast->parent);
+        }
 
         return;
       }
@@ -1385,7 +1391,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSN2(ret, &dummy_line_node, getspecial, key, INT2FIX(0));
         ADD_INSNL(ret, &dummy_line_node, branchif, lend);
 
-        PM_COMPILE(flip_flop_node->left);
+        if (flip_flop_node->left) {
+            PM_COMPILE(flip_flop_node->left);
+        }
         /* *flip == 0 */
         ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
@@ -1396,7 +1404,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         /* *flip == 1 */
         ADD_LABEL(ret, lend);
-        PM_COMPILE(flip_flop_node->right);
+        if (flip_flop_node->right) {
+            PM_COMPILE(flip_flop_node->right);
+        }
+
         ADD_INSNL(ret, &dummy_line_node, branchunless, then_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         ADD_INSN1(ret, &dummy_line_node, setspecial, key);
@@ -1746,7 +1757,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE(elements.nodes[index]);
         }
 
-        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
+        }
         return;
       }
       case PM_LAMBDA_NODE: {
@@ -1998,7 +2011,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
 
         const int flags = VM_DEFINECLASS_TYPE_MODULE |
-            pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, popped, compile_context);
+            pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, false, compile_context);
 
         ADD_INSN(ret, &dummy_line_node, putnil);
         ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
@@ -2380,7 +2393,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_SPLAT_NODE: {
         pm_splat_node_t *splat_node = (pm_splat_node_t *)node;
-        PM_COMPILE(splat_node->expression);
+        if (splat_node->expression) {
+            PM_COMPILE(splat_node->expression);
+        }
 
         ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
 
@@ -2436,13 +2451,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
             ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
-            PM_COMPILE(undef_node->names.nodes[index]);
+            PM_COMPILE_NOT_POPPED(undef_node->names.nodes[index]);
 
             ADD_SEND(ret, &dummy_line_node, id_core_undef_method, INT2NUM(2));
 
             if (index < undef_node->names.size - 1)
                 ADD_INSN(ret, &dummy_line_node, pop);
         }
+
+        PM_POP_IF_POPPED;
 
         return;
       }

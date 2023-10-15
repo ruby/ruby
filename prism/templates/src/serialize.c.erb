@@ -110,7 +110,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             <%- when Prism::UInt32Field -%>
             pm_buffer_append_u32(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::FlagsField -%>
-            pm_buffer_append_u32(buffer, node->flags >> <%= Prism::COMMON_FLAGS %>);
+            pm_buffer_append_u32(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
             <%- else -%>
             <%- raise -%>
             <%- end -%>

@@ -36,7 +36,7 @@ module CGI::Util
 
   # URL-encode a string following RFC 3986
   # Space characters (+" "+) are encoded with (+"%20"+)
-  #   url_encoded_string = CGI.escape("'Stop!' said Fred")
+  #   url_encoded_string = CGI.escapeURIComponent("'Stop!' said Fred")
   #      # => "%27Stop%21%27%20said%20Fred"
   def escapeURIComponent(string)
     encoding = string.encoding
@@ -48,7 +48,7 @@ module CGI::Util
   end
 
   # URL-decode a string following RFC 3986 with encoding(optional).
-  #   string = CGI.unescape("%27Stop%21%27+said%20Fred")
+  #   string = CGI.unescapeURIComponent("%27Stop%21%27+said%20Fred")
   #      # => "'Stop!'+said Fred"
   def unescapeURIComponent(string, encoding = @@accept_charset)
     str = string.b

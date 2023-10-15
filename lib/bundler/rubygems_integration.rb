@@ -243,36 +243,11 @@ module Bundler
 
       [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
-        kernel_class.send(:define_method, :require) do |file|
-          file = File.path(file)
-          name = file.tr("/", "-")
-          if (::Gem::BUNDLED_GEMS::SINCE.keys - specs.to_a.map(&:name)).include?(name)
-            unless $LOADED_FEATURES.any? {|f| f.end_with?("#{name}.rb", "#{name}.#{RbConfig::CONFIG["DLEXT"]}") }
-              target_file = begin
-                              Bundler.default_gemfile.basename
-                            rescue GemfileNotFound
-                              "inline Gemfile"
-                            end
-              if ::Gem::BUNDLED_GEMS::SINCE[name]
-                be = ::Gem::BUNDLED_GEMS::SINCE[name] > RUBY_VERSION ? "will be" : "is"
-                message = "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[name]}." \
-                " Add #{name} to your #{target_file}."
-                location = caller_locations(1,1)[0]&.path
-                if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
-                  caller_gem = nil
-                  Gem.path.each do |path|
-                    if location =~ %r{#{path}/gems/([\w\-\.]+)}
-                      caller_gem = $1
-                      break
-                    end
-                  end
-                  message += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
-                end
-                warn message, :uplevel => 1
-              end
-            end
+        kernel_class.send(:define_method, :require) do |name|
+          if message = ::Gem::BUNDLED_GEMS.warning?(name)
+            warn message, :uplevel => 1
           end
-          kernel_class.send(:no_warning_require, file)
+          kernel_class.send(:no_warning_require, name)
         end
         if kernel_class == ::Kernel
           kernel_class.send(:private, :require)

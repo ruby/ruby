@@ -8,7 +8,68 @@
 require_relative 'ruby-lex'
 
 module IRB
-  module InputCompletor # :nodoc:
+  class BaseCompletor # :nodoc:
+    def completion_candidates(preposing, target, postposing, bind:)
+      raise NotImplementedError
+    end
+
+    def doc_namespace(preposing, matched, postposing, bind:)
+      raise NotImplementedError
+    end
+
+    GEM_PATHS =
+      if defined?(Gem::Specification)
+        Gem::Specification.latest_specs(true).map { |s|
+          s.require_paths.map { |p|
+            if File.absolute_path?(p)
+              p
+            else
+              File.join(s.full_gem_path, p)
+            end
+          }
+        }.flatten
+      else
+        []
+      end.freeze
+
+    def retrieve_gem_and_system_load_path
+      candidates = (GEM_PATHS | $LOAD_PATH)
+      candidates.map do |p|
+        if p.respond_to?(:to_path)
+          p.to_path
+        else
+          String(p) rescue nil
+        end
+      end.compact.sort
+    end
+
+    def retrieve_files_to_require_from_load_path
+      @files_from_load_path ||=
+        (
+          shortest = []
+          rest = retrieve_gem_and_system_load_path.each_with_object([]) { |path, result|
+            begin
+              names = Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
+            rescue Errno::ENOENT
+              nil
+            end
+            next if names.empty?
+            names.map! { |n| n.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '') }.sort!
+            shortest << names.shift
+            result.concat(names)
+          }
+          shortest.sort! | rest
+        )
+    end
+
+    def retrieve_files_to_require_relative_from_current_dir
+      @files_from_current_dir ||= Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
+        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+      }
+    end
+  end
+
+  class RegexpCompletor < BaseCompletor # :nodoc:
     using Module.new {
       refine ::Binding do
         def eval_methods
@@ -56,60 +117,7 @@ module IRB
       yield
     ]
 
-    BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
-
-    GEM_PATHS =
-      if defined?(Gem::Specification)
-        Gem::Specification.latest_specs(true).map { |s|
-          s.require_paths.map { |p|
-            if File.absolute_path?(p)
-              p
-            else
-              File.join(s.full_gem_path, p)
-            end
-          }
-        }.flatten
-      else
-        []
-      end.freeze
-
-    def self.retrieve_gem_and_system_load_path
-      candidates = (GEM_PATHS | $LOAD_PATH)
-      candidates.map do |p|
-        if p.respond_to?(:to_path)
-          p.to_path
-        else
-          String(p) rescue nil
-        end
-      end.compact.sort
-    end
-
-    def self.retrieve_files_to_require_from_load_path
-      @@files_from_load_path ||=
-        (
-          shortest = []
-          rest = retrieve_gem_and_system_load_path.each_with_object([]) { |path, result|
-            begin
-              names = Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
-            rescue Errno::ENOENT
-              nil
-            end
-            next if names.empty?
-            names.map! { |n| n.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '') }.sort!
-            shortest << names.shift
-            result.concat(names)
-          }
-          shortest.sort! | rest
-        )
-    end
-
-    def self.retrieve_files_to_require_relative_from_current_dir
-      @@files_from_current_dir ||= Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
-        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
-      }
-    end
-
-    CompletionRequireProc = lambda { |target, preposing = nil, postposing = nil|
+    def complete_require_path(target, preposing, postposing)
       if target =~ /\A(['"])([^'"]+)\Z/
         quote = $1
         actual_target = $2
@@ -124,39 +132,37 @@ module IRB
           break
         end
       end
-      result = []
-      if tok && tok.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
-        case tok.tok
-        when 'require'
-          result = retrieve_files_to_require_from_load_path.select { |path|
-            path.start_with?(actual_target)
-          }.map { |path|
-            quote + path
-          }
-        when 'require_relative'
-          result = retrieve_files_to_require_relative_from_current_dir.select { |path|
-            path.start_with?(actual_target)
-          }.map { |path|
-            quote + path
-          }
-        end
-      end
-      result
-    }
+      return unless tok&.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
 
-    CompletionProc = lambda { |target, preposing = nil, postposing = nil|
+      case tok.tok
+      when 'require'
+        retrieve_files_to_require_from_load_path.select { |path|
+          path.start_with?(actual_target)
+        }.map { |path|
+          quote + path
+        }
+      when 'require_relative'
+        retrieve_files_to_require_relative_from_current_dir.select { |path|
+          path.start_with?(actual_target)
+        }.map { |path|
+          quote + path
+        }
+      end
+    end
+
+    def completion_candidates(preposing, target, postposing, bind:)
       if preposing && postposing
-        result = CompletionRequireProc.(target, preposing, postposing)
-        unless result
-          result = retrieve_completion_data(target).compact.map{ |i| i.encode(Encoding.default_external) }
-        end
-        result
-      else
-        retrieve_completion_data(target).compact.map{ |i| i.encode(Encoding.default_external) }
+        result = complete_require_path(target, preposing, postposing)
+        return result if result
       end
-    }
+      retrieve_completion_data(target, bind: bind, doc_namespace: false).compact.map{ |i| i.encode(Encoding.default_external) }
+    end
 
-    def self.retrieve_completion_data(input, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding, doc_namespace: false)
+    def doc_namespace(_preposing, matched, _postposing, bind:)
+      retrieve_completion_data(matched, bind: bind, doc_namespace: true)
+    end
+
+    def retrieve_completion_data(input, bind:, doc_namespace:)
       case input
       # this regexp only matches the closing character because of irb's Reline.completer_quote_characters setting
       # details are described in: https://github.com/ruby/irb/pull/523
@@ -394,44 +400,10 @@ module IRB
       end
     end
 
-    PerfectMatchedProc = ->(matched, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding) {
-      begin
-        require 'rdoc'
-      rescue LoadError
-        return
-      end
-
-      RDocRIDriver ||= RDoc::RI::Driver.new
-
-      if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
-        IRB.__send__(:easter_egg)
-        return
-      end
-
-      namespace = retrieve_completion_data(matched, bind: bind, doc_namespace: true)
-      return unless namespace
-
-      if namespace.is_a?(Array)
-        out = RDoc::Markup::Document.new
-        namespace.each do |m|
-          begin
-            RDocRIDriver.add_method(out, m)
-          rescue RDoc::RI::Driver::NotFoundError
-          end
-        end
-        RDocRIDriver.display(out)
-      else
-        begin
-          RDocRIDriver.display_names([namespace])
-        rescue RDoc::RI::Driver::NotFoundError
-        end
-      end
-    }
-
     # Set of available operators in Ruby
     Operators = %w[% & * ** + - / < << <= <=> == === =~ > >= >> [] []= ^ ! != !~]
 
-    def self.select_message(receiver, message, candidates, sep = ".")
+    def select_message(receiver, message, candidates, sep = ".")
       candidates.grep(/^#{Regexp.quote(message)}/).collect do |e|
         case e
         when /^[a-zA-Z_]/
@@ -443,4 +415,20 @@ module IRB
       end
     end
   end
+
+  module InputCompletor
+    class << self
+      private def regexp_completor
+        @regexp_completor ||= RegexpCompletor.new
+      end
+
+      def retrieve_completion_data(input, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding, doc_namespace: false)
+        regexp_completor.retrieve_completion_data(input, bind: bind, doc_namespace: doc_namespace)
+      end
+    end
+    CompletionProc = ->(target, preposing = nil, postposing = nil) {
+      regexp_completor.completion_candidates(preposing, target, postposing, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding)
+    }
+  end
+  deprecate_constant :InputCompletor
 end

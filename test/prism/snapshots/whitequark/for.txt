@@ -7,7 +7,7 @@
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (1,4)-(1,5))
         │   │   ├── name: :a
-        │   │   └── depth: 0
+        │   │   └── depth: 1
         │   ├── collection:
         │   │   @ CallNode (location: (1,9)-(1,12))
         │   │   ├── receiver: ∅
@@ -45,7 +45,7 @@
             ├── index:
             │   @ LocalVariableTargetNode (location: (3,4)-(3,5))
             │   ├── name: :a
-            │   └── depth: 0
+            │   └── depth: 1
             ├── collection:
             │   @ CallNode (location: (3,9)-(3,12))
             │   ├── receiver: ∅

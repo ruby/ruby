@@ -33,7 +33,7 @@ module Prism
     end
 
     <%- nodes.each_with_index do |node, index| -%>
-    <%= "\n" if index != 0 -%>
+<%= "\n" if index != 0 -%>
     # Compile a <%= node.name %> node
     alias visit_<%= node.human %> visit_child_nodes
     <%- end -%>

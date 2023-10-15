@@ -15,7 +15,7 @@
 
 class DSL
   TAG_PATTERN = /(?><[a-zA-Z0-9_]+>)/.source
-  NAME_PATTERN = /(?>\$|\d+|[a-zA-Z_][a-zA-Z0-9_]*|\[[a-zA-Z_.][-a-zA-Z0-9_.]*\])/.source
+  NAME_PATTERN = /(?>\$|\d+|[a-zA-Z_][a-zA-Z0-9_]*|\[[a-zA-Z_.][-a-zA-Z0-9_.]*\])(?>(?:\.|->)[a-zA-Z_][a-zA-Z0-9_]*)*/.source
   NOT_REF_PATTERN = /(?>\#.*|[^\"$@]*|"(?>\\.|[^\"])*")/.source
 
   def initialize(code, options)

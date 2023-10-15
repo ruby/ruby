@@ -142,3 +142,15 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     ```
     $ make test-bundler BUNDLER_SPECS=commands/exec_spec.rb
     ```
+
+## Troubleshooting
+
+### Running test suites on s390x CPU Architecture
+
+If we see failing tests related to the zlib library on s390x CPU architecture, we can run the test suites with `DFLTCC=0` to pass:
+
+```
+DFLTCC=0 make check
+```
+
+The failures can happen with the zlib library applying the patch [madler/zlib#410](https://github.com/madler/zlib/pull/410) to enable the deflate algorithm producing a different compressed byte stream. We manage this issue at [[ruby-core:114942][Bug #19909]](https://bugs.ruby-lang.org/issues/19909).

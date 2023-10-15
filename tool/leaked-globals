@@ -11,11 +11,14 @@ until ARGV.empty?
     platform = $1
   when /\A SOEXT=(.+)?/x
     soext = $1
+  when /\A SYMBOLS_IN_EMPTYLIB=(.*)/x
+    SYMBOLS_IN_EMPTYLIB = $1.split(" ")
   else
     break
   end
   ARGV.shift
 end
+SYMBOLS_IN_EMPTYLIB ||= nil
 
 config = ARGV.shift
 count = 0
@@ -74,6 +77,8 @@ IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
     next unless so
   when /\A(?:RUBY_|ruby_|rb_)/
     next unless so and /_(threadptr|ec)_/ =~ n
+  when *SYMBOLS_IN_EMPTYLIB
+    next
   end
   next if REPLACE.include?(n)
   puts col.fail("leaked") if count.zero?

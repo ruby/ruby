@@ -33,7 +33,7 @@
         │   ├── opening_loc: (10,0)-(10,3) = "%r("
         │   ├── content_loc: (10,3)-(10,5) = "\\)"
         │   ├── closing_loc: (10,5)-(10,6) = ")"
-        │   ├── unescaped: ")"
+        │   ├── unescaped: "\\)"
         │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (11,0)-(11,14))
         │   ├── opening_loc: (11,0)-(11,3) = "%r("

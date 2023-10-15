@@ -976,7 +976,6 @@ impl fmt::Debug for MutableBranchList {
     }
 }
 
-
 /// This is all the data YJIT stores on an iseq
 /// This will be dynamically allocated by C code
 /// C code should pass an &mut IseqPayload to us
@@ -995,9 +994,6 @@ pub struct IseqPayload {
     // Blocks that are invalidated but are not yet deallocated.
     // The code GC will free them later.
     pub dead_blocks: Vec<BlockRef>,
-
-    // Used to estimate how frequently this ISEQ gets called
-    pub call_count_at_interv: u64,
 }
 
 impl IseqPayload {

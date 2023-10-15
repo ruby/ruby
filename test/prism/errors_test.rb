@@ -136,7 +136,7 @@ module Prism
       source = "<<-END + /b\nEND\n"
 
       assert_errors expression(source), source, [
-        ["Expected a closing delimiter for the regular expression", 10..10]
+        ["Expected a closing delimiter for the regular expression", 16..16]
       ]
     end
 
@@ -1401,6 +1401,20 @@ module Prism
         ["Token reserved for a numbered parameter", 30..32],
         ["Token reserved for a numbered parameter", 49..51],
         ["Token reserved for a numbered parameter", 68..70],
+      ]
+    end
+
+    def test_symbol_in_keyword_parameter
+      source = "def foo(x:'y':); end"
+      assert_errors expression(source), source, [
+        ["Expected a closing delimiter for the string literal", 14..14],
+      ]
+    end
+
+    def test_symbol_in_hash
+      source = "{x:'y':}"
+      assert_errors expression(source), source, [
+        ["Expected a closing delimiter for the string literal", 7..7],
       ]
     end
 

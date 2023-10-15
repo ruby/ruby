@@ -1342,6 +1342,7 @@
         │   │   │   @ StatementsNode (location: (95,10)-(95,12))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ BackReferenceReadNode (location: (95,10)-(95,12))
+        │   │   │           └── name: :$&
         │   │   ├── opening_loc: (95,8)-(95,9) = "{"
         │   │   └── closing_loc: (95,13)-(95,14) = "}"
         │   ├── flags: ∅

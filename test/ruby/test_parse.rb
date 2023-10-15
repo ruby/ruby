@@ -633,6 +633,8 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("?\\M-\x01", 'Invalid escape character syntax')
     assert_syntax_error("?\\M-\\C-\x01", 'Invalid escape character syntax')
     assert_syntax_error("?\\C-\\M-\x01", 'Invalid escape character syntax')
+
+    assert_equal("\xff", eval("# encoding: ascii-8bit\n""?\\\xFF"))
   end
 
   def test_percent
@@ -893,12 +895,14 @@ x = __ENCODING__
   end
 
   def test_assign_in_conditional
+    # multiple assignment
     assert_warning(/`= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         (x, y = 1, 2) ? 1 : 2
       END
     end
 
+    # instance variable assignment
     assert_warning(/`= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         if @x = true
@@ -908,6 +912,71 @@ x = __ENCODING__
         end
       END
     end
+
+    # local variable assignment
+    assert_warning(/`= literal' in conditional/) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+        def m
+          if x = true
+            1
+          else
+            2
+          end
+        end
+      END
+    end
+
+    # global variable assignment
+    assert_separately([], <<-RUBY)
+      assert_warning(/`= literal' in conditional/) do
+        eval <<-END, nil, __FILE__, __LINE__+1
+          if $x = true
+            1
+          else
+            2
+          end
+        END
+      end
+    RUBY
+
+    # dynamic variable assignment
+    assert_warning(/`= literal' in conditional/) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+        y = 1
+
+        1.times do
+          if y = true
+            1
+          else
+            2
+          end
+        end
+      END
+    end
+
+    # class variable assignment
+    assert_warning(/`= literal' in conditional/) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+        c = Class.new
+        class << c
+          if @@a = 1
+          end
+        end
+      END
+    end
+
+    # constant declaration
+    assert_separately([], <<-RUBY)
+      assert_warning(/`= literal' in conditional/) do
+        eval <<-END, nil, __FILE__, __LINE__+1
+          if Const = true
+            1
+          else
+            2
+          end
+        END
+      end
+    RUBY
   end
 
   def test_literal_in_conditional

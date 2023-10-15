@@ -79,6 +79,9 @@ jobs:
           upload: False
           output: sarif-results
           ram: 8192
+        # CodeQL randomly hits `OutOfMemoryError "Java heap space"`.
+        # GitHub recommends running a larger runner to fix it, but we don't pay for it.
+        continue-on-error: true
 
       - name: filter-sarif
         uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d # v1.0

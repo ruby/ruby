@@ -7,7 +7,7 @@
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (1,4)-(1,5))
         │   │   ├── name: :i
-        │   │   └── depth: 0
+        │   │   └── depth: 1
         │   ├── collection:
         │   │   @ RangeNode (location: (1,9)-(1,14))
         │   │   ├── left:
@@ -32,7 +32,7 @@
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (5,4)-(5,5))
         │   │   ├── name: :i
-        │   │   └── depth: 0
+        │   │   └── depth: 1
         │   ├── collection:
         │   │   @ RangeNode (location: (5,9)-(5,14))
         │   │   ├── left:
@@ -59,10 +59,10 @@
         │   │   ├── targets: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (7,4)-(7,5))
         │   │   │   │   ├── name: :i
-        │   │   │   │   └── depth: 0
+        │   │   │   │   └── depth: 1
         │   │   │   └── @ LocalVariableTargetNode (location: (7,6)-(7,7))
         │   │   │       ├── name: :j
-        │   │   │       └── depth: 0
+        │   │   │       └── depth: 1
         │   │   ├── lparen_loc: ∅
         │   │   └── rparen_loc: ∅
         │   ├── collection:
@@ -91,13 +91,13 @@
         │   │   ├── targets: (length: 3)
         │   │   │   ├── @ LocalVariableTargetNode (location: (11,4)-(11,5))
         │   │   │   │   ├── name: :i
-        │   │   │   │   └── depth: 0
+        │   │   │   │   └── depth: 1
         │   │   │   ├── @ LocalVariableTargetNode (location: (11,6)-(11,7))
         │   │   │   │   ├── name: :j
-        │   │   │   │   └── depth: 0
+        │   │   │   │   └── depth: 1
         │   │   │   └── @ LocalVariableTargetNode (location: (11,8)-(11,9))
         │   │   │       ├── name: :k
-        │   │   │       └── depth: 0
+        │   │   │       └── depth: 1
         │   │   ├── lparen_loc: ∅
         │   │   └── rparen_loc: ∅
         │   ├── collection:
@@ -124,7 +124,7 @@
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (15,4)-(15,5))
         │   │   ├── name: :i
-        │   │   └── depth: 0
+        │   │   └── depth: 1
         │   ├── collection:
         │   │   @ RangeNode (location: (15,9)-(15,14))
         │   │   ├── left:
@@ -149,7 +149,7 @@
             ├── index:
             │   @ LocalVariableTargetNode (location: (19,4)-(19,5))
             │   ├── name: :i
-            │   └── depth: 0
+            │   └── depth: 1
             ├── collection:
             │   @ RangeNode (location: (19,9)-(19,14))
             │   ├── left:

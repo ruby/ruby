@@ -739,7 +739,6 @@ typedef struct RNode_BLOCK_PASS {
 typedef struct RNode_DEFN {
     NODE node;
 
-    VALUE not_used;
     ID nd_mid;
     struct RNode *nd_defn;
 } rb_node_defn_t;
@@ -1060,6 +1059,10 @@ typedef struct RNode_RIPPER_VALUES {
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
+#define nd_fl_newline(n) (n)->flags & NODE_FL_NEWLINE
+#define nd_set_fl_newline(n) (n)->flags |= NODE_FL_NEWLINE
+#define nd_unset_fl_newline(n) (n)->flags &= ~NODE_FL_NEWLINE
+
 #define nd_type(n) ((int) ((RNODE(n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
     rb_node_set_type(n, t)
@@ -1140,9 +1143,6 @@ typedef struct rb_parser_config_struct {
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
     /* imemo */
-    // TODO: Should it return `rb_strterm_t *'?
-    VALUE (*new_strterm)(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc);
-    int (*strterm_is_heredoc)(VALUE strterm);
     rb_imemo_tmpbuf_t *(*tmpbuf_parser_heap)(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
     rb_ast_t *(*ast_new)(VALUE nb);
 
@@ -1230,6 +1230,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*hash_clear)(VALUE hash);
     VALUE (*hash_new)(void);
     VALUE (*hash_aset)(VALUE hash, VALUE key, VALUE val);
+    VALUE (*hash_delete)(VALUE hash, VALUE key);
     VALUE (*hash_lookup)(VALUE hash, VALUE key);
     VALUE (*ident_hash_new)(void);
 
