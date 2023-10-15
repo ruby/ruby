@@ -70,11 +70,17 @@ static const void *const condattr_monotonic = NULL;
 // #define HAVE_SYS_EPOLL_H 0
 #endif
 
-#if HAVE_SYS_EPOLL_H && !defined(COROUTINE_PTHREAD_CONTEXT)
-  #include <sys/epoll.h>
-  #define USE_MN_THREADS 1
-#else
-  #define USE_MN_THREADS 0
+#ifndef USE_MN_THREADS
+  #if defined(__EMSCRIPTEN__) || defined(COROUTINE_PTHREAD_CONTEXT)
+    // on __EMSCRIPTEN__ provides epoll* declarations, but no implementations.
+    // on COROUTINE_PTHREAD_CONTEXT, it doesn't worth to use it.
+    #define USE_MN_THREADS 0
+  #elif HAVE_SYS_EPOLL_H
+    #include <sys/epoll.h>
+    #define USE_MN_THREADS 1
+  #else
+    #define USE_MN_THREADS 0
+  #endif
 #endif
 
 // native thread wrappers
@@ -587,8 +593,16 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
 
     if (add_th && !del_th && UNLIKELY(vm->ractor.sync.lock_owner != NULL)) {
         // it can be after barrier synchronization by another ractor
-        RB_VM_LOCK_ENTER();
-        RB_VM_LOCK_LEAVE();
+        rb_thread_t *lock_owner = NULL;
+#if VM_CHECK_MODE
+        lock_owner = sched->lock_owner;
+#endif
+        thread_sched_unlock(sched, lock_owner);
+        {
+            RB_VM_LOCK_ENTER();
+            RB_VM_LOCK_LEAVE();
+        }
+        thread_sched_lock(sched, lock_owner);
     }
 
     //RUBY_DEBUG_LOG("+:%u -:%u +ts:%u -ts:%u run:%u->%u",

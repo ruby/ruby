@@ -476,6 +476,32 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_getconstant_path_general
+    assert_compiles(<<~RUBY, result: [1, 1])
+      module Base
+        Const = 1
+      end
+
+      class Sub
+        def const
+          _const = nil # make a non-entry block for opt_getconstant_path
+          Const
+        end
+
+        def self.const_missing(n)
+          Base.const_get(n)
+        end
+      end
+
+
+      sub = Sub.new
+      result = []
+      result << sub.const # generate the general case
+      result << sub.const # const_missing does not invalidate the block
+      result
+    RUBY
+  end
+
   def test_string_interpolation
     assert_compiles(<<~'RUBY', insns: %i[objtostring anytostring concatstrings], result: "foobar", call_threshold: 2)
       def make_str(foo, bar)
@@ -1257,7 +1283,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_setivar_on_class
     # Bug in https://github.com/ruby/ruby/pull/8152
-    assert_compiles(<<~RUBY, result: :ok, exits: { opt_getconstant_path: 2 })
+    assert_compiles(<<~RUBY, result: :ok)
       class Base
         def self.or_equal
           @or_equal ||= Object.new
@@ -1280,7 +1306,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_nested_send
     #[Bug #19464]
-    assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { opt_getconstant_path: 1, defineclass: 1 })
+    assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { defineclass: 1 })
       klass = Class.new do
         class << self
           alias_method :my_send, :send

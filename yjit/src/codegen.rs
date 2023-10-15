@@ -8134,18 +8134,32 @@ fn gen_opt_getconstant_path(
     let ic: *const iseq_inline_constant_cache = const_cache_as_value.as_ptr();
     let idlist: *const ID = unsafe { (*ic).segments };
 
-    // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
-    let ice = unsafe { (*ic).entry };
-    if ice.is_null() {
-        // In this case, leave a block that unconditionally side exits
-        // for the interpreter to invalidate.
-        gen_counter_incr(asm, Counter::opt_getconstant_path_no_ic_entry);
-        return None;
-    }
-
     // Make sure there is an exit for this block as the interpreter might want
     // to invalidate this block from yjit_constant_ic_update().
     jit_ensure_block_entry_exit(jit, asm, ocb);
+
+    // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
+    // If a cache is not filled, fallback to the general C call.
+    let ice = unsafe { (*ic).entry };
+    if ice.is_null() {
+        // Prepare for const_missing
+        jit_prepare_routine_call(jit, asm);
+
+        // If this does not trigger const_missing, vm_ic_update will invalidate this block.
+        extern "C" {
+            fn rb_vm_opt_getconstant_path(ec: EcPtr, cfp: CfpPtr, ic: *const u8) -> VALUE;
+        }
+        let val = asm.ccall(
+            rb_vm_opt_getconstant_path as *const u8,
+            vec![EC, CFP, Opnd::const_ptr(ic as *const u8)],
+        );
+
+        let stack_top = asm.stack_push(Type::Unknown);
+        asm.store(stack_top, val);
+
+        jump_to_next_insn(jit, asm, ocb);
+        return Some(EndBlock);
+    }
 
     if !unsafe { (*ice).ic_cref }.is_null() {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.

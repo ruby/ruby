@@ -9,7 +9,7 @@ module Prism
     File.read(filepath).split(/(?=\n)\n(?=<)/).each_with_index do |heredoc, index|
       define_method "test_heredoc_#{index}" do
         node = Prism.parse(heredoc).value.statements.body.first
-        if node.is_a? StringNode
+        if node.is_a?(StringNode)
           actual = node.unescaped
         else
           actual = node.parts.map { |part| part.is_a?(StringNode) ? part.unescaped : "1" }.join
