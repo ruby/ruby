@@ -7190,7 +7190,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
-        if (!RCLASS_EXT(obj)) break;
 
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         mark_cvc_tbl(objspace, obj);
@@ -7210,7 +7209,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
-        if (!RCLASS_EXT(obj)) break;
 
         if (RCLASS_INCLUDER(obj)) {
             gc_mark(objspace, RCLASS_INCLUDER(obj));
@@ -10521,7 +10519,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
-        if (!RCLASS_EXT(obj)) break;
         update_m_tbl(objspace, RCLASS_M_TBL(obj));
         update_cc_tbl(objspace, obj);
         update_cvc_tbl(objspace, obj);
@@ -10545,7 +10542,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
-        if (!RCLASS_EXT(obj)) break;
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         update_cc_tbl(objspace, obj);
