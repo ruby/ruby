@@ -1180,7 +1180,8 @@ pm_back_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) 
         {
             .type = PM_BACK_REFERENCE_READ_NODE,
             .location = PM_LOCATION_TOKEN_VALUE(name),
-        }
+        },
+        .name = pm_parser_constant_id_token(parser, name)
     };
 
     return node;
@@ -2584,16 +2585,20 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *assoc
 
 // Retrieve the name from a node that will become a global variable write node.
 static pm_constant_id_t
-pm_global_variable_write_name(pm_parser_t *parser, pm_node_t *target) {
-    if (PM_NODE_TYPE_P(target, PM_GLOBAL_VARIABLE_READ_NODE)) {
-        return ((pm_global_variable_read_node_t *) target)->name;
+pm_global_variable_write_name(pm_parser_t *parser, const pm_node_t *target) {
+    switch (PM_NODE_TYPE(target)) {
+        case PM_GLOBAL_VARIABLE_READ_NODE:
+            return ((pm_global_variable_read_node_t *) target)->name;
+        case PM_BACK_REFERENCE_READ_NODE:
+            return ((pm_back_reference_read_node_t *) target)->name;
+        case PM_NUMBERED_REFERENCE_READ_NODE:
+            // This will only ever happen in the event of a syntax error, but we
+            // still need to provide something for the node.
+            return pm_parser_constant_id_location(parser, target->location.start, target->location.end);
+        default:
+            assert(false && "unreachable");
+            return (pm_constant_id_t) -1;
     }
-
-    assert(PM_NODE_TYPE_P(target, PM_BACK_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(target, PM_NUMBERED_REFERENCE_READ_NODE));
-
-    // This will only ever happen in the event of a syntax error, but we
-    // still need to provide something for the node.
-    return pm_parser_constant_id_location(parser, target->location.start, target->location.end);
 }
 
 // Allocate and initialize a new GlobalVariableAndWriteNode node.
@@ -4001,9 +4006,10 @@ pm_redo_node_create(pm_parser_t *parser, const pm_token_t *token) {
     return node;
 }
 
-// Allocate a new RegularExpressionNode node.
+// Allocate a new initialize a new RegularExpressionNode node with the given
+// unescaped string.
 static pm_regular_expression_node_t *
-pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+pm_regular_expression_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *unescaped) {
     pm_regular_expression_node_t *node = PM_ALLOC_NODE(parser, pm_regular_expression_node_t);
 
     *node = (pm_regular_expression_node_t) {
@@ -4018,10 +4024,16 @@ pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .content_loc = PM_LOCATION_TOKEN_VALUE(content),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .unescaped = PM_EMPTY_STRING
+        .unescaped = *unescaped
     };
 
     return node;
+}
+
+// Allocate a new initialize a new RegularExpressionNode node.
+static inline pm_regular_expression_node_t *
+pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+    return pm_regular_expression_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
 }
 
 // Allocate a new RequiredDestructuredParameterNode node.
@@ -4369,9 +4381,9 @@ pm_string_concat_node_create(pm_parser_t *parser, pm_node_t *left, pm_node_t *ri
     return node;
 }
 
-// Allocate a new StringNode node.
-static pm_string_node_t *
-pm_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+// Allocate a new StringNode node with the current string on the parser.
+static inline pm_string_node_t *
+pm_string_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *string) {
     pm_string_node_t *node = PM_ALLOC_NODE(parser, pm_string_node_t);
     pm_node_flags_t flags = 0;
 
@@ -4391,9 +4403,24 @@ pm_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_t
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .content_loc = PM_LOCATION_TOKEN_VALUE(content),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
-        .unescaped = PM_EMPTY_STRING
+        .unescaped = *string
     };
 
+    return node;
+}
+
+// Allocate a new StringNode node.
+static pm_string_node_t *
+pm_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+    return pm_string_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
+}
+
+// Allocate a new StringNode node and create it using the current string on the
+// parser.
+static pm_string_node_t *
+pm_string_node_create_current_string(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+    pm_string_node_t *node = pm_string_node_create_unescaped(parser, opening, content, closing, &parser->current_string);
+    parser->current_string = PM_EMPTY_STRING;
     return node;
 }
 
@@ -4433,9 +4460,10 @@ pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
     return node;
 }
 
-// Allocate a new SymbolNode node.
+// Allocate and initialize a new SymbolNode node with the given unescaped
+// string.
 static pm_symbol_node_t *
-pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
+pm_symbol_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing, const pm_string_t *unescaped) {
     pm_symbol_node_t *node = PM_ALLOC_NODE(parser, pm_symbol_node_t);
 
     *node = (pm_symbol_node_t) {
@@ -4450,9 +4478,23 @@ pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_t
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .value_loc = PM_LOCATION_TOKEN_VALUE(value),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
-        .unescaped = PM_EMPTY_STRING
+        .unescaped = *unescaped
     };
 
+    return node;
+}
+
+// Allocate and initialize a new SymbolNode node.
+static inline pm_symbol_node_t *
+pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
+    return pm_symbol_node_create_unescaped(parser, opening, value, closing, &PM_EMPTY_STRING);
+}
+
+// Allocate and initialize a new SymbolNode node with the current string.
+static pm_symbol_node_t *
+pm_symbol_node_create_current_string(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
+    pm_symbol_node_t *node = pm_symbol_node_create_unescaped(parser, opening, value, closing, &parser->current_string);
+    parser->current_string = PM_EMPTY_STRING;
     return node;
 }
 
@@ -4471,8 +4513,6 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
 
             assert((label.end - label.start) >= 0);
             pm_string_shared_init(&node->unescaped, label.start, label.end);
-
-            pm_unescape_manipulate_string(parser, &node->unescaped, PM_UNESCAPE_ALL);
             break;
         }
         case PM_TOKEN_MISSING: {
@@ -4805,9 +4845,10 @@ pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
     return node;
 }
 
-// Allocate and initialize a new XStringNode node.
+// Allocate and initialize a new XStringNode node with the given unescaped
+// string.
 static pm_x_string_node_t *
-pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+pm_xstring_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *unescaped) {
     pm_x_string_node_t *node = PM_ALLOC_NODE(parser, pm_x_string_node_t);
 
     *node = (pm_x_string_node_t) {
@@ -4821,10 +4862,16 @@ pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .content_loc = PM_LOCATION_TOKEN_VALUE(content),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .unescaped = PM_EMPTY_STRING
+        .unescaped = *unescaped
     };
 
     return node;
+}
+
+// Allocate and initialize a new XStringNode node.
+static inline pm_x_string_node_t *
+pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
+    return pm_xstring_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
 }
 
 // Allocate a new YieldNode node.
@@ -4860,8 +4907,6 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
     return node;
 }
 
-
-#undef PM_EMPTY_STRING
 #undef PM_ALLOC_NODE
 
 /******************************************************************************/
@@ -6066,6 +6111,422 @@ lex_interpolation(pm_parser_t *parser, const uint8_t *pound) {
     }
 }
 
+static const uint8_t PM_ESCAPE_FLAG_NONE = 0x0;
+static const uint8_t PM_ESCAPE_FLAG_CONTROL = 0x1;
+static const uint8_t PM_ESCAPE_FLAG_META = 0x2;
+static const uint8_t PM_ESCAPE_FLAG_SINGLE = 0x4;
+static const uint8_t PM_ESCAPE_FLAG_REGEXP = 0x8;
+
+// This is a lookup table for whether or not an ASCII character is printable.
+static const bool ascii_printable_chars[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
+};
+
+static inline bool
+char_is_ascii_printable(const uint8_t b) {
+    return (b < 0x80) && ascii_printable_chars[b];
+}
+
+// Return the value that a hexadecimal digit character represents. For example,
+// transform 'a' into 10, 'b' into 11, etc.
+static inline uint8_t
+escape_hexadecimal_digit(const uint8_t value) {
+    return (uint8_t) ((value <= '9') ? (value - '0') : (value & 0x7) + 9);
+}
+
+// Scan the 4 digits of a Unicode escape into the value. Returns the number of
+// digits scanned. This function assumes that the characters have already been
+// validated.
+static inline uint32_t
+escape_unicode(const uint8_t *string, size_t length) {
+    uint32_t value = 0;
+    for (size_t index = 0; index < length; index++) {
+        if (index != 0) value <<= 4;
+        value |= escape_hexadecimal_digit(string[index]);
+    }
+    return value;
+}
+
+// Escape a single character value based on the given flags.
+static inline uint8_t
+escape_byte(uint8_t value, const uint8_t flags) {
+    if (flags & PM_ESCAPE_FLAG_CONTROL) value &= 0x1f;
+    if (flags & PM_ESCAPE_FLAG_META) value |= 0x80;
+    return value;
+}
+
+// Write a unicode codepoint to the given buffer.
+static inline void
+escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t *start, const uint8_t *end, uint32_t value) {
+    if (value <= 0x7F) { // 0xxxxxxx
+        pm_buffer_append_u8(buffer, (uint8_t) value);
+    } else if (value <= 0x7FF) { // 110xxxxx 10xxxxxx
+        pm_buffer_append_u8(buffer, (uint8_t) (0xC0 | (value >> 6)));
+        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | (value & 0x3F)));
+    } else if (value <= 0xFFFF) { // 1110xxxx 10xxxxxx 10xxxxxx
+        pm_buffer_append_u8(buffer, (uint8_t) (0xE0 | (value >> 12)));
+        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
+        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | (value & 0x3F)));
+    } else if (value <= 0x10FFFF) { // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        pm_buffer_append_u8(buffer, (uint8_t) (0xF0 | (value >> 18)));
+        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | ((value >> 12) & 0x3F)));
+        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
+        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | (value & 0x3F)));
+    } else {
+        pm_parser_err(parser, start, end, PM_ERR_ESCAPE_INVALID_UNICODE);
+        pm_buffer_append_u8(buffer, 0xEF);
+        pm_buffer_append_u8(buffer, 0xBF);
+        pm_buffer_append_u8(buffer, 0xBD);
+    }
+}
+
+// The regular expression engine doesn't support the same escape sequences as
+// Ruby does. So first we have to read the escape sequence, and then we have to
+// format it like the regular expression engine expects it. For example, in Ruby
+// if we have:
+//
+//     /\M-\C-?/
+//
+// then the first byte is actually 255, so we have to rewrite this as:
+//
+//     /\xFF/
+//
+// Note that in this case there is a literal \ byte in the regular expression
+// source so that the regular expression engine will perform its own unescaping.
+static inline void
+escape_write_byte(pm_buffer_t *buffer, uint8_t flags, uint8_t byte) {
+    if (flags & PM_ESCAPE_FLAG_REGEXP) {
+        pm_buffer_append_bytes(buffer, (const uint8_t *) "\\x", 2);
+
+        uint8_t byte1 = (uint8_t) ((byte >> 4) & 0xF);
+        uint8_t byte2 = (uint8_t) (byte & 0xF);
+
+        if (byte1 >= 0xA) {
+            pm_buffer_append_u8(buffer, (uint8_t) ((byte1 - 0xA) + 'A'));
+        } else {
+            pm_buffer_append_u8(buffer, (uint8_t) (byte1 + '0'));
+        }
+
+        if (byte2 >= 0xA) {
+            pm_buffer_append_u8(buffer, (uint8_t) (byte2 - 0xA + 'A'));
+        } else {
+            pm_buffer_append_u8(buffer, (uint8_t) (byte2 + '0'));
+        }
+    } else {
+        pm_buffer_append_u8(buffer, byte);
+    }
+}
+
+// Read the value of an escape into the buffer.
+static void
+escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
+    switch (peek(parser)) {
+        case '\\': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\\');
+            return;
+        }
+        case '\'': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\'');
+            return;
+        }
+        case 'a': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\a');
+            return;
+        }
+        case 'b': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\b');
+            return;
+        }
+        case 'e': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\033');
+            return;
+        }
+        case 'f': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\f');
+            return;
+        }
+        case 'n': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\n');
+            return;
+        }
+        case 'r': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\r');
+            return;
+        }
+        case 's': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, ' ');
+            return;
+        }
+        case 't': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\t');
+            return;
+        }
+        case 'v': {
+            parser->current.end++;
+            pm_buffer_append_u8(buffer, '\v');
+            return;
+        }
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
+            uint8_t value = (uint8_t) (*parser->current.end - '0');
+            parser->current.end++;
+
+            if (pm_char_is_octal_digit(peek(parser))) {
+                value = ((uint8_t) (value << 3)) | ((uint8_t) (*parser->current.end - '0'));
+                parser->current.end++;
+
+                if (pm_char_is_octal_digit(peek(parser))) {
+                    value = ((uint8_t) (value << 3)) | ((uint8_t) (*parser->current.end - '0'));
+                    parser->current.end++;
+                }
+            }
+
+            pm_buffer_append_u8(buffer, value);
+            return;
+        }
+        case 'x': {
+            const uint8_t *start = parser->current.end - 1;
+
+            parser->current.end++;
+            uint8_t byte = peek(parser);
+
+            if (pm_char_is_hexadecimal_digit(byte)) {
+                uint8_t value = escape_hexadecimal_digit(byte);
+                parser->current.end++;
+
+                byte = peek(parser);
+                if (pm_char_is_hexadecimal_digit(byte)) {
+                    value = (uint8_t) ((value << 4) | escape_hexadecimal_digit(byte));
+                    parser->current.end++;
+                }
+
+                if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                    pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
+                } else {
+                    pm_buffer_append_u8(buffer, value);
+                }
+            } else {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
+            }
+
+            return;
+        }
+        case 'u': {
+            const uint8_t *start = parser->current.end - 1;
+            parser->current.end++;
+
+            if (
+                (parser->current.end + 4 <= parser->end) &&
+                pm_char_is_hexadecimal_digit(parser->current.end[0]) &&
+                pm_char_is_hexadecimal_digit(parser->current.end[1]) &&
+                pm_char_is_hexadecimal_digit(parser->current.end[2]) &&
+                pm_char_is_hexadecimal_digit(parser->current.end[3])
+            ) {
+                uint32_t value = escape_unicode(parser->current.end, 4);
+
+                if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                    pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end + 4 - start));
+                } else {
+                    escape_write_unicode(parser, buffer, start, parser->current.end + 4, value);
+                }
+
+                parser->current.end += 4;
+            } else if (peek(parser) == '{') {
+                const uint8_t *unicode_codepoints_start = parser->current.end - 2;
+
+                parser->current.end++;
+                parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
+
+                const uint8_t *extra_codepoints_start = NULL;
+                int codepoints_count = 0;
+
+                while ((parser->current.end < parser->end) && (*parser->current.end != '}')) {
+                    const uint8_t *unicode_start = parser->current.end;
+                    size_t hexadecimal_length = pm_strspn_hexadecimal_digit(parser->current.end, parser->end - parser->current.end);
+
+                    if (hexadecimal_length > 6) {
+                        // \u{nnnn} character literal allows only 1-6 hexadecimal digits
+                        pm_parser_err(parser, unicode_start, unicode_start + hexadecimal_length, PM_ERR_ESCAPE_INVALID_UNICODE_LONG);
+                    } else if (hexadecimal_length == 0) {
+                        // there are not hexadecimal characters
+                        pm_parser_err(parser, unicode_start, unicode_start + hexadecimal_length, PM_ERR_ESCAPE_INVALID_UNICODE);
+                        return;
+                    }
+
+                    parser->current.end += hexadecimal_length;
+                    codepoints_count++;
+                    if (flags & PM_ESCAPE_FLAG_SINGLE && codepoints_count == 2) {
+                        extra_codepoints_start = unicode_start;
+                    }
+
+                    if (!(flags & PM_ESCAPE_FLAG_REGEXP)) {
+                        uint32_t value = escape_unicode(unicode_start, hexadecimal_length);
+                        escape_write_unicode(parser, buffer, unicode_start, parser->current.end, value);
+                    }
+
+                    parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
+                }
+
+                // ?\u{nnnn} character literal should contain only one codepoint and cannot be like ?\u{nnnn mmmm}
+                if (flags & PM_ESCAPE_FLAG_SINGLE && codepoints_count > 1) {
+                    pm_parser_err(parser, extra_codepoints_start, parser->current.end - 1, PM_ERR_ESCAPE_INVALID_UNICODE_LITERAL);
+                }
+
+                if (peek(parser) == '}') {
+                    parser->current.end++;
+                } else {
+                    pm_parser_err(parser, unicode_codepoints_start, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE_TERM);
+                }
+
+                if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                    pm_buffer_append_bytes(buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
+                }
+            } else {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_UNICODE);
+            }
+
+            return;
+        }
+        case 'c': {
+            parser->current.end++;
+            if (parser->current.end == parser->end) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                return;
+            }
+
+            uint8_t peeked = peek(parser);
+            switch (peeked) {
+                case '?': {
+                    parser->current.end++;
+                    escape_write_byte(buffer, flags, escape_byte(0x7f, flags));
+                    return;
+                }
+                case '\\':
+                    if (flags & PM_ESCAPE_FLAG_CONTROL) {
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
+                        return;
+                    }
+                    parser->current.end++;
+                    escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_CONTROL);
+                    return;
+                default: {
+                    if (!char_is_ascii_printable(peeked)) {
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                        return;
+                    }
+
+                    parser->current.end++;
+                    escape_write_byte(buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    return;
+                }
+            }
+        }
+        case 'C': {
+            parser->current.end++;
+            if (peek(parser) != '-') {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                return;
+            }
+
+            parser->current.end++;
+            if (parser->current.end == parser->end) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                return;
+            }
+
+            uint8_t peeked = peek(parser);
+            switch (peeked) {
+                case '?': {
+                    parser->current.end++;
+                    escape_write_byte(buffer, flags, escape_byte(0x7f, flags));
+                    return;
+                }
+                case '\\':
+                    if (flags & PM_ESCAPE_FLAG_CONTROL) {
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
+                        return;
+                    }
+                    parser->current.end++;
+                    escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_CONTROL);
+                    return;
+                default: {
+                    if (!char_is_ascii_printable(peeked)) {
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                        return;
+                    }
+
+                    parser->current.end++;
+                    escape_write_byte(buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    return;
+                }
+            }
+        }
+        case 'M': {
+            parser->current.end++;
+            if (peek(parser) != '-') {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                return;
+            }
+
+            parser->current.end++;
+            if (parser->current.end == parser->end) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                return;
+            }
+
+            uint8_t peeked = peek(parser);
+            if (peeked == '\\') {
+                if (flags & PM_ESCAPE_FLAG_META) {
+                    pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
+                    return;
+                }
+                parser->current.end++;
+                escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_META);
+                return;
+            }
+
+            if (!char_is_ascii_printable(peeked)) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                return;
+            }
+
+            parser->current.end++;
+            escape_write_byte(buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+            return;
+        }
+        case '\r': {
+            if (peek_offset(parser, 1) == '\n') {
+                parser->current.end += 2;
+                pm_buffer_append_u8(buffer, '\n');
+                return;
+            }
+        }
+        /* fallthrough */
+        default: {
+            if (parser->current.end < parser->end) {
+                pm_buffer_append_u8(buffer, *parser->current.end++);
+            }
+            return;
+        }
+    }
+}
+
 // This function is responsible for lexing either a character literal or the ?
 // operator. The supported character literals are described below.
 //
@@ -6099,6 +6560,7 @@ lex_question_mark(pm_parser_t *parser) {
 
     if (parser->current.end >= parser->end) {
         pm_parser_err_current(parser, PM_ERR_INCOMPLETE_QUESTION_MARK);
+        pm_string_shared_init(&parser->current_string, parser->current.start + 1, parser->current.end);
         return PM_TOKEN_CHARACTER_LITERAL;
     }
 
@@ -6109,9 +6571,15 @@ lex_question_mark(pm_parser_t *parser) {
 
     lex_state_set(parser, PM_LEX_STATE_BEG);
 
-    if (parser->current.start[1] == '\\') {
+    if (match(parser, '\\')) {
         lex_state_set(parser, PM_LEX_STATE_END);
-        parser->current.end += pm_unescape_calculate_difference(parser, parser->current.start + 1, PM_UNESCAPE_ALL, true);
+
+        pm_buffer_t buffer;
+        pm_buffer_init_capacity(&buffer, 3);
+
+        escape_read(parser, &buffer, PM_ESCAPE_FLAG_SINGLE);
+        pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
+
         return PM_TOKEN_CHARACTER_LITERAL;
     } else {
         size_t encoding_width = parser->encoding.char_width(parser->current.end, parser->end - parser->current.end);
@@ -6128,6 +6596,7 @@ lex_question_mark(pm_parser_t *parser) {
         ) {
             lex_state_set(parser, PM_LEX_STATE_END);
             parser->current.end += encoding_width;
+            pm_string_shared_init(&parser->current_string, parser->current.start + 1, parser->current.end);
             return PM_TOKEN_CHARACTER_LITERAL;
         }
     }
@@ -6279,6 +6748,113 @@ parser_flush_heredoc_end(pm_parser_t *parser) {
     assert(parser->heredoc_end <= parser->end);
     parser->next_start = parser->heredoc_end;
     parser->heredoc_end = NULL;
+}
+
+// When we're lexing certain types (strings, symbols, lists, etc.) we have
+// string content associated with the tokens. For example:
+//
+//     "foo"
+//
+// In this case, the string content is foo. Since there is no escaping, there's
+// no need to track additional information and the token can be returned as
+// normal. However, if we have escape sequences:
+//
+//     "foo\n"
+//
+// then the bytes in the string are "f", "o", "o", "\", "n", but we want to
+// provide out consumers with the string content "f", "o", "o", "\n". In these
+// cases, when we find the first escape sequence, we initialize a pm_buffer_t
+// to keep track of the string content. Then in the parser, it will
+// automatically attach the string content to the node that it belongs to.
+typedef struct {
+    pm_buffer_t buffer;
+    const uint8_t *cursor;
+} pm_token_buffer_t;
+
+// Push the given byte into the token buffer.
+static inline void
+pm_token_buffer_push(pm_token_buffer_t *token_buffer, uint8_t byte) {
+    pm_buffer_append_u8(&token_buffer->buffer, byte);
+}
+
+// When we're about to return from lexing the current token and we know for sure
+// that we have found an escape sequence, this function is called to copy the
+// contents of the token buffer into the current string on the parser so that it
+// can be attached to the correct node.
+static inline void
+pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer->buffer.value, token_buffer->buffer.length);
+}
+
+// When we're about to return from lexing the current token, we need to flush
+// all of the content that we have pushed into the buffer into the current
+// string. If we haven't pushed anything into the buffer, this means that we
+// never found an escape sequence, so we can directly reference the bounds of
+// the current string. Either way, at the return of this function it is expected
+// that parser->current_string is established in such a way that it can be
+// attached to a node.
+static void
+pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    if (token_buffer->cursor == NULL) {
+        pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
+    } else {
+        pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
+        pm_token_buffer_copy(parser, token_buffer);
+    }
+}
+
+// When we've found an escape sequence, we need to copy everything up to this
+// point into the buffer because we're about to provide a string that has
+// different content than a direct slice of the source.
+//
+// It is expected that the parser's current token end will be pointing at one
+// byte past the backslash that starts the escape sequence.
+static void
+pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+    const uint8_t *start;
+    if (token_buffer->cursor == NULL) {
+        pm_buffer_init_capacity(&token_buffer->buffer, 16);
+        start = parser->current.start;
+    } else {
+        start = token_buffer->cursor;
+    }
+
+    const uint8_t *end = parser->current.end - 1;
+    pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
+}
+
+// Effectively the same thing as pm_strspn_inline_whitespace, but in the case of
+// a tilde heredoc expands out tab characters to the nearest tab boundaries.
+static inline size_t
+pm_heredoc_strspn_inline_whitespace(pm_parser_t *parser, const uint8_t **cursor, pm_heredoc_indent_t indent) {
+    size_t whitespace = 0;
+
+    switch (indent) {
+        case PM_HEREDOC_INDENT_NONE:
+            // Do nothing, we can't match a terminator with
+            // indentation and there's no need to calculate common
+            // whitespace.
+            break;
+        case PM_HEREDOC_INDENT_DASH:
+            // Skip past inline whitespace.
+            *cursor += pm_strspn_inline_whitespace(*cursor, parser->end - *cursor);
+            break;
+        case PM_HEREDOC_INDENT_TILDE:
+            // Skip past inline whitespace and calculate common
+            // whitespace.
+            while (*cursor < parser->end && pm_char_is_inline_whitespace(**cursor)) {
+                if (**cursor == '\t') {
+                    whitespace = (whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
+                } else {
+                    whitespace++;
+                }
+                (*cursor)++;
+            }
+
+            break;
+    }
+
+    return whitespace;
 }
 
 // This is a convenience macro that will set the current token type, call the
@@ -6824,7 +7400,8 @@ parser_lex(pm_parser_t *parser) {
                                         .ident_length = ident_length,
                                         .next_start = parser->current.end,
                                         .quote = quote,
-                                        .indent = indent
+                                        .indent = indent,
+                                        .common_whitespace = (size_t) -1
                                     }
                                 });
 
@@ -7445,7 +8022,7 @@ parser_lex(pm_parser_t *parser) {
                 }
             }
         }
-        case PM_LEX_LIST:
+        case PM_LEX_LIST: {
             if (parser->next_start != NULL) {
                 parser->current.end = parser->next_start;
                 parser->next_start = NULL;
@@ -7488,6 +8065,10 @@ parser_lex(pm_parser_t *parser) {
             const uint8_t *breakpoints = lex_mode->as.list.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
+            // If we haven't found an escape yet, then this buffer will be
+            // unallocated since we can refer directly to the source string.
+            pm_token_buffer_t token_buffer = { 0 };
+
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
                 if (*breakpoint == '\0') {
@@ -7499,16 +8080,18 @@ parser_lex(pm_parser_t *parser) {
                 // now, so we can return an element of the list.
                 if (pm_char_is_whitespace(*breakpoint)) {
                     parser->current.end = breakpoint;
+                    pm_token_buffer_flush(parser, &token_buffer);
                     LEX(PM_TOKEN_STRING_CONTENT);
                 }
 
-                //If we hit the terminator, we need to check which token to
+                // If we hit the terminator, we need to check which token to
                 // return.
                 if (*breakpoint == lex_mode->as.list.terminator) {
                     // If this terminator doesn't actually close the list, then
                     // we need to continue on past it.
                     if (lex_mode->as.list.nesting > 0) {
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         lex_mode->as.list.nesting--;
                         continue;
                     }
@@ -7517,6 +8100,7 @@ parser_lex(pm_parser_t *parser) {
                     // past content, then we can return a list node.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -7532,59 +8116,109 @@ parser_lex(pm_parser_t *parser) {
                 // literally. In this case we'll skip past the next character
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
-                    pm_unescape_type_t unescape_type = lex_mode->as.list.interpolation ? PM_UNESCAPE_ALL : PM_UNESCAPE_MINIMAL;
-                    size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
-                    if (difference == 0) {
-                        // we're at the end of the file
+                    parser->current.end = breakpoint + 1;
+
+                    // If we've hit the end of the file, then break out of the
+                    // loop by setting the breakpoint to NULL.
+                    if (parser->current.end == parser->end) {
                         breakpoint = NULL;
                         continue;
                     }
 
-                    // If the result is an escaped newline ...
-                    if (breakpoint[difference - 1] == '\n') {
-                        if (parser->heredoc_end) {
-                            // ... if we are on the same line as a heredoc, flush the heredoc and
-                            // continue parsing after heredoc_end.
-                            parser->current.end = breakpoint + difference;
-                            parser_flush_heredoc_end(parser);
-                            LEX(PM_TOKEN_STRING_CONTENT);
-                        } else {
-                            // ... else track the newline.
-                            pm_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                        }
+                    pm_token_buffer_escape(parser, &token_buffer);
+                    uint8_t peeked = peek(parser);
+
+                    switch (peeked) {
+                        case ' ':
+                        case '\f':
+                        case '\t':
+                        case '\v':
+                        case '\\':
+                            pm_token_buffer_push(&token_buffer, peeked);
+                            parser->current.end++;
+                            break;
+                        case '\r':
+                            parser->current.end++;
+                            if (peek(parser) != '\n') {
+                                pm_token_buffer_push(&token_buffer, '\r');
+                                break;
+                            }
+                        /* fallthrough */
+                        case '\n':
+                            pm_token_buffer_push(&token_buffer, '\n');
+
+                            if (parser->heredoc_end) {
+                                // ... if we are on the same line as a heredoc,
+                                // flush the heredoc and continue parsing after
+                                // heredoc_end.
+                                parser_flush_heredoc_end(parser);
+                                pm_token_buffer_copy(parser, &token_buffer);
+                                LEX(PM_TOKEN_STRING_CONTENT);
+                            } else {
+                                // ... else track the newline.
+                                pm_newline_list_append(&parser->newline_list, parser->current.end);
+                            }
+
+                            parser->current.end++;
+                            break;
+                        default:
+                            if (peeked == lex_mode->as.list.incrementor || peeked == lex_mode->as.list.terminator) {
+                                pm_token_buffer_push(&token_buffer, peeked);
+                                parser->current.end++;
+                            } else if (lex_mode->as.list.interpolation) {
+                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                            } else {
+                                pm_token_buffer_push(&token_buffer, '\\');
+                                pm_token_buffer_push(&token_buffer, peeked);
+                                parser->current.end++;
+                            }
+
+                            break;
                     }
 
-                    breakpoint = pm_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                    token_buffer.cursor = parser->current.end;
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
 
                 // If we hit a #, then we will attempt to lex interpolation.
                 if (*breakpoint == '#') {
                     pm_token_type_t type = lex_interpolation(parser, breakpoint);
-                    if (type != PM_TOKEN_NOT_PROVIDED) {
-                        LEX(type);
+
+                    if (type == PM_TOKEN_NOT_PROVIDED) {
+                        // If we haven't returned at this point then we had something
+                        // that looked like an interpolated class or instance variable
+                        // like "#@" but wasn't actually. In this case we'll just skip
+                        // to the next breakpoint.
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        continue;
                     }
 
-                    // If we haven't returned at this point then we had something
-                    // that looked like an interpolated class or instance variable
-                    // like "#@" but wasn't actually. In this case we'll just skip
-                    // to the next breakpoint.
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
-                    continue;
+                    if (type == PM_TOKEN_STRING_CONTENT) {
+                        pm_token_buffer_flush(parser, &token_buffer);
+                    }
+
+                    LEX(type);
                 }
 
                 // If we've hit the incrementor, then we need to skip past it
                 // and find the next breakpoint.
                 assert(*breakpoint == lex_mode->as.list.incrementor);
-                breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                parser->current.end = breakpoint + 1;
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                 lex_mode->as.list.nesting++;
                 continue;
             }
 
-            // If we were unable to find a breakpoint, then this token hits the end of
-            // the file.
-            LEX(PM_TOKEN_EOF);
+            if (parser->current.end > parser->current.start) {
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
 
+            // If we were unable to find a breakpoint, then this token hits the
+            // end of the file.
+            LEX(PM_TOKEN_EOF);
+        }
         case PM_LEX_REGEXP: {
             // First, we'll set to start of this token to be the current end.
             if (parser->next_start == NULL) {
@@ -7609,11 +8243,13 @@ parser_lex(pm_parser_t *parser) {
             // characters.
             const uint8_t *breakpoints = lex_mode->as.regexp.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+            pm_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
                 if (*breakpoint == '\0') {
-                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    parser->current.end = breakpoint + 1;
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
 
@@ -7634,7 +8270,8 @@ parser_lex(pm_parser_t *parser) {
                     if (lex_mode->as.regexp.terminator != '\n') {
                         // If the terminator is not a newline, then we can set
                         // the next breakpoint and continue.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         continue;
                     }
                 }
@@ -7643,7 +8280,8 @@ parser_lex(pm_parser_t *parser) {
                 // token to return.
                 if (*breakpoint == lex_mode->as.regexp.terminator) {
                     if (lex_mode->as.regexp.nesting > 0) {
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         lex_mode->as.regexp.nesting--;
                         continue;
                     }
@@ -7653,11 +8291,12 @@ parser_lex(pm_parser_t *parser) {
                     // first.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
-                    // Since we've hit the terminator of the regular expression, we now
-                    // need to parse the options.
+                    // Since we've hit the terminator of the regular expression,
+                    // we now need to parse the options.
                     parser->current.end = breakpoint + 1;
                     parser->current.end += pm_strspn_regexp_option(parser->current.end, parser->end - parser->current.end);
 
@@ -7670,56 +8309,103 @@ parser_lex(pm_parser_t *parser) {
                 // literally. In this case we'll skip past the next character
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
-                    size_t difference = pm_unescape_calculate_difference(parser, breakpoint, PM_UNESCAPE_ALL, false);
-                    if (difference == 0) {
-                        // we're at the end of the file
+                    parser->current.end = breakpoint + 1;
+
+                    // If we've hit the end of the file, then break out of the
+                    // loop by setting the breakpoint to NULL.
+                    if (parser->current.end == parser->end) {
                         breakpoint = NULL;
                         continue;
                     }
 
-                    // If the result is an escaped newline ...
-                    if (breakpoint[difference - 1] == '\n') {
-                        if (parser->heredoc_end) {
-                            // ... if we are on the same line as a heredoc, flush the heredoc and
-                            // continue parsing after heredoc_end.
-                            parser->current.end = breakpoint + difference;
-                            parser_flush_heredoc_end(parser);
-                            LEX(PM_TOKEN_STRING_CONTENT);
-                        } else {
-                            // ... else track the newline.
-                            pm_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                        }
+                    pm_token_buffer_escape(parser, &token_buffer);
+                    uint8_t peeked = peek(parser);
+
+                    switch (peeked) {
+                        case '\r':
+                            parser->current.end++;
+                            if (peek(parser) != '\n') {
+                                pm_token_buffer_push(&token_buffer, '\\');
+                                pm_token_buffer_push(&token_buffer, '\r');
+                                break;
+                            }
+                        /* fallthrough */
+                        case '\n':
+                            if (parser->heredoc_end) {
+                                // ... if we are on the same line as a heredoc,
+                                // flush the heredoc and continue parsing after
+                                // heredoc_end.
+                                parser_flush_heredoc_end(parser);
+                                pm_token_buffer_copy(parser, &token_buffer);
+                                LEX(PM_TOKEN_STRING_CONTENT);
+                            } else {
+                                // ... else track the newline.
+                                pm_newline_list_append(&parser->newline_list, parser->current.end);
+                            }
+
+                            parser->current.end++;
+                            break;
+                        case 'c':
+                        case 'C':
+                        case 'M':
+                        case 'u':
+                        case 'x':
+                            escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_REGEXP);
+                            break;
+                        default:
+                            if (lex_mode->as.regexp.terminator == '/' && peeked == '/') {
+                                pm_token_buffer_push(&token_buffer, peeked);
+                                parser->current.end++;
+                                break;
+                            }
+
+                            if (peeked < 0x80) pm_token_buffer_push(&token_buffer, '\\');
+                            pm_token_buffer_push(&token_buffer, peeked);
+                            parser->current.end++;
+                            break;
                     }
 
-                    breakpoint = pm_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                    token_buffer.cursor = parser->current.end;
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
 
                 // If we hit a #, then we will attempt to lex interpolation.
                 if (*breakpoint == '#') {
                     pm_token_type_t type = lex_interpolation(parser, breakpoint);
-                    if (type != PM_TOKEN_NOT_PROVIDED) {
-                        LEX(type);
+
+                    if (type == PM_TOKEN_NOT_PROVIDED) {
+                        // If we haven't returned at this point then we had
+                        // something that looked like an interpolated class or
+                        // instance variable like "#@" but wasn't actually. In
+                        // this case we'll just skip to the next breakpoint.
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        continue;
                     }
 
-                    // If we haven't returned at this point then we had
-                    // something that looked like an interpolated class or
-                    // instance variable like "#@" but wasn't actually. In this
-                    // case we'll just skip to the next breakpoint.
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
-                    continue;
+                    if (type == PM_TOKEN_STRING_CONTENT) {
+                        pm_token_buffer_flush(parser, &token_buffer);
+                    }
+
+                    LEX(type);
                 }
 
                 // If we've hit the incrementor, then we need to skip past it
                 // and find the next breakpoint.
                 assert(*breakpoint == lex_mode->as.regexp.incrementor);
-                breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                parser->current.end = breakpoint + 1;
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                 lex_mode->as.regexp.nesting++;
                 continue;
             }
 
-            // At this point, the breakpoint is NULL which means we were unable to
-            // find anything before the end of the file.
+            if (parser->current.end > parser->current.start) {
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
+
+            // If we were unable to find a breakpoint, then this token hits the
+            // end of the file.
             LEX(PM_TOKEN_EOF);
         }
         case PM_LEX_STRING: {
@@ -7740,30 +8426,34 @@ parser_lex(pm_parser_t *parser) {
 
             // These are the places where we need to split up the content of the
             // string. We'll use strpbrk to find the first of these characters.
-            const uint8_t *breakpoints = parser->lex_modes.current->as.string.breakpoints;
+            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+            const uint8_t *breakpoints = lex_mode->as.string.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+
+            // If we haven't found an escape yet, then this buffer will be
+            // unallocated since we can refer directly to the source string.
+            pm_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
                 // If we hit the incrementor, then we'll increment then nesting and
                 // continue lexing.
-                if (
-                    parser->lex_modes.current->as.string.incrementor != '\0' &&
-                    *breakpoint == parser->lex_modes.current->as.string.incrementor
-                ) {
-                    parser->lex_modes.current->as.string.nesting++;
-                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                if (lex_mode->as.string.incrementor != '\0' && *breakpoint == lex_mode->as.string.incrementor) {
+                    lex_mode->as.string.nesting++;
+                    parser->current.end = breakpoint + 1;
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                     continue;
                 }
 
                 // Note that we have to check the terminator here first because we could
                 // potentially be parsing a % string that has a # character as the
                 // terminator.
-                if (*breakpoint == parser->lex_modes.current->as.string.terminator) {
+                if (*breakpoint == lex_mode->as.string.terminator) {
                     // If this terminator doesn't actually close the string, then we need
                     // to continue on past it.
-                    if (parser->lex_modes.current->as.string.nesting > 0) {
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                        parser->lex_modes.current->as.string.nesting--;
+                    if (lex_mode->as.string.nesting > 0) {
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        lex_mode->as.string.nesting--;
                         continue;
                     }
 
@@ -7771,6 +8461,7 @@ parser_lex(pm_parser_t *parser) {
                     // then we need to return that content as string content first.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -7784,11 +8475,7 @@ parser_lex(pm_parser_t *parser) {
                         parser->current.end = breakpoint + 1;
                     }
 
-                    if (
-                        parser->lex_modes.current->as.string.label_allowed &&
-                        (peek(parser) == ':') &&
-                        (peek_offset(parser, 1) != ':')
-                    ) {
+                    if (lex_mode->as.string.label_allowed && (peek(parser) == ':') && (peek_offset(parser, 1) != ':')) {
                         parser->current.end++;
                         lex_state_set(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
                         lex_mode_pop(parser);
@@ -7806,11 +8493,13 @@ parser_lex(pm_parser_t *parser) {
                 if (*breakpoint == '\n') {
                     if (parser->heredoc_end == NULL) {
                         pm_newline_list_append(&parser->newline_list, breakpoint);
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         continue;
                     } else {
                         parser->current.end = breakpoint + 1;
                         parser_flush_heredoc_end(parser);
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
                 }
@@ -7818,58 +8507,110 @@ parser_lex(pm_parser_t *parser) {
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     case '\\': {
-                        // If we hit escapes, then we need to treat the next token
-                        // literally. In this case we'll skip past the next character and
-                        // find the next breakpoint.
-                        pm_unescape_type_t unescape_type = parser->lex_modes.current->as.string.interpolation ? PM_UNESCAPE_ALL : PM_UNESCAPE_MINIMAL;
-                        size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
-                        if (difference == 0) {
-                            // we're at the end of the file
+                        // Here we hit escapes.
+                        parser->current.end = breakpoint + 1;
+
+                        // If we've hit the end of the file, then break out of
+                        // the loop by setting the breakpoint to NULL.
+                        if (parser->current.end == parser->end) {
                             breakpoint = NULL;
-                            break;
+                            continue;
                         }
 
-                        // If the result is an escaped newline ...
-                        if (breakpoint[difference - 1] == '\n') {
-                            if (parser->heredoc_end) {
-                                // ... if we are on the same line as a heredoc, flush the heredoc and
-                                // continue parsing after heredoc_end.
-                                parser->current.end = breakpoint + difference;
-                                parser_flush_heredoc_end(parser);
-                                LEX(PM_TOKEN_STRING_CONTENT);
-                            } else {
-                                // ... else track the newline.
-                                pm_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                            }
+                        pm_token_buffer_escape(parser, &token_buffer);
+                        uint8_t peeked = peek(parser);
+
+                        switch (peeked) {
+                            case '\\':
+                                pm_token_buffer_push(&token_buffer, '\\');
+                                parser->current.end++;
+                                break;
+                            case '\r':
+                                parser->current.end++;
+                                if (peek(parser) != '\n') {
+                                    if (!lex_mode->as.string.interpolation) {
+                                        pm_token_buffer_push(&token_buffer, '\\');
+                                    }
+                                    pm_token_buffer_push(&token_buffer, '\r');
+                                    break;
+                                }
+                            /* fallthrough */
+                            case '\n':
+                                if (!lex_mode->as.string.interpolation) {
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push(&token_buffer, '\n');
+                                }
+
+                                if (parser->heredoc_end) {
+                                    // ... if we are on the same line as a heredoc,
+                                    // flush the heredoc and continue parsing after
+                                    // heredoc_end.
+                                    parser_flush_heredoc_end(parser);
+                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    LEX(PM_TOKEN_STRING_CONTENT);
+                                } else {
+                                    // ... else track the newline.
+                                    pm_newline_list_append(&parser->newline_list, parser->current.end);
+                                }
+
+                                parser->current.end++;
+                                break;
+                            default:
+                                if (lex_mode->as.string.incrementor != '\0' && peeked == lex_mode->as.string.incrementor) {
+                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    parser->current.end++;
+                                } else if (lex_mode->as.string.terminator != '\0' && peeked == lex_mode->as.string.terminator) {
+                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    parser->current.end++;
+                                } else if (lex_mode->as.string.interpolation) {
+                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                } else {
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    parser->current.end++;
+                                }
+
+                                break;
                         }
 
-                        breakpoint = pm_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                        token_buffer.cursor = parser->current.end;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
                     case '#': {
                         pm_token_type_t type = lex_interpolation(parser, breakpoint);
-                        if (type != PM_TOKEN_NOT_PROVIDED) {
-                            LEX(type);
+
+                        if (type == PM_TOKEN_NOT_PROVIDED) {
+                            // If we haven't returned at this point then we had something that
+                            // looked like an interpolated class or instance variable like "#@"
+                            // but wasn't actually. In this case we'll just skip to the next
+                            // breakpoint.
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                            break;
                         }
 
-                        // If we haven't returned at this point then we had something that
-                        // looked like an interpolated class or instance variable like "#@"
-                        // but wasn't actually. In this case we'll just skip to the next
-                        // breakpoint.
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
-                        break;
+                        if (type == PM_TOKEN_STRING_CONTENT) {
+                            pm_token_buffer_flush(parser, &token_buffer);
+                        }
+
+                        LEX(type);
                     }
                     default:
                         assert(false && "unreachable");
                 }
             }
 
+            if (parser->current.end > parser->current.start) {
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
+            }
+
             // If we've hit the end of the string, then this is an unterminated
             // string. In that case we'll return the EOF token.
-            parser->current.end = parser->end;
             LEX(PM_TOKEN_EOF);
         }
         case PM_LEX_HEREDOC: {
@@ -7891,16 +8632,15 @@ parser_lex(pm_parser_t *parser) {
 
             // Now let's grab the information about the identifier off of the current
             // lex mode.
-            const uint8_t *ident_start = parser->lex_modes.current->as.heredoc.ident_start;
-            size_t ident_length = parser->lex_modes.current->as.heredoc.ident_length;
+            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+            const uint8_t *ident_start = lex_mode->as.heredoc.ident_start;
+            size_t ident_length = lex_mode->as.heredoc.ident_length;
 
             // If we are immediately following a newline and we have hit the
             // terminator, then we need to return the ending of the heredoc.
             if (current_token_starts_line(parser)) {
                 const uint8_t *start = parser->current.start;
-                if (parser->lex_modes.current->as.heredoc.indent != PM_HEREDOC_INDENT_NONE) {
-                    start += pm_strspn_inline_whitespace(start, parser->end - start);
-                }
+                size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
 
                 if ((start + ident_length <= parser->end) && (memcmp(start, ident_start, ident_length) == 0)) {
                     bool matched = true;
@@ -7918,10 +8658,10 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (matched) {
-                        if (*parser->lex_modes.current->as.heredoc.next_start == '\\') {
+                        if (*lex_mode->as.heredoc.next_start == '\\') {
                             parser->next_start = NULL;
                         } else {
-                            parser->next_start = parser->lex_modes.current->as.heredoc.next_start;
+                            parser->next_start = lex_mode->as.heredoc.next_start;
                             parser->heredoc_end = parser->current.end;
                         }
 
@@ -7932,61 +8672,91 @@ parser_lex(pm_parser_t *parser) {
                         LEX(PM_TOKEN_HEREDOC_END);
                     }
                 }
+
+                if (
+                    lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE &&
+                    (lex_mode->as.heredoc.common_whitespace > whitespace) &&
+                    peek_at(parser, start) != '\n'
+                ) {
+                    lex_mode->as.heredoc.common_whitespace = whitespace;
+                }
             }
 
-            // Otherwise we'll be parsing string content. These are the places where
-            // we need to split up the content of the heredoc. We'll use strpbrk to
-            // find the first of these characters.
+            // Otherwise we'll be parsing string content. These are the places
+            // where we need to split up the content of the heredoc. We'll use
+            // strpbrk to find the first of these characters.
             uint8_t breakpoints[] = "\n\\#";
 
-            pm_heredoc_quote_t quote = parser->lex_modes.current->as.heredoc.quote;
+            pm_heredoc_quote_t quote = lex_mode->as.heredoc.quote;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
                 breakpoints[2] = '\0';
             }
 
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+            pm_token_buffer_t token_buffer = { 0 };
+            bool was_escaped_newline = false;
 
             while (breakpoint != NULL) {
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     case '\n': {
                         if (parser->heredoc_end != NULL && (parser->heredoc_end > breakpoint)) {
                             parser_flush_heredoc_end(parser);
                             parser->current.end = breakpoint + 1;
+                            pm_token_buffer_flush(parser, &token_buffer);
                             LEX(PM_TOKEN_STRING_CONTENT);
                         }
 
                         pm_newline_list_append(&parser->newline_list, breakpoint);
 
+                        // If we have a - or ~ heredoc, then we can match after
+                        // some leading whitespace.
                         const uint8_t *start = breakpoint + 1;
-                        if (parser->lex_modes.current->as.heredoc.indent != PM_HEREDOC_INDENT_NONE) {
-                            start += pm_strspn_inline_whitespace(start, parser->end - start);
-                        }
+                        size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
 
-                        // If we have hit a newline that is followed by a valid terminator,
-                        // then we need to return the content of the heredoc here as string
-                        // content. Then, the next time a token is lexed, it will match
-                        // again and return the end of the heredoc.
+                        // If we have hit a newline that is followed by a valid
+                        // terminator, then we need to return the content of the
+                        // heredoc here as string content. Then, the next time a
+                        // token is lexed, it will match again and return the
+                        // end of the heredoc.
                         if (
+                            !was_escaped_newline &&
                             (start + ident_length <= parser->end) &&
                             (memcmp(start, ident_start, ident_length) == 0)
                         ) {
-                            // Heredoc terminators must be followed by a newline, CRLF, or EOF to be valid.
+                            // Heredoc terminators must be followed by a
+                            // newline, CRLF, or EOF to be valid.
                             if (
                                 start + ident_length == parser->end ||
                                 match_eol_at(parser, start + ident_length)
                             ) {
                                 parser->current.end = breakpoint + 1;
+                                pm_token_buffer_flush(parser, &token_buffer);
                                 LEX(PM_TOKEN_STRING_CONTENT);
                             }
                         }
 
-                        // Otherwise we hit a newline and it wasn't followed by a
-                        // terminator, so we can continue parsing.
-                        breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                            if ((lex_mode->as.heredoc.common_whitespace > whitespace) && peek_at(parser, start) != '\n') {
+                                lex_mode->as.heredoc.common_whitespace = whitespace;
+                            }
+
+                            parser->current.end = breakpoint + 1;
+
+                            if (!was_escaped_newline) {
+                                pm_token_buffer_flush(parser, &token_buffer);
+                                LEX(PM_TOKEN_STRING_CONTENT);
+                            }
+                        }
+
+                        // Otherwise we hit a newline and it wasn't followed by
+                        // a terminator, so we can continue parsing.
+                        parser->current.end = breakpoint + 1;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
                     case '\\': {
@@ -7996,46 +8766,98 @@ parser_lex(pm_parser_t *parser) {
                         // stop looping before the newline and not after the
                         // newline so that we can still potentially find the
                         // terminator of the heredoc.
-                        size_t eol_length = match_eol_at(parser, breakpoint + 1);
-                        if (eol_length) {
-                            breakpoint += eol_length;
-                        } else {
-                            pm_unescape_type_t unescape_type = (quote == PM_HEREDOC_QUOTE_SINGLE) ? PM_UNESCAPE_MINIMAL : PM_UNESCAPE_ALL;
-                            size_t difference = pm_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
-                            if (difference == 0) {
-                                // we're at the end of the file
-                                breakpoint = NULL;
-                                break;
-                            }
+                        parser->current.end = breakpoint + 1;
 
-                            pm_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
-
-                            breakpoint = pm_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                        // If we've hit the end of the file, then break out of
+                        // the loop by setting the breakpoint to NULL.
+                        if (parser->current.end == parser->end) {
+                            breakpoint = NULL;
+                            continue;
                         }
 
+                        pm_token_buffer_escape(parser, &token_buffer);
+                        uint8_t peeked = peek(parser);
+
+                        if (quote == PM_HEREDOC_QUOTE_SINGLE) {
+                            switch (peeked) {
+                                case '\r':
+                                    parser->current.end++;
+                                    if (peek(parser) != '\n') {
+                                        pm_token_buffer_push(&token_buffer, '\\');
+                                        pm_token_buffer_push(&token_buffer, '\r');
+                                        break;
+                                    }
+                                /* fallthrough */
+                                case '\n':
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push(&token_buffer, '\n');
+                                    token_buffer.cursor = parser->current.end + 1;
+                                    breakpoint = parser->current.end;
+                                    continue;
+                                default:
+                                    parser->current.end++;
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    break;
+                            }
+                        } else {
+                            switch (peeked) {
+                                case '\r':
+                                    parser->current.end++;
+                                    if (peek(parser) != '\n') {
+                                        pm_token_buffer_push(&token_buffer, '\r');
+                                        break;
+                                    }
+                                /* fallthrough */
+                                case '\n':
+                                    was_escaped_newline = true;
+                                    token_buffer.cursor = parser->current.end + 1;
+                                    breakpoint = parser->current.end;
+                                    continue;
+                                default:
+                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                    break;
+                            }
+                        }
+
+                        token_buffer.cursor = parser->current.end;
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
                     case '#': {
                         pm_token_type_t type = lex_interpolation(parser, breakpoint);
-                        if (type != PM_TOKEN_NOT_PROVIDED) {
-                            LEX(type);
+
+                        if (type == PM_TOKEN_NOT_PROVIDED) {
+                            // If we haven't returned at this point then we had
+                            // something that looked like an interpolated class
+                            // or instance variable like "#@" but wasn't
+                            // actually. In this case we'll just skip to the
+                            // next breakpoint.
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                            break;
                         }
 
-                        // If we haven't returned at this point then we had something
-                        // that looked like an interpolated class or instance variable
-                        // like "#@" but wasn't actually. In this case we'll just skip
-                        // to the next breakpoint.
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
-                        break;
+                        if (type == PM_TOKEN_STRING_CONTENT) {
+                            pm_token_buffer_flush(parser, &token_buffer);
+                        }
+
+                        LEX(type);
                     }
                     default:
                         assert(false && "unreachable");
                 }
+
+                was_escaped_newline = false;
+            }
+
+            if (parser->current.end > parser->current.start) {
+                parser->current.end = parser->end;
+                pm_token_buffer_flush(parser, &token_buffer);
+                LEX(PM_TOKEN_STRING_CONTENT);
             }
 
             // If we've hit the end of the string, then this is an unterminated
             // heredoc. In that case we'll return the EOF token.
-            parser->current.end = parser->end;
             LEX(PM_TOKEN_EOF);
         }
     }
@@ -8048,67 +8870,6 @@ parser_lex(pm_parser_t *parser) {
 /******************************************************************************/
 /* Parse functions                                                            */
 /******************************************************************************/
-
-// When we are parsing certain content, we need to unescape the content to
-// provide to the consumers of the parser. The following functions accept a range
-// of characters from the source and unescapes into the provided type.
-//
-// We have functions for unescaping regular expression nodes, string nodes,
-// symbol nodes, and xstring nodes
-static pm_regular_expression_node_t *
-pm_regular_expression_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
-    pm_regular_expression_node_t *node = pm_regular_expression_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_string(parser, &node->unescaped, unescape_type);
-    return node;
-}
-
-static pm_symbol_node_t *
-pm_symbol_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
-    pm_symbol_node_t *node = pm_symbol_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_string(parser, &node->unescaped, unescape_type);
-    return node;
-}
-
-static pm_string_node_t *
-pm_char_literal_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
-    pm_string_node_t *node = pm_string_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_char_literal(parser, &node->unescaped, unescape_type);
-    return node;
-}
-
-static pm_string_node_t *
-pm_string_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, pm_unescape_type_t unescape_type) {
-    pm_string_node_t *node = pm_string_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_string(parser, &node->unescaped, unescape_type);
-    return node;
-}
-
-static pm_x_string_node_t *
-pm_xstring_node_create_and_unescape(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
-    pm_x_string_node_t *node = pm_xstring_node_create(parser, opening, content, closing);
-
-    assert((content->end - content->start) >= 0);
-    pm_string_shared_init(&node->unescaped, content->start, content->end);
-
-    pm_unescape_manipulate_string(parser, &node->unescaped, PM_UNESCAPE_ALL);
-    return node;
-}
 
 // These are the various precedence rules. Because we are using a Pratt parser,
 // they are named binding power to represent the manner in which nodes are bound
@@ -10154,25 +10915,12 @@ parse_string_part(pm_parser_t *parser) {
         //     "aaa #{bbb} #@ccc ddd"
         //      ^^^^      ^     ^^^^
         case PM_TOKEN_STRING_CONTENT: {
-            pm_unescape_type_t unescape_type = PM_UNESCAPE_ALL;
-
-            if (parser->lex_modes.current->mode == PM_LEX_HEREDOC) {
-                if (parser->lex_modes.current->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
-                    // If we're in a tilde heredoc, we want to unescape it later
-                    // because we don't want unescaped newlines to disappear
-                    // before we handle them in the dedent.
-                    unescape_type = PM_UNESCAPE_NONE;
-                } else if (parser->lex_modes.current->as.heredoc.quote == PM_HEREDOC_QUOTE_SINGLE) {
-                    unescape_type = PM_UNESCAPE_MINIMAL;
-                }
-            }
-
-            parser_lex(parser);
-
             pm_token_t opening = not_provided(parser);
             pm_token_t closing = not_provided(parser);
+            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
 
-            return (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, unescape_type);
+            parser_lex(parser);
+            return node;
         }
         // Here the lexer has returned the beginning of an embedded expression. In
         // that case we'll parse the inner statements and return that as the part.
@@ -10274,7 +11022,6 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
 
     if (lex_mode->mode != PM_LEX_STRING) {
         if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
-        pm_token_t symbol;
 
         switch (parser->current.type) {
             case PM_TOKEN_IDENTIFIER:
@@ -10287,21 +11034,21 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
             case PM_TOKEN_BACK_REFERENCE:
             case PM_CASE_KEYWORD:
                 parser_lex(parser);
-                symbol = parser->previous;
                 break;
             case PM_CASE_OPERATOR:
                 lex_state_set(parser, next_state == PM_LEX_STATE_NONE ? PM_LEX_STATE_ENDFN : next_state);
                 parser_lex(parser);
-                symbol = parser->previous;
                 break;
             default:
                 expect2(parser, PM_TOKEN_IDENTIFIER, PM_TOKEN_METHOD_NAME, PM_ERR_SYMBOL_INVALID);
-                symbol = parser->previous;
                 break;
         }
 
         pm_token_t closing = not_provided(parser);
-        return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &symbol, &closing, PM_UNESCAPE_ALL);
+        pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
+
+        pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+        return (pm_node_t *) symbol;
     }
 
     if (lex_mode->as.string.interpolation) {
@@ -10312,7 +11059,7 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
 
             pm_token_t content = not_provided(parser);
             pm_token_t closing = parser->previous;
-            return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &closing, PM_UNESCAPE_NONE);
+            return (pm_node_t *) pm_symbol_node_create(parser, &opening, &content, &closing);
         }
 
         // Now we can parse the first part of the symbol.
@@ -10345,18 +11092,23 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
     }
 
     pm_token_t content;
-    if (accept1(parser, PM_TOKEN_STRING_CONTENT)) {
-        content = parser->previous;
+    pm_string_t unescaped;
+
+    if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+        content = parser->current;
+        unescaped = parser->current_string;
+        parser_lex(parser);
     } else {
         content = (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = parser->previous.end, .end = parser->previous.end };
+        pm_string_shared_init(&unescaped, content.start, content.end);
     }
 
     if (next_state != PM_LEX_STATE_NONE) {
         lex_state_set(parser, next_state);
     }
-    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
 
-    return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
+    return (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
 }
 
 // Parse an argument to undef which can either be a bare word, a
@@ -10373,8 +11125,10 @@ parse_undef_argument(pm_parser_t *parser) {
 
             pm_token_t opening = not_provided(parser);
             pm_token_t closing = not_provided(parser);
+            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
 
-            return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+            pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+            return (pm_node_t *) symbol;
         }
         case PM_TOKEN_SYMBOL_BEGIN: {
             pm_lex_mode_t lex_mode = *parser->lex_modes.current;
@@ -10407,8 +11161,10 @@ parse_alias_argument(pm_parser_t *parser, bool first) {
             parser_lex(parser);
             pm_token_t opening = not_provided(parser);
             pm_token_t closing = not_provided(parser);
+            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
 
-            return (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+            pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+            return (pm_node_t *) symbol;
         }
         case PM_TOKEN_SYMBOL_BEGIN: {
             pm_lex_mode_t lex_mode = *parser->lex_modes.current;
@@ -10518,76 +11274,8 @@ parse_method_definition_name(pm_parser_t *parser) {
     }
 }
 
-static int
-parse_heredoc_common_whitespace_for_single_node(pm_parser_t *parser, pm_node_t *node, int common_whitespace)
-{
-    const pm_location_t *content_loc = &((pm_string_node_t *) node)->content_loc;
-    int cur_whitespace;
-    const uint8_t *cur_char = content_loc->start;
-
-    while (cur_char && cur_char < content_loc->end) {
-        // Any empty newlines aren't included in the minimum whitespace
-        // calculation.
-        size_t eol_length;
-        while ((eol_length = match_eol_at(parser, cur_char))) {
-            cur_char += eol_length;
-        }
-
-        if (cur_char == content_loc->end) break;
-
-        cur_whitespace = 0;
-
-        while (pm_char_is_inline_whitespace(*cur_char) && cur_char < content_loc->end) {
-            if (cur_char[0] == '\t') {
-                cur_whitespace = (cur_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
-            } else {
-                cur_whitespace++;
-            }
-            cur_char++;
-        }
-
-        // If we hit a newline, then we have encountered a line that
-        // contains only whitespace, and it shouldn't be considered in
-        // the calculation of common leading whitespace.
-        eol_length = match_eol_at(parser, cur_char);
-        if (eol_length) {
-            cur_char += eol_length;
-            continue;
-        }
-
-        if (cur_whitespace < common_whitespace || common_whitespace == -1) {
-            common_whitespace = cur_whitespace;
-        }
-
-        cur_char = next_newline(cur_char + 1, parser->end - (cur_char + 1));
-        if (cur_char) cur_char++;
-    }
-    return common_whitespace;
-}
-
-// Calculate the common leading whitespace for each line in a heredoc.
-static int
-parse_heredoc_common_whitespace(pm_parser_t *parser, pm_node_list_t *nodes) {
-    int common_whitespace = -1;
-
-    for (size_t index = 0; index < nodes->size; index++) {
-        pm_node_t *node = nodes->nodes[index];
-        if (!PM_NODE_TYPE_P(node, PM_STRING_NODE)) continue;
-
-        // If the previous node wasn't a string node, we don't want to trim
-        // whitespace. This could happen after an interpolated expression or
-        // variable.
-        if (index == 0 || PM_NODE_TYPE_P(nodes->nodes[index - 1], PM_STRING_NODE)) {
-            common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, common_whitespace);
-        }
-    }
-
-    return common_whitespace;
-}
-
-static pm_string_t *
-parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool dedent_node, int common_whitespace, pm_heredoc_quote_t quote)
-{
+static void
+parse_heredoc_dedent_string(pm_string_t *string, size_t common_whitespace) {
     // Get a reference to the string struct that is being held by the string
     // node. This is the value we're going to actually manipulate.
     pm_string_ensure_owned(string);
@@ -10596,85 +11284,37 @@ parse_heredoc_dedent_single_node(pm_parser_t *parser, pm_string_t *string, bool 
     // destination to move bytes into. We'll also use it for bounds checking
     // since we don't require that these strings be null terminated.
     size_t dest_length = pm_string_length(string);
-    uint8_t *source_start = (uint8_t *) string->source;
-
-    const uint8_t *source_cursor = source_start;
+    const uint8_t *source_cursor = (uint8_t *) string->source;
     const uint8_t *source_end = source_cursor + dest_length;
 
     // We're going to move bytes backward in the string when we get leading
     // whitespace, so we'll maintain a pointer to the current position in the
     // string that we're writing to.
-    uint8_t *dest_cursor = source_start;
+    size_t trimmed_whitespace = 0;
 
-    while (source_cursor < source_end) {
-        // If we need to dedent the next element within the heredoc or the next
-        // line within the string node, then we'll do it here.
-        if (dedent_node) {
-            int trimmed_whitespace = 0;
-
-            // While we haven't reached the amount of common whitespace that we need
-            // to trim and we haven't reached the end of the string, we'll keep
-            // trimming whitespace. Trimming in this context means skipping over
-            // these bytes such that they aren't copied into the new string.
-            while ((source_cursor < source_end) && pm_char_is_inline_whitespace(*source_cursor) && trimmed_whitespace < common_whitespace) {
-                if (*source_cursor == '\t') {
-                    trimmed_whitespace = (trimmed_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
-                    if (trimmed_whitespace > common_whitespace) break;
-                } else {
-                    trimmed_whitespace++;
-                }
-
-                source_cursor++;
-                dest_length--;
-            }
+    // While we haven't reached the amount of common whitespace that we need to
+    // trim and we haven't reached the end of the string, we'll keep trimming
+    // whitespace. Trimming in this context means skipping over these bytes such
+    // that they aren't copied into the new string.
+    while ((source_cursor < source_end) && pm_char_is_inline_whitespace(*source_cursor) && trimmed_whitespace < common_whitespace) {
+        if (*source_cursor == '\t') {
+            trimmed_whitespace = (trimmed_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
+            if (trimmed_whitespace > common_whitespace) break;
+        } else {
+            trimmed_whitespace++;
         }
 
-        // At this point we have dedented all that we need to, so we need to find
-        // the next newline.
-        const uint8_t *breakpoint = next_newline(source_cursor, source_end - source_cursor);
-
-        if (breakpoint == NULL) {
-            // If there isn't another newline, then we can just move the rest of the
-            // string and break from the loop.
-            memmove(dest_cursor, source_cursor, (size_t) (source_end - source_cursor));
-            break;
-        }
-
-        // Otherwise, we need to move everything including the newline, and
-        // then set the dedent_node flag to true.
-        if (breakpoint < source_end) breakpoint++;
-        memmove(dest_cursor, source_cursor, (size_t) (breakpoint - source_cursor));
-        dest_cursor += (breakpoint - source_cursor);
-        source_cursor = breakpoint;
-        dedent_node = true;
+        source_cursor++;
+        dest_length--;
     }
 
-    // We only want to write this node into the list if it has any content.
+    memmove((uint8_t *) string->source, source_cursor, (size_t) (source_end - source_cursor));
     string->length = dest_length;
-
-    if (dest_length != 0) {
-        pm_unescape_manipulate_string(parser, string, (quote == PM_HEREDOC_QUOTE_SINGLE) ? PM_UNESCAPE_MINIMAL : PM_UNESCAPE_ALL);
-    }
-    return string;
 }
 
 // Take a heredoc node that is indented by a ~ and trim the leading whitespace.
 static void
-parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_quote_t quote)
-{
-    pm_node_list_t *nodes;
-
-    if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-        nodes = &((pm_interpolated_x_string_node_t *) heredoc_node)->parts;
-    } else {
-        nodes = &((pm_interpolated_string_node_t *) heredoc_node)->parts;
-    }
-
-    // First, calculate how much common whitespace we need to trim. If there is
-    // none or it's 0, then we can return early.
-    int common_whitespace;
-    if ((common_whitespace = parse_heredoc_common_whitespace(parser, nodes)) <= 0) return;
-
+parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_whitespace) {
     // The next node should be dedented if it's the first node in the list or if
     // if follows a string node.
     bool dedent_next = true;
@@ -10697,7 +11337,10 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_t *heredoc_node, pm_heredoc_qu
         }
 
         pm_string_node_t *string_node = ((pm_string_node_t *) node);
-        parse_heredoc_dedent_single_node(parser, &string_node->unescaped, dedent_next, common_whitespace, quote);
+        if (dedent_next) {
+            parse_heredoc_dedent_string(&string_node->unescaped, common_whitespace);
+        }
+
         if (string_node->unescaped.length == 0) {
             pm_node_destroy(parser, node);
         } else {
@@ -11399,17 +12042,30 @@ parse_strings(pm_parser_t *parser) {
             // start. In that case we'll create an empty content token and
             // return an uninterpolated string.
             pm_token_t content = parse_strings_empty_content(parser->previous.start);
-            node = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_NONE);
+            pm_string_node_t *string = pm_string_node_create(parser, &opening, &content, &parser->previous);
+
+            pm_string_shared_init(&string->unescaped, content.start, content.end);
+            node = (pm_node_t *) string;
         } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
             // If we get here, then we have an end of a label immediately
             // after a start. In that case we'll create an empty symbol
             // node.
             pm_token_t opening = not_provided(parser);
             pm_token_t content = parse_strings_empty_content(parser->previous.start);
-            node = (pm_node_t *) pm_symbol_node_create(parser, &opening, &content, &parser->previous);
+            pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &content, &parser->previous);
+
+            pm_string_shared_init(&symbol->unescaped, content.start, content.end);
+            node = (pm_node_t *) symbol;
         } else if (!lex_interpolation) {
             // If we don't accept interpolation then we expect the string to
             // start with a single string content node.
+            pm_string_t unescaped;
+            if (match1(parser, PM_TOKEN_EOF)) {
+                unescaped = PM_EMPTY_STRING;
+            } else {
+                unescaped = parser->current_string;
+            }
+
             expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_EXPECT_STRING_CONTENT);
             pm_token_t content = parser->previous;
 
@@ -11428,21 +12084,22 @@ parse_strings(pm_parser_t *parser) {
                 pm_node_list_t parts = PM_EMPTY_NODE_LIST;
 
                 pm_token_t delimiters = not_provided(parser);
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_and_unescape(parser, &delimiters, &content, &delimiters, PM_UNESCAPE_MINIMAL);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &delimiters, &content, &delimiters, &unescaped);
                 pm_node_list_append(&parts, part);
 
-                while (accept1(parser, PM_TOKEN_STRING_CONTENT)) {
-                    part = (pm_node_t *) pm_string_node_create_and_unescape(parser, &delimiters, &parser->previous, &delimiters, PM_UNESCAPE_MINIMAL);
+                do {
+                    part = (pm_node_t *) pm_string_node_create_current_string(parser, &delimiters, &parser->current, &delimiters);
                     pm_node_list_append(&parts, part);
-                }
+                    parser_lex(parser);
+                } while (match1(parser, PM_TOKEN_STRING_CONTENT));
 
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
                 node = (pm_node_t *) pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous);
             } else if (accept1(parser, PM_TOKEN_LABEL_END) && !state_is_arg_labeled) {
-                node = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             } else {
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
-                node = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_MINIMAL);
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             }
         } else if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
             // In this case we've hit string content so we know the string
@@ -11450,12 +12107,14 @@ parse_strings(pm_parser_t *parser) {
             // following token is the end (in which case we can return a
             // plain string) or if it's not then it has interpolation.
             pm_token_t content = parser->current;
+            pm_string_t unescaped = parser->current_string;
             parser_lex(parser);
 
-            if (accept1(parser, PM_TOKEN_STRING_END)) {
-                node = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+            if (match1(parser, PM_TOKEN_STRING_END)) {
+                node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
+                parser_lex(parser);
             } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             } else {
                 // If we get here, then we have interpolation so we'll need
                 // to create a string or symbol node with interpolation.
@@ -11463,7 +12122,7 @@ parse_strings(pm_parser_t *parser) {
                 pm_token_t string_opening = not_provided(parser);
                 pm_token_t string_closing = not_provided(parser);
 
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_and_unescape(parser, &string_opening, &parser->previous, &string_closing, PM_UNESCAPE_ALL);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &string_opening, &parser->previous, &string_closing, &unescaped);
                 pm_node_list_append(&parts, part);
 
                 while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
@@ -11480,11 +12139,11 @@ parse_strings(pm_parser_t *parser) {
                 }
             }
         } else {
-            // If we get here, then the first part of the string is not
-            // plain string content, in which case we need to parse the
-            // string as an interpolated string.
+            // If we get here, then the first part of the string is not plain
+            // string content, in which case we need to parse the string as an
+            // interpolated string.
             pm_node_list_t parts = PM_EMPTY_NODE_LIST;
-            pm_node_t *part = NULL;
+            pm_node_t *part;
 
             while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
                 if ((part = parse_string_part(parser)) != NULL) {
@@ -11763,7 +12422,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             content.start = content.start + 1;
 
             pm_token_t closing = not_provided(parser);
-            pm_node_t *node = (pm_node_t *) pm_char_literal_node_create_and_unescape(parser, &opening, &content, &closing, PM_UNESCAPE_ALL);
+            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
@@ -11937,9 +12596,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
         case PM_TOKEN_HEREDOC_START: {
             // Here we have found a heredoc. We'll parse it and add it to the
             // list of strings.
-            assert(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
-            pm_heredoc_quote_t quote = parser->lex_modes.current->as.heredoc.quote;
-            pm_heredoc_indent_t indent = parser->lex_modes.current->as.heredoc.indent;
+            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+            assert(lex_mode->mode == PM_LEX_HEREDOC);
+            pm_heredoc_quote_t quote = lex_mode->as.heredoc.quote;
+            pm_heredoc_indent_t indent = lex_mode->as.heredoc.indent;
 
             parser_lex(parser);
             pm_token_t opening = parser->previous;
@@ -11955,9 +12615,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 pm_token_t content = parse_strings_empty_content(parser->previous.start);
 
                 if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-                    node = (pm_node_t *) pm_xstring_node_create_and_unescape(parser, &opening, &content, &parser->previous);
+                    node = (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_EMPTY_STRING);
                 } else {
-                    node = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_NONE);
+                    node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_EMPTY_STRING);
                 }
 
                 node->location.end = opening.end;
@@ -11982,15 +12642,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                     cast->base.type = PM_X_STRING_NODE;
                 }
 
-                lex_state_set(parser, PM_LEX_STATE_END);
-                expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
+                size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
+                if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
+                    parse_heredoc_dedent_string(&cast->unescaped, common_whitespace);
+                }
 
                 node = (pm_node_t *) cast;
-
-                if (indent == PM_HEREDOC_INDENT_TILDE) {
-                    int common_whitespace = parse_heredoc_common_whitespace_for_single_node(parser, node, -1);
-                    parse_heredoc_dedent_single_node(parser, &cast->unescaped, true, common_whitespace, quote);
-                }
+                lex_state_set(parser, PM_LEX_STATE_END);
+                expect1(parser, PM_TOKEN_HEREDOC_END, PM_ERR_HEREDOC_TERM);
             } else {
                 // If we get here, then we have multiple parts in the heredoc,
                 // so we'll need to create an interpolated string node to hold
@@ -12029,8 +12688,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
                 // If this is a heredoc that is indented with a ~, then we need
                 // to dedent each line by the common leading whitespace.
-                if (indent == PM_HEREDOC_INDENT_TILDE) {
-                    parse_heredoc_dedent(parser, node, quote);
+                size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
+                if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
+                    pm_node_list_t *nodes;
+                    if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                        nodes = &((pm_interpolated_x_string_node_t *) node)->parts;
+                    } else {
+                        nodes = &((pm_interpolated_string_node_t *) node)->parts;
+                    }
+
+                    parse_heredoc_dedent(parser, nodes, common_whitespace);
                 }
             }
 
@@ -12988,13 +13655,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 accept1(parser, PM_TOKEN_WORDS_SEP);
                 if (match1(parser, PM_TOKEN_STRING_END)) break;
 
+                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                    pm_token_t opening = not_provided(parser);
+                    pm_token_t closing = not_provided(parser);
+                    pm_array_node_elements_append(array, (pm_node_t *) pm_symbol_node_create_current_string(parser, &opening, &parser->current, &closing));
+                }
+
                 expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_LOWER_ELEMENT);
-
-                pm_token_t opening = not_provided(parser);
-                pm_token_t closing = not_provided(parser);
-
-                pm_node_t *symbol = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_MINIMAL);
-                pm_array_node_elements_append(array, symbol);
             }
 
             expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_I_LOWER_TERM);
@@ -13034,26 +13701,26 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                             // If we hit content and the current node is NULL, then this is
                             // the first string content we've seen. In that case we're going
                             // to create a new string node and set that to the current.
+                            current = (pm_node_t *) pm_symbol_node_create_current_string(parser, &opening, &parser->current, &closing);
                             parser_lex(parser);
-                            current = (pm_node_t *) pm_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
                         } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
                             // If we hit string content and the current node is an
                             // interpolated string, then we need to append the string content
                             // to the list of child nodes.
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_symbol_node_append((pm_interpolated_symbol_node_t *) current, part);
+                            pm_node_t *string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
+                            parser_lex(parser);
+
+                            pm_interpolated_symbol_node_append((pm_interpolated_symbol_node_t *) current, string);
                         } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
                             // If we hit string content and the current node is a string node,
                             // then we need to convert the current node into an interpolated
                             // string and add the string content to the list of child nodes.
-                            pm_token_t opening = not_provided(parser);
-                            pm_token_t closing = not_provided(parser);
-                            pm_interpolated_symbol_node_t *interpolated =
-                                pm_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
-                            pm_interpolated_symbol_node_append(interpolated, current);
+                            pm_node_t *string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->previous, &closing);
+                            parser_lex(parser);
 
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_symbol_node_append(interpolated, part);
+                            pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
+                            pm_interpolated_symbol_node_append(interpolated, current);
+                            pm_interpolated_symbol_node_append(interpolated, string);
                             current = (pm_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");
@@ -13160,12 +13827,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 accept1(parser, PM_TOKEN_WORDS_SEP);
                 if (match1(parser, PM_TOKEN_STRING_END)) break;
 
-                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_LOWER_ELEMENT);
+                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                    pm_token_t opening = not_provided(parser);
+                    pm_token_t closing = not_provided(parser);
 
-                pm_token_t opening = not_provided(parser);
-                pm_token_t closing = not_provided(parser);
-                pm_node_t *string = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_WHITESPACE);
-                pm_array_node_elements_append(array, string);
+                    pm_node_t *string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
+                    pm_array_node_elements_append(array, string);
+                }
+
+                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_LOWER_ELEMENT);
             }
 
             expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_W_LOWER_TERM);
@@ -13198,29 +13868,29 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                         break;
                     }
                     case PM_TOKEN_STRING_CONTENT: {
+                        pm_token_t opening = not_provided(parser);
+                        pm_token_t closing = not_provided(parser);
+
+                        pm_node_t *string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
+                        parser_lex(parser);
+
                         if (current == NULL) {
                             // If we hit content and the current node is NULL, then this is
                             // the first string content we've seen. In that case we're going
                             // to create a new string node and set that to the current.
-                            current = parse_string_part(parser);
+                            current = string;
                         } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
                             // If we hit string content and the current node is an
                             // interpolated string, then we need to append the string content
                             // to the list of child nodes.
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, part);
+                            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, string);
                         } else if (PM_NODE_TYPE_P(current, PM_STRING_NODE)) {
                             // If we hit string content and the current node is a string node,
                             // then we need to convert the current node into an interpolated
                             // string and add the string content to the list of child nodes.
-                            pm_token_t opening = not_provided(parser);
-                            pm_token_t closing = not_provided(parser);
-                            pm_interpolated_string_node_t *interpolated =
-                                pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
+                            pm_interpolated_string_node_t *interpolated = pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
                             pm_interpolated_string_node_append(interpolated, current);
-
-                            pm_node_t *part = parse_string_part(parser);
-                            pm_interpolated_string_node_append(interpolated, part);
+                            pm_interpolated_string_node_append(interpolated, string);
                             current = (pm_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");
@@ -13315,7 +13985,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 };
 
                 parser_lex(parser);
-                return (pm_node_t *) pm_regular_expression_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                return (pm_node_t *) pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
             }
 
             pm_interpolated_regular_expression_node_t *node;
@@ -13325,6 +13995,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 // expression at least has something in it. We'll need to check if the
                 // following token is the end (in which case we can return a plain
                 // regular expression) or if it's not then it has interpolation.
+                pm_string_t unescaped = parser->current_string;
                 pm_token_t content = parser->current;
                 parser_lex(parser);
 
@@ -13332,7 +14003,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 // without interpolation, which can be represented more succinctly and
                 // more easily compiled.
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
-                    return (pm_node_t *) pm_regular_expression_node_create_and_unescape(parser, &opening, &content, &parser->previous, PM_UNESCAPE_ALL);
+                    return (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
                 }
 
                 // If we get here, then we have interpolation so we'll need to create
@@ -13341,7 +14012,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
                 pm_token_t opening = not_provided(parser);
                 pm_token_t closing = not_provided(parser);
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
                 pm_interpolated_regular_expression_node_append(node, part);
             } else {
                 // If the first part of the body of the regular expression is not a
@@ -13352,9 +14023,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
             // Now that we're here and we have interpolation, we'll parse all of the
             // parts into the list.
+            pm_node_t *part;
             while (!match2(parser, PM_TOKEN_REGEXP_END, PM_TOKEN_EOF)) {
-                pm_node_t *part = parse_string_part(parser);
-                if (part != NULL) {
+                if ((part = parse_string_part(parser)) != NULL) {
                     pm_interpolated_regular_expression_node_append(node, part);
                 }
             }
@@ -13390,35 +14061,37 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             pm_interpolated_x_string_node_t *node;
 
             if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                // In this case we've hit string content so we know the string at least
-                // has something in it. We'll need to check if the following token is
-                // the end (in which case we can return a plain string) or if it's not
-                // then it has interpolation.
+                // In this case we've hit string content so we know the string
+                // at least has something in it. We'll need to check if the
+                // following token is the end (in which case we can return a
+                // plain string) or if it's not then it has interpolation.
+                pm_string_t unescaped = parser->current_string;
                 pm_token_t content = parser->current;
                 parser_lex(parser);
 
                 if (accept1(parser, PM_TOKEN_STRING_END)) {
-                    return (pm_node_t *) pm_xstring_node_create_and_unescape(parser, &opening, &content, &parser->previous);
+                    return (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
                 }
 
-                // If we get here, then we have interpolation so we'll need to create
-                // a string node with interpolation.
+                // If we get here, then we have interpolation so we'll need to
+                // create a string node with interpolation.
                 node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
 
                 pm_token_t opening = not_provided(parser);
                 pm_token_t closing = not_provided(parser);
-                pm_node_t *part = (pm_node_t *) pm_string_node_create_and_unescape(parser, &opening, &parser->previous, &closing, PM_UNESCAPE_ALL);
+                pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
+
                 pm_interpolated_xstring_node_append(node, part);
             } else {
-                // If the first part of the body of the string is not a string content,
-                // then we have interpolation and we need to create an interpolated
-                // string node.
+                // If the first part of the body of the string is not a string
+                // content, then we have interpolation and we need to create an
+                // interpolated string node.
                 node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
             }
 
+            pm_node_t *part;
             while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-                pm_node_t *part = parse_string_part(parser);
-                if (part != NULL) {
+                if ((part = parse_string_part(parser)) != NULL) {
                     pm_interpolated_xstring_node_append(node, part);
                 }
             }
@@ -14538,6 +15211,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .constant_pool = PM_CONSTANT_POOL_EMPTY,
         .newline_list = PM_NEWLINE_LIST_EMPTY,
         .integer_base = 0,
+        .current_string = PM_EMPTY_STRING,
         .command_start = true,
         .recovering = false,
         .encoding_changed = false,
@@ -14675,10 +15349,11 @@ pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, cons
     pm_parser_free(&parser);
 }
 
-#undef PM_LOCATION_NULL_VALUE
-#undef PM_LOCATION_TOKEN_VALUE
-#undef PM_LOCATION_NODE_VALUE
-#undef PM_LOCATION_NODE_BASE_VALUE
 #undef PM_CASE_KEYWORD
 #undef PM_CASE_OPERATOR
 #undef PM_CASE_WRITABLE
+#undef PM_EMPTY_STRING
+#undef PM_LOCATION_NODE_BASE_VALUE
+#undef PM_LOCATION_NODE_VALUE
+#undef PM_LOCATION_NULL_VALUE
+#undef PM_LOCATION_TOKEN_VALUE

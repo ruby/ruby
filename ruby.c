@@ -56,6 +56,7 @@
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
+#include "prism/prism.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -153,6 +154,8 @@ enum feature_flag_bits {
     SEP \
     X(parsetree_with_comment) \
     SEP \
+    X(prism) \
+    SEP \
     X(insns) \
     SEP \
     X(insns_without_opt) \
@@ -166,7 +169,7 @@ enum dump_flag_bits {
                                 DUMP_BIT(parsetree_with_comment)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-                      DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
+                      DUMP_BIT(prism) | DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
 };
 
 static inline void
@@ -353,7 +356,7 @@ usage(const char *name, int help, int highlight, int columns)
 
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
-        M("--dump={insns|parsetree|...}[,...]",     "",
+        M("--dump={insns|parsetree|prism|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
         M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
           "enable or disable features. see below for available features"),
@@ -372,6 +375,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
         M("parsetree(+error-tolerant)","", "AST"),
         M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
+        M("prism", "", "Prism AST with comments"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -2331,6 +2335,25 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_define_global_function("gsub", rb_f_gsub, -1);
         rb_define_global_function("chop", rb_f_chop, 0);
         rb_define_global_function("chomp", rb_f_chomp, -1);
+    }
+
+    if (dump & (DUMP_BIT(prism))) {
+        pm_parser_t parser;
+        if (opt->e_script) {
+            size_t len = RSTRING_LEN(opt->e_script);
+            pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(opt->e_script), len, "-e");
+        }
+        else {
+            pm_string_t input;
+            char *filepath = RSTRING_PTR(opt->script_name);
+            pm_string_mapped_init(&input, filepath);
+            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), filepath);
+        }
+
+        pm_node_t *node = pm_parse(&parser);
+        pm_print_node(&parser, node);
+        pm_node_destroy(&parser, node);
+        pm_parser_free(&parser);
     }
 
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {

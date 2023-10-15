@@ -157,23 +157,6 @@ static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, con
 VALUE rb_io_gets_internal(VALUE io);
 
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
-
-static int
-strterm_is_heredoc(VALUE strterm)
-{
-    return ((rb_strterm_t *)strterm)->flags & STRTERM_HEREDOC;
-}
-
-static VALUE
-new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
-{
-    rb_strterm_t *imemo = (rb_strterm_t *)rb_imemo_new(imemo_parser_strterm, v1, v2, v3, v0);
-    if (heredoc) {
-        imemo->flags |= STRTERM_HEREDOC;
-    }
-
-    return (VALUE)imemo;
-}
 #endif /* !UNIVERSAL_PARSER */
 
 static inline int
@@ -7625,6 +7608,30 @@ parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *
     return str;
 }
 
+static int
+strterm_is_heredoc(rb_strterm_t *strterm)
+{
+    return strterm->flags & STRTERM_HEREDOC;
+}
+
+static rb_strterm_t *
+new_strterm(struct parser_params *p, int func, int term, int paren)
+{
+    rb_strterm_t *strterm = ZALLOC(rb_strterm_t);
+    strterm->u.literal.func = func;
+    strterm->u.literal.term = term;
+    strterm->u.literal.paren = paren;
+    return strterm;
+}
+
+static rb_strterm_t *
+new_heredoc(struct parser_params *p)
+{
+    rb_strterm_t *strterm = ZALLOC(rb_strterm_t);
+    strterm->flags |= STRTERM_HEREDOC;
+    return strterm;
+}
+
 #define peek(p,c) peek_n(p, (c), 0)
 #define peek_n(p,c,n) (!lex_eol_n_p(p, n) && (c) == (unsigned char)(p)->lex.pcur[n])
 #define peekc(p) peekc_n(p, 0)
@@ -7851,8 +7858,8 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
     int codepoint = (int)ruby_scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
     p->lex.pcur += numlen;
     if (p->lex.strterm == NULL ||
-        (strterm_is_heredoc((VALUE)p->lex.strterm)) ||
-        (p->lex.strterm->u.literal.u1.func != str_regexp)) {
+        strterm_is_heredoc(p->lex.strterm) ||
+        (p->lex.strterm->u.literal.func != str_regexp)) {
         if (wide ? (numlen == 0 || numlen > 6) : (numlen < 4))  {
             literal_flush(p, p->lex.pcur);
             yyerror0("invalid Unicode escape");
@@ -7908,7 +7915,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
     if (regexp_literal) { tokadd(p, '\\'); tokadd(p, 'u'); }
 
     if (peek(p, open_brace)) {  /* handle \u{...} form */
-        if (regexp_literal && p->lex.strterm->u.literal.u1.func == str_regexp) {
+        if (regexp_literal && p->lex.strterm->u.literal.func == str_regexp) {
             /*
              * Skip parsing validation code and copy bytes as-is until term or
              * closing brace, in order to correctly handle extended regexps where
@@ -8435,9 +8442,7 @@ tokadd_string(struct parser_params *p,
     return c;
 }
 
-/* imemo_parser_strterm for literal */
-#define NEW_STRTERM(func, term, paren) \
-    (rb_strterm_t *)new_strterm((VALUE)(func), (VALUE)(paren), (VALUE)(term), 0, 0)
+#define NEW_STRTERM(func, term, paren) new_strterm(p, func, term, paren)
 
 #ifdef RIPPER
 static void
@@ -8548,6 +8553,7 @@ parser_peek_variable_name(struct parser_params *p)
 static inline enum yytokentype
 parser_string_term(struct parser_params *p, int func)
 {
+    xfree(p->lex.strterm);
     p->lex.strterm = 0;
     if (func & STR_FUNC_REGEXP) {
         set_yylval_num(regx_options(p));
@@ -8567,9 +8573,9 @@ parser_string_term(struct parser_params *p, int func)
 static enum yytokentype
 parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
 {
-    int func = (int)quote->u1.func;
-    int term = (int)quote->u3.term;
-    int paren = (int)quote->u2.paren;
+    int func = quote->func;
+    int term = quote->term;
+    int paren = quote->paren;
     int c, space = 0;
     rb_encoding *enc = p->enc;
     rb_encoding *base_enc = 0;
@@ -8578,6 +8584,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
     if (func & STR_FUNC_TERM) {
         if (func & STR_FUNC_QWORDS) nextc(p); /* delayed term */
         SET_LEX_STATE(EXPR_END);
+        xfree(p->lex.strterm);
         p->lex.strterm = 0;
         return func & STR_FUNC_REGEXP ? tREGEXP_END : tSTRING_END;
     }
@@ -8587,12 +8594,12 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
         space = 1;
     }
     if (func & STR_FUNC_LIST) {
-        quote->u1.func &= ~STR_FUNC_LIST;
+        quote->func &= ~STR_FUNC_LIST;
         space = 1;
     }
-    if (c == term && !quote->u0.nest) {
+    if (c == term && !quote->nest) {
         if (func & STR_FUNC_QWORDS) {
-            quote->u1.func |= STR_FUNC_TERM;
+            quote->func |= STR_FUNC_TERM;
             pushback(p, c); /* dispatch the term at tSTRING_END */
             add_delayed_token(p, p->lex.ptok, p->lex.pcur, __LINE__);
             return ' ';
@@ -8612,7 +8619,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
         c = nextc(p);
     }
     pushback(p, c);
-    if (tokadd_string(p, func, term, paren, &quote->u0.nest,
+    if (tokadd_string(p, func, term, paren, &quote->nest,
                       &enc, &base_enc) == -1) {
         if (p->eofp) {
 #ifndef RIPPER
@@ -8624,6 +8631,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
             if (func & STR_FUNC_QWORDS) {
                 /* no content to add, bailing out here */
                 unterminated_literal("unterminated list meets end of file");
+                xfree(p->lex.strterm);
                 p->lex.strterm = 0;
                 return tSTRING_END;
             }
@@ -8633,7 +8641,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
             else {
                 unterminated_literal("unterminated string meets end of file");
             }
-            quote->u1.func |= STR_FUNC_TERM;
+            quote->func |= STR_FUNC_TERM;
         }
     }
 
@@ -8714,13 +8722,15 @@ heredoc_identifier(struct parser_params *p)
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
 
-    p->lex.strterm = (rb_strterm_t *)new_strterm(0, 0, 0, p->lex.lastline, 1);
+    p->lex.strterm = new_heredoc(p);
     rb_strterm_heredoc_t *here = &p->lex.strterm->u.heredoc;
     here->offset = offset;
     here->sourceline = p->ruby_sourceline;
-    here->length = (int)len;
+    here->length = (unsigned)len;
     here->quote = quote;
     here->func = func;
+    here->lastline = p->lex.lastline;
+    rb_ast_add_mark_object(p->ast, p->lex.lastline);
 
     token_flush(p);
     p->heredoc_indent = indent;
@@ -8732,6 +8742,7 @@ static void
 heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
 {
     VALUE line;
+    rb_strterm_t *term = p->lex.strterm;
 
     p->lex.strterm = 0;
     line = here->lastline;
@@ -8744,6 +8755,8 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->ruby_sourceline = (int)here->sourceline;
     if (p->eofp) p->lex.nextline = Qnil;
     p->eofp = 0;
+    xfree(term);
+    rb_ast_delete_mark_object(p->ast, line);
 }
 
 static int
@@ -9007,7 +9020,6 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
         compile_error(p, "can't find string \"%.*s\" anywhere before EOF",
                       (int)len, eos);
         token_flush(p);
-        p->lex.strterm = 0;
         SET_LEX_STATE(EXPR_END);
         return tSTRING_END;
     }
@@ -9027,7 +9039,6 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
       restore:
         heredoc_restore(p, &p->lex.strterm->u.heredoc);
         token_flush(p);
-        p->lex.strterm = 0;
         SET_LEX_STATE(EXPR_END);
         return tSTRING_END;
     }
@@ -10417,7 +10428,7 @@ parser_yylex(struct parser_params *p)
     int token_seen = p->token_seen;
 
     if (p->lex.strterm) {
-        if (strterm_is_heredoc((VALUE)p->lex.strterm)) {
+        if (strterm_is_heredoc(p->lex.strterm)) {
             token_flush(p);
             return here_document(p, &p->lex.strterm->u.heredoc);
         }
@@ -12815,7 +12826,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         break;
       case NODE_STR:
         nd_set_type(symbol, NODE_LIT);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(symbol)->nd_lit = rb_str_intern(RNODE_STR(symbol)->nd_lit));
+        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(symbol)->nd_lit = rb_str_intern(RNODE_LIT(symbol)->nd_lit));
         break;
       default:
         compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
@@ -12841,7 +12852,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
             VALUE src = RNODE_STR(node)->nd_lit;
             nd_set_type(node, NODE_LIT);
             nd_set_loc(node, loc);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(node)->nd_lit = reg_compile(p, src, options));
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit = reg_compile(p, src, options));
         }
         break;
       default:
@@ -12881,7 +12892,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
         if (!RNODE_DREGX(node)->nd_next) {
             VALUE src = RNODE_DREGX(node)->nd_lit;
             nd_set_type(node, NODE_LIT);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_DREGX(node)->nd_lit = reg_compile(p, src, options));
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit = reg_compile(p, src, options));
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);
@@ -13584,7 +13595,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_STR:
         lit = rb_fstring(RNODE_STR(value)->nd_lit);
         nd_set_type(value, NODE_LIT);
-        RB_OBJ_WRITE(p->ast, &RNODE_STR(value)->nd_lit, lit);
+        RB_OBJ_WRITE(p->ast, &RNODE_LIT(value)->nd_lit, lit);
         return value;
 
       case NODE_ZLIST:
@@ -15417,7 +15428,6 @@ rb_ruby_parser_mark(void *ptr)
     rb_gc_mark(p->lex.lastline);
     rb_gc_mark(p->lex.nextline);
     rb_gc_mark(p->ruby_sourcefile_string);
-    rb_gc_mark((VALUE)p->lex.strterm);
     rb_gc_mark((VALUE)p->ast);
     rb_gc_mark(p->case_labels);
     rb_gc_mark(p->delayed.token);
@@ -15709,16 +15719,6 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
     rb_ruby_parser_set_yydebug(p, RTEST(flag));
     return flag;
-}
-
-void
-rb_strterm_mark(VALUE obj)
-{
-    rb_strterm_t *strterm = (rb_strterm_t*)obj;
-    if (RBASIC(obj)->flags & STRTERM_HEREDOC) {
-        rb_strterm_heredoc_t *heredoc = &strterm->u.heredoc;
-        rb_gc_mark(heredoc->lastline);
-    }
 }
 #endif /* !UNIVERSAL_PARSER */
 

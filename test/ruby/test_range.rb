@@ -977,6 +977,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal 41, (1...42).size
     assert_equal 6, (1...6.3).size
     assert_equal 5, (1.1...6).size
+    assert_equal 3, (1..3r).size
+    assert_equal 2, (1...3r).size
+    assert_equal 3, (1..3.1r).size
+    assert_equal 3, (1...3.1r).size
     assert_equal 42, (1..42).each.size
     assert_nil ("a"..."z").size
     assert_nil ("a"...).size
