@@ -1,3 +1,27 @@
+# regression test for callee block handler overlapping with arguments
+assert_equal '3', %q{
+  def foo(_req, *args) = args.last
+
+  def call_foo = foo(0, 1, 2, 3, &->{})
+
+  call_foo
+}
+
+# call leaf builtin with a block argument
+assert_equal '0', "0.abs(&nil)"
+
+# regression test for invokeblock iseq guard
+assert_equal 'ok', %q{
+  return :ok unless defined?(GC.compact)
+  def foo = yield
+  10.times do |i|
+    ret = eval("foo { #{i} }")
+    raise "failed at #{i}" unless ret == i
+    GC.compact
+  end
+  :ok
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
   # In faulty versions, the following happens:
@@ -1831,6 +1855,24 @@ assert_equal 'true', %q{
   end
   jittable_method
 }
+
+# test getbyte on string class
+assert_equal '[97, :nil, 97, :nil, :raised]', %q{
+  def getbyte(s, i)
+   byte = begin
+    s.getbyte(i)
+   rescue TypeError
+    :raised
+   end
+
+   byte || :nil
+  end
+
+  getbyte("a", 0)
+  getbyte("a", 0)
+
+  [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
 
 # Test << operator on string subclass
 assert_equal 'abab', %q{
@@ -4151,3 +4193,6 @@ assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 212
 
   [r1, r2, r3, r4, r5]
 }
+
+# Integer multiplication and overflow (minimized regression test from test-basic)
+assert_equal '8515157028618240000', %q{2128789257154560000 * 4}

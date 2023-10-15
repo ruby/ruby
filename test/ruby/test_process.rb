@@ -665,6 +665,7 @@ class TestProcess < Test::Unit::TestCase
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_raise
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -682,15 +683,21 @@ class TestProcess < Test::Unit::TestCase
           puts "ok"
         end
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.5
         Process.kill(:USR1, io.pid)
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)} if pid
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_print
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -703,14 +710,25 @@ class TestProcess < Test::Unit::TestCase
         puts "start"
         system("cat", :in => "fifo")
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
+        sleep 0.2 # wait for the child to return to opening "fifo".
+        # On arm64-darwin22, often deadlocks while the child is
+        # opening "fifo".  Not sure to where "ok" line being written
+        # at the next has gone.
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    if pid
+      assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)}
+    end
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_pipe
@@ -1437,8 +1455,15 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s, s)
       assert_equal(s, s.to_i)
 
-      assert_equal(s.to_i & 0x55555555, s & 0x55555555)
-      assert_equal(s.to_i >> 1, s >> 1)
+      assert_deprecated_warn(/\buse .*Process::Status/) do
+        assert_equal(s.to_i & 0x55555555, s & 0x55555555)
+      end
+      assert_deprecated_warn(/\buse .*Process::Status/) do
+        assert_equal(s.to_i >> 1, s >> 1)
+      end
+      assert_raise(ArgumentError) do
+        s >> -1
+      end
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
 
@@ -2706,6 +2731,9 @@ EOS
   def test_warmup_run_major_gc_and_compact
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      # Run a GC to ensure that we are not in the middle of a GC run
+      GC.start
+
       major_gc_count = GC.stat(:major_gc_count)
       compact_count = GC.stat(:compact_count)
       Process.warmup
@@ -2729,6 +2757,8 @@ EOS
   def test_warmup_frees_pages
     assert_separately([{"RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO" => "1.0"}, "-W0"], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      GC.start
+
       TIMES = 10_000
       ary = Array.new(TIMES)
       TIMES.times do |i|
@@ -2737,13 +2767,16 @@ EOS
       ary.clear
       ary = nil
 
+      # Disable GC so we can make sure GC only runs in Process.warmup
+      GC.disable
+
       total_pages_before = GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages)
 
       Process.warmup
 
       # Number of pages freed should cause equal increase in number of allocatable pages.
       assert_equal(total_pages_before, GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages))
-      assert_equal(0, GC.stat(:heap_tomb_pages))
+      assert_equal(0, GC.stat(:heap_tomb_pages), GC.stat)
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
     end;
   end

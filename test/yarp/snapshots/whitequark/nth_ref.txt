@@ -1,4 +1,0 @@
-ProgramNode(0...3)(
-  [],
-  StatementsNode(0...3)([NumberedReferenceReadNode(0...3)(10)])
-)

@@ -1,0 +1,37 @@
+@ ProgramNode (location: (1,0)-(7,14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(7,14))
+    └── body: (length: 4)
+        ├── @ YieldNode (location: (1,0)-(1,5))
+        │   ├── keyword_loc: (1,0)-(1,5) = "yield"
+        │   ├── lparen_loc: ∅
+        │   ├── arguments: ∅
+        │   └── rparen_loc: ∅
+        ├── @ YieldNode (location: (3,0)-(3,7))
+        │   ├── keyword_loc: (3,0)-(3,5) = "yield"
+        │   ├── lparen_loc: (3,5)-(3,6) = "("
+        │   ├── arguments: ∅
+        │   └── rparen_loc: (3,6)-(3,7) = ")"
+        ├── @ YieldNode (location: (5,0)-(5,8))
+        │   ├── keyword_loc: (5,0)-(5,5) = "yield"
+        │   ├── lparen_loc: (5,5)-(5,6) = "("
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (5,6)-(5,7))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (5,6)-(5,7))
+        │   │           └── flags: decimal
+        │   └── rparen_loc: (5,7)-(5,8) = ")"
+        └── @ YieldNode (location: (7,0)-(7,14))
+            ├── keyword_loc: (7,0)-(7,5) = "yield"
+            ├── lparen_loc: (7,5)-(7,6) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (7,6)-(7,13))
+            │   └── arguments: (length: 3)
+            │       ├── @ IntegerNode (location: (7,6)-(7,7))
+            │       │   └── flags: decimal
+            │       ├── @ IntegerNode (location: (7,9)-(7,10))
+            │       │   └── flags: decimal
+            │       └── @ IntegerNode (location: (7,12)-(7,13))
+            │           └── flags: decimal
+            └── rparen_loc: (7,13)-(7,14) = ")"

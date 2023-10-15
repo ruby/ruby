@@ -133,9 +133,9 @@ class Gem::BasicSpecification
 
   def full_name
     if platform == Gem::Platform::RUBY || platform.nil?
-      "#{name}-#{version}".dup.tap(&Gem::UNTAINT)
+      (+"#{name}-#{version}").tap(&Gem::UNTAINT)
     else
-      "#{name}-#{version}-#{platform}".dup.tap(&Gem::UNTAINT)
+      (+"#{name}-#{version}-#{platform}").tap(&Gem::UNTAINT)
     end
   end
 

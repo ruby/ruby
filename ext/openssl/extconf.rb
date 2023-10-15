@@ -45,13 +45,6 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
-##
-# Adds -DOSSL_DEBUG for compilation and some more targets when GCC is used
-# To turn it on, use: --with-debug or --enable-debug
-#
-if with_config("debug") or enable_config("debug")
-  $defs.push("-DOSSL_DEBUG")
-end
 $defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
 have_func("rb_io_descriptor")

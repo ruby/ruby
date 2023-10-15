@@ -22,20 +22,23 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
   def test_execute
     @cmd.options[:args] = %w[foo]
-    @cmd.options[:editor] = "#{ruby_with_rubygems_in_load_path} -eexit --"
+    @cmd.options[:editor] = (ruby_with_rubygems_in_load_path + ["-e", "puts(ARGV,Dir.pwd)", "--"]).join(" ")
 
     gem "foo", "1.0.0"
     spec = gem "foo", "1.0.1"
 
     assert_nothing_raised Gem::MockGemUi::TermError do
-      Dir.stub(:chdir, spec.full_gem_path) do
+      stdout, stderr = capture_subprocess_io do
         use_ui @ui do
           @cmd.execute
         end
       end
+      assert_equal [spec.full_gem_path, spec.full_gem_path], stdout.split("\n")
+      assert_equal "", stderr
     end
 
     assert_equal "", @ui.error
+    assert_equal "", @ui.output
   end
 
   def test_wrong_version

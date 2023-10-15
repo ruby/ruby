@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Support for encoding and decoding binary data using a Base64 representation.}
   spec.description   = %q{Support for encoding and decoding binary data using a Base64 representation.}
   spec.homepage      = "https://github.com/ruby/base64"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.4")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

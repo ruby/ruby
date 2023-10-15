@@ -447,13 +447,12 @@ class TestSocket < Test::Unit::TestCase
         omit "UDP server is no response: #{$!}"
       ensure
         if th
-          if skipped
-            Thread.kill th unless th.join(10)
-          else
+          unless skipped
             Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
-            unless th.join(10)
-              Thread.kill th
-              th.join(10)
+          end
+          unless th.join(10)
+            th.kill.join(10)
+            unless skipped
               raise "thread killed"
             end
           end
@@ -497,6 +496,7 @@ class TestSocket < Test::Unit::TestCase
       assert(stamp.cmsg_is?(:SOCKET, type))
       w.close # stop th
       n = th.value
+      th = nil
       n > 1 and
         warn "UDP packet loss for #{type} over loopback, #{n} tries needed"
       t2 = Time.now.strftime("%Y-%m-%d")
@@ -505,6 +505,10 @@ class TestSocket < Test::Unit::TestCase
       t = stamp.timestamp
       assert_match(pat, t.strftime("%Y-%m-%d"))
       stamp
+    ensure
+      if th and !th.join(10)
+        th.kill.join(10)
+      end
     end
   end
 

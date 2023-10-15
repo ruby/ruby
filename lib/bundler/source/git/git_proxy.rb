@@ -43,6 +43,13 @@ module Bundler
         end
       end
 
+      class AmbiguousGitReference < GitError
+        def initialize(options)
+          msg = "Specification of branch or ref with tag is ambiguous. You specified #{options.inspect}"
+          super msg
+        end
+      end
+
       # The GitProxy is responsible to interact with git repositories.
       # All actions required by the Git source is encapsulated in this
       # object.
@@ -53,10 +60,15 @@ module Bundler
         def initialize(path, uri, options = {}, revision = nil, git = nil)
           @path     = path
           @uri      = uri
-          @branch   = options["branch"]
           @tag      = options["tag"]
+          @branch   = options["branch"]
           @ref      = options["ref"]
-          @explicit_ref = branch || tag || ref
+          if @tag
+            raise AmbiguousGitReference.new(options) if @branch || @ref
+            @explicit_ref = @tag
+          else
+            @explicit_ref = @ref || @branch
+          end
           @revision = revision
           @git      = git
           @commit_ref = nil
@@ -118,7 +130,8 @@ module Bundler
             end
           end
 
-          git "fetch", "--force", "--quiet", *extra_fetch_args, :dir => destination if @commit_ref
+          ref = @commit_ref || (locked_to_full_sha? && @revision)
+          git "fetch", "--force", "--quiet", *extra_fetch_args(ref), :dir => destination if ref
 
           git "reset", "--hard", @revision, :dir => destination
 
@@ -235,7 +248,15 @@ module Bundler
         end
 
         def pinned_to_full_sha?
-          ref =~ /\A\h{40}\z/
+          full_sha_revision?(ref)
+        end
+
+        def locked_to_full_sha?
+          full_sha_revision?(@revision)
+        end
+
+        def full_sha_revision?(ref)
+          ref&.match?(/\A\h{40}\z/)
         end
 
         def git_null(*command, dir: nil)
@@ -399,9 +420,9 @@ module Bundler
           ["--depth", depth.to_s]
         end
 
-        def extra_fetch_args
+        def extra_fetch_args(ref)
           extra_args = [path.to_s, *depth_args]
-          extra_args.push(@commit_ref)
+          extra_args.push(ref)
           extra_args
         end
 

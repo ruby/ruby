@@ -100,8 +100,17 @@ RSpec.describe "Resolving" do
   end
 
   it "raises an exception if a child dependency is not resolved" do
-    @index = a_unresovable_child_index
+    @index = a_unresolvable_child_index
     dep "chef_app_error"
+    expect do
+      resolve
+    end.to raise_error(Bundler::SolveFailure)
+  end
+
+  it "does not try to re-resolve including prereleases if gems involved don't have prereleases" do
+    @index = a_unresolvable_child_index
+    dep "chef_app_error"
+    expect(Bundler.ui).not_to receive(:debug).with("Retrying resolution...", any_args)
     expect do
       resolve
     end.to raise_error(Bundler::SolveFailure)

@@ -369,6 +369,49 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
+#if USE_YJIT
+// Counter to serve as a proxy for execution time, total number of calls
+static uint64_t yjit_total_entry_hits = 0;
+
+// Number of calls used to estimate how hot an ISEQ is
+#define YJIT_CALL_COUNT_INTERV 20u
+
+/// Test whether we are ready to compile an ISEQ or not
+static inline bool
+rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
+{
+    yjit_total_entry_hits += 1;
+
+    // Record the number of calls at the beginning of the interval
+    if (entry_calls + YJIT_CALL_COUNT_INTERV == rb_yjit_call_threshold) {
+        iseq->body->yjit_calls_at_interv = yjit_total_entry_hits;
+    }
+
+    // Try to estimate the total time taken (total number of calls) to reach 20 calls to this ISEQ
+    // This give us a ratio of how hot/cold this ISEQ is
+    if (entry_calls == rb_yjit_call_threshold) {
+        // We expect threshold 1 to compile everything immediately
+        if (rb_yjit_call_threshold < YJIT_CALL_COUNT_INTERV) {
+            return true;
+        }
+
+        uint64_t num_calls = yjit_total_entry_hits - iseq->body->yjit_calls_at_interv;
+
+        // Reject ISEQs that don't get called often enough
+        if (num_calls > rb_yjit_cold_threshold) {
+            rb_yjit_incr_counter("cold_iseq_entry");
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+#else
+#define rb_yjit_threshold_hit(iseq, entry_calls) false
+#endif
+
 #if USE_RJIT || USE_YJIT
 // Generate JIT code that supports the following kinds of ISEQ entries:
 //   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
@@ -396,10 +439,8 @@ jit_compile(rb_execution_context_t *ec)
                 rb_yjit_compile_iseq(iseq, ec, false);
             }
         }
-        else { // rb_rjit_call_p
-            if (body->jit_entry_calls == rb_rjit_call_threshold()) {
-                rb_rjit_compile(iseq);
-            }
+        else if (body->jit_entry_calls == rb_rjit_call_threshold()) {
+            rb_rjit_compile(iseq);
         }
     }
     return body->jit_entry;
@@ -442,10 +483,11 @@ jit_compile_exception(rb_execution_context_t *ec)
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_exception == NULL) {
         body->jit_exception_calls++;
-        if (rb_yjit_threshold_hit(iseq, body->jit_exception_calls)) {
+        if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
+
     return body->jit_exception;
 }
 
@@ -488,13 +530,14 @@ bool ruby_vm_keep_script_lines;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+
 #ifdef RUBY_NT_SERIAL
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
 
-#ifdef __APPLE__
+// no-inline decl on thread_pthread.h
 rb_execution_context_t *
-rb_current_ec(void)
+rb_current_ec_noinline(void)
 {
     return ruby_current_ec;
 }
@@ -504,8 +547,16 @@ rb_current_ec_set(rb_execution_context_t *ec)
 {
     ruby_current_ec = ec;
 }
-#endif
 
+
+#ifdef __APPLE__
+rb_execution_context_t *
+rb_current_ec(void)
+{
+    return ruby_current_ec;
+}
+
+#endif
 #else
 native_tls_key_t ruby_current_ec_key;
 #endif
@@ -1384,7 +1435,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_execution_context_t *ec = GET_EC();
     const rb_iseq_t *base_iseq, *iseq;
     rb_ast_body_t ast;
-    NODE tmp_node;
+    rb_node_scope_t tmp_node;
 
     if (dyncount < 0) return 0;
 
@@ -1396,8 +1447,12 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     dyns->size = dyncount;
     MEMCPY(dyns->ids, dynvars, ID, dyncount);
 
-    rb_node_init(&tmp_node, NODE_SCOPE, (VALUE)dyns, 0, 0);
-    ast.root = &tmp_node;
+    rb_node_init(RNODE(&tmp_node), NODE_SCOPE);
+    tmp_node.nd_tbl = dyns;
+    tmp_node.nd_body = 0;
+    tmp_node.nd_args = 0;
+
+    ast.root = RNODE(&tmp_node);
     ast.frozen_string_literal = -1;
     ast.coverage_enabled = -1;
     ast.script_lines = INT2FIX(-1);
@@ -1744,6 +1799,17 @@ void
 rb_lastline_set(VALUE val)
 {
     vm_svar_set(GET_EC(), VM_SVAR_LASTLINE, val);
+}
+
+void
+rb_lastline_set_up(VALUE val, unsigned int up)
+{
+    rb_control_frame_t * cfp = GET_EC()->cfp;
+
+    for(unsigned int i = 0; i < up; i++) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    vm_cfp_svar_set(GET_EC(), cfp, VM_SVAR_LASTLINE, val);
 }
 
 /* misc */
@@ -2743,6 +2809,8 @@ rb_vm_update_references(void *ptr)
 
         rb_gc_update_tbl_refs(vm->overloaded_cme_table);
 
+        rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
+
         if (vm->coverages) {
             vm->coverages = rb_gc_location(vm->coverages);
             vm->me2counter = rb_gc_location(vm->me2counter);
@@ -2786,6 +2854,8 @@ vm_mark_negative_cme(VALUE val, void *dmy)
     rb_gc_mark(val);
     return ID_TABLE_CONTINUE;
 }
+
+void rb_thread_sched_mark_zombies(rb_vm_t *vm);
 
 void
 rb_vm_mark(void *ptr)
@@ -2858,6 +2928,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
+        rb_thread_sched_mark_zombies(vm);
         rb_rjit_mark();
     }
 
@@ -3271,11 +3342,15 @@ thread_mark(void *ptr)
     RUBY_MARK_LEAVE("thread");
 }
 
+void rb_threadptr_sched_free(rb_thread_t *th); // thread_*.c
+
 static void
 thread_free(void *ptr)
 {
     rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
+
+    rb_threadptr_sched_free(th);
 
     if (th->locking_mutex != Qfalse) {
         rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
@@ -3290,7 +3365,8 @@ thread_free(void *ptr)
         RUBY_GC_INFO("MRI main thread\n");
     }
     else {
-        ruby_xfree(th->nt); // TODO
+        // ruby_xfree(th->nt);
+        // TODO: MN system collect nt, but without MN system it should be freed here.
         ruby_xfree(th);
     }
 
@@ -3411,8 +3487,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
 #if USE_RUBY_DEBUG_LOG
-    static rb_atomic_t thread_serial = 0;
+    static rb_atomic_t thread_serial = 1;
     th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
+
+    RUBY_DEBUG_LOG("th:%u", th->serial);
 #endif
 }
 
@@ -3540,7 +3618,7 @@ extern size_t rb_gc_stack_maxsize;
 static VALUE
 sdr(VALUE self)
 {
-    rb_vm_bugreport(NULL);
+    rb_vm_bugreport(NULL, stderr);
     return Qnil;
 }
 
@@ -3662,6 +3740,7 @@ Init_VM(void)
 {
     VALUE opts;
     VALUE klass;
+    VALUE fcore;
 
     /*
      * Document-class: RubyVM
@@ -3687,8 +3766,9 @@ Init_VM(void)
 #endif
 
     /* FrozenCore (hidden) */
-    VALUE fcore = rb_mRubyVMFrozenCore = rb_iclass_alloc(rb_cBasicObject);
+    fcore = rb_class_new(rb_cBasicObject);
     rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
+    RBASIC(fcore)->flags = T_ICLASS;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
@@ -3707,6 +3787,8 @@ Init_VM(void)
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
+    rb_gc_register_mark_object(rb_class_path_cached(fcore));
+    rb_mRubyVMFrozenCore = fcore;
 
     /*
      * Document-class: Thread
@@ -4036,8 +4118,11 @@ Init_BareVM(void)
 
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
+
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+#endif
 }
 
 #ifndef _WIN32

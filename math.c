@@ -538,6 +538,7 @@ math_log_split(VALUE x, size_t *numbits)
 # define log_intermediate log2
 #else
 # define log_intermediate log10
+double log2(double x);
 #endif
 
 VALUE
@@ -561,14 +562,14 @@ rb_math_log(int argc, const VALUE *argv)
             return DBL2NUM(-0.0);
         }
         d = log_intermediate(d) / log_intermediate(b);
-        numbits -= numbits_2;
+        d += (numbits - numbits_2) / log2(b);
     }
     else {
         /* check for pole error */
         if (d == 0.0) return DBL2NUM(-HUGE_VAL);
         d = log(d);
+        d += numbits * M_LN2;
     }
-    d += numbits * M_LN2;
     return DBL2NUM(d);
 }
 
@@ -730,7 +731,7 @@ rb_math_sqrt(VALUE x)
  *    cbrt(1.0)       # => 1.0
  *    cbrt(0.0)       # => 0.0
  *    cbrt(1.0)       # => 1.0
-      cbrt(2.0)       # => 1.2599210498948732
+ *    cbrt(2.0)       # => 1.2599210498948732
  *    cbrt(8.0)       # => 2.0
  *    cbrt(27.0)      # => 3.0
  *    cbrt(INFINITY)  # => Infinity

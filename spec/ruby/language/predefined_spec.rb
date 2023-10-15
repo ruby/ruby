@@ -1037,7 +1037,7 @@ describe "Global variable $0" do
 
   it "is the path given as the main script and the same as __FILE__" do
     script = "fixtures/dollar_zero.rb"
-    Dir.chdir(File.dirname(__FILE__)) do
+    Dir.chdir(__dir__) do
       ruby_exe(script).should == "#{script}\n#{script}\nOK"
     end
   end

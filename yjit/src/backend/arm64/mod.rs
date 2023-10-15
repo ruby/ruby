@@ -184,6 +184,10 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
     }
 }
 
+/// List of registers that can be used for stack temps.
+/// These are caller-saved registers.
+pub static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
+
 impl Assembler
 {
     // Special scratch registers for intermediate processing.
@@ -191,10 +195,6 @@ impl Assembler
     pub const SCRATCH_REG: Reg = X16_REG;
     const SCRATCH0: A64Opnd = A64Opnd::Reg(Assembler::SCRATCH_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
-
-    /// List of registers that can be used for stack temps.
-    /// These are caller-saved registers.
-    pub const TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
@@ -824,7 +824,6 @@ impl Assembler
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            let mut next_insn_idx = insn_idx + 1;
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -878,8 +877,9 @@ impl Assembler
                 },
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is jo (jump on overflow)
-                    match self.insns.get(insn_idx + 1) {
-                        Some(Insn::Jo(target)) => {
+                    match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
+                        (Some(Insn::JoMul(target)), _) |
+                        (Some(Insn::PosMarker(_)), Some(Insn::JoMul(target))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::SCRATCH0, left.into(), right.into());
 
@@ -895,9 +895,7 @@ impl Assembler
                             // If the high 64-bits are not all zeros or all ones,
                             // matching the sign bit, then we have an overflow
                             cmp(cb, Self::SCRATCH0, Self::SCRATCH1);
-                            emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb));
-
-                            next_insn_idx += 1;
+                            // Insn::JoMul will emit_conditional_jump::<{Condition::NE}>
                         }
                         _ => {
                             mul(cb, out.into(), left.into(), right.into());
@@ -1120,7 +1118,7 @@ impl Assembler
                 Insn::Je(target) | Insn::Jz(target) => {
                     emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(*target, self, ocb));
                 },
-                Insn::Jne(target) | Insn::Jnz(target) => {
+                Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
                     emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jl(target) => {
@@ -1197,7 +1195,7 @@ impl Assembler
                     return Err(());
                 }
             } else {
-                insn_idx = next_insn_idx;
+                insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
@@ -1636,7 +1634,7 @@ mod tests {
     fn test_replace_mov_with_ldur() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::mem(64, CFP, 8));
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::mem(64, CFP, 8));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_disasm!(cb, "618240f8", {"
@@ -1648,8 +1646,8 @@ mod tests {
     fn test_not_split_mov() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(0xffff));
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(0x10000));
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::UImm(0xffff));
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::UImm(0x10000));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_disasm!(cb, "e1ff9fd2e10370b2", {"
@@ -1663,7 +1661,7 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
 
         let out = asm.csel_l(Qtrue.into(), Qfalse.into());
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), out);
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
         assert_disasm!(cb, "8b0280d20c0080d261b18c9a", {"

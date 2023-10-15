@@ -607,6 +607,10 @@ double_as_int64(double d)
 static int
 is_integer_p(VALUE v)
 {
+    if (rb_integer_type_p(v)) {
+        return true;
+    }
+
     ID id_integer_p;
     VALUE is_int;
     CONST_ID(id_integer_p, "integer?");
@@ -649,26 +653,29 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 
     VALUE low = rb_to_int(beg);
     VALUE high = rb_to_int(end);
-    VALUE mid, org_high;
+    VALUE mid;
     ID id_div;
     CONST_ID(id_div, "div");
 
-    if (excl) high = rb_funcall(high, '-', 1, INT2FIX(1));
-    org_high = high;
+    if (!excl) high = rb_funcall(high, '+', 1, INT2FIX(1));
+    low = rb_funcall(low, '-', 1, INT2FIX(1));
 
-    while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
-        mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
+    /*
+     * This loop must continue while low + 1 < high.
+     * Instead of checking low + 1 < high, check low < mid, where mid = (low + high) / 2.
+     * This is to avoid the cost of calculating low + 1 on each iteration.
+     * Note that this condition replacement is valid because Integer#div always rounds
+     * towards negative infinity.
+     */
+    while (mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2)),
+           rb_cmpint(rb_funcall(low, id_cmp, 1, mid), low, mid) < 0) {
         BSEARCH_CHECK(mid);
         if (smaller) {
             high = mid;
         }
         else {
-            low = rb_funcall(mid, '+', 1, INT2FIX(1));
+            low = mid;
         }
-    }
-    if (rb_equal(low, org_high)) {
-        BSEARCH_CHECK(low);
-        if (!smaller) return Qnil;
     }
     return satisfied;
 }
@@ -696,52 +703,58 @@ range_bsearch(VALUE range)
      * by the mantissa. This is true with or without implicit bit.
      *
      * Finding the average of two ints needs to be careful about
-     * potential overflow (since float to long can use 64 bits)
-     * as well as the fact that -1/2 can be 0 or -1 in C89.
+     * potential overflow (since float to long can use 64 bits).
+     *
+     * The half-open interval (low, high] indicates where the target is located.
+     * The loop continues until low and high are adjacent.
+     *
+     * -1/2 can be either 0 or -1 in C89. However, when low and high are not adjacent,
+     * the rounding direction of mid = (low + high) / 2 does not affect the result of
+     * the binary search.
      *
      * Note that -0.0 is mapped to the same int as 0.0 as we don't want
      * (-1...0.0).bsearch to yield -0.0.
      */
 
-#define BSEARCH(conv) \
+#define BSEARCH(conv, excl) \
     do { \
         RETURN_ENUMERATOR(range, 0, 0); \
-        if (EXCL(range)) high--; \
-        org_high = high; \
-        while (low < high) { \
+        if (!(excl)) high++; \
+        low--; \
+        while (low + 1 < high) { \
             mid = ((high < 0) == (low < 0)) ? low + ((high - low) / 2) \
-                : (low < -high) ? -((-1 - low - high)/2 + 1) : (low + high) / 2; \
+                : (low + high) / 2; \
             BSEARCH_CHECK(conv(mid)); \
             if (smaller) { \
                 high = mid; \
             } \
             else { \
-                low = mid + 1; \
+                low = mid; \
             } \
-        } \
-        if (low == org_high) { \
-            BSEARCH_CHECK(conv(low)); \
-            if (!smaller) return Qnil; \
         } \
         return satisfied; \
     } while (0)
 
+#define BSEARCH_FIXNUM(beg, end, excl) \
+    do { \
+        long low = FIX2LONG(beg); \
+        long high = FIX2LONG(end); \
+        long mid; \
+        BSEARCH(INT2FIX, (excl)); \
+    } while (0)
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
-        long low = FIX2LONG(beg);
-        long high = FIX2LONG(end);
-        long mid, org_high;
-        BSEARCH(INT2FIX);
+        BSEARCH_FIXNUM(beg, end, EXCL(range));
     }
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_FLOAT_TYPE_P(beg) || RB_FLOAT_TYPE_P(end)) {
         int64_t low  = double_as_int64(NIL_P(beg) ? -HUGE_VAL : RFLOAT_VALUE(rb_Float(beg)));
         int64_t high = double_as_int64(NIL_P(end) ?  HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
-        int64_t mid, org_high;
-        BSEARCH(int64_as_double_to_num);
+        int64_t mid;
+        BSEARCH(int64_as_double_to_num, EXCL(range));
     }
 #endif
     else if (is_integer_p(beg) && is_integer_p(end)) {
@@ -755,9 +768,15 @@ range_bsearch(VALUE range)
             VALUE mid = rb_funcall(beg, '+', 1, diff);
             BSEARCH_CHECK(mid);
             if (smaller) {
-                return bsearch_integer_range(beg, mid, 0);
+                if (FIXNUM_P(beg) && FIXNUM_P(mid)) {
+                    BSEARCH_FIXNUM(beg, mid, false);
+                }
+                else {
+                    return bsearch_integer_range(beg, mid, false);
+                }
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
+            beg = mid;
         }
     }
     else if (NIL_P(beg) && is_integer_p(end)) {
@@ -767,9 +786,15 @@ range_bsearch(VALUE range)
             VALUE mid = rb_funcall(end, '+', 1, diff);
             BSEARCH_CHECK(mid);
             if (!smaller) {
-                return bsearch_integer_range(mid, end, 0);
+                if (FIXNUM_P(mid) && FIXNUM_P(end)) {
+                    BSEARCH_FIXNUM(mid, end, false);
+                }
+                else {
+                    return bsearch_integer_range(mid, end, false);
+                }
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
+            end = mid;
         }
     }
     else {
@@ -996,6 +1021,139 @@ range_each(VALUE range)
                     rb_yield(beg);
         }
     }
+    return range;
+}
+
+RBIMPL_ATTR_NORETURN()
+static void
+range_reverse_each_bignum_beginless(VALUE end)
+{
+    RUBY_ASSERT(RBIGNUM_NEGATIVE_P(end));
+
+    for (;; end = rb_big_minus(end, INT2FIX(1))) {
+        rb_yield(end);
+    }
+    UNREACHABLE;
+}
+
+static void
+range_reverse_each_bignum(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(RBIGNUM_POSITIVE_P(beg) == RBIGNUM_POSITIVE_P(end));
+
+    VALUE c;
+    while ((c = rb_big_cmp(beg, end)) != INT2FIX(1)) {
+        rb_yield(end);
+        if (c == INT2FIX(0)) break;
+        end = rb_big_minus(end, INT2FIX(1));
+    }
+}
+
+static void
+range_reverse_each_positive_bignum_section(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(!NIL_P(end));
+
+    if (FIXNUM_P(end) || RBIGNUM_NEGATIVE_P(end)) return;
+
+    if (NIL_P(beg) || FIXNUM_P(beg) || RBIGNUM_NEGATIVE_P(beg)) {
+        beg = LONG2NUM(FIXNUM_MAX + 1);
+    }
+
+    range_reverse_each_bignum(beg, end);
+}
+
+static void
+range_reverse_each_fixnum_section(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(!NIL_P(end));
+
+    if (!FIXNUM_P(beg)) {
+        if (!NIL_P(beg) && RBIGNUM_POSITIVE_P(beg)) return;
+
+        beg = LONG2FIX(FIXNUM_MIN);
+    }
+
+    if (!FIXNUM_P(end)) {
+        if (RBIGNUM_NEGATIVE_P(end)) return;
+
+        end = LONG2FIX(FIXNUM_MAX);
+    }
+
+    long b = FIX2LONG(beg);
+    long e = FIX2LONG(end);
+    for (long i = e; i >= b; --i) {
+        rb_yield(LONG2FIX(i));
+    }
+}
+
+static void
+range_reverse_each_negative_bignum_section(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(!NIL_P(end));
+
+    if (FIXNUM_P(end) || RBIGNUM_POSITIVE_P(end)) {
+        end = LONG2NUM(FIXNUM_MIN - 1);
+    }
+
+    if (NIL_P(beg)) {
+        range_reverse_each_bignum_beginless(end);
+    }
+
+    if (FIXNUM_P(beg) || RBIGNUM_POSITIVE_P(beg)) return;
+
+    range_reverse_each_bignum(beg, end);
+}
+
+/*
+ *  call-seq:
+ *    reverse_each {|element| ... } -> self
+ *    reverse_each                  -> an_enumerator
+ *
+ *  With a block given, passes each element of +self+ to the block in reverse order:
+ *
+ *    a = []
+ *    (1..4).reverse_each {|element| a.push(element) } # => 1..4
+ *    a # => [4, 3, 2, 1]
+ *
+ *    a = []
+ *    (1...4).reverse_each {|element| a.push(element) } # => 1...4
+ *    a # => [3, 2, 1]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ */
+
+static VALUE
+range_reverse_each(VALUE range)
+{
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
+
+    VALUE beg = RANGE_BEG(range);
+    VALUE end = RANGE_END(range);
+    int excl = EXCL(range);
+
+    if (FIXNUM_P(beg) && FIXNUM_P(end)) {
+        if (excl) {
+            if (end == LONG2FIX(FIXNUM_MIN)) return range;
+
+            end = rb_int_minus(end, INT2FIX(1));
+        }
+
+        range_reverse_each_fixnum_section(beg, end);
+    }
+    else if ((NIL_P(beg) || RB_INTEGER_TYPE_P(beg)) && RB_INTEGER_TYPE_P(end)) {
+        if (excl) {
+            end = rb_int_minus(end, INT2FIX(1));
+        }
+        range_reverse_each_positive_bignum_section(beg, end);
+        range_reverse_each_fixnum_section(beg, end);
+        range_reverse_each_negative_bignum_section(beg, end);
+    }
+    else {
+        return rb_call_super(0, NULL);
+    }
+
     return range;
 }
 
@@ -1818,6 +1976,7 @@ range_string_cover_internal(VALUE range, VALUE val)
             return r_cover_p(range, beg, end, val);
         }
         if (NIL_P(beg)) {
+unbounded_begin:;
             VALUE r = rb_funcall(val, id_cmp, 1, end);
             if (NIL_P(r)) return Qfalse;
             if (RANGE_EXCL(range)) {
@@ -1826,10 +1985,18 @@ range_string_cover_internal(VALUE range, VALUE val)
             return RBOOL(rb_cmpint(r, val, end) <= 0);
         }
         else if (NIL_P(end)) {
+unbounded_end:;
             VALUE r = rb_funcall(beg, id_cmp, 1, val);
             if (NIL_P(r)) return Qfalse;
             return RBOOL(rb_cmpint(r, beg, val) <= 0);
         }
+    }
+
+    if (!NIL_P(beg) && NIL_P(end)) {
+        goto unbounded_end;
+    }
+    if (NIL_P(beg) && !NIL_P(end)) {
+        goto unbounded_begin;
     }
 
     return range_include_fallback(beg, end, val);
@@ -1877,7 +2044,7 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *    r.cover?(0)     # => false
  *    r.cover?(5)     # => false
  *    r.cover?('foo') # => false
-
+ *
  *    r = ('a'..'d')
  *    r.cover?('a')     # => true
  *    r.cover?('d')     # => true
@@ -1898,7 +2065,7 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *    r.cover?(0)     # => false
  *    r.cover?(4)     # => false
  *    r.cover?('foo') # => false
-
+ *
  *    r = ('a'...'d')
  *    r.cover?('a')     # => true
  *    r.cover?('c')     # => true
@@ -1914,7 +2081,7 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *    r.cover?(0..4)     # => false
  *    r.cover?(1..5)     # => false
  *    r.cover?('a'..'d') # => false
-
+ *
  *    r = (1...4)
  *    r.cover?(1..3)     # => true
  *    r.cover?(1..4)     # => false
@@ -2136,17 +2303,130 @@ range_count(int argc, VALUE *argv, VALUE range)
          * Infinity. Just let it loop. */
         return rb_call_super(argc, argv);
     }
-    else if (NIL_P(RANGE_END(range))) {
+
+    VALUE beg = RANGE_BEG(range), end = RANGE_END(range);
+
+    if (NIL_P(beg) || NIL_P(end)) {
         /* We are confident that the answer is Infinity. */
         return DBL2NUM(HUGE_VAL);
     }
-    else if (NIL_P(RANGE_BEG(range))) {
-        /* We are confident that the answer is Infinity. */
-        return DBL2NUM(HUGE_VAL);
+
+    if (is_integer_p(beg)) {
+        VALUE size = range_size(range);
+        if (!NIL_P(size)) {
+            return size;
+        }
     }
-    else {
-        return rb_call_super(argc, argv);
+
+    return rb_call_super(argc, argv);
+}
+
+static bool
+empty_region_p(VALUE beg, VALUE end, int excl)
+{
+    if (NIL_P(beg)) return false;
+    if (NIL_P(end)) return false;
+    int less = r_less(beg, end);
+    /* empty range */
+    if (less > 0) return true;
+    if (excl && less == 0) return true;
+    return false;
+}
+
+/*
+ *  call-seq:
+ *    overlap?(range) -> true or false
+ *
+ *  Returns +true+ if +range+ overlaps with +self+, +false+ otherwise:
+ *
+ *    (0..2).overlap?(1..3) #=> true
+ *    (0..2).overlap?(3..4) #=> false
+ *    (0..).overlap?(..0)   #=> true
+ *
+ *  With non-range argument, raises TypeError.
+ *
+ *    (1..3).overlap?(1)         # TypeError
+ *
+ *  Returns +false+ if an internal call to <tt><=></tt> returns +nil+;
+ *  that is, the operands are not comparable.
+ *
+ *    (1..3).overlap?('a'..'d')  # => false
+ *
+ *  Returns +false+ if +self+ or +range+ is empty. "Empty range" means
+ *  that its begin value is larger than, or equal for an exclusive
+ *  range, its end value.
+ *
+ *    (4..1).overlap?(2..3)      # => false
+ *    (4..1).overlap?(..3)       # => false
+ *    (4..1).overlap?(2..)       # => false
+ *    (2...2).overlap?(1..2)     # => false
+ *
+ *    (1..4).overlap?(3..2)      # => false
+ *    (..4).overlap?(3..2)       # => false
+ *    (1..).overlap?(3..2)       # => false
+ *    (1..2).overlap?(2...2)     # => false
+ *
+ *  Returns +false+ if the begin value one of +self+ and +range+ is
+ *  larger than, or equal if the other is an exclusive range, the end
+ *  value of the other:
+ *
+ *    (4..5).overlap?(2..3)      # => false
+ *    (4..5).overlap?(2...4)     # => false
+ *
+ *    (1..2).overlap?(3..4)      # => false
+ *    (1...3).overlap?(3..4)     # => false
+ *
+ *  Returns +false+ if the end value one of +self+ and +range+ is
+ *  larger than, or equal for an exclusive range, the end value of the
+ *  other:
+ *
+ *    (4..5).overlap?(2..3)      # => false
+ *    (4..5).overlap?(2...4)     # => false
+ *
+ *    (1..2).overlap?(3..4)      # => false
+ *    (1...3).overlap?(3..4)     # => false
+ *
+ *  This method assumes that there is no minimum value because
+ *  Ruby lacks a standard method for determining minimum values.
+ *  This assumption is invalid.
+ *  For example, there is no value smaller than +-Float::INFINITY+,
+ *  making +(...-Float::INFINITY)+ an empty set.
+ *  Consequently, +(...-Float::INFINITY)+ has no elements in common with itself,
+ *  yet +(...-Float::INFINITY).overlap?((...-Float::INFINITY))+ returns
+ *  true due to this assumption.
+ *  In general, if +r = (...minimum); r.overlap?(r)+ returns +true+,
+ *  where +minimum+ is a value that no value is smaller than.
+ *  Such values include +-Float::INFINITY+, +[]+, +""+, and
+ *  classes without subclasses.
+ *
+ *  Related: Range#cover?.
+ */
+
+static VALUE
+range_overlap(VALUE range, VALUE other)
+{
+    if (!rb_obj_is_kind_of(other, rb_cRange)) {
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Range)",
+                 rb_class_name(rb_obj_class(other)));
     }
+
+    VALUE self_beg = RANGE_BEG(range);
+    VALUE self_end = RANGE_END(range);
+    int self_excl = EXCL(range);
+    VALUE other_beg = RANGE_BEG(other);
+    VALUE other_end = RANGE_END(other);
+    int other_excl = EXCL(other);
+
+    if (empty_region_p(self_beg, other_end, other_excl)) return Qfalse;
+    if (empty_region_p(other_beg, self_end, self_excl)) return Qfalse;
+
+    /* if both begin values are equal, no more comparisons needed */
+    if (rb_equal(self_beg, other_beg)) return Qtrue;
+
+    if (empty_region_p(self_beg, self_end, self_excl)) return Qfalse;
+    if (empty_region_p(other_beg, other_end, other_excl)) return Qfalse;
+
+    return Qtrue;
 }
 
 /* A \Range object represents a collection of values
@@ -2363,7 +2643,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  * - #%: Requires argument +n+; calls the block with each +n+-th element of +self+.
  * - #each: Calls the block with each element of +self+.
  * - #step: Takes optional argument +n+ (defaults to 1);
-     calls the block with each +n+-th element of +self+.
+ *   calls the block with each +n+-th element of +self+.
  *
  * === Methods for Converting
  *
@@ -2395,6 +2675,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
+    rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_end, 0);
@@ -2415,4 +2696,5 @@ Init_Range(void)
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
     rb_define_method(rb_cRange, "count", range_count, -1);
+    rb_define_method(rb_cRange, "overlap?", range_overlap, 1);
 }

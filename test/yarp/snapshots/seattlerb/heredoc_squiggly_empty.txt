@@ -1,4 +1,0 @@
-ProgramNode(0...4)(
-  [],
-  StatementsNode(0...4)([InterpolatedStringNode(0...4)((0...4), [], (5...7))])
-)

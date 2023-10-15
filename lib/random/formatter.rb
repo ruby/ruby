@@ -174,6 +174,125 @@ module Random::Formatter
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 
+  alias uuid_v4 uuid
+
+  # Generate a random v7 UUID (Universally Unique IDentifier).
+  #
+  #   require 'random/formatter'
+  #
+  #   Random.uuid_v7 # => "0188d4c3-1311-7f96-85c7-242a7aa58f1e"
+  #   Random.uuid_v7 # => "0188d4c3-16fe-744f-86af-38fa04c62bb5"
+  #   Random.uuid_v7 # => "0188d4c3-1af8-764f-b049-c204ce0afa23"
+  #   Random.uuid_v7 # => "0188d4c3-1e74-7085-b14f-ef6415dc6f31"
+  #   #                    |<--sorted-->| |<----- random ---->|
+  #
+  #   # or
+  #   prng = Random.new
+  #   prng.uuid_v7 # => "0188ca51-5e72-7950-a11d-def7ff977c98"
+  #
+  # The version 7 UUID starts with the least significant 48 bits of a 64 bit
+  # Unix timestamp (milliseconds since the epoch) and fills the remaining bits
+  # with random data, excluding the version and variant bits.
+  #
+  # This allows version 7 UUIDs to be sorted by creation time.  Time ordered
+  # UUIDs can be used for better database index locality of newly inserted
+  # records, which may have a significant performance benefit compared to random
+  # data inserts.
+  #
+  # The result contains 74 random bits (9.25 random bytes).
+  #
+  # Note that this method cannot be made reproducable with Kernel#srand, which
+  # can only affect the random bits.  The sorted bits will still be based on
+  # Process.clock_gettime.
+  #
+  # See draft-ietf-uuidrev-rfc4122bis[https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/]
+  # for details of UUIDv7.
+  #
+  # ==== Monotonicity
+  #
+  # UUIDv7 has millisecond precision by default, so multiple UUIDs created
+  # within the same millisecond are not issued in monotonically increasing
+  # order.  To create UUIDs that are time-ordered with sub-millisecond
+  # precision, up to 12 bits of additional timestamp may added with
+  # +extra_timestamp_bits+.  The extra timestamp precision comes at the expense
+  # of random bits.  Setting <tt>extra_timestamp_bits: 12</tt> provides ~244ns
+  # of precision, but only 62 random bits (7.75 random bytes).
+  #
+  #   prng = Random.new
+  #   Array.new(4) { prng.uuid_v7(extra_timestamp_bits: 12) }
+  #   # =>
+  #   ["0188d4c7-13da-74f9-8b53-22a786ffdd5a",
+  #    "0188d4c7-13da-753b-83a5-7fb9b2afaeea",
+  #    "0188d4c7-13da-754a-88ea-ac0baeedd8db",
+  #    "0188d4c7-13da-7557-83e1-7cad9cda0d8d"]
+  #   # |<--- sorted --->| |<-- random --->|
+  #
+  #   Array.new(4) { prng.uuid_v7(extra_timestamp_bits: 8) }
+  #   # =>
+  #   ["0188d4c7-3333-7a95-850a-de6edb858f7e",
+  #    "0188d4c7-3333-7ae8-842e-bc3a8b7d0cf9",  # <- out of order
+  #    "0188d4c7-3333-7ae2-995a-9f135dc44ead",  # <- out of order
+  #    "0188d4c7-3333-7af9-87c3-8f612edac82e"]
+  #   # |<--- sorted -->||<---- random --->|
+  #
+  # Any rollbacks of the system clock will break monotonicity.  UUIDv7 is based
+  # on UTC, which excludes leap seconds and can rollback the clock.  To avoid
+  # this, the system clock can synchronize with an NTP server configured to use
+  # a "leap smear" approach.  NTP or PTP will also be needed to synchronize
+  # across distributed nodes.
+  #
+  # Counters and other mechanisms for stronger guarantees of monotonicity are
+  # not implemented.  Applications with stricter requirements should follow
+  # {Section 6.2}[https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-07.html#monotonicity_counters]
+  # of the specification.
+  #
+  def uuid_v7(extra_timestamp_bits: 0)
+    case (extra_timestamp_bits = Integer(extra_timestamp_bits))
+    when 0 # min timestamp precision
+      ms = Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)
+      rand = random_bytes(10)
+      rand.setbyte(0, rand.getbyte(0) & 0x0f | 0x70) # version
+      rand.setbyte(2, rand.getbyte(2) & 0x3f | 0x80) # variant
+      "%08x-%04x-%s" % [
+        (ms & 0x0000_ffff_ffff_0000) >> 16,
+        (ms & 0x0000_0000_0000_ffff),
+        rand.unpack("H4H4H12").join("-")
+      ]
+
+    when 12 # max timestamp precision
+      ms, ns = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+        .divmod(1_000_000)
+      extra_bits = ns * 4096 / 1_000_000
+      rand = random_bytes(8)
+      rand.setbyte(0, rand.getbyte(0) & 0x3f | 0x80) # variant
+      "%08x-%04x-7%03x-%s" % [
+        (ms & 0x0000_ffff_ffff_0000) >> 16,
+        (ms & 0x0000_0000_0000_ffff),
+        extra_bits,
+        rand.unpack("H4H12").join("-")
+      ]
+
+    when (0..12) # the generic version is slower than the special cases above
+      rand_a, rand_b1, rand_b2, rand_b3 = random_bytes(10).unpack("nnnN")
+      rand_mask_bits = 12 - extra_timestamp_bits
+      ms, ns = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+        .divmod(1_000_000)
+      "%08x-%04x-%04x-%04x-%04x%08x" % [
+        (ms & 0x0000_ffff_ffff_0000) >> 16,
+        (ms & 0x0000_0000_0000_ffff),
+        0x7000 |
+          ((ns * (1 << extra_timestamp_bits) / 1_000_000) << rand_mask_bits) |
+          rand_a & ((1 << rand_mask_bits) - 1),
+        0x8000 | (rand_b1 & 0x3fff),
+        rand_b2,
+        rand_b3
+      ]
+
+    else
+      raise ArgumentError, "extra_timestamp_bits must be in 0..12"
+    end
+  end
+
   private def gen_random(n)
     self.bytes(n)
   end

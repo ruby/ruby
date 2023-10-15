@@ -503,6 +503,11 @@ describe "C-API Kernel function" do
     it "evaluates a string of ruby code" do
       @s.rb_eval_string("1+1").should == 2
     end
+
+    it "captures local variables when called within a method" do
+      a = 2
+      @s.rb_eval_string("a+1").should == 3
+    end
   end
 
   describe "rb_eval_cmd_kw" do

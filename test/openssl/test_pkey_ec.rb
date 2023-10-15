@@ -5,20 +5,6 @@ if defined?(OpenSSL)
 
 class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_ec_key
-    builtin_curves = OpenSSL::PKey::EC.builtin_curves
-    assert_not_empty builtin_curves
-
-    builtin_curves.each do |curve_name, comment|
-      # Oakley curves and X25519 are not suitable for signing and causes
-      # FIPS-selftest failure on some environment, so skip for now.
-      next if ["Oakley", "X25519"].any? { |n| curve_name.start_with?(n) }
-
-      key = OpenSSL::PKey::EC.generate(curve_name)
-      assert_predicate key, :private?
-      assert_predicate key, :public?
-      assert_nothing_raised { key.check_key }
-    end
-
     key1 = OpenSSL::PKey::EC.generate("prime256v1")
 
     # PKey is immutable in OpenSSL >= 3.0; constructing an empty EC object is
@@ -47,6 +33,17 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       key5.public_key = key_tmp.public_key
       assert_not_equal key1.to_der, key5.to_der
     end
+  end
+
+  def test_builtin_curves
+    builtin_curves = OpenSSL::PKey::EC.builtin_curves
+    assert_not_empty builtin_curves
+    assert_equal 2, builtin_curves[0].size
+    assert_kind_of String, builtin_curves[0][0]
+    assert_kind_of String, builtin_curves[0][1]
+
+    builtin_curve_names = builtin_curves.map { |name, comment| name }
+    assert_include builtin_curve_names, "prime256v1"
   end
 
   def test_generate
@@ -110,7 +107,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     signature = p256.sign("SHA256", data)
     assert_equal true, p256.verify("SHA256", signature, data)
 
-    signature0 = (<<~'end;').unpack("m")[0]
+    signature0 = (<<~'end;').unpack1("m")
       MEQCIEOTY/hD7eI8a0qlzxkIt8LLZ8uwiaSfVbjX2dPAvN11AiAQdCYx56Fq
       QdBp1B4sxJoA8jvODMMklMyBKVmudboA6A==
     end;
@@ -232,6 +229,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_ECPrivateKey_encrypted
+    omit_on_fips
+
     p256 = Fixtures.pkey("p256")
     # key = abcdef
     pem = <<~EOF

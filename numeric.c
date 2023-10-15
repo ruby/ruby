@@ -999,7 +999,7 @@ num_negative_p(VALUE num)
  *  - #/: Returns the quotient of +self+ and the given value.
  *  - #ceil: Returns the smallest number greater than or equal to +self+.
  *  - #coerce: Returns a 2-element array containing the given value converted to a \Float
-      and +self+
+ *    and +self+
  *  - #divmod: Returns a 2-element array containing the quotient and remainder
  *    results of dividing +self+ by the given value.
  *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
@@ -1683,12 +1683,12 @@ rb_dbl_cmp(double a, double b)
  *  Examples:
  *
  *    2.0 <=> 2              # => 0
-      2.0 <=> 2.0            # => 0
-      2.0 <=> Rational(2, 1) # => 0
-      2.0 <=> Complex(2, 0)  # => 0
-      2.0 <=> 1.9            # => 1
-      2.0 <=> 2.1            # => -1
-      2.0 <=> 'foo'          # => nil
+ *    2.0 <=> 2.0            # => 0
+ *    2.0 <=> Rational(2, 1) # => 0
+ *    2.0 <=> Complex(2, 0)  # => 0
+ *    2.0 <=> 1.9            # => 1
+ *    2.0 <=> 2.1            # => -1
+ *    2.0 <=> 'foo'          # => nil
  *
  *  This is the basis for the tests in the Comparable module.
  *
@@ -2834,7 +2834,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
         }
         if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
         result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
-        if (!excl || RTEST(rb_funcall(rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step)), cmp, 1, to))) {
+        if (!excl || RTEST(rb_funcall(to, cmp, 1, rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step))))) {
             result = rb_funcall(result, '+', 1, INT2FIX(1));
         }
         return result;
@@ -2960,11 +2960,11 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  The generated sequence:
  *
  *  - Begins with +self+.
- *  - Continues at intervals of +step+ (which may not be zero).
- *  - Ends with the last number that is within or equal to +limit+;
- *    that is, less than or equal to +limit+ if +step+ is positive,
- *    greater than or equal to +limit+ if +step+ is negative.
- *    If +limit+ is not given, the sequence is of infinite length.
+ *  - Continues at intervals of +by+ (which may not be zero).
+ *  - Ends with the last number that is within or equal to +to+;
+ *    that is, less than or equal to +to+ if +by+ is positive,
+ *    greater than or equal to +to+ if +by+ is negative.
+ *    If +to+ is +nil+, the sequence is of infinite length.
  *
  *  If a block is given, calls the block with each number in the sequence;
  *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
@@ -3006,7 +3006,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  <b>Positional Arguments</b>
  *
- *  With optional positional arguments +limit+ and +step+,
+ *  With optional positional arguments +to+ and +by+,
  *  their values (or defaults) determine the step and limit:
  *
  *    squares = []
@@ -5652,58 +5652,6 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
-static VALUE
-int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
-{
-    if (FIXNUM_P(num)) {
-        if (NUM2LONG(num) <= 0) return INT2FIX(0);
-    }
-    else {
-        if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
-    }
-    return num;
-}
-
-/*
- *  call-seq:
- *    times {|i| ... } -> self
- *    times            -> enumerator
- *
- *  Calls the given block +self+ times with each integer in <tt>(0..self-1)</tt>:
- *
- *    a = []
- *    5.times {|i| a.push(i) } # => 5
- *    a                        # => [0, 1, 2, 3, 4]
- *
- *  With no block given, returns an Enumerator.
- *
- */
-
-static VALUE
-int_dotimes(VALUE num)
-{
-    RETURN_SIZED_ENUMERATOR(num, 0, 0, int_dotimes_size);
-
-    if (FIXNUM_P(num)) {
-        long i, end;
-
-        end = FIX2LONG(num);
-        for (i=0; i<end; i++) {
-            rb_yield_1(LONG2FIX(i));
-        }
-    }
-    else {
-        VALUE i = INT2FIX(0);
-
-        for (;;) {
-            if (!RTEST(int_le(i, num))) break;
-            rb_yield(i);
-            i = rb_int_plus(i, INT2FIX(1));
-        }
-    }
-    return num;
-}
-
 /*
  *  call-seq:
  *    round(ndigits= 0, half: :up) -> integer
@@ -6243,7 +6191,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
-    rb_define_method(rb_cInteger, "times", int_dotimes, 0);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);

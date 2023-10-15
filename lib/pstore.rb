@@ -517,8 +517,8 @@ class PStore
   end
 
   # Exits the current transaction block, committing any changes
-  # specified in the transaction block.
-  # See {Committing or Aborting}[rdoc-ref:PStore@Committing+or+Aborting].
+  # specified in the
+  # {transaction block}[rdoc-ref:PStore@The+Transaction+Block].
   #
   # Raises an exception if called outside a transaction block.
   def commit
@@ -528,8 +528,8 @@ class PStore
   end
 
   # Exits the current transaction block, discarding any changes
-  # specified in the transaction block.
-  # See {Committing or Aborting}[rdoc-ref:PStore@Committing+or+Aborting].
+  # specified in the
+  # {transaction block}[rdoc-ref:PStore@The+Transaction+Block].
   #
   # Raises an exception if called outside a transaction block.
   def abort

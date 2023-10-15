@@ -1,6 +1,6 @@
 class Reline::Unicode::EastAsianWidth
   # This is based on EastAsianWidth.txt
-  # UNICODE_VERSION = '15.0.0'
+  # UNICODE_VERSION = '15.1.0'
 
   # Fullwidth
   TYPE_F = /^[#{ %W(
@@ -60,14 +60,14 @@ class Reline::Unicode::EastAsianWidth
     \u{2E80}-\u{2E99}
     \u{2E9B}-\u{2EF3}
     \u{2F00}-\u{2FD5}
-    \u{2FF0}-\u{2FFB}
+    \u{2FF0}-\u{2FFF}
     \u{3001}-\u{303E}
     \u{3041}-\u{3096}
     \u{3099}-\u{30FF}
     \u{3105}-\u{312F}
     \u{3131}-\u{318E}
     \u{3190}-\u{31E3}
-    \u{31F0}-\u{321E}
+    \u{31EF}-\u{321E}
     \u{3220}-\u{3247}
     \u{3250}-\u{4DBF}
     \u{4E00}-\u{A48C}

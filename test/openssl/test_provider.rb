@@ -58,7 +58,7 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
 
   # this is required because OpenSSL::Provider methods change global state
   def with_openssl(code, **opts)
-    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;", **opts)
+    assert_separately(["-ropenssl"], <<~"end;", **opts)
       #{code}
     end;
   end

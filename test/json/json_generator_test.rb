@@ -395,8 +395,9 @@ EOT
     def test_string_ext_included_calls_super
       included = false
 
-      Module.alias_method(:included_orig, :included)
-      Module.define_method(:included) do |base|
+      Module.send(:alias_method, :included_orig, :included)
+      Module.send(:remove_method, :included)
+      Module.send(:define_method, :included) do |base|
         included_orig(base)
         included = true
       end
@@ -408,8 +409,9 @@ EOT
       assert included
     ensure
       if Module.private_method_defined?(:included_orig)
-        Module.alias_method(:included, :included_orig)
-        Module.remove_method(:included_orig)
+        Module.send(:remove_method, :included) if Module.method_defined?(:included)
+        Module.send(:alias_method, :included, :included_orig)
+        Module.send(:remove_method, :included_orig)
       end
     end
   end

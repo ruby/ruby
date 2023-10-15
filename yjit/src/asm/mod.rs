@@ -6,6 +6,7 @@ use crate::core::IseqPayload;
 use crate::core::for_each_off_stack_iseq_payload;
 use crate::core::for_each_on_stack_iseq_payload;
 use crate::invariants::rb_yjit_tracing_invalidate_all;
+use crate::stats::incr_counter;
 use crate::virtualmem::WriteError;
 
 #[cfg(feature = "disasm")]
@@ -57,6 +58,9 @@ pub struct CodeBlock {
 
     // Current writing position
     write_pos: usize,
+
+    // The index of the last page with written bytes
+    last_page_idx: usize,
 
     // Total number of bytes written to past pages
     past_page_bytes: usize,
@@ -118,6 +122,7 @@ impl CodeBlock {
             mem_size,
             page_size,
             write_pos: 0,
+            last_page_idx: 0,
             past_page_bytes: 0,
             page_end_reserve: 0,
             label_addrs: Vec::new(),
@@ -202,11 +207,15 @@ impl CodeBlock {
                 assert!(!cb.has_dropped_bytes());
             });
 
-            // Update past_page_bytes for code_size()
-            self.past_page_bytes += self.current_page_bytes();
+            // Update past_page_bytes for code_size() if this is a new page
+            if self.last_page_idx < page_idx {
+                self.past_page_bytes += self.current_page_bytes();
+            }
 
             // Start the next code from dst_pos
             self.write_pos = dst_pos;
+            // Update the last_page_idx if page_idx points to the furthest page
+            self.last_page_idx = usize::max(self.last_page_idx, page_idx);
         }
         !self.dropped_bytes
     }
@@ -652,7 +661,7 @@ impl CodeBlock {
         ocb.unwrap().freed_pages = new_freed_pages;
         assert_eq!(1, Rc::strong_count(&old_freed_pages)); // will deallocate
 
-        CodegenGlobals::incr_code_gc_count();
+        incr_counter!(code_gc_count);
     }
 
     pub fn inline(&self) -> bool {
@@ -804,6 +813,7 @@ mod tests
 
     #[test]
     fn test_code_size() {
+        // Write 4 bytes in the first page
         let mut cb = CodeBlock::new_dummy(CodeBlock::PREFERRED_CODE_PAGE_SIZE * 2);
         cb.write_bytes(&[0, 0, 0, 0]);
         assert_eq!(cb.code_size(), 4);
@@ -812,7 +822,18 @@ mod tests
         cb.next_page(cb.get_write_ptr(), |_, _| {});
         assert_eq!(cb.code_size(), 4);
 
+        // Write 4 bytes in the second page
         cb.write_bytes(&[0, 0, 0, 0]);
+        assert_eq!(cb.code_size(), 8);
+
+        // Rewrite 4 bytes in the first page
+        let old_write_pos = cb.get_write_pos();
+        cb.set_pos(0);
+        cb.write_bytes(&[1, 1, 1, 1]);
+
+        // Moving from an old page to the next page should not increase code_size
+        cb.next_page(cb.get_write_ptr(), |_, _| {});
+        cb.set_pos(old_write_pos);
         assert_eq!(cb.code_size(), 8);
     }
 }

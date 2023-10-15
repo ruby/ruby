@@ -1,6 +1,0 @@
-ProgramNode(0...12)(
-  [],
-  StatementsNode(0...12)(
-    [IntegerNode(0...3)(), IntegerNode(5...8)(), IntegerNode(10...12)()]
-  )
-)

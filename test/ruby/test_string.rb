@@ -1939,6 +1939,7 @@ CODE
     assert_not_send([S("hello"), :start_with?, S("el")])
     assert_send([S("hello"), :start_with?, S("el"), S("he")])
     assert_send([S("\xFF\xFE"), :start_with?, S("\xFF")])
+    assert_send([S("hello\xBE"), :start_with?, S("hello")])
     assert_not_send([S("\u{c4}"), :start_with?, S("\xC3")])
 
     bug5536 = '[ruby-core:40623]'
@@ -2933,6 +2934,8 @@ CODE
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
 
     assert_equal("\xFE", S("\xFF\xFE").delete_prefix("\xFF"))
+    assert_equal("\xBE", S("hello\xBE").delete_prefix("hello"))
+    assert_equal("\xBE", S("\xFFhello\xBE").delete_prefix("\xFFhello"))
   end
 
   def test_delete_prefix_clear_coderange

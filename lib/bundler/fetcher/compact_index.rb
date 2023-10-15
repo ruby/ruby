@@ -35,7 +35,7 @@ module Bundler
         remaining_gems = gem_names.dup
 
         until remaining_gems.empty?
-          log_specs "Looking up gems #{remaining_gems.inspect}"
+          log_specs { "Looking up gems #{remaining_gems.inspect}" }
 
           deps = begin
                    parallel_compact_index_client.dependencies(remaining_gems)

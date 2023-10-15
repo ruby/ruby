@@ -88,6 +88,7 @@ module Bundler
       end
 
       def self.from_lock(options)
+        options["remotes"] = Array(options.delete("remote")).reverse
         new(options)
       end
 
@@ -128,12 +129,12 @@ module Bundler
       def specs
         @specs ||= begin
           # remote_specs usually generates a way larger Index than the other
-          # sources, and large_idx.use small_idx is way faster than
-          # small_idx.use large_idx.
-          idx = @allow_remote ? remote_specs.dup : Index.new
-          idx.use(cached_specs, :override_dupes) if @allow_cached || @allow_remote
-          idx.use(installed_specs, :override_dupes) if @allow_local
-          idx
+          # sources, and large_idx.merge! small_idx is way faster than
+          # small_idx.merge! large_idx.
+          index = @allow_remote ? remote_specs.dup : Index.new
+          index.merge!(cached_specs) if @allow_cached || @allow_remote
+          index.merge!(installed_specs) if @allow_local
+          index
         end
       end
 
@@ -274,9 +275,9 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, remote_specs, false)
+        fetch_names(api_fetchers, unmet_dependency_names, remote_specs)
 
-        specs.use(remote_specs, false)
+        specs.use remote_specs
       end
 
       def dependency_names_to_double_check
@@ -380,7 +381,7 @@ module Bundler
 
       def cached_specs
         @cached_specs ||= begin
-          idx = @allow_local ? installed_specs.dup : Index.new
+          idx = Index.new
 
           Dir["#{cache_path}/*.gem"].each do |gemfile|
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
@@ -401,22 +402,22 @@ module Bundler
           index_fetchers = fetchers - api_fetchers
 
           if index_fetchers.empty?
-            fetch_names(api_fetchers, dependency_names, idx, false)
+            fetch_names(api_fetchers, dependency_names, idx)
           else
-            fetch_names(fetchers, nil, idx, false)
+            fetch_names(fetchers, nil, idx)
           end
         end
       end
 
-      def fetch_names(fetchers, dependency_names, index, override_dupes)
+      def fetch_names(fetchers, dependency_names, index)
         fetchers.each do |f|
           if dependency_names
             Bundler.ui.info "Fetching gem metadata from #{URICredentialsFilter.credential_filtered_uri(f.uri)}", Bundler.ui.debug?
-            index.use f.specs_with_retry(dependency_names, self), override_dupes
+            index.use f.specs_with_retry(dependency_names, self)
             Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
           else
             Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
-            index.use f.specs_with_retry(nil, self), override_dupes
+            index.use f.specs_with_retry(nil, self)
           end
         end
       end

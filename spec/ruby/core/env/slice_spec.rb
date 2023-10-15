@@ -21,6 +21,16 @@ describe "ENV.slice" do
     ENV.slice("foo", "boo", "bar").should == {"foo" => "0", "bar" => "1"}
   end
 
+  it "returns the values for the keys coerced with #to_str, but keeps the original objects as result keys" do
+    foo = mock('key 1')
+    foo.should_receive(:to_str).and_return("foo")
+    boo = mock('key 2')
+    boo.should_receive(:to_str).and_return("boo")
+    bar = mock('key 3')
+    bar.should_receive(:to_str).and_return("bar")
+    ENV.slice(foo, boo, bar).should == {foo => "0", bar => "1"}
+  end
+
   it "raises TypeError if any argument is not a String and does not respond to #to_str" do
     -> { ENV.slice(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
   end

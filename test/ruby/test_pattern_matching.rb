@@ -109,16 +109,12 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_block do
-      # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
-      experimental, Warning[:experimental] = Warning[:experimental], false
       eval(%q{
         case true
         in a
           a
         end
       })
-    ensure
-      Warning[:experimental] = experimental
     end
 
     assert_block do
