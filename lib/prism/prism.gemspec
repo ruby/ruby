@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.13.0"
+  spec.version = "0.14.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -47,7 +47,6 @@ Gem::Specification.new do |spec|
     "include/prism/pack.h",
     "include/prism/parser.h",
     "include/prism/regexp.h",
-    "include/prism/unescape.h",
     "include/prism/util/pm_buffer.h",
     "include/prism/util/pm_char.h",
     "include/prism/util/pm_constant_pool.h",
@@ -93,7 +92,6 @@ Gem::Specification.new do |spec|
     "src/regexp.c",
     "src/serialize.c",
     "src/token_type.c",
-    "src/unescape.c",
     "src/util/pm_buffer.c",
     "src/util/pm_char.c",
     "src/util/pm_constant_pool.c",

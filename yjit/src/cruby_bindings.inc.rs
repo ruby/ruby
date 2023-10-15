@@ -801,7 +801,7 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u32;
+pub type attr_index_t = u8;
 pub type shape_id_t = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -809,7 +809,7 @@ pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
     pub next_iv_index: attr_index_t,
-    pub capacity: u32,
+    pub capacity: attr_index_t,
     pub type_: u8,
     pub size_pool_index: u8,
     pub parent_id: shape_id_t,
@@ -1179,10 +1179,7 @@ extern "C" {
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
-    pub fn rb_shape_transition_shape_capa(
-        shape: *mut rb_shape_t,
-        new_capacity: u32,
-    ) -> *mut rb_shape_t;
+    pub fn rb_shape_transition_shape_capa(shape: *mut rb_shape_t) -> *mut rb_shape_t;
     pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
@@ -1312,7 +1309,6 @@ extern "C" {
     pub fn rb_get_cfp_sp(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
-    pub fn rb_cfp_get_iseq(cfp: *mut rb_control_frame_struct) -> *mut rb_iseq_t;
     pub fn rb_get_cfp_self(cfp: *mut rb_control_frame_struct) -> VALUE;
     pub fn rb_get_cfp_ep(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;

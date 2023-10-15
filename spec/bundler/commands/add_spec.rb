@@ -9,6 +9,7 @@ RSpec.describe "bundle add" do
       build_gem "bar", "0.12.3"
       build_gem "cat", "0.12.3.pre"
       build_gem "dog", "1.1.3.pre"
+      build_gem "lemur", "3.1.1.pre.2023.1.1"
     end
 
     build_git "foo", "2.0"
@@ -50,6 +51,13 @@ RSpec.describe "bundle add" do
       bundle "add 'dog'"
       expect(bundled_app_gemfile.read).to match(/gem "dog", "~> 1.1.pre"/)
       expect(the_bundle).to include_gems "dog 1.1.3.pre"
+    end
+
+    it "version requirement becomes ~> major.minor.pre.tail when resolved version has a very long tail pre version" do
+      bundle "add 'lemur'"
+      # the trailing pre purposely matches the release version to ensure that subbing the release doesn't change the pre.version"
+      expect(bundled_app_gemfile.read).to match(/gem "lemur", "~> 3.1.pre.2023.1.1"/)
+      expect(the_bundle).to include_gems "lemur 3.1.1.pre.2023.1.1"
     end
   end
 

@@ -242,6 +242,20 @@ assert_equal 'true', %{
   end
 }
 
+assert_equal 'true', %{
+  Thread.new{}.join
+  begin
+    Process.waitpid2 fork{
+      Thread.new{
+        sleep 0.1
+      }.join
+    }
+    true
+  rescue NotImplementedError
+    true
+  end
+}
+
 assert_equal 'ok', %{
   open("zzz_t1.rb", "w") do |f|
     f.puts <<-END

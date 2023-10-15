@@ -444,6 +444,12 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
         asm_comment!(asm, "exit to interpreter on {}", insn_name(opcode as usize));
     }
 
+    if asm.ctx.is_return_landing() {
+        asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, C_RET_OPND);
+    }
+
     // Spill stack temps before returning to the interpreter
     asm.spill_temps();
 
@@ -636,13 +642,18 @@ fn gen_leave_exception(ocb: &mut OutlinedCb) -> CodePtr {
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
+    // gen_leave() leaves the return value in C_RET_OPND before coming here.
+    let ruby_ret_val = asm.live_reg_opnd(C_RET_OPND);
+
     // Every exit to the interpreter should be counted
     gen_counter_incr(&mut asm, Counter::leave_interp_return);
 
-    asm_comment!(asm, "increment SP of the caller");
-    let sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+    asm_comment!(asm, "push return value through cfp->sp");
+    let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+    let sp = asm.load(cfp_sp);
+    asm.mov(Opnd::mem(64, sp, 0), ruby_ret_val);
     let new_sp = asm.add(sp, SIZEOF_VALUE.into());
-    asm.mov(sp, new_sp);
+    asm.mov(cfp_sp, new_sp);
 
     asm_comment!(asm, "exit from exception");
     asm.cpop_into(SP);
@@ -870,6 +881,18 @@ pub fn gen_single_block(
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
         asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
+    }
+
+    if asm.ctx.is_return_landing() {
+        // Continuation of the end of gen_leave().
+        // Reload REG_SP for the current frame and transfer the return value
+        // to the stack top.
+        asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, C_RET_OPND);
+
+        asm.ctx.clear_return_landing();
     }
 
     // For each instruction to compile
@@ -2179,7 +2202,7 @@ fn gen_get_ivar(
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
         let shape = rb_shape_get_shape_by_id(shape_id);
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u8 = 0;
         if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
         } else {
@@ -2365,7 +2388,7 @@ fn gen_setinstancevariable(
     let ivar_index = if !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
         let shape = unsafe { rb_shape_get_shape_by_id(shape_id) };
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u8 = 0;
         if unsafe { rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
         } else {
@@ -2380,7 +2403,6 @@ fn gen_setinstancevariable(
         let shape = comptime_receiver.shape_of();
 
         let current_capacity = unsafe { (*shape).capacity };
-        let new_capacity = current_capacity * 2;
 
         // If the object doesn't have the capacity to store the IV,
         // then we'll need to allocate it.
@@ -2393,7 +2415,7 @@ fn gen_setinstancevariable(
             // We need to add an extended table to the object
             // First, create an outgoing transition that increases the
             // capacity
-            Some(unsafe { rb_shape_transition_shape_capa(shape, new_capacity) })
+            Some(unsafe { rb_shape_transition_shape_capa(shape) })
         } else {
             None
         };
@@ -2406,7 +2428,7 @@ fn gen_setinstancevariable(
 
         let new_shape_id = unsafe { rb_shape_id(dest_shape) };
         let needs_extension = if needs_extension {
-            Some((current_capacity, new_capacity))
+            Some((current_capacity, unsafe { (*dest_shape).capacity }))
         } else {
             None
         };
@@ -2633,7 +2655,7 @@ fn gen_definedivar(
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
         let shape = rb_shape_get_shape_by_id(shape_id);
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u8 = 0;
         rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index)
     };
 
@@ -6021,48 +6043,7 @@ fn gen_send_iseq(
         }
     }
 
-    // We will not have None from here. You can use stack_pop / stack_pop.
-
-    match block_arg_type {
-        Some(Type::Nil) => {
-            // We have a nil block arg, so let's pop it off the args
-            asm.stack_pop(1);
-        }
-        Some(Type::BlockParamProxy) => {
-            // We don't need the actual stack value
-            asm.stack_pop(1);
-        }
-        Some(Type::TProc) => {
-            // Place the proc as the block handler. We do this early because
-            // the block arg being at the top of the stack gets in the way of
-            // rest param handling later. Also, since there are C calls that
-            // come later, we can't hold this value in a register and place it
-            // near the end when we push a new control frame.
-            asm_comment!(asm, "guard block arg is a proc");
-            // Simple predicate, no need for jit_prepare_routine_call().
-            let is_proc = asm.ccall(rb_obj_is_proc as _, vec![asm.stack_opnd(0)]);
-            asm.cmp(is_proc, Qfalse.into());
-            jit_chain_guard(
-                JCC_JE,
-                jit,
-                asm,
-                ocb,
-                SEND_MAX_DEPTH,
-                Counter::guard_send_block_arg_type,
-            );
-
-            let proc = asm.stack_pop(1);
-            let callee_ep = -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1;
-            let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
-            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
-            asm.store(callee_specval, proc);
-        }
-        None => {
-            // Nothing to do
-        }
-        _ => unreachable!(),
-    }
-
+    // Shortcut for special `Primitive.attr! :leaf` builtins
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
     let builtin_func = if builtin_func_raw.is_null() { None } else { Some(builtin_func_raw) };
@@ -6071,6 +6052,18 @@ fn gen_send_iseq(
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm_comment!(asm, "inlined leaf builtin");
+
+            // We pop the block arg without using it because:
+            //  - the builtin is leaf, so it promises to not `yield`.
+            //  - no leaf builtins have block param at the time of writing, and
+            //    adding one requires interpreter changes to support.
+            if block_arg_type.is_some() {
+                if iseq_has_block_param {
+                    gen_counter_incr(asm, Counter::send_iseq_leaf_builtin_block_arg_block_param);
+                    return None;
+                }
+                asm.stack_pop(1);
+            }
 
             // Skip this if it doesn't trigger GC
             if builtin_attrs & BUILTIN_ATTR_NO_GC == 0 {
@@ -6112,6 +6105,51 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
+
+    match block_arg_type {
+        Some(Type::Nil) => {
+            // We have a nil block arg, so let's pop it off the args
+            asm.stack_pop(1);
+        }
+        Some(Type::BlockParamProxy) => {
+            // We don't need the actual stack value
+            asm.stack_pop(1);
+        }
+        Some(Type::TProc) => {
+            // Place the proc as the block handler. We do this early because
+            // the block arg being at the top of the stack gets in the way of
+            // rest param handling later. Also, since there are C calls that
+            // come later, we can't hold this value in a register and place it
+            // near the end when we push a new control frame.
+            asm_comment!(asm, "guard block arg is a proc");
+            // Simple predicate, no need for jit_prepare_routine_call().
+            let is_proc = asm.ccall(rb_obj_is_proc as _, vec![asm.stack_opnd(0)]);
+            asm.cmp(is_proc, Qfalse.into());
+            jit_chain_guard(
+                JCC_JE,
+                jit,
+                asm,
+                ocb,
+                SEND_MAX_DEPTH,
+                Counter::guard_send_block_arg_type,
+            );
+
+            let callee_ep = -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1;
+            let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
+            if callee_specval < 0 {
+                // Can't write to sp[-n] since that's where the arguments are
+                gen_counter_incr(asm, Counter::send_iseq_clobbering_block_arg);
+                return None;
+            }
+            let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
+            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
+            asm.store(callee_specval, proc);
+        }
+        None => {
+            // Nothing to do
+        }
+        _ => unreachable!(),
+    }
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if let Some(array_length) = splat_array_length {
@@ -6535,17 +6573,14 @@ fn gen_send_iseq(
     // The callee might change locals through Kernel#binding and other means.
     asm.ctx.clear_local_types();
 
-    // Pop arguments and receiver in return context, push the return value
-    // After the return, sp_offset will be 1. The codegen for leave writes
-    // the return value in case of JIT-to-JIT return.
+    // Pop arguments and receiver in return context and
+    // mark it as a continuation of gen_leave()
     let mut return_asm = Assembler::new();
     return_asm.ctx = asm.ctx.clone();
     return_asm.stack_pop(sp_offset.try_into().unwrap());
-    let return_val = return_asm.stack_push(Type::Unknown);
-    // The callee writes a return value on stack. Update reg_temps accordingly.
-    return_asm.ctx.dealloc_temp_reg(return_val.stack_idx());
-    return_asm.ctx.set_sp_offset(1);
+    return_asm.ctx.set_sp_offset(0); // We set SP on the caller's frame above
     return_asm.ctx.reset_chain_depth();
+    return_asm.ctx.set_as_return_landing();
 
     // Write the JIT return address on the callee frame
     gen_branch(
@@ -7745,15 +7780,15 @@ fn gen_leave(
     // Load the return value
     let retval_opnd = asm.stack_pop(1);
 
-    // Move the return value into the C return register for gen_leave_exit()
+    // Move the return value into the C return register
     asm.mov(C_RET_OPND, retval_opnd);
 
-    // Reload REG_SP for the caller and write the return value.
-    // Top of the stack is REG_SP[0] since the caller has sp_offset=1.
-    asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
-    asm.mov(Opnd::mem(64, SP, 0), C_RET_OPND);
-
-    // Jump to the JIT return address on the frame that was just popped
+    // Jump to the JIT return address on the frame that was just popped.
+    // There are a few possible jump targets:
+    //   - gen_leave_exit() and gen_leave_exception(), for C callers
+    //   - Return context set up by gen_send_iseq()
+    // We don't write the return value to stack memory like the interpreter here.
+    // Each jump target do it as necessary.
     let offset_to_jit_return =
         -(RUBY_SIZEOF_CONTROL_FRAME as i32) + RUBY_OFFSET_CFP_JIT_RETURN;
     asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
@@ -8099,18 +8134,32 @@ fn gen_opt_getconstant_path(
     let ic: *const iseq_inline_constant_cache = const_cache_as_value.as_ptr();
     let idlist: *const ID = unsafe { (*ic).segments };
 
-    // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
-    let ice = unsafe { (*ic).entry };
-    if ice.is_null() {
-        // In this case, leave a block that unconditionally side exits
-        // for the interpreter to invalidate.
-        gen_counter_incr(asm, Counter::opt_getconstant_path_no_ic_entry);
-        return None;
-    }
-
     // Make sure there is an exit for this block as the interpreter might want
     // to invalidate this block from yjit_constant_ic_update().
     jit_ensure_block_entry_exit(jit, asm, ocb);
+
+    // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
+    // If a cache is not filled, fallback to the general C call.
+    let ice = unsafe { (*ic).entry };
+    if ice.is_null() {
+        // Prepare for const_missing
+        jit_prepare_routine_call(jit, asm);
+
+        // If this does not trigger const_missing, vm_ic_update will invalidate this block.
+        extern "C" {
+            fn rb_vm_opt_getconstant_path(ec: EcPtr, cfp: CfpPtr, ic: *const u8) -> VALUE;
+        }
+        let val = asm.ccall(
+            rb_vm_opt_getconstant_path as *const u8,
+            vec![EC, CFP, Opnd::const_ptr(ic as *const u8)],
+        );
+
+        let stack_top = asm.stack_push(Type::Unknown);
+        asm.store(stack_top, val);
+
+        jump_to_next_insn(jit, asm, ocb);
+        return Some(EndBlock);
+    }
 
     if !unsafe { (*ice).ic_cref }.is_null() {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.

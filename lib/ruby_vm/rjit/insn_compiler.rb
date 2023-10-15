@@ -502,8 +502,6 @@ module RubyVM::RJIT
           shape = C.rb_shape_get_shape_by_id(shape_id)
 
           current_capacity = shape.capacity
-          new_capacity = current_capacity * 2
-
           # If the object doesn't have the capacity to store the IV,
           # then we'll need to allocate it.
           needs_extension = shape.next_iv_index >= current_capacity
@@ -515,7 +513,7 @@ module RubyVM::RJIT
             if needs_extension
               # We need to add an extended table to the object
               # First, create an outgoing transition that increases the capacity
-              C.rb_shape_transition_shape_capa(shape, new_capacity)
+              C.rb_shape_transition_shape_capa(shape)
             else
               nil
             end
@@ -538,7 +536,7 @@ module RubyVM::RJIT
             # the capacity and set the buffer.
             asm.mov(C_ARGS[0], :rax)
             asm.mov(C_ARGS[1], current_capacity)
-            asm.mov(C_ARGS[2], new_capacity)
+            asm.mov(C_ARGS[2], capa_shape.capacity)
             asm.call(C.rb_ensure_iv_list_size)
 
             # Load the receiver again after the function call
