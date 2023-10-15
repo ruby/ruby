@@ -67,7 +67,7 @@ jobs:
         run: |
           ::- find needed tools
           set NEEDS=
-          for %%I in (patch.exe) do if "%%~$PATH:I" == "" (
+          for %%I in (%NEEDED_TOOLS%) do if "%%~$PATH:I" == "" (
             call set NEEDS=%%NEEDS%% %%~nI
           ) else (
             echo %%I: %%~$PATH:I
@@ -78,6 +78,9 @@ jobs:
           ) else (
             echo [warning^]Needs%NEEDS%
           )
+        env:
+          NEEDED_TOOLS: >-
+            patch.exe
 
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
