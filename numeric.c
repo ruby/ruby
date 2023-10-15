@@ -2960,11 +2960,11 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  The generated sequence:
  *
  *  - Begins with +self+.
- *  - Continues at intervals of +step+ (which may not be zero).
- *  - Ends with the last number that is within or equal to +limit+;
- *    that is, less than or equal to +limit+ if +step+ is positive,
- *    greater than or equal to +limit+ if +step+ is negative.
- *    If +limit+ is not given, the sequence is of infinite length.
+ *  - Continues at intervals of +by+ (which may not be zero).
+ *  - Ends with the last number that is within or equal to +to+;
+ *    that is, less than or equal to +to+ if +by+ is positive,
+ *    greater than or equal to +to+ if +by+ is negative.
+ *    If +to+ is +nil+, the sequence is of infinite length.
  *
  *  If a block is given, calls the block with each number in the sequence;
  *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
@@ -3006,7 +3006,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  <b>Positional Arguments</b>
  *
- *  With optional positional arguments +limit+ and +step+,
+ *  With optional positional arguments +to+ and +by+,
  *  their values (or defaults) determine the step and limit:
  *
  *    squares = []
