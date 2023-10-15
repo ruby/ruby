@@ -1,0 +1,19 @@
+module Prism
+  # This visitor walks through the tree and copies each node as it is being
+  # visited. This is useful for consumers that want to mutate the tree, as you
+  # can change subtrees in place without effecting the rest of the tree.
+  class MutationCompiler < Compiler
+    <%- nodes.each_with_index do |node, index| -%>
+<%= "\n" if index != 0 -%>
+    # Copy a <%= node.name %> node
+    def visit_<%= node.human %>(node)
+      <%- fields = node.fields.select { |field| [Prism::NodeField, Prism::OptionalNodeField, Prism::NodeListField].include?(field.class) } -%>
+      <%- if fields.any? -%>
+      node.copy(<%= fields.map { |field| "#{field.name}: #{field.is_a?(Prism::NodeListField) ? "visit_all" : "visit"}(node.#{field.name})" }.join(", ") %>)
+      <%- else -%>
+      node.copy
+      <%- end -%>
+    end
+    <%- end -%>
+  end
+end

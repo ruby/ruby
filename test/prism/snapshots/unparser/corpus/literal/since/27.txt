@@ -1,0 +1,45 @@
+@ ProgramNode (location: (1,0)-(4,5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(4,5))
+    └── body: (length: 2)
+        ├── @ LambdaNode (location: (1,0)-(3,1))
+        │   ├── locals: [:_1, :_2]
+        │   ├── operator_loc: (1,0)-(1,2) = "->"
+        │   ├── opening_loc: (1,3)-(1,4) = "{"
+        │   ├── closing_loc: (3,0)-(3,1) = "}"
+        │   ├── parameters: ∅
+        │   └── body:
+        │       @ StatementsNode (location: (2,2)-(2,9))
+        │       └── body: (length: 1)
+        │           └── @ CallNode (location: (2,2)-(2,9))
+        │               ├── receiver:
+        │               │   @ LocalVariableReadNode (location: (2,2)-(2,4))
+        │               │   ├── name: :_1
+        │               │   └── depth: 0
+        │               ├── call_operator_loc: ∅
+        │               ├── message_loc: (2,5)-(2,6) = "+"
+        │               ├── opening_loc: ∅
+        │               ├── arguments:
+        │               │   @ ArgumentsNode (location: (2,7)-(2,9))
+        │               │   └── arguments: (length: 1)
+        │               │       └── @ LocalVariableReadNode (location: (2,7)-(2,9))
+        │               │           ├── name: :_2
+        │               │           └── depth: 0
+        │               ├── closing_loc: ∅
+        │               ├── block: ∅
+        │               ├── flags: ∅
+        │               └── name: :+
+        └── @ ParenthesesNode (location: (4,0)-(4,5))
+            ├── body:
+            │   @ StatementsNode (location: (4,1)-(4,4))
+            │   └── body: (length: 1)
+            │       └── @ RangeNode (location: (4,1)-(4,4))
+            │           ├── left: ∅
+            │           ├── right:
+            │           │   @ IntegerNode (location: (4,3)-(4,4))
+            │           │   └── flags: decimal
+            │           ├── operator_loc: (4,1)-(4,3) = ".."
+            │           └── flags: ∅
+            ├── opening_loc: (4,0)-(4,1) = "("
+            └── closing_loc: (4,4)-(4,5) = ")"

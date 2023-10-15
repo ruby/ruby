@@ -366,6 +366,7 @@ class Net::HTTPResponse
       @body = nil
     end
     @read = true
+    return if @body.nil?
 
     case enc = @body_encoding
     when Encoding, false, nil
@@ -639,7 +640,7 @@ class Net::HTTPResponse
   end
 
   def stream_check
-    raise IOError, 'attempt to read body out of block' if @socket.closed?
+    raise IOError, 'attempt to read body out of block' if @socket.nil? || @socket.closed?
   end
 
   def procdest(dest, block)

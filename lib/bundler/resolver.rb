@@ -131,7 +131,7 @@ module Bundler
 
           if base_requirements[name]
             names_to_unlock << name
-          elsif package.ignores_prereleases?
+          elsif package.ignores_prereleases? && @all_specs[name].any? {|s| s.version.prerelease? }
             names_to_allow_prereleases_for << name
           end
 

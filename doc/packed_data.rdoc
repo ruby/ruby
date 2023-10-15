@@ -214,18 +214,16 @@ for one element in the input or output array.
     s.unpack('I*')
     # => [67305985, 4244504319]
 
-==== Pointer Directives
-
-- <tt>'j'</tt> - 64-bit pointer-width signed integer,
-  native-endian (like C <tt>intptr_t</tt>):
+- <tt>'j'</tt> - Pointer-width signed integer, native-endian
+  (like C <tt>intptr_t</tt>):
 
     s = [67305985, -50462977].pack('j*')
     # => "\x01\x02\x03\x04\x00\x00\x00\x00\xFF\xFE\xFD\xFC\xFF\xFF\xFF\xFF"
     s.unpack('j*')
     # => [67305985, -50462977]
 
-- <tt>'j'</tt> - 64-bit pointer-width unsigned integer,
-  native-endian (like C <tt>uintptr_t</tt>):
+- <tt>'J'</tt> - Pointer-width unsigned integer, native-endian
+  (like C <tt>uintptr_t</tt>):
 
     s = [67305985, 4244504319].pack('J*')
     # => "\x01\x02\x03\x04\x00\x00\x00\x00\xFF\xFE\xFD\xFC\x00\x00\x00\x00"
@@ -251,20 +249,19 @@ for one element in the input or output array.
 
 ==== Modifiers for \Integer Directives
 
-For directives in
-<tt>'i'</tt>,
-<tt>'I'</tt>,
-<tt>'s'</tt>,
-<tt>'S'</tt>,
-<tt>'l'</tt>,
-<tt>'L'</tt>,
-<tt>'q'</tt>,
-<tt>'Q'</tt>,
-<tt>'j'</tt>, and
-<tt>'J'</tt>,
-these modifiers may be suffixed:
+For the following directives, <tt>'!'</tt> or <tt>'_'</tt> modifiers may be
+suffixed as underlying platform’s native size.
 
-- <tt>'!'</tt> or <tt>'_'</tt> - Underlying platform’s native size.
+- <tt>'i'</tt>, <tt>'I'</tt> - C <tt>int</tt>, always native size.
+- <tt>'s'</tt>, <tt>'S'</tt> - C <tt>short</tt>.
+- <tt>'l'</tt>, <tt>'L'</tt> - C <tt>long</tt>.
+- <tt>'q'</tt>, <tt>'Q'</tt> - C <tt>long long</tt>, if available.
+- <tt>'j'</tt>, <tt>'J'</tt> - C <tt>intptr_t</tt>, always native size.
+
+Native size modifiers are silently ignored for always native size directives.
+
+The endian modifiers also may be suffixed in the directives above:
+
 - <tt>'>'</tt> - Big-endian.
 - <tt>'<'</tt> - Little-endian.
 

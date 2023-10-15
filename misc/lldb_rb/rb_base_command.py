@@ -55,4 +55,3 @@ class RbBaseCommand(LLDBInterface):
 
     def get_long_help(self):
         return self.__class__.help_string
-

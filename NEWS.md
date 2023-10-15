@@ -77,31 +77,35 @@ Note: We're only listing outstanding class updates.
 * RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
   in the future version of Ruby. [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
 
+* Socket#recv and Socket#recv_nonblock returns `nil` instead of an empty string on closed
+  connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
+  connections. [[Bug #19012]]
+
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
   keyword argument. [[Feature #18183]]
 
 The following default gems are updated.
 
 * RubyGems 3.5.0.dev
-* bigdecimal 3.1.4
+* bigdecimal 3.1.5
 * bundler 2.5.0.dev
 * csv 3.2.8
 * erb 4.0.3
 * fiddle 1.1.2
 * fileutils 1.7.1
-* irb 1.8.1
+* irb 1.8.3
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
-* psych 5.1.0
-* reline 0.3.8
+* prism 0.14.0
+* psych 5.1.1
+* reline 0.3.9
 * stringio 3.0.9
 * strscan 3.0.7
 * syntax_suggest 1.1.0
 * time 0.2.2
 * timeout 0.4.0
 * uri 0.12.2
-* yarp 0.12.0
 
 The following bundled gems are updated.
 
@@ -109,8 +113,9 @@ The following bundled gems are updated.
 * test-unit 3.6.1
 * rexml 3.2.6
 * rss 0.3.0
-* net-imap 0.3.7
-* rbs 3.2.1
+* net-imap 0.4.1
+* net-smtp 0.4.0
+* rbs 3.2.2
 * typeprof 0.21.8
 * debug 1.8.0
 
@@ -181,6 +186,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
+[Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347

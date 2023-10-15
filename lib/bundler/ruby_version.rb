@@ -23,7 +23,7 @@ module Bundler
       #   specified must match the version.
 
       @versions = Array(versions).map do |v|
-        op, v = Gem::Requirement.parse(v)
+        op, v = Gem::Requirement.parse(normalize_version(v))
         op == "=" ? v.to_s : "#{op} #{v}"
       end
 
@@ -111,6 +111,13 @@ module Bundler
     end
 
     private
+
+    # Ruby's official preview version format uses a `-`: Example: 3.3.0-preview2
+    # However, RubyGems recognizes preview version format with a `.`: Example: 3.3.0.preview2
+    # Returns version string after replacing `-` with `.`
+    def normalize_version(version)
+      version.tr("-", ".")
+    end
 
     def matches?(requirements, version)
       # Handles RUBY_PATCHLEVEL of -1 for instances like ruby-head

@@ -740,7 +740,8 @@ impl Assembler
                     }
                 }
 
-                Insn::Jo(target) => {
+                Insn::Jo(target) |
+                Insn::JoMul(target) => {
                     match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),

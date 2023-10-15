@@ -43,6 +43,7 @@ enum vm_call_flag_bits {
 
 struct rb_callinfo_kwarg {
     int keyword_len;
+    int references;
     VALUE keywords[];
 };
 
@@ -199,6 +200,9 @@ vm_ci_dump(const struct rb_callinfo *ci)
 static inline const struct rb_callinfo *
 vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
+    if (kwarg) {
+        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+    }
     if (USE_EMBED_CI && VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
         RB_DEBUG_COUNTER_INC(ci_packed);
         return vm_ci_new_id(mid, flag, argc, kwarg);

@@ -384,6 +384,25 @@ module Psych
                      [:end_stream, [2, 0, 2, 0]]], events
     end
 
+    if Psych::Parser.method_defined?(:code_point_limit)
+      def test_code_point_limit
+        yaml = "foo: bar\n" * 500_000
+        assert_raise(org.snakeyaml.engine.v2.exceptions.YamlEngineException) do
+          Psych.load(yaml)
+        end
+
+        assert_nothing_raised do
+          begin
+            old_code_point_limit, Psych::Parser.code_point_limit = Psych::Parser::code_point_limit, 5_000_000
+
+            Psych.load(yaml)
+          ensure
+            Psych::Parser.code_point_limit = old_code_point_limit
+          end
+        end
+      end
+    end
+
     def assert_called call, with = nil, parser = @parser
       if with
         call = parser.handler.calls.find { |x|

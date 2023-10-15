@@ -304,7 +304,7 @@ module Spec
       end
     end
 
-    def a_unresovable_child_index
+    def a_unresolvable_child_index
       build_index do
         gem "json", %w[1.8.0]
 

@@ -56,7 +56,7 @@ module Bundler
     def keep_trying?
       return true  if current_run.zero?
       return false if last_attempt?
-      return true  if @failed
+      true if @failed
     end
 
     def last_attempt?

@@ -150,13 +150,13 @@ FILES_NEED_VPATH = %w[
   enc/trans/utf8_mac.c
   enc/trans/utf_16_32.c
 
-  yarp/api_node.c
-  yarp/ast.h
-  yarp/node.c
-  yarp/prettyprint.c
-  yarp/serialize.c
-  yarp/token_type.c
-  yarp/version.h
+  prism/api_node.c
+  prism/ast.h
+  prism/node.c
+  prism/prettyprint.c
+  prism/serialize.c
+  prism/token_type.c
+  prism/version.h
 ]
 
 # Multiple files with same filename.
@@ -184,7 +184,7 @@ def in_makefile(target, source)
   target = target.to_s
   source = source.to_s
   case target
-  when %r{\A[^/]*\z}, %r{\Acoroutine/}, %r{\Ayarp/}
+  when %r{\A[^/]*\z}, %r{\Acoroutine/}, %r{\Aprism/}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
     when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"

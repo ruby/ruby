@@ -1,0 +1,19 @@
+@ ProgramNode (location: (1,0)-(4,7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(4,7))
+    └── body: (length: 4)
+        ├── @ SourceEncodingNode (location: (1,0)-(1,12))
+        ├── @ SourceFileNode (location: (2,0)-(2,8))
+        │   └── filepath: "unparser/corpus/literal/pragma.txt"
+        ├── @ SourceLineNode (location: (3,0)-(3,8))
+        └── @ CallNode (location: (4,0)-(4,7))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (4,0)-(4,7) = "__dir__"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: variable_call
+            └── name: :__dir__

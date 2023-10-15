@@ -29,6 +29,21 @@ inputs:
     description: >-
       If set to true, additionally runs `make up`.
 
+  checkout:
+    required: false
+    type: boolean
+    default: true
+    description: >-
+      If set to '' (false), skip running actions/checkout. This is useful when
+      you don't want to overwrite a GitHub token that is already set up.
+
+  dummy-files:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, creates dummy files in build dir.
+
 outputs: {} # nothing?
 
 runs:
@@ -60,7 +75,8 @@ runs:
         git config --global advice.detachedHead 0
         git config --global init.defaultBranch garbage
 
-    - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+    - if: inputs.checkout
+      uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       with:
         path: ${{ inputs.srcdir }}
 
@@ -110,3 +126,12 @@ runs:
         sudo chmod -R go-w /usr/share
         chmod -v go-w $HOME $HOME/.config || :
         sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+
+    - if: inputs.dummy-files == 'true'
+      shell: bash
+      working-directory: ${{ inputs.builddir }}
+      run: |
+        : Create dummy files in build dir
+        for basename in {a..z} {A..Z} {0..9} foo bar test zzz; do
+          echo > ${basename}.rb "raise %(do not load ${basename}.rb)"
+        done

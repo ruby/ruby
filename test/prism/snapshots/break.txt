@@ -1,0 +1,207 @@
+@ ProgramNode (location: (1,0)-(25,23))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(25,23))
+    └── body: (length: 11)
+        ├── @ BreakNode (location: (1,0)-(1,5))
+        │   ├── arguments: ∅
+        │   └── keyword_loc: (1,0)-(1,5) = "break"
+        ├── @ BreakNode (location: (3,0)-(3,19))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (3,6)-(3,19))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ ParenthesesNode (location: (3,6)-(3,9))
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (3,7)-(3,8))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ IntegerNode (location: (3,7)-(3,8))
+        │   │       │   │           └── flags: decimal
+        │   │       │   ├── opening_loc: (3,6)-(3,7) = "("
+        │   │       │   └── closing_loc: (3,8)-(3,9) = ")"
+        │   │       ├── @ ParenthesesNode (location: (3,11)-(3,14))
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (3,12)-(3,13))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ IntegerNode (location: (3,12)-(3,13))
+        │   │       │   │           └── flags: decimal
+        │   │       │   ├── opening_loc: (3,11)-(3,12) = "("
+        │   │       │   └── closing_loc: (3,13)-(3,14) = ")"
+        │   │       └── @ ParenthesesNode (location: (3,16)-(3,19))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (3,17)-(3,18))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (3,17)-(3,18))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (3,16)-(3,17) = "("
+        │   │           └── closing_loc: (3,18)-(3,19) = ")"
+        │   └── keyword_loc: (3,0)-(3,5) = "break"
+        ├── @ BreakNode (location: (5,0)-(5,7))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (5,6)-(5,7))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (5,6)-(5,7))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (5,0)-(5,5) = "break"
+        ├── @ BreakNode (location: (7,0)-(8,1))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (7,6)-(8,1))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ IntegerNode (location: (7,6)-(7,7))
+        │   │       │   └── flags: decimal
+        │   │       ├── @ IntegerNode (location: (7,9)-(7,10))
+        │   │       │   └── flags: decimal
+        │   │       └── @ IntegerNode (location: (8,0)-(8,1))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (7,0)-(7,5) = "break"
+        ├── @ BreakNode (location: (10,0)-(10,13))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (10,6)-(10,13))
+        │   │   └── arguments: (length: 3)
+        │   │       ├── @ IntegerNode (location: (10,6)-(10,7))
+        │   │       │   └── flags: decimal
+        │   │       ├── @ IntegerNode (location: (10,9)-(10,10))
+        │   │       │   └── flags: decimal
+        │   │       └── @ IntegerNode (location: (10,12)-(10,13))
+        │   │           └── flags: decimal
+        │   └── keyword_loc: (10,0)-(10,5) = "break"
+        ├── @ BreakNode (location: (12,0)-(12,15))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (12,6)-(12,15))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ArrayNode (location: (12,6)-(12,15))
+        │   │           ├── elements: (length: 3)
+        │   │           │   ├── @ IntegerNode (location: (12,7)-(12,8))
+        │   │           │   │   └── flags: decimal
+        │   │           │   ├── @ IntegerNode (location: (12,10)-(12,11))
+        │   │           │   │   └── flags: decimal
+        │   │           │   └── @ IntegerNode (location: (12,13)-(12,14))
+        │   │           │       └── flags: decimal
+        │   │           ├── opening_loc: (12,6)-(12,7) = "["
+        │   │           └── closing_loc: (12,14)-(12,15) = "]"
+        │   └── keyword_loc: (12,0)-(12,5) = "break"
+        ├── @ BreakNode (location: (14,0)-(17,1))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (14,5)-(17,1))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (14,5)-(17,1))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (15,2)-(16,3))
+        │   │           │   └── body: (length: 2)
+        │   │           │       ├── @ IntegerNode (location: (15,2)-(15,3))
+        │   │           │       │   └── flags: decimal
+        │   │           │       └── @ IntegerNode (location: (16,2)-(16,3))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (14,5)-(14,6) = "("
+        │   │           └── closing_loc: (17,0)-(17,1) = ")"
+        │   └── keyword_loc: (14,0)-(14,5) = "break"
+        ├── @ BreakNode (location: (19,0)-(19,7))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (19,5)-(19,7))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (19,5)-(19,7))
+        │   │           ├── body: ∅
+        │   │           ├── opening_loc: (19,5)-(19,6) = "("
+        │   │           └── closing_loc: (19,6)-(19,7) = ")"
+        │   └── keyword_loc: (19,0)-(19,5) = "break"
+        ├── @ BreakNode (location: (21,0)-(21,8))
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (21,5)-(21,8))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ ParenthesesNode (location: (21,5)-(21,8))
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (21,6)-(21,7))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (21,6)-(21,7))
+        │   │           │           └── flags: decimal
+        │   │           ├── opening_loc: (21,5)-(21,6) = "("
+        │   │           └── closing_loc: (21,7)-(21,8) = ")"
+        │   └── keyword_loc: (21,0)-(21,5) = "break"
+        ├── @ CallNode (location: (23,0)-(23,22))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (23,0)-(23,16))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (23,0)-(23,3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block:
+        │   │   │   @ BlockNode (location: (23,4)-(23,16))
+        │   │   │   ├── locals: []
+        │   │   │   ├── parameters: ∅
+        │   │   │   ├── body:
+        │   │   │   │   @ StatementsNode (location: (23,6)-(23,14))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ BreakNode (location: (23,6)-(23,14))
+        │   │   │   │           ├── arguments:
+        │   │   │   │           │   @ ArgumentsNode (location: (23,12)-(23,14))
+        │   │   │   │           │   └── arguments: (length: 1)
+        │   │   │   │           │       └── @ IntegerNode (location: (23,12)-(23,14))
+        │   │   │   │           │           └── flags: decimal
+        │   │   │   │           └── keyword_loc: (23,6)-(23,11) = "break"
+        │   │   │   ├── opening_loc: (23,4)-(23,5) = "{"
+        │   │   │   └── closing_loc: (23,15)-(23,16) = "}"
+        │   │   ├── flags: ∅
+        │   │   └── name: :foo
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (23,17)-(23,19) = "=="
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (23,20)-(23,22))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (23,20)-(23,22))
+        │   │           └── flags: decimal
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: :==
+        └── @ CallNode (location: (25,0)-(25,23))
+            ├── receiver:
+            │   @ CallNode (location: (25,0)-(25,17))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (25,0)-(25,3) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block:
+            │   │   @ BlockNode (location: (25,4)-(25,17))
+            │   │   ├── locals: [:a]
+            │   │   ├── parameters:
+            │   │   │   @ BlockParametersNode (location: (25,6)-(25,9))
+            │   │   │   ├── parameters:
+            │   │   │   │   @ ParametersNode (location: (25,7)-(25,8))
+            │   │   │   │   ├── requireds: (length: 1)
+            │   │   │   │   │   └── @ RequiredParameterNode (location: (25,7)-(25,8))
+            │   │   │   │   │       └── name: :a
+            │   │   │   │   ├── optionals: (length: 0)
+            │   │   │   │   ├── rest: ∅
+            │   │   │   │   ├── posts: (length: 0)
+            │   │   │   │   ├── keywords: (length: 0)
+            │   │   │   │   ├── keyword_rest: ∅
+            │   │   │   │   └── block: ∅
+            │   │   │   ├── locals: (length: 0)
+            │   │   │   ├── opening_loc: (25,6)-(25,7) = "|"
+            │   │   │   └── closing_loc: (25,8)-(25,9) = "|"
+            │   │   ├── body:
+            │   │   │   @ StatementsNode (location: (25,10)-(25,15))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ BreakNode (location: (25,10)-(25,15))
+            │   │   │           ├── arguments: ∅
+            │   │   │           └── keyword_loc: (25,10)-(25,15) = "break"
+            │   │   ├── opening_loc: (25,4)-(25,5) = "{"
+            │   │   └── closing_loc: (25,16)-(25,17) = "}"
+            │   ├── flags: ∅
+            │   └── name: :foo
+            ├── call_operator_loc: ∅
+            ├── message_loc: (25,18)-(25,20) = "=="
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (25,21)-(25,23))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (25,21)-(25,23))
+            │           └── flags: decimal
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: :==

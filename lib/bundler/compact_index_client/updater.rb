@@ -95,7 +95,12 @@ module Bundler
         # because we need to preserve \n line endings on windows when calculating
         # the checksum
         SharedHelpers.filesystem_access(path, :read) do
-          SharedHelpers.digest(:MD5).hexdigest(File.read(path))
+          File.open(path, "rb") do |f|
+            digest = SharedHelpers.digest(:MD5).new
+            buf = String.new(:capacity => 16_384, :encoding => Encoding::BINARY)
+            digest << buf while f.read(16_384, buf)
+            digest.hexdigest
+          end
         end
       end
 

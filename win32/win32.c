@@ -1537,7 +1537,8 @@ rb_w32_uspawn(int mode, const char *cmd, const char *prog)
 
 /* License: Artistic or GPL */
 static rb_pid_t
-w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UINT cp)
+w32_spawn_process(int mode, const char *prog, char *const *argv,
+                  int in_fd, int out_fd, int err_fd, DWORD flags, UINT cp)
 {
     int c_switch = 0;
     size_t len;
@@ -1548,8 +1549,19 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     int e = 0;
     rb_pid_t ret = -1;
     VALUE v = 0;
+    HANDLE in_handle = NULL, out_handle = NULL, err_handle = NULL;
 
     if (check_spawn_mode(mode)) return -1;
+
+    if (in_fd >= 0) {
+        in_handle = (HANDLE)rb_w32_get_osfhandle(in_fd);
+    }
+    if (out_fd >= 0) {
+        out_handle = (HANDLE)rb_w32_get_osfhandle(out_fd);
+    }
+    if (err_fd >= 0) {
+        err_handle = (HANDLE)rb_w32_get_osfhandle(err_fd);
+    }
 
     if (!prog) prog = argv[0];
     if ((shell = w32_getenv("COMSPEC", cp)) &&
@@ -1598,7 +1610,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
 
     if (!e) {
         struct ChildRecord *child = FindFreeChildSlot();
-        if (CreateChild(child, wcmd, wprog, NULL, NULL, NULL, flags)) {
+        if (CreateChild(child, wcmd, wprog, in_handle, out_handle, err_handle, flags)) {
             ret = child_result(child, mode);
         }
     }
@@ -1613,21 +1625,21 @@ rb_pid_t
 rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 {
     /* assume ACP */
-    return w32_aspawn_flags(mode, prog, argv, flags, filecp());
+    return w32_spawn_process(mode, prog, argv, -1, -1, -1, flags, filecp());
 }
 
 /* License: Ruby's */
 rb_pid_t
 rb_w32_uaspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 {
-    return w32_aspawn_flags(mode, prog, argv, flags, CP_UTF8);
+    return w32_spawn_process(mode, prog, argv, -1, -1, -1, flags, CP_UTF8);
 }
 
 /* License: Ruby's */
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
-    return w32_aspawn_flags(mode, prog, argv, 0, filecp());
+    return w32_spawn_process(mode, prog, argv, -1, -1, -1, 0, filecp());
 }
 
 /* License: Ruby's */
@@ -1635,6 +1647,15 @@ rb_pid_t
 rb_w32_uaspawn(int mode, const char *prog, char *const *argv)
 {
     return rb_w32_uaspawn_flags(mode, prog, argv, 0);
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uspawn_process(int mode, const char *prog, char *const *argv,
+                      int in_fd, int out_fd, int err_fd, DWORD flags)
+{
+    return w32_spawn_process(mode, prog, argv, in_fd, out_fd, err_fd,
+                             flags, CP_UTF8);
 }
 
 /* License: Artistic or GPL */

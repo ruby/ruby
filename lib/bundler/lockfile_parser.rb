@@ -67,8 +67,8 @@ module Bundler
       @specs        = {}
 
       if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
-        raise LockfileError, "Your #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} contains merge conflicts.\n" \
-          "Run `git checkout HEAD -- #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` first to get a clean lock."
+        raise LockfileError, "Your lockfile contains merge conflicts.\n" \
+          "Run `git checkout HEAD -- #{SharedHelpers.relative_lockfile_path}` first to get a clean lock."
       end
 
       lockfile.split(/(?:\r?\n)+/) do |line|
@@ -92,7 +92,7 @@ module Bundler
       @specs = @specs.values.sort_by!(&:full_name)
     rescue ArgumentError => e
       Bundler.ui.debug(e)
-      raise LockfileError, "Your lockfile is unreadable. Run `rm #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` " \
+      raise LockfileError, "Your lockfile is unreadable. Run `rm #{SharedHelpers.relative_lockfile_path}` " \
         "and then `bundle install` to generate a new lockfile."
     end
 

@@ -75,29 +75,22 @@ module Random::Formatter
       assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
     end
 
-    def test_uuid_v7
-      t1 = current_uuid7_time
-      uuid = @it.uuid_v7
-      t3 = current_uuid7_time
+    def assert_uuid_v7(**opts)
+      t1 = current_uuid7_time(**opts)
+      uuid = @it.uuid_v7(**opts)
+      t3 = current_uuid7_time(**opts)
 
       assert_match(/\A\h{8}-\h{4}-7\h{3}-[89ab]\h{3}-\h{12}\z/, uuid)
 
-      t2 = get_uuid7_time(uuid)
+      t2 = get_uuid7_time(uuid, **opts)
       assert_operator(t1, :<=, t2)
       assert_operator(t2, :<=, t3)
     end
 
-    def test_uuid_v7_extra_timestamp_bits
+    def test_uuid_v7
+      assert_uuid_v7
       0.upto(12) do |extra_timestamp_bits|
-        t1 = current_uuid7_time extra_timestamp_bits: extra_timestamp_bits
-        uuid = @it.uuid_v7      extra_timestamp_bits: extra_timestamp_bits
-        t3 = current_uuid7_time extra_timestamp_bits: extra_timestamp_bits
-
-        assert_match(/\A\h{8}-\h{4}-7\h{3}-[89ab]\h{3}-\h{12}\z/, uuid)
-
-        t2 = get_uuid7_time uuid, extra_timestamp_bits: extra_timestamp_bits
-        assert_operator(t1, :<=, t2)
-        assert_operator(t2, :<=, t3)
+        assert_uuid_v7 extra_timestamp_bits: extra_timestamp_bits
       end
     end
 

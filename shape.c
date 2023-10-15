@@ -417,14 +417,20 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
     return new_shape;
 }
 
-rb_shape_t *
-rb_shape_transition_shape_capa(rb_shape_t* shape, uint32_t new_capacity)
+static inline rb_shape_t *
+rb_shape_transition_shape_capa_create(rb_shape_t* shape, uint32_t new_capacity)
 {
     ID edge_name = rb_make_temporary_id(new_capacity);
     bool dont_care;
     rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true, false);
     new_shape->capacity = new_capacity;
     return new_shape;
+}
+
+rb_shape_t *
+rb_shape_transition_shape_capa(rb_shape_t* shape)
+{
+    return rb_shape_transition_shape_capa_create(shape, shape->capacity * 2);
 }
 
 bool
@@ -541,7 +547,7 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
       case SHAPE_IVAR:
         if (midway_shape->capacity <= midway_shape->next_iv_index) {
             // There isn't enough room to write this IV, so we need to increase the capacity
-            midway_shape = rb_shape_transition_shape_capa(midway_shape, midway_shape->capacity * 2);
+            midway_shape = rb_shape_transition_shape_capa(midway_shape);
         }
 
         midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
@@ -828,7 +834,7 @@ Init_default_shapes(void)
     // Shapes by size pool
     for (int i = 1; i < SIZE_POOL_COUNT; i++) {
         uint32_t capa = (uint32_t)((rb_size_pool_slot_size(i) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
-        rb_shape_t * new_shape = rb_shape_transition_shape_capa(root, capa);
+        rb_shape_t * new_shape = rb_shape_transition_shape_capa_create(root, capa);
         new_shape->type = SHAPE_INITIAL_CAPACITY;
         new_shape->size_pool_index = i;
         RUBY_ASSERT(rb_shape_id(new_shape) == (shape_id_t)i);

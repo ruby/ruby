@@ -426,11 +426,11 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The path in the gem for executable scripts.  Usually 'bin'
+  # The path in the gem for executable scripts.  Usually 'exe'
   #
   # Usage:
   #
-  #   spec.bindir = 'bin'
+  #   spec.bindir = 'exe'
 
   attr_accessor :bindir
 

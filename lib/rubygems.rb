@@ -572,7 +572,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # The number of paths in the +$LOAD_PATH+ from activated gems. Used to
-  # prioritize +-I+ and +ENV['RUBYLIB']+ entries during +require+.
+  # prioritize +-I+ and <code>ENV['RUBYLIB']</code> entries during +require+.
 
   def self.activated_gem_paths
     @activated_gem_paths ||= 0

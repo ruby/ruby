@@ -1,0 +1,69 @@
+@ ProgramNode (location: (1,0)-(1,43))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,43))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (1,0)-(1,43))
+            ├── predicate:
+            │   @ CallNode (location: (1,5)-(1,8))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (1,5)-(1,8) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: :foo
+            ├── conditions: (length: 2)
+            │   ├── @ WhenNode (location: (1,10)-(1,27))
+            │   │   ├── keyword_loc: (1,10)-(1,14) = "when"
+            │   │   ├── conditions: (length: 2)
+            │   │   │   ├── @ IntegerNode (location: (1,15)-(1,16))
+            │   │   │   │   └── flags: decimal
+            │   │   │   └── @ SplatNode (location: (1,18)-(1,22))
+            │   │   │       ├── operator_loc: (1,18)-(1,19) = "*"
+            │   │   │       └── expression:
+            │   │   │           @ CallNode (location: (1,19)-(1,22))
+            │   │   │           ├── receiver: ∅
+            │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── message_loc: (1,19)-(1,22) = "baz"
+            │   │   │           ├── opening_loc: ∅
+            │   │   │           ├── arguments: ∅
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           ├── block: ∅
+            │   │   │           ├── flags: variable_call
+            │   │   │           └── name: :baz
+            │   │   └── statements:
+            │   │       @ StatementsNode (location: (1,24)-(1,27))
+            │   │       └── body: (length: 1)
+            │   │           └── @ CallNode (location: (1,24)-(1,27))
+            │   │               ├── receiver: ∅
+            │   │               ├── call_operator_loc: ∅
+            │   │               ├── message_loc: (1,24)-(1,27) = "bar"
+            │   │               ├── opening_loc: ∅
+            │   │               ├── arguments: ∅
+            │   │               ├── closing_loc: ∅
+            │   │               ├── block: ∅
+            │   │               ├── flags: variable_call
+            │   │               └── name: :bar
+            │   └── @ WhenNode (location: (1,29)-(1,38))
+            │       ├── keyword_loc: (1,29)-(1,33) = "when"
+            │       ├── conditions: (length: 1)
+            │       │   └── @ SplatNode (location: (1,34)-(1,38))
+            │       │       ├── operator_loc: (1,34)-(1,35) = "*"
+            │       │       └── expression:
+            │       │           @ CallNode (location: (1,35)-(1,38))
+            │       │           ├── receiver: ∅
+            │       │           ├── call_operator_loc: ∅
+            │       │           ├── message_loc: (1,35)-(1,38) = "foo"
+            │       │           ├── opening_loc: ∅
+            │       │           ├── arguments: ∅
+            │       │           ├── closing_loc: ∅
+            │       │           ├── block: ∅
+            │       │           ├── flags: variable_call
+            │       │           └── name: :foo
+            │       └── statements: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (1,40)-(1,43) = "end"

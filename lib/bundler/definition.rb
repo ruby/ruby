@@ -405,13 +405,13 @@ module Bundler
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
       msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
       msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n\nRun `bundle install` elsewhere and add the updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control.\n"
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n"
 
       unless explicit_flag
         suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
           "bundle config set frozen false"
         end
-        msg << "If this is a development machine, remove the #{Bundler.default_gemfile.relative_path_from(SharedHelpers.pwd)} " \
+        msg << "If this is a development machine, remove the #{SharedHelpers.relative_lockfile_path} " \
                "freeze by running `#{suggested_command}`." if suggested_command
       end
 

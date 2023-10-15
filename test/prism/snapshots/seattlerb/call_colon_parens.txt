@@ -1,0 +1,17 @@
+@ ProgramNode (location: (1,0)-(1,5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,5))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,5))
+            ├── receiver:
+            │   @ IntegerNode (location: (1,0)-(1,1))
+            │   └── flags: decimal
+            ├── call_operator_loc: (1,1)-(1,3) = "::"
+            ├── message_loc: ∅
+            ├── opening_loc: (1,3)-(1,4) = "("
+            ├── arguments: ∅
+            ├── closing_loc: (1,4)-(1,5) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: :call

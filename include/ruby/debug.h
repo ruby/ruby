@@ -628,9 +628,9 @@ typedef void (*rb_postponed_job_func_t)(void *arg);
 int rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data);
 
 /**
- * Identical to rb_postponed_job_register_one(),  except it additionally checks
- * for  duplicated registration.   In case  the passed  job is  already in  the
- * postponed job buffer this function does nothing.
+ * Identical to rb_postponed_job_register(), except  it additionally checks for
+ * duplicated registration.  In case the passed job is already in the postponed
+ * job buffer this function does nothing.
  *
  * @param[in]      flags      (Unused) reserved for future extensions.
  * @param[in]      func       Job body.

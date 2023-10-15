@@ -69,33 +69,58 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name)
+    name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
     return unless gem = find_gem(path)
     caller = caller_locations(3, 3).find {|c| c&.absolute_path}
     return if find_gem(caller&.absolute_path)
+    name = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
-      gem = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
+      gem = name
     elsif gem
       return if WARNED[gem]
       WARNED[gem] = true
       "#{name} is found in #{gem}"
     else
       return
-    end + " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}"
+    end + build_message(gem)
   end
 
-  bundled_gems = self
+  def self.build_message(gem)
+    msg = " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}."
 
-  define_method(:find_unresolved_default_spec) do |name|
-    if msg = bundled_gems.warning?(name)
-      warn msg, uplevel: 1
+    if defined?(Bundler)
+      msg += " Add #{gem} to your Gemfile."
+      location = caller_locations(2,2)[0]&.path
+      if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
+        caller_gem = nil
+        Gem.path.each do |path|
+          if location =~ %r{#{path}/gems/([\w\-\.]+)}
+            caller_gem = $1
+            break
+          end
+        end
+        msg += " Also contact author of #{caller_gem} to add #{gem} into its gemspec."
+      end
+    else
+      msg += " Install #{gem} from RubyGems."
     end
-    super(name)
+
+    msg
   end
 
   freeze
 end
 
-Gem.singleton_class.prepend Gem::BUNDLED_GEMS
+# for RubyGems without Bundler environment.
+# If loading library is not part of the default gems and the bundled gems, warn it.
+class LoadError
+  def message
+    if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[path] && !Gem::BUNDLED_GEMS::WARNED[path]
+      warn path + Gem::BUNDLED_GEMS.build_message(path)
+    end
+    super
+  end
+end

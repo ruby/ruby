@@ -71,7 +71,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 #if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
         else {
             /* SDR() is not possible; that causes infinite loop. */
-            rb_print_backtrace();
+            rb_print_backtrace(stderr);
             __builtin_trap();
         }
 #endif
@@ -1003,31 +1003,38 @@ vm_backtrace_print(FILE *fp)
                    &arg);
 }
 
+struct oldbt_bugreport_arg {
+    FILE *fp;
+    int count;
+};
+
 static void
 oldbt_bugreport(void *arg, VALUE file, int line, VALUE method)
 {
+    struct oldbt_bugreport_arg *p = arg;
+    FILE *fp = p->fp;
     const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
-    if (!*(int *)arg) {
-        fprintf(stderr, "-- Ruby level backtrace information "
+    if (!p->count) {
+        fprintf(fp, "-- Ruby level backtrace information "
                 "----------------------------------------\n");
-        *(int *)arg = 1;
+        p->count = 1;
     }
     if (NIL_P(method)) {
-        fprintf(stderr, "%s:%d:in unknown method\n", filename, line);
+        fprintf(fp, "%s:%d:in unknown method\n", filename, line);
     }
     else {
-        fprintf(stderr, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
+        fprintf(fp, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
     }
 }
 
 void
-rb_backtrace_print_as_bugreport(void)
+rb_backtrace_print_as_bugreport(FILE *fp)
 {
     struct oldbt_arg arg;
-    int i = 0;
+    struct oldbt_bugreport_arg barg = {fp, 0};
 
     arg.func = oldbt_bugreport;
-    arg.data = (int *)&i;
+    arg.data = &barg;
 
     backtrace_each(GET_EC(),
                    oldbt_init,

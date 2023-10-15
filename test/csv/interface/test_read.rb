@@ -113,11 +113,11 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
       file << "\u{1F600},\u{1F601}"
     end
     CSV.open(@input.path, encoding: "EUC-JP") do |csv|
-      error = assert_raise(CSV::MalformedCSVError) do
+      error = assert_raise(CSV::InvalidEncodingError) do
         csv.shift
       end
-      assert_equal("Invalid byte sequence in EUC-JP in line 1.",
-                   error.message)
+      assert_equal([Encoding::EUC_JP, "Invalid byte sequence in EUC-JP in line 1."],
+                   [error.encoding, error.message])
     end
   end
 

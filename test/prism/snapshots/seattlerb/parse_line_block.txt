@@ -1,0 +1,28 @@
+@ ProgramNode (location: (1,0)-(2,3))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(2,3))
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (1,0)-(1,6))
+        │   ├── name: :a
+        │   ├── depth: 0
+        │   ├── name_loc: (1,0)-(1,1) = "a"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (1,4)-(1,6))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (1,2)-(1,3) = "="
+        └── @ CallNode (location: (2,0)-(2,3))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (2,0)-(2,1) = "p"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (2,2)-(2,3))
+            │   └── arguments: (length: 1)
+            │       └── @ LocalVariableReadNode (location: (2,2)-(2,3))
+            │           ├── name: :a
+            │           └── depth: 0
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: :p

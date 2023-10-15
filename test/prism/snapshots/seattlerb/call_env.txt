@@ -1,0 +1,25 @@
+@ ProgramNode (location: (1,0)-(1,7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,7))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,7))
+            ├── receiver:
+            │   @ CallNode (location: (1,0)-(1,1))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (1,0)-(1,1) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: :a
+            ├── call_operator_loc: (1,1)-(1,2) = "."
+            ├── message_loc: (1,2)-(1,7) = "happy"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: :happy

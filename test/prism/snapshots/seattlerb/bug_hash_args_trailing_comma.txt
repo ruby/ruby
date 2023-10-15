@@ -1,0 +1,34 @@
+@ ProgramNode (location: (1,0)-(1,20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,20))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,20))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (1,0)-(1,3) = "foo"
+            ├── opening_loc: (1,3)-(1,4) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (1,4)-(1,18))
+            │   └── arguments: (length: 2)
+            │       ├── @ SymbolNode (location: (1,4)-(1,8))
+            │       │   ├── opening_loc: (1,4)-(1,5) = ":"
+            │       │   ├── value_loc: (1,5)-(1,8) = "bar"
+            │       │   ├── closing_loc: ∅
+            │       │   └── unescaped: "bar"
+            │       └── @ KeywordHashNode (location: (1,10)-(1,18))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (1,10)-(1,18))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (1,10)-(1,14))
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── value_loc: (1,10)-(1,13) = "baz"
+            │                   │   ├── closing_loc: (1,13)-(1,14) = ":"
+            │                   │   └── unescaped: "baz"
+            │                   ├── value:
+            │                   │   @ NilNode (location: (1,15)-(1,18))
+            │                   └── operator_loc: ∅
+            ├── closing_loc: (1,19)-(1,20) = ")"
+            ├── block: ∅
+            ├── flags: ∅
+            └── name: :foo

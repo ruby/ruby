@@ -481,7 +481,7 @@ VALUE *rb_ruby_debug_ptr(void);
  */
 #define ruby_debug   (*rb_ruby_debug_ptr())
 
-/* reports if `-W' specified */
+/* reports if $VERBOSE is true */
 RBIMPL_ATTR_NONNULL((1))
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
 /**
@@ -496,7 +496,8 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
  * default,  the method  just emits  its passed  contents to  ::rb_stderr using
  * rb_io_write().
  *
- * @note       This function is affected by the `-W` flag.
+ * @note       This function is affected by the value of $VERBOSE, it does
+ *             nothing unless $VERBOSE is true.
  * @param[in]  fmt  Format specifier string compatible with rb_sprintf().
  *
  * @internal
@@ -521,7 +522,7 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 4)
  * Issues a compile-time warning  that happens at `__file__:__line__`.  Purpose
  * of this function being exposed to CAPI is unclear.
  *
- * @note       This function is affected by the `-W` flag.
+ * @note       This function is affected by the value of $VERBOSE.
  * @param[in]  file  The path corresponding to Ruby level `__FILE__`.
  * @param[in]  line  The number corresponding to Ruby level `__LINE__`.
  * @param[in]  fmt   Format specifier string compatible with rb_sprintf().
@@ -534,19 +535,20 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
  * Identical to rb_sys_fail(), except it does  not raise an exception to render
  * a warning instead.
  *
- * @note       This function is affected by the `-W` flag.
+ * @note       This function is affected by the value of $VERBOSE.
  * @param[in]  fmt  Format specifier string compatible with rb_sprintf().
  */
 void rb_sys_warning(const char *fmt, ...);
 
-/* reports always */
+/* reports if $VERBOSE is not nil (so if it is true or false) */
 RBIMPL_ATTR_COLD()
 RBIMPL_ATTR_NONNULL((1))
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
 /**
- * Identical to  rb_warning(), except it  reports always regardless  of runtime
- * `-W` flag.
+ * Identical to rb_warning(), except it reports unless $VERBOSE is nil.
  *
+ * @note       This function is affected by the value of $VERBOSE, it does
+ *             nothing if $VERBOSE is nil.
  * @param[in]  fmt  Format specifier string compatible with rb_sprintf().
  */
 void rb_warn(const char *fmt, ...);
@@ -555,8 +557,7 @@ RBIMPL_ATTR_COLD()
 RBIMPL_ATTR_NONNULL((2))
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
 /**
- * Identical to  rb_category_warning(), except it reports  always regardless of
- * runtime `-W` flag.
+ * Identical to rb_category_warning(), except it reports unless $VERBOSE is nil.
  *
  * @param[in]  cat  Category e.g. deprecated.
  * @param[in]  fmt  Format specifier string compatible with rb_sprintf().
@@ -566,8 +567,7 @@ void rb_category_warn(rb_warning_category_t cat, const char *fmt, ...);
 RBIMPL_ATTR_NONNULL((1, 3))
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 4)
 /**
- * Identical to  rb_compile_warning(), except  it reports always  regardless of
- * runtime `-W` flag.
+ * Identical to rb_compile_warning(), except  it reports unless $VERBOSE is nil.
  *
  * @param[in]  file  The path corresponding to Ruby level `__FILE__`.
  * @param[in]  line  The number corresponding to Ruby level `__LINE__`.

@@ -411,7 +411,7 @@ RSpec.describe "Bundler.setup" do
 
     it "provides a useful exception when the git repo is not checked out yet" do
       run "1", :raise_on_error => false
-      expect(err).to match(/the git source #{lib_path('rack-1.0.0')} is not yet checked out. Please run `bundle install`/i)
+      expect(err).to match(/the git source #{lib_path("rack-1.0.0")} is not yet checked out. Please run `bundle install`/i)
     end
 
     it "does not hit the git binary if the lockfile is available and up to date" do
@@ -498,7 +498,7 @@ RSpec.describe "Bundler.setup" do
 
       FileUtils.rm_rf(lib_path("local-rack"))
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
+      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path("local-rack").to_s)} does not exist/)
     end
 
     it "explodes if branch is not given on runtime" do
@@ -1339,6 +1339,7 @@ end
         exempts = %w[did_you_mean bundler]
         exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
+        exempts << "etc" if Gem.ruby_version < Gem::Version.new("3.2") && Gem.win_platform?
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
         exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
@@ -1575,130 +1576,5 @@ end
 
     sys_exec "#{Gem.ruby} #{script}", :raise_on_error => false
     expect(out).to include("requiring foo used the monkeypatch")
-  end
-
-  it "warn with bundled gems when it's loaded" do
-    build_repo4 do
-      build_gem "rack"
-    end
-
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "rack"
-    G
-
-    ruby <<-R
-      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
-      module Gem::BUNDLED_GEMS
-        SINCE = { "csv" => "1.0.0" }
-      end
-      require 'bundler/setup'
-      require 'csv'
-    R
-
-    expect(err).to include("csv is not part of the default gems")
-  end
-
-  it "don't warn with bundled gems when it's loaded twice" do
-    build_repo4 do
-      build_gem "rack"
-    end
-
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "rack"
-    G
-
-    ruby <<-R
-      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
-      module Gem::BUNDLED_GEMS
-        SINCE = { "csv" => "1.0.0" }
-      end
-      require 'csv'
-      require 'bundler/setup'
-      require 'csv'
-    R
-
-    expect(err).not_to include("Add csv to your Gemfile")
-  end
-
-  it "don't warn with bundled gems when it's declared in Gemfile" do
-    build_repo4 do
-      build_gem "csv"
-    end
-
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "csv"
-    G
-
-    ruby <<-R
-      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
-      module Gem::BUNDLED_GEMS
-        SINCE = { "csv" => "1.0.0" }
-      end
-      require 'bundler/setup'
-      require 'csv'
-    R
-
-    expect(err).to be_empty
-  end
-
-  it "warn foo-bar style gems correct name" do
-    build_repo4 do
-      build_gem "net-imap" do |s|
-        s.write "lib/net/imap.rb", "NET_IMAP = '0.0.1'"
-      end
-      build_gem "csv"
-    end
-
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "csv"
-    G
-
-    ruby <<-R
-      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
-      module Gem::BUNDLED_GEMS
-        SINCE = { "csv" => "1.0.0", "net-imap" => "0.0.1" }
-      end
-      require 'bundler/setup'
-      begin
-        require 'net/imap'
-      rescue LoadError
-      end
-    R
-
-    expect(err).to include("net-imap is not part of the default gems")
-  end
-
-  it "calls #to_path on the name to require" do
-    build_repo4 do
-      build_gem "net-imap" do |s|
-        s.write "lib/net/imap.rb", "NET_IMAP = '0.0.1'"
-      end
-      build_gem "csv"
-    end
-
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "csv"
-    G
-
-    ruby <<-R
-      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
-      module Gem::BUNDLED_GEMS
-        SINCE = { "csv" => "1.0.0", "net-imap" => "0.0.1" }
-      end
-      path = BasicObject.new
-      def path.to_path; 'net/imap'; end
-      require 'bundler/setup'
-      begin
-        require path
-      rescue LoadError
-      end
-    R
-
-    expect(err).to include("net-imap is not part of the default gems")
   end
 end

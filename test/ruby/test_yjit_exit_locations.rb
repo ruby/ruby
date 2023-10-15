@@ -18,22 +18,8 @@ class TestYJITExitLocations < Test::Unit::TestCase
     refute_includes(stderr, "NoMethodError")
   end
 
-  def test_trace_exits_setclassvariable
-    script = 'class Foo; def self.foo; @@foo = 1; end; end; Foo.foo'
-    assert_exit_locations(script)
-  end
-
-  def test_trace_exits_putobject
-    assert_exit_locations('true')
-    assert_exit_locations('123')
-    assert_exit_locations(':foo')
-  end
-
-  def test_trace_exits_opt_not
-    assert_exit_locations('!false')
-    assert_exit_locations('!nil')
-    assert_exit_locations('!true')
-    assert_exit_locations('![]')
+  def test_trace_exits_expandarray_splat
+    assert_exit_locations('*arr = []')
   end
 
   private

@@ -3539,12 +3539,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
 #endif
 
-        if (RHASH_ST_TABLE_P(obj)) {
-            st_table *tab = RHASH_ST_TABLE(obj);
-
-            free(tab->bins);
-            free(tab->entries);
-        }
+        rb_hash_free(obj);
         break;
       case T_REGEXP:
         if (RANY(obj)->as.regexp.ptr) {
@@ -3686,8 +3681,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
             break;
           case imemo_callinfo:
-            RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
-            break;
+            {
+                const struct rb_callinfo * ci = ((const struct rb_callinfo *)obj);
+                if (ci->kwarg) {
+                    ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
+                    if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
+                }
+                RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
+                break;
+            }
           case imemo_callcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
             break;
@@ -7064,7 +7066,6 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
         rb_ast_mark(&RANY(obj)->as.imemo.ast);
         return;
       case imemo_parser_strterm:
-        rb_strterm_mark(obj);
         return;
       case imemo_callinfo:
         return;
@@ -7803,7 +7804,7 @@ check_children_i(const VALUE child, void *ptr)
     if (check_rvalue_consistency_force(child, FALSE) != 0) {
         fprintf(stderr, "check_children_i: %s has error (referenced from %s)",
                 obj_info(child), obj_info(data->parent));
-        rb_print_backtrace(); /* C backtrace will help to debug */
+        rb_print_backtrace(stderr); /* C backtrace will help to debug */
 
         data->err_count++;
     }
@@ -9123,7 +9124,7 @@ rb_gc_register_address(VALUE *addr)
     if (0 && !SPECIAL_CONST_P(obj)) {
         rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
                 rb_obj_class(obj));
-        rb_print_backtrace();
+        rb_print_backtrace(stderr);
     }
 }
 

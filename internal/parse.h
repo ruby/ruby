@@ -22,47 +22,22 @@ struct rb_iseq_struct;          /* in vm_core.h */
 
 /* structs for managing terminator of string literal and heredocment */
 typedef struct rb_strterm_literal_struct {
-    union {
-        VALUE dummy;
-        long nest;
-    } u0;
-    union {
-        VALUE dummy;
-        long func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
-    } u1;
-    union {
-        VALUE dummy;
-        long paren;	    /* '(' of `%q(...)` */
-    } u2;
-    union {
-        VALUE dummy;
-        long term;	    /* ')' of `%q(...)` */
-    } u3;
+    long nest;
+    int func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
+    int paren;	    /* '(' of `%q(...)` */
+    int term;	    /* ')' of `%q(...)` */
 } rb_strterm_literal_t;
-
-#define HERETERM_LENGTH_BITS ((SIZEOF_VALUE - 1) * CHAR_BIT - 1)
 
 typedef struct rb_strterm_heredoc_struct {
     VALUE lastline;	/* the string of line that contains `<<"END"` */
     long offset;	/* the column of END in `<<"END"` */
     int sourceline;	/* lineno of the line that contains `<<"END"` */
-    unsigned length	/* the length of END in `<<"END"` */
-#if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
-    : HERETERM_LENGTH_BITS
-# define HERETERM_LENGTH_MAX ((1U << HERETERM_LENGTH_BITS) - 1)
-#else
-# define HERETERM_LENGTH_MAX UINT_MAX
-#endif
-    ;
-#if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
-    unsigned quote: 1;
-    unsigned func: 8;
-#else
+    unsigned length;	/* the length of END in `<<"END"` */
     uint8_t quote;
     uint8_t func;
-#endif
 } rb_strterm_heredoc_t;
-STATIC_ASSERT(rb_strterm_heredoc_t, sizeof(rb_strterm_heredoc_t) <= 4 * SIZEOF_VALUE);
+
+#define HERETERM_LENGTH_MAX UINT_MAX
 
 typedef struct rb_strterm_struct {
     VALUE flags;

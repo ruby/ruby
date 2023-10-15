@@ -28,8 +28,8 @@ module Bundler
           flag   = "--deployment flag" if options[:deployment]
           flag ||= "--frozen flag"     if options[:frozen]
           flag ||= "deployment setting"
-          raise ProductionError, "The #{flag} requires a #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}. Please make " \
-                                 "sure you have checked your #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} into version control " \
+          raise ProductionError, "The #{flag} requires a lockfile. Please make " \
+                                 "sure you have checked your #{SharedHelpers.relative_lockfile_path} into version control " \
                                  "before deploying."
         end
 

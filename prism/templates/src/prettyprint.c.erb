@@ -1,0 +1,111 @@
+#include "prism/defines.h"
+
+#include <stdio.h>
+
+#include "prism/ast.h"
+#include "prism/parser.h"
+#include "prism/util/pm_buffer.h"
+
+static void
+prettyprint_location(pm_buffer_t *buffer, pm_parser_t *parser, pm_location_t *location) {
+    char printed[] = "[0000-0000]";
+    snprintf(printed, sizeof(printed), "[%04ld-%04ld]", (long int)(location->start - parser->start), (long int)(location->end - parser->start));
+    pm_buffer_append_str(buffer, printed, strlen(printed));
+}
+
+static void
+prettyprint_node(pm_buffer_t *buffer, pm_parser_t *parser, pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        // We do not need to print a ScopeNode as it's not part
+        // of the AST
+        case PM_SCOPE_NODE:
+            return;
+        <%- nodes.each do |node| -%>
+        case <%= node.type %>: {
+            pm_buffer_append_str(buffer, "<%= node.name %>(", <%= node.name.length + 1 %>);
+            <%- node.fields.each_with_index do |field, index| -%>
+            <%= "pm_buffer_append_str(buffer, \", \", 2);" if index != 0 -%>
+            <%- case field -%>
+            <%- when Prism::NodeField -%>
+            prettyprint_node(buffer, parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            <%- when Prism::OptionalNodeField -%>
+            if (((pm_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
+                pm_buffer_append_str(buffer, "nil", 3);
+            } else {
+                prettyprint_node(buffer, parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            }
+            <%- when Prism::StringField -%>
+            pm_buffer_append_str(buffer, "\"", 1);
+            pm_buffer_append_bytes(buffer, pm_string_source(&((pm_<%= node.human %>_t *)node)-><%= field.name %>), pm_string_length(&((pm_<%= node.human %>_t *)node)-><%= field.name %>));
+            pm_buffer_append_str(buffer, "\"", 1);
+            <%- when Prism::NodeListField -%>
+            pm_buffer_append_str(buffer, "[", 1);
+            for (uint32_t index = 0; index < ((pm_<%= node.human %>_t *)node)-><%= field.name %>.size; index++) {
+                if (index != 0) pm_buffer_append_str(buffer, ", ", 2);
+                prettyprint_node(buffer, parser, (pm_node_t *) ((pm_<%= node.human %>_t *) node)-><%= field.name %>.nodes[index]);
+            }
+            pm_buffer_append_str(buffer, "]", 1);
+            <%- when Prism::ConstantField -%>
+            char <%= field.name %>_buffer[12];
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            <%- when Prism::OptionalConstantField -%>
+            if (((pm_<%= node.human %>_t *)node)-><%= field.name %> == 0) {
+                pm_buffer_append_str(buffer, "nil", 3);
+            } else {
+                char <%= field.name %>_buffer[12];
+                snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+                pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            }
+            <%- when Prism::ConstantListField -%>
+            pm_buffer_append_str(buffer, "[", 1);
+            for (uint32_t index = 0; index < ((pm_<%= node.human %>_t *)node)-><%= field.name %>.size; index++) {
+                if (index != 0) pm_buffer_append_str(buffer, ", ", 2);
+                char <%= field.name %>_buffer[12];
+                snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]);
+                pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            }
+            pm_buffer_append_str(buffer, "]", 1);
+            <%- when Prism::LocationField -%>
+            prettyprint_location(buffer, parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            <%- when Prism::OptionalLocationField -%>
+            if (((pm_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
+                pm_buffer_append_str(buffer, "nil", 3);
+            } else {
+                prettyprint_location(buffer, parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            }
+            <%- when Prism::UInt32Field -%>
+            char <%= field.name %>_buffer[12];
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "+%d", ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            <%- when Prism::FlagsField -%>
+            char <%= field.name %>_buffer[12];
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "+%d", (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
+            pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            <%- else -%>
+            <%- raise -%>
+            <%- end -%>
+            <%- end -%>
+            pm_buffer_append_str(buffer, ")", 1);
+            break;
+        }
+        <%- end -%>
+    }
+}
+
+void
+pm_print_node(pm_parser_t *parser, pm_node_t *node) {
+    pm_buffer_t buffer;
+    if (!pm_buffer_init(&buffer)) return;
+
+    prettyprint_node(&buffer, parser, node);
+    printf("%.*s\n", (int) buffer.length, buffer.value);
+
+    pm_buffer_free(&buffer);
+}
+
+// Pretty-prints the AST represented by the given node to the given buffer.
+PRISM_EXPORTED_FUNCTION void
+pm_prettyprint(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+    prettyprint_node(buffer, parser, node);
+}

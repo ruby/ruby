@@ -414,8 +414,7 @@ class CSV
         else
           lineno = @lineno + 1
         end
-        message = "Invalid byte sequence in #{@encoding}"
-        raise MalformedCSVError.new(message, lineno)
+        raise InvalidEncodingError.new(@encoding, lineno)
       rescue UnexpectedError => error
         if @scanner
           ignore_broken_line
@@ -876,8 +875,7 @@ class CSV
               !line.valid_encoding?
             end
             if index
-              message = "Invalid byte sequence in #{@encoding}"
-              raise MalformedCSVError.new(message, @lineno + index + 1)
+              raise InvalidEncodingError.new(@encoding, @lineno + index + 1)
             end
           end
           Scanner.new(string)

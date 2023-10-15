@@ -313,7 +313,7 @@ EOF
     deffile_path
   end
 
-  # We have to basically reimplement RbConfig::CONFIG['SOEXT'] here to support
+  # We have to basically reimplement <code>RbConfig::CONFIG['SOEXT']</code> here to support
   # Ruby < 2.5
   #
   # @see https://github.com/ruby/ruby/blob/c87c027f18c005460746a74c07cd80ee355b16e4/configure.ac#L3185

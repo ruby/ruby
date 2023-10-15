@@ -252,7 +252,7 @@ class Reline::Config
       end
       @skip_section = @if_stack.pop
     when 'include'
-      read(args)
+      read(File.expand_path(args))
     end
   end
 

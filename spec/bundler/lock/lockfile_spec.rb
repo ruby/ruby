@@ -1584,7 +1584,7 @@ RSpec.describe "the lockfile format" do
       gem "rack"
     G
 
-    expect(err).to match(/your Gemfile.lock contains merge conflicts/i)
+    expect(err).to match(/your lockfile contains merge conflicts/i)
     expect(err).to match(/git checkout HEAD -- Gemfile.lock/i)
   end
 

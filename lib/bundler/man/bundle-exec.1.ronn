@@ -21,9 +21,8 @@ available on your shell's `$PATH`.
 ## OPTIONS
 
 * `--keep-file-descriptors`:
-  Exec in Ruby 2.0 began discarding non-standard file descriptors. When this
-  flag is passed, exec will revert to the 1.9 behaviour of passing all file
-  descriptors to the new process.
+  Passes all file descriptors to the new processes. Default is true from
+  bundler version 2.2.26. Setting it to false is now deprecated.
 
 ## BUNDLE INSTALL --BINSTUBS
 

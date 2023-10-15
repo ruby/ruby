@@ -3,7 +3,11 @@ require 'io/wait'
 class Reline::GeneralIO
   def self.reset(encoding: nil)
     @@pasting = false
-    @@encoding = encoding
+    if encoding
+      @@encoding = encoding
+    elsif defined?(@@encoding)
+      remove_class_variable(:@@encoding)
+    end
   end
 
   def self.encoding

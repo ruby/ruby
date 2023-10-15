@@ -1,0 +1,429 @@
+@ ProgramNode (location: (1,0)-(42,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(42,3))
+    └── body: (length: 13)
+        ├── @ IfNode (location: (1,0)-(1,15))
+        │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (1,3)-(1,7))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (1,9)-(1,10))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (1,9)-(1,10))
+        │   │           └── flags: decimal
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (1,12)-(1,15) = "end"
+        ├── @ IfNode (location: (3,0)-(4,12))
+        │   ├── if_keyword_loc: (3,0)-(3,2) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (3,3)-(3,7))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (4,0)-(4,1))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (4,0)-(4,1))
+        │   │           └── flags: decimal
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (4,2)-(4,12))
+        │   │   ├── else_keyword_loc: (4,2)-(4,6) = "else"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (4,7)-(4,8))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (4,7)-(4,8))
+        │   │   │           └── flags: decimal
+        │   │   └── end_keyword_loc: (4,9)-(4,12) = "end"
+        │   └── end_keyword_loc: (4,9)-(4,12) = "end"
+        ├── @ IfNode (location: (6,0)-(6,73))
+        │   ├── if_keyword_loc: (6,0)-(6,2) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (6,3)-(6,7))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (6,13)-(6,17))
+        │   │   └── body: (length: 1)
+        │   │       └── @ TrueNode (location: (6,13)-(6,17))
+        │   ├── consequent:
+        │   │   @ IfNode (location: (6,18)-(6,73))
+        │   │   ├── if_keyword_loc: (6,18)-(6,23) = "elsif"
+        │   │   ├── predicate:
+        │   │   │   @ FalseNode (location: (6,24)-(6,29))
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (6,35)-(6,40))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ FalseNode (location: (6,35)-(6,40))
+        │   │   ├── consequent:
+        │   │   │   @ IfNode (location: (6,41)-(6,73))
+        │   │   │   ├── if_keyword_loc: (6,41)-(6,46) = "elsif"
+        │   │   │   ├── predicate:
+        │   │   │   │   @ NilNode (location: (6,47)-(6,50))
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (6,56)-(6,59))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ NilNode (location: (6,56)-(6,59))
+        │   │   │   ├── consequent:
+        │   │   │   │   @ ElseNode (location: (6,60)-(6,73))
+        │   │   │   │   ├── else_keyword_loc: (6,60)-(6,64) = "else"
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (6,65)-(6,69))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ SelfNode (location: (6,65)-(6,69))
+        │   │   │   │   └── end_keyword_loc: (6,70)-(6,73) = "end"
+        │   │   │   └── end_keyword_loc: (6,70)-(6,73) = "end"
+        │   │   └── end_keyword_loc: (6,70)-(6,73) = "end"
+        │   └── end_keyword_loc: (6,70)-(6,73) = "end"
+        ├── @ IfNode (location: (8,0)-(8,9))
+        │   ├── if_keyword_loc: (8,2)-(8,4) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (8,5)-(8,9))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (8,0)-(8,1))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (8,0)-(8,1))
+        │   │           └── flags: decimal
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (10,0)-(10,13))
+        │   ├── if_keyword_loc: (10,6)-(10,8) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (10,9)-(10,13))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (10,0)-(10,5))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (10,0)-(10,5))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (10,0)-(10,5) = "break"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (12,0)-(12,12))
+        │   ├── if_keyword_loc: (12,5)-(12,7) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (12,8)-(12,12))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (12,0)-(12,4))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NextNode (location: (12,0)-(12,4))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (12,0)-(12,4) = "next"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (14,0)-(14,14))
+        │   ├── if_keyword_loc: (14,7)-(14,9) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (14,10)-(14,14))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (14,0)-(14,6))
+        │   │   └── body: (length: 1)
+        │   │       └── @ ReturnNode (location: (14,0)-(14,6))
+        │   │           ├── keyword_loc: (14,0)-(14,6) = "return"
+        │   │           └── arguments: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (16,0)-(16,30))
+        │   ├── if_keyword_loc: (16,0)-(16,2) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (16,3)-(16,12))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (16,3)-(16,12) = "exit_loop"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :exit_loop
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (16,18)-(16,26))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (16,18)-(16,26))
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (16,24)-(16,26))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (16,24)-(16,26))
+        │   │           │           └── flags: decimal
+        │   │           └── keyword_loc: (16,18)-(16,23) = "break"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (16,27)-(16,30) = "end"
+        ├── @ IfNode (location: (18,0)-(20,3))
+        │   ├── if_keyword_loc: (18,0)-(18,2) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (18,3)-(18,6))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (18,3)-(18,6) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :foo
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (19,5)-(19,8))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (19,5)-(19,8))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (19,5)-(19,8) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: :bar
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (20,0)-(20,3) = "end"
+        ├── @ IfNode (location: (22,0)-(22,11))
+        │   ├── if_keyword_loc: (22,7)-(22,9) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (22,10)-(22,11))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (22,10)-(22,11) = "c"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :c
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (22,0)-(22,6))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IfNode (location: (22,0)-(22,6))
+        │   │           ├── if_keyword_loc: (22,2)-(22,4) = "if"
+        │   │           ├── predicate:
+        │   │           │   @ CallNode (location: (22,5)-(22,6))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (22,5)-(22,6) = "b"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: variable_call
+        │   │           │   └── name: :b
+        │   │           ├── statements:
+        │   │           │   @ StatementsNode (location: (22,0)-(22,1))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ CallNode (location: (22,0)-(22,1))
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── message_loc: (22,0)-(22,1) = "a"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           ├── block: ∅
+        │   │           │           ├── flags: variable_call
+        │   │           │           └── name: :a
+        │   │           ├── consequent: ∅
+        │   │           └── end_keyword_loc: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (24,0)-(27,3))
+        │   ├── if_keyword_loc: (24,0)-(24,2) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (24,3)-(24,7))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (25,2)-(25,6))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (25,2)-(25,6))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (25,2)-(25,3) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (25,4)-(25,6))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ KeywordHashNode (location: (25,4)-(25,6))
+        │   │           │           └── elements: (length: 1)
+        │   │           │               └── @ AssocNode (location: (25,4)-(25,6))
+        │   │           │                   ├── key:
+        │   │           │                   │   @ SymbolNode (location: (25,4)-(25,6))
+        │   │           │                   │   ├── opening_loc: ∅
+        │   │           │                   │   ├── value_loc: (25,4)-(25,5) = "b"
+        │   │           │                   │   ├── closing_loc: (25,5)-(25,6) = ":"
+        │   │           │                   │   └── unescaped: "b"
+        │   │           │                   ├── value:
+        │   │           │                   │   @ ImplicitNode (location: (25,4)-(25,6))
+        │   │           │                   │   └── value:
+        │   │           │                   │       @ CallNode (location: (25,4)-(25,6))
+        │   │           │                   │       ├── receiver: ∅
+        │   │           │                   │       ├── call_operator_loc: ∅
+        │   │           │                   │       ├── message_loc: (25,4)-(25,5) = "b"
+        │   │           │                   │       ├── opening_loc: ∅
+        │   │           │                   │       ├── arguments: ∅
+        │   │           │                   │       ├── closing_loc: ∅
+        │   │           │                   │       ├── block: ∅
+        │   │           │                   │       ├── flags: ∅
+        │   │           │                   │       └── name: :b
+        │   │           │                   └── operator_loc: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: :a
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (26,0)-(27,3))
+        │   │   ├── else_keyword_loc: (26,0)-(26,4) = "else"
+        │   │   ├── statements: ∅
+        │   │   └── end_keyword_loc: (27,0)-(27,3) = "end"
+        │   └── end_keyword_loc: (27,0)-(27,3) = "end"
+        ├── @ IfNode (location: (29,0)-(31,3))
+        │   ├── if_keyword_loc: (29,0)-(29,2) = "if"
+        │   ├── predicate:
+        │   │   @ MatchPredicateNode (location: (29,3)-(29,12))
+        │   │   ├── value:
+        │   │   │   @ CallNode (location: (29,3)-(29,7))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (29,3)-(29,7) = "type"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: :type
+        │   │   ├── pattern:
+        │   │   │   @ IntegerNode (location: (29,11)-(29,12))
+        │   │   │   └── flags: decimal
+        │   │   └── operator_loc: (29,8)-(29,10) = "in"
+        │   ├── statements: ∅
+        │   ├── consequent:
+        │   │   @ IfNode (location: (30,0)-(31,3))
+        │   │   ├── if_keyword_loc: (30,0)-(30,5) = "elsif"
+        │   │   ├── predicate:
+        │   │   │   @ MatchPredicateNode (location: (30,6)-(30,15))
+        │   │   │   ├── value:
+        │   │   │   │   @ CallNode (location: (30,6)-(30,10))
+        │   │   │   │   ├── receiver: ∅
+        │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── message_loc: (30,6)-(30,10) = "type"
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── arguments: ∅
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   ├── block: ∅
+        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   └── name: :type
+        │   │   │   ├── pattern:
+        │   │   │   │   @ ConstantReadNode (location: (30,14)-(30,15))
+        │   │   │   │   └── name: :B
+        │   │   │   └── operator_loc: (30,11)-(30,13) = "in"
+        │   │   ├── statements: ∅
+        │   │   ├── consequent: ∅
+        │   │   └── end_keyword_loc: (31,0)-(31,3) = "end"
+        │   └── end_keyword_loc: (31,0)-(31,3) = "end"
+        └── @ IfNode (location: (33,0)-(42,3))
+            ├── if_keyword_loc: (33,0)-(33,2) = "if"
+            ├── predicate:
+            │   @ IntegerNode (location: (33,3)-(33,4))
+            │   └── flags: decimal
+            ├── statements:
+            │   @ StatementsNode (location: (34,2)-(35,5))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (34,2)-(35,5))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (34,2)-(34,8) = "lambda"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block:
+            │           │   @ BlockNode (location: (34,9)-(35,5))
+            │           │   ├── locals: [:_]
+            │           │   ├── parameters:
+            │           │   │   @ BlockParametersNode (location: (34,12)-(34,15))
+            │           │   │   ├── parameters:
+            │           │   │   │   @ ParametersNode (location: (34,13)-(34,14))
+            │           │   │   │   ├── requireds: (length: 1)
+            │           │   │   │   │   └── @ RequiredParameterNode (location: (34,13)-(34,14))
+            │           │   │   │   │       └── name: :_
+            │           │   │   │   ├── optionals: (length: 0)
+            │           │   │   │   ├── rest: ∅
+            │           │   │   │   ├── posts: (length: 0)
+            │           │   │   │   ├── keywords: (length: 0)
+            │           │   │   │   ├── keyword_rest: ∅
+            │           │   │   │   └── block: ∅
+            │           │   │   ├── locals: (length: 0)
+            │           │   │   ├── opening_loc: (34,12)-(34,13) = "|"
+            │           │   │   └── closing_loc: (34,14)-(34,15) = "|"
+            │           │   ├── body: ∅
+            │           │   ├── opening_loc: (34,9)-(34,11) = "do"
+            │           │   └── closing_loc: (35,2)-(35,5) = "end"
+            │           ├── flags: ∅
+            │           └── name: :lambda
+            ├── consequent:
+            │   @ IfNode (location: (36,0)-(42,3))
+            │   ├── if_keyword_loc: (36,0)-(36,5) = "elsif"
+            │   ├── predicate:
+            │   │   @ IntegerNode (location: (36,6)-(36,7))
+            │   │   └── flags: decimal
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (37,2)-(38,5))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (37,2)-(38,5))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (37,2)-(37,8) = "lambda"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block:
+            │   │           │   @ BlockNode (location: (37,9)-(38,5))
+            │   │           │   ├── locals: [:_]
+            │   │           │   ├── parameters:
+            │   │           │   │   @ BlockParametersNode (location: (37,12)-(37,15))
+            │   │           │   │   ├── parameters:
+            │   │           │   │   │   @ ParametersNode (location: (37,13)-(37,14))
+            │   │           │   │   │   ├── requireds: (length: 1)
+            │   │           │   │   │   │   └── @ RequiredParameterNode (location: (37,13)-(37,14))
+            │   │           │   │   │   │       └── name: :_
+            │   │           │   │   │   ├── optionals: (length: 0)
+            │   │           │   │   │   ├── rest: ∅
+            │   │           │   │   │   ├── posts: (length: 0)
+            │   │           │   │   │   ├── keywords: (length: 0)
+            │   │           │   │   │   ├── keyword_rest: ∅
+            │   │           │   │   │   └── block: ∅
+            │   │           │   │   ├── locals: (length: 0)
+            │   │           │   │   ├── opening_loc: (37,12)-(37,13) = "|"
+            │   │           │   │   └── closing_loc: (37,14)-(37,15) = "|"
+            │   │           │   ├── body: ∅
+            │   │           │   ├── opening_loc: (37,9)-(37,11) = "do"
+            │   │           │   └── closing_loc: (38,2)-(38,5) = "end"
+            │   │           ├── flags: ∅
+            │   │           └── name: :lambda
+            │   ├── consequent:
+            │   │   @ ElseNode (location: (39,0)-(42,3))
+            │   │   ├── else_keyword_loc: (39,0)-(39,4) = "else"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (40,2)-(41,5))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ CallNode (location: (40,2)-(41,5))
+            │   │   │           ├── receiver: ∅
+            │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── message_loc: (40,2)-(40,8) = "lambda"
+            │   │   │           ├── opening_loc: ∅
+            │   │   │           ├── arguments: ∅
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           ├── block:
+            │   │   │           │   @ BlockNode (location: (40,9)-(41,5))
+            │   │   │           │   ├── locals: [:_]
+            │   │   │           │   ├── parameters:
+            │   │   │           │   │   @ BlockParametersNode (location: (40,12)-(40,15))
+            │   │   │           │   │   ├── parameters:
+            │   │   │           │   │   │   @ ParametersNode (location: (40,13)-(40,14))
+            │   │   │           │   │   │   ├── requireds: (length: 1)
+            │   │   │           │   │   │   │   └── @ RequiredParameterNode (location: (40,13)-(40,14))
+            │   │   │           │   │   │   │       └── name: :_
+            │   │   │           │   │   │   ├── optionals: (length: 0)
+            │   │   │           │   │   │   ├── rest: ∅
+            │   │   │           │   │   │   ├── posts: (length: 0)
+            │   │   │           │   │   │   ├── keywords: (length: 0)
+            │   │   │           │   │   │   ├── keyword_rest: ∅
+            │   │   │           │   │   │   └── block: ∅
+            │   │   │           │   │   ├── locals: (length: 0)
+            │   │   │           │   │   ├── opening_loc: (40,12)-(40,13) = "|"
+            │   │   │           │   │   └── closing_loc: (40,14)-(40,15) = "|"
+            │   │   │           │   ├── body: ∅
+            │   │   │           │   ├── opening_loc: (40,9)-(40,11) = "do"
+            │   │   │           │   └── closing_loc: (41,2)-(41,5) = "end"
+            │   │   │           ├── flags: ∅
+            │   │   │           └── name: :lambda
+            │   │   └── end_keyword_loc: (42,0)-(42,3) = "end"
+            │   └── end_keyword_loc: (42,0)-(42,3) = "end"
+            └── end_keyword_loc: (42,0)-(42,3) = "end"

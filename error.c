@@ -23,6 +23,10 @@
 # include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+# include <sys/wait.h>
+#endif
+
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
@@ -34,12 +38,14 @@
 #include "internal/io.h"
 #include "internal/load.h"
 #include "internal/object.h"
+#include "internal/process.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
+#include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
 
@@ -622,18 +628,239 @@ rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
     return 1;
 }
 
+/* returns true if x can not be used as file name */
+static bool
+path_sep_p(char x)
+{
+#if defined __CYGWIN__ || defined DOSISH
+# define PATH_SEP_ENCODING 1
+    // Assume that "/" is only the first byte in any encoding.
+    if (x == ':') return true; // drive letter or ADS
+    if (x == '\\') return true;
+#endif
+    return x == '/';
+}
+
+struct path_string {
+    const char *ptr;
+    size_t len;
+};
+
+static const char PATHSEP_REPLACE = '!';
+
+static char *
+append_pathname(char *p, const char *pe, VALUE str)
+{
+#ifdef PATH_SEP_ENCODING
+    rb_encoding *enc = rb_enc_get(str);
+#endif
+    const char *s = RSTRING_PTR(str);
+    const char *const se = s + RSTRING_LEN(str);
+    char c;
+
+    --pe; // for terminator
+
+    while (p < pe && s < se && (c = *s) != '\0') {
+        if (c == '.') {
+            if (s == se || !*s) break; // chomp "." basename
+            if (path_sep_p(s[1])) goto skipsep; // skip "./"
+        }
+        else if (path_sep_p(c)) {
+            // squeeze successive separators
+            *p++ = PATHSEP_REPLACE;
+          skipsep:
+            while (++s < se && path_sep_p(*s));
+            continue;
+        }
+        const char *const ss = s;
+        while (p < pe && s < se && *s && !path_sep_p(*s)) {
+#ifdef PATH_SEP_ENCODING
+            int n = rb_enc_mbclen(s, se, enc);
+#else
+            const int n = 1;
+#endif
+            p += n;
+            s += n;
+        }
+        if (s > ss) memcpy(p - (s - ss), ss, s - ss);
+    }
+
+    return p;
+}
+
+static char *
+append_basename(char *p, const char *pe, struct path_string *path, VALUE str)
+{
+    if (!path->ptr) {
+#ifdef PATH_SEP_ENCODING
+        rb_encoding *enc = rb_enc_get(str);
+#endif
+        const char *const b = RSTRING_PTR(str), *const e = RSTRING_END(str), *p = e;
+
+        while (p > b) {
+            if (path_sep_p(p[-1])) {
+#ifdef PATH_SEP_ENCODING
+                const char *t = rb_enc_prev_char(b, p, e, enc);
+                if (t == p-1) break;
+                p = t;
+#else
+                break;
+#endif
+            }
+            else {
+                --p;
+            }
+        }
+
+        path->ptr = p;
+        path->len = e - p;
+    }
+    size_t n = path->len;
+    if (p + n > pe) n = pe - p;
+    memcpy(p, path->ptr, n);
+    return p + n;
+}
+
+static void
+finish_report(FILE *out, rb_pid_t pid)
+{
+    if (out != stdout && out != stderr) fclose(out);
+#ifdef HAVE_WORKING_FORK
+    if (pid > 0) waitpid(pid, NULL, 0);
+#endif
+}
+
+struct report_expansion {
+    struct path_string exe, script;
+    rb_pid_t pid;
+    time_t time;
+};
+
+/*
+ * Open a bug report file to write.  The `RUBY_CRASH_REPORT`
+ * environment variable can be set to define a template that is used
+ * to name bug report files.  The template can contain % specifiers
+ * which are substituted by the following values when a bug report
+ * file is created:
+ *
+ *   %%    A single % character.
+ *   %e    The base name of the executable filename.
+ *   %E    Pathname of executable, with slashes ('/') replaced by
+ *         exclamation marks ('!').
+ *   %f    Similar to %e with the main script filename.
+ *   %F    Similar to %E with the main script filename.
+ *   %p    PID of dumped process in decimal.
+ *   %t    Time of dump, expressed as seconds since the Epoch,
+ *         1970-01-01 00:00:00 +0000 (UTC).
+ *   %NNN  Octal char code, upto 3 digits.
+ */
+static char *
+expand_report_argument(const char **input_template, struct report_expansion *values,
+                       char *buf, size_t size, bool word)
+{
+    char *p = buf;
+    char *end = buf + size;
+    const char *template = *input_template;
+    bool store = true;
+
+    if (p >= end-1 || !*template) return NULL;
+    do {
+        char c = *template++;
+        if (word && ISSPACE(c)) break;
+        if (!store) continue;
+        if (c == '%') {
+            size_t n;
+            switch (c = *template++) {
+              case 'e':
+                p = append_basename(p, end, &values->exe, rb_argv0);
+                continue;
+              case 'E':
+                p = append_pathname(p, end, rb_argv0);
+                continue;
+              case 'f':
+                p = append_basename(p, end, &values->script, GET_VM()->orig_progname);
+                continue;
+              case 'F':
+                p = append_pathname(p, end, GET_VM()->orig_progname);
+                continue;
+              case 'p':
+                if (!values->pid) values->pid = getpid();
+                snprintf(p, end-p, "%" PRI_PIDT_PREFIX "d", values->pid);
+                p += strlen(p);
+                continue;
+              case 't':
+                if (!values->time) values->time = time(NULL);
+                snprintf(p, end-p, "%" PRI_TIMET_PREFIX "d", values->time);
+                p += strlen(p);
+                continue;
+              default:
+                if (c >= '0' && c <= '7') {
+                    c = (unsigned char)ruby_scan_oct(template-1, 3, &n);
+                    template += n - 1;
+                    if (!c) store = false;
+                }
+                break;
+            }
+        }
+        if (p < end-1) *p++ = c;
+    } while (*template);
+    *input_template = template;
+    *p = '\0';
+    return ++p;
+}
+
+FILE *ruby_popen_writer(char *const *argv, rb_pid_t *pid);
+
+static FILE *
+open_report_path(const char *template, char *buf, size_t size, rb_pid_t *pid)
+{
+    struct report_expansion values = {{0}};
+
+    if (!template) return NULL;
+    if (0) fprintf(stderr, "RUBY_CRASH_REPORT=%s\n", buf);
+    if (*template == '|') {
+        char *argv[16], *bufend = buf + size, *p;
+        int argc;
+        template++;
+        for (argc = 0; argc < numberof(argv) - 1; ++argc) {
+            while (*template && ISSPACE(*template)) template++;
+            p = expand_report_argument(&template, &values, buf, bufend-buf, true);
+            if (!p) break;
+            argv[argc] = buf;
+            buf = p;
+        }
+        argv[argc] = NULL;
+        if (!p) return ruby_popen_writer(argv, pid);
+    }
+    else if (*template) {
+        expand_report_argument(&template, &values, buf, size, false);
+        return fopen(buf, "w");
+    }
+    return NULL;
+}
+
+static const char *crash_report;
+
 /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
 #define REPORT_BUG_BUFSIZ 256
 static FILE *
-bug_report_file(const char *file, int line)
+bug_report_file(const char *file, int line, rb_pid_t *pid)
 {
     char buf[REPORT_BUG_BUFSIZ];
-    FILE *out = stderr;
+    const char *report = crash_report;
+    if (!report) report = getenv("RUBY_CRASH_REPORT");
+    FILE *out = open_report_path(report, buf, sizeof(buf), pid);
     int len = err_position_0(buf, sizeof(buf), file, line);
 
-    if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
-        (ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
-        return out;
+    if (out) {
+        if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len) return out;
+        fclose(out);
+    }
+    if ((ssize_t)fwrite(buf, 1, len, stderr) == (ssize_t)len) {
+        return stderr;
+    }
+    if ((ssize_t)fwrite(buf, 1, len, stdout) == (ssize_t)len) {
+        return stdout;
     }
 
     return NULL;
@@ -740,7 +967,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 } while (0)
 
 static void
-bug_report_end(FILE *out)
+bug_report_end(FILE *out, rb_pid_t pid)
 {
     /* call additional bug reporters */
     {
@@ -751,25 +978,44 @@ bug_report_end(FILE *out)
         }
     }
     postscript_dump(out);
+    finish_report(out, pid);
 }
 
 #define report_bug(file, line, fmt, ctx) do { \
-    FILE *out = bug_report_file(file, line); \
+    rb_pid_t pid = -1; \
+    FILE *out = bug_report_file(file, line, &pid); \
     if (out) { \
         bug_report_begin(out, fmt); \
-        rb_vm_bugreport(ctx); \
-        bug_report_end(out); \
+        rb_vm_bugreport(ctx, out); \
+        bug_report_end(out, pid); \
     } \
 } while (0) \
 
 #define report_bug_valist(file, line, fmt, ctx, args) do { \
-    FILE *out = bug_report_file(file, line); \
+    rb_pid_t pid = -1; \
+    FILE *out = bug_report_file(file, line, &pid); \
     if (out) { \
         bug_report_begin_valist(out, fmt, args); \
-        rb_vm_bugreport(ctx); \
-        bug_report_end(out); \
+        rb_vm_bugreport(ctx, out); \
+        bug_report_end(out, pid); \
     } \
 } while (0) \
+
+void
+ruby_set_crash_report(const char *template)
+{
+    crash_report = template;
+#if RUBY_DEBUG
+    rb_pid_t pid = -1;
+    char buf[REPORT_BUG_BUFSIZ];
+    FILE *out = open_report_path(template, buf, sizeof(buf), &pid);
+    if (out) {
+        time_t t = time(NULL);
+        fprintf(out, "ruby_test_bug_report: %s", ctime(&t));
+        finish_report(out, pid);
+    }
+#endif
+}
 
 NORETURN(static void die(void));
 static void
@@ -881,8 +1127,8 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
     if (name) fprintf(out, "%s:", name);
     fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
     preface_dump(out);
-    rb_vm_bugreport(NULL);
-    bug_report_end(out);
+    rb_vm_bugreport(NULL, out);
+    bug_report_end(out, -1);
     die();
 }
 
@@ -3256,7 +3502,7 @@ rb_fatal(const char *fmt, ...)
         /* The thread has no GVL.  Object allocation impossible (cant run GC),
          * thus no message can be printed out. */
         fprintf(stderr, "[FATAL] rb_fatal() outside of GVL\n");
-        rb_print_backtrace();
+        rb_print_backtrace(stderr);
         die();
     }
 

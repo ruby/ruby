@@ -112,18 +112,16 @@ ractor_unlock_self(rb_ractor_t *cr, const char *file, int line)
 #define RACTOR_LOCK_SELF(r) ractor_lock_self(r, __FILE__, __LINE__)
 #define RACTOR_UNLOCK_SELF(r) ractor_unlock_self(r, __FILE__, __LINE__)
 
-static void
-ractor_cond_wait(rb_ractor_t *r)
+void
+rb_ractor_lock_self(rb_ractor_t *r)
 {
-#if RACTOR_CHECK_MODE > 0
-    VALUE locked_by = r->sync.locked_by;
-    r->sync.locked_by = Qnil;
-#endif
-    rb_native_cond_wait(&r->sync.cond, &r->sync.lock);
+    RACTOR_LOCK_SELF(r);
+}
 
-#if RACTOR_CHECK_MODE > 0
-    r->sync.locked_by = locked_by;
-#endif
+void
+rb_ractor_unlock_self(rb_ractor_t *r)
+{
+    RACTOR_UNLOCK_SELF(r);
 }
 
 // Ractor status
@@ -243,7 +241,9 @@ ractor_free(void *ptr)
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
     rb_native_mutex_destroy(&r->sync.lock);
+#ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_destroy(&r->sync.cond);
+#endif
     ractor_queue_free(&r->sync.recv_queue);
     ractor_queue_free(&r->sync.takers_queue);
     ractor_local_storage_free(r);
@@ -531,6 +531,19 @@ ractor_sleeping_by(const rb_ractor_t *r, enum rb_ractor_wait_status wait_status)
     return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
 }
 
+#ifdef RUBY_THREAD_PTHREAD_H
+// thread_*.c
+void rb_ractor_sched_wakeup(rb_ractor_t *r);
+#else
+
+static void
+rb_ractor_sched_wakeup(rb_ractor_t *r)
+{
+    rb_native_cond_broadcast(&r->sync.cond);
+}
+#endif
+
+
 static bool
 ractor_wakeup(rb_ractor_t *r, enum rb_ractor_wait_status wait_status, enum rb_ractor_wakeup_status wakeup_status)
 {
@@ -544,28 +557,12 @@ ractor_wakeup(rb_ractor_t *r, enum rb_ractor_wait_status wait_status, enum rb_ra
 
     if (ractor_sleeping_by(r, wait_status)) {
         r->sync.wait.wakeup_status = wakeup_status;
-        rb_native_cond_broadcast(&r->sync.cond);
+        rb_ractor_sched_wakeup(r);
         return true;
     }
     else {
         return false;
     }
-}
-
-static void *
-ractor_sleep_wo_gvl(void *ptr)
-{
-    rb_ractor_t *cr = ptr;
-    RACTOR_LOCK_SELF(cr);
-    {
-        VM_ASSERT(cr->sync.wait.status != wait_none);
-        if (cr->sync.wait.wakeup_status == wakeup_none) {
-            ractor_cond_wait(cr);
-        }
-        cr->sync.wait.status = wait_none;
-    }
-    RACTOR_UNLOCK_SELF(cr);
-    return NULL;
 }
 
 static void
@@ -582,34 +579,11 @@ ractor_sleep_interrupt(void *ptr)
 
 typedef void (*ractor_sleep_cleanup_function)(rb_ractor_t *cr, void *p);
 
-static enum rb_ractor_wakeup_status
-ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_ractor_wait_status wait_status,
-                          ractor_sleep_cleanup_function cf_func, void *cf_data)
+static void
+ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_cleanup_function cf_func, void *cf_data)
 {
-    enum rb_ractor_wakeup_status wakeup_status;
-    VM_ASSERT(GET_RACTOR() == cr);
-
-    // TODO: multi-threads
-    VM_ASSERT(cr->sync.wait.status == wait_none);
-    VM_ASSERT(wait_status != wait_none);
-    cr->sync.wait.status = wait_status;
-    cr->sync.wait.wakeup_status = wakeup_none;
-
-    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", RUBY_FUNCTION_NAME_STRING, (void *)cr,
-    //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
-
-    RUBY_DEBUG_LOG("sleep by %s", wait_status_str(wait_status));
-
-    RACTOR_UNLOCK(cr);
-    {
-        rb_nogvl(ractor_sleep_wo_gvl, cr,
-                 ractor_sleep_interrupt, cr,
-                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
-    }
-    RACTOR_LOCK(cr);
-
-    // rb_nogvl() can be canceled by interrupts
     if (cr->sync.wait.status != wait_none) {
+        enum rb_ractor_wait_status prev_wait_status = cr->sync.wait.status;
         cr->sync.wait.status = wait_none;
         cr->sync.wait.wakeup_status = wakeup_by_interrupt;
 
@@ -632,8 +606,85 @@ ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_r
                 rb_thread_check_ints();
             }
         }
-        RACTOR_LOCK(cr); // reachable?
+
+        // reachable?
+        RACTOR_LOCK(cr);
+        cr->sync.wait.status = prev_wait_status;
     }
+}
+
+#ifdef RUBY_THREAD_PTHREAD_H
+void rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf);
+#else
+
+// win32
+static void
+ractor_cond_wait(rb_ractor_t *r)
+{
+#if RACTOR_CHECK_MODE > 0
+    VALUE locked_by = r->sync.locked_by;
+    r->sync.locked_by = Qnil;
+#endif
+    rb_native_cond_wait(&r->sync.cond, &r->sync.lock);
+
+#if RACTOR_CHECK_MODE > 0
+    r->sync.locked_by = locked_by;
+#endif
+}
+
+static void *
+ractor_sleep_wo_gvl(void *ptr)
+{
+    rb_ractor_t *cr = ptr;
+    RACTOR_LOCK_SELF(cr);
+    {
+        VM_ASSERT(cr->sync.wait.status != wait_none);
+        if (cr->sync.wait.wakeup_status == wakeup_none) {
+            ractor_cond_wait(cr);
+        }
+        cr->sync.wait.status = wait_none;
+    }
+    RACTOR_UNLOCK_SELF(cr);
+    return NULL;
+}
+
+static void
+rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf)
+{
+    RACTOR_UNLOCK(cr);
+    {
+        rb_nogvl(ractor_sleep_wo_gvl, cr,
+                 ubf, cr,
+                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
+    }
+    RACTOR_LOCK(cr);
+}
+#endif
+
+static enum rb_ractor_wakeup_status
+ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_ractor_wait_status wait_status,
+                          ractor_sleep_cleanup_function cf_func, void *cf_data)
+{
+    enum rb_ractor_wakeup_status wakeup_status;
+    VM_ASSERT(GET_RACTOR() == cr);
+
+    // TODO: multi-threads
+    VM_ASSERT(cr->sync.wait.status == wait_none);
+    VM_ASSERT(wait_status != wait_none);
+    cr->sync.wait.status = wait_status;
+    cr->sync.wait.wakeup_status = wakeup_none;
+
+    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", RUBY_FUNCTION_NAME_STRING, (void *)cr,
+    //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
+
+    RUBY_DEBUG_LOG("sleep by %s", wait_status_str(wait_status));
+
+    while (cr->sync.wait.wakeup_status == wakeup_none) {
+        rb_ractor_sched_sleep(ec, cr, ractor_sleep_interrupt);
+        ractor_check_ints(ec, cr, cf_func, cf_data);
+    }
+
+    cr->sync.wait.status = wait_none;
 
     // TODO: multi-thread
     wakeup_status = cr->sync.wait.wakeup_status;
@@ -1943,7 +1994,7 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 }
 #endif
 
-void rb_thread_sched_init(struct rb_thread_sched *);
+void rb_thread_sched_init(struct rb_thread_sched *, bool atfork);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
@@ -1959,11 +2010,15 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     ractor_queue_setup(&r->sync.recv_queue);
     ractor_queue_setup(&r->sync.takers_queue);
     rb_native_mutex_initialize(&r->sync.lock);
-    rb_native_cond_initialize(&r->sync.cond);
     rb_native_cond_initialize(&r->barrier_wait_cond);
 
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_initialize(&r->sync.cond);
+    rb_native_cond_initialize(&r->barrier_wait_cond);
+#endif
+
     // thread management
-    rb_thread_sched_init(&r->threads.sched);
+    rb_thread_sched_init(&r->threads.sched, false);
     rb_ractor_living_threads_init(r);
 
     // naming
@@ -2218,12 +2273,16 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
     }
 }
 
+void rb_threadptr_remove(rb_thread_t *th);
+
 void
 rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
     VM_ASSERT(cr == GET_RACTOR());
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
     ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
+
+    rb_threadptr_remove(th);
 
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
@@ -2327,6 +2386,9 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
     }
 }
 
+void rb_add_running_thread(rb_thread_t *th);
+void rb_del_running_thread(rb_thread_t *th);
+
 void
 rb_ractor_terminate_all(void)
 {
@@ -2354,7 +2416,9 @@ rb_ractor_terminate_all(void)
 
             // wait for 1sec
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
+            rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
+            rb_add_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
 
             ractor_terminal_interrupt_all(vm);

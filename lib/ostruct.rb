@@ -109,6 +109,14 @@
 class OpenStruct
   VERSION = "0.5.5"
 
+  HAS_PERFORMANCE_WARNINGS = begin
+    Warning[:performance]
+    true
+  rescue NoMethodError, ArgumentError
+    false
+  end
+  private_constant :HAS_PERFORMANCE_WARNINGS
+
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
   # object will have no attributes.
@@ -124,6 +132,10 @@ class OpenStruct
   #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
   def initialize(hash=nil)
+    if HAS_PERFORMANCE_WARNINGS && Warning[:performance]
+       warn "OpenStruct use is discouraged for performance reasons", uplevel: 1, category: :performance
+    end
+
     if hash
       update_to_values!(hash)
     else

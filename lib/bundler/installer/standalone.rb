@@ -12,6 +12,7 @@ module Bundler
       end
       File.open File.join(bundler_path, "setup.rb"), "w" do |file|
         file.puts "require 'rbconfig'"
+        file.puts prevent_gem_activation
         file.puts define_path_helpers
         file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
@@ -55,11 +56,24 @@ module Bundler
       if spec.source.instance_of?(Source::Path) && spec.source.path.absolute?
         full_path
       else
-        Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
+        SharedHelpers.relative_path_to(full_path, :from => Bundler.root.join(bundler_path))
       end
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)
+    end
+
+    def prevent_gem_activation
+      <<~'END'
+        module Kernel
+          remove_method(:gem) if private_method_defined?(:gem)
+
+          def gem(*)
+          end
+
+          private :gem
+        end
+      END
     end
 
     def define_path_helpers

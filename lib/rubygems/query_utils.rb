@@ -311,8 +311,8 @@ module Gem::QueryUtils
       label = "Installed at"
       specs.each do |s|
         version = s.version.to_s
-        version << ", default" if s.default_gem?
-        entry << "\n" << "    #{label} (#{version}): #{s.base_dir}"
+        default = ", default" if s.default_gem?
+        entry << "\n" << "    #{label} (#{version}#{default}): #{s.base_dir}"
         label = " " * label.length
       end
     end

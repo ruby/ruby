@@ -639,6 +639,7 @@ yes-test-leaked-globals: yes-test-leaked-globals-precheck
 	$(ACTIONS_GROUP)
 	$(Q) $(XRUBY) $(tooldir)/leaked-globals \
 	  SOEXT=$(SOEXT) NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) \
+	  SYMBOLS_IN_EMPTYLIB="@XSYMBOLS_IN_EMPTYLIB@" \
 	  PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac \
 	  $(COMMONOBJS) $(LIBRUBY_FOR_LEAKED_GLOBALS:yes=$(LIBRUBY_SO))
 	$(ACTIONS_ENDGROUP)

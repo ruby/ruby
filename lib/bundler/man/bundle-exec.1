@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-EXEC" "1" "August 2023" "" ""
+.TH "BUNDLE\-EXEC" "1" "October 2023" "" ""
 .
 .SH "NAME"
 \fBbundle\-exec\fR \- Execute a command in the context of the bundle
@@ -22,7 +22,7 @@ Note that \fBbundle exec\fR does not require that an executable is available on 
 .
 .TP
 \fB\-\-keep\-file\-descriptors\fR
-Exec in Ruby 2\.0 began discarding non\-standard file descriptors\. When this flag is passed, exec will revert to the 1\.9 behaviour of passing all file descriptors to the new process\.
+Passes all file descriptors to the new processes\. Default is true from bundler version 2\.2\.26\. Setting it to false is now deprecated\.
 .
 .SH "BUNDLE INSTALL \-\-BINSTUBS"
 If you use the \fB\-\-binstubs\fR flag in bundle install(1) \fIbundle\-install\.1\.html\fR, Bundler will automatically create a directory (which defaults to \fBapp_root/bin\fR) containing all of the executables available from gems in the bundle\.

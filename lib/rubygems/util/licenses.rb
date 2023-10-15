@@ -22,10 +22,8 @@ class Gem::Licenses
     AFL-2.0
     AFL-2.1
     AFL-3.0
-    AGPL-1.0
     AGPL-1.0-only
     AGPL-1.0-or-later
-    AGPL-3.0
     AGPL-3.0-only
     AGPL-3.0-or-later
     AMDPLPA
@@ -58,8 +56,6 @@ class Gem::Licenses
     Artistic-2.0
     BSD-1-Clause
     BSD-2-Clause
-    BSD-2-Clause-FreeBSD
-    BSD-2-Clause-NetBSD
     BSD-2-Clause-Patent
     BSD-2-Clause-Views
     BSD-3-Clause
@@ -219,21 +215,18 @@ class Gem::Licenses
     FreeBSD-DOC
     FreeImage
     GD
-    GFDL-1.1
     GFDL-1.1-invariants-only
     GFDL-1.1-invariants-or-later
     GFDL-1.1-no-invariants-only
     GFDL-1.1-no-invariants-or-later
     GFDL-1.1-only
     GFDL-1.1-or-later
-    GFDL-1.2
     GFDL-1.2-invariants-only
     GFDL-1.2-invariants-or-later
     GFDL-1.2-no-invariants-only
     GFDL-1.2-no-invariants-or-later
     GFDL-1.2-only
     GFDL-1.2-or-later
-    GFDL-1.3
     GFDL-1.3-invariants-only
     GFDL-1.3-invariants-or-later
     GFDL-1.3-no-invariants-only
@@ -242,25 +235,12 @@ class Gem::Licenses
     GFDL-1.3-or-later
     GL2PS
     GLWTPL
-    GPL-1.0
-    GPL-1.0+
     GPL-1.0-only
     GPL-1.0-or-later
-    GPL-2.0
-    GPL-2.0+
     GPL-2.0-only
     GPL-2.0-or-later
-    GPL-2.0-with-GCC-exception
-    GPL-2.0-with-autoconf-exception
-    GPL-2.0-with-bison-exception
-    GPL-2.0-with-classpath-exception
-    GPL-2.0-with-font-exception
-    GPL-3.0
-    GPL-3.0+
     GPL-3.0-only
     GPL-3.0-or-later
-    GPL-3.0-with-GCC-exception
-    GPL-3.0-with-autoconf-exception
     Giftware
     Glide
     Glulxe
@@ -298,16 +278,10 @@ class Gem::Licenses
     Knuth-CTAN
     LAL-1.2
     LAL-1.3
-    LGPL-2.0
-    LGPL-2.0+
     LGPL-2.0-only
     LGPL-2.0-or-later
-    LGPL-2.1
-    LGPL-2.1+
     LGPL-2.1-only
     LGPL-2.1-or-later
-    LGPL-3.0
-    LGPL-3.0+
     LGPL-3.0-only
     LGPL-3.0-or-later
     LGPLLR
@@ -387,7 +361,6 @@ class Gem::Licenses
     Newsletr
     Nokia
     Noweb
-    Nunit
     O-UDA-1.0
     OCCT-PL
     OCLC-2.0
@@ -486,7 +459,6 @@ class Gem::Licenses
     Spencer-86
     Spencer-94
     Spencer-99
-    StandardML-NJ
     SugarCRM-1.1.3
     SunPro
     Symlinks
@@ -539,7 +511,6 @@ class Gem::Licenses
     Zimbra-1.4
     Zlib
     blessing
-    bzip2-1.0.5
     bzip2-1.0.6
     checkmk
     copyleft-next-0.3.0
@@ -548,7 +519,6 @@ class Gem::Licenses
     diffmark
     dtoa
     dvipdfm
-    eCos-2.0
     eGenix
     etalab-2.0
     gSOAP-1.3b
@@ -566,11 +536,44 @@ class Gem::Licenses
     psutils
     snprintf
     w3m
-    wxWindows
     xinetd
     xlock
     xpp
     zlib-acknowledgement
+  ].freeze
+
+  DEPRECATED_LICENSE_IDENTIFIERS = %w[
+    AGPL-1.0
+    AGPL-3.0
+    BSD-2-Clause-FreeBSD
+    BSD-2-Clause-NetBSD
+    GFDL-1.1
+    GFDL-1.2
+    GFDL-1.3
+    GPL-1.0
+    GPL-1.0+
+    GPL-2.0
+    GPL-2.0+
+    GPL-2.0-with-GCC-exception
+    GPL-2.0-with-autoconf-exception
+    GPL-2.0-with-bison-exception
+    GPL-2.0-with-classpath-exception
+    GPL-2.0-with-font-exception
+    GPL-3.0
+    GPL-3.0+
+    GPL-3.0-with-GCC-exception
+    GPL-3.0-with-autoconf-exception
+    LGPL-2.0
+    LGPL-2.0+
+    LGPL-2.1
+    LGPL-2.1+
+    LGPL-3.0
+    LGPL-3.0+
+    Nunit
+    StandardML-NJ
+    bzip2-1.0.5
+    eCos-2.0
+    wxWindows
   ].freeze
 
   # exception identifiers
@@ -605,7 +608,6 @@ class Gem::Licenses
     LZMA-exception
     Libtool-exception
     Linux-syscall-note
-    Nokia-Qt-exception-1.1
     OCCT-exception-1.0
     OCaml-LGPL-linking-exception
     OpenJDK-assembly-exception-1.0
@@ -633,7 +635,11 @@ class Gem::Licenses
     x11vnc-openssl-exception
   ].freeze
 
-  REGEXP = /
+  DEPRECATED_EXCEPTION_IDENTIFIERS = %w[
+    Nokia-Qt-exception-1.1
+  ].freeze
+
+  VALID_REGEXP = /
     \A
     (?:
       #{Regexp.union(LICENSE_IDENTIFIERS)}
@@ -645,8 +651,32 @@ class Gem::Licenses
     \Z
   /ox.freeze
 
+  DEPRECATED_LICENSE_REGEXP = /
+    \A
+    #{Regexp.union(DEPRECATED_LICENSE_IDENTIFIERS)}
+    \+?
+    (?:\s WITH \s .+?)?
+    \Z
+  /ox.freeze
+
+  DEPRECATED_EXCEPTION_REGEXP = /
+    \A
+    .+?
+    \+?
+    (?:\s WITH \s #{Regexp.union(DEPRECATED_EXCEPTION_IDENTIFIERS)})
+    \Z
+  /ox.freeze
+
   def self.match?(license)
-    REGEXP.match?(license)
+    VALID_REGEXP.match?(license)
+  end
+
+  def self.deprecated_license_id?(license)
+    DEPRECATED_LICENSE_REGEXP.match?(license)
+  end
+
+  def self.deprecated_exception_id?(license)
+    DEPRECATED_EXCEPTION_REGEXP.match?(license)
   end
 
   def self.suggestions(license)

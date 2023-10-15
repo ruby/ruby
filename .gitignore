@@ -255,13 +255,17 @@ lcov*.info
 # /wasm/
 /wasm/tests/*.wasm
 
-# YARP
-/lib/yarp/mutation_visitor.rb
-/lib/yarp/node.rb
-/lib/yarp/serialize.rb
-/yarp/api_node.c
-/yarp/ast.h
-/yarp/node.c
-/yarp/prettyprint.c
-/yarp/serialize.c
-/yarp/token_type.c
+# prism
+/lib/prism/compiler.rb
+/lib/prism/dispatcher.rb
+/lib/prism/dsl.rb
+/lib/prism/mutation_compiler.rb
+/lib/prism/node.rb
+/lib/prism/serialize.rb
+/lib/prism/visitor.rb
+/prism/api_node.c
+/prism/ast.h
+/prism/node.c
+/prism/prettyprint.c
+/prism/serialize.c
+/prism/token_type.c

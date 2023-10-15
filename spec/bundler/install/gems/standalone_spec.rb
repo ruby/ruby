@@ -101,6 +101,22 @@ RSpec.shared_examples "bundle install --standalone" do
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
+
+    it "skips activating gems" do
+      testrb = String.new <<-RUBY
+        $:.unshift File.expand_path("bundle")
+        require "bundler/setup"
+
+        gem "do_not_activate_me"
+      RUBY
+      expected_gems.each do |k, _|
+        testrb << "\nrequire \"#{k}\""
+        testrb << "\nputs #{k.upcase}"
+      end
+      sys_exec %(#{Gem.ruby} -w -e #{testrb.shellescape})
+
+      expect(out).to eq(expected_gems.values.join("\n"))
+    end
   end
 
   describe "with simple gems" do

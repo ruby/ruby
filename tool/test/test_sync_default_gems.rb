@@ -73,6 +73,15 @@ module Test_SyncDefaultGems
       ]
       assert_message_filter(expected, trailers, [expected, "", trailers].join("\n"))
     end
+
+    def test_dot_ending_subject
+      expected = [
+        "subject with a dot.",
+        "",
+        "- next body line",
+      ]
+      assert_message_filter(expected, nil, [expected[0], expected[2], ""].join("\n"))
+    end
   end
 
   class TestSyncWithCommits < Test::Unit::TestCase

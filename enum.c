@@ -4936,11 +4936,11 @@ enum_compact(VALUE obj)
  * - #group_by: Returns a Hash that partitions the elements into groups.
  * - #partition: Returns elements partitioned into two new Arrays, as determined by the given block.
  * - #slice_after: Returns a new Enumerator whose entries are a partition of +self+,
-     based either on a given +object+ or a given block.
+ *   based either on a given +object+ or a given block.
  * - #slice_before: Returns a new Enumerator whose entries are a partition of +self+,
-     based either on a given +object+ or a given block.
+ *   based either on a given +object+ or a given block.
  * - #slice_when: Returns a new Enumerator whose entries are a partition of +self+
-     based on the given block.
+ *   based on the given block.
  * - #chunk: Returns elements organized into chunks as specified by the given block.
  * - #chunk_while: Returns elements organized into chunks as specified by the given block.
  *

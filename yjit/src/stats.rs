@@ -70,11 +70,6 @@ static mut YJIT_EXIT_LOCATIONS: Option<YjitExitLocations> = None;
 impl YjitExitLocations {
     /// Initialize the yjit exit locations
     pub fn init() {
-        // Return if the stats feature is disabled
-        if !cfg!(feature = "stats") {
-            return;
-        }
-
         // Return if --yjit-trace-exits isn't enabled
         if !get_option!(gen_trace_exits) {
             return;
@@ -121,11 +116,6 @@ impl YjitExitLocations {
     pub fn gc_mark_raw_samples() {
         // Return if YJIT is not enabled
         if !yjit_enabled_p() {
-            return;
-        }
-
-        // Return if the stats feature is disabled
-        if !cfg!(feature = "stats") {
             return;
         }
 
@@ -198,9 +188,10 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 7] = [
+pub const DEFAULT_COUNTERS: [Counter; 8] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
+    Counter::cold_iseq_entry,
     Counter::compiled_iseq_count,
     Counter::compiled_blockid_count,
     Counter::compiled_block_count,
@@ -276,6 +267,8 @@ make_counters! {
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
+    send_iseq_clobbering_block_arg,
+    send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_only_keywords,
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
@@ -411,7 +404,6 @@ make_counters! {
     opt_case_dispatch_megamorphic,
 
     opt_getconstant_path_ic_miss,
-    opt_getconstant_path_no_ic_entry,
     opt_getconstant_path_multi_ractor,
 
     expandarray_splat,
@@ -441,6 +433,7 @@ make_counters! {
     binding_set,
 
     compiled_iseq_entry,
+    cold_iseq_entry,
     compiled_iseq_count,
     compiled_blockid_count,
     compiled_block_count,
@@ -536,7 +529,6 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, context: VALU
 /// to be enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    #[cfg(feature = "stats")]
     if get_option!(gen_trace_exits) {
         return Qtrue;
     }
@@ -550,11 +542,6 @@ pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
 pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
-        return Qnil;
-    }
-
-    // Return if the stats feature is disabled
-    if !cfg!(feature = "stats") {
         return Qnil;
     }
 
@@ -579,6 +566,16 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
     unsafe {
         rb_yjit_exit_locations_dict(yjit_raw_samples.as_mut_ptr(), yjit_line_samples.as_mut_ptr(), samples_len)
     }
+}
+
+/// Increment a counter by name from the CRuby side
+/// Warning: this is not fast because it requires a hash lookup, so don't use in tight loops
+#[no_mangle]
+pub extern "C" fn rb_yjit_incr_counter(counter_name: *const std::os::raw::c_char) {
+    use std::ffi::CStr;
+    let counter_name = unsafe { CStr::from_ptr(counter_name).to_str().unwrap() };
+    let counter_ptr = get_counter_ptr(counter_name);
+    unsafe { *counter_ptr += 1 };
 }
 
 /// Export all YJIT statistics as a Ruby hash.
@@ -711,11 +708,6 @@ pub extern "C" fn rb_yjit_record_exit_stack(_exit_pc: *const VALUE)
 {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
-        return;
-    }
-
-    // Return if the stats feature is disabled
-    if !cfg!(feature = "stats") {
         return;
     }
 

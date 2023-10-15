@@ -1,0 +1,76 @@
+@ ProgramNode (location: (1,0)-(3,22))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,22))
+    └── body: (length: 2)
+        ├── @ ArrayNode (location: (1,0)-(1,14))
+        │   ├── elements: (length: 2)
+        │   │   ├── @ StringNode (location: (1,3)-(1,6))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (1,3)-(1,6) = "foo"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "foo"
+        │   │   └── @ InterpolatedStringNode (location: (1,7)-(1,13))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── parts: (length: 1)
+        │   │       │   └── @ EmbeddedStatementsNode (location: (1,7)-(1,13))
+        │   │       │       ├── opening_loc: (1,7)-(1,9) = "\#{"
+        │   │       │       ├── statements:
+        │   │       │       │   @ StatementsNode (location: (1,9)-(1,12))
+        │   │       │       │   └── body: (length: 1)
+        │   │       │       │       └── @ CallNode (location: (1,9)-(1,12))
+        │   │       │       │           ├── receiver: ∅
+        │   │       │       │           ├── call_operator_loc: ∅
+        │   │       │       │           ├── message_loc: (1,9)-(1,12) = "bar"
+        │   │       │       │           ├── opening_loc: ∅
+        │   │       │       │           ├── arguments: ∅
+        │   │       │       │           ├── closing_loc: ∅
+        │   │       │       │           ├── block: ∅
+        │   │       │       │           ├── flags: variable_call
+        │   │       │       │           └── name: :bar
+        │   │       │       └── closing_loc: (1,12)-(1,13) = "}"
+        │   │       └── closing_loc: ∅
+        │   ├── opening_loc: (1,0)-(1,3) = "%W["
+        │   └── closing_loc: (1,13)-(1,14) = "]"
+        └── @ ArrayNode (location: (3,0)-(3,22))
+            ├── elements: (length: 2)
+            │   ├── @ StringNode (location: (3,3)-(3,6))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (3,3)-(3,6) = "foo"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "foo"
+            │   └── @ InterpolatedStringNode (location: (3,7)-(3,21))
+            │       ├── opening_loc: ∅
+            │       ├── parts: (length: 3)
+            │       │   ├── @ EmbeddedStatementsNode (location: (3,7)-(3,13))
+            │       │   │   ├── opening_loc: (3,7)-(3,9) = "\#{"
+            │       │   │   ├── statements:
+            │       │   │   │   @ StatementsNode (location: (3,9)-(3,12))
+            │       │   │   │   └── body: (length: 1)
+            │       │   │   │       └── @ CallNode (location: (3,9)-(3,12))
+            │       │   │   │           ├── receiver: ∅
+            │       │   │   │           ├── call_operator_loc: ∅
+            │       │   │   │           ├── message_loc: (3,9)-(3,12) = "bar"
+            │       │   │   │           ├── opening_loc: ∅
+            │       │   │   │           ├── arguments: ∅
+            │       │   │   │           ├── closing_loc: ∅
+            │       │   │   │           ├── block: ∅
+            │       │   │   │           ├── flags: variable_call
+            │       │   │   │           └── name: :bar
+            │       │   │   └── closing_loc: (3,12)-(3,13) = "}"
+            │       │   ├── @ StringNode (location: (3,13)-(3,16))
+            │       │   │   ├── flags: ∅
+            │       │   │   ├── opening_loc: ∅
+            │       │   │   ├── content_loc: (3,13)-(3,16) = "foo"
+            │       │   │   ├── closing_loc: ∅
+            │       │   │   └── unescaped: "foo"
+            │       │   └── @ EmbeddedVariableNode (location: (3,16)-(3,21))
+            │       │       ├── operator_loc: (3,16)-(3,17) = "#"
+            │       │       └── variable:
+            │       │           @ InstanceVariableReadNode (location: (3,17)-(3,21))
+            │       │           └── name: :@baz
+            │       └── closing_loc: ∅
+            ├── opening_loc: (3,0)-(3,3) = "%W["
+            └── closing_loc: (3,21)-(3,22) = "]"
