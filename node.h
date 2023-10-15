@@ -67,6 +67,7 @@ void rb_ast_mark(rb_ast_t*);
 void rb_ast_update_references(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
+void rb_ast_delete_mark_object(rb_ast_t*, VALUE);
 void rb_ast_set_tokens(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type, size_t size, size_t alignment);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
@@ -96,7 +97,7 @@ RUBY_SYMBOL_EXPORT_END
 
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
-#define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
+#define NODE_REQUIRED_KEYWORD_P(node) ((node) == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
 #define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)

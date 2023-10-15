@@ -473,37 +473,10 @@ zalloc(size_t elemsiz)
     return ruby_xcalloc(1, elemsiz);
 }
 
-static VALUE
-new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
-{
-    rb_strterm_t *imemo = (rb_strterm_t *)rb_imemo_new(imemo_parser_strterm, v1, v2, v3, v0);
-    if (heredoc) {
-        imemo->flags |= STRTERM_HEREDOC;
-    }
-
-    return (VALUE)imemo;
-}
-
-static int
-strterm_is_heredoc(VALUE strterm)
-{
-    return ((rb_strterm_t *)strterm)->flags & STRTERM_HEREDOC;
-}
-
 static void
 gc_guard(VALUE obj)
 {
     RB_GC_GUARD(obj);
-}
-
-void
-rb_strterm_mark(VALUE obj)
-{
-    rb_strterm_t *strterm = (rb_strterm_t*)obj;
-    if (RBASIC(obj)->flags & STRTERM_HEREDOC) {
-        rb_strterm_heredoc_t *heredoc = &strterm->u.heredoc;
-        rb_gc_mark(heredoc->lastline);
-    }
 }
 
 static rb_imemo_tmpbuf_t *
@@ -564,8 +537,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->nonempty_memcpy = nonempty_memcpy;
     config->xmalloc_mul_add = rb_xmalloc_mul_add;
 
-    config->new_strterm = new_strterm;
-    config->strterm_is_heredoc = strterm_is_heredoc;
     config->tmpbuf_parser_heap = tmpbuf_parser_heap;
     config->ast_new = ast_new;
 
@@ -647,6 +618,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->hash_new       = rb_hash_new;
     config->hash_aset      = rb_hash_aset;
     config->hash_lookup    = rb_hash_lookup;
+    config->hash_delete    = rb_hash_delete;
     config->ident_hash_new = rb_ident_hash_new;
 
     config->int2fix = int2fix;

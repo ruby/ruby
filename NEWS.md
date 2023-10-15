@@ -94,12 +94,12 @@ The following default gems are updated.
 * erb 4.0.3
 * fiddle 1.1.2
 * fileutils 1.7.1
-* irb 1.8.1
+* irb 1.8.3
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
-* prism 0.13.0
-* psych 5.1.0
+* prism 0.14.0
+* psych 5.1.1
 * reline 0.3.9
 * stringio 3.0.9
 * strscan 3.0.7
@@ -114,7 +114,7 @@ The following bundled gems are updated.
 * test-unit 3.6.1
 * rexml 3.2.6
 * rss 0.3.0
-* net-imap 0.4.0
+* net-imap 0.4.1
 * net-smtp 0.4.0
 * rbs 3.2.2
 * typeprof 0.21.8

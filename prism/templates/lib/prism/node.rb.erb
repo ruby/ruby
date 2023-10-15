@@ -211,6 +211,16 @@ module Prism
     def type
       :<%= node.human %>
     end
+
+    # Similar to #type, this method returns a symbol that you can use for
+    # splitting on the type of the node without having to do a long === chain.
+    # Note that like #type, it will still be slower than using == for a single
+    # class, but should be faster in a case statement or an array comparison.
+    #
+    # def self.type: () -> Symbol
+    def self.type
+      :<%= node.human %>
+    end
   end
   <%- end -%>
   <%- flags.each_with_index do |flag, flag_index| -%>

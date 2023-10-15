@@ -6,12 +6,11 @@
 #if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
 #define SIZEOF_SHAPE_T 4
 #define SHAPE_IN_BASIC_FLAGS 1
-typedef uint32_t attr_index_t;
 #else
 #define SIZEOF_SHAPE_T 2
 #define SHAPE_IN_BASIC_FLAGS 0
-typedef uint16_t attr_index_t;
 #endif
+typedef uint8_t attr_index_t;
 
 #define MAX_IVARS (attr_index_t)(-1)
 
@@ -44,7 +43,7 @@ struct rb_shape {
     struct rb_id_table * edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t next_iv_index;
-    uint32_t capacity; // Total capacity of the object with this shape
+    attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t size_pool_index;
     shape_id_t parent_id;
@@ -152,7 +151,7 @@ rb_shape_t* rb_shape_get_shape(VALUE obj);
 int rb_shape_frozen_shape_p(rb_shape_t* shape);
 void rb_shape_transition_shape_frozen(VALUE obj);
 void rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
-rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape, uint32_t new_capacity);
+rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
 
 rb_shape_t * rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape);
