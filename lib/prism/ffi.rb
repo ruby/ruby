@@ -25,8 +25,8 @@ module Prism
     #     void         -> :void
     #
     def self.resolve_type(type)
-      type = type.strip.delete_prefix("const ")
-      type.end_with?("*") ? :pointer : type.to_sym
+      type = type.strip
+      type.end_with?("*") ? :pointer : type.delete_prefix("const ").to_sym
     end
 
     # Read through the given header file and find the declaration of each of the
