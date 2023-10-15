@@ -79,8 +79,8 @@ jobs:
         with:
           update: true
           install: >-
-            ${{ steps.find-patch.outputs.needs }}
-        if: ${{ steps.find-patch.outputs.needs != '' }}
+            ${{ steps.find-tools.outputs.needs }}
+        if: ${{ steps.find-tools.outputs.needs != '' }}
 
       - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
