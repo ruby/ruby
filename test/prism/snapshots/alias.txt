@@ -78,6 +78,7 @@
         │   │   └── name: :$a
         │   ├── old_name:
         │   │   @ BackReferenceReadNode (location: (9,9)-(9,11))
+        │   │   └── name: :$'
         │   └── keyword_loc: (9,0)-(9,5) = "alias"
         ├── @ AliasMethodNode (location: (11,0)-(11,13))
         │   ├── new_name:

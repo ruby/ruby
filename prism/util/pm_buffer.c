@@ -1,24 +1,26 @@
 #include "prism/util/pm_buffer.h"
 
-#define PRISM_BUFFER_INITIAL_SIZE 1024
-
 // Return the size of the pm_buffer_t struct.
 size_t
 pm_buffer_sizeof(void) {
     return sizeof(pm_buffer_t);
 }
 
-// Initialize a pm_buffer_t with its default values.
+// Initialize a pm_buffer_t with the given capacity.
 bool
-pm_buffer_init(pm_buffer_t *buffer) {
+pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity) {
     buffer->length = 0;
-    buffer->capacity = PRISM_BUFFER_INITIAL_SIZE;
+    buffer->capacity = capacity;
 
-    buffer->value = (char *) malloc(PRISM_BUFFER_INITIAL_SIZE);
+    buffer->value = (char *) malloc(capacity);
     return buffer->value != NULL;
 }
 
-#undef PRISM_BUFFER_INITIAL_SIZE
+// Initialize a pm_buffer_t with its default values.
+bool
+pm_buffer_init(pm_buffer_t *buffer) {
+    return pm_buffer_init_capacity(buffer, 1024);
+}
 
 // Return the value of the buffer.
 char *

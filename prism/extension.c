@@ -461,48 +461,6 @@ named_captures(VALUE self, VALUE source) {
     return names;
 }
 
-// Accepts a source string and a type of unescaping and returns the unescaped
-// version.
-static VALUE
-unescape(VALUE source, pm_unescape_type_t unescape_type) {
-    pm_string_t result;
-
-    if (pm_unescape_string((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
-        VALUE str = rb_str_new((const char *) pm_string_source(&result), pm_string_length(&result));
-        pm_string_free(&result);
-        return str;
-    } else {
-        pm_string_free(&result);
-        return Qnil;
-    }
-}
-
-// Do not unescape anything in the given string. This is here to provide a
-// consistent API.
-static VALUE
-unescape_none(VALUE self, VALUE source) {
-    return unescape(source, PM_UNESCAPE_NONE);
-}
-
-// Minimally unescape the given string. This means effectively unescaping just
-// the quotes of a string. Returns the unescaped string.
-static VALUE
-unescape_minimal(VALUE self, VALUE source) {
-    return unescape(source, PM_UNESCAPE_MINIMAL);
-}
-
-// Escape the given string minimally plus whitespace. Returns the unescaped string.
-static VALUE
-unescape_whitespace(VALUE self, VALUE source) {
-    return unescape(source, PM_UNESCAPE_WHITESPACE);
-}
-
-// Unescape everything in the given string. Return the unescaped string.
-static VALUE
-unescape_all(VALUE self, VALUE source) {
-    return unescape(source, PM_UNESCAPE_ALL);
-}
-
 // Return a hash of information about the given source string's memory usage.
 static VALUE
 memsize(VALUE self, VALUE string) {
@@ -612,10 +570,6 @@ Init_prism(void) {
     // internal tasks. We expose these to make them easier to test.
     VALUE rb_cPrismDebug = rb_define_module_under(rb_cPrism, "Debug");
     rb_define_singleton_method(rb_cPrismDebug, "named_captures", named_captures, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "unescape_none", unescape_none, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "unescape_minimal", unescape_minimal, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "unescape_whitespace", unescape_whitespace, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "unescape_all", unescape_all, 1);
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);

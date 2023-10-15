@@ -98,6 +98,15 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: macos-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+
 defaults:
   run:
     working-directory: build
