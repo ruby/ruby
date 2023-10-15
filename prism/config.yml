@@ -507,6 +507,9 @@ nodes:
           { **foo }
             ^^^^^
   - name: BackReferenceReadNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents reading a reference to a field in the previous match.
 

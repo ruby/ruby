@@ -1180,7 +1180,8 @@ pm_back_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) 
         {
             .type = PM_BACK_REFERENCE_READ_NODE,
             .location = PM_LOCATION_TOKEN_VALUE(name),
-        }
+        },
+        .name = pm_parser_constant_id_token(parser, name)
     };
 
     return node;
@@ -2584,16 +2585,20 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *assoc
 
 // Retrieve the name from a node that will become a global variable write node.
 static pm_constant_id_t
-pm_global_variable_write_name(pm_parser_t *parser, pm_node_t *target) {
-    if (PM_NODE_TYPE_P(target, PM_GLOBAL_VARIABLE_READ_NODE)) {
-        return ((pm_global_variable_read_node_t *) target)->name;
+pm_global_variable_write_name(pm_parser_t *parser, const pm_node_t *target) {
+    switch (PM_NODE_TYPE(target)) {
+        case PM_GLOBAL_VARIABLE_READ_NODE:
+            return ((pm_global_variable_read_node_t *) target)->name;
+        case PM_BACK_REFERENCE_READ_NODE:
+            return ((pm_back_reference_read_node_t *) target)->name;
+        case PM_NUMBERED_REFERENCE_READ_NODE:
+            // This will only ever happen in the event of a syntax error, but we
+            // still need to provide something for the node.
+            return pm_parser_constant_id_location(parser, target->location.start, target->location.end);
+        default:
+            assert(false && "unreachable");
+            return (pm_constant_id_t) -1;
     }
-
-    assert(PM_NODE_TYPE_P(target, PM_BACK_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(target, PM_NUMBERED_REFERENCE_READ_NODE));
-
-    // This will only ever happen in the event of a syntax error, but we
-    // still need to provide something for the node.
-    return pm_parser_constant_id_location(parser, target->location.start, target->location.end);
 }
 
 // Allocate and initialize a new GlobalVariableAndWriteNode node.

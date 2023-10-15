@@ -265,4 +265,31 @@ module TestIRB
       assert_include(doc_namespace("private_hoge", bind), "private_hoge")
     end
   end
+
+  class DeprecatedInputCompletorTest < TestCase
+    def setup
+      save_encodings
+      @verbose, $VERBOSE = $VERBOSE, nil
+      IRB.init_config(nil)
+      IRB.conf[:MAIN_CONTEXT] = IRB::Context.new(IRB::WorkSpace.new(binding))
+    end
+
+    def teardown
+      restore_encodings
+      $VERBOSE = @verbose
+    end
+
+    def test_completion_proc
+      assert_include(IRB::InputCompletor::CompletionProc.call('1.ab'), '1.abs')
+      assert_include(IRB::InputCompletor::CompletionProc.call('1.ab', '', ''), '1.abs')
+    end
+
+    def test_retrieve_completion_data
+      assert_include(IRB::InputCompletor.retrieve_completion_data('1.ab'), '1.abs')
+      assert_equal(IRB::InputCompletor.retrieve_completion_data('1.abs', doc_namespace: true), 'Integer.abs')
+      bind = eval('a = 1; binding')
+      assert_include(IRB::InputCompletor.retrieve_completion_data('a.ab', bind: bind), 'a.abs')
+      assert_equal(IRB::InputCompletor.retrieve_completion_data('a.abs', bind: bind, doc_namespace: true), 'Integer.abs')
+    end
+  end
 end

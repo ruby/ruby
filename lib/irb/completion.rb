@@ -415,4 +415,20 @@ module IRB
       end
     end
   end
+
+  module InputCompletor
+    class << self
+      private def regexp_completor
+        @regexp_completor ||= RegexpCompletor.new
+      end
+
+      def retrieve_completion_data(input, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding, doc_namespace: false)
+        regexp_completor.retrieve_completion_data(input, bind: bind, doc_namespace: doc_namespace)
+      end
+    end
+    CompletionProc = ->(target, preposing = nil, postposing = nil) {
+      regexp_completor.completion_candidates(preposing, target, postposing, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding)
+    }
+  end
+  deprecate_constant :InputCompletor
 end
