@@ -68,11 +68,16 @@ jobs:
           ::- find needed tools
           set NEEDS=
           for %%I in (patch.exe) do if "%%~$PATH:I" == "" (
-            echo NEEDS=%NEEDS% %%I
+            call set NEEDS=%%NEEDS%% %%~nI
           ) else (
             echo %%I: %%~$PATH:I
           )
-          echo needs=%NEEDS% >> %GITHUB_OUTPUT%
+          echo.needs=%NEEDS%>>%GITHUB_OUTPUT%
+          if "%NEEDS%" == "" (
+            echo [debug] All needed tools found
+          ) else (
+            echo [warning^]Needs%NEEDS%
+          )
 
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
@@ -81,9 +86,6 @@ jobs:
           install: >-
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
-        # FIXME: The above `!= ''` check is not working correctly, so this runs
-        # even when `needs` is empty. Remove this `continue-on-error` after fixing it.
-        continue-on-error: true
 
       - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
