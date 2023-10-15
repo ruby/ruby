@@ -100,6 +100,7 @@ jobs:
 
   result:
     if: ${{ always() }}
+    name: ${{ github.workflow }} result
     runs-on: macos-latest
     needs: [make]
     steps:
