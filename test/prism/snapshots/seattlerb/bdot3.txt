@@ -22,7 +22,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── operator_loc: (2,2)-(2,5) = "..."
         │   └── flags: exclude_end
         └── @ CallNode (location: (3,2)-(3,3))
@@ -34,4 +34,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: variable_call
-            └── name: "c"
+            └── name: :c

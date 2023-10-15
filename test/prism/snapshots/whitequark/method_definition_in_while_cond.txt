@@ -35,7 +35,7 @@
         │   │   │   │           │   ├── opening_loc: (1,22)-(1,24) = "do"
         │   │   │   │           │   └── closing_loc: (1,25)-(1,28) = "end"
         │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: "tap"
+        │   │   │   │           └── name: :tap
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -83,7 +83,7 @@
         │   │   │           │   ├── opening_loc: (3,19)-(3,21) = "do"
         │   │   │           │   └── closing_loc: (3,22)-(3,25) = "end"
         │   │   │           ├── flags: ∅
-        │   │   │           └── name: "tap"
+        │   │   │           └── name: :tap
         │   │   ├── locals: []
         │   │   ├── def_keyword_loc: (3,6)-(3,9) = "def"
         │   │   ├── operator_loc: ∅
@@ -131,7 +131,7 @@
         │   │   │   │           │   ├── opening_loc: (5,27)-(5,29) = "do"
         │   │   │   │           │   └── closing_loc: (5,30)-(5,33) = "end"
         │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: "tap"
+        │   │   │   │           └── name: :tap
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -180,7 +180,7 @@
             │   │           │   ├── opening_loc: (7,24)-(7,26) = "do"
             │   │           │   └── closing_loc: (7,27)-(7,30) = "end"
             │   │           ├── flags: ∅
-            │   │           └── name: "tap"
+            │   │           └── name: :tap
             │   ├── locals: []
             │   ├── def_keyword_loc: (7,6)-(7,9) = "def"
             │   ├── operator_loc: (7,14)-(7,15) = "."

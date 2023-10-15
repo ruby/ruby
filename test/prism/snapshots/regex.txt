@@ -20,7 +20,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ RegularExpressionNode (location: (3,0)-(3,8))
         │   ├── opening_loc: (3,0)-(3,3) = "%r{"
         │   ├── content_loc: (3,3)-(3,6) = "abc"
@@ -31,7 +31,7 @@
         │   ├── opening_loc: (5,0)-(5,1) = "/"
         │   ├── content_loc: (5,1)-(5,4) = "a\\b"
         │   ├── closing_loc: (5,4)-(5,5) = "/"
-        │   ├── unescaped: "a\b"
+        │   ├── unescaped: "a\\b"
         │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (7,0)-(7,11))
         │   ├── opening_loc: (7,0)-(7,1) = "/"
@@ -72,7 +72,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bbb"
+        │   │   │   │           └── name: :bbb
         │   │   │   └── closing_loc: (9,10)-(9,11) = "}"
         │   │   └── @ StringNode (location: (9,11)-(9,15))
         │   │       ├── flags: ∅
@@ -109,11 +109,11 @@
         │   │   │   │   │           ├── closing_loc: ∅
         │   │   │   │   │           ├── block: ∅
         │   │   │   │   │           ├── flags: variable_call
-        │   │   │   │   │           └── name: "baz"
+        │   │   │   │   │           └── name: :baz
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: ∅
-        │   │   │   │   └── name: "=~"
+        │   │   │   │   └── name: :=~
         │   │   │   └── locals: [:foo]
         │   │   └── @ LocalVariableReadNode (location: (11,23)-(11,26))
         │   │       ├── name: :foo
@@ -130,25 +130,25 @@
         │   ├── opening_loc: (15,0)-(15,3) = "%r/"
         │   ├── content_loc: (15,3)-(15,24) = "[a-z$._?][\\w$.?\#@~]*:"
         │   ├── closing_loc: (15,24)-(15,26) = "/i"
-        │   ├── unescaped: "[a-z$._?][w$.?\#@~]*:"
+        │   ├── unescaped: "[a-z$._?][\\w$.?\#@~]*:"
         │   └── flags: ignore_case
         ├── @ RegularExpressionNode (location: (17,0)-(17,37))
         │   ├── opening_loc: (17,0)-(17,3) = "%r/"
         │   ├── content_loc: (17,3)-(17,35) = "([a-z$._?][\\w$.?\#@~]*)(\\s+)(equ)"
         │   ├── closing_loc: (17,35)-(17,37) = "/i"
-        │   ├── unescaped: "([a-z$._?][w$.?\#@~]*)( +)(equ)"
+        │   ├── unescaped: "([a-z$._?][\\w$.?\#@~]*)(\\s+)(equ)"
         │   └── flags: ignore_case
         ├── @ RegularExpressionNode (location: (19,0)-(19,25))
         │   ├── opening_loc: (19,0)-(19,3) = "%r/"
         │   ├── content_loc: (19,3)-(19,23) = "[a-z$._?][\\w$.?\#@~]*"
         │   ├── closing_loc: (19,23)-(19,25) = "/i"
-        │   ├── unescaped: "[a-z$._?][w$.?\#@~]*"
+        │   ├── unescaped: "[a-z$._?][\\w$.?\#@~]*"
         │   └── flags: ignore_case
         ├── @ RegularExpressionNode (location: (21,0)-(24,1))
         │   ├── opening_loc: (21,0)-(21,3) = "%r("
         │   ├── content_loc: (21,3)-(23,0) = "\n(?:[\\w\#$%_']|\\(\\)|\\(,\\)|\\[\\]|[0-9])*\n  (?:[\\w\#$%_']+)\n"
         │   ├── closing_loc: (24,0)-(24,1) = ")"
-        │   ├── unescaped: "\n(?:[w\#$%_']|()|(,)|[]|[0-9])*\n  (?:[w\#$%_']+)\n"
+        │   ├── unescaped: "\n(?:[\\w\#$%_']|\\(\\)|\\(,\\)|\\[\\]|[0-9])*\n  (?:[\\w\#$%_']+)\n"
         │   └── flags: ∅
         ├── @ CallNode (location: (26,0)-(26,16))
         │   ├── receiver:
@@ -156,7 +156,7 @@
         │   │   ├── opening_loc: (26,0)-(26,1) = "/"
         │   │   ├── content_loc: (26,1)-(26,7) = "(?#\\))"
         │   │   ├── closing_loc: (26,7)-(26,8) = "/"
-        │   │   ├── unescaped: "(?#))"
+        │   │   ├── unescaped: "(?#\\))"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (26,9)-(26,11) = "=~"
@@ -173,7 +173,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "=~"
+        │   └── name: :=~
         ├── @ RegularExpressionNode (location: (28,0)-(28,9))
         │   ├── opening_loc: (28,0)-(28,3) = "%r#"
         │   ├── content_loc: (28,3)-(28,8) = "pound"
@@ -203,7 +203,7 @@
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: variable_call
-            │       │           └── name: "bbb"
+            │       │           └── name: :bbb
             │       └── closing_loc: (30,10)-(30,11) = "}"
             ├── closing_loc: (30,11)-(30,13) = "/o"
             └── flags: once

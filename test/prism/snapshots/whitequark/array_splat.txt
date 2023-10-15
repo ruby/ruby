@@ -17,7 +17,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "foo"
+        │   │           └── name: :foo
         │   ├── opening_loc: (1,0)-(1,1) = "["
         │   └── closing_loc: (1,5)-(1,6) = "]"
         ├── @ ArrayNode (location: (3,0)-(3,12))
@@ -36,7 +36,7 @@
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
         │   │   │       ├── flags: variable_call
-        │   │   │       └── name: "foo"
+        │   │   │       └── name: :foo
         │   │   └── @ IntegerNode (location: (3,10)-(3,11))
         │   │       └── flags: decimal
         │   ├── opening_loc: (3,0)-(3,1) = "["
@@ -57,6 +57,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── opening_loc: (5,0)-(5,1) = "["
             └── closing_loc: (5,8)-(5,9) = "]"

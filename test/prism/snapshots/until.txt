@@ -74,7 +74,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "bar?"
+            │   └── name: :bar?
             ├── statements:
             │   @ StatementsNode (location: (11,0)-(11,10))
             │   └── body: (length: 1)
@@ -99,5 +99,5 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "foo"
+            │           └── name: :foo
             └── flags: ∅

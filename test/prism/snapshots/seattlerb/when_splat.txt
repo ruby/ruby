@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,8)-(1,15))
             │       ├── keyword_loc: (1,8)-(1,12) = "when"
@@ -31,7 +31,7 @@
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: variable_call
-            │       │           └── name: "b"
+            │       │           └── name: :b
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

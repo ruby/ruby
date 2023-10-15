@@ -12,7 +12,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
-        │   └── name: "a"
+        │   └── name: :a
         ├── @ InstanceVariableReadNode (location: (2,0)-(2,2))
         │   └── name: :@a
         ├── @ ClassVariableReadNode (location: (3,0)-(3,3))
@@ -22,6 +22,7 @@
         ├── @ NumberedReferenceReadNode (location: (5,0)-(5,2))
         │   └── number: 1
         ├── @ BackReferenceReadNode (location: (6,0)-(6,2))
+        │   └── name: :$`
         ├── @ ConstantReadNode (location: (7,0)-(7,5))
         │   └── name: :CONST
         ├── @ ConstantPathNode (location: (8,0)-(8,13))

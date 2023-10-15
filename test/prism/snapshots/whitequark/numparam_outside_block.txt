@@ -12,7 +12,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
-        │   └── name: "_1"
+        │   └── name: :_1
         ├── @ SingletonClassNode (location: (3,0)-(3,21))
         │   ├── locals: []
         │   ├── class_keyword_loc: (3,0)-(3,5) = "class"
@@ -27,7 +27,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── body:
         │   │   @ StatementsNode (location: (3,14)-(3,16))
         │   │   └── body: (length: 1)
@@ -40,7 +40,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "_1"
+        │   │           └── name: :_1
         │   └── end_keyword_loc: (3,18)-(3,21) = "end"
         ├── @ ClassNode (location: (5,0)-(5,16))
         │   ├── locals: []
@@ -62,7 +62,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "_1"
+        │   │           └── name: :_1
         │   ├── end_keyword_loc: (5,13)-(5,16) = "end"
         │   └── name: :A
         ├── @ DefNode (location: (7,0)-(7,19))
@@ -83,7 +83,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "_1"
+        │   │           └── name: :_1
         │   ├── locals: []
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: (7,8)-(7,9) = "."
@@ -109,6 +109,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "_1"
+            │           └── name: :_1
             ├── end_keyword_loc: (9,14)-(9,17) = "end"
             └── name: :A

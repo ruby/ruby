@@ -22,7 +22,7 @@
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
             │           │   ├── flags: variable_call
-            │           │   └── name: "a"
+            │           │   └── name: :a
             │           ├── call_operator_loc: ∅
             │           ├── message_loc: (1,4)-(1,5) = "+"
             │           ├── opening_loc: ∅
@@ -38,11 +38,11 @@
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
-            │           │           └── name: "b"
+            │           │           └── name: :b
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "+"
+            │           └── name: :+
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (1,8)-(1,14))
@@ -52,4 +52,4 @@
             │   ├── opening_loc: (1,8)-(1,10) = "do"
             │   └── closing_loc: (1,11)-(1,14) = "end"
             ├── flags: ∅
-            └── name: "m"
+            └── name: :m

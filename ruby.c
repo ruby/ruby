@@ -53,8 +53,10 @@
 #include "internal/loadpath.h"
 #include "internal/missing.h"
 #include "internal/object.h"
+#include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
+#include "prism/prism.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -152,6 +154,8 @@ enum feature_flag_bits {
     SEP \
     X(parsetree_with_comment) \
     SEP \
+    X(prism) \
+    SEP \
     X(insns) \
     SEP \
     X(insns_without_opt) \
@@ -165,7 +169,7 @@ enum dump_flag_bits {
                                 DUMP_BIT(parsetree_with_comment)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-                      DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
+                      DUMP_BIT(prism) | DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
 };
 
 static inline void
@@ -241,6 +245,47 @@ static const char esc_standout[] = "\n\033[1;7m";
 static const char esc_bold[] = "\033[1m";
 static const char esc_reset[] = "\033[0m";
 static const char esc_none[] = "";
+#define USAGE_INDENT "  "       /* macro for concatenation */
+
+static void
+show_usage_part(const char *str, const unsigned int namelen,
+                const char *str2, const unsigned int secondlen,
+                const char *desc,
+                int help, int highlight, unsigned int w, int columns)
+{
+    static const int indent_width = (int)rb_strlen_lit(USAGE_INDENT);
+    const char *sb = highlight ? esc_bold : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
+    unsigned int desclen = (unsigned int)strcspn(desc, "\n");
+    if (help && (namelen + 1 > w) && /* a padding space */
+        (int)(namelen + secondlen + indent_width) >= columns) {
+        printf(USAGE_INDENT "%s" "%.*s" "%s\n", sb, namelen, str, se);
+        if (secondlen > 0) {
+            const int second_end = secondlen;
+            int n = 0;
+            if (str2[n] == ',') n++;
+            if (str2[n] == ' ') n++;
+            printf(USAGE_INDENT "%s" "%.*s" "%s\n", sb, second_end-n, str2+n, se);
+        }
+        printf("%-*s%.*s\n", w + indent_width, USAGE_INDENT, desclen, desc);
+    }
+    else {
+        const int wrap = help && namelen + secondlen >= w;
+        printf(USAGE_INDENT "%s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen, str,
+               (wrap ? 0 : w - namelen),
+               (help ? secondlen : 0), str2, se,
+               (wrap ? (int)(w + rb_strlen_lit("\n" USAGE_INDENT)) : 0),
+               (wrap ? "\n" USAGE_INDENT : ""),
+               desclen, desc);
+    }
+    if (help) {
+        while (desc[desclen]) {
+            desc += desclen + rb_strlen_lit("\n");
+            desclen = (unsigned int)strcspn(desc, "\n");
+            printf("%-*s%.*s\n", w + indent_width, USAGE_INDENT, desclen, desc);
+        }
+    }
+}
 
 static void
 show_usage_line(const struct ruby_opt_message *m,
@@ -248,36 +293,19 @@ show_usage_line(const struct ruby_opt_message *m,
 {
     const char *str = m->str;
     const unsigned int namelen = m->namelen, secondlen = m->secondlen;
-    const char *sb = highlight ? esc_bold : esc_none;
-    const char *se = highlight ? esc_reset : esc_none;
     const char *desc = str + namelen + secondlen;
-    unsigned int desclen = (unsigned int)strcspn(desc, "\n");
-    if (help && (namelen > w) && (int)(namelen + secondlen) >= columns) {
-        printf("  %s" "%.*s" "%s\n", sb, namelen-1, str, se);
-        if (secondlen > 1) {
-            const int second_end = namelen+secondlen-1;
-            int n = namelen;
-            if (str[n] == ',') n++;
-            if (str[n] == ' ') n++;
-            printf("  %s" "%.*s" "%s\n", sb, second_end-n, str+n, se);
-        }
-        printf("%-*s%.*s\n", w + 2, "", desclen, desc);
-    }
-    else {
-        const int wrap = help && namelen + secondlen - 1 > w;
-        printf("  %s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen-1, str,
-               (wrap ? 0 : w - namelen + 1),
-               (help ? secondlen-1 : 0), str + namelen, se,
-               (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
-               desclen, desc);
-    }
-    if (help) {
-        while (desc[desclen]) {
-            desc += desclen + 1;
-            desclen = (unsigned int)strcspn(desc, "\n");
-            printf("%-*s%.*s\n", w + 2, "", desclen, desc);
-        }
-    }
+    show_usage_part(str, namelen - 1, str + namelen, secondlen - 1, desc,
+                    help, highlight, w, columns);
+}
+
+void
+ruby_show_usage_line(const char *name, const char *secondary, const char *description,
+                     int help, int highlight, unsigned int width, int columns)
+{
+    unsigned int namelen = (unsigned int)strlen(name);
+    unsigned int secondlen = (secondary ? (unsigned int)strlen(secondary) : 0);
+    show_usage_part(name, namelen, secondary, secondlen,
+                    description, help, highlight, width, columns);
 }
 
 static void
@@ -328,7 +356,7 @@ usage(const char *name, int help, int highlight, int columns)
 
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
-        M("--dump={insns|parsetree|...}[,...]",     "",
+        M("--dump={insns|parsetree|prism|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
         M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
           "enable or disable features. see below for available features"),
@@ -347,6 +375,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
         M("parsetree(+error-tolerant)","", "AST"),
         M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
+        M("prism", "", "Prism AST with comments"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -367,17 +396,6 @@ usage(const char *name, int help, int highlight, int columns)
         M("experimental", "",     "experimental features"),
         M("performance", "",      "performance issues"),
     };
-#if USE_YJIT
-    static const struct ruby_opt_message yjit_options[] = {
-        M("--yjit-stats",                    "", "Enable collecting YJIT statistics"),
-        M("--yjit-trace-exits",              "", "Record Ruby source location when exiting from generated code"),
-        M("--yjit-trace-exits-sample-rate",  "", "Trace exit locations only every Nth occurrence"),
-        M("--yjit-exec-mem-size=num",        "", "Size of executable memory block in MiB (default: 128)"),
-        M("--yjit-call-threshold=num",       "", "Number of calls to trigger JIT (default: 30)"),
-        M("--yjit-max-versions=num",         "", "Maximum number of versions per basic block (default: 4)"),
-        M("--yjit-greedy-versioning",        "", "Greedy versioning mode (default: disabled)"),
-    };
-#endif
 #if USE_RJIT
     extern const struct ruby_opt_message rb_rjit_option_messages[];
 #endif
@@ -409,8 +427,7 @@ usage(const char *name, int help, int highlight, int columns)
         SHOW(warn_categories[i]);
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
-    for (i = 0; i < numberof(yjit_options); ++i)
-        SHOW(yjit_options[i]);
+    rb_yjit_show_usage(help, highlight, w, columns);
 #endif
 #if USE_RJIT
     printf("%s""RJIT options (experimental):%s\n", sb, se);
@@ -2136,6 +2153,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 
     ruby_gc_set_params();
+    ruby_mn_threads_params();
     ruby_init_loadpath();
 
     Init_enc();
@@ -2317,6 +2335,25 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_define_global_function("gsub", rb_f_gsub, -1);
         rb_define_global_function("chop", rb_f_chop, 0);
         rb_define_global_function("chomp", rb_f_chomp, -1);
+    }
+
+    if (dump & (DUMP_BIT(prism))) {
+        pm_parser_t parser;
+        if (opt->e_script) {
+            size_t len = RSTRING_LEN(opt->e_script);
+            pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(opt->e_script), len, "-e");
+        }
+        else {
+            pm_string_t input;
+            char *filepath = RSTRING_PTR(opt->script_name);
+            pm_string_mapped_init(&input, filepath);
+            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), filepath);
+        }
+
+        pm_node_t *node = pm_parse(&parser);
+        pm_print_node(&parser, node);
+        pm_node_destroy(&parser, node);
+        pm_parser_free(&parser);
     }
 
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {

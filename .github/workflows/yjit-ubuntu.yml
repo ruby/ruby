@@ -8,12 +8,8 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -130,6 +126,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Install Rust
         if: ${{ matrix.rust_version }}
@@ -144,11 +141,6 @@ jobs:
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
-
-      - name: Create dummy files in build dir
-        run: |
-          ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
-        if: ${{ matrix.test_task == 'check' }}
 
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
@@ -180,6 +172,15 @@ jobs:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: ubuntu-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:

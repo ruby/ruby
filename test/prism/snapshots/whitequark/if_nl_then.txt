@@ -15,7 +15,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── statements:
             │   @ StatementsNode (location: (2,5)-(2,8))
             │   └── body: (length: 1)
@@ -28,6 +28,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "bar"
+            │           └── name: :bar
             ├── consequent: ∅
             └── end_keyword_loc: (2,9)-(2,12) = "end"

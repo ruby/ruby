@@ -17,7 +17,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (1,10)-(1,19))
         │   │   ├── keyword_loc: (1,10)-(1,16) = "rescue"
@@ -36,7 +36,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (1,21)-(1,33))
@@ -53,7 +53,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "c"
+        │   │   │           └── name: :c
         │   │   └── end_keyword_loc: (1,30)-(1,33) = "end"
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (1,30)-(1,33) = "end"
@@ -71,7 +71,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (3,10)-(3,19))
         │   │   ├── keyword_loc: (3,10)-(3,16) = "rescue"
@@ -90,7 +90,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (3,21)-(3,36))
@@ -107,7 +107,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "c"
+        │   │   │           └── name: :c
         │   │   └── end_keyword_loc: (3,30)-(3,36) = "ensure"
         │   ├── ensure_clause:
         │   │   @ EnsureNode (location: (3,30)-(3,44))
@@ -124,7 +124,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "d"
+        │   │   │           └── name: :d
         │   │   └── end_keyword_loc: (3,41)-(3,44) = "end"
         │   └── end_keyword_loc: (3,41)-(3,44) = "end"
         ├── @ BeginNode (location: (5,0)-(7,3))
@@ -141,7 +141,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -160,7 +160,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -179,7 +179,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -198,7 +198,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -217,7 +217,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (18,0)-(23,1))
         │   │   ├── keyword_loc: (18,0)-(18,6) = "rescue"
@@ -236,7 +236,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent:
         │   │       @ RescueNode (location: (20,0)-(23,1))
         │   │       ├── keyword_loc: (20,0)-(20,6) = "rescue"
@@ -255,7 +255,7 @@
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
         │   │       │           ├── flags: variable_call
-        │   │       │           └── name: "c"
+        │   │       │           └── name: :c
         │   │       └── consequent:
         │   │           @ RescueNode (location: (22,0)-(23,1))
         │   │           ├── keyword_loc: (22,0)-(22,6) = "rescue"
@@ -274,7 +274,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: variable_call
-        │   │           │           └── name: "d"
+        │   │           │           └── name: :d
         │   │           └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -293,7 +293,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (28,0)-(31,3))
         │   │   ├── keyword_loc: (28,0)-(28,6) = "rescue"
@@ -317,7 +317,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent:
         │   │       @ RescueNode (location: (30,0)-(31,3))
         │   │       ├── keyword_loc: (30,0)-(30,6) = "rescue"
@@ -343,7 +343,7 @@
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
         │   │       │           ├── flags: variable_call
-        │   │       │           └── name: "c"
+        │   │       │           └── name: :c
         │   │       └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -362,7 +362,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (36,0)-(37,3))
         │   │   ├── keyword_loc: (36,0)-(36,6) = "rescue"
@@ -386,7 +386,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause:
@@ -404,7 +404,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── end_keyword_loc: (40,0)-(40,3) = "end"
         │   └── end_keyword_loc: (40,0)-(40,3) = "end"
         ├── @ StringNode (location: (42,0)-(42,6))
@@ -427,7 +427,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (46,0)-(47,1))
         │   │   ├── keyword_loc: (46,0)-(46,6) = "rescue"
@@ -446,7 +446,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -465,7 +465,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (50,8)-(50,16))
         │   │   ├── keyword_loc: (50,8)-(50,14) = "rescue"
@@ -484,7 +484,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -503,7 +503,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (53,2)-(54,1))
         │   │   ├── keyword_loc: (53,2)-(53,8) = "rescue"
@@ -522,7 +522,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -541,7 +541,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (58,0)-(59,1))
         │   │   ├── keyword_loc: (58,0)-(58,6) = "rescue"
@@ -562,7 +562,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -581,7 +581,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (64,0)-(65,1))
         │   │   ├── keyword_loc: (64,0)-(64,6) = "rescue"
@@ -604,7 +604,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -623,7 +623,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "a"
+        │   │           └── name: :a
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (70,0)-(71,3))
         │   │   ├── keyword_loc: (70,0)-(70,6) = "rescue"
@@ -649,7 +649,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -668,7 +668,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "a"
+            │           └── name: :a
             ├── rescue_clause:
             │   @ RescueNode (location: (76,0)-(77,3))
             │   ├── keyword_loc: (76,0)-(76,6) = "rescue"
@@ -692,7 +692,7 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "b"
+            │   │           └── name: :b
             │   └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

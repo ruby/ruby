@@ -15,7 +15,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,12)-(1,15))
         │   │   └── body: (length: 1)
@@ -28,7 +28,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (1,17)-(1,20) = "end"
         └── @ IfNode (location: (3,0)-(3,16))
@@ -43,7 +43,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── statements:
             │   @ StatementsNode (location: (3,8)-(3,11))
             │   └── body: (length: 1)
@@ -56,6 +56,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "bar"
+            │           └── name: :bar
             ├── consequent: ∅
             └── end_keyword_loc: (3,13)-(3,16) = "end"

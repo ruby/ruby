@@ -8,12 +8,8 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -33,13 +29,9 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
-        os:
-          - macos-11
-          - macos-12
-        configure:
-          - ''
-          - '--enable-shared'
+        test_task: ['check']
+        configure: ['']
+        os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
       fail-fast: false
 
     env:
@@ -69,6 +61,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
@@ -101,9 +94,18 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }}
+          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: macos-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:

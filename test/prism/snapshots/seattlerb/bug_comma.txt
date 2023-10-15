@@ -29,11 +29,11 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "dir"
+            │   │           └── name: :dir
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "test"
+            │   └── name: :test
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (1,21)-(1,24) = "end"

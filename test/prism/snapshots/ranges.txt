@@ -49,7 +49,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (7,3)-(7,9) = "[...2]"
         │   ├── opening_loc: (7,3)-(7,4) = "["
@@ -66,7 +66,7 @@
         │   ├── closing_loc: (7,8)-(7,9) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]"
+        │   └── name: :[]
         ├── @ HashNode (location: (9,0)-(9,15))
         │   ├── opening_loc: (9,0)-(9,1) = "{"
         │   ├── elements: (length: 1)
@@ -90,7 +90,7 @@
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   ├── block: ∅
         │   │       │   │   ├── flags: variable_call
-        │   │       │   │   └── name: "bar"
+        │   │       │   │   └── name: :bar
         │   │       │   ├── operator_loc: (9,7)-(9,10) = "..."
         │   │       │   └── flags: exclude_end
         │   │       └── operator_loc: ∅
@@ -140,7 +140,7 @@
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   ├── block: ∅
         │   │       │   │   ├── flags: variable_call
-        │   │       │   │   └── name: "bar"
+        │   │       │   │   └── name: :bar
         │   │       │   ├── operator_loc: (15,7)-(15,9) = ".."
         │   │       │   └── flags: ∅
         │   │       └── operator_loc: ∅

@@ -142,7 +142,7 @@
         │   │   │   ├── opening_loc: (23,4)-(23,5) = "{"
         │   │   │   └── closing_loc: (23,15)-(23,16) = "}"
         │   │   ├── flags: ∅
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (23,17)-(23,19) = "=="
         │   ├── opening_loc: ∅
@@ -154,7 +154,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "=="
+        │   └── name: :==
         └── @ CallNode (location: (25,0)-(25,23))
             ├── receiver:
             │   @ CallNode (location: (25,0)-(25,17))
@@ -192,7 +192,7 @@
             │   │   ├── opening_loc: (25,4)-(25,5) = "{"
             │   │   └── closing_loc: (25,16)-(25,17) = "}"
             │   ├── flags: ∅
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── call_operator_loc: ∅
             ├── message_loc: (25,18)-(25,20) = "=="
             ├── opening_loc: ∅
@@ -204,4 +204,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "=="
+            └── name: :==

@@ -87,7 +87,13 @@ env:
   - &s390x-linux
     name: s390x-linux
     arch: s390x
+    dist: jammy
     compiler: gcc
+    env:
+      # Avoid possible test failures with the zlib applying the following patch
+      # on s390x CPU architecture.
+      # https://github.com/madler/zlib/pull/410
+      - DFLTCC=0
 
   - &arm32-linux
     name: arm32-linux

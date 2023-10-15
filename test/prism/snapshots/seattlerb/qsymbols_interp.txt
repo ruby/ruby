@@ -39,7 +39,7 @@
             │   │   │       │           ├── closing_loc: ∅
             │   │   │       │           ├── block: ∅
             │   │   │       │           ├── flags: ∅
-            │   │   │       │           └── name: "+"
+            │   │   │       │           └── name: :+
             │   │   │       └── closing_loc: (1,11)-(1,12) = "}"
             │   │   └── closing_loc: ∅
             │   └── @ SymbolNode (location: (1,13)-(1,14))

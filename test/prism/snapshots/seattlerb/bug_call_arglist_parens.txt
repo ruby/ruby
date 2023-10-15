@@ -32,7 +32,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "g"
+        │   │           └── name: :g
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,6)-(1,9) = "def"
         │   ├── operator_loc: ∅
@@ -69,7 +69,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "g"
+        │   │           └── name: :g
         │   ├── locals: []
         │   ├── def_keyword_loc: (6,6)-(6,9) = "def"
         │   ├── operator_loc: ∅
@@ -98,4 +98,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "g"
+            └── name: :g

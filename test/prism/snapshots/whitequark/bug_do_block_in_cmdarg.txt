@@ -30,10 +30,10 @@
             │           │           │   ├── opening_loc: (1,10)-(1,12) = "do"
             │           │           │   └── closing_loc: (1,13)-(1,16) = "end"
             │           │           ├── flags: ∅
-            │           │           └── name: "proc"
+            │           │           └── name: :proc
             │           ├── opening_loc: (1,4)-(1,5) = "("
             │           └── closing_loc: (1,16)-(1,17) = ")"
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "tap"
+            └── name: :tap

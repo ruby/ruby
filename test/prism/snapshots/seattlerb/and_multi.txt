@@ -19,7 +19,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
-            │   │   └── name: "!"
+            │   │   └── name: :!
             │   └── operator_loc: (1,5)-(1,8) = "and"
             ├── right:
             │   @ TrueNode (location: (3,0)-(3,4))

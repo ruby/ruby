@@ -23,7 +23,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "a"
+        │   │           │   └── name: :a
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (1,6)-(1,9))
         │   │           │   └── body: (length: 1)
@@ -46,7 +46,7 @@
         │   ├── closing_loc: (1,11)-(1,12) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "f"
+        │   └── name: :f
         ├── @ HashNode (location: (3,0)-(3,12))
         │   ├── opening_loc: (3,0)-(3,1) = "{"
         │   ├── elements: (length: 1)

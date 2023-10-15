@@ -171,7 +171,7 @@ You can use `i` command instead of `install`.
 
     show_installed
 
-    say update_suggestion if eglible_for_update?
+    say update_suggestion if eligible_for_update?
 
     terminate_interaction exit_code
   end

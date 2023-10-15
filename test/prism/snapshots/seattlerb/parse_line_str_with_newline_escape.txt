@@ -21,4 +21,4 @@
             ├── closing_loc: (1,12)-(1,13) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "a"
+            └── name: :a

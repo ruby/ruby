@@ -30,7 +30,7 @@
             │   │               ├── closing_loc: ∅
             │   │               ├── block: ∅
             │   │               ├── flags: variable_call
-            │   │               └── name: "foo"
+            │   │               └── name: :foo
             │   ├── opening_loc: (1,1)-(1,2) = "("
             │   └── closing_loc: (1,12)-(1,13) = ")"
             ├── call_operator_loc: ∅
@@ -40,4 +40,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "!"
+            └── name: :!

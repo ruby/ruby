@@ -89,7 +89,7 @@ module Prism
             nil,
             nil,
             0,
-            "+"
+            :+
           )
         ]),
         Location(),
@@ -136,7 +136,7 @@ module Prism
       source = "<<-END + /b\nEND\n"
 
       assert_errors expression(source), source, [
-        ["Expected a closing delimiter for the regular expression", 10..10]
+        ["Expected a closing delimiter for the regular expression", 16..16]
       ]
     end
 
@@ -350,7 +350,7 @@ module Prism
         Location(),
         nil,
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a(**kwargs, *args)", [
@@ -368,7 +368,7 @@ module Prism
         Location(),
         BlockArgumentNode(expression("block"), Location()),
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a(&block, foo)", [
@@ -403,7 +403,7 @@ module Prism
         Location(),
         nil,
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a(foo: bar, *args)", [
@@ -454,7 +454,7 @@ module Prism
               Location()
             ),
             0,
-            "bar"
+            :bar
           )]
         ),
         [],
@@ -1016,7 +1016,7 @@ module Prism
           Location()
         ),
         0,
-        "a"
+        :a
       )
 
       assert_errors expected, "a {|...|}", [
@@ -1176,7 +1176,7 @@ module Prism
 
     def test_invalid_message_name
       result = Prism.parse("+.@foo,+=foo")
-      assert_equal "", result.value.statements.body.first.write_name
+      assert_equal :"", result.value.statements.body.first.write_name
     end
 
     def test_invalid_operator_write_fcall
@@ -1360,6 +1360,61 @@ module Prism
       source = "class Foo < Bar end"
       assert_errors expression(source), source, [
         ["Unexpected `end`, expecting ';' or '\n'", 15..15],
+      ]
+    end
+
+    def test_shadow_args_in_lambda
+      source = "->a;b{}"
+      assert_errors expression(source), source, [
+        ["Expected a `do` keyword or a `{` to open the lambda block", 3..3],
+        ["Expected a newline or semicolon after the statement", 7..7],
+        ["Cannot parse the expression", 7..7],
+        ["Expected a lambda block beginning with `do` to end with `end`", 7..7],
+      ]
+    end
+
+    def test_shadow_args_in_block
+      source = "tap{|a;a|}"
+      assert_errors expression(source), source, [
+        ["Repeated parameter name", 7..8],
+      ]
+    end
+
+    def test_repeated_parameter_name_in_destructured_params
+      source = "def f(a, (b, (a))); end"
+      # In Ruby 3.0.x, `Ripper.sexp_raw` does not return `nil` for this case.
+      compare_ripper = RUBY_ENGINE == "ruby" && (RUBY_VERSION.split('.').map { |x| x.to_i } <=> [3, 1]) >= 1
+      assert_errors expression(source), source, [
+        ["Repeated parameter name", 14..15],
+      ], compare_ripper: compare_ripper
+    end
+
+    def test_assign_to_numbered_parameter
+      source = "
+        a in _1
+        a => _1
+        1 => a, _1
+        1 in a, _1
+      "
+      assert_errors expression(source), source, [
+        ["Token reserved for a numbered parameter", 14..16],
+        ["Token reserved for a numbered parameter", 30..32],
+        ["Token reserved for a numbered parameter", 49..51],
+        ["Token reserved for a numbered parameter", 68..70],
+      ]
+    end
+
+    def test_symbol_in_keyword_parameter
+      source = "def foo(x:'y':); end"
+      assert_errors expression(source), source, [
+        ["Expected a closing delimiter for the string literal", 14..14],
+      ]
+    end
+
+    def test_symbol_in_hash
+      source = "{x:'y':}"
+      assert_errors expression(source), source, [
+        ["Expected a closing delimiter for the string literal", 7..7],
       ]
     end
 

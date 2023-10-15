@@ -8,12 +8,8 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -36,14 +32,14 @@ jobs:
         test_task: [check]
         arch: ['']
         configure: ['cppflags=-DVM_CHECK_MODE']
-        # specifying everything else with `include` to avoid redundant tests
+        # specifying other jobs with `include` to avoid redundant tests
         include:
           - test_task: check
             arch: i686
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
           - test_task: test-all TESTS=--repeat-count=2
-          - test_task: test-all TESTS=--repeat-count=2
+          - test_task: test-all
             configure: 'cppflags=-DUNIVERSAL_PARSER'
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
@@ -78,6 +74,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
         env:
@@ -91,11 +88,6 @@ jobs:
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: $SETARCH make
-
-      - name: Create dummy files in build dir
-        run: |
-          $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
-        if: ${{ matrix.test_task == 'check' }}
 
       - name: make ${{ matrix.test_task }}
         run: >-
@@ -124,6 +116,15 @@ jobs:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: ubuntu-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:

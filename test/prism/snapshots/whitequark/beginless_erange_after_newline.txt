@@ -12,7 +12,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: variable_call
-        │   └── name: "foo"
+        │   └── name: :foo
         └── @ RangeNode (location: (2,0)-(2,6))
             ├── left: ∅
             ├── right:

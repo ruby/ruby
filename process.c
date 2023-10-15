@@ -685,10 +685,16 @@ rb_last_status_set(int status, rb_pid_t pid)
     GET_THREAD()->last_status = rb_process_status_new(pid, status, 0);
 }
 
+static void
+last_status_clear(rb_thread_t *th)
+{
+    th->last_status = Qnil;
+}
+
 void
 rb_last_status_clear(void)
 {
-    GET_THREAD()->last_status = Qnil;
+    last_status_clear(GET_THREAD());
 }
 
 static rb_pid_t
@@ -1654,24 +1660,11 @@ before_exec(void)
     before_exec_async_signal_safe();
 }
 
-/* This function should be async-signal-safe.  Actually it is. */
-static void
-after_exec_async_signal_safe(void)
-{
-}
-
-static void
-after_exec_non_async_signal_safe(void)
-{
-    rb_thread_reset_timer_thread();
-    rb_thread_start_timer_thread();
-}
-
 static void
 after_exec(void)
 {
-    after_exec_async_signal_safe();
-    after_exec_non_async_signal_safe();
+    rb_thread_reset_timer_thread();
+    rb_thread_start_timer_thread();
 }
 
 #if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
@@ -1686,10 +1679,14 @@ after_fork_ruby(rb_pid_t pid)
 {
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     if (pid == 0) {
+        // child
         clear_pid_cache();
         rb_thread_atfork();
     }
-    after_exec();
+    else {
+        // parent
+        after_exec();
+    }
 }
 #endif
 
@@ -4210,16 +4207,19 @@ rb_fork_ruby2(struct rb_process_status *status)
 
     while (1) {
         prefork();
-        disable_child_handler_before_fork(&old);
+
         before_fork_ruby();
-        pid = rb_fork();
-        err = errno;
-        if (status) {
-            status->pid = pid;
-            status->error = err;
+        disable_child_handler_before_fork(&old);
+        {
+            pid = rb_fork();
+            err = errno;
+            if (status) {
+                status->pid = pid;
+                status->error = err;
+            }
         }
-        after_fork_ruby(pid);
         disable_child_handler_fork_parent(&old); /* yes, bad name */
+        after_fork_ruby(pid);
 
         if (pid >= 0) { /* fork succeed */
             return pid;
@@ -4663,10 +4663,15 @@ static VALUE
 do_spawn_process(VALUE arg)
 {
     struct spawn_args *argp = (struct spawn_args *)arg;
+
     rb_execarg_parent_start1(argp->execarg);
+
     return (VALUE)rb_spawn_process(DATA_PTR(argp->execarg),
                                    argp->errmsg.ptr, argp->errmsg.buflen);
 }
+
+NOINLINE(static rb_pid_t
+         rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen));
 
 static rb_pid_t
 rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
@@ -4676,8 +4681,10 @@ rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
     args.execarg = execarg_obj;
     args.errmsg.ptr = errmsg;
     args.errmsg.buflen = errmsg_buflen;
-    return (rb_pid_t)rb_ensure(do_spawn_process, (VALUE)&args,
-                               execarg_parent_end, execarg_obj);
+
+    rb_pid_t r = (rb_pid_t)rb_ensure(do_spawn_process, (VALUE)&args,
+                                     execarg_parent_end, execarg_obj);
+    return r;
 }
 
 static rb_pid_t
@@ -4820,13 +4827,14 @@ rb_spawn(int argc, const VALUE *argv)
 static VALUE
 rb_f_system(int argc, VALUE *argv, VALUE _)
 {
+    rb_thread_t *th = GET_THREAD();
     VALUE execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
     struct rb_process_status status = {0};
     eargp->status = &status;
 
-    rb_last_status_clear();
+    last_status_clear(th);
 
     // This function can set the thread's last status.
     // May be different from waitpid_state.pid on exec failure.
@@ -4834,12 +4842,10 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
 
     if (pid > 0) {
         VALUE status = rb_process_status_wait(pid, 0);
-
         struct rb_process_status *data = rb_check_typeddata(status, &rb_process_status_type);
-
         // Set the last status:
         rb_obj_freeze(status);
-        GET_THREAD()->last_status = status;
+        th->last_status = status;
 
         if (data->status == EXIT_SUCCESS) {
             return Qtrue;
@@ -4952,18 +4958,24 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Argument +exe_path+ is one of the following:
  *
- *  - The string path to an executable to be called.
+ *  - The string path to an executable to be called:
+ *
+ *      spawn('/usr/bin/date') # Path to date on Unix-style system.
+ *      Process.wait
+ *
+ *    Output:
+ *
+ *      Thu Aug 31 10:06:48 AM CDT 2023
+ *
  *  - A 2-element array containing the path to an executable
- *    and the string to be used as the name of the executing process.
+ *    and the string to be used as the name of the executing process:
  *
- *  Example:
+ *      pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
+ *      p `ps -p #{pid} -o command=`
  *
- *    spawn('/usr/bin/date') # => 799198 # Path to date on Unix-style system.
- *    Process.wait           # => 799198
+ *    Output:
  *
- *  Output:
- *
- *    Thu Aug 31 10:06:48 AM CDT 2023
+ *      "Hello! 1\n"
  *
  *  Ruby invokes the executable directly, with no shell and no shell expansion.
  *
@@ -7830,6 +7842,7 @@ get_clk_tck(void)
  *    Process.times
  *    # => #<struct Process::Tms utime=55.122118, stime=35.533068, cutime=0.0, cstime=0.002846>
  *
+ *  The precision is platform-defined.
  */
 
 VALUE

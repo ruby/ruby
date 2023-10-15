@@ -24,4 +24,4 @@
             │   ├── opening_loc: (1,5)-(1,6) = "{"
             │   └── closing_loc: (1,6)-(1,7) = "}"
             ├── flags: ∅
-            └── name: "m"
+            └── name: :m

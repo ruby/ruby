@@ -20,7 +20,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
-            │       │   └── name: "b"
+            │       │   └── name: :b
             │       └── @ KeywordHashNode (location: (1,5)-(1,8))
             │           └── elements: (length: 1)
             │               └── @ AssocSplatNode (location: (1,5)-(1,8))
@@ -31,4 +31,4 @@
             ├── closing_loc: (1,8)-(1,9) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "a"
+            └── name: :a

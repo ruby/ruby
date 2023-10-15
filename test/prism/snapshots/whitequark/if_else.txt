@@ -15,7 +15,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,12)-(1,15))
         │   │   └── body: (length: 1)
@@ -28,7 +28,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,17)-(1,30))
         │   │   ├── else_keyword_loc: (1,17)-(1,21) = "else"
@@ -44,7 +44,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "baz"
+        │   │   │           └── name: :baz
         │   │   └── end_keyword_loc: (1,27)-(1,30) = "end"
         │   └── end_keyword_loc: (1,27)-(1,30) = "end"
         └── @ IfNode (location: (3,0)-(3,26))
@@ -59,7 +59,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── statements:
             │   @ StatementsNode (location: (3,8)-(3,11))
             │   └── body: (length: 1)
@@ -72,7 +72,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "bar"
+            │           └── name: :bar
             ├── consequent:
             │   @ ElseNode (location: (3,13)-(3,26))
             │   ├── else_keyword_loc: (3,13)-(3,17) = "else"
@@ -88,6 +88,6 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "baz"
+            │   │           └── name: :baz
             │   └── end_keyword_loc: (3,23)-(3,26) = "end"
             └── end_keyword_loc: (3,23)-(3,26) = "end"

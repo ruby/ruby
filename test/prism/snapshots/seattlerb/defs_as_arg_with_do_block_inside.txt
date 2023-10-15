@@ -31,7 +31,7 @@
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
             │           │           │   ├── flags: variable_call
-            │           │           │   └── name: "x"
+            │           │           │   └── name: :x
             │           │           ├── call_operator_loc: (1,15)-(1,16) = "."
             │           │           ├── message_loc: (1,16)-(1,17) = "y"
             │           │           ├── opening_loc: ∅
@@ -45,7 +45,7 @@
             │           │           │   ├── opening_loc: (1,18)-(1,20) = "do"
             │           │           │   └── closing_loc: (1,22)-(1,25) = "end"
             │           │           ├── flags: ∅
-            │           │           └── name: "y"
+            │           │           └── name: :y
             │           ├── locals: []
             │           ├── def_keyword_loc: (1,2)-(1,5) = "def"
             │           ├── operator_loc: (1,10)-(1,11) = "."
@@ -56,4 +56,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "p"
+            └── name: :p

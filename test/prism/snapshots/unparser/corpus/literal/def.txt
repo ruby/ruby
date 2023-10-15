@@ -23,7 +23,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "a"
+        │   │   │           └── name: :a
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (3,0)-(4,3))
         │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -42,7 +42,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "b"
+        │   │   │   │           └── name: :b
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (5,0)-(7,6))
@@ -59,7 +59,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "c"
+        │   │   │   │           └── name: :c
         │   │   │   └── end_keyword_loc: (7,0)-(7,6) = "ensure"
         │   │   ├── ensure_clause:
         │   │   │   @ EnsureNode (location: (7,0)-(9,3))
@@ -76,7 +76,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "d"
+        │   │   │   │           └── name: :d
         │   │   │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         │   │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         │   ├── locals: []
@@ -108,7 +108,7 @@
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
         │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: "a"
+        │   │   │           │   └── name: :a
         │   │   │           ├── keyword_loc: (12,4)-(12,10) = "rescue"
         │   │   │           └── rescue_expression:
         │   │   │               @ CallNode (location: (12,11)-(12,12))
@@ -120,7 +120,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: variable_call
-        │   │   │               └── name: "b"
+        │   │   │               └── name: :b
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (13,0)-(14,3))
         │   │   │   ├── keyword_loc: (13,0)-(13,6) = "rescue"
@@ -139,7 +139,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "b"
+        │   │   │   │           └── name: :b
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (15,0)-(17,6))
@@ -156,7 +156,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "c"
+        │   │   │   │           └── name: :c
         │   │   │   └── end_keyword_loc: (17,0)-(17,6) = "ensure"
         │   │   ├── ensure_clause:
         │   │   │   @ EnsureNode (location: (17,0)-(19,3))
@@ -173,7 +173,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "d"
+        │   │   │   │           └── name: :d
         │   │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   ├── locals: []
@@ -242,7 +242,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: []
         │   ├── def_keyword_loc: (27,0)-(27,3) = "def"
         │   ├── operator_loc: ∅
@@ -270,7 +270,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "foo"
+        │   │   │           └── name: :foo
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (33,0)-(34,5))
         │   │   │   ├── keyword_loc: (33,0)-(33,6) = "rescue"
@@ -289,7 +289,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bar"
+        │   │   │   │           └── name: :bar
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause:
@@ -307,7 +307,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "baz"
+        │   │   │   │           └── name: :baz
         │   │   │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         │   │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         │   ├── locals: []
@@ -337,7 +337,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "bar"
+        │   │   │           └── name: :bar
         │   │   ├── rescue_clause: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause:
@@ -355,7 +355,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "baz"
+        │   │   │   │           └── name: :baz
         │   │   │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         │   │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         │   ├── locals: []
@@ -385,7 +385,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "bar"
+        │   │   │           └── name: :bar
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (47,0)-(48,5))
         │   │   │   ├── keyword_loc: (47,0)-(47,6) = "rescue"
@@ -404,7 +404,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "baz"
+        │   │   │   │           └── name: :baz
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
@@ -535,7 +535,7 @@
         │   │   │           │       │   ├── closing_loc: ∅
         │   │   │           │       │   ├── block: ∅
         │   │   │           │       │   ├── flags: variable_call
-        │   │   │           │       │   └── name: "baz"
+        │   │   │           │       │   └── name: :baz
         │   │   │           │       └── @ NilNode (location: (63,20)-(63,23))
         │   │   │           ├── opening_loc: (63,14)-(63,15) = "("
         │   │   │           └── closing_loc: (63,23)-(63,24) = ")"
@@ -669,7 +669,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "baz"
+        │   │   │           └── name: :baz
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -704,7 +704,7 @@
         │   │   │           ├── closing_loc: (80,17)-(80,18) = ")"
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: ∅
-        │   │   │           └── name: "bar"
+        │   │   │           └── name: :bar
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -744,7 +744,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:*]
         │   ├── def_keyword_loc: (83,0)-(83,3) = "def"
         │   ├── operator_loc: ∅
@@ -849,7 +849,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:baz, :bor]
         │   ├── def_keyword_loc: (95,0)-(95,3) = "def"
         │   ├── operator_loc: ∅
@@ -896,7 +896,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:baz, :bor, :block]
         │   ├── def_keyword_loc: (99,0)-(99,3) = "def"
         │   ├── operator_loc: ∅
@@ -971,7 +971,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── locals: [:block]
         │   ├── def_keyword_loc: (107,0)-(107,3) = "def"
         │   ├── operator_loc: ∅
@@ -1028,7 +1028,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "bar"
+        │   │       │   └── name: :bar
         │   │       └── @ CallNode (location: (117,2)-(117,5))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
@@ -1038,7 +1038,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "baz"
+        │   │           └── name: :baz
         │   ├── locals: []
         │   ├── def_keyword_loc: (115,0)-(115,3) = "def"
         │   ├── operator_loc: ∅

@@ -28,10 +28,10 @@
         │   │           │       ├── @ InterpolatedRegularExpressionNode (location: (4,13)-(7,2))
         │   │           │       │   ├── opening_loc: (4,13)-(4,14) = "/"
         │   │           │       │   ├── parts: (length: 2)
-        │   │           │       │   │   ├── @ StringNode (location: (4,14)-(4,0))
+        │   │           │       │   │   ├── @ StringNode (location: (4,14)-(4,16))
         │   │           │       │   │   │   ├── flags: ∅
         │   │           │       │   │   │   ├── opening_loc: ∅
-        │   │           │       │   │   │   ├── content_loc: (4,14)-(4,0) = "b\\\n"
+        │   │           │       │   │   │   ├── content_loc: (4,14)-(4,16) = "b\\"
         │   │           │       │   │   │   ├── closing_loc: ∅
         │   │           │       │   │   │   └── unescaped: "b"
         │   │           │       │   │   └── @ StringNode (location: (7,0)-(7,1))
@@ -51,11 +51,11 @@
         │   │           ├── closing_loc: (7,6)-(7,7) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "gsub"
+        │   │           └── name: :gsub
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (10,0)-(13,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -73,10 +73,10 @@
         │   │       └── @ InterpolatedStringNode (location: (10,9)-(13,2))
         │   │           ├── opening_loc: (10,9)-(10,10) = "\""
         │   │           ├── parts: (length: 2)
-        │   │           │   ├── @ StringNode (location: (10,10)-(10,0))
+        │   │           │   ├── @ StringNode (location: (10,10)-(10,12))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (10,10)-(10,0) = "d\\\n"
+        │   │           │   │   ├── content_loc: (10,10)-(10,12) = "d\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "d"
         │   │           │   └── @ StringNode (location: (13,0)-(13,1))
@@ -89,7 +89,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (16,0)-(19,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -107,10 +107,10 @@
         │   │       └── @ InterpolatedStringNode (location: (16,9)-(19,2))
         │   │           ├── opening_loc: (16,9)-(16,12) = "%q["
         │   │           ├── parts: (length: 2)
-        │   │           │   ├── @ StringNode (location: (16,12)-(16,0))
+        │   │           │   ├── @ StringNode (location: (16,12)-(16,14))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (16,12)-(16,0) = "f\\\n"
+        │   │           │   │   ├── content_loc: (16,12)-(16,14) = "f\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "f\\\n"
         │   │           │   └── @ StringNode (location: (19,0)-(19,1))
@@ -123,7 +123,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (22,0)-(25,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -141,10 +141,10 @@
         │   │       └── @ InterpolatedStringNode (location: (22,9)-(25,2))
         │   │           ├── opening_loc: (22,9)-(22,12) = "%Q["
         │   │           ├── parts: (length: 2)
-        │   │           │   ├── @ StringNode (location: (22,12)-(22,0))
+        │   │           │   ├── @ StringNode (location: (22,12)-(22,14))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (22,12)-(22,0) = "h\\\n"
+        │   │           │   │   ├── content_loc: (22,12)-(22,14) = "h\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "h"
         │   │           │   └── @ StringNode (location: (25,0)-(25,1))
@@ -157,7 +157,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (28,0)-(31,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -174,10 +174,10 @@
         │   │       │   └── unescaped: "i\n"
         │   │       └── @ ArrayNode (location: (28,9)-(31,2))
         │   │           ├── elements: (length: 2)
-        │   │           │   ├── @ StringNode (location: (28,12)-(28,0))
+        │   │           │   ├── @ StringNode (location: (28,12)-(28,14))
         │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (28,12)-(28,0) = "j\\\n"
+        │   │           │   │   ├── content_loc: (28,12)-(28,14) = "j\\"
         │   │           │   │   ├── closing_loc: ∅
         │   │           │   │   └── unescaped: "j\n"
         │   │           │   └── @ StringNode (location: (31,0)-(31,1))
@@ -191,7 +191,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (35,0)-(38,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -211,12 +211,12 @@
         │   │           │   └── @ InterpolatedStringNode (location: (35,12)-(38,1))
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── parts: (length: 2)
-        │   │           │       │   ├── @ StringNode (location: (35,12)-(35,0))
+        │   │           │       │   ├── @ StringNode (location: (35,12)-(35,14))
         │   │           │       │   │   ├── flags: ∅
         │   │           │       │   │   ├── opening_loc: ∅
-        │   │           │       │   │   ├── content_loc: (35,12)-(35,0) = "l\\\n"
+        │   │           │       │   │   ├── content_loc: (35,12)-(35,14) = "l\\"
         │   │           │       │   │   ├── closing_loc: ∅
-        │   │           │       │   │   └── unescaped: "l"
+        │   │           │       │   │   └── unescaped: "l\n"
         │   │           │       │   └── @ StringNode (location: (38,0)-(38,1))
         │   │           │       │       ├── flags: ∅
         │   │           │       │       ├── opening_loc: ∅
@@ -229,7 +229,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         ├── @ CallNode (location: (41,0)-(44,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -246,11 +246,11 @@
         │   │       │   └── unescaped: "m\n"
         │   │       └── @ ArrayNode (location: (41,9)-(44,2))
         │   │           ├── elements: (length: 2)
-        │   │           │   ├── @ SymbolNode (location: (41,12)-(41,0))
+        │   │           │   ├── @ SymbolNode (location: (41,12)-(41,14))
         │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── value_loc: (41,12)-(41,0) = "n\\\n"
+        │   │           │   │   ├── value_loc: (41,12)-(41,14) = "n\\"
         │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │   └── unescaped: "n\\\n"
+        │   │           │   │   └── unescaped: "n\n"
         │   │           │   └── @ SymbolNode (location: (44,0)-(44,1))
         │   │           │       ├── opening_loc: ∅
         │   │           │       ├── value_loc: (44,0)-(44,1) = "n"
@@ -261,7 +261,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "pp"
+        │   └── name: :pp
         └── @ CallNode (location: (48,0)-(51,2))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
@@ -278,18 +278,18 @@
             │       │   └── unescaped: "o\n"
             │       └── @ ArrayNode (location: (48,9)-(51,2))
             │           ├── elements: (length: 1)
-            │           │   └── @ InterpolatedSymbolNode (location: (48,12)-(51,1))
+            │           │   └── @ InterpolatedSymbolNode (location: (48,12)-(48,14))
             │           │       ├── opening_loc: ∅
             │           │       ├── parts: (length: 2)
-            │           │       │   ├── @ SymbolNode (location: (48,12)-(48,0))
+            │           │       │   ├── @ SymbolNode (location: (48,12)-(48,14))
             │           │       │   │   ├── opening_loc: ∅
-            │           │       │   │   ├── value_loc: (48,12)-(48,0) = "p\\\n"
+            │           │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
             │           │       │   │   ├── closing_loc: ∅
-            │           │       │   │   └── unescaped: "p"
-            │           │       │   └── @ StringNode (location: (51,0)-(51,1))
+            │           │       │   │   └── unescaped: "p\n"
+            │           │       │   └── @ StringNode (location: (48,12)-(48,14))
             │           │       │       ├── flags: ∅
             │           │       │       ├── opening_loc: ∅
-            │           │       │       ├── content_loc: (51,0)-(51,1) = "p"
+            │           │       │       ├── content_loc: (48,12)-(48,14) = "p\\"
             │           │       │       ├── closing_loc: ∅
             │           │       │       └── unescaped: "p"
             │           │       └── closing_loc: ∅
@@ -298,4 +298,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "pp"
+            └── name: :pp

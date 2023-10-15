@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── call_operator_loc: (3,0)-(3,2) = "&."
         │   ├── message_loc: (3,2)-(3,5) = "foo"
         │   ├── opening_loc: ∅
@@ -22,7 +22,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: safe_navigation
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (6,0)-(8,4))
         │   ├── receiver:
         │   │   @ CallNode (location: (6,0)-(6,1))
@@ -34,7 +34,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── call_operator_loc: (8,0)-(8,1) = "."
         │   ├── message_loc: (8,1)-(8,4) = "foo"
         │   ├── opening_loc: ∅
@@ -42,7 +42,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "foo"
+        │   └── name: :foo
         ├── @ CallNode (location: (11,0)-(13,5))
         │   ├── receiver:
         │   │   @ CallNode (location: (11,0)-(11,1))
@@ -54,7 +54,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── call_operator_loc: (13,0)-(13,2) = "&."
         │   ├── message_loc: (13,2)-(13,5) = "foo"
         │   ├── opening_loc: ∅
@@ -62,7 +62,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: safe_navigation
-        │   └── name: "foo"
+        │   └── name: :foo
         └── @ CallNode (location: (16,0)-(18,4))
             ├── receiver:
             │   @ CallNode (location: (16,0)-(16,1))
@@ -74,7 +74,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: (18,0)-(18,1) = "."
             ├── message_loc: (18,1)-(18,4) = "foo"
             ├── opening_loc: ∅
@@ -82,4 +82,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "foo"
+            └── name: :foo

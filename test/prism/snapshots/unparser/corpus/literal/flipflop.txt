@@ -27,7 +27,7 @@
         │   │   │           │   │           │   ├── closing_loc: ∅
         │   │   │           │   │           │   ├── block: ∅
         │   │   │           │   │           │   ├── flags: variable_call
-        │   │   │           │   │           │   └── name: "i"
+        │   │   │           │   │           │   └── name: :i
         │   │   │           │   │           ├── call_operator_loc: ∅
         │   │   │           │   │           ├── message_loc: (1,7)-(1,9) = "=="
         │   │   │           │   │           ├── opening_loc: ∅
@@ -39,7 +39,7 @@
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: ∅
-        │   │   │           │   │           └── name: "=="
+        │   │   │           │   │           └── name: :==
         │   │   │           │   ├── opening_loc: (1,4)-(1,5) = "("
         │   │   │           │   └── closing_loc: (1,11)-(1,12) = ")"
         │   │   │           ├── right:
@@ -58,7 +58,7 @@
         │   │   │           │   │           │   ├── closing_loc: ∅
         │   │   │           │   │           │   ├── block: ∅
         │   │   │           │   │           │   ├── flags: variable_call
-        │   │   │           │   │           │   └── name: "i"
+        │   │   │           │   │           │   └── name: :i
         │   │   │           │   │           ├── call_operator_loc: ∅
         │   │   │           │   │           ├── message_loc: (1,17)-(1,19) = "=="
         │   │   │           │   │           ├── opening_loc: ∅
@@ -70,7 +70,7 @@
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: ∅
-        │   │   │           │   │           └── name: "=="
+        │   │   │           │   │           └── name: :==
         │   │   │           │   ├── opening_loc: (1,14)-(1,15) = "("
         │   │   │           │   └── closing_loc: (1,21)-(1,22) = ")"
         │   │   │           ├── operator_loc: (1,12)-(1,14) = ".."
@@ -89,7 +89,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "foo"
+        │   │           └── name: :foo
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         └── @ IfNode (location: (4,0)-(6,3))
@@ -116,7 +116,7 @@
             │   │           │   │           │   ├── closing_loc: ∅
             │   │           │   │           │   ├── block: ∅
             │   │           │   │           │   ├── flags: variable_call
-            │   │           │   │           │   └── name: "i"
+            │   │           │   │           │   └── name: :i
             │   │           │   │           ├── call_operator_loc: ∅
             │   │           │   │           ├── message_loc: (4,7)-(4,9) = "=="
             │   │           │   │           ├── opening_loc: ∅
@@ -128,7 +128,7 @@
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
             │   │           │   │           ├── flags: ∅
-            │   │           │   │           └── name: "=="
+            │   │           │   │           └── name: :==
             │   │           │   ├── opening_loc: (4,4)-(4,5) = "("
             │   │           │   └── closing_loc: (4,11)-(4,12) = ")"
             │   │           ├── right:
@@ -147,7 +147,7 @@
             │   │           │   │           │   ├── closing_loc: ∅
             │   │           │   │           │   ├── block: ∅
             │   │           │   │           │   ├── flags: variable_call
-            │   │           │   │           │   └── name: "i"
+            │   │           │   │           │   └── name: :i
             │   │           │   │           ├── call_operator_loc: ∅
             │   │           │   │           ├── message_loc: (4,18)-(4,20) = "=="
             │   │           │   │           ├── opening_loc: ∅
@@ -159,7 +159,7 @@
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
             │   │           │   │           ├── flags: ∅
-            │   │           │   │           └── name: "=="
+            │   │           │   │           └── name: :==
             │   │           │   ├── opening_loc: (4,15)-(4,16) = "("
             │   │           │   └── closing_loc: (4,22)-(4,23) = ")"
             │   │           ├── operator_loc: (4,12)-(4,15) = "..."
@@ -178,6 +178,6 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── consequent: ∅
             └── end_keyword_loc: (6,0)-(6,3) = "end"

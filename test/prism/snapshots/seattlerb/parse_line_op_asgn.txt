@@ -16,7 +16,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "bar"
+        │   │   └── name: :bar
         │   ├── name: :foo
         │   ├── operator: :+
         │   └── depth: 0
@@ -29,4 +29,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: variable_call
-            └── name: "baz"
+            └── name: :baz

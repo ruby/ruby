@@ -41,7 +41,7 @@
             │           ├── closing_loc: (1,34)-(1,35) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "bar"
+            │           └── name: :bar
             ├── locals: [:a, :b, :"..."]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

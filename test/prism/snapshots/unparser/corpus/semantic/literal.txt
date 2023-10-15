@@ -33,7 +33,7 @@
         │   ├── opening_loc: (10,0)-(10,3) = "%r("
         │   ├── content_loc: (10,3)-(10,5) = "\\)"
         │   ├── closing_loc: (10,5)-(10,6) = ")"
-        │   ├── unescaped: ")"
+        │   ├── unescaped: "\\)"
         │   └── flags: ∅
         ├── @ InterpolatedRegularExpressionNode (location: (11,0)-(11,14))
         │   ├── opening_loc: (11,0)-(11,3) = "%r("
@@ -81,12 +81,12 @@
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
-            │           │           └── name: "bar"
+            │           │           └── name: :bar
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "foo"
+            │           └── name: :foo
             ├── closing_loc: (14,9)-(14,10) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "w"
+            └── name: :w

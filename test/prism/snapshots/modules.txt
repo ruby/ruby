@@ -45,7 +45,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bbb"
+        │   │   │   │           └── name: :bbb
         │   │   │   └── closing_loc: (3,12)-(3,13) = "}"
         │   │   └── @ StringNode (location: (3,13)-(3,17))
         │   │       ├── flags: ∅
@@ -69,7 +69,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "m"
+        │   │   │   └── name: :m
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (5,10)-(5,11))
         │   │   │   └── name: :M
@@ -140,7 +140,7 @@
         │   │   │   ├── closing_loc: (14,9)-(14,10) = "]"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "[]"
+        │   │   │   └── name: :[]
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (14,12)-(14,13))
         │   │   │   └── name: :B
@@ -169,7 +169,7 @@
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
-            │   │   └── name: "[]"
+            │   │   └── name: :[]
             │   ├── child:
             │   │   @ ConstantReadNode (location: (17,13)-(17,14))
             │   │   └── name: :B

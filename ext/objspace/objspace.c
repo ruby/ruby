@@ -434,7 +434,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ZSUPER);
                 COUNT_NODE(NODE_LIST);
                 COUNT_NODE(NODE_ZLIST);
-                COUNT_NODE(NODE_VALUES);
                 COUNT_NODE(NODE_HASH);
                 COUNT_NODE(NODE_RETURN);
                 COUNT_NODE(NODE_YIELD);
@@ -493,8 +492,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ARYPTN);
                 COUNT_NODE(NODE_FNDPTN);
                 COUNT_NODE(NODE_HSHPTN);
-                COUNT_NODE(NODE_DEF_TEMP);
-                COUNT_NODE(NODE_DEF_TEMP2);
                 COUNT_NODE(NODE_RIPPER);
                 COUNT_NODE(NODE_RIPPER_VALUES);
                 COUNT_NODE(NODE_ERROR);

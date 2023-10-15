@@ -17,7 +17,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "meth"
+            │           └── name: :meth
             ├── rescue_clause:
             │   @ RescueNode (location: (1,13)-(1,24))
             │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
@@ -36,7 +36,7 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "baz"
+            │   │           └── name: :baz
             │   └── consequent: ∅
             ├── else_clause:
             │   @ ElseNode (location: (1,26)-(1,42))
@@ -53,7 +53,7 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "foo"
+            │   │           └── name: :foo
             │   └── end_keyword_loc: (1,36)-(1,42) = "ensure"
             ├── ensure_clause:
             │   @ EnsureNode (location: (1,36)-(1,51))
@@ -70,6 +70,6 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "bar"
+            │   │           └── name: :bar
             │   └── end_keyword_loc: (1,48)-(1,51) = "end"
             └── end_keyword_loc: (1,48)-(1,51) = "end"

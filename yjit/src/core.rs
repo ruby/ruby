@@ -42,7 +42,7 @@ pub type IseqIdx = u16;
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub enum Type {
-    Unknown,
+    Unknown = 0,
     UnknownImm,
     UnknownHeap,
     Nil,
@@ -64,6 +64,10 @@ pub enum Type {
 
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp
+
+    // The context currently relies on types taking at most 4 bits (max value 15)
+    // to encode, so if we add any more, we will need to refactor the context,
+    // or we could remove HeapSymbol, which is currently unused.
 }
 
 // Default initialization
@@ -438,7 +442,8 @@ impl RegTemps {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Clone, Default, Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
+#[repr(packed)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u8,
@@ -450,11 +455,15 @@ pub struct Context {
     /// Bitmap of which stack temps are in a register
     reg_temps: RegTemps,
 
-    // Depth of this block in the sidechain (eg: inline-cache chain)
-    chain_depth: u8,
+    /// Fields packed into u8
+    /// - Lower 7 bits: Depth of this block in the sidechain (eg: inline-cache chain)
+    /// - Top bit: Whether this code is the target of a JIT-to-JIT Ruby return
+    ///   ([Self::is_return_landing])
+    chain_depth_return_landing: u8,
 
     // Local variable types we keep track of
-    local_types: [Type; MAX_LOCAL_TYPES],
+    // We store 8 local types, requiring 4 bits each, for a total of 32 bits
+    local_types: u32,
 
     // Type we track for self
     self_type: Type,
@@ -493,6 +502,7 @@ pub enum BranchGenFn {
     JZToTarget0,
     JBEToTarget0,
     JBToTarget0,
+    JOMulToTarget0,
     JITReturn,
 }
 
@@ -549,6 +559,9 @@ impl BranchGenFn {
             BranchGenFn::JBToTarget0 => {
                 asm.jb(target0)
             }
+            BranchGenFn::JOMulToTarget0 => {
+                asm.jo_mul(target0)
+            }
             BranchGenFn::JITReturn => {
                 asm_comment!(asm, "update cfp->jit_return");
                 asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.unwrap_code_ptr().raw_ptr()));
@@ -566,6 +579,7 @@ impl BranchGenFn {
             BranchGenFn::JZToTarget0 |
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
+            BranchGenFn::JOMulToTarget0 |
             BranchGenFn::JITReturn => BranchShape::Default,
         }
     }
@@ -587,6 +601,7 @@ impl BranchGenFn {
             BranchGenFn::JZToTarget0 |
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
+            BranchGenFn::JOMulToTarget0 |
             BranchGenFn::JITReturn => {
                 assert_eq!(new_shape, BranchShape::Default);
             }
@@ -960,7 +975,6 @@ impl fmt::Debug for MutableBranchList {
         formatter.debug_list().entries(branches.into_iter()).finish()
     }
 }
-
 
 /// This is all the data YJIT stores on an iseq
 /// This will be dynamically allocated by C code
@@ -1393,7 +1407,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
 /// Produce a generic context when the block version limit is hit for a blockid
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
-    if ctx.chain_depth > 0 {
+    if ctx.get_chain_depth() > 0 {
         return ctx.clone();
     }
 
@@ -1601,6 +1615,9 @@ impl Context {
         generic_ctx.stack_size = self.stack_size;
         generic_ctx.sp_offset = self.sp_offset;
         generic_ctx.reg_temps = self.reg_temps;
+        if self.is_return_landing() {
+            generic_ctx.set_as_return_landing();
+        }
         generic_ctx
     }
 
@@ -1631,15 +1648,30 @@ impl Context {
     }
 
     pub fn get_chain_depth(&self) -> u8 {
-        self.chain_depth
+        self.chain_depth_return_landing & 0x7f
     }
 
     pub fn reset_chain_depth(&mut self) {
-        self.chain_depth = 0;
+        self.chain_depth_return_landing &= 0x80;
     }
 
     pub fn increment_chain_depth(&mut self) {
-        self.chain_depth += 1;
+        if self.get_chain_depth() == 0x7f {
+            panic!("max block version chain depth reached!");
+        }
+        self.chain_depth_return_landing += 1;
+    }
+
+    pub fn set_as_return_landing(&mut self) {
+        self.chain_depth_return_landing |= 0x80;
+    }
+
+    pub fn clear_return_landing(&mut self) {
+        self.chain_depth_return_landing &= 0x7f;
+    }
+
+    pub fn is_return_landing(&self) -> bool {
+        self.chain_depth_return_landing & 0x80 > 0
     }
 
     /// Get an operand for the adjusted stack pointer address
@@ -1681,7 +1713,7 @@ impl Context {
                     MapToLocal => {
                         let idx = mapping.get_local_idx();
                         assert!((idx as usize) < MAX_LOCAL_TYPES);
-                        return self.local_types[idx as usize];
+                        return self.get_local_type(idx.into());
                     }
                 }
             }
@@ -1689,8 +1721,14 @@ impl Context {
     }
 
     /// Get the currently tracked type for a local variable
-    pub fn get_local_type(&self, idx: usize) -> Type {
-        *self.local_types.get(idx).unwrap_or(&Type::Unknown)
+    pub fn get_local_type(&self, local_idx: usize) -> Type {
+        if local_idx >= MAX_LOCAL_TYPES {
+            return Type::Unknown
+        } else {
+            // Each type is stored in 4 bits
+            let type_bits = (self.local_types >> (4 * local_idx)) & 0b1111;
+            unsafe { transmute::<u8, Type>(type_bits as u8) }
+        }
     }
 
     /// Upgrade (or "learn") the type of an instruction operand
@@ -1726,7 +1764,9 @@ impl Context {
                     MapToLocal => {
                         let idx = mapping.get_local_idx() as usize;
                         assert!(idx < MAX_LOCAL_TYPES);
-                        self.local_types[idx].upgrade(opnd_type);
+                        let mut new_type = self.get_local_type(idx);
+                        new_type.upgrade(opnd_type);
+                        self.set_local_type(idx, new_type);
                     }
                 }
             }
@@ -1784,26 +1824,26 @@ impl Context {
 
     /// Set the type of a local variable
     pub fn set_local_type(&mut self, local_idx: usize, local_type: Type) {
-        let ctx = self;
-
         // If type propagation is disabled, store no types
         if get_option!(no_type_prop) {
             return;
         }
 
         if local_idx >= MAX_LOCAL_TYPES {
-            return;
+            return
         }
 
         // If any values on the stack map to this local we must detach them
-        for mapping in ctx.temp_mapping.iter_mut() {
-            *mapping = match mapping.get_kind() {
-                MapToStack => *mapping,
-                MapToSelf => *mapping,
+        for mapping_idx in 0..self.temp_mapping.len() {
+            let mapping = self.temp_mapping[mapping_idx];
+            self.temp_mapping[mapping_idx] = match mapping.get_kind() {
+                MapToStack => mapping,
+                MapToSelf => mapping,
                 MapToLocal => {
                     let idx = mapping.get_local_idx();
                     if idx as usize == local_idx {
-                        TempMapping::map_to_stack(ctx.local_types[idx as usize])
+                        let local_type = self.get_local_type(local_idx.into());
+                        TempMapping::map_to_stack(local_type)
                     } else {
                         TempMapping::map_to_local(idx)
                     }
@@ -1811,7 +1851,12 @@ impl Context {
             }
         }
 
-        ctx.local_types[local_idx] = local_type;
+        // Update the type bits
+        let type_bits = local_type as u32;
+        assert!(type_bits <= 0b1111);
+        let mask_bits = (0b1111 as u32) << (4 * local_idx);
+        let shifted_bits = type_bits << (4 * local_idx);
+        self.local_types = (self.local_types & !mask_bits) | shifted_bits;
     }
 
     /// Erase local variable type information
@@ -1819,15 +1864,17 @@ impl Context {
     pub fn clear_local_types(&mut self) {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
-        for mapping in self.temp_mapping.iter_mut() {
+
+        for mapping_idx in 0..self.temp_mapping.len() {
+            let mapping = self.temp_mapping[mapping_idx];
             if mapping.get_kind() == MapToLocal {
-                let idx = mapping.get_local_idx();
-                *mapping = TempMapping::map_to_stack(self.local_types[idx as usize]);
+                let local_idx = mapping.get_local_idx() as usize;
+                self.temp_mapping[mapping_idx] = TempMapping::map_to_stack(self.get_local_type(local_idx));
             }
         }
 
         // Clear the local types
-        self.local_types = [Type::default(); MAX_LOCAL_TYPES];
+        self.local_types = 0;
     }
 
     /// Compute a difference score for two context objects
@@ -1836,13 +1883,17 @@ impl Context {
         let src = self;
 
         // Can only lookup the first version in the chain
-        if dst.chain_depth != 0 {
+        if dst.get_chain_depth() != 0 {
             return TypeDiff::Incompatible;
         }
 
         // Blocks with depth > 0 always produce new versions
         // Sidechains cannot overlap
-        if src.chain_depth != 0 {
+        if src.get_chain_depth() != 0 {
+            return TypeDiff::Incompatible;
+        }
+
+        if src.is_return_landing() != dst.is_return_landing() {
             return TypeDiff::Incompatible;
         }
 
@@ -1868,9 +1919,9 @@ impl Context {
         };
 
         // For each local type we track
-        for i in 0..src.local_types.len() {
-            let t_src = src.local_types[i];
-            let t_dst = dst.local_types[i];
+        for i in 0.. MAX_LOCAL_TYPES {
+            let t_src = src.get_local_type(i);
+            let t_dst = dst.get_local_type(i);
             diff += match t_src.diff(t_dst) {
                 TypeDiff::Compatible(diff) => diff,
                 TypeDiff::Incompatible => return TypeDiff::Incompatible,
@@ -2277,7 +2328,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
     asm.compile(cb, Some(ocb));
 
-    // Try to find an existing compiled version of this block
+    // Find or compile a block version
     let blockid = BlockId { iseq, idx: insn_idx };
     let mut ctx = Context::default();
     ctx.stack_size = stack_size;
@@ -2287,33 +2338,31 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
             let mut asm = Assembler::new();
             asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
             asm.compile(cb, Some(ocb));
-            blockref
+            Some(blockref)
         }
         // If this block hasn't yet been compiled, generate blocks after the entry guard.
-        None => match gen_block_series(blockid, &ctx, ec, cb, ocb) {
-            Some(blockref) => blockref,
-            None => { // No space
-                // Trigger code GC. This entry point will be recompiled later.
-                cb.code_gc(ocb);
-                return None;
-            }
-        }
+        None => gen_block_series(blockid, &ctx, ec, cb, ocb),
     };
 
-    // Regenerate the previous entry
-    assert!(!entry_ptr.is_null());
-    let entryref = NonNull::<Entry>::new(entry_ptr as *mut Entry).expect("Entry should not be null");
-    regenerate_entry(cb, &entryref, next_entry);
+    // Commit or retry the entry
+    if blockref.is_some() {
+        // Regenerate the previous entry
+        let entryref = NonNull::<Entry>::new(entry_ptr as *mut Entry).expect("Entry should not be null");
+        regenerate_entry(cb, &entryref, next_entry);
 
-    // Write an entry to the heap and push it to the ISEQ
-    let pending_entry = Rc::try_unwrap(pending_entry).ok().expect("PendingEntry should be unique");
-    get_or_create_iseq_payload(iseq).entries.push(pending_entry.into_entry());
+        // Write an entry to the heap and push it to the ISEQ
+        let pending_entry = Rc::try_unwrap(pending_entry).ok().expect("PendingEntry should be unique");
+        get_or_create_iseq_payload(iseq).entries.push(pending_entry.into_entry());
+    } else { // No space
+        // Trigger code GC. This entry point will be recompiled later.
+        cb.code_gc(ocb);
+    }
 
     cb.mark_all_executable();
     ocb.unwrap().mark_all_executable();
 
     // Let the stub jump to the block
-    Some(unsafe { blockref.as_ref() }.start_addr.raw_ptr())
+    blockref.map(|block| unsafe { block.as_ref() }.start_addr.raw_ptr())
 }
 
 /// Generate a stub that calls entry_stub_hit
@@ -2486,9 +2535,12 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let cfp = get_ec_cfp(ec);
         let original_interp_sp = get_cfp_sp(cfp);
 
-        let running_iseq = rb_cfp_get_iseq(cfp);
+        let running_iseq = get_cfp_iseq(cfp);
         let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_blockid.idx.into());
         let reconned_sp = original_interp_sp.offset(target_ctx.sp_offset.into());
+        // Unlike in the interpreter, our `leave` doesn't write to the caller's
+        // SP -- we do it in the returned-to code. Account for this difference.
+        let reconned_sp = reconned_sp.add(target_ctx.is_return_landing().into());
 
         assert_eq!(running_iseq, target_blockid.iseq as _, "each stub expects a particular iseq");
 
@@ -2625,10 +2677,16 @@ fn gen_branch_stub(
     asm.set_reg_temps(ctx.reg_temps);
     asm_comment!(asm, "branch stub hit");
 
+    if asm.ctx.is_return_landing() {
+        asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, C_RET_OPND);
+    }
+
     // Save caller-saved registers before C_ARG_OPNDS get clobbered.
     // Spill all registers for consistency with the trampoline.
-    for &reg in caller_saved_temp_regs().iter() {
-        asm.cpush(reg);
+    for &reg in caller_saved_temp_regs() {
+        asm.cpush(Opnd::Reg(reg));
     }
 
     // Spill temps to the VM stack as well for jit.peek_at_stack()
@@ -2669,7 +2727,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Since this trampoline is static, it allows code GC inside
     // branch_stub_hit() to free stubs without problems.
     asm_comment!(asm, "branch_stub_hit() trampoline");
-    let jump_addr = asm.ccall(
+    let stub_hit_ret = asm.ccall(
         branch_stub_hit as *mut u8,
         vec![
             C_ARG_OPNDS[0],
@@ -2677,14 +2735,20 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
             EC,
         ]
     );
+    let jump_addr = asm.load(stub_hit_ret);
 
     // Restore caller-saved registers for stack temps
-    for &reg in caller_saved_temp_regs().iter().rev() {
-        asm.cpop_into(reg);
+    for &reg in caller_saved_temp_regs().rev() {
+        asm.cpop_into(Opnd::Reg(reg));
     }
 
     // Jump to the address returned by the branch_stub_hit() call
     asm.jmp_opnd(jump_addr);
+
+    // HACK: popping into C_RET_REG clobbers the return value of branch_stub_hit() we need to jump
+    // to, so we need a scratch register to preserve it. This extends the live range of the C
+    // return register so we get something else for the return value.
+    let _ = asm.live_reg_opnd(stub_hit_ret);
 
     asm.compile(ocb, None);
 
@@ -2692,13 +2756,20 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
 }
 
 /// Return registers to be pushed and popped on branch_stub_hit.
-/// The return value may include an extra register for x86 alignment.
-fn caller_saved_temp_regs() -> Vec<Opnd> {
-    let mut regs = Assembler::get_temp_regs().to_vec();
-    if regs.len() % 2 == 1 {
-        regs.push(*regs.last().unwrap()); // x86 alignment
+fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
+    let temp_regs = Assembler::get_temp_regs().iter();
+    let len = temp_regs.len();
+    // The return value gen_leave() leaves in C_RET_REG
+    // needs to survive the branch_stub_hit() call.
+    let regs = temp_regs.chain(std::iter::once(&C_RET_REG));
+
+    // On x86_64, maintain 16-byte stack alignment
+    if cfg!(target_arch = "x86_64") && len % 2 == 0 {
+        static ONE_MORE: [Reg; 1] = [C_RET_REG];
+        regs.chain(ONE_MORE.iter())
+    } else {
+        regs.chain(&[])
     }
-    regs.iter().map(|&reg| Opnd::Reg(reg)).collect()
 }
 
 impl Assembler
@@ -2825,16 +2896,13 @@ pub fn defer_compilation(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
-    if asm.ctx.chain_depth != 0 {
+    if asm.ctx.get_chain_depth() != 0 {
         panic!("Double defer!");
     }
 
     let mut next_ctx = asm.ctx.clone();
 
-    if next_ctx.chain_depth == u8::MAX {
-        panic!("max block version chain depth reached!");
-    }
-    next_ctx.chain_depth += 1;
+    next_ctx.increment_chain_depth();
 
     let branch = new_pending_branch(jit, BranchGenFn::JumpToTarget0(Cell::new(BranchShape::Default)));
 
@@ -3187,8 +3255,42 @@ mod tests {
     use crate::core::*;
 
     #[test]
+    fn type_size() {
+        // Check that we can store types in 4 bits,
+        // and all local types in 32 bits
+        assert_eq!(mem::size_of::<Type>(), 1);
+        assert!(Type::BlockParamProxy as usize <= 0b1111);
+        assert!(MAX_LOCAL_TYPES * 4 <= 32);
+    }
+
+    #[test]
     fn tempmapping_size() {
         assert_eq!(mem::size_of::<TempMapping>(), 1);
+    }
+
+    #[test]
+    fn local_types() {
+        let mut ctx = Context::default();
+
+        for i in 0..MAX_LOCAL_TYPES {
+            ctx.set_local_type(i, Type::Fixnum);
+            assert_eq!(ctx.get_local_type(i), Type::Fixnum);
+            ctx.set_local_type(i, Type::BlockParamProxy);
+            assert_eq!(ctx.get_local_type(i), Type::BlockParamProxy);
+        }
+
+        ctx.set_local_type(0, Type::Fixnum);
+        ctx.clear_local_types();
+        assert!(ctx.get_local_type(0) == Type::Unknown);
+
+        // Make sure we don't accidentally set bits incorrectly
+        let mut ctx = Context::default();
+        ctx.set_local_type(0, Type::Fixnum);
+        assert_eq!(ctx.get_local_type(0), Type::Fixnum);
+        ctx.set_local_type(2, Type::Fixnum);
+        ctx.set_local_type(1, Type::BlockParamProxy);
+        assert_eq!(ctx.get_local_type(0), Type::Fixnum);
+        assert_eq!(ctx.get_local_type(2), Type::Fixnum);
     }
 
     #[test]
@@ -3208,7 +3310,7 @@ mod tests {
 
     #[test]
     fn context_size() {
-        assert_eq!(mem::size_of::<Context>(), 21);
+        assert_eq!(mem::size_of::<Context>(), 17);
     }
 
     #[test]

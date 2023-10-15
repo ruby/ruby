@@ -37,4 +37,4 @@
             │   ├── opening_loc: (1,5)-(1,6) = "{"
             │   └── closing_loc: (1,14)-(1,15) = "}"
             ├── flags: ∅
-            └── name: "blah"
+            └── name: :blah

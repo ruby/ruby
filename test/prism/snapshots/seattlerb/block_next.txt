@@ -24,7 +24,7 @@
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
-            │           │           └── name: "arg"
+            │           │           └── name: :arg
             │           ├── closing_loc: ∅
             │           ├── block:
             │           │   @ BlockNode (location: (1,13)-(1,25))
@@ -49,5 +49,5 @@
             │           │   ├── opening_loc: (1,13)-(1,15) = "do"
             │           │   └── closing_loc: (1,22)-(1,25) = "end"
             │           ├── flags: ∅
-            │           └── name: "foo"
+            │           └── name: :foo
             └── keyword_loc: (1,0)-(1,4) = "next"

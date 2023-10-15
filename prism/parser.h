@@ -8,6 +8,7 @@
 #include "prism/util/pm_list.h"
 #include "prism/util/pm_newline_list.h"
 #include "prism/util/pm_state_stack.h"
+#include "prism/util/pm_string.h"
 
 #include <stdbool.h>
 
@@ -172,6 +173,11 @@ typedef struct pm_lex_mode {
             // This is the pointer to the character where lexing should resume
             // once the heredoc has been completely processed.
             const uint8_t *next_start;
+
+            // This is used to track the amount of common whitespace on each
+            // line so that we know how much to dedent each line in the case of
+            // a tilde heredoc.
+            size_t common_whitespace;
         } heredoc;
     } as;
 
@@ -293,6 +299,11 @@ typedef struct pm_scope {
     // This is necessary to determine if child blocks are allowed to use
     // numbered parameters.
     bool numbered_params;
+
+    // A transparent scope is a scope that cannot have locals set on itself.
+    // When a local is set on this scope, it will instead be set on the parent
+    // scope's local table.
+    bool transparent;
 } pm_scope_t;
 
 // This struct represents the overall parser. It contains a reference to the
@@ -387,6 +398,10 @@ struct pm_parser {
     // communicate this information. So we store it here and pass it through
     // when we find tokens that we need it for.
     pm_node_flags_t integer_base;
+
+    // This string is used to pass information from the lexer to the parser. It
+    // is particularly necessary because of escape sequences.
+    pm_string_t current_string;
 
     // Whether or not we're at the beginning of a command
     bool command_start;

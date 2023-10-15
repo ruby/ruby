@@ -1334,8 +1334,8 @@ rb_iseqw_new(const rb_iseq_t *iseq)
  *     InstructionSequence.compile(source[, file[, path[, line[, options]]]]) -> iseq
  *     InstructionSequence.new(source[, file[, path[, line[, options]]]]) -> iseq
  *
- *  Takes +source+, a String of Ruby code and compiles it to an
- *  InstructionSequence.
+ *  Takes +source+, which can be a string of Ruby code, or an open +File+ object.
+ *  that contains Ruby source code.
  *
  *  Optionally takes +file+, +path+, and +line+ which describe the file path,
  *  real path and first line number of the ruby code in +source+ which are
@@ -1356,6 +1356,10 @@ rb_iseqw_new(const rb_iseq_t *iseq)
  *     path = "test.rb"
  *     RubyVM::InstructionSequence.compile(File.read(path), path, File.expand_path(path))
  *     #=> <RubyVM::InstructionSequence:<compiled>@test.rb:1>
+ *
+ *     file = File.open("test.rb")
+ *     RubyVM::InstructionSequence.compile(file)
+ *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>:1>
  *
  *     path = File.expand_path("test.rb")
  *     RubyVM::InstructionSequence.compile(File.read(path), path, path)

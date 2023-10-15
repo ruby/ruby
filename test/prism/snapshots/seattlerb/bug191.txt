@@ -15,7 +15,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "a"
+        │   │   └── name: :a
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,4)-(1,6))
         │   │   └── body: (length: 1)
@@ -40,7 +40,7 @@
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: variable_call
-        │   │   │           └── name: "b"
+        │   │   │           └── name: :b
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         └── @ IfNode (location: (3,0)-(3,9))
@@ -55,7 +55,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── statements:
             │   @ StatementsNode (location: (3,4)-(3,6))
             │   └── body: (length: 1)
@@ -80,6 +80,6 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "b"
+            │   │           └── name: :b
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

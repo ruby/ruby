@@ -27,6 +27,6 @@
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: ∅
-            │       │           └── name: "p"
+            │       │           └── name: :p
             │       └── closing_loc: (1,6)-(1,7) = "}"
             └── closing_loc: (1,7)-(1,8) = "\""

@@ -261,7 +261,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "foo="
+        │   │   │   └── name: :foo=
         │   │   └── @ CallNode (location: (14,8)-(14,13))
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (14,8)-(14,9))
@@ -274,7 +274,7 @@
         │   │       ├── closing_loc: ∅
         │   │       ├── block: ∅
         │   │       ├── flags: ∅
-        │   │       └── name: "bar="
+        │   │       └── name: :bar=
         │   ├── lparen_loc: (14,0)-(14,1) = "("
         │   ├── rparen_loc: (14,13)-(14,14) = ")"
         │   ├── operator_loc: (14,15)-(14,16) = "="
@@ -309,7 +309,7 @@
         │   │   │   ├── closing_loc: (15,7)-(15,8) = "]"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "[]="
+        │   │   │   └── name: :[]=
         │   │   └── @ CallNode (location: (15,10)-(15,14))
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (15,10)-(15,11))
@@ -326,7 +326,7 @@
         │   │       ├── closing_loc: (15,13)-(15,14) = "]"
         │   │       ├── block: ∅
         │   │       ├── flags: ∅
-        │   │       └── name: "[]="
+        │   │       └── name: :[]=
         │   ├── lparen_loc: (15,0)-(15,1) = "("
         │   ├── rparen_loc: (15,14)-(15,15) = ")"
         │   ├── operator_loc: (15,16)-(15,17) = "="
@@ -357,7 +357,7 @@
         │   │   │   ├── closing_loc: (16,4)-(16,5) = "]"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "[]="
+        │   │   │   └── name: :[]=
         │   │   └── @ CallNode (location: (16,7)-(16,11))
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (16,7)-(16,8))
@@ -374,7 +374,7 @@
         │   │       ├── closing_loc: (16,10)-(16,11) = "]"
         │   │       ├── block: ∅
         │   │       ├── flags: ∅
-        │   │       └── name: "[]="
+        │   │       └── name: :[]=
         │   ├── lparen_loc: (16,0)-(16,1) = "("
         │   ├── rparen_loc: (16,11)-(16,12) = ")"
         │   ├── operator_loc: (16,13)-(16,14) = "="
@@ -404,7 +404,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "foo="
+        │   │           └── name: :foo=
         │   ├── lparen_loc: (17,0)-(17,1) = "("
         │   ├── rparen_loc: (17,7)-(17,8) = ")"
         │   ├── operator_loc: (17,9)-(17,10) = "="
@@ -516,7 +516,7 @@
         │   │   ├── closing_loc: (25,10)-(25,11) = ")"
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   └── operator_loc: (25,4)-(25,5) = "="
         ├── @ CallNode (location: (26,0)-(26,9))
         │   ├── receiver:
@@ -530,7 +530,7 @@
         │   ├── closing_loc: (26,8)-(26,9) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (27,0)-(27,13))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (27,0)-(27,3))
@@ -549,7 +549,7 @@
         │   ├── closing_loc: (27,12)-(27,13) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (28,0)-(28,11))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (28,0)-(28,3))
@@ -565,7 +565,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (29,0)-(29,19))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (29,0)-(29,3))
@@ -589,7 +589,7 @@
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: variable_call
-        │   │       │       └── name: "index"
+        │   │       │       └── name: :index
         │   │       └── @ CallNode (location: (29,14)-(29,19))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
@@ -599,11 +599,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "value"
+        │   │           └── name: :value
         │   ├── closing_loc: (29,10)-(29,11) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (30,0)-(30,17))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (30,0)-(30,3))
@@ -633,11 +633,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "value"
+        │   │           └── name: :value
         │   ├── closing_loc: (30,8)-(30,9) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (31,0)-(31,9))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (31,0)-(31,3))
@@ -654,7 +654,7 @@
         │   ├── closing_loc: (31,4)-(31,5) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (32,0)-(32,17))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (32,0)-(32,3))
@@ -681,11 +681,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "value"
+        │   │           └── name: :value
         │   ├── closing_loc: (32,8)-(32,9) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (33,0)-(33,18))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (33,0)-(33,3))
@@ -706,7 +706,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "index"
+        │   │       │   └── name: :index
         │   │       └── @ CallNode (location: (33,13)-(33,18))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
@@ -716,11 +716,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "value"
+        │   │           └── name: :value
         │   ├── closing_loc: (33,9)-(33,10) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ LocalVariableWriteNode (location: (34,0)-(34,7))
         │   ├── name: :x
         │   ├── depth: 0
@@ -753,7 +753,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "x="
+        │   └── name: :x=
         ├── @ CallNode (location: (36,0)-(36,12))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (36,0)-(36,1))
@@ -780,11 +780,11 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "bar"
+        │   │           └── name: :bar
         │   ├── closing_loc: (36,5)-(36,6) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallOrWriteNode (location: (37,0)-(37,14))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (37,0)-(37,1))
@@ -804,8 +804,8 @@
         │   │           └── unescaped: ""
         │   ├── closing_loc: (37,5)-(37,6) = "]"
         │   ├── flags: ∅
-        │   ├── read_name: "[]"
-        │   ├── write_name: "[]="
+        │   ├── read_name: :[]
+        │   ├── write_name: :[]=
         │   ├── operator_loc: (37,7)-(37,10) = "||="
         │   └── value:
         │       @ CallNode (location: (37,11)-(37,14))
@@ -817,7 +817,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ InstanceVariableOrWriteNode (location: (38,0)-(38,10))
         │   ├── name: :@a
         │   ├── name_loc: (38,0)-(38,2) = "@a"
@@ -889,7 +889,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "x="
+        │   └── name: :x=
         ├── @ CallNode (location: (45,0)-(45,16))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (45,0)-(45,1))
@@ -924,7 +924,7 @@
         │   ├── closing_loc: (45,2)-(45,3) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallOrWriteNode (location: (48,0)-(48,21))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (48,0)-(48,1))
@@ -958,8 +958,8 @@
         │   │           └── closing_loc: (50,0)-(50,0) = "HEREDOC\n"
         │   ├── closing_loc: (48,12)-(48,13) = "]"
         │   ├── flags: ∅
-        │   ├── read_name: "[]"
-        │   ├── write_name: "[]="
+        │   ├── read_name: :[]
+        │   ├── write_name: :[]=
         │   ├── operator_loc: (48,14)-(48,17) = "||="
         │   └── value:
         │       @ CallNode (location: (48,18)-(48,21))
@@ -971,7 +971,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         └── @ InstanceVariableOrWriteNode (location: (51,0)-(51,17))
             ├── name: :@a
             ├── name_loc: (51,0)-(51,2) = "@a"

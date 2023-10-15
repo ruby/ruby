@@ -101,7 +101,7 @@
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: variable_call
-        │               └── name: "foo"
+        │               └── name: :foo
         ├── @ LambdaNode (location: (15,0)-(15,15))
         │   ├── locals: []
         │   ├── operator_loc: (15,0)-(15,2) = "->"
@@ -120,7 +120,7 @@
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: variable_call
-        │               └── name: "foo"
+        │               └── name: :foo
         ├── @ LambdaNode (location: (17,0)-(17,29))
         │   ├── locals: [:a, :b, :c, :d, :e]
         │   ├── operator_loc: (17,0)-(17,2) = "->"
@@ -340,7 +340,7 @@
         │                           ├── closing_loc: ∅
         │                           ├── block: ∅
         │                           ├── flags: ∅
-        │                           └── name: "*"
+        │                           └── name: :*
         └── @ LambdaNode (location: (27,0)-(27,19))
             ├── locals: [:a, :b, :c]
             ├── operator_loc: (27,0)-(27,2) = "->"

@@ -14,15 +14,15 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── call_operator_loc: (1,3)-(1,4) = "."
         │   ├── message_loc: (1,4)-(1,5) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── flags: ∅
-        │   ├── read_name: "a"
-        │   ├── write_name: "a="
+        │   ├── read_name: :a
+        │   ├── write_name: :a=
         │   ├── operator_loc: (1,6)-(1,9) = "||="
         │   └── value:
         │       @ IntegerNode (location: (1,10)-(1,11))
@@ -38,7 +38,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "foo"
+            │   └── name: :foo
             ├── call_operator_loc: ∅
             ├── message_loc: (3,3)-(3,9) = "[0, 1]"
             ├── opening_loc: (3,3)-(3,4) = "["
@@ -51,8 +51,8 @@
             │           └── flags: decimal
             ├── closing_loc: (3,8)-(3,9) = "]"
             ├── flags: ∅
-            ├── read_name: "[]"
-            ├── write_name: "[]="
+            ├── read_name: :[]
+            ├── write_name: :[]=
             ├── operator_loc: (3,10)-(3,13) = "||="
             └── value:
                 @ IntegerNode (location: (3,14)-(3,15))

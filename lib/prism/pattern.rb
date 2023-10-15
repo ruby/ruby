@@ -10,7 +10,7 @@ module Prism
   #     in ConstantPathNode[ConstantReadNode[name: :Prism], ConstantReadNode[name: :Pattern]]
   #     end
   #
-  # the pattern is the `ConstantPathNode[...]` expression.
+  # the pattern is the <tt>ConstantPathNode[...]</tt> expression.
   #
   # The pattern gets compiled into an object that responds to #call by running
   # the #compile method. This method itself will run back through Prism to

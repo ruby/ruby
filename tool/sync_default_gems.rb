@@ -449,7 +449,11 @@ module SyncDefaultGems
     log.delete!("\r")
     log << "\n" if !log.end_with?("\n")
     repo_url = "https://github.com/#{repo}"
-    subject, log = log.split(/\n(?:[ \t]*(?:\n|\z))/, 2)
+
+    # Split the subject from the log message according to git conventions.
+    # SPECIAL TREAT: when the first line ends with a dot `.` (which is not
+    # obeying the conventions too), takes only that line.
+    subject, log = log.split(/\A.+\.\K\n(?=\S)|\n(?:[ \t]*(?:\n|\z))/, 2)
     conv = proc do |s|
       mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?|close[sd]?|resolve[sd]?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
         "#{repo_url}/pull/"

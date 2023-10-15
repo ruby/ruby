@@ -129,7 +129,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bbb"
+        │   │   │   │           └── name: :bbb
         │   │   │   └── closing_loc: (35,11)-(35,12) = "}"
         │   │   └── @ StringNode (location: (35,12)-(35,16))
         │   │       ├── flags: ∅
@@ -167,7 +167,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "+"
+        │   └── name: :+
         ├── @ StringNode (location: (43,0)-(43,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (43,0)-(43,3) = "%q{"
@@ -226,7 +226,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "bbb"
+        │   │   │   │           └── name: :bbb
         │   │   │   └── closing_loc: (55,10)-(55,11) = "}"
         │   │   └── @ StringNode (location: (55,11)-(55,15))
         │   │       ├── flags: ∅
@@ -348,7 +348,7 @@
         │   │   │   │   │   │           ├── closing_loc: ∅
         │   │   │   │   │   │           ├── block: ∅
         │   │   │   │   │   │           ├── flags: variable_call
-        │   │   │   │   │   │           └── name: "c"
+        │   │   │   │   │   │           └── name: :c
         │   │   │   │   │   └── closing_loc: (67,9)-(67,10) = "}"
         │   │   │   │   └── @ StringNode (location: (67,10)-(67,11))
         │   │   │   │       ├── flags: ∅

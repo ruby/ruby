@@ -20,7 +20,7 @@
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
             │   │   │   ├── flags: variable_call
-            │   │   │   └── name: "var"
+            │   │   │   └── name: :var
             │   │   ├── call_operator_loc: (1,13)-(1,14) = "."
             │   │   ├── message_loc: (1,14)-(1,18) = "nil?"
             │   │   ├── opening_loc: ∅
@@ -28,7 +28,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
-            │   │   └── name: "nil?"
+            │   │   └── name: :nil?
             │   ├── call_operator_loc: ∅
             │   ├── message_loc: (1,6)-(1,9) = "not"
             │   ├── opening_loc: ∅
@@ -36,7 +36,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "!"
+            │   └── name: :!
             ├── statements:
             │   @ StatementsNode (location: (2,2)-(2,7))
             │   └── body: (length: 1)

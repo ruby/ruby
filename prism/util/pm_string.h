@@ -11,9 +11,10 @@
 
 // This struct represents a string value.
 typedef struct {
-    enum { PM_STRING_SHARED, PM_STRING_OWNED, PM_STRING_CONSTANT, PM_STRING_MAPPED } type;
     const uint8_t *source;
     size_t length;
+    // This field is not the first one, because otherwise things like .pm_string_t_field = 123/pm_constant_id_t does not warn or error
+    enum { PM_STRING_SHARED, PM_STRING_OWNED, PM_STRING_CONSTANT, PM_STRING_MAPPED } type;
 } pm_string_t;
 
 #define PM_EMPTY_STRING ((pm_string_t) { .type = PM_STRING_CONSTANT, .source = NULL, .length = 0 })

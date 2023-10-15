@@ -32,9 +32,9 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: variable_call
-            │   │           └── name: "d"
+            │   │           └── name: :d
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "c"
+            │   └── name: :c
             └── operator: :*

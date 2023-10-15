@@ -30,7 +30,7 @@
                 ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
                 nd_first_lineno(node), nd_first_column(node), \
                 nd_last_lineno(node), nd_last_column(node), \
-                (node->flags & NODE_FL_NEWLINE ? "*" : ""))
+                (nd_fl_newline(node) ? "*" : ""))
 #define A_FIELD_HEADER(len, name, term) \
     rb_str_catf(buf, "+- %.*s:"term, (len), (name))
 #define D_FIELD_HEADER(len, name, term) (A_INDENT, A_FIELD_HEADER(len, name, term))
@@ -67,7 +67,7 @@
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, type, ann) \
-    COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, type(node)->name);}
+    COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, RNODE(type(node)->name));}
 
 #define F_NODE2(name, n, ann) \
     COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, n);}
@@ -294,19 +294,22 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("break statement");
         ANN("format: break [nd_stts]");
         ANN("example: break 1");
-        goto jump;
+        LAST_NODE;
+        F_NODE(nd_stts, RNODE_BREAK, "value");
+        return;
       case NODE_NEXT:
         ANN("next statement");
         ANN("format: next [nd_stts]");
         ANN("example: next 1");
-        goto jump;
+        LAST_NODE;
+        F_NODE(nd_stts, RNODE_NEXT, "value");
+        return;
       case NODE_RETURN:
         ANN("return statement");
         ANN("format: return [nd_stts]");
         ANN("example: return 1");
-      jump:
         LAST_NODE;
-        F_NODE(nd_stts, RNODE_BREAK, "value");
+        F_NODE(nd_stts, RNODE_RETURN, "value");
         return;
 
       case NODE_REDO:
@@ -398,7 +401,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_vid](lvar) = [nd_value]");
         ANN("example: x = foo");
         F_ID(nd_vid, RNODE_LASGN, "local variable");
-        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node))) {
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node)->nd_value)) {
             F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
         }
         else {
@@ -412,7 +415,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: x = nil; 1.times { x = foo }");
         ANN("example: 1.times { x = foo }");
         F_ID(nd_vid, RNODE_DASGN, "local variable");
-        if (NODE_REQUIRED_KEYWORD_P(RNODE_DASGN(node))) {
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_DASGN(node)->nd_value)) {
             F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
         }
         else {
@@ -576,12 +579,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("list constructor");
         ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
         ANN("example: [1, 2, 3]");
-        goto ary;
-      case NODE_VALUES:
-        ANN("return arguments");
-        ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
-        ANN("example: return 1, 2, 3");
-      ary:
         dump_array(buf, indent, comment, node);
         return;
 
@@ -1054,35 +1051,35 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("array pattern");
         ANN("format: [nd_pconst]([pre_args], ..., *[rest_arg], [post_args], ...)");
         F_NODE(nd_pconst, RNODE_ARYPTN, "constant");
-        F_NODE(nd_apinfo->pre_args, RNODE_ARYPTN, "pre arguments");
-        if (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->nd_apinfo->rest_arg)) {
-            F_NODE(nd_apinfo->rest_arg, RNODE_ARYPTN, "rest argument");
+        F_NODE(pre_args, RNODE_ARYPTN, "pre arguments");
+        if (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg)) {
+            F_NODE(rest_arg, RNODE_ARYPTN, "rest argument");
         }
         else {
-            F_MSG(nd_apinfo->rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+            F_MSG(rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
         LAST_NODE;
-        F_NODE(nd_apinfo->post_args, RNODE_ARYPTN, "post arguments");
+        F_NODE(post_args, RNODE_ARYPTN, "post arguments");
         return;
 
       case NODE_FNDPTN:
         ANN("find pattern");
         ANN("format: [nd_pconst](*[pre_rest_arg], args, ..., *[post_rest_arg])");
         F_NODE(nd_pconst, RNODE_FNDPTN, "constant");
-        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->nd_fpinfo->pre_rest_arg)) {
-            F_NODE(nd_fpinfo->pre_rest_arg, RNODE_FNDPTN, "pre rest argument");
+        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->pre_rest_arg)) {
+            F_NODE(pre_rest_arg, RNODE_FNDPTN, "pre rest argument");
         }
         else {
-            F_MSG(nd_fpinfo->pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+            F_MSG(pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
-        F_NODE(nd_fpinfo->args, RNODE_FNDPTN, "arguments");
+        F_NODE(args, RNODE_FNDPTN, "arguments");
 
         LAST_NODE;
-        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->nd_fpinfo->post_rest_arg)) {
-            F_NODE(nd_fpinfo->post_rest_arg, RNODE_FNDPTN, "post rest argument");
+        if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->post_rest_arg)) {
+            F_NODE(post_rest_arg, RNODE_FNDPTN, "post rest argument");
         }
         else {
-            F_MSG(nd_fpinfo->post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+            F_MSG(post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
         return;
 
@@ -1104,8 +1101,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         return;
 
       case NODE_ARGS_AUX:
-      case NODE_DEF_TEMP:
-      case NODE_DEF_TEMP2:
       case NODE_RIPPER:
       case NODE_RIPPER_VALUES:
       case NODE_LAST:

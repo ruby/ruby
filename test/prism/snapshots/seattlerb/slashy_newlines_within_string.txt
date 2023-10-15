@@ -20,7 +20,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "puts"
+        │   └── name: :puts
         └── @ CallNode (location: (6,0)-(6,5))
             ├── receiver:
             │   @ CallNode (location: (6,0)-(6,1))
@@ -32,7 +32,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: ∅
             ├── message_loc: (6,2)-(6,3) = "+"
             ├── opening_loc: ∅
@@ -48,8 +48,8 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "b"
+            │           └── name: :b
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "+"
+            └── name: :+

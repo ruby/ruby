@@ -19,7 +19,7 @@
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
             │   │   │   ├── flags: variable_call
-            │   │   │   └── name: "b"
+            │   │   │   └── name: :b
             │   │   ├── @ SplatNode (location: (1,7)-(1,9))
             │   │   │   ├── operator_loc: (1,7)-(1,8) = "*"
             │   │   │   └── expression:
@@ -32,7 +32,7 @@
             │   │   │       ├── closing_loc: ∅
             │   │   │       ├── block: ∅
             │   │   │       ├── flags: variable_call
-            │   │   │       └── name: "c"
+            │   │   │       └── name: :c
             │   │   └── @ CallNode (location: (1,11)-(1,12))
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
@@ -42,7 +42,7 @@
             │   │       ├── closing_loc: ∅
             │   │       ├── block: ∅
             │   │       ├── flags: variable_call
-            │   │       └── name: "d"
+            │   │       └── name: :d
             │   ├── opening_loc: ∅
             │   └── closing_loc: ∅
             └── operator_loc: (1,2)-(1,3) = "="

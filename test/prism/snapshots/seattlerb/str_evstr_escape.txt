@@ -26,7 +26,7 @@
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
             │   │   │           ├── flags: variable_call
-            │   │   │           └── name: "b"
+            │   │   │           └── name: :b
             │   │   └── closing_loc: (1,6)-(1,7) = "}"
             │   └── @ StringNode (location: (1,7)-(1,15))
             │       ├── flags: ∅

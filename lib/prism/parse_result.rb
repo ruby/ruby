@@ -117,7 +117,7 @@ module Prism
     end
 
     def pretty_print(q)
-      q.text("(#{start_line},#{start_column})-(#{end_line},#{end_column}))")
+      q.text("(#{start_line},#{start_column})-(#{end_line},#{end_column})")
     end
 
     def ==(other)

@@ -52,8 +52,10 @@ typedef uint16_t pm_node_flags_t;
 
 // We store the flags enum in every node in the tree. Some flags are common to
 // all nodes (the ones listed below). Others are specific to certain node types.
-static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = 0x1;
-static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = 0x2;
+#define PM_NODE_FLAG_BITS (sizeof(pm_node_flags_t) * 8)
+static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = (1 << (PM_NODE_FLAG_BITS - 1));
+static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = (1 << (PM_NODE_FLAG_BITS - 2));
+static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS - 1)) | (1 << (PM_NODE_FLAG_BITS - 2));
 
 // For easy access, we define some macros to check node type
 #define PM_NODE_TYPE(node) ((enum pm_node_type)node->type)
@@ -104,8 +106,8 @@ typedef struct pm_<%= node.human %> {
 <%- flags.each do |flag| -%>
 
 // <%= flag.name %>
-typedef enum {
-    <%- flag.values.each.with_index(Prism::COMMON_FLAGS) do |value, index| -%>
+typedef enum pm_<%= flag.human %> {
+    <%- flag.values.each_with_index do |value, index| -%>
     PM_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,
     <%- end -%>
 } pm_<%= flag.human %>_t;

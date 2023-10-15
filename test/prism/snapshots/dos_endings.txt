@@ -29,14 +29,14 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "puts"
+        │   └── name: :puts
         ├── @ ArrayNode (location: (4,0)-(5,2))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (4,3)-(5,1))
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (4,3)-(5,1) = "a\\\r\nb"
         │   │       ├── closing_loc: ∅
-        │   │       └── unescaped: "ab"
+        │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (4,0)-(4,3) = "%I{"
         │   └── closing_loc: (5,1)-(5,2) = "}"
         ├── @ StringNode (location: (7,0)-(7,4))
@@ -72,12 +72,22 @@
             │   │   └── arguments: (length: 1)
             │   │       └── @ CallNode (location: (17,8)-(17,19))
             │   │           ├── receiver:
-            │   │           │   @ StringNode (location: (17,8)-(17,14))
-            │   │           │   ├── flags: ∅
+            │   │           │   @ InterpolatedStringNode (location: (17,8)-(17,14))
             │   │           │   ├── opening_loc: (17,8)-(17,14) = "<<~EOF"
-            │   │           │   ├── content_loc: (18,0)-(19,0) = "\r\n    baz\r\n"
-            │   │           │   ├── closing_loc: (20,0)-(20,0) = "  EOF\r\n"
-            │   │           │   └── unescaped: "\nbaz\r\n"
+            │   │           │   ├── parts: (length: 2)
+            │   │           │   │   ├── @ StringNode (location: (18,0)-(18,0))
+            │   │           │   │   │   ├── flags: ∅
+            │   │           │   │   │   ├── opening_loc: ∅
+            │   │           │   │   │   ├── content_loc: (18,0)-(18,0) = "\r\n"
+            │   │           │   │   │   ├── closing_loc: ∅
+            │   │           │   │   │   └── unescaped: "\n"
+            │   │           │   │   └── @ StringNode (location: (19,0)-(19,0))
+            │   │           │   │       ├── flags: ∅
+            │   │           │   │       ├── opening_loc: ∅
+            │   │           │   │       ├── content_loc: (19,0)-(19,0) = "    baz\r\n"
+            │   │           │   │       ├── closing_loc: ∅
+            │   │           │   │       └── unescaped: "baz\r\n"
+            │   │           │   └── closing_loc: (20,0)-(20,0) = "  EOF\r\n"
             │   │           ├── call_operator_loc: (17,14)-(17,15) = "."
             │   │           ├── message_loc: (17,15)-(17,19) = "chop"
             │   │           ├── opening_loc: ∅
@@ -85,9 +95,9 @@
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅
-            │   │           └── name: "chop"
+            │   │           └── name: :chop
             │   ├── closing_loc: (17,19)-(17,20) = ")"
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "foo"
+            │   └── name: :foo
             └── operator_loc: (17,2)-(17,3) = "="

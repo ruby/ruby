@@ -13,8 +13,8 @@
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── flags: ∅
-            ├── read_name: "b"
-            ├── write_name: "b="
+            ├── read_name: :b
+            ├── write_name: :b=
             ├── operator: :+
             ├── operator_loc: (1,5)-(1,7) = "+="
             └── value:

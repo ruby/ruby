@@ -27,7 +27,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "m"
+        │   └── name: :m
         └── @ CallNode (location: (1,16)-(1,28))
             ├── receiver:
             │   @ IntegerNode (location: (1,16)-(1,17))
@@ -45,4 +45,4 @@
             │   ├── opening_loc: (1,22)-(1,24) = "do"
             │   └── closing_loc: (1,25)-(1,28) = "end"
             ├── flags: ∅
-            └── name: "tap"
+            └── name: :tap

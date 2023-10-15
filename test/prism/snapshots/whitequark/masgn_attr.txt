@@ -15,7 +15,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "A="
+        │   │   │   └── name: :A=
         │   │   └── @ LocalVariableTargetNode (location: (1,8)-(1,11))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -38,7 +38,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
-        │   │   │   └── name: "a="
+        │   │   │   └── name: :a=
         │   │   └── @ CallNode (location: (3,8)-(3,18))
         │   │       ├── receiver:
         │   │       │   @ SelfNode (location: (3,8)-(3,12))
@@ -55,7 +55,7 @@
         │   │       ├── closing_loc: (3,17)-(3,18) = "]"
         │   │       ├── block: ∅
         │   │       ├── flags: ∅
-        │   │       └── name: "[]="
+        │   │       └── name: :[]=
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (3,19)-(3,20) = "="
@@ -75,7 +75,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: ∅
-            │   │   └── name: "a="
+            │   │   └── name: :a=
             │   └── @ LocalVariableTargetNode (location: (5,9)-(5,12))
             │       ├── name: :foo
             │       └── depth: 0

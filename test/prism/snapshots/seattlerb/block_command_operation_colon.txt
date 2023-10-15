@@ -27,7 +27,7 @@
             │   │   ├── opening_loc: (1,5)-(1,7) = "do"
             │   │   └── closing_loc: (1,8)-(1,11) = "end"
             │   ├── flags: ∅
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: (1,11)-(1,13) = "::"
             ├── message_loc: (1,13)-(1,14) = "c"
             ├── opening_loc: ∅
@@ -42,4 +42,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "c"
+            └── name: :c

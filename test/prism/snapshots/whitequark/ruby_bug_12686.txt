@@ -26,7 +26,7 @@
             │           │           │   ├── closing_loc: ∅
             │           │           │   ├── block: ∅
             │           │           │   ├── flags: variable_call
-            │           │           │   └── name: "g"
+            │           │           │   └── name: :g
             │           │           ├── keyword_loc: (1,5)-(1,11) = "rescue"
             │           │           └── rescue_expression:
             │           │               @ NilNode (location: (1,12)-(1,15))
@@ -35,4 +35,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "f"
+            └── name: :f

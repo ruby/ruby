@@ -14,7 +14,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 15)
         │   │   ├── @ InNode (location: (2,0)-(3,6))
         │   │   │   ├── pattern:
@@ -70,7 +70,7 @@
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: "y"
+        │   │   │   │           └── name: :y
         │   │   │   ├── in_loc: (4,0)-(4,2) = "in"
         │   │   │   └── then_loc: (4,12)-(4,16) = "then"
         │   │   ├── @ InNode (location: (6,0)-(7,6))
@@ -350,7 +350,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (35,0)-(35,17))
         │   │       ├── pattern:
@@ -392,7 +392,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "foo"
+        │   │   └── name: :foo
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (38,0)-(38,4))
         │   │       ├── pattern:

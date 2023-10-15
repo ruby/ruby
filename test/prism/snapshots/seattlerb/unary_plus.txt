@@ -14,7 +14,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: ∅
             ├── message_loc: (1,0)-(1,1) = "+"
             ├── opening_loc: ∅
@@ -22,4 +22,4 @@
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅
-            └── name: "+@"
+            └── name: :+@

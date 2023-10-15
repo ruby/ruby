@@ -46,13 +46,6 @@ pub fn yjit_enabled_p() -> bool {
     YJIT_ENABLED.load(Ordering::Acquire)
 }
 
-/// Test whether we are ready to compile an ISEQ or not
-#[no_mangle]
-pub extern "C" fn rb_yjit_threshold_hit(_iseq: IseqPtr, total_calls: u64) -> bool {
-    let call_threshold = get_option!(call_threshold) as u64;
-    return total_calls == call_threshold;
-}
-
 /// This function is called from C code
 #[no_mangle]
 pub extern "C" fn rb_yjit_init_rust() {

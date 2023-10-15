@@ -18,7 +18,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "!"
+        │   └── name: :!
         └── @ IfNode (location: (3,0)-(3,13))
             ├── if_keyword_loc: (3,0)-(3,2) = "if"
             ├── predicate:

@@ -18,7 +18,7 @@
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
-            │   │   └── name: "b"
+            │   │   └── name: :b
             │   ├── call_operator_loc: (1,7)-(1,8) = "."
             │   ├── message_loc: (1,8)-(1,9) = "c"
             │   ├── opening_loc: ∅
@@ -30,6 +30,6 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "c"
+            │   └── name: :c
             ├── name: :a
             └── depth: 0

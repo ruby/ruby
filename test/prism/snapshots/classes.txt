@@ -118,7 +118,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: ∅
         │   │   ├── message_loc: (11,9)-(11,12) = "not"
         │   │   ├── opening_loc: ∅
@@ -126,7 +126,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "!"
+        │   │   └── name: :!
         │   ├── body: ∅
         │   └── end_keyword_loc: (12,0)-(12,3) = "end"
         ├── @ ClassNode (location: (14,0)-(14,40))
@@ -220,7 +220,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: (18,12)-(18,13) = "."
         │   │   ├── message_loc: (18,13)-(18,16) = "bar"
         │   │   ├── opening_loc: ∅
@@ -228,7 +228,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "bar"
+        │   │   └── name: :bar
         │   ├── body: ∅
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         ├── @ SingletonClassNode (location: (21,0)-(21,20))
@@ -247,7 +247,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "foo"
+        │   │   │   └── name: :foo
         │   │   ├── call_operator_loc: (21,12)-(21,13) = "."
         │   │   ├── message_loc: (21,13)-(21,16) = "bar"
         │   │   ├── opening_loc: ∅
@@ -255,7 +255,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
-        │   │   └── name: "bar"
+        │   │   └── name: :bar
         │   ├── body: ∅
         │   └── end_keyword_loc: (21,17)-(21,20) = "end"
         ├── @ SingletonClassNode (location: (23,0)-(24,3))
@@ -298,7 +298,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "+"
+        │   │           └── name: :+
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         ├── @ SingletonClassNode (location: (32,0)-(32,23))
         │   ├── locals: []
@@ -324,7 +324,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
-        │   │           └── name: "+"
+        │   │           └── name: :+
         │   └── end_keyword_loc: (32,20)-(32,23) = "end"
         └── @ ClassNode (location: (34,0)-(35,3))
             ├── locals: []
@@ -349,7 +349,7 @@
             │   ├── closing_loc: (34,13)-(34,14) = "]"
             │   ├── block: ∅
             │   ├── flags: ∅
-            │   └── name: "[]"
+            │   └── name: :[]
             ├── body: ∅
             ├── end_keyword_loc: (35,0)-(35,3) = "end"
             └── name: :A

@@ -28,12 +28,12 @@
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: variable_call
-            │           │           └── name: "bar"
+            │           │           └── name: :bar
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅
-            │           └── name: "f"
+            │           └── name: :f
             ├── closing_loc: (1,9)-(1,10) = ")"
             ├── block: ∅
             ├── flags: ∅
-            └── name: "fun"
+            └── name: :fun

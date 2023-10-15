@@ -30,4 +30,4 @@
             │   ├── opening_loc: (1,6)-(1,7) = "{"
             │   └── closing_loc: (1,12)-(1,13) = "}"
             ├── flags: ∅
-            └── name: "lambda"
+            └── name: :lambda

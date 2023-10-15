@@ -21,7 +21,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (3,0)-(3,13))
         │   ├── targets: (length: 3)
         │   │   ├── @ MultiTargetNode (location: (3,0)-(3,1))
@@ -50,7 +50,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (5,0)-(5,8))
         │   ├── targets: (length: 1)
         │   │   └── @ SplatNode (location: (5,0)-(5,2))
@@ -72,7 +72,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (7,0)-(7,11))
         │   ├── targets: (length: 2)
         │   │   ├── @ MultiTargetNode (location: (7,0)-(7,2))
@@ -101,7 +101,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (9,0)-(9,18))
         │   ├── targets: (length: 2)
         │   │   ├── @ InstanceVariableTargetNode (location: (9,0)-(9,4))
@@ -126,7 +126,7 @@
         │       │           ├── closing_loc: ∅
         │       │           ├── block: ∅
         │       │           ├── flags: variable_call
-        │       │           └── name: "foo"
+        │       │           └── name: :foo
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (11,0)-(11,10))
@@ -150,7 +150,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (13,0)-(13,13))
         │   ├── targets: (length: 3)
         │   │   ├── @ LocalVariableTargetNode (location: (13,0)-(13,1))
@@ -175,7 +175,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (15,0)-(15,11))
         │   ├── targets: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (15,0)-(15,1))
@@ -200,7 +200,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         ├── @ MultiWriteNode (location: (17,0)-(17,14))
         │   ├── targets: (length: 3)
         │   │   ├── @ LocalVariableTargetNode (location: (17,0)-(17,1))
@@ -228,7 +228,7 @@
         │       ├── closing_loc: ∅
         │       ├── block: ∅
         │       ├── flags: variable_call
-        │       └── name: "bar"
+        │       └── name: :bar
         └── @ MultiWriteNode (location: (19,0)-(19,16))
             ├── targets: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (19,0)-(19,1))
@@ -255,7 +255,7 @@
                 │   │       ├── closing_loc: ∅
                 │   │       ├── block: ∅
                 │   │       ├── flags: variable_call
-                │   │       └── name: "foo"
+                │   │       └── name: :foo
                 │   └── @ CallNode (location: (19,13)-(19,16))
                 │       ├── receiver: ∅
                 │       ├── call_operator_loc: ∅
@@ -265,6 +265,6 @@
                 │       ├── closing_loc: ∅
                 │       ├── block: ∅
                 │       ├── flags: variable_call
-                │       └── name: "bar"
+                │       └── name: :bar
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

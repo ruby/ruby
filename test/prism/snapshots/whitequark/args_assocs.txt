@@ -27,7 +27,7 @@
         │   ├── closing_loc: (1,13)-(1,14) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "fun"
+        │   └── name: :fun
         ├── @ CallNode (location: (3,0)-(3,19))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -62,10 +62,10 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
-        │   │   │   └── name: "baz"
+        │   │   │   └── name: :baz
         │   │   └── operator_loc: (3,15)-(3,16) = "&"
         │   ├── flags: ∅
-        │   └── name: "fun"
+        │   └── name: :fun
         ├── @ CallNode (location: (5,0)-(5,21))
         │   ├── receiver:
         │   │   @ SelfNode (location: (5,0)-(5,4))
@@ -84,7 +84,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: variable_call
-        │   │       │   └── name: "foo"
+        │   │       │   └── name: :foo
         │   │       └── @ KeywordHashNode (location: (5,14)-(5,21))
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (5,14)-(5,21))
@@ -101,7 +101,7 @@
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]="
+        │   └── name: :[]=
         ├── @ CallNode (location: (7,0)-(7,15))
         │   ├── receiver:
         │   │   @ SelfNode (location: (7,0)-(7,4))
@@ -127,7 +127,7 @@
         │   ├── closing_loc: (7,14)-(7,15) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "[]"
+        │   └── name: :[]
         ├── @ SuperNode (location: (9,0)-(9,17))
         │   ├── keyword_loc: (9,0)-(9,5) = "super"
         │   ├── lparen_loc: (9,5)-(9,6) = "("

@@ -1,3 +1,15 @@
+# regression test for callee block handler overlapping with arguments
+assert_equal '3', %q{
+  def foo(_req, *args) = args.last
+
+  def call_foo = foo(0, 1, 2, 3, &->{})
+
+  call_foo
+}
+
+# call leaf builtin with a block argument
+assert_equal '0', "0.abs(&nil)"
+
 # regression test for invokeblock iseq guard
 assert_equal 'ok', %q{
   return :ok unless defined?(GC.compact)
@@ -4181,3 +4193,6 @@ assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 212
 
   [r1, r2, r3, r4, r5]
 }
+
+# Integer multiplication and overflow (minimized regression test from test-basic)
+assert_equal '8515157028618240000', %q{2128789257154560000 * 4}

@@ -19,7 +19,7 @@
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: variable_call
-            │       │   └── name: "b"
+            │       │   └── name: :b
             │       ├── call_operator_loc: (1,4)-(1,5) = "."
             │       ├── message_loc: (1,5)-(1,6) = "C"
             │       ├── opening_loc: ∅
@@ -27,7 +27,7 @@
             │       ├── closing_loc: ∅
             │       ├── block: ∅
             │       ├── flags: ∅
-            │       └── name: "C="
+            │       └── name: :C=
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (1,7)-(1,8) = "="
@@ -41,4 +41,4 @@
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: variable_call
-                └── name: "d"
+                └── name: :d

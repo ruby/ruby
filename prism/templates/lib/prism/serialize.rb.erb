@@ -14,7 +14,7 @@ end
 module Prism
   module Serialize
     MAJOR_VERSION = 0
-    MINOR_VERSION = 12
+    MINOR_VERSION = 14
     PATCH_VERSION = 0
 
     def self.load(input, serialized)
@@ -144,13 +144,14 @@ module Prism
       end
 
       def load_string
-        case io.getbyte
+        type = io.getbyte
+        case type
         when 1
           input.byteslice(load_varint, load_varint).force_encoding(encoding)
         when 2
           load_embedded_string
         else
-          raise
+          raise "Unknown serialized string type: #{type}"
         end
       end
 

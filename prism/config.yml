@@ -361,6 +361,8 @@ flags:
         comment: "x - ignores whitespace and allows comments in regular expressions"
       - name: MULTI_LINE
         comment: "m - allows $ to match the end of lines within strings"
+      - name: ONCE
+        comment: "o - only interpolates values into the regular expression once"
       - name: EUC_JP
         comment: "e - forces the EUC-JP encoding"
       - name: ASCII_8BIT
@@ -369,12 +371,10 @@ flags:
         comment: "s - forces the Windows-31J encoding"
       - name: UTF_8
         comment: "u - forces the UTF-8 encoding"
-      - name: ONCE
-        comment: "o - only interpolates values into the regular expression once"
   - name: StringFlags
     values:
       - name: FROZEN
-        comment: "frozen by virtue of a frozen_string_literal comment"
+        comment: "frozen by virtue of a `frozen_string_literal` comment"
 nodes:
   - name: AliasGlobalVariableNode
     fields:
@@ -507,6 +507,9 @@ nodes:
           { **foo }
             ^^^^^
   - name: BackReferenceReadNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents reading a reference to a field in the previous match.
 
@@ -641,9 +644,9 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: read_name
-        type: string
+        type: constant
       - name: write_name
-        type: string
+        type: constant
       - name: operator_loc
         type: location
       - name: value
@@ -674,7 +677,7 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: name
-        type: string
+        type: constant
     comment: |
       Represents a method call, in all of the various forms that can take.
 
@@ -714,9 +717,9 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: read_name
-        type: string
+        type: constant
       - name: write_name
-        type: string
+        type: constant
       - name: operator
         type: constant
       - name: operator_loc
@@ -747,9 +750,9 @@ nodes:
         type: flags
         kind: CallNodeFlags
       - name: read_name
-        type: string
+        type: constant
       - name: write_name
-        type: string
+        type: constant
       - name: operator_loc
         type: location
       - name: value
@@ -1772,7 +1775,6 @@ nodes:
         type: location
       - name: content_loc
         type: location
-        semantic_field: true # https://github.com/ruby/prism/issues/1452
       - name: closing_loc
         type: location
       - name: unescaped
@@ -2093,7 +2095,6 @@ nodes:
         type: location
       - name: content_loc
         type: location
-        semantic_field: true # https://github.com/ruby/prism/issues/1452
       - name: closing_loc
         type: location
       - name: unescaped
@@ -2287,10 +2288,8 @@ nodes:
         kind: StringFlags
       - name: opening_loc
         type: location?
-        semantic_field: true # https://github.com/ruby/prism/issues/1452
       - name: content_loc
         type: location
-        semantic_field: true # https://github.com/ruby/prism/issues/1452
       - name: closing_loc
         type: location?
       - name: unescaped

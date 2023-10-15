@@ -21,6 +21,9 @@ typedef struct {
 // Return the size of the pm_buffer_t struct.
 PRISM_EXPORTED_FUNCTION size_t pm_buffer_sizeof(void);
 
+// Initialize a pm_buffer_t with the given capacity.
+bool pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity);
+
 // Initialize a pm_buffer_t with its default values.
 PRISM_EXPORTED_FUNCTION bool pm_buffer_init(pm_buffer_t *buffer);
 

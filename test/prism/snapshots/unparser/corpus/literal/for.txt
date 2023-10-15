@@ -15,7 +15,7 @@
         │   │           ├── index:
         │   │           │   @ LocalVariableTargetNode (location: (1,8)-(1,9))
         │   │           │   ├── name: :a
-        │   │           │   └── depth: 0
+        │   │           │   └── depth: 1
         │   │           ├── collection:
         │   │           │   @ CallNode (location: (1,13)-(1,16))
         │   │           │   ├── receiver: ∅
@@ -26,7 +26,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
-        │   │           │   └── name: "bar"
+        │   │           │   └── name: :bar
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (2,2)-(2,5))
         │   │           │   └── body: (length: 1)
@@ -39,7 +39,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: variable_call
-        │   │           │           └── name: "baz"
+        │   │           │           └── name: :baz
         │   │           ├── for_keyword_loc: (1,4)-(1,7) = "for"
         │   │           ├── in_keyword_loc: (1,10)-(1,12) = "in"
         │   │           ├── do_keyword_loc: (1,17)-(1,19) = "do"
@@ -47,12 +47,12 @@
         │   ├── closing_loc: (3,3)-(3,4) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
-        │   └── name: "bar"
+        │   └── name: :bar
         ├── @ ForNode (location: (4,0)-(6,3))
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (4,4)-(4,5))
         │   │   ├── name: :a
-        │   │   └── depth: 0
+        │   │   └── depth: 1
         │   ├── collection:
         │   │   @ CallNode (location: (4,9)-(4,12))
         │   │   ├── receiver: ∅
@@ -63,7 +63,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "bar"
+        │   │   └── name: :bar
         │   ├── statements:
         │   │   @ StatementsNode (location: (5,2)-(5,5))
         │   │   └── body: (length: 1)
@@ -76,7 +76,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "baz"
+        │   │           └── name: :baz
         │   ├── for_keyword_loc: (4,0)-(4,3) = "for"
         │   ├── in_keyword_loc: (4,6)-(4,8) = "in"
         │   ├── do_keyword_loc: (4,13)-(4,15) = "do"
@@ -87,13 +87,13 @@
         │   │   ├── targets: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (7,5)-(7,6))
         │   │   │   │   ├── name: :a
-        │   │   │   │   └── depth: 0
+        │   │   │   │   └── depth: 1
         │   │   │   └── @ SplatNode (location: (7,8)-(7,10))
         │   │   │       ├── operator_loc: (7,8)-(7,9) = "*"
         │   │   │       └── expression:
         │   │   │           @ LocalVariableTargetNode (location: (7,9)-(7,10))
         │   │   │           ├── name: :b
-        │   │   │           └── depth: 0
+        │   │   │           └── depth: 1
         │   │   ├── lparen_loc: (7,4)-(7,5) = "("
         │   │   └── rparen_loc: (7,10)-(7,11) = ")"
         │   ├── collection:
@@ -106,7 +106,7 @@
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
-        │   │   └── name: "bar"
+        │   │   └── name: :bar
         │   ├── statements:
         │   │   @ StatementsNode (location: (8,2)-(8,5))
         │   │   └── body: (length: 1)
@@ -119,7 +119,7 @@
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: variable_call
-        │   │           └── name: "baz"
+        │   │           └── name: :baz
         │   ├── for_keyword_loc: (7,0)-(7,3) = "for"
         │   ├── in_keyword_loc: (7,12)-(7,14) = "in"
         │   ├── do_keyword_loc: (7,19)-(7,21) = "do"
@@ -130,10 +130,10 @@
             │   ├── targets: (length: 2)
             │   │   ├── @ LocalVariableTargetNode (location: (10,5)-(10,6))
             │   │   │   ├── name: :a
-            │   │   │   └── depth: 0
+            │   │   │   └── depth: 1
             │   │   └── @ LocalVariableTargetNode (location: (10,8)-(10,9))
             │   │       ├── name: :b
-            │   │       └── depth: 0
+            │   │       └── depth: 1
             │   ├── lparen_loc: (10,4)-(10,5) = "("
             │   └── rparen_loc: (10,9)-(10,10) = ")"
             ├── collection:
@@ -146,7 +146,7 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "bar"
+            │   └── name: :bar
             ├── statements:
             │   @ StatementsNode (location: (11,2)-(11,5))
             │   └── body: (length: 1)
@@ -159,7 +159,7 @@
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: variable_call
-            │           └── name: "baz"
+            │           └── name: :baz
             ├── for_keyword_loc: (10,0)-(10,3) = "for"
             ├── in_keyword_loc: (10,11)-(10,13) = "in"
             ├── do_keyword_loc: (10,18)-(10,20) = "do"

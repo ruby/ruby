@@ -14,15 +14,15 @@
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: variable_call
-            │   └── name: "a"
+            │   └── name: :a
             ├── call_operator_loc: ∅
             ├── message_loc: (1,1)-(1,3) = "[]"
             ├── opening_loc: (1,1)-(1,2) = "["
             ├── arguments: ∅
             ├── closing_loc: (1,2)-(1,3) = "]"
             ├── flags: ∅
-            ├── read_name: "[]"
-            ├── write_name: "[]="
+            ├── read_name: :[]
+            ├── write_name: :[]=
             ├── operator: :+
             ├── operator_loc: (1,4)-(1,6) = "+="
             └── value:
@@ -35,4 +35,4 @@
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: variable_call
-                └── name: "b"
+                └── name: :b

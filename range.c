@@ -607,6 +607,10 @@ double_as_int64(double d)
 static int
 is_integer_p(VALUE v)
 {
+    if (rb_integer_type_p(v)) {
+        return true;
+    }
+
     ID id_integer_p;
     VALUE is_int;
     CONST_ID(id_integer_p, "integer?");
@@ -1017,6 +1021,139 @@ range_each(VALUE range)
                     rb_yield(beg);
         }
     }
+    return range;
+}
+
+RBIMPL_ATTR_NORETURN()
+static void
+range_reverse_each_bignum_beginless(VALUE end)
+{
+    RUBY_ASSERT(RBIGNUM_NEGATIVE_P(end));
+
+    for (;; end = rb_big_minus(end, INT2FIX(1))) {
+        rb_yield(end);
+    }
+    UNREACHABLE;
+}
+
+static void
+range_reverse_each_bignum(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(RBIGNUM_POSITIVE_P(beg) == RBIGNUM_POSITIVE_P(end));
+
+    VALUE c;
+    while ((c = rb_big_cmp(beg, end)) != INT2FIX(1)) {
+        rb_yield(end);
+        if (c == INT2FIX(0)) break;
+        end = rb_big_minus(end, INT2FIX(1));
+    }
+}
+
+static void
+range_reverse_each_positive_bignum_section(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(!NIL_P(end));
+
+    if (FIXNUM_P(end) || RBIGNUM_NEGATIVE_P(end)) return;
+
+    if (NIL_P(beg) || FIXNUM_P(beg) || RBIGNUM_NEGATIVE_P(beg)) {
+        beg = LONG2NUM(FIXNUM_MAX + 1);
+    }
+
+    range_reverse_each_bignum(beg, end);
+}
+
+static void
+range_reverse_each_fixnum_section(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(!NIL_P(end));
+
+    if (!FIXNUM_P(beg)) {
+        if (!NIL_P(beg) && RBIGNUM_POSITIVE_P(beg)) return;
+
+        beg = LONG2FIX(FIXNUM_MIN);
+    }
+
+    if (!FIXNUM_P(end)) {
+        if (RBIGNUM_NEGATIVE_P(end)) return;
+
+        end = LONG2FIX(FIXNUM_MAX);
+    }
+
+    long b = FIX2LONG(beg);
+    long e = FIX2LONG(end);
+    for (long i = e; i >= b; --i) {
+        rb_yield(LONG2FIX(i));
+    }
+}
+
+static void
+range_reverse_each_negative_bignum_section(VALUE beg, VALUE end)
+{
+    RUBY_ASSERT(!NIL_P(end));
+
+    if (FIXNUM_P(end) || RBIGNUM_POSITIVE_P(end)) {
+        end = LONG2NUM(FIXNUM_MIN - 1);
+    }
+
+    if (NIL_P(beg)) {
+        range_reverse_each_bignum_beginless(end);
+    }
+
+    if (FIXNUM_P(beg) || RBIGNUM_POSITIVE_P(beg)) return;
+
+    range_reverse_each_bignum(beg, end);
+}
+
+/*
+ *  call-seq:
+ *    reverse_each {|element| ... } -> self
+ *    reverse_each                  -> an_enumerator
+ *
+ *  With a block given, passes each element of +self+ to the block in reverse order:
+ *
+ *    a = []
+ *    (1..4).reverse_each {|element| a.push(element) } # => 1..4
+ *    a # => [4, 3, 2, 1]
+ *
+ *    a = []
+ *    (1...4).reverse_each {|element| a.push(element) } # => 1...4
+ *    a # => [3, 2, 1]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ */
+
+static VALUE
+range_reverse_each(VALUE range)
+{
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
+
+    VALUE beg = RANGE_BEG(range);
+    VALUE end = RANGE_END(range);
+    int excl = EXCL(range);
+
+    if (FIXNUM_P(beg) && FIXNUM_P(end)) {
+        if (excl) {
+            if (end == LONG2FIX(FIXNUM_MIN)) return range;
+
+            end = rb_int_minus(end, INT2FIX(1));
+        }
+
+        range_reverse_each_fixnum_section(beg, end);
+    }
+    else if ((NIL_P(beg) || RB_INTEGER_TYPE_P(beg)) && RB_INTEGER_TYPE_P(end)) {
+        if (excl) {
+            end = rb_int_minus(end, INT2FIX(1));
+        }
+        range_reverse_each_positive_bignum_section(beg, end);
+        range_reverse_each_fixnum_section(beg, end);
+        range_reverse_each_negative_bignum_section(beg, end);
+    }
+    else {
+        return rb_call_super(0, NULL);
+    }
+
     return range;
 }
 
@@ -2166,17 +2303,22 @@ range_count(int argc, VALUE *argv, VALUE range)
          * Infinity. Just let it loop. */
         return rb_call_super(argc, argv);
     }
-    else if (NIL_P(RANGE_END(range))) {
+
+    VALUE beg = RANGE_BEG(range), end = RANGE_END(range);
+
+    if (NIL_P(beg) || NIL_P(end)) {
         /* We are confident that the answer is Infinity. */
         return DBL2NUM(HUGE_VAL);
     }
-    else if (NIL_P(RANGE_BEG(range))) {
-        /* We are confident that the answer is Infinity. */
-        return DBL2NUM(HUGE_VAL);
+
+    if (is_integer_p(beg)) {
+        VALUE size = range_size(range);
+        if (!NIL_P(size)) {
+            return size;
+        }
     }
-    else {
-        return rb_call_super(argc, argv);
-    }
+
+    return rb_call_super(argc, argv);
 }
 
 static bool
@@ -2243,6 +2385,19 @@ empty_region_p(VALUE beg, VALUE end, int excl)
  *
  *    (1..2).overlap?(3..4)      # => false
  *    (1...3).overlap?(3..4)     # => false
+ *
+ *  This method assumes that there is no minimum value because
+ *  Ruby lacks a standard method for determining minimum values.
+ *  This assumption is invalid.
+ *  For example, there is no value smaller than +-Float::INFINITY+,
+ *  making +(...-Float::INFINITY)+ an empty set.
+ *  Consequently, +(...-Float::INFINITY)+ has no elements in common with itself,
+ *  yet +(...-Float::INFINITY).overlap?((...-Float::INFINITY))+ returns
+ *  true due to this assumption.
+ *  In general, if +r = (...minimum); r.overlap?(r)+ returns +true+,
+ *  where +minimum+ is a value that no value is smaller than.
+ *  Such values include +-Float::INFINITY+, +[]+, +""+, and
+ *  classes without subclasses.
  *
  *  Related: Range#cover?.
  */
@@ -2520,6 +2675,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
+    rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_end, 0);
