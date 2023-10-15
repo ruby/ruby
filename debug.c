@@ -285,6 +285,12 @@ static const char *dlf_type_names[] = {
     "func",
 };
 
+#ifdef MAX_PATH
+#define DEBUG_LOG_MAX_PATH (MAX_PATH-1)
+#else
+#define DEBUG_LOG_MAX_PATH 255
+#endif
+
 static struct {
     char *mem;
     unsigned int cnt;
@@ -292,6 +298,7 @@ static struct {
     unsigned int filters_num;
     bool show_pid;
     rb_nativethread_lock_t lock;
+    char output_file[DEBUG_LOG_MAX_PATH+1];
     FILE *output;
 } debug_log;
 
@@ -393,7 +400,39 @@ setup_debug_log(void)
         }
         else {
             ruby_debug_log_mode |= ruby_debug_log_file;
-            if ((debug_log.output = fopen(log_config, "w")) == NULL) {
+
+            // pid extension with %p
+            unsigned long len = strlen(log_config);
+
+            for (unsigned long i=0, j=0; i<len; i++) {
+                const char c = log_config[i];
+
+                if (c == '%') {
+                    i++;
+                    switch (log_config[i]) {
+                      case '%':
+                        debug_log.output_file[j++] = '%';
+                        break;
+                      case 'p':
+                        snprintf(debug_log.output_file + j, DEBUG_LOG_MAX_PATH - j, "%d", getpid());
+                        j = strlen(debug_log.output_file);
+                        break;
+                      default:
+                        fprintf(stderr, "can not parse RUBY_DEBUG_LOG filename: %s\n", log_config);
+                        exit(1);
+                    }
+                }
+                else {
+                    debug_log.output_file[j++] = c;
+                }
+
+                if (j >= DEBUG_LOG_MAX_PATH) {
+                    fprintf(stderr, "RUBY_DEBUG_LOG=%s is too long\n", log_config);
+                    exit(1);
+                }
+            }
+
+            if ((debug_log.output = fopen(debug_log.output_file, "w")) == NULL) {
                 fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
                 exit(1);
             }
@@ -404,6 +443,10 @@ setup_debug_log(void)
                 (ruby_debug_log_mode & ruby_debug_log_memory) ? "[mem]" : "",
                 (ruby_debug_log_mode & ruby_debug_log_stderr) ? "[stderr]" : "",
                 (ruby_debug_log_mode & ruby_debug_log_file)   ? "[file]" : "");
+        if (debug_log.output_file[0]) {
+            fprintf(stderr, "RUBY_DEBUG_LOG filename=%s\n", debug_log.output_file);
+        }
+
         rb_nativethread_lock_initialize(&debug_log.lock);
 
         setup_debug_log_filter();
@@ -570,10 +613,11 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         // ractor information
         if (ruby_single_main_ractor == NULL) {
             rb_ractor_t *cr = th ? th->ractor : NULL;
+            rb_vm_t *vm = GET_VM();
 
             if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u",
-                             cr ? (int)rb_ractor_id(cr) : -1, GET_VM()->ractor.cnt);
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u (%u)",
+                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt, vm->ractor.sched.running_cnt);
 
                 if (r < 0) rb_bug("ruby_debug_log returns %d", r);
                 len += r;

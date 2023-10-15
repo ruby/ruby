@@ -166,7 +166,7 @@ def parse_scripts(data, categories)
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
         cps = []
-      elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
+      elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w+)/ =~ line
         current = $3
         $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
       end
@@ -221,7 +221,7 @@ def parse_age(data)
       ages << current
       last_constname = constname
       cps = []
-    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
+    elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\d+\.\d+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end
@@ -240,7 +240,7 @@ def parse_GraphemeBreakProperty(data)
       make_const(constname, cps, "Grapheme_Cluster_Break=#{current}")
       ages << current
       cps = []
-    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
+    elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end
@@ -252,7 +252,7 @@ def parse_block(data)
   cps = []
   blocks = []
   data_foreach('Blocks.txt') do |line|
-    if /^([0-9a-fA-F]+)\.\.([0-9a-fA-F]+);\s*(.*)/ =~ line
+    if /^(\h+)\.\.(\h+);\s*(.*)/ =~ line
       cps = ($1.to_i(16)..$2.to_i(16)).to_a
       constname = constantize_blockname($3)
       data[constname] = cps
@@ -597,7 +597,6 @@ if header
     IO.popen([*NAME2CTYPE, out: tmp], "w") {|f| output.show(f, *syms)}
   end while syms.pop
   fds.each(&:close)
-  ff = nil
   IO.popen(ifdef["USE_UNICODE_AGE_PROPERTIES", fds[1].path, fds[0].path], "r") {|age|
     IO.popen(ifdef["USE_UNICODE_PROPERTIES", fds[2].path, "-"], "r", in: age) {|f|
       ansi = false
@@ -608,7 +607,7 @@ if header
         line.sub!(/\/\*ANSI\*\//, '1') if ansi
         line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
                    'uniname2ctype_offset(\1), ')
-        if ff = (!ff ? /^(uniname2ctype_hash) /=~line : /^\}/!~line) # no line can match both, exclusive flip-flop
+        if line.start_with?("uniname2ctype_hash\s") ... line.start_with?("}")
           line.sub!(/^( *(?:register\s+)?(.*\S)\s+hval\s*=\s*)(?=len;)/, '\1(\2)')
         end
         puts line

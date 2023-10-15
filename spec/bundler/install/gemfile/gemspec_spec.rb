@@ -85,7 +85,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
-    expect(err).to match(/There are no gemspecs at #{tmp.join('foo')}/)
+    expect(err).to match(/There are no gemspecs at #{tmp.join("foo")}/)
   end
 
   it "should raise if there are too many gemspecs available" do
@@ -97,7 +97,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
-    expect(err).to match(/There are multiple gemspecs at #{tmp.join('foo')}/)
+    expect(err).to match(/There are multiple gemspecs at #{tmp.join("foo")}/)
   end
 
   it "should pick a specific gemspec" do

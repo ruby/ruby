@@ -715,6 +715,10 @@ class TestProcess < Test::Unit::TestCase
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
+        sleep 0.2 # wait for the child to return to opening "fifo".
+        # On arm64-darwin22, often deadlocks while the child is
+        # opening "fifo".  Not sure to where "ok" line being written
+        # at the next has gone.
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
@@ -1451,8 +1455,15 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s, s)
       assert_equal(s, s.to_i)
 
-      assert_equal(s.to_i & 0x55555555, s & 0x55555555)
-      assert_equal(s.to_i >> 1, s >> 1)
+      assert_deprecated_warn(/\buse .*Process::Status/) do
+        assert_equal(s.to_i & 0x55555555, s & 0x55555555)
+      end
+      assert_deprecated_warn(/\buse .*Process::Status/) do
+        assert_equal(s.to_i >> 1, s >> 1)
+      end
+      assert_raise(ArgumentError) do
+        s >> -1
+      end
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
 

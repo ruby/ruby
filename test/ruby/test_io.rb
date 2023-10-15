@@ -1898,6 +1898,110 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_readline_bad_param_raises
+    File.open(__FILE__) do |f|
+      assert_raise(TypeError) do
+        f.readline Object.new
+      end
+    end
+
+    File.open(__FILE__) do |f|
+      assert_raise(TypeError) do
+        f.readline 1, 2
+      end
+    end
+  end
+
+  def test_readline_raises
+    File.open(__FILE__) do |f|
+      assert_equal File.read(__FILE__), f.readline(nil)
+      assert_raise(EOFError) do
+        f.readline
+      end
+    end
+  end
+
+  def test_readline_separators
+    File.open(__FILE__) do |f|
+      line = f.readline("def")
+      assert_equal File.read(__FILE__)[/\A.*?def/m], line
+    end
+
+    File.open(__FILE__) do |f|
+      line = f.readline("def", chomp: true)
+      assert_equal File.read(__FILE__)[/\A.*?(?=def)/m], line
+    end
+  end
+
+  def test_readline_separators_limits
+    t = Tempfile.open("readline_limit")
+    str = "#" * 50
+    sep = "def"
+
+    t.write str
+    t.write sep
+    t.write str
+    t.flush
+
+    # over limit
+    File.open(t.path) do |f|
+      line = f.readline sep, str.bytesize
+      assert_equal(str, line)
+    end
+
+    # under limit
+    File.open(t.path) do |f|
+      line = f.readline(sep, str.bytesize + 5)
+      assert_equal(str + sep, line)
+    end
+
+    # under limit + chomp
+    File.open(t.path) do |f|
+      line = f.readline(sep, str.bytesize + 5, chomp: true)
+      assert_equal(str, line)
+    end
+  ensure
+    t&.close!
+  end
+
+  def test_readline_limit_without_separator
+    t = Tempfile.open("readline_limit")
+    str = "#" * 50
+    sep = "\n"
+
+    t.write str
+    t.write sep
+    t.write str
+    t.flush
+
+    # over limit
+    File.open(t.path) do |f|
+      line = f.readline str.bytesize
+      assert_equal(str, line)
+    end
+
+    # under limit
+    File.open(t.path) do |f|
+      line = f.readline(str.bytesize + 5)
+      assert_equal(str + sep, line)
+    end
+
+    # under limit + chomp
+    File.open(t.path) do |f|
+      line = f.readline(str.bytesize + 5, chomp: true)
+      assert_equal(str, line)
+    end
+  ensure
+    t&.close!
+  end
+
+  def test_readline_chomp_true
+    File.open(__FILE__) do |f|
+      line = f.readline(chomp: true)
+      assert_equal File.readlines(__FILE__).first.chomp, line
+    end
+  end
+
   def test_set_lineno_readline
     pipe(proc do |w|
       w.puts "foo"

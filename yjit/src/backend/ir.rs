@@ -1,26 +1,20 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::From;
-use std::io::Write;
 use std::mem::take;
 use crate::codegen::{gen_outlined_exit, gen_counted_exit};
 use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
 use crate::virtualmem::{CodePtr};
-use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits, OutlinedCb};
-use crate::core::{Context, Type, TempMapping, RegTemps, MAX_REG_TEMPS, MAX_TEMP_TYPES};
+use crate::asm::{CodeBlock, OutlinedCb};
+use crate::core::{Context, RegTemps, MAX_REG_TEMPS};
 use crate::options::*;
 use crate::stats::*;
 
-#[cfg(target_arch = "x86_64")]
-use crate::backend::x86_64::*;
-
-#[cfg(target_arch = "aarch64")]
-use crate::backend::arm64::*;
+use crate::backend::current::*;
 
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
@@ -28,6 +22,7 @@ pub const SP: Opnd = _SP;
 
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
+pub use crate::backend::current::{Reg, C_RET_REG};
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -453,6 +448,9 @@ pub enum Insn {
     /// Jump if overflow
     Jo(Target),
 
+    /// Jump if overflow in multiplication
+    JoMul(Target),
+
     /// Jump if zero
     Jz(Target),
 
@@ -596,6 +594,7 @@ impl Insn {
             Insn::Jne(_) => "Jne",
             Insn::Jnz(_) => "Jnz",
             Insn::Jo(_) => "Jo",
+            Insn::JoMul(_) => "JoMul",
             Insn::Jz(_) => "Jz",
             Insn::Label(_) => "Label",
             Insn::LeaLabel { .. } => "LeaLabel",
@@ -749,6 +748,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jne(_) |
             Insn::Jnz(_) |
             Insn::Jo(_) |
+            Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
@@ -849,6 +849,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jne(_) |
             Insn::Jnz(_) |
             Insn::Jo(_) |
+            Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
@@ -955,6 +956,7 @@ pub struct SideExitContext {
     pub stack_size: u8,
     pub sp_offset: i8,
     pub reg_temps: RegTemps,
+    pub is_return_landing: bool,
 }
 
 impl SideExitContext {
@@ -965,6 +967,7 @@ impl SideExitContext {
             stack_size: ctx.get_stack_size(),
             sp_offset: ctx.get_sp_offset(),
             reg_temps: ctx.get_reg_temps(),
+            is_return_landing: ctx.is_return_landing(),
         };
         if cfg!(debug_assertions) {
             // Assert that we're not losing any mandatory metadata
@@ -979,9 +982,15 @@ impl SideExitContext {
         ctx.set_stack_size(self.stack_size);
         ctx.set_sp_offset(self.sp_offset);
         ctx.set_reg_temps(self.reg_temps);
+        if self.is_return_landing {
+            ctx.set_as_return_landing();
+        }
         ctx
     }
 }
+
+/// Initial capacity for asm.insns vector
+const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 
 /// Object into which we assemble instructions to be
 /// optimized and lowered
@@ -1016,8 +1025,8 @@ impl Assembler
 
     pub fn new_with_label_names(label_names: Vec<String>, side_exits: HashMap<SideExitContext, CodePtr>) -> Self {
         Self {
-            insns: Vec::default(),
-            live_ranges: Vec::default(),
+            insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
+            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names,
             ctx: Context::default(),
             side_exits,
@@ -1027,10 +1036,9 @@ impl Assembler
     }
 
     /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs() -> Vec<Reg> {
+    pub fn get_temp_regs() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
-        let mut regs = Self::TEMP_REGS.to_vec();
-        regs.drain(0..num_regs).collect()
+        &TEMP_REGS[0..num_regs]
     }
 
     /// Set a context for generating side exits
@@ -1048,7 +1056,7 @@ impl Assembler
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
-    pub(super) fn push_insn(&mut self, insn: Insn) {
+    pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
@@ -1184,7 +1192,7 @@ impl Assembler
 
         // Spill live stack temps
         if self.ctx.get_reg_temps() != RegTemps::default() {
-            self.comment(&format!("spill_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), RegTemps::default().as_u8()));
+            asm_comment!(self, "spill_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), RegTemps::default().as_u8());
             for stack_idx in 0..u8::min(MAX_REG_TEMPS, self.ctx.get_stack_size()) {
                 if self.ctx.get_reg_temps().get(stack_idx) {
                     let idx = self.ctx.get_stack_size() - 1 - stack_idx;
@@ -1224,7 +1232,7 @@ impl Assembler
     /// Update which stack temps are in a register
     pub fn set_reg_temps(&mut self, reg_temps: RegTemps) {
         if self.ctx.get_reg_temps() != reg_temps {
-            self.comment(&format!("reg_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), reg_temps.as_u8()));
+            asm_comment!(self, "reg_temps: {:08b} -> {:08b}", self.ctx.get_reg_temps().as_u8(), reg_temps.as_u8());
             self.ctx.set_reg_temps(reg_temps);
             self.verify_reg_temps();
         }
@@ -1565,7 +1573,7 @@ impl AssemblerDrainingIterator {
         Self {
             insns: asm.insns.into_iter().peekable(),
             index: 0,
-            indices: Vec::default()
+            indices: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
         }
     }
 
@@ -1720,10 +1728,6 @@ impl Assembler {
         self.push_insn(Insn::Cmp { left, right });
     }
 
-    pub fn comment(&mut self, text: &str) {
-        self.push_insn(Insn::Comment(text.to_string()));
-    }
-
     #[must_use]
     pub fn cpop(&mut self) -> Opnd {
         let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
@@ -1869,6 +1873,10 @@ impl Assembler {
         self.push_insn(Insn::Jo(target));
     }
 
+    pub fn jo_mul(&mut self, target: Target) {
+        self.push_insn(Insn::JoMul(target));
+    }
+
     pub fn jz(&mut self, target: Target) {
         self.push_insn(Insn::Jz(target));
     }
@@ -1998,6 +2006,17 @@ impl Assembler {
         out
     }
 }
+
+/// Macro to use format! for Insn::Comment, which skips a format! call
+/// when disasm is not supported.
+macro_rules! asm_comment {
+    ($asm:expr, $($fmt:tt)*) => {
+        if cfg!(feature = "disasm") {
+            $asm.push_insn(Insn::Comment(format!($($fmt)*)));
+        }
+    };
+}
+pub(crate) use asm_comment;
 
 #[cfg(test)]
 mod tests {

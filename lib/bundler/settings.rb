@@ -97,6 +97,8 @@ module Bundler
 
       @global_config   = load_config(global_config_file)
       @temporary       = {}
+
+      @key_cache = {}
     end
 
     def [](name)
@@ -312,7 +314,7 @@ module Bundler
     end
 
     def key_for(key)
-      self.class.key_for(key)
+      @key_cache[key] ||= self.class.key_for(key)
     end
 
     private
@@ -344,12 +346,12 @@ module Bundler
     end
 
     def is_bool(name)
-      name = name.to_s
+      name = self.class.key_to_s(name)
       BOOL_KEYS.include?(name) || BOOL_KEYS.include?(parent_setting_for(name))
     end
 
     def is_string(name)
-      name = name.to_s
+      name = self.class.key_to_s(name)
       STRING_KEYS.include?(name) || name.start_with?("local.") || name.start_with?("mirror.") || name.start_with?("build.")
     end
 
@@ -365,11 +367,11 @@ module Bundler
     end
 
     def is_num(key)
-      NUMBER_KEYS.include?(key.to_s)
+      NUMBER_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_array(key)
-      ARRAY_KEYS.include?(key.to_s)
+      ARRAY_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_credential(key)
@@ -392,7 +394,7 @@ module Bundler
     end
 
     def set_key(raw_key, value, hash, file)
-      raw_key = raw_key.to_s
+      raw_key = self.class.key_to_s(raw_key)
       value = array_to_s(value) if is_array(raw_key)
 
       key = key_for(raw_key)
@@ -412,7 +414,7 @@ module Bundler
     end
 
     def converted_value(value, key)
-      key = key.to_s
+      key = self.class.key_to_s(key)
 
       if is_array(key)
         to_array(value)
@@ -472,17 +474,16 @@ module Bundler
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
         serializer_class.load(file.read).inject({}) do |config, (k, v)|
-          new_k = k
-
           if k.include?("-")
             Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
               "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
               "Please edit #{file} and replace any dashes in configuration keys with a triple underscore (`___`)."
 
-            new_k = k.gsub("-", "___")
+            # string hash keys are frozen
+            k = k.gsub("-", "___")
           end
 
-          config[new_k] = v
+          config[k] = v
           config
         end
       end
@@ -512,7 +513,7 @@ module Bundler
 
     def self.key_for(key)
       key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")
-      key = key.to_s.gsub(".", "__")
+      key = key_to_s(key).gsub(".", "__")
       key.gsub!("-", "___")
       key.upcase!
 
@@ -535,6 +536,35 @@ module Bundler
         raise ArgumentError, format("Gem sources must be absolute. You provided '%s'.", uri)
       end
       "#{prefix}#{uri}#{suffix}"
+    end
+
+    # This is a hot method, so avoid respond_to? checks on every invocation
+    if :read.respond_to?(:name)
+      def self.key_to_s(key)
+        case key
+        when String
+          key
+        when Symbol
+          key.name
+        when Bundler::URI::HTTP
+          key.to_s
+        else
+          raise ArgumentError, "Invalid key: #{key.inspect}"
+        end
+      end
+    else
+      def self.key_to_s(key)
+        case key
+        when String
+          key
+        when Symbol
+          key.to_s
+        when Bundler::URI::HTTP
+          key.to_s
+        else
+          raise ArgumentError, "Invalid key: #{key.inspect}"
+        end
+      end
     end
   end
 end

@@ -43,7 +43,7 @@ module IRB
     private
 
     def find_end(file, first_line)
-      lex = RubyLex.new(@irb_context)
+      lex = RubyLex.new
       lines = File.read(file).lines[(first_line - 1)..-1]
       tokens = RubyLex.ripper_lex_without_warning(lines.join)
       prev_tokens = []
@@ -53,7 +53,7 @@ module IRB
         code = lines[0..lnum].join
         prev_tokens.concat chunk
         continue = lex.should_continue?(prev_tokens)
-        syntax = lex.check_code_syntax(code)
+        syntax = lex.check_code_syntax(code, local_variables: [])
         if !continue && syntax == :valid
           return first_line + lnum
         end

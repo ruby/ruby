@@ -307,7 +307,6 @@ fn main() {
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
-        .allowlist_function("rb_cfp_get_iseq")
         .allowlist_function("rb_yjit_multi_ractor_p")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
@@ -449,6 +448,7 @@ fn main() {
         .allowlist_function("rb_obj_class")
         .allowlist_function("rb_obj_is_proc")
         .allowlist_function("rb_vm_base_ptr")
+        .allowlist_function("rb_ec_stack_check")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

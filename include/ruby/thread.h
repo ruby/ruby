@@ -243,7 +243,7 @@ typedef struct rb_internal_thread_event_hook rb_internal_thread_event_hook_t;
  * @return     An opaque pointer to the hook, to unregister it later.
  * @note       This functionality is a noop on Windows.
  * @note       The callback will be called without the GVL held, except for the
-               RESUMED event.
+ *             RESUMED event.
  * @warning    This function MUST not be called from a thread event callback.
  */
 rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(

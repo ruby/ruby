@@ -11,12 +11,12 @@ RSpec.describe "install in deployment or frozen mode" do
   context "with CLI flags", :bundler => "< 3" do
     it "fails without a lockfile and says that --deployment requires a lock" do
       bundle "install --deployment", :raise_on_error => false
-      expect(err).to include("The --deployment flag requires a Gemfile.lock")
+      expect(err).to include("The --deployment flag requires a lockfile")
     end
 
     it "fails without a lockfile and says that --frozen requires a lock" do
       bundle "install --frozen", :raise_on_error => false
-      expect(err).to include("The --frozen flag requires a Gemfile.lock")
+      expect(err).to include("The --frozen flag requires a lockfile")
     end
 
     it "disallows --deployment --system" do

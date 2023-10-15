@@ -793,7 +793,7 @@ size_t rb_absint_size(VALUE val, int *nlz_bits_ret);
  * @exception   rb_eTypeError  `val` doesn't respond to `#to_int`.
  * @retval      (size_t)-1     Overflowed.
  * @retval      otherwise
-                `((val_numbits * CHAR_BIT + word_numbits - 1) / word_numbits)`,
+ *              `((val_numbits * CHAR_BIT + word_numbits - 1) / word_numbits)`,
  *              where val_numbits is the number of bits of `abs(val)`.
  * @post        If  `nlz_bits_ret` is  not  `NULL` and  there  is no  overflow,
  *              `(return_value * word_numbits - val_numbits)`   is  stored   in

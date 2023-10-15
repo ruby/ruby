@@ -1,0 +1,41 @@
+module Prism
+  # A compiler is a visitor that returns the value of each node as it visits.
+  # This is as opposed to a visitor which will only walk the tree. This can be
+  # useful when you are trying to compile a tree into a different format.
+  #
+  # For example, to build a representation of the tree as s-expressions, you
+  # could write:
+  #
+  #     class SExpressions < Prism::Compiler
+  #       def visit_arguments_node(node) = [:arguments, super]
+  #       def visit_call_node(node) = [:call, super]
+  #       def visit_integer_node(node) = [:integer]
+  #       def visit_program_node(node) = [:program, super]
+  #     end
+  #
+  #     Prism.parse("1 + 2").value.accept(SExpressions.new)
+  #     # => [:program, [[[:call, [[:integer], [:arguments, [[:integer]]]]]]]]
+  #
+  class Compiler
+    # Visit an individual node.
+    def visit(node)
+      node&.accept(self)
+    end
+
+    # Visit a list of nodes.
+    def visit_all(nodes)
+      nodes.map { |node| node&.accept(self) }
+    end
+
+    # Visit the child nodes of the given node.
+    def visit_child_nodes(node)
+      node.compact_child_nodes.map { |node| node.accept(self) }
+    end
+
+    <%- nodes.each_with_index do |node, index| -%>
+<%= "\n" if index != 0 -%>
+    # Compile a <%= node.name %> node
+    alias visit_<%= node.human %> visit_child_nodes
+    <%- end -%>
+  end
+end

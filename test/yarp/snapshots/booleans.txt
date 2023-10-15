@@ -1,7 +1,0 @@
-@ ProgramNode (location: (0...11))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (0...11))
-    └── body: (length: 2)
-        ├── @ FalseNode (location: (0...5))
-        └── @ TrueNode (location: (7...11))

@@ -23,7 +23,7 @@ RSpec.describe Bundler do
     end
 
     it "loads simple structure" do
-      simple_structure = { "name" => [:abc] }
+      simple_structure = { "name" => [:development] }
       data = Marshal.dump(simple_structure)
       expect(Bundler.safe_load_marshal(data)).to eq(simple_structure)
     end

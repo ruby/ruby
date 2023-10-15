@@ -1,9 +1,0 @@
-@ ProgramNode (location: (0...5))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (0...5))
-    └── body: (length: 1)
-        └── @ ArrayNode (location: (0...5))
-            ├── elements: (length: 0)
-            ├── opening_loc: (0...3) = "%i("
-            └── closing_loc: (4...5) = ")"

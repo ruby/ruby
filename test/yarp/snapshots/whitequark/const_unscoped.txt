@@ -1,7 +1,0 @@
-@ ProgramNode (location: (0...3))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (0...3))
-    └── body: (length: 1)
-        └── @ ConstantReadNode (location: (0...3))
-            └── name: :Foo

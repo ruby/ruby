@@ -229,6 +229,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_ECPrivateKey_encrypted
+    omit_on_fips
+
     p256 = Fixtures.pkey("p256")
     # key = abcdef
     pem = <<~EOF

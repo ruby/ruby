@@ -731,7 +731,7 @@ rb_math_sqrt(VALUE x)
  *    cbrt(1.0)       # => 1.0
  *    cbrt(0.0)       # => 0.0
  *    cbrt(1.0)       # => 1.0
-      cbrt(2.0)       # => 1.2599210498948732
+ *    cbrt(2.0)       # => 1.2599210498948732
  *    cbrt(8.0)       # => 2.0
  *    cbrt(27.0)      # => 3.0
  *    cbrt(INFINITY)  # => Infinity
