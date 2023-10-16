@@ -6974,7 +6974,7 @@ fn gen_send_general(
     }
     // If megamorphic, let the caller fallback to dynamic dispatch
     if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
-        gen_counter_incr(asm, Counter::num_send_megamorphic);
+        gen_counter_incr(asm, Counter::send_megamorphic);
         return None;
     }
 
@@ -6993,7 +6993,7 @@ fn gen_send_general(
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
     if cme.is_null() {
-        // TODO: counter
+        gen_counter_incr(asm, Counter::send_cme_not_found);
         return None;
     }
 
@@ -7006,6 +7006,7 @@ fn gen_send_general(
             if flags & VM_CALL_FCALL == 0 {
                 // Can only call private methods with FCALL callsites.
                 // (at the moment they are callsites without a receiver or an explicit `self` receiver)
+                gen_counter_incr(asm, Counter::send_private_not_fcall);
                 return None;
             }
         }
