@@ -110,7 +110,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-arm-oss
+    runs-on: ubuntu-latest
     needs: [make]
     steps:
       - run: exit 1
