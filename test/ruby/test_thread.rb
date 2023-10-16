@@ -1435,7 +1435,8 @@ q.pop
     Thread.pass until th1.stop?
 
     # After a thread starts (and execute `sleep`), it returns native_thread_id
-    assert_instance_of Integer, th1.native_thread_id
+    native_tid = th1.native_thread_id
+    assert_instance_of Integer, native_tid if native_tid # it can be nil
 
     th1.wakeup
     Thread.pass while th1.alive?

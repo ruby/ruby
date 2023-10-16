@@ -379,6 +379,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     rb_io_t *fptr;
     ID flags[RB_OBJ_GC_FLAGS_MAX];
     size_t n, i;
+    ID mid;
 
     if (SPECIAL_CONST_P(obj)) {
         dump_append_special_const(dc, obj);
@@ -433,9 +434,11 @@ dump_object(VALUE obj, struct dump_config *dc)
 
         switch (imemo_type(obj)) {
           case imemo_callinfo:
-            dump_append(dc, ", \"mid\":\"");
-            dump_append(dc, RSTRING_PTR(rb_id2str(vm_ci_mid((const struct rb_callinfo *)obj))));
-            dump_append(dc, "\"");
+            mid = vm_ci_mid((const struct rb_callinfo *)obj);
+            if (mid != 0) {
+                dump_append(dc, ", \"mid\":");
+                dump_append_string_value(dc, rb_id2str(mid));
+            }
             break;
 
           default:

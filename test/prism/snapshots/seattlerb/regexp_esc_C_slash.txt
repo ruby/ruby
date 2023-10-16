@@ -7,5 +7,5 @@
             ├── opening_loc: (1,0)-(1,1) = "/"
             ├── content_loc: (1,1)-(1,6) = "\\cC\\d"
             ├── closing_loc: (1,6)-(1,7) = "/"
-            ├── unescaped: "\u0003d"
+            ├── unescaped: "\\x03\\d"
             └── flags: ∅

@@ -370,10 +370,9 @@ module Prism
             @embexpr_balance -= 1
           when :on_tstring_content
             if embexpr_balance == 0
-              token.value.split(/(?<=\n)/).each_with_index do |line, index|
-                next if line.strip.empty? && line.end_with?("\n")
-                next if !(dedent_next || index > 0)
+              line = token.value
 
+              if !(line.strip.empty? && line.end_with?("\n")) && dedent_next
                 leading = line[/\A(\s*)\n?/, 1]
                 next_dedent = 0
 
@@ -424,6 +423,38 @@ module Prism
                 end
               else
                 results << token
+              end
+            end
+
+            return results
+          end
+
+          # If the minimum common whitespace is 0, then we need to concatenate
+          # string nodes together that are immediately adjacent.
+          if dedent == 0
+            results = []
+            embexpr_balance = 0
+
+            index = 0
+            max_index = tokens.length
+
+            while index < max_index
+              token = tokens[index]
+              results << token
+              index += 1
+
+              case token.event
+              when :on_embexpr_beg, :on_heredoc_beg
+                embexpr_balance += 1
+              when :on_embexpr_end, :on_heredoc_end
+                embexpr_balance -= 1
+              when :on_tstring_content
+                if embexpr_balance == 0
+                  while index < max_index && tokens[index].event == :on_tstring_content
+                    token.value << tokens[index].value
+                    index += 1
+                  end
+                end
               end
             end
 
@@ -786,10 +817,6 @@ module Prism
 
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
-
-      if result_value.size - 1 > tokens.size
-        raise StandardError, "Lost tokens when performing lex_compat"
-      end
 
       ParseResult.new(tokens, result.comments, result.errors, result.warnings, [])
     end

@@ -80,7 +80,7 @@ prettyprint_node(pm_buffer_t *buffer, pm_parser_t *parser, pm_node_t *node) {
             pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
             <%- when Prism::FlagsField -%>
             char <%= field.name %>_buffer[12];
-            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "+%d", node->flags >> <%= Prism::COMMON_FLAGS %>);
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "+%d", (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
             pm_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
             <%- else -%>
             <%- raise -%>

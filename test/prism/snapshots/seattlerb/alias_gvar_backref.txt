@@ -9,4 +9,5 @@
             │   └── name: :$MATCH
             ├── old_name:
             │   @ BackReferenceReadNode (location: (1,13)-(1,15))
+            │   └── name: :$&
             └── keyword_loc: (1,0)-(1,5) = "alias"
