@@ -1027,7 +1027,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (call_node->block != NULL && PM_NODE_TYPE_P(call_node->block, PM_BLOCK_NODE)) {
             // Scope associated with the block
             pm_scope_node_t scope_node;
-            pm_scope_node_init(call_node->block, &scope_node);
+            pm_scope_node_init(call_node->block, &scope_node, &scope_node, NULL);
 
             const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
             ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
@@ -1059,7 +1059,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_CLASS_NODE: {
         pm_class_node_t *class_node = (pm_class_node_t *)node;
         pm_scope_node_t scope_node;
-        pm_scope_node_init((pm_node_t *)class_node, &scope_node);
+        pm_scope_node_init((pm_node_t *)class_node, &scope_node, &scope_node, NULL);
 
         ID class_id = pm_constant_id_lookup(compile_context, class_node->name);
 
@@ -1343,7 +1343,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_def_node_t *def_node = (pm_def_node_t *) node;
         ID method_name = pm_constant_id_lookup(compile_context, def_node->name);
         pm_scope_node_t scope_node;
-        pm_scope_node_init((pm_node_t *)def_node, &scope_node);
+        pm_scope_node_init((pm_node_t *)def_node, &scope_node, &scope_node, NULL);
         rb_iseq_t *method_iseq = NEW_ISEQ(&scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
 
         ADD_INSN2(ret, &dummy_line_node, definemethod, ID2SYM(method_name), method_iseq);
@@ -1785,7 +1785,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_LAMBDA_NODE: {
         pm_scope_node_t scope_node;
-        pm_scope_node_init((pm_node_t *)node, &scope_node);
+        pm_scope_node_init((pm_node_t *)node, &scope_node, &scope_node, NULL);
 
         const rb_iseq_t *block = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
         VALUE argc = INT2FIX(0);
@@ -2024,7 +2024,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_MODULE_NODE: {
         pm_module_node_t *module_node = (pm_module_node_t *)node;
         pm_scope_node_t scope_node;
-        pm_scope_node_init((pm_node_t *)module_node, &scope_node);
+        pm_scope_node_init((pm_node_t *)module_node, &scope_node, &scope_node, NULL);
 
         ID module_id = pm_constant_id_lookup(compile_context, module_node->name);
         VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
@@ -2157,7 +2157,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_program_node_t *program_node = (pm_program_node_t *) node;
 
         pm_scope_node_t scope_node;
-        pm_scope_node_init((pm_node_t *)node, &scope_node);
+        pm_scope_node_init((pm_node_t *)node, &scope_node, &scope_node, NULL);
         if (program_node->statements->body.size == 0) {
             ADD_INSN(ret, &dummy_line_node, putnil);
             ADD_INSN(ret, &dummy_line_node, leave);
@@ -2364,7 +2364,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_SINGLETON_CLASS_NODE: {
         pm_singleton_class_node_t *singleton_class_node = (pm_singleton_class_node_t *)node;
         pm_scope_node_t scope_node;
-        pm_scope_node_init((pm_node_t *)singleton_class_node, &scope_node);
+        pm_scope_node_init((pm_node_t *)singleton_class_node, &scope_node, &scope_node, NULL);
 
         const rb_iseq_t *singleton_class = NEW_ISEQ(&scope_node, rb_fstring_lit("singleton class"),
                 ISEQ_TYPE_CLASS, lineno);
