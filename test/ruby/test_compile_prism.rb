@@ -3,7 +3,7 @@
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
     def test_empty_program
-#      test_prism_eval("")
+      test_prism_eval("")
     end
 
     ############################################################################

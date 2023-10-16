@@ -952,6 +952,8 @@ pm_iseq_new_with_opt(pm_scope_node_t scope_node, pm_parser_t *parser, VALUE name
 
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
+    /*
+     * TODO: Fix the below
     pm_line_column_t start_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node.base.location.start);
     pm_line_column_t end_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node.base.location.end);
 
@@ -965,6 +967,7 @@ pm_iseq_new_with_opt(pm_scope_node_t scope_node, pm_parser_t *parser, VALUE name
             .column = (int) end_line_col.column
         },
     };
+    */
 
     // TODO: node_id
     int node_id = -1;
