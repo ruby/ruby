@@ -1643,7 +1643,7 @@ ruby_mn_threads_params(void)
 #else
         enable_mn_threads = false;
         if (RTEST(ruby_verbose)) {
-            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implmeented on this executable.", mn_threads_cstr);
+            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implemented on this executable.", mn_threads_cstr);
         }
 #endif
     }
@@ -1660,7 +1660,7 @@ ruby_mn_threads_params(void)
 #if USE_MN_THREADS
             fprintf(stderr, "RUBY_MAX_CPU = %d (default: %d)\n", max_cpu, default_max_cpu);
 #else
-            fprintf(stderr, "RUBY_MAX_CPU = %d is specified, but MN threads are not implmeented on this executable.", max_cpu);
+            fprintf(stderr, "RUBY_MAX_CPU = %d is specified, but MN threads are not implemented on this executable.", max_cpu);
 #endif
         }
     }
