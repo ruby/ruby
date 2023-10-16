@@ -654,14 +654,22 @@ pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_b
 
 // Generate a scope node from the given node.
 void
-pm_scope_node_init(pm_node_t *node, pm_scope_node_t *scope) {
+pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser) {
     scope->base.type = PM_SCOPE_NODE;
     scope->base.location.start = node->location.start;
     scope->base.location.end = node->location.end;
 
-    scope->ast_node = node;
+    scope->previous = previous;
+    scope->parser = parser;
+    scope->ast_node = (pm_node_t *)node;
     scope->parameters = NULL;
     scope->body = NULL;
+    scope->constants = NULL;
+    if (previous) {
+        scope->constants = previous->constants;
+    }
+    scope->index_lookup_table = NULL;
+
     pm_constant_id_list_init(&scope->locals);
 
     switch (PM_NODE_TYPE(node)) {

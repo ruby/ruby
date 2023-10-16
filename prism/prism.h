@@ -34,7 +34,7 @@ void pm_print_node(pm_parser_t *parser, pm_node_t *node);
 void pm_parser_metadata(pm_parser_t *parser, const char *metadata);
 
 // Generate a scope node from the given node.
-void pm_scope_node_init(pm_node_t *node, pm_scope_node_t *dest);
+void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);
 
 // The prism version and the serialization format.
 PRISM_EXPORTED_FUNCTION const char * pm_version(void);

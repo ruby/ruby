@@ -33,10 +33,17 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
 // declare them here to avoid generating them.
 typedef struct pm_scope_node {
     pm_node_t base;
+    struct pm_scope_node *previous;
     pm_node_t *ast_node;
     struct pm_parameters_node *parameters;
     pm_node_t *body;
     pm_constant_id_list_t locals;
+    pm_parser_t *parser;
+
+    // We don't have the CRuby types ID and st_table within Prism
+    // so we use void *
+    void *constants; // ID *constants
+    void *index_lookup_table; // st_table *index_lookup_table
 } pm_scope_node_t;
 
 #endif // PRISM_NODE_H
