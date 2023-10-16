@@ -13150,7 +13150,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
             parse_arguments_list(parser, &arguments, true);
 
-            if (arguments.opening_loc.start == NULL && arguments.arguments == NULL) {
+            if (
+                arguments.opening_loc.start == NULL &&
+                arguments.arguments == NULL &&
+                ((arguments.block == NULL) || PM_NODE_TYPE_P(arguments.block, PM_BLOCK_NODE))
+            ) {
                 return (pm_node_t *) pm_forwarding_super_node_create(parser, &keyword, &arguments);
             }
 
