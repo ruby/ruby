@@ -161,6 +161,12 @@ parse_string_symbol(pm_string_t *string)
     return parse_symbol(start, start + pm_string_length(string));
 }
 
+static inline ID
+parse_location_symbol(pm_location_t *location)
+{
+    return parse_symbol(location->start, location->end);
+}
+
 static int
 pm_optimizable_range_item_p(pm_node_t *node)
 {
@@ -848,6 +854,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
     switch (PM_NODE_TYPE(node)) {
+      case PM_ALIAS_GLOBAL_VARIABLE_NODE: {
+        pm_alias_global_variable_node_t *alias_node = (pm_alias_global_variable_node_t *) node;
+
+        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+        ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_location_symbol(&alias_node->new_name->location)));
+        ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_location_symbol(&alias_node->old_name->location)));
+
+        ADD_SEND(ret, &dummy_line_node, id_core_set_variable_alias, INT2FIX(2));
+
+        PM_POP_IF_POPPED;
+        return;
+      }
       case PM_ALIAS_METHOD_NODE: {
         pm_alias_method_node_t *alias_node = (pm_alias_method_node_t *) node;
 

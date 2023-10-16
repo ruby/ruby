@@ -401,6 +401,14 @@ module Prism
     # Methods / parameters                                                     #
     ############################################################################
 
+    def test_AliasGlobalVariableNode
+      test_prism_eval("alias $prism_foo $prism_bar")
+    end
+
+    def test_AliasMethodNode
+      test_prism_eval("alias :prism_a :to_s")
+    end
+
     def test_UndefNode
       test_prism_eval("def prism_undef_node_1; end; undef prism_undef_node_1")
       test_prism_eval(<<-HERE
