@@ -967,17 +967,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-typedef struct pm_compile_context {
-    pm_parser_t *parser;
-    struct pm_compile_context *previous;
-    ID *constants;
-    st_table *index_lookup_table;
-} pm_compile_context_t;
-
-static VALUE rb_translate_prism(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_compile_context_t *compile_context);
+static VALUE rb_translate_prism(rb_iseq_t *iseq, const pm_scope_node_t node, LINK_ANCHOR *const ret);
 
 VALUE
-rb_iseq_compile_prism_node(rb_iseq_t * iseq, const pm_node_t *node, pm_parser_t *parser)
+rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t scope_node, pm_parser_t *parser)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
@@ -990,13 +983,9 @@ rb_iseq_compile_prism_node(rb_iseq_t * iseq, const pm_node_t *node, pm_parser_t 
         constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
     }
 
-    pm_compile_context_t compile_context = {
-        .parser = parser,
-        .previous = NULL,
-        .constants = constants
-    };
+    scope_node.constants = (void *)constants;
 
-    CHECK(rb_translate_prism(iseq, node, ret, &compile_context));
+    CHECK(rb_translate_prism(iseq, scope_node, ret));
     free(constants);
 
     CHECK(iseq_setup_insn(iseq, ret));
