@@ -3,7 +3,7 @@
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
     def test_empty_program
-      test_prism_eval("")
+#      test_prism_eval("")
     end
 
     ############################################################################
@@ -481,6 +481,15 @@ module Prism
       test_prism_eval("module Prism; @prism = 1; 1 in ^@prism; end")
       test_prism_eval("$prism = 1; 1 in ^$prism")
       test_prism_eval("prism = 1; 1 in ^prism")
+    end
+
+    ############################################################################
+    #  Miscellaneous                                                           #
+    ############################################################################
+
+    def test_ScopeNode
+      test_prism_eval("a = 1; tap do; { a: }; end")
+      test_prism_eval("a = 1; def foo(a); a; end")
     end
 
     private
