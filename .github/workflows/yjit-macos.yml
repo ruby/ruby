@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   cargo:
-    name: Rust cargo test
+    name: cargo test
 
     runs-on: macos-arm-oss
 

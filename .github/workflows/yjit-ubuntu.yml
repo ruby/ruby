@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   cargo:
-    name: Rust cargo test
+    name: cargo test
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
@@ -59,7 +59,7 @@ jobs:
         working-directory: yjit
 
   lint:
-    name: Rust lint
+    name: cargo clippy
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
