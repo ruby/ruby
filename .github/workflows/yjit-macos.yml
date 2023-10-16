@@ -108,9 +108,9 @@ jobs:
         if: ${{ failure() }}
 
   result:
-    if: ${{ always() }}
+    if: ${{ always() && github.repository == 'ruby/ruby' }}
     name: ${{ github.workflow }} result
-    runs-on: ubuntu-latest
+    runs-on: macos-arm-oss
     needs: [make]
     steps:
       - run: exit 1
