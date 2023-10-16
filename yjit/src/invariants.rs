@@ -521,10 +521,10 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         let old_pos = cb.get_write_pos();
         let old_dropped_bytes = cb.has_dropped_bytes();
         let mut patches = CodegenGlobals::take_global_inval_patches();
-        patches.sort_by_cached_key(|patch| patch.inline_patch_pos.raw_ptr());
+        patches.sort_by_cached_key(|patch| patch.inline_patch_pos.raw_ptr(cb));
         let mut last_patch_end = std::ptr::null();
         for patch in &patches {
-            assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(), "patches should not overlap");
+            assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(cb), "patches should not overlap");
 
             let mut asm = crate::backend::ir::Assembler::new();
             asm.jmp(patch.outlined_target_pos.as_side_exit());
@@ -532,7 +532,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
             asm.compile(cb, None).expect("can rewrite existing code");
-            last_patch_end = cb.get_write_ptr().raw_ptr();
+            last_patch_end = cb.get_write_ptr().raw_ptr(cb);
         }
         cb.set_pos(old_pos);
         cb.set_dropped_bytes(old_dropped_bytes);
