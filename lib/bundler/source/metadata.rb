@@ -5,7 +5,7 @@ module Bundler
     class Metadata < Source
       def specs
         @specs ||= Index.build do |idx|
-          idx << Gem::Specification.new("Ruby\0", Gem.ruby_version)
+          idx << Gem::Specification.new("Ruby\0", Bundler::RubyVersion.system.gem_version)
           idx << Gem::Specification.new("RubyGems\0", Gem::VERSION) do |s|
             s.required_rubygems_version = Gem::Requirement.default
           end

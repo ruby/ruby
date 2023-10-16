@@ -885,7 +885,7 @@ module Bundler
 
     def metadata_dependencies
       @metadata_dependencies ||= [
-        Dependency.new("Ruby\0", Gem.ruby_version),
+        Dependency.new("Ruby\0", Bundler::RubyVersion.system.gem_version),
         Dependency.new("RubyGems\0", Gem::VERSION),
       ]
     end
