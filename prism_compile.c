@@ -2397,9 +2397,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE(splat_node->expression);
         }
 
-        ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
-
-        PM_POP_IF_POPPED;
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+        }
         return;
       }
       case PM_STATEMENTS_NODE: {
