@@ -161,12 +161,6 @@ parse_string_symbol(pm_string_t *string)
     return parse_symbol(start, start + pm_string_length(string));
 }
 
-static inline ID
-parse_location_symbol(pm_location_t *location)
-{
-    return parse_symbol(location->start, location->end);
-}
-
 static int
 pm_optimizable_range_item_p(pm_node_t *node)
 {
@@ -940,7 +934,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         // TODO: Not sure this is accurate, look at FLUSH_CHUNK in the compiler
-        ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
+        }
 
         PM_POP_IF_POPPED;
         return;
@@ -1202,13 +1198,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_CONSTANT_PATH_WRITE_NODE: {
         pm_constant_path_write_node_t *constant_path_write_node = (pm_constant_path_write_node_t*) node;
-        PM_COMPILE(constant_path_write_node->value);
-        PM_DUP_UNLESS_POPPED;
-
-        ID constant_var_name = parse_location_symbol(&constant_path_write_node->target->base.location);
-
-        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_var_name));
+        if (constant_path_write_node->target->parent) {
+            PM_COMPILE_NOT_POPPED((pm_node_t *)constant_path_write_node->target->parent);
+        }
+        else {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
+        }
+        PM_COMPILE_NOT_POPPED(constant_path_write_node->value);
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+        }
+        ADD_INSN(ret, &dummy_line_node, swap);
+        VALUE constant_name = ID2SYM(pm_constant_id_lookup(compile_context,
+                    ((pm_constant_read_node_t *)constant_path_write_node->target->child)->name));
+        ADD_INSN1(ret, &dummy_line_node, setconstant, constant_name);
         return;
       }
       case PM_CONSTANT_READ_NODE: {
@@ -1375,18 +1379,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case PM_FLIP_FLOP_NODE: {
-        // TODO: The labels here are wrong, figure out why.....
         pm_flip_flop_node_t *flip_flop_node = (pm_flip_flop_node_t *)node;
 
         LABEL *lend = NEW_LABEL(lineno);
+        LABEL *final_label = NEW_LABEL(lineno);
         LABEL *then_label = NEW_LABEL(lineno);
         LABEL *else_label = NEW_LABEL(lineno);
-        //TODO:         int again = type == NODE_FLIP2;
-        int again = 0;
+        int again = !(flip_flop_node->base.flags & PM_RANGE_FLAGS_EXCLUDE_END);
 
-        rb_num_t cnt = ISEQ_FLIP_CNT_INCREMENT(ISEQ_BODY(iseq)->local_iseq)
-            + VM_SVAR_FLIPFLOP_START;
-        VALUE key = INT2FIX(cnt);
+        rb_num_t count = ISEQ_FLIP_CNT_INCREMENT(ISEQ_BODY(iseq)->local_iseq) + VM_SVAR_FLIPFLOP_START;
+        VALUE key = INT2FIX(count);
 
         ADD_INSN2(ret, &dummy_line_node, getspecial, key, INT2FIX(0));
         ADD_INSNL(ret, &dummy_line_node, branchif, lend);
@@ -1394,7 +1396,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (flip_flop_node->left) {
             PM_COMPILE(flip_flop_node->left);
         }
-        /* *flip == 0 */
+
         ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
         ADD_INSN1(ret, &dummy_line_node, setspecial, key);
@@ -1402,7 +1404,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSNL(ret, &dummy_line_node, jump, then_label);
         }
 
-        /* *flip == 1 */
         ADD_LABEL(ret, lend);
         if (flip_flop_node->right) {
             PM_COMPILE(flip_flop_node->right);
@@ -1412,12 +1413,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         ADD_INSN1(ret, &dummy_line_node, setspecial, key);
         ADD_INSNL(ret, &dummy_line_node, jump, then_label);
+
         ADD_LABEL(ret, then_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
-        ADD_INSNL(ret, &dummy_line_node, jump, lend);
+        ADD_INSNL(ret, &dummy_line_node, jump, final_label);
         ADD_LABEL(ret, else_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
-        ADD_LABEL(ret, lend);
+        ADD_LABEL(ret, final_label);
         return;
       }
       case PM_FLOAT_NODE: {
