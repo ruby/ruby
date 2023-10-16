@@ -39,11 +39,6 @@
 # define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
 #endif
 
-# define RUBY_DESCRIPTION_WITH(opt) \
-    "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " " \
-    "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ")" opt " " \
-    "[" RUBY_PLATFORM "]"
-
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
@@ -70,9 +65,13 @@ const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
-const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_rjit[] = RUBY_DESCRIPTION_WITH(" +RJIT");
-static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(YJIT_DESCRIPTION);
+const char ruby_description[] =
+    "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " "
+    "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ") "
+    "[" RUBY_PLATFORM "]";
+static const int ruby_description_opt_point =
+    (int)(sizeof(ruby_description) - sizeof(" [" RUBY_PLATFORM "]"));
+
 const char ruby_copyright[] = "ruby - Copyright (C) "
     RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
     RUBY_AUTHOR;
@@ -143,19 +142,23 @@ Init_version(void)
 void
 Init_ruby_description(ruby_cmdline_options_t *opt)
 {
-    VALUE description;
+    static char desc[
+        sizeof(ruby_description)
+        + rb_strlen_lit(YJIT_DESCRIPTION)
+        ];
 
-    if (RJIT_OPTS_ON) {
-        rb_dynamic_description = ruby_description_with_rjit;
-        description = MKSTR(description_with_rjit);
-    }
-    else if (YJIT_OPTS_ON) {
-        rb_dynamic_description = ruby_description_with_yjit;
-        description = MKSTR(description_with_yjit);
-    }
-    else {
-        description = MKSTR(description);
-    }
+    const char *const jit_opt =
+        RJIT_OPTS_ON ? " +RJIT" :
+        YJIT_OPTS_ON ? YJIT_DESCRIPTION :
+        "";
+
+    int n = snprintf(desc, sizeof(desc), "%.*s" /* jit_opt */"%s" "%s",
+                     ruby_description_opt_point, ruby_description,
+                     jit_opt,
+                     ruby_description + ruby_description_opt_point);
+
+    VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));
+    rb_dynamic_description = desc;
 
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
