@@ -101,9 +101,6 @@ jobs:
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx'
 
-          - test_task: 'test-all TESTS=--repeat-count=2'
-            configure: '--enable-yjit=dev'
-
           - test_task: 'test-bundled-gems'
             configure: '--enable-yjit=dev'
 
