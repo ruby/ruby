@@ -325,10 +325,10 @@ impl CodeBlock {
     /// Return the address ranges of a given address range that this CodeBlock can write.
     #[allow(dead_code)]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
-        let region_start = self.get_ptr(0).into_usize();
-        let region_end = self.get_ptr(self.get_mem_size()).into_usize();
-        let mut start = start_ptr.into_usize();
-        let end = std::cmp::min(end_ptr.into_usize(), region_end);
+        let region_start = self.get_ptr(0).raw_addr(self);
+        let region_end = self.get_ptr(self.get_mem_size()).raw_addr(self);
+        let mut start = start_ptr.raw_addr(self);
+        let end = std::cmp::min(end_ptr.raw_addr(self), region_end);
 
         let freed_pages = self.freed_pages.as_ref().as_ref();
         let mut addrs = vec![];
@@ -366,7 +366,7 @@ impl CodeBlock {
     /// If not, this becomes an inline no-op.
     #[cfg(feature = "disasm")]
     pub fn add_comment(&mut self, comment: &str) {
-        let cur_ptr = self.get_write_ptr().into_usize();
+        let cur_ptr = self.get_write_ptr().raw_addr(self);
 
         // If there's no current list of comments for this line number, add one.
         let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
@@ -388,7 +388,7 @@ impl CodeBlock {
     #[allow(unused_variables)]
     #[cfg(feature = "disasm")]
     pub fn remove_comments(&mut self, start_addr: CodePtr, end_addr: CodePtr) {
-        for addr in start_addr.into_usize()..end_addr.into_usize() {
+        for addr in start_addr.raw_addr(self)..end_addr.raw_addr(self) {
             self.asm_comments.remove(&addr);
         }
     }
@@ -424,8 +424,8 @@ impl CodeBlock {
 
     // Set the current write position from a pointer
     pub fn set_write_ptr(&mut self, code_ptr: CodePtr) {
-        let pos = code_ptr.into_usize() - self.mem_block.borrow().start_ptr().into_usize();
-        self.set_pos(pos);
+        let pos = code_ptr.as_offset() - self.mem_block.borrow().start_ptr().as_offset();
+        self.set_pos(pos.try_into().unwrap());
     }
 
     /// Get a (possibly dangling) direct pointer into the executable memory block
@@ -435,19 +435,19 @@ impl CodeBlock {
 
     /// Convert an address range to memory page indexes against a num_pages()-sized array.
     pub fn addrs_to_pages(&self, start_addr: CodePtr, end_addr: CodePtr) -> Vec<usize> {
-        let mem_start = self.mem_block.borrow().start_ptr().into_usize();
-        let mem_end = self.mem_block.borrow().mapped_end_ptr().into_usize();
-        assert!(mem_start <= start_addr.into_usize());
-        assert!(start_addr.into_usize() <= end_addr.into_usize());
-        assert!(end_addr.into_usize() <= mem_end);
+        let mem_start = self.mem_block.borrow().start_ptr().raw_addr(self);
+        let mem_end = self.mem_block.borrow().mapped_end_ptr().raw_addr(self);
+        assert!(mem_start <= start_addr.raw_addr(self));
+        assert!(start_addr.raw_addr(self) <= end_addr.raw_addr(self));
+        assert!(end_addr.raw_addr(self) <= mem_end);
 
         // Ignore empty code ranges
         if start_addr == end_addr {
             return vec![];
         }
 
-        let start_page = (start_addr.into_usize() - mem_start) / self.page_size;
-        let end_page = (end_addr.into_usize() - mem_start - 1) / self.page_size;
+        let start_page = (start_addr.raw_addr(self) - mem_start) / self.page_size;
+        let end_page = (end_addr.raw_addr(self) - mem_start - 1) / self.page_size;
         (start_page..=end_page).collect() // TODO: consider returning an iterator
     }
 
@@ -716,10 +716,17 @@ impl CodeBlock {
 impl fmt::LowerHex for CodeBlock {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         for pos in 0..self.write_pos {
-            let byte = unsafe { self.mem_block.borrow().start_ptr().raw_ptr().add(pos).read() };
+            let mem_block = &*self.mem_block.borrow();
+            let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
             fmtr.write_fmt(format_args!("{:02x}", byte))?;
         }
         Ok(())
+    }
+}
+
+impl crate::virtualmem::CodePtrBase for CodeBlock {
+    fn base_ptr(&self) -> std::ptr::NonNull<u8> {
+        self.mem_block.borrow().base_ptr()
     }
 }
 

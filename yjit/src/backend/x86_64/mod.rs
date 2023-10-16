@@ -6,6 +6,7 @@ use crate::codegen::CodePtr;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::options::*;
+use crate::utils::*;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -586,16 +587,23 @@ impl Assembler
                     lea(cb, out.into(), opnd.into());
                 },
 
-                // Load relative address
-                Insn::LeaLabel { target, out } => {
-                    let label_idx = target.unwrap_label_idx();
+                // Load address of jump target
+                Insn::LeaJumpTarget { target, out } => {
+                    if let Target::Label(label_idx) = target {
+                        // Set output to the raw address of the label
+                        cb.label_ref(*label_idx, 7, |cb, src_addr, dst_addr| {
+                            let disp = dst_addr - src_addr;
+                            lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
+                        });
 
-                    cb.label_ref(label_idx, 7, |cb, src_addr, dst_addr| {
-                        let disp = dst_addr - src_addr;
-                        lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
-                    });
-
-                    mov(cb, out.into(), Self::SCRATCH0);
+                        mov(cb, out.into(), Self::SCRATCH0);
+                    } else {
+                        // Set output to the jump target's raw address
+                        let target_code = target.unwrap_code_ptr();
+                        let target_addr = target_code.raw_addr(cb).as_u64();
+                        // Constant encoded length important for patching
+                        movabs(cb, out.into(), target_addr);
+                    }
                 },
 
                 // Push and pop to/from the C stack

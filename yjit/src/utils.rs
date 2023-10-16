@@ -51,6 +51,20 @@ impl IntoUsize for u8 {
     }
 }
 
+/// The [Into<u64>] Rust does not provide.
+/// Convert to u64 with assurance that the value is preserved.
+/// Currently, `usize::BITS == 64` holds for all platforms we support.
+pub(crate) trait IntoU64 {
+    fn as_u64(self) -> u64;
+}
+
+#[cfg(target_pointer_width = "64")]
+impl IntoU64 for usize {
+    fn as_u64(self) -> u64 {
+        self as u64
+    }
+}
+
 /// Compute an offset in bytes of a given struct field
 #[allow(unused)]
 macro_rules! offset_of {
@@ -219,7 +233,7 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
     asm.bake_string(str);
     asm.write_label(after_string);
 
-    let opnd = asm.lea_label(string_data);
+    let opnd = asm.lea_jump_target(string_data);
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
 
     asm.cpop_all();

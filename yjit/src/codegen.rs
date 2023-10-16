@@ -770,8 +770,8 @@ pub fn gen_entry_prologue(
             rb_yjit_set_exception_return as *mut u8,
             vec![
                 CFP,
-                Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
-                Opnd::const_ptr(CodegenGlobals::get_leave_exception_code().raw_ptr()),
+                Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr(cb)),
+                Opnd::const_ptr(CodegenGlobals::get_leave_exception_code().raw_ptr(cb)),
             ],
         );
     } else {
@@ -779,7 +779,7 @@ pub fn gen_entry_prologue(
         // on the entry frame. See [jit_compile] for details.
         asm.mov(
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN),
-            Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
+            Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr(cb)),
         );
     }
 

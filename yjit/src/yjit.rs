@@ -145,7 +145,7 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
     let maybe_code_ptr = with_compile_time(|| { gen_entry_point(iseq, ec, jit_exception) });
 
     match maybe_code_ptr {
-        Some(ptr) => ptr.raw_ptr(),
+        Some(ptr) => ptr,
         None => std::ptr::null(),
     }
 }
