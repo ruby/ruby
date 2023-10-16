@@ -161,12 +161,6 @@ parse_string_symbol(pm_string_t *string)
     return parse_symbol(start, start + pm_string_length(string));
 }
 
-static inline ID
-parse_location_symbol(pm_location_t *location)
-{
-    return parse_symbol(location->start, location->end);
-}
-
 static int
 pm_optimizable_range_item_p(pm_node_t *node)
 {
@@ -1385,18 +1379,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case PM_FLIP_FLOP_NODE: {
-        // TODO: The labels here are wrong, figure out why.....
         pm_flip_flop_node_t *flip_flop_node = (pm_flip_flop_node_t *)node;
 
         LABEL *lend = NEW_LABEL(lineno);
+        LABEL *final_label = NEW_LABEL(lineno);
         LABEL *then_label = NEW_LABEL(lineno);
         LABEL *else_label = NEW_LABEL(lineno);
-        //TODO:         int again = type == NODE_FLIP2;
-        int again = 0;
+        int again = !(flip_flop_node->base.flags & PM_RANGE_FLAGS_EXCLUDE_END);
 
-        rb_num_t cnt = ISEQ_FLIP_CNT_INCREMENT(ISEQ_BODY(iseq)->local_iseq)
-            + VM_SVAR_FLIPFLOP_START;
-        VALUE key = INT2FIX(cnt);
+        rb_num_t count = ISEQ_FLIP_CNT_INCREMENT(ISEQ_BODY(iseq)->local_iseq) + VM_SVAR_FLIPFLOP_START;
+        VALUE key = INT2FIX(count);
 
         ADD_INSN2(ret, &dummy_line_node, getspecial, key, INT2FIX(0));
         ADD_INSNL(ret, &dummy_line_node, branchif, lend);
@@ -1404,7 +1396,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (flip_flop_node->left) {
             PM_COMPILE(flip_flop_node->left);
         }
-        /* *flip == 0 */
+
         ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
         ADD_INSN1(ret, &dummy_line_node, setspecial, key);
@@ -1412,7 +1404,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSNL(ret, &dummy_line_node, jump, then_label);
         }
 
-        /* *flip == 1 */
         ADD_LABEL(ret, lend);
         if (flip_flop_node->right) {
             PM_COMPILE(flip_flop_node->right);
@@ -1422,12 +1413,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         ADD_INSN1(ret, &dummy_line_node, setspecial, key);
         ADD_INSNL(ret, &dummy_line_node, jump, then_label);
+
         ADD_LABEL(ret, then_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
-        ADD_INSNL(ret, &dummy_line_node, jump, lend);
+        ADD_INSNL(ret, &dummy_line_node, jump, final_label);
         ADD_LABEL(ret, else_label);
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
-        ADD_LABEL(ret, lend);
+        ADD_LABEL(ret, final_label);
         return;
       }
       case PM_FLOAT_NODE: {

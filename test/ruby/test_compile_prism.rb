@@ -167,8 +167,8 @@ module Prism
     end
 
     def test_ConstantPathWriteNode
-      test_prism_eval("Prism::ConstantPathWriteNode= 1")
-      test_prism_eval("::ConstantPathWriteNode = 1")
+      test_prism_eval("Prism::CPWN = 1")
+      test_prism_eval("::CPWN = 1")
     end
 
     def test_GlobalVariableTargetNode
@@ -354,6 +354,11 @@ module Prism
       test_prism_eval("if true; 0; else; 1; end")
       test_prism_eval("true ? 1 : 0")
       test_prism_eval("false ? 0 : 1")
+    end
+
+    def test_FlipFlopNode
+      test_prism_eval("not (1 == 1) .. (2 == 2)")
+      test_prism_eval("not (1 == 1) ... (2 == 2)")
     end
 
     ############################################################################
