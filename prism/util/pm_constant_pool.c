@@ -213,7 +213,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
 
     *bucket = (pm_constant_pool_bucket_t) {
         .id = (unsigned int) (id & 0x3fffffff),
-        .type = type,
+        .type = (unsigned int) (type & 0x3),
         .hash = hash
     };
 
