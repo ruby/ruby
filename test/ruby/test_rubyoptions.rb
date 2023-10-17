@@ -156,7 +156,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?\[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end

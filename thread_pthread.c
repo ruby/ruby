@@ -1626,6 +1626,8 @@ Init_native_thread(rb_thread_t *main_th)
     vm->ractor.sched.dnt_cnt = 1;
 }
 
+extern int ruby_mn_threads_enabled;
+
 void
 ruby_mn_threads_params(void)
 {
@@ -1633,38 +1635,19 @@ ruby_mn_threads_params(void)
     rb_ractor_t *main_ractor = GET_RACTOR();
 
     const char *mn_threads_cstr = getenv("RUBY_MN_THREADS");
-    bool enable_mn_threads;
+    bool enable_mn_threads = false;
 
-    if (mn_threads_cstr && (enable_mn_threads = atoi(mn_threads_cstr) > 0)) {
-#if USE_MN_THREADS
-        if (RTEST(ruby_verbose)) {
-            fprintf(stderr, "RUBY_MN_THREADS = %s (default: 0)\n", mn_threads_cstr);
-        }
-#else
-        enable_mn_threads = false;
-        if (RTEST(ruby_verbose)) {
-            fprintf(stderr, "RUBY_MN_THREADS = %s is specified, but MN threads are not implemented on this executable.", mn_threads_cstr);
-        }
-#endif
-    }
-    else {
-        enable_mn_threads = false; // default: off on main Ractor
+    if (USE_MN_THREADS && mn_threads_cstr && (enable_mn_threads = atoi(mn_threads_cstr) > 0)) {
+        // enabled
+        ruby_mn_threads_enabled = 1;
     }
     main_ractor->threads.sched.enable_mn_threads = enable_mn_threads;
 
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
     const int default_max_cpu = 8; // TODO: CPU num?
-    int max_cpu;
-    if (max_cpu_cstr && (max_cpu = atoi(max_cpu_cstr)) > 0) {
-        if (RTEST(ruby_verbose)) {
-#if USE_MN_THREADS
-            fprintf(stderr, "RUBY_MAX_CPU = %d (default: %d)\n", max_cpu, default_max_cpu);
-#else
-            fprintf(stderr, "RUBY_MAX_CPU = %d is specified, but MN threads are not implemented on this executable.", max_cpu);
-#endif
-        }
-    }
-    else {
+    int max_cpu = default_max_cpu;
+
+    if (USE_MN_THREADS && max_cpu_cstr && (max_cpu = atoi(max_cpu_cstr)) > 0) {
         max_cpu = default_max_cpu;
     }
 

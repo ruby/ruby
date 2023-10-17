@@ -139,12 +139,15 @@ Init_version(void)
 #define YJIT_OPTS_ON 0
 #endif
 
+int ruby_mn_threads_enabled;
+
 void
 Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     static char desc[
         sizeof(ruby_description)
         + rb_strlen_lit(YJIT_DESCRIPTION)
+        + rb_strlen_lit(" +MN")
         ];
 
     const char *const jit_opt =
@@ -152,9 +155,16 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
         YJIT_OPTS_ON ? YJIT_DESCRIPTION :
         "";
 
-    int n = snprintf(desc, sizeof(desc), "%.*s" /* jit_opt */"%s" "%s",
+    const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
+
+    int n = snprintf(desc, sizeof(desc),
+                     "%.*s"
+                     "%s" // jit_opt
+                     "%s" // threads_opts
+                     "%s",
                      ruby_description_opt_point, ruby_description,
                      jit_opt,
+                     threads_opt,
                      ruby_description + ruby_description_opt_point);
 
     VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));

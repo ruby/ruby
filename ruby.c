@@ -2101,7 +2101,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         opt->yjit = true; // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
     }
 #endif
+
+    ruby_mn_threads_params();
     Init_ruby_description(opt);
+
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
         ruby_show_version();
         if (opt->dump & DUMP_BIT(version)) return Qtrue;
@@ -2153,7 +2156,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 
     ruby_gc_set_params();
-    ruby_mn_threads_params();
     ruby_init_loadpath();
 
     Init_enc();
