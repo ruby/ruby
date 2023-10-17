@@ -105,13 +105,6 @@ module Prism
               *params.keywords.select(&:value).map(&:name)
             ]
 
-            # TODO: When we get a ... parameter, we should be pushing * and &
-            # onto the local list. We don't do that yet, so we need to add them
-            # in here.
-            if params.keyword_rest.is_a?(ForwardingParameterNode)
-              sorted.push(:*, :&, :"...")
-            end
-
             # Recurse down the parameter tree to find any destructured
             # parameters and add them after the other parameters.
             param_stack = params.requireds.concat(params.posts).grep(RequiredDestructuredParameterNode).reverse

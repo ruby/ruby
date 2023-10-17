@@ -33,7 +33,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :bar
-        │   ├── locals: [:"..."]
+        │   ├── locals: [:*, :&, :"..."]
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,7)-(1,8) = "("
@@ -55,7 +55,7 @@
         │   │   │   @ ForwardingParameterNode (location: (3,8)-(3,11))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:"..."]
+        │   ├── locals: [:*, :&, :"..."]
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (3,7)-(3,8) = "("
@@ -88,7 +88,7 @@
             │           │       └── @ ForwardingArgumentsNode (location: (5,20)-(5,23))
             │           ├── rparen_loc: (5,23)-(5,24) = ")"
             │           └── block: ∅
-            ├── locals: [:"..."]
+            ├── locals: [:*, :&, :"..."]
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (5,7)-(5,8) = "("

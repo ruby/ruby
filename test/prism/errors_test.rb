@@ -723,7 +723,7 @@ module Prism
           nil
         ),
         nil,
-        [:"...", :a],
+        [:*, :&, :"...", :a],
         Location(),
         nil,
         Location(),
@@ -800,7 +800,7 @@ module Prism
         nil,
         ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil),
         nil,
-        [:"..."],
+        [:*, :&, :"..."],
         Location(),
         nil,
         Location(),
@@ -987,7 +987,7 @@ module Prism
 
     def test_do_not_allow_forward_arguments_in_lambda_literals
       expected = LambdaNode(
-        [:"..."],
+        [],
         Location(),
         Location(),
         Location(),
@@ -1009,7 +1009,7 @@ module Prism
         nil,
         nil,
         BlockNode(
-          [:"..."],
+          [],
           BlockParametersNode(ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil), [], Location(), Location()),
           nil,
           Location(),

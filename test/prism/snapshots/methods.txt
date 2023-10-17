@@ -183,7 +183,7 @@
         │   │   │   @ ForwardingParameterNode (location: (19,6)-(19,9))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:"..."]
+        │   ├── locals: [:*, :&, :"..."]
         │   ├── def_keyword_loc: (19,0)-(19,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (19,5)-(19,6) = "("
@@ -949,7 +949,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :b
-        │   ├── locals: [:"..."]
+        │   ├── locals: [:*, :&, :"..."]
         │   ├── def_keyword_loc: (112,0)-(112,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (112,5)-(112,6) = "("
@@ -990,7 +990,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :b
-        │   ├── locals: [:"..."]
+        │   ├── locals: [:*, :&, :"..."]
         │   ├── def_keyword_loc: (114,0)-(114,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (114,5)-(114,6) = "("
@@ -1210,7 +1210,7 @@
         │   │           │       │           └── name: :b
         │   │           │       └── closing_loc: (136,24)-(136,25) = "}"
         │   │           └── closing_loc: (136,25)-(136,26) = "\""
-        │   ├── locals: [:"..."]
+        │   ├── locals: [:*, :&, :"..."]
         │   ├── def_keyword_loc: (136,0)-(136,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (136,5)-(136,6) = "("

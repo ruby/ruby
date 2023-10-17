@@ -5093,6 +5093,13 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
     }
 }
 
+// Add a local variable from a constant string to the current scope.
+static inline void
+pm_parser_local_add_constant(pm_parser_t *parser, const char *start, size_t length) {
+    pm_constant_id_t constant_id = pm_parser_constant_id_constant(parser, start, length);
+    if (constant_id != 0) pm_parser_local_add(parser, constant_id);
+}
+
 // Add a local variable from a location to the current scope.
 static pm_constant_id_t
 pm_parser_local_add_location(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
@@ -10410,11 +10417,17 @@ parse_parameters(
                 if (!allows_forwarding_parameter) {
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
                 }
+
                 if (order > PM_PARAMETERS_ORDER_NOTHING_AFTER) {
                     update_parameter_state(parser, &parser->current, &order);
                     parser_lex(parser);
 
-                    pm_parser_local_add_token(parser, &parser->previous);
+                    if (allows_forwarding_parameter) {
+                        pm_parser_local_add_constant(parser, "*", 1);
+                        pm_parser_local_add_constant(parser, "&", 1);
+                        pm_parser_local_add_token(parser, &parser->previous);
+                    }
+
                     pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);
                     if (params->keyword_rest != NULL) {
                         // If we already have a keyword rest parameter, then we replace it with the
@@ -10429,6 +10442,7 @@ parse_parameters(
                     update_parameter_state(parser, &parser->current, &order);
                     parser_lex(parser);
                 }
+
                 break;
             }
             case PM_TOKEN_CLASS_VARIABLE:
