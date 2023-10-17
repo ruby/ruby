@@ -3961,7 +3961,8 @@ AS_IF([test x"$enable_shared" = xyes], [
             rb_cv_symbols_in_emptylib=`$NM -Pgp conftest$ac_exeext |
                 sed ["/ [A-TV-Z] .*/!d;s///;s/^${SYMBOL_PREFIX}//;/^main$/d"]`
         ])
-        set ${rb_cv_symbols_in_emptylib}
+        set dummy ${rb_cv_symbols_in_emptylib}
+        shift
         rb_cv_symbols_in_emptylib="$*"
         CC="$save_CC"
     ])
