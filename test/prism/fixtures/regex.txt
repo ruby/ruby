@@ -28,3 +28,6 @@ foo /bar/
 %r#pound#
 
 /aaa #{bbb}/o
+
+/(?<a\
+b>)/ =~ ""; ab

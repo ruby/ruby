@@ -5117,10 +5117,11 @@ pm_parser_local_add_token(pm_parser_t *parser, pm_token_t *token) {
 }
 
 // Add a local variable from an owned string to the current scope.
-static inline void
+static pm_constant_id_t
 pm_parser_local_add_owned(pm_parser_t *parser, const uint8_t *start, size_t length) {
     pm_constant_id_t constant_id = pm_parser_constant_id_owned(parser, start, length);
     if (constant_id != 0) pm_parser_local_add(parser, constant_id);
+    return constant_id;
 }
 
 // Add a parameter name to the current scope and check whether the name of the
@@ -15016,15 +15017,31 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 pm_string_list_t named_captures;
                 pm_string_list_init(&named_captures);
 
-                const pm_location_t *content_loc = &((pm_regular_expression_node_t *) node)->content_loc;
-                if (pm_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures, parser->encoding_changed, &parser->encoding) && (named_captures.length > 0)) {
+                const pm_string_t *unescaped = &((pm_regular_expression_node_t *) node)->unescaped;
+                if (pm_regexp_named_capture_group_names(pm_string_source(unescaped), pm_string_length(unescaped), &named_captures, parser->encoding_changed, &parser->encoding) && (named_captures.length > 0)) {
                     pm_match_write_node_t *match = pm_match_write_node_create(parser, call);
 
                     for (size_t index = 0; index < named_captures.length; index++) {
                         pm_string_t *name = &named_captures.strings[index];
-                        assert(name->type == PM_STRING_SHARED);
+                        pm_constant_id_t local;
 
-                        pm_constant_id_t local = pm_parser_local_add_location(parser, name->source, name->source + name->length);
+                        if (unescaped->type == PM_STRING_SHARED) {
+                            // If the unescaped string is a slice of the source,
+                            // then we can copy the names directly. The pointers
+                            // will line up.
+                            local = pm_parser_local_add_location(parser, name->source, name->source + name->length);
+                        } else {
+                            // Otherwise, the name is a slice of the malloc-ed
+                            // owned string, in which case we need to copy it
+                            // out into a new string.
+                            size_t length = pm_string_length(name);
+
+                            void *memory = malloc(length);
+                            memcpy(memory, pm_string_source(name), length);
+
+                            local = pm_parser_local_add_owned(parser, (const uint8_t *) memory, length);
+                        }
+
                         pm_constant_id_list_append(&match->locals, local);
                     }
 
