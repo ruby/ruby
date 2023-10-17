@@ -143,11 +143,11 @@ module TestParallel
   end
 
   class TestParallel < Test::Unit::TestCase
-    def spawn_runner(*opt_args)
+    def spawn_runner(*opt_args, jobs: "t1")
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
                         "--ruby", @options[:ruby].join(" "),
-                        "-j","t1",*opt_args, out: o, err: o)
+                        "-j", jobs, *opt_args, out: o, err: o)
       o.close
     end
 
@@ -166,11 +166,7 @@ module TestParallel
     end
 
     def test_ignore_jzero
-      @test_out, o = IO.pipe
-      @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "--ruby", @options[:ruby].join(" "),
-                        "-j","0", out: File::NULL, err: o)
-      o.close
+      spawn_runner(jobs: "0")
       Timeout.timeout(TIMEOUT) {
         assert_match(/Error: parameter of -j option should be greater than 0/,@test_out.read)
       }
