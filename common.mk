@@ -928,7 +928,10 @@ test-sample: test-basic # backward compatibility for mswin-build
 test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
-yes-test-all-precheck: programs encs exts PHONY $(DOT_WAIT)
+# Separate to skip updating encs and exts by `make -o test-precheck`
+# for GNU make.
+test-precheck: encs exts PHONY $(DOT_WAIT)
+yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
