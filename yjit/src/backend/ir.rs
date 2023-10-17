@@ -1056,11 +1056,10 @@ impl Assembler
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
-    pub fn push_insn(&mut self, insn: Insn) {
+    pub fn push_insn(&mut self, mut insn: Insn) {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
-        let mut insn = insn;
         let mut opnd_iter = insn.opnd_iter_mut();
         while let Some(opnd) = opnd_iter.next() {
             match opnd {
@@ -1089,7 +1088,6 @@ impl Assembler
         }
 
         // Set a side exit context to Target::SideExit
-        let mut insn = insn;
         if let Some(Target::SideExit { context, .. }) = insn.target_mut() {
             // We should skip this when this instruction is being copied from another Assembler.
             if context.is_none() {
