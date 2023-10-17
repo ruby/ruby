@@ -39,10 +39,26 @@ size_t pm_constant_id_list_memsize(pm_constant_id_list_t *list);
 // Free the memory associated with a list of constant ids.
 void pm_constant_id_list_free(pm_constant_id_list_t *list);
 
+// Constant pool buckets can have a couple of different types.
+typedef unsigned int pm_constant_pool_bucket_type_t;
+
+// By default, each constant is a slice of the source.
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_DEFAULT = 0;
+
+// An owned constant is one for which memory has been allocated.
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_OWNED = 1;
+
+// A constant constant is known at compile time.
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_CONSTANT = 2;
+
+// An anonymous constant is one that doesn't directly reference values in the
+// source. This is used for things like the anonymous local variable introduced
+// by for loops, rescue bodies, destructured required parameters, etc.
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_ANONYMOUS = 3;
+
 typedef struct {
     unsigned int id: 30;
-    bool owned: 1;
-    bool constant: 1;
+    pm_constant_pool_bucket_type_t type: 2;
     uint32_t hash;
 } pm_constant_pool_bucket_t;
 

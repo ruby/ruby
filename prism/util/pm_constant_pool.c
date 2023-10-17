@@ -163,7 +163,7 @@ pm_constant_pool_id_to_constant(pm_constant_pool_t *pool, pm_constant_id_t const
 
 // Insert a constant into a constant pool and return its index in the pool.
 static inline pm_constant_id_t
-pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t length, bool owned, bool constant) {
+pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t length, pm_constant_pool_bucket_type_t type) {
     if (pool->size >= (pool->capacity / 4 * 3)) {
         if (!pm_constant_pool_resize(pool)) return 0;
     }
@@ -185,19 +185,19 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
             // Since we have found a match, we need to check if this is
             // attempting to insert a shared or an owned constant. We want to
             // prefer shared constants since they don't require allocations.
-            if (owned) {
+            if (type == PM_CONSTANT_POOL_BUCKET_OWNED) {
                 // If we're attempting to insert an owned constant and we have
                 // an existing constant, then either way we don't want the given
                 // memory. Either it's duplicated with the existing constant or
                 // it's not necessary because we have a shared version.
                 free((void *) start);
-            } else if (bucket->owned) {
+            } else if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
                 // If we're attempting to insert a shared constant and the
                 // existing constant is owned, then we can free the owned
                 // constant and replace it with the shared constant.
                 free((void *) constant->start);
                 constant->start = start;
-                bucket->owned = false;
+                bucket->type = PM_CONSTANT_POOL_BUCKET_DEFAULT;
             }
 
             return bucket->id;
@@ -213,8 +213,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
 
     *bucket = (pm_constant_pool_bucket_t) {
         .id = (unsigned int) (id & 0x3fffffff),
-        .owned = owned,
-        .constant = constant,
+        .type = type,
         .hash = hash
     };
 
@@ -230,7 +229,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
 // if any potential calls to resize fail.
 pm_constant_id_t
 pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, false, false);
+    return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_DEFAULT);
 }
 
 // Insert a constant into a constant pool from memory that is now owned by the
@@ -238,14 +237,14 @@ pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, s
 // resize fail.
 pm_constant_id_t
 pm_constant_pool_insert_owned(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, true, false);
+    return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_OWNED);
 }
 
 // Insert a constant into a constant pool from memory that is constant. Returns
 // the id of the constant, or 0 if any potential calls to resize fail.
 pm_constant_id_t
 pm_constant_pool_insert_constant(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, false, true);
+    return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_CONSTANT);
 }
 
 // Free the memory associated with a constant pool.
@@ -257,7 +256,7 @@ pm_constant_pool_free(pm_constant_pool_t *pool) {
         pm_constant_pool_bucket_t *bucket = &pool->buckets[index];
 
         // If an id is set on this constant, then we know we have content here.
-        if (bucket->id != 0 && bucket->owned) {
+        if (bucket->id != 0 && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
             pm_constant_t *constant = &pool->constants[bucket->id - 1];
             free((void *) constant->start);
         }

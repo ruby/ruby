@@ -234,7 +234,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
             pm_constant_t *constant = &parser->constant_pool.constants[bucket->id - 1];
             size_t buffer_offset = offset + ((((size_t)bucket->id) - 1) * 8);
 
-            if (bucket->owned || bucket->constant) {
+            if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED || bucket->type == PM_CONSTANT_POOL_BUCKET_CONSTANT) {
                 // Since this is an owned or constant constant, we are going to
                 // write its contents into the buffer after the constant pool.
                 // So effectively in place of the source offset, we have a
