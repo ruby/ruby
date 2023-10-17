@@ -192,6 +192,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED]     = "Numbered parameters are not allowed alongside explicit parameters",
     [PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE]     = "Numbered parameter is already used in outer scope",
     [PM_ERR_OPERATOR_MULTI_ASSIGN]              = "Unexpected operator for a multiple assignment",
+    [PM_ERR_OPERATOR_WRITE_ARGUMENTS]           = "Unexpected operator after a call with arguments",
     [PM_ERR_OPERATOR_WRITE_BLOCK]               = "Unexpected operator after a call with a block",
     [PM_ERR_PARAMETER_ASSOC_SPLAT_MULTI]        = "Unexpected multiple `**` splat parameters",
     [PM_ERR_PARAMETER_BLOCK_MULTI]              = "Multiple block parameters; only one block is allowed",

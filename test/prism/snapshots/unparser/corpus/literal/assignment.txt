@@ -785,13 +785,12 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: :[]=
-        ├── @ CallOrWriteNode (location: (37,0)-(37,14))
+        ├── @ IndexOrWriteNode (location: (37,0)-(37,14))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (37,0)-(37,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (37,1)-(37,6) = "[%()]"
         │   ├── opening_loc: (37,1)-(37,2) = "["
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (37,2)-(37,5))
@@ -803,9 +802,8 @@
         │   │           ├── closing_loc: (37,4)-(37,5) = ")"
         │   │           └── unescaped: ""
         │   ├── closing_loc: (37,5)-(37,6) = "]"
+        │   ├── block: ∅
         │   ├── flags: ∅
-        │   ├── read_name: :[]
-        │   ├── write_name: :[]=
         │   ├── operator_loc: (37,7)-(37,10) = "||="
         │   └── value:
         │       @ CallNode (location: (37,11)-(37,14))
@@ -925,13 +923,12 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: :[]=
-        ├── @ CallOrWriteNode (location: (48,0)-(48,21))
+        ├── @ IndexOrWriteNode (location: (48,0)-(48,21))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (48,0)-(48,1))
         │   │   ├── name: :a
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (48,1)-(48,13) = "[<<-HEREDOC]"
         │   ├── opening_loc: (48,1)-(48,2) = "["
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (48,2)-(48,12))
@@ -957,9 +954,8 @@
         │   │           │       └── unescaped: "\n"
         │   │           └── closing_loc: (50,0)-(50,0) = "HEREDOC\n"
         │   ├── closing_loc: (48,12)-(48,13) = "]"
+        │   ├── block: ∅
         │   ├── flags: ∅
-        │   ├── read_name: :[]
-        │   ├── write_name: :[]=
         │   ├── operator_loc: (48,14)-(48,17) = "||="
         │   └── value:
         │       @ CallNode (location: (48,18)-(48,21))

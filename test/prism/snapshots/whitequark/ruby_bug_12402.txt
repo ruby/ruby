@@ -144,9 +144,6 @@
         │   │   └── depth: 0
         │   ├── call_operator_loc: (9,3)-(9,4) = "."
         │   ├── message_loc: (9,4)-(9,5) = "C"
-        │   ├── opening_loc: ∅
-        │   ├── arguments: ∅
-        │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: :C
         │   ├── write_name: :C=
@@ -187,9 +184,6 @@
         │   │   └── depth: 0
         │   ├── call_operator_loc: (11,3)-(11,4) = "."
         │   ├── message_loc: (11,4)-(11,5) = "C"
-        │   ├── opening_loc: ∅
-        │   ├── arguments: ∅
-        │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: :C
         │   ├── write_name: :C=
@@ -230,9 +224,6 @@
         │   │   └── depth: 0
         │   ├── call_operator_loc: (13,3)-(13,4) = "."
         │   ├── message_loc: (13,4)-(13,5) = "m"
-        │   ├── opening_loc: ∅
-        │   ├── arguments: ∅
-        │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: :m
         │   ├── write_name: :m=
@@ -273,9 +264,6 @@
         │   │   └── depth: 0
         │   ├── call_operator_loc: (15,3)-(15,4) = "."
         │   ├── message_loc: (15,4)-(15,5) = "m"
-        │   ├── opening_loc: ∅
-        │   ├── arguments: ∅
-        │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: :m
         │   ├── write_name: :m=
@@ -396,9 +384,6 @@
         │   │   └── depth: 0
         │   ├── call_operator_loc: (21,3)-(21,5) = "::"
         │   ├── message_loc: (21,5)-(21,6) = "m"
-        │   ├── opening_loc: ∅
-        │   ├── arguments: ∅
-        │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: :m
         │   ├── write_name: :m=
@@ -439,9 +424,6 @@
         │   │   └── depth: 0
         │   ├── call_operator_loc: (23,3)-(23,5) = "::"
         │   ├── message_loc: (23,5)-(23,6) = "m"
-        │   ├── opening_loc: ∅
-        │   ├── arguments: ∅
-        │   ├── closing_loc: ∅
         │   ├── flags: ∅
         │   ├── read_name: :m
         │   ├── write_name: :m=
@@ -475,13 +457,12 @@
         │       ├── keyword_loc: (23,21)-(23,27) = "rescue"
         │       └── rescue_expression:
         │           @ NilNode (location: (23,28)-(23,31))
-        ├── @ CallOperatorWriteNode (location: (25,0)-(25,30))
+        ├── @ IndexOperatorWriteNode (location: (25,0)-(25,30))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (25,0)-(25,3))
         │   │   ├── name: :foo
         │   │   └── depth: 0
         │   ├── call_operator_loc: ∅
-        │   ├── message_loc: (25,3)-(25,6) = "[0]"
         │   ├── opening_loc: (25,3)-(25,4) = "["
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (25,4)-(25,5))
@@ -489,9 +470,8 @@
         │   │       └── @ IntegerNode (location: (25,4)-(25,5))
         │   │           └── flags: decimal
         │   ├── closing_loc: (25,5)-(25,6) = "]"
+        │   ├── block: ∅
         │   ├── flags: ∅
-        │   ├── read_name: :[]
-        │   ├── write_name: :[]=
         │   ├── operator: :+
         │   ├── operator_loc: (25,7)-(25,9) = "+="
         │   └── value:
@@ -522,13 +502,12 @@
         │       ├── block: ∅
         │       ├── flags: ∅
         │       └── name: :raise
-        └── @ CallOperatorWriteNode (location: (27,0)-(27,31))
+        └── @ IndexOperatorWriteNode (location: (27,0)-(27,31))
             ├── receiver:
             │   @ LocalVariableReadNode (location: (27,0)-(27,3))
             │   ├── name: :foo
             │   └── depth: 0
             ├── call_operator_loc: ∅
-            ├── message_loc: (27,3)-(27,6) = "[0]"
             ├── opening_loc: (27,3)-(27,4) = "["
             ├── arguments:
             │   @ ArgumentsNode (location: (27,4)-(27,5))
@@ -536,9 +515,8 @@
             │       └── @ IntegerNode (location: (27,4)-(27,5))
             │           └── flags: decimal
             ├── closing_loc: (27,5)-(27,6) = "]"
+            ├── block: ∅
             ├── flags: ∅
-            ├── read_name: :[]
-            ├── write_name: :[]=
             ├── operator: :+
             ├── operator_loc: (27,7)-(27,9) = "+="
             └── value:

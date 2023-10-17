@@ -9,9 +9,6 @@
             │   └── name: :A
             ├── call_operator_loc: (1,1)-(1,2) = "."
             ├── message_loc: (1,2)-(1,3) = "B"
-            ├── opening_loc: ∅
-            ├── arguments: ∅
-            ├── closing_loc: ∅
             ├── flags: ∅
             ├── read_name: :B
             ├── write_name: :B=

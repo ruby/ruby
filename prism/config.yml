@@ -633,13 +633,6 @@ nodes:
         type: location?
       - name: message_loc
         type: location?
-      - name: opening_loc
-        type: location?
-      - name: arguments
-        type: node?
-        kind: ArgumentsNode
-      - name: closing_loc
-        type: location?
       - name: flags
         type: flags
         kind: CallNodeFlags
@@ -706,13 +699,6 @@ nodes:
         type: location?
       - name: message_loc
         type: location?
-      - name: opening_loc
-        type: location?
-      - name: arguments
-        type: node?
-        kind: ArgumentsNode
-      - name: closing_loc
-        type: location?
       - name: flags
         type: flags
         kind: CallNodeFlags
@@ -738,13 +724,6 @@ nodes:
       - name: call_operator_loc
         type: location?
       - name: message_loc
-        type: location?
-      - name: opening_loc
-        type: location?
-      - name: arguments
-        type: node?
-        kind: ArgumentsNode
-      - name: closing_loc
         type: location?
       - name: flags
         type: flags
@@ -1446,6 +1425,89 @@ nodes:
 
           case a; in b then c end
                   ^^^^^^^^^^^
+  - name: IndexAndWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator on a call to the `[]` method.
+
+          foo.bar[baz] &&= value
+          ^^^^^^^^^^^^^^^^^^^^^^
+  - name: IndexOperatorWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: operator
+        type: constant
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of an assignment operator on a call to `[]`.
+
+          foo.bar[baz] += value
+          ^^^^^^^^^^^^^^^^^^^^^
+  - name: IndexOrWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator on a call to `[]`.
+
+          foo.bar[baz] ||= value
+          ^^^^^^^^^^^^^^^^^^^^^^
   - name: InstanceVariableAndWriteNode
     fields:
       - name: name
