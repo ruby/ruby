@@ -14,6 +14,10 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
+/// A running total of how many ISeqs are in the system.
+#[no_mangle]
+pub static mut rb_yjit_live_iseq_count: u64 = 0;
+
 /// A middleware to count Rust-allocated bytes as yjit_alloc_size.
 #[global_allocator]
 static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
@@ -635,6 +639,8 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
 
         // VM instructions count
         hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+
+        hash_aset_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
     }
 
     // If we're not generating stats, put only default counters
