@@ -782,6 +782,16 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     return res;
 }
 
+VALUE
+rb_ec_pack_ary(rb_execution_context_t *ec, long num, const VALUE *elts, VALUE fmt, VALUE buffer)
+{
+    struct RArray ary = {
+        .basic = {FL_FREEZE|T_ARRAY},
+        .as = {.heap = {.len = num, .ptr = elts}},
+    };
+    return pack_pack(ec, (VALUE)&ary, fmt, buffer);
+}
+
 static const char uu_table[] =
 "`!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
 static const char b64_table[] =

@@ -953,6 +953,19 @@ opt_newarray_send
     }
 }
 
+DEFINE_INSN
+opt_newarray_pack
+(rb_num_t num, VALUE fmt)
+(...)
+(VALUE val)
+// attr bool leaf = false; /* has rb_funcall() */
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+// attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)num;
+{
+    VALUE rb_ec_pack_ary(rb_execution_context_t *ec, long num, const VALUE *elts, VALUE fmt, VALUE buffer);
+    val = rb_ec_pack_ary(ec, (long)num, STACK_ADDR_FROM_TOP(num), fmt, Qnil);
+}
+
 /* super(args) # args.size => num */
 DEFINE_INSN
 invokesuper

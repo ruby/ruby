@@ -4049,6 +4049,23 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                 }
             }
         }
+        else if ((IS_INSN_ID(niobj, putstring) ||
+                  (IS_INSN_ID(niobj, putobject) && RB_TYPE_P(OPERAND_AT(niobj, 0), T_STRING))) &&
+                 IS_NEXT_INSN_ID(&niobj->link, send)) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT((INSN *)niobj->link.next, 0);
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idPack) {
+                VALUE num = iobj->operands[0];
+                int operand_len = insn_len(BIN(opt_newarray_pack)) - 1;
+                iobj->insn_id = BIN(opt_newarray_pack);
+                iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
+                iobj->operands[0] = num;
+                iobj->operands[1] = OPERAND_AT(niobj, 0);
+                iobj->operand_size = operand_len;
+                ELEM_REMOVE(niobj->link.next);
+                ELEM_REMOVE(&niobj->link);
+                return COMPILE_OK;
+            }
+        }
     }
 
     if (IS_INSN_ID(iobj, send)) {
