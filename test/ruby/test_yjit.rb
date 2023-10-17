@@ -1519,6 +1519,6 @@ class TestYJIT < Test::Unit::TestCase
   # A wrapper of EnvUtil.invoke_ruby that uses RbConfig.ruby instead of EnvUtil.ruby
   # that might use a wrong Ruby depending on your environment.
   def invoke_ruby(*args, **kwargs)
-    EnvUtil.invoke_ruby(*args, **{ rubybin: RbConfig.ruby, **kwargs })
+    EnvUtil.invoke_ruby(*args, rubybin: RbConfig.ruby, **kwargs)
   end
 end
