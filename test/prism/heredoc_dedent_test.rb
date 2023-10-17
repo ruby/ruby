@@ -7,8 +7,13 @@ module Prism
     filepath = File.expand_path("fixtures/tilde_heredocs.txt", __dir__)
 
     File.read(filepath).split(/(?=\n)\n(?=<)/).each_with_index do |heredoc, index|
+      # The first example in this file has incorrect dedent calculated by
+      # TruffleRuby so we skip it.
+      next if index == 0 && RUBY_ENGINE == "truffleruby"
+
       define_method "test_heredoc_#{index}" do
         node = Prism.parse(heredoc).value.statements.body.first
+
         if node.is_a?(StringNode)
           actual = node.unescaped
         else

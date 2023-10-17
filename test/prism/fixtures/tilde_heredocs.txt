@@ -1,5 +1,11 @@
 <<~EOF
   a
+#{1}
+  a
+EOF
+
+<<~EOF
+  a
 EOF
 
 <<~EOF

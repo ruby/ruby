@@ -357,6 +357,7 @@ module Prism
           @dedent_next = true
           @dedent = nil
           @embexpr_balance = 0
+          @ended_on_newline = false
         end
 
         # As tokens are coming in, we track the minimum amount of common leading
@@ -366,13 +367,14 @@ module Prism
           case token.event
           when :on_embexpr_beg, :on_heredoc_beg
             @embexpr_balance += 1
+            @dedent = 0 if @dedent_next && @ended_on_newline
           when :on_embexpr_end, :on_heredoc_end
             @embexpr_balance -= 1
           when :on_tstring_content
             if embexpr_balance == 0
               line = token.value
 
-              if !(line.strip.empty? && line.end_with?("\n")) && dedent_next
+              if dedent_next && !(line.strip.empty? && line.end_with?("\n"))
                 leading = line[/\A(\s*)\n?/, 1]
                 next_dedent = 0
 
@@ -385,11 +387,16 @@ module Prism
                 end
 
                 @dedent = [dedent, next_dedent].compact.min
+                @dedent_next = true
+                @ended_on_newline = line.end_with?("\n")
+                tokens << token
+                return
               end
             end
           end
 
           @dedent_next = token.event == :on_tstring_content && embexpr_balance == 0
+          @ended_on_newline = false
           tokens << token
         end
 
