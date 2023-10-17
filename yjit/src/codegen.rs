@@ -7760,16 +7760,13 @@ fn gen_invokesuper_specialized(
 fn gen_leave(
     _jit: &mut JITState,
     asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
+    _ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     // Only the return value should be on the stack
     assert_eq!(1, asm.ctx.get_stack_size(), "leave instruction expects stack size 1, but was: {}", asm.ctx.get_stack_size());
 
-    let ocb_asm = Assembler::new();
-
     // Check for interrupts
     gen_check_ints(asm, Counter::leave_se_interrupt);
-    ocb_asm.compile(ocb.unwrap(), None);
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
