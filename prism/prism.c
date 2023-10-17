@@ -683,11 +683,15 @@ parse_decimal_number(pm_parser_t *parser, const uint8_t *start, const uint8_t *e
     return (uint32_t) value;
 }
 
+// When you have an encoding flag on a regular expression, it takes precedence
+// over all of the previously set encoding flags. So we need to mask off any
+// previously set encoding flags before setting the new one.
+#define PM_REGULAR_EXPRESSION_ENCODING_MASK ~(PM_REGULAR_EXPRESSION_FLAGS_EUC_JP | PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J | PM_REGULAR_EXPRESSION_FLAGS_UTF_8)
+
 // Parse out the options for a regular expression.
 static inline pm_node_flags_t
 pm_regular_expression_flags_create(const pm_token_t *closing) {
     pm_node_flags_t flags = 0;
-    pm_node_flags_t mask = (uint16_t) 0xFF0F;
 
     if (closing->type == PM_TOKEN_REGEXP_END) {
         for (const uint8_t *flag = closing->start + 1; flag < closing->end; flag++) {
@@ -697,10 +701,10 @@ pm_regular_expression_flags_create(const pm_token_t *closing) {
                 case 'x': flags |= PM_REGULAR_EXPRESSION_FLAGS_EXTENDED; break;
                 case 'o': flags |= PM_REGULAR_EXPRESSION_FLAGS_ONCE; break;
 
-                case 'e': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_EUC_JP; break;
-                case 'n': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT; break;
-                case 's': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J; break;
-                case 'u': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_UTF_8; break;
+                case 'e': flags = (pm_node_flags_t) (((pm_node_flags_t) (flags & PM_REGULAR_EXPRESSION_ENCODING_MASK)) | PM_REGULAR_EXPRESSION_FLAGS_EUC_JP); break;
+                case 'n': flags = (pm_node_flags_t) (((pm_node_flags_t) (flags & PM_REGULAR_EXPRESSION_ENCODING_MASK)) | PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT); break;
+                case 's': flags = (pm_node_flags_t) (((pm_node_flags_t) (flags & PM_REGULAR_EXPRESSION_ENCODING_MASK)) | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J); break;
+                case 'u': flags = (pm_node_flags_t) (((pm_node_flags_t) (flags & PM_REGULAR_EXPRESSION_ENCODING_MASK)) | PM_REGULAR_EXPRESSION_FLAGS_UTF_8); break;
 
                 default: assert(false && "unreachable");
             }
@@ -709,6 +713,8 @@ pm_regular_expression_flags_create(const pm_token_t *closing) {
 
     return flags;
 }
+
+#undef PM_REGULAR_EXPRESSION_ENCODING_MASK
 
 // Allocate and initialize a new StatementsNode node.
 static pm_statements_node_t *
