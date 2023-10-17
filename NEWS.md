@@ -162,7 +162,7 @@ changelog for details of the default gems or bundled gems.
 * Option to start YJIT in paused mode and then later enable it manually
   * `--yjit-pause` and RubyVM::YJIT.resume
   * This can be used to enable YJIT only once your application is done booting
-* `ratio_in_yjit` stat produced by `--yjit-stats` is now avaiable in release builds,
+* `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
   a special stats or dev build is no longer required.
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
