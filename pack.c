@@ -782,14 +782,13 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     return res;
 }
 
+VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool freeze);
+
 VALUE
 rb_ec_pack_ary(rb_execution_context_t *ec, long num, const VALUE *elts, VALUE fmt, VALUE buffer)
 {
-    struct RArray ary = {
-        .basic = {FL_FREEZE|T_ARRAY},
-        .as = {.heap = {.len = num, .ptr = elts}},
-    };
-    return pack_pack(ec, (VALUE)&ary, fmt, buffer);
+    struct RArray ary;
+    return pack_pack(ec, rb_setup_fake_ary(&ary, elts, num, true), fmt, buffer);
 }
 
 static const char uu_table[] =
