@@ -267,7 +267,7 @@ module Test
             r.close_on_exec = true
             w.close_on_exec = true
             @jobserver = [r, w]
-            options[:parallel] ||= 1
+            options[:parallel] ||= 256 # number of tokens to acquire first
           end
         end
         @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
@@ -661,10 +661,18 @@ module Test
         @ios          = [] # Array of worker IOs
         @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
-          [@tasks.size, @options[:parallel]].min.times {launch_worker}
-
           while true
-            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0) + @worker_timeout, 1].max
+            newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
+            if newjobs > 0
+              if @jobserver
+                t = @jobserver[0].read_nonblock(newjobs, exception: false)
+                @job_tokens << t if String === t
+                newjobs = @job_tokens.size + 1 - @workers.size
+              end
+              newjobs.times {launch_worker}
+            end
+
+            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0), 0].max + @worker_timeout
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
@@ -678,15 +686,9 @@ module Test
             }
               break
             end
-            break if @tasks.empty? and @workers.empty?
-            if @jobserver and @job_tokens and !@tasks.empty? and
-               ((newjobs = [@tasks.size, @options[:parallel]].min) > @workers.size or
-                !@workers.any? {|x| x.status == :ready})
-              t = @jobserver[0].read_nonblock(newjobs, exception: false)
-              if String === t
-                @job_tokens << t
-                t.size.times {launch_worker}
-              end
+            if @tasks.empty?
+              break if @workers.empty?
+              next # wait for all workers to finish
             end
           end
         rescue Interrupt => ex
