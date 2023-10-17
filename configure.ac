@@ -953,9 +953,10 @@ AS_IF([test "x$OPT_DIR" != x], [
     LDFLAGS="${LDFLAGS:+$LDFLAGS }$val"
     DLDFLAGS="${DLDFLAGS:+$DLDFLAGS }$val"
     LDFLAGS_OPTDIR="$val"
-    CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
+    INCFLAGS="${INCFLAGS:+$INCFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
         sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
 ])
+AC_SUBST(incflags, "$INCFLAGS")
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""

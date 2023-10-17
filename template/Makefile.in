@@ -86,6 +86,7 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
+incflags = @incflags@
 XCFLAGS = @XCFLAGS@ $(INCFLAGS)
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
