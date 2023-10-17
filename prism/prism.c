@@ -496,18 +496,8 @@ pm_parser_constant_id_owned(pm_parser_t *parser, const uint8_t *start, size_t le
 
 // Retrieve the constant pool id for the given static literal C string.
 static inline pm_constant_id_t
-pm_parser_constant_id_static(pm_parser_t *parser, const char *start, size_t length) {
-    uint8_t *owned_copy;
-    if (length > 0) {
-        owned_copy = malloc(length);
-        memcpy(owned_copy, start, length);
-    } else {
-        owned_copy = malloc(1);
-        owned_copy[0] = '\0';
-    }
-    return pm_constant_pool_insert_owned(&parser->constant_pool, owned_copy, length);
-    // Does not work because the static literal cannot be serialized as an offset of source
-    // return pm_constant_pool_insert_shared(&parser->constant_pool, start, length);
+pm_parser_constant_id_constant(pm_parser_t *parser, const char *start, size_t length) {
+    return pm_constant_pool_insert_constant(&parser->constant_pool, (const uint8_t *) start, length);
 }
 
 // Retrieve the constant pool id for the given token.
@@ -1450,7 +1440,7 @@ pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_
     node->closing_loc = arguments->closing_loc;
     node->block = arguments->block;
 
-    node->name = pm_parser_constant_id_static(parser, "[]", 2);
+    node->name = pm_parser_constant_id_constant(parser, "[]", 2);
     return node;
 }
 
@@ -1550,7 +1540,7 @@ pm_call_node_not_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *me
     node->arguments = arguments->arguments;
     node->closing_loc = arguments->closing_loc;
 
-    node->name = pm_parser_constant_id_static(parser, "!", 1);
+    node->name = pm_parser_constant_id_constant(parser, "!", 1);
     return node;
 }
 
@@ -1577,7 +1567,7 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
         node->base.flags |= PM_CALL_NODE_FLAGS_SAFE_NAVIGATION;
     }
 
-    node->name = pm_parser_constant_id_static(parser, "call", 4);
+    node->name = pm_parser_constant_id_constant(parser, "call", 4);
     return node;
 }
 
@@ -1592,7 +1582,7 @@ pm_call_node_unary_create(pm_parser_t *parser, pm_token_t *operator, pm_node_t *
     node->receiver = receiver;
     node->message_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
 
-    node->name = pm_parser_constant_id_static(parser, name, strlen(name));
+    node->name = pm_parser_constant_id_constant(parser, name, strlen(name));
     return node;
 }
 
@@ -1646,7 +1636,8 @@ pm_call_node_writable_p(pm_call_node_t *node) {
 static void
 pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, pm_constant_id_t *write_name) {
     pm_constant_t *write_constant = pm_constant_pool_id_to_constant(&parser->constant_pool, *write_name);
-    if (write_constant->length >= 1) {
+
+    if (write_constant->length > 0) {
         size_t length = write_constant->length - 1;
 
         void *memory = malloc(length);
@@ -1655,7 +1646,7 @@ pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, p
         *read_name = pm_constant_pool_insert_owned(&parser->constant_pool, (uint8_t *) memory, length);
     } else {
         // We can get here if the message was missing because of a syntax error.
-        *read_name = pm_parser_constant_id_static(parser, "", 0);
+        *read_name = pm_parser_constant_id_constant(parser, "", 0);
     }
 }
 
@@ -9631,7 +9622,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
                 (call->block == NULL)
             ) {
                 // Replace the name with "[]=".
-                call->name = pm_parser_constant_id_static(parser, "[]=", 3);
+                call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
                 return target;
             }
         }
@@ -9798,7 +9789,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                 target->location.end = value->location.end;
 
                 // Replace the name with "[]=".
-                call->name = pm_parser_constant_id_static(parser, "[]=", 3);
+                call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
                 return target;
             }
 

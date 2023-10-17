@@ -154,9 +154,16 @@ pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity) {
     return true;
 }
 
+// Return a pointer to the constant indicated by the given constant id.
+pm_constant_t *
+pm_constant_pool_id_to_constant(pm_constant_pool_t *pool, pm_constant_id_t constant_id) {
+    assert(constant_id > 0 && constant_id <= pool->size);
+    return &pool->constants[constant_id - 1];
+}
+
 // Insert a constant into a constant pool and return its index in the pool.
 static inline pm_constant_id_t
-pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t length, bool owned) {
+pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t length, bool owned, bool constant) {
     if (pool->size >= (pool->capacity / 4 * 3)) {
         if (!pm_constant_pool_resize(pool)) return 0;
     }
@@ -202,15 +209,16 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
     // IDs are allocated starting at 1, since the value 0 denotes a non-existant
     // constant.
     uint32_t id = ++pool->size;
-    assert(pool->size < ((uint32_t) (1 << 31)));
+    assert(pool->size < ((uint32_t) (1 << 30)));
 
     *bucket = (pm_constant_pool_bucket_t) {
-        .id = (unsigned int) (id & 0x7FFFFFFF),
+        .id = (unsigned int) (id & 0x3fffffff),
         .owned = owned,
+        .constant = constant,
         .hash = hash
     };
 
-    pool->constants[id - 1]  = (pm_constant_t) {
+    pool->constants[id - 1] = (pm_constant_t) {
         .start = start,
         .length = length,
     };
@@ -222,7 +230,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
 // if any potential calls to resize fail.
 pm_constant_id_t
 pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, false);
+    return pm_constant_pool_insert(pool, start, length, false, false);
 }
 
 // Insert a constant into a constant pool from memory that is now owned by the
@@ -230,7 +238,14 @@ pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, s
 // resize fail.
 pm_constant_id_t
 pm_constant_pool_insert_owned(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, true);
+    return pm_constant_pool_insert(pool, start, length, true, false);
+}
+
+// Insert a constant into a constant pool from memory that is constant. Returns
+// the id of the constant, or 0 if any potential calls to resize fail.
+pm_constant_id_t
+pm_constant_pool_insert_constant(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(pool, start, length, false, true);
 }
 
 // Free the memory associated with a constant pool.
