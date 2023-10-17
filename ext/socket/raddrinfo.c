@@ -1266,9 +1266,9 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                  * RFC 4007: IPv6 Scoped Address Architecture
                  * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
                  */
-                error = getnameinfo(&sockaddr->addr, socklen,
-                                    hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
-                                    NI_NUMERICHOST|NI_NUMERICSERV);
+                error = rb_getnameinfo(&sockaddr->addr, socklen,
+                                       hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
+                                       NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
                     rsock_raise_socket_error("getnameinfo", error);
                 }
@@ -1634,9 +1634,9 @@ addrinfo_mdump(VALUE self)
       {
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int error;
-        error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
-                            hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
-                            NI_NUMERICHOST|NI_NUMERICSERV);
+        error = rb_getnameinfo(&rai->addr.addr, rai->sockaddr_len,
+                               hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
+                               NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
             rsock_raise_socket_error("getnameinfo", error);
         }
@@ -1980,9 +1980,9 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
     if (rai->socktype == SOCK_DGRAM)
         flags |= NI_DGRAM;
 
-    error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
-                        hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
-                        flags);
+    error = rb_getnameinfo(&rai->addr.addr, rai->sockaddr_len,
+                           hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
+                           flags);
     if (error) {
         rsock_raise_socket_error("getnameinfo", error);
     }
