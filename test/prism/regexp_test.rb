@@ -227,6 +227,18 @@ module Prism
       assert_equal(value, options("mix"))
     end
 
+    def test_last_encoding_option_wins
+      regex = "/foo/nu"
+      option = Prism.parse(regex).value.statements.body.first.options
+
+      assert_equal Regexp::FIXEDENCODING, option
+
+      regex = "/foo/un"
+      option = Prism.parse(regex).value.statements.body.first.options
+
+      assert_equal Regexp::NOENCODING, option
+    end
+
     private
 
     def named_captures(source)

@@ -771,6 +771,7 @@ parse_decimal_number(pm_parser_t *parser, const uint8_t *start, const uint8_t *e
 static inline pm_node_flags_t
 pm_regular_expression_flags_create(const pm_token_t *closing) {
     pm_node_flags_t flags = 0;
+    pm_node_flags_t mask = (uint16_t) 0xFF0F;
 
     if (closing->type == PM_TOKEN_REGEXP_END) {
         for (const uint8_t *flag = closing->start + 1; flag < closing->end; flag++) {
@@ -778,11 +779,13 @@ pm_regular_expression_flags_create(const pm_token_t *closing) {
                 case 'i': flags |= PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE; break;
                 case 'm': flags |= PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE; break;
                 case 'x': flags |= PM_REGULAR_EXPRESSION_FLAGS_EXTENDED; break;
-                case 'e': flags |= PM_REGULAR_EXPRESSION_FLAGS_EUC_JP; break;
-                case 'n': flags |= PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT; break;
-                case 's': flags |= PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J; break;
-                case 'u': flags |= PM_REGULAR_EXPRESSION_FLAGS_UTF_8; break;
                 case 'o': flags |= PM_REGULAR_EXPRESSION_FLAGS_ONCE; break;
+
+                case 'e': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_EUC_JP; break;
+                case 'n': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT; break;
+                case 's': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J; break;
+                case 'u': flags &= mask; flags |= PM_REGULAR_EXPRESSION_FLAGS_UTF_8; break;
+
                 default: assert(false && "unreachable");
             }
         }
