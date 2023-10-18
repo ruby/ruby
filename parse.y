@@ -891,7 +891,7 @@ static rb_node_gasgn_t *rb_node_gasgn_new(struct parser_params *p, ID nd_vid, NO
 static rb_node_iasgn_t *rb_node_iasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_cdecl_t *rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, const YYLTYPE *loc);
 static rb_node_cvasgn_t *rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
-static rb_node_op_asgn1_t *rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, rb_node_argscat_t *nd_args, const YYLTYPE *loc);
+static rb_node_op_asgn1_t *rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *index, NODE *rvalue, const YYLTYPE *loc);
 static rb_node_op_asgn2_t *rb_node_op_asgn2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, ID nd_vid, ID nd_mid, bool nd_aid, const YYLTYPE *loc);
 static rb_node_op_asgn_or_t *rb_node_op_asgn_or_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_op_asgn_and_t *rb_node_op_asgn_and_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
@@ -992,7 +992,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_IASGN(v,val,loc) (NODE *)rb_node_iasgn_new(p,v,val,loc)
 #define NEW_CDECL(v,val,path,loc) (NODE *)rb_node_cdecl_new(p,v,val,path,loc)
 #define NEW_CVASGN(v,val,loc) (NODE *)rb_node_cvasgn_new(p,v,val,loc)
-#define NEW_OP_ASGN1(r,id,a,loc) (NODE *)rb_node_op_asgn1_new(p,r,id,a,loc)
+#define NEW_OP_ASGN1(r,id,idx,rval,loc) (NODE *)rb_node_op_asgn1_new(p,r,id,idx,rval,loc)
 #define NEW_OP_ASGN2(r,t,i,o,val,loc) (NODE *)rb_node_op_asgn2_new(p,r,val,i,o,t,loc)
 #define NEW_OP_ASGN_OR(i,val,loc) (NODE *)rb_node_op_asgn_or_new(p,i,val,loc)
 #define NEW_OP_ASGN_AND(i,val,loc) (NODE *)rb_node_op_asgn_and_new(p,i,val,loc)
@@ -11720,12 +11720,13 @@ rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYL
 }
 
 static rb_node_op_asgn1_t *
-rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, rb_node_argscat_t *nd_args, const YYLTYPE *loc)
+rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *index, NODE *rvalue, const YYLTYPE *loc)
 {
     rb_node_op_asgn1_t *n = NODE_NEWNODE(NODE_OP_ASGN1, rb_node_op_asgn1_t, loc);
     n->nd_recv = nd_recv;
     n->nd_mid = nd_mid;
-    n->nd_args = nd_args;
+    n->nd_index = index;
+    n->nd_rvalue = rvalue;
 
     return n;
 }
@@ -14714,13 +14715,7 @@ new_ary_op_assign(struct parser_params *p, NODE *ary,
     NODE *asgn;
 
     args = make_list(args, args_loc);
-    if (nd_type_p(args, NODE_BLOCK_PASS)) {
-        args = NEW_ARGSCAT(args, rhs, loc);
-    }
-    else {
-        args = arg_concat(p, args, rhs, loc);
-    }
-    asgn = NEW_OP_ASGN1(ary, op, (rb_node_argscat_t *)args, loc);
+    asgn = NEW_OP_ASGN1(ary, op, args, rhs, loc);
     fixpos(asgn, ary);
     return asgn;
 }

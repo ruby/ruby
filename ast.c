@@ -480,8 +480,8 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_OP_ASGN1:
         return rb_ary_new_from_args(4, NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_recv),
                                     ID2SYM(RNODE_OP_ASGN1(node)->nd_mid),
-                                    NEW_CHILD(ast, RNODE_ARGSCAT(RNODE_OP_ASGN1(node)->nd_args)->nd_head),
-                                    NEW_CHILD(ast, RNODE_ARGSCAT(RNODE_OP_ASGN1(node)->nd_args)->nd_body));
+                                    NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_index),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_rvalue));
       case NODE_OP_ASGN2:
         return rb_ary_new_from_args(5, NEW_CHILD(ast, RNODE_OP_ASGN2(node)->nd_recv),
                                     RBOOL(RNODE_OP_ASGN2(node)->nd_aid),

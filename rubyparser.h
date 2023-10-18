@@ -402,7 +402,8 @@ typedef struct RNode_OP_ASGN1 {
 
     struct RNode *nd_recv;
     ID nd_mid;
-    struct RNode_ARGSCAT *nd_args;
+    struct RNode *nd_index;
+    struct RNode *nd_rvalue;
 } rb_node_op_asgn1_t;
 
 typedef struct RNode_OP_ASGN2 {
