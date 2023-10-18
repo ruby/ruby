@@ -964,11 +964,14 @@ module Test
         @output = Output.new(self) unless @options[:testing]
         filter = options[:filter]
         type = "#{type}_methods"
-        total = if filter
-                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
-                else
-                  suites.inject(0) {|n, suite| n + suite.send(type).size}
-                end
+        total = suites.sum {|suite|
+          methods = suite.send(type)
+          if filter
+            methods.count {|method| filter === "#{suite}##{method}"}
+          else
+            methods.size
+          end
+        }
         @test_count = 0
         @total_tests = total.to_s(10)
       end
