@@ -168,6 +168,8 @@ rb_iseq_free(const rb_iseq_t *iseq)
         rb_rjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
+        RUBY_ASSERT(rb_yjit_live_iseq_count > 0);
+        rb_yjit_live_iseq_count--;
 #endif
         ruby_xfree((void *)body->iseq_encoded);
         ruby_xfree((void *)body->insns_info.body);

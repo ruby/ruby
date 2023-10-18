@@ -39,6 +39,7 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_debug.h"
+#include "yjit.h"
 
 #include "builtin.h"
 #include "insns.inc"
@@ -1019,6 +1020,11 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     }
     FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 #endif
+
+#if USE_YJIT
+    rb_yjit_live_iseq_count++;
+#endif
+
     return COMPILE_OK;
 }
 
