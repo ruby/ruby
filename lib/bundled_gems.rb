@@ -90,10 +90,10 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.build_message(gem)
-    msg = " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}."
+    msg = " which #{RUBY_VERSION < SINCE[gem] ? "will no longer be" : "is not"} part of the default gems since Ruby #{SINCE[gem]}."
 
     if defined?(Bundler)
-      msg += " Add #{gem} to your Gemfile."
+      msg += " Add #{gem} to your Gemfile or gemspec."
       location = caller_locations(2,2)[0]&.path
       if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
