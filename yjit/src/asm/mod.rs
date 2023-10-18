@@ -323,7 +323,6 @@ impl CodeBlock {
     }
 
     /// Return the address ranges of a given address range that this CodeBlock can write.
-    #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
     #[allow(dead_code)]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
         let region_start = self.get_ptr(0).into_usize();

@@ -72,6 +72,13 @@ pub extern "C" fn rb_yjit_init_rust() {
         println!("YJIT: rb_yjit_init_rust() panicked. Aborting.");
         std::process::abort();
     }
+
+    // Make sure --yjit-perf doesn't append symbols to an old file
+    if get_option!(perf_map) {
+        let perf_map = format!("/tmp/perf-{}.map", std::process::id());
+        let _ = std::fs::remove_file(&perf_map);
+        println!("YJIT perf map: {perf_map}");
+    }
 }
 
 /// At the moment, we abort in all cases we panic.

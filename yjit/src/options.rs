@@ -62,6 +62,12 @@ pub struct Options {
 
     /// Verify context objects (debug mode only)
     pub verify_ctx: bool,
+
+    /// Enable generating frame pointers (for x86. arm64 always does this)
+    pub frame_pointer: bool,
+
+    /// Enable writing /tmp/perf-{pid}.map for Linux perf
+    pub perf_map: bool,
 }
 
 // Initialize the options to default values
@@ -80,10 +86,12 @@ pub static mut OPTIONS: Options = Options {
     dump_disasm: None,
     verify_ctx: false,
     dump_iseq_disasm: None,
+    frame_pointer: false,
+    perf_map: false,
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 8] = [
+static YJIT_OPTIONS: [(&str, &str); 9] = [
     ("--yjit-stats",                    "Enable collecting YJIT statistics"),
     ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
     ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
@@ -92,6 +100,7 @@ static YJIT_OPTIONS: [(&str, &str); 8] = [
     ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
     ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
     ("--yjit-greedy-versioning",        "Greedy versioning mode (default: disabled)"),
+    ("--yjit-perf",                     "Enable frame pointers and perf profiling"),
 ];
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -190,6 +199,16 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 return None;
             }
         },
+
+        ("perf", _) => match opt_val {
+            "" => unsafe {
+                OPTIONS.frame_pointer = true;
+                OPTIONS.perf_map = true;
+            },
+            "fp" => unsafe { OPTIONS.frame_pointer = true },
+            "maps" => unsafe { OPTIONS.perf_map = true },
+            _ => return None,
+         },
 
         ("dump-disasm", _) => match opt_val {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
