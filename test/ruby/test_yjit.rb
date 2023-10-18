@@ -75,7 +75,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_stats_and_v_no_error
-    _stdout, stderr, _status = EnvUtil.invoke_ruby(%w(-v --yjit-stats), '', true, true)
+    _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
   end
 
@@ -1504,9 +1504,7 @@ class TestYJIT < Test::Unit::TestCase
       stats = stats_r.read
       stats_r.close
     end
-    out, err, status = EnvUtil.invoke_ruby(args,
-      '', true, true, timeout: timeout, ios: {3 => stats_w}
-    )
+    out, err, status = invoke_ruby(args, '', true, true, timeout: timeout, ios: { 3 => stats_w })
     stats_w.close
     stats_reader.join(timeout)
     stats = Marshal.load(stats) if !stats.empty?
@@ -1516,5 +1514,11 @@ class TestYJIT < Test::Unit::TestCase
     stats_reader&.join(timeout)
     stats_r&.close
     stats_w&.close
+  end
+
+  # A wrapper of EnvUtil.invoke_ruby that uses RbConfig.ruby instead of EnvUtil.ruby
+  # that might use a wrong Ruby depending on your environment.
+  def invoke_ruby(*args, **kwargs)
+    EnvUtil.invoke_ruby(*args, rubybin: RbConfig.ruby, **kwargs)
   end
 end
