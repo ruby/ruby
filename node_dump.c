@@ -466,13 +466,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_OP_ASGN1:
         ANN("array assignment with operator");
-        ANN("format: [nd_recv] [ [nd_args->nd_head] ] [nd_mid]= [nd_args->nd_body]");
+        ANN("format: [nd_recv] [ [nd_index] ] [nd_mid]= [nd_rvalue]");
         ANN("example: ary[1] += foo");
         F_NODE(nd_recv, RNODE_OP_ASGN1, "receiver");
         F_ID(nd_mid, RNODE_OP_ASGN1, "operator");
-        F_NODE(nd_args->nd_head, RNODE_OP_ASGN1, "index");
+        F_NODE(nd_index, RNODE_OP_ASGN1, "index");
         LAST_NODE;
-        F_NODE(nd_args->nd_body, RNODE_OP_ASGN1, "rvalue");
+        F_NODE(nd_rvalue, RNODE_OP_ASGN1, "rvalue");
         return;
 
       case NODE_OP_ASGN2:

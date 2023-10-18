@@ -8708,7 +8708,7 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     }
     asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN1 recv", node, RNODE_OP_ASGN1(node)->nd_recv);
     CHECK(asgnflag != -1);
-    switch (nd_type(RNODE_OP_ASGN1(node)->nd_args->nd_head)) {
+    switch (nd_type(RNODE_OP_ASGN1(node)->nd_index)) {
       case NODE_ZLIST:
         argc = INT2FIX(0);
         break;
@@ -8716,7 +8716,7 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         boff = 1;
         /* fall through */
       default:
-        argc = setup_args(iseq, ret, RNODE_OP_ASGN1(node)->nd_args->nd_head, &flag, NULL);
+        argc = setup_args(iseq, ret, RNODE_OP_ASGN1(node)->nd_index, &flag, NULL);
         CHECK(!NIL_P(argc));
     }
     ADD_INSN1(ret, node, dupn, FIXNUM_INC(argc, 1 + boff));
@@ -8744,7 +8744,7 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         }
         ADD_INSN(ret, node, pop);
 
-        CHECK(COMPILE(ret, "NODE_OP_ASGN1 args->body: ", RNODE_OP_ASGN1(node)->nd_args->nd_body));
+        CHECK(COMPILE(ret, "NODE_OP_ASGN1 nd_rvalue: ", RNODE_OP_ASGN1(node)->nd_rvalue));
         if (!popped) {
             ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
         }
@@ -8778,7 +8778,7 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         ADD_LABEL(ret, lfin);
     }
     else {
-        CHECK(COMPILE(ret, "NODE_OP_ASGN1 args->body: ", RNODE_OP_ASGN1(node)->nd_args->nd_body));
+        CHECK(COMPILE(ret, "NODE_OP_ASGN1 nd_rvalue: ", RNODE_OP_ASGN1(node)->nd_rvalue));
         ADD_SEND(ret, node, id, INT2FIX(1));
         if (!popped) {
             ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
