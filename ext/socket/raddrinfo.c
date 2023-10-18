@@ -10,6 +10,17 @@
 
 #include "rubysocket.h"
 
+// GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
+// GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)
+
+#ifndef GETADDRINFO_IMPL
+#  ifdef GETADDRINFO_EMU
+#    define GETADDRINFO_IMPL 0
+#  else
+#    define GETADDRINFO_IMPL 1
+#  endif
+#endif
+
 #if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
 #define LOOKUP_ORDERS (sizeof(lookup_order_table) / sizeof(lookup_order_table[0]))
 static const int lookup_order_table[] = {
@@ -173,7 +184,7 @@ parse_numeric_port(const char *service, int *portp)
 }
 #endif
 
-#ifndef GETADDRINFO_EMU
+#if GETADDRINFO_IMPL != 0
 struct getaddrinfo_arg
 {
     const char *node;
@@ -305,7 +316,7 @@ rb_freeaddrinfo(struct rb_addrinfo *ai)
 static int
 rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
 {
-#ifdef GETADDRINFO_EMU
+#if GETADDRINFO_IMPL == 0
     return getaddrinfo(hostp, portp, hints, ai);
 #else
     struct getaddrinfo_arg arg;
@@ -318,7 +329,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 #endif
 }
 
-#ifndef GETADDRINFO_EMU
+#if GETADDRINFO_IMPL != 0
 struct getnameinfo_arg
 {
     const struct sockaddr *sa;
@@ -346,7 +357,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
            char *host, size_t hostlen,
            char *serv, size_t servlen, int flags)
 {
-#ifdef GETADDRINFO_EMU
+#if GETADDRINFO_IMPL == 0
     return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
 #else
     struct getnameinfo_arg arg;
