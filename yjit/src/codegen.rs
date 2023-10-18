@@ -219,18 +219,22 @@ impl JITState {
         }
     }
 
-    pub fn assume_method_lookup_stable(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, cme: CmePtr) {
-        jit_ensure_block_entry_exit(self, asm, ocb);
+    pub fn assume_method_lookup_stable(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, cme: CmePtr) -> Option<()> {
+        jit_ensure_block_entry_exit(self, asm, ocb)?;
         self.method_lookup_assumptions.push(cme);
+
+        Some(())
     }
 
     fn get_cfp(&self) -> *mut rb_control_frame_struct {
         unsafe { get_ec_cfp(self.ec) }
     }
 
-    pub fn assume_stable_constant_names(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, id: *const ID) {
-        jit_ensure_block_entry_exit(self, asm, ocb);
+    pub fn assume_stable_constant_names(&mut self, asm: &mut Assembler, ocb: &mut OutlinedCb, id: *const ID) -> Option<()> {
+        jit_ensure_block_entry_exit(self, asm, ocb)?;
         self.stable_constant_names_assumption = Some(id);
+
+        Some(())
     }
 
     pub fn queue_outgoing_branch(&mut self, branch: PendingBranchRef) {
@@ -454,9 +458,8 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 // to the interpreter when it cannot service a stub by generating new code.
 // Before coming here, branch_stub_hit() takes care of fully reconstructing
 // interpreter state.
-fn gen_stub_exit(ocb: &mut OutlinedCb) -> CodePtr {
+fn gen_stub_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
     gen_counter_incr(&mut asm, Counter::exit_from_branch_stub);
@@ -470,9 +473,7 @@ fn gen_stub_exit(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.cret(Qundef.into());
 
-    asm.compile(ocb, None);
-
-    code_ptr
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 /// Generate an exit to return to the interpreter
@@ -546,33 +547,27 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
 /// moment, so there is one unique side exit for each context. Note that
 /// it's incorrect to jump to the side exit after any ctx stack push operations
 /// since they change the logic required for reconstructing interpreter state.
-pub fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
+pub fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut cb = ocb.unwrap();
-    let exit_code = cb.get_write_ptr();
     let mut asm = Assembler::new();
     asm.ctx = ctx.clone();
     asm.set_reg_temps(ctx.get_reg_temps());
 
     gen_exit(exit_pc, &mut asm);
 
-    asm.compile(&mut cb, None);
-
-    exit_code
+    asm.compile(&mut cb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 /// Get a side exit. Increment a counter in it if --yjit-stats is enabled.
-pub fn gen_counted_exit(side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Option<Counter>) -> CodePtr {
+pub fn gen_counted_exit(side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Option<Counter>) -> Option<CodePtr> {
     // The counter is only incremented when stats are enabled
     if !get_option!(gen_stats) {
-        return side_exit;
+        return Some(side_exit);
     }
     let counter = match counter {
         Some(counter) => counter,
-        None => return side_exit,
+        None => return Some(side_exit),
     };
-
-    let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
 
     let mut asm = Assembler::new();
 
@@ -586,16 +581,17 @@ pub fn gen_counted_exit(side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Optio
 
     // Jump to the existing side exit
     asm.jmp(Target::CodePtr(side_exit));
-    asm.compile(ocb, None);
 
-    code_ptr
+    let ocb = ocb.unwrap();
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 // Ensure that there is an exit for the start of the block being compiled.
 // Block invalidation uses this exit.
-pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler, ocb: &mut OutlinedCb) {
+#[must_use]
+pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler, ocb: &mut OutlinedCb) -> Option<()> {
     if jit.block_entry_exit.is_some() {
-        return;
+        return Some(());
     }
 
     let block_starting_context = &jit.get_starting_ctx();
@@ -605,17 +601,18 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler, ocb:
         // Generate the exit with the cache in Assembler.
         let side_exit_context = SideExitContext::new(jit.pc, block_starting_context.clone());
         let entry_exit = asm.get_side_exit(&side_exit_context, None, ocb);
-        jit.block_entry_exit = Some(entry_exit);
+        jit.block_entry_exit = Some(entry_exit?);
     } else {
         let block_entry_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, jit.starting_insn_idx.into()) };
-        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, block_starting_context, ocb));
+        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, block_starting_context, ocb)?);
     }
+
+    Some(())
 }
 
 // Landing code for when c_return tracing is enabled. See full_cfunc_return().
-fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
+fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
     // This chunk of code expects REG_EC to be filled properly and
@@ -639,16 +636,13 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.cret(Qundef.into());
 
-    asm.compile(ocb, None);
-
-    return code_ptr;
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 /// Generate a continuation for leave that exits to the interpreter at REG_CFP->pc.
 /// This is used by gen_leave() and gen_entry_prologue()
-fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
+fn gen_leave_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
     // gen_leave() fully reconstructs interpreter state and leaves the
@@ -667,18 +661,15 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.cret(ret_opnd);
 
-    asm.compile(ocb, None);
-
-    return code_ptr;
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 // Increment SP and transfer the execution to the interpreter after jit_exec_exception().
 // On jit_exec_exception(), you need to return Qundef to keep executing caller non-FINISH
 // frames on the interpreter. You also need to increment SP to push the return value to
 // the caller's stack, which is different from gen_stub_exit().
-fn gen_leave_exception(ocb: &mut OutlinedCb) -> CodePtr {
+fn gen_leave_exception(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
     // gen_leave() leaves the return value in C_RET_OPND before coming here.
@@ -704,9 +695,7 @@ fn gen_leave_exception(ocb: &mut OutlinedCb) -> CodePtr {
     // Execute vm_exec_core
     asm.cret(Qundef.into());
 
-    asm.compile(ocb, None);
-
-    return code_ptr;
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 // Generate a runtime guard that ensures the PC is at the expected
@@ -807,7 +796,7 @@ pub fn gen_entry_prologue(
         None
     };
 
-    asm.compile(cb, Some(ocb));
+    asm.compile(cb, Some(ocb))?;
 
     if cb.has_dropped_bytes() {
         None
@@ -851,7 +840,7 @@ fn jump_to_next_insn(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-) {
+) -> Option<()> {
     // Reset the depth since in current usages we only ever jump to to
     // chain_depth > 0 from the same instruction.
     let mut reset_depth = asm.ctx.clone();
@@ -866,12 +855,13 @@ fn jump_to_next_insn(
     if jit.record_boundary_patch_point {
         let exit_pc = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
         let exit_pos = gen_outlined_exit(exit_pc, &reset_depth, ocb);
-        record_global_inval_patch(asm, exit_pos);
+        record_global_inval_patch(asm, exit_pos?);
         jit.record_boundary_patch_point = false;
     }
 
     // Generate the jump instruction
     gen_direct_jump(jit, &reset_depth, jump_block, asm);
+    Some(())
 }
 
 // Compile a sequence of bytecode instructions for a given basic block version.
@@ -981,7 +971,7 @@ pub fn gen_single_block(
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
             // Generate an exit to this instruction and record it
-            let exit_pos = gen_outlined_exit(jit.pc, &asm.ctx, ocb);
+            let exit_pos = gen_outlined_exit(jit.pc, &asm.ctx, ocb).ok_or(())?;
             record_global_inval_patch(&mut asm, exit_pos);
             jit.record_boundary_patch_point = false;
         }
@@ -1062,7 +1052,7 @@ pub fn gen_single_block(
     }
 
     // Compile code into the code block
-    let gc_offsets = asm.compile(cb, Some(ocb));
+    let (_, gc_offsets) = asm.compile(cb, Some(ocb)).ok_or(())?;
     let end_addr = cb.get_write_ptr();
 
     // Flush perf symbols after asm.compile() writes addresses
@@ -8196,7 +8186,7 @@ fn gen_opt_getconstant_path(
 
     // Make sure there is an exit for this block as the interpreter might want
     // to invalidate this block from yjit_constant_ic_update().
-    jit_ensure_block_entry_exit(jit, asm, ocb);
+    jit_ensure_block_entry_exit(jit, asm, ocb)?;
 
     // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
     // If a cache is not filled, fallback to the general C call.
@@ -8784,16 +8774,16 @@ impl CodegenGlobals {
         let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(mem_size / 2));
 
         let ocb_start_addr = ocb.unwrap().get_write_ptr();
-        let leave_exit_code = gen_leave_exit(&mut ocb);
-        let leave_exception_code = gen_leave_exception(&mut ocb);
+        let leave_exit_code = gen_leave_exit(&mut ocb).unwrap();
+        let leave_exception_code = gen_leave_exception(&mut ocb).unwrap();
 
-        let stub_exit_code = gen_stub_exit(&mut ocb);
+        let stub_exit_code = gen_stub_exit(&mut ocb).unwrap();
 
-        let branch_stub_hit_trampoline = gen_branch_stub_hit_trampoline(&mut ocb);
-        let entry_stub_hit_trampoline = gen_entry_stub_hit_trampoline(&mut ocb);
+        let branch_stub_hit_trampoline = gen_branch_stub_hit_trampoline(&mut ocb).unwrap();
+        let entry_stub_hit_trampoline = gen_entry_stub_hit_trampoline(&mut ocb).unwrap();
 
         // Generate full exit code for C func
-        let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
+        let cfunc_exit_code = gen_full_cfunc_return(&mut ocb).unwrap();
 
         let ocb_end_addr = ocb.unwrap().get_write_ptr();
         let ocb_pages = ocb.unwrap().addrs_to_pages(ocb_start_addr, ocb_end_addr);
@@ -9009,7 +8999,7 @@ mod tests {
     fn test_gen_exit() {
         let (_, _ctx, mut asm, mut cb, _) = setup_codegen();
         gen_exit(0 as *mut VALUE, &mut asm);
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0);
     }
 
@@ -9032,7 +9022,7 @@ mod tests {
     fn test_gen_nop() {
         let (mut jit, context, mut asm, mut cb, mut ocb) = setup_codegen();
         let status = gen_nop(&mut jit, &mut asm, &mut ocb);
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(context.diff(&Context::default()), TypeDiff::Compatible(0));
@@ -9064,7 +9054,7 @@ mod tests {
         assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(0)));
         assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(1)));
 
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0); // Write some movs
     }
 
@@ -9088,7 +9078,7 @@ mod tests {
         assert_eq!(Type::Flonum, asm.ctx.get_opnd_type(StackOpnd(0)));
 
         // TODO: this is writing zero bytes on x86. Why?
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0); // Write some movs
     }
 
@@ -9117,7 +9107,7 @@ mod tests {
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Nil);
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0);
     }
 
@@ -9136,7 +9126,7 @@ mod tests {
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::True);
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0);
     }
 
@@ -9156,7 +9146,7 @@ mod tests {
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Fixnum);
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0);
     }
 
@@ -9179,7 +9169,7 @@ mod tests {
         let status = gen_putself(&mut jit, &mut asm, &mut ocb);
 
         assert_eq!(status, Some(KeepCompiling));
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0);
     }
 
@@ -9202,7 +9192,7 @@ mod tests {
         assert_eq!(Type::Flonum, asm.ctx.get_opnd_type(StackOpnd(1)));
         assert_eq!(Type::CString, asm.ctx.get_opnd_type(StackOpnd(0)));
 
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0);
     }
 
@@ -9224,7 +9214,7 @@ mod tests {
         assert_eq!(Type::CString, asm.ctx.get_opnd_type(StackOpnd(1)));
         assert_eq!(Type::Flonum, asm.ctx.get_opnd_type(StackOpnd(0)));
 
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0); // Write some movs
     }
 
@@ -9245,7 +9235,7 @@ mod tests {
 
         assert_eq!(Type::Flonum, asm.ctx.get_opnd_type(StackOpnd(0)));
 
-        asm.compile(&mut cb, None);
+        asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() == 0); // No instructions written
     }
 
