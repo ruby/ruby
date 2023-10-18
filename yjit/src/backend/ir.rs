@@ -1,7 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
-use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::From;
@@ -149,13 +145,6 @@ impl Opnd
         match reg_opnd {
             Opnd::Reg(reg) => Opnd::CArg(reg),
             _ => unreachable!(),
-        }
-    }
-
-    pub fn is_some(&self) -> bool {
-        match *self {
-            Opnd::None => false,
-            _ => true,
         }
     }
 
@@ -353,6 +342,7 @@ pub enum Insn {
     BakeString(String),
 
     // Trigger a debugger breakpoint
+    #[allow(dead_code)]
     Breakpoint,
 
     /// Add a comment into the IR at the point that this instruction is added.
@@ -1152,7 +1142,7 @@ impl Assembler
         }
 
         match opnd {
-            Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps } => {
+            Opnd::Stack { reg_temps, .. } => {
                 if opnd.stack_idx() < MAX_REG_TEMPS && reg_temps.unwrap().get(opnd.stack_idx()) {
                     reg_opnd(opnd)
                 } else {
@@ -1551,11 +1541,6 @@ impl Assembler
     pub fn into_draining_iter(self) -> AssemblerDrainingIterator {
         AssemblerDrainingIterator::new(self)
     }
-
-    /// Consume the assembler by creating a new lookback iterator.
-    pub fn into_lookback_iter(self) -> AssemblerLookbackIterator {
-        AssemblerLookbackIterator::new(self)
-    }
 }
 
 /// A struct that allows iterating through an assembler's instructions and
@@ -1587,6 +1572,7 @@ impl AssemblerDrainingIterator {
     }
 
     /// Map an operand by using this iterator's list of mapped indices.
+    #[cfg(target_arch = "x86_64")]
     pub fn map_opnd(&self, opnd: Opnd) -> Opnd {
         opnd.map_index(&self.indices)
     }
@@ -1615,52 +1601,6 @@ impl AssemblerDrainingIterator {
     /// Returns the next instruction without incrementing the iterator's index.
     pub fn peek(&mut self) -> Option<&Insn> {
         self.insns.peek()
-    }
-}
-
-/// A struct that allows iterating through references to an assembler's
-/// instructions without consuming them.
-pub struct AssemblerLookbackIterator {
-    asm: Assembler,
-    index: Cell<usize>
-}
-
-impl AssemblerLookbackIterator {
-    fn new(asm: Assembler) -> Self {
-        Self { asm, index: Cell::new(0) }
-    }
-
-    /// Fetches a reference to an instruction at a specific index.
-    pub fn get(&self, index: usize) -> Option<&Insn> {
-        self.asm.insns.get(index)
-    }
-
-    /// Fetches a reference to an instruction in the list relative to the
-    /// current cursor location of this iterator.
-    pub fn get_relative(&self, difference: i32) -> Option<&Insn> {
-        let index: Result<i32, _> = self.index.get().try_into();
-        let relative: Result<usize, _> = index.and_then(|value| (value + difference).try_into());
-        relative.ok().and_then(|value| self.asm.insns.get(value))
-    }
-
-    /// Fetches the previous instruction relative to the current cursor location
-    /// of this iterator.
-    pub fn get_previous(&self) -> Option<&Insn> {
-        self.get_relative(-1)
-    }
-
-    /// Fetches the next instruction relative to the current cursor location of
-    /// this iterator.
-    pub fn get_next(&self) -> Option<&Insn> {
-        self.get_relative(1)
-    }
-
-    /// Returns the next instruction in the list with the indices corresponding
-    /// to the previous list of instructions.
-    pub fn next_unmapped(&self) -> Option<(usize, &Insn)> {
-        let index = self.index.get();
-        self.index.set(index + 1);
-        self.asm.insns.get(index).map(|insn| (index, insn))
     }
 }
 
@@ -1695,6 +1635,7 @@ impl Assembler {
         self.push_insn(Insn::BakeString(text.to_string()));
     }
 
+    #[allow(dead_code)]
     pub fn breakpoint(&mut self) {
         self.push_insn(Insn::Breakpoint);
     }
@@ -1847,6 +1788,7 @@ impl Assembler {
         self.push_insn(Insn::Jl(target));
     }
 
+    #[allow(dead_code)]
     pub fn jg(&mut self, target: Target) {
         self.push_insn(Insn::Jg(target));
     }
@@ -1985,6 +1927,7 @@ impl Assembler {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub fn urshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::URShift { opnd, shift, out });
