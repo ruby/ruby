@@ -1,7 +1,7 @@
 #ifndef PRISM_EXT_NODE_H
 #define PRISM_EXT_NODE_H
 
-#define EXPECTED_PRISM_VERSION "0.15.0"
+#define EXPECTED_PRISM_VERSION "0.15.1"
 
 #include <ruby.h>
 #include <ruby/encoding.h>

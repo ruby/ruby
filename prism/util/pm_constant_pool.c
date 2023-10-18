@@ -197,7 +197,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
                 // constant and replace it with the shared constant.
                 free((void *) constant->start);
                 constant->start = start;
-                bucket->type = PM_CONSTANT_POOL_BUCKET_DEFAULT;
+                bucket->type = (unsigned int) (PM_CONSTANT_POOL_BUCKET_DEFAULT & 0x3);
             }
 
             return bucket->id;
