@@ -962,8 +962,7 @@ opt_newarray_pack
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 // attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)num;
 {
-    VALUE rb_ec_pack_ary(rb_execution_context_t *ec, long num, const VALUE *elts, VALUE fmt, VALUE buffer);
-    val = rb_ec_pack_ary(ec, (long)num, STACK_ADDR_FROM_TOP(num), fmt, Qnil);
+    val = rb_vm_opt_newarray_pack(ec, (long)num, STACK_ADDR_FROM_TOP(num), fmt);
 }
 
 /* super(args) # args.size => num */
