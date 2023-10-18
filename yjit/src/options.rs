@@ -206,7 +206,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 OPTIONS.perf_map = true;
             },
             "fp" => unsafe { OPTIONS.frame_pointer = true },
-            "maps" => unsafe { OPTIONS.perf_map = true },
+            "map" => unsafe { OPTIONS.perf_map = true },
             _ => return None,
          },
 
