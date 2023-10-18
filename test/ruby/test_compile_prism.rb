@@ -488,8 +488,30 @@ module Prism
     ############################################################################
 
     def test_ScopeNode
-      test_prism_eval("a = 1; tap do; { a: }; end")
-      test_prism_eval("a = 1; def foo(a); a; end")
+      assert_separately(%w[], "#{<<-'begin;'}\n#{<<-'end;'}")
+                        begin;
+    def compare_eval(source)
+      ruby_eval = RubyVM::InstructionSequence.compile(source).eval
+      prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
+
+      assert_equal ruby_eval, prism_eval
+    end
+
+    def test_prism_eval(source)
+      $VERBOSE, verbose_bak = nil, $VERBOSE
+
+      begin
+        compare_eval(source)
+
+        # Test "popped" functionality
+        compare_eval("#{source}; 1")
+      ensure
+        $VERBOSE = verbose_bak
+      end
+    end
+        test_prism_eval("a = 1; tap do; { a: }; end")
+        test_prism_eval("a = 1; def foo(a); a; end")
+                        end;
     end
 
     private
