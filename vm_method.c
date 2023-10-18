@@ -522,6 +522,8 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
     rb_method_definition_release(me->def);
     *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
 
+    if (!ruby_running) add_opt_method_entry(me);
+
     if (opts != NULL) {
         switch (def->type) {
           case VM_METHOD_TYPE_ISEQ:
