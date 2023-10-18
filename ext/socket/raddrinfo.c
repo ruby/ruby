@@ -184,32 +184,6 @@ parse_numeric_port(const char *service, int *portp)
 }
 #endif
 
-#if GETADDRINFO_IMPL != 0
-struct getaddrinfo_arg
-{
-    const char *node;
-    const char *service;
-    const struct addrinfo *hints;
-    struct addrinfo **res;
-};
-
-static void *
-nogvl_getaddrinfo(void *arg)
-{
-    int ret;
-    struct getaddrinfo_arg *ptr = arg;
-    ret = getaddrinfo(ptr->node, ptr->service, ptr->hints, ptr->res);
-#ifdef __linux__
-    /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
-     * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
-     */
-    if (ret == EAI_SYSTEM && errno == ENOENT)
-        ret = EAI_NONAME;
-#endif
-    return (void *)(VALUE)ret;
-}
-#endif
-
 static int
 numeric_getaddrinfo(const char *node, const char *service,
         const struct addrinfo *hints,
@@ -313,12 +287,43 @@ rb_freeaddrinfo(struct rb_addrinfo *ai)
     xfree(ai);
 }
 
+#if GETADDRINFO_IMPL == 0
+
 static int
 rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
 {
-#if GETADDRINFO_IMPL == 0
     return getaddrinfo(hostp, portp, hints, ai);
-#else
+}
+
+#elif GETADDRINFO_IMPL == 1
+
+struct getaddrinfo_arg
+{
+    const char *node;
+    const char *service;
+    const struct addrinfo *hints;
+    struct addrinfo **res;
+};
+
+static void *
+nogvl_getaddrinfo(void *arg)
+{
+    int ret;
+    struct getaddrinfo_arg *ptr = arg;
+    ret = getaddrinfo(ptr->node, ptr->service, ptr->hints, ptr->res);
+#ifdef __linux__
+    /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
+     * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
+     */
+    if (ret == EAI_SYSTEM && errno == ENOENT)
+        ret = EAI_NONAME;
+#endif
+    return (void *)(VALUE)ret;
+}
+
+static int
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
+{
     struct getaddrinfo_arg arg;
     MEMZERO(&arg, struct getaddrinfo_arg, 1);
     arg.node = hostp;
@@ -326,10 +331,22 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
     arg.hints = hints;
     arg.res = ai;
     return (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
-#endif
 }
 
-#if GETADDRINFO_IMPL != 0
+#endif
+
+#if GETADDRINFO_IMPL == 0
+
+int
+rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
+           char *host, size_t hostlen,
+           char *serv, size_t servlen, int flags)
+{
+    return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+}
+
+#elif GETADDRINFO_IMPL == 1
+
 struct getnameinfo_arg
 {
     const struct sockaddr *sa;
@@ -350,16 +367,11 @@ nogvl_getnameinfo(void *arg)
                                       ptr->serv, (socklen_t)ptr->servlen,
                                       ptr->flags);
 }
-#endif
-
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
-           char *host, size_t hostlen,
-           char *serv, size_t servlen, int flags)
+               char *host, size_t hostlen,
+               char *serv, size_t servlen, int flags)
 {
-#if GETADDRINFO_IMPL == 0
-    return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
-#else
     struct getnameinfo_arg arg;
     int ret;
     arg.sa = sa;
@@ -371,8 +383,9 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.flags = flags;
     ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getnameinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
-#endif
 }
+
+#endif
 
 static void
 make_ipaddr0(struct sockaddr *addr, socklen_t addrlen, char *buf, size_t buflen)
