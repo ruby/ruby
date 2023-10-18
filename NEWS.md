@@ -97,7 +97,7 @@ The following default gems are updated.
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
-* prism 0.14.0
+* prism 0.15.0
 * psych 5.1.1.1
 * reline 0.3.9
 * stringio 3.0.9
