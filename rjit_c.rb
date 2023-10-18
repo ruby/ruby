@@ -898,7 +898,7 @@ module RubyVM::RJIT # :nodoc: all
   end
 
   def C.attr_index_t
-    @attr_index_t ||= CType::Immediate.parse("uint8_t")
+    @attr_index_t ||= CType::Immediate.parse("uint32_t")
   end
 
   def C.iseq_inline_constant_cache
@@ -1479,7 +1479,7 @@ module RubyVM::RJIT # :nodoc: all
       edges: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edges)")],
       edge_name: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edge_name)")],
       next_iv_index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), next_iv_index)")],
-      capacity: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), capacity)")],
+      capacity: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), capacity)")],
       type: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), type)")],
       size_pool_index: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), size_pool_index)")],
       parent_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), parent_id)")],
