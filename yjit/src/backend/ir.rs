@@ -1093,11 +1093,11 @@ impl Assembler
     }
 
     /// Get a cached side exit, wrapping a counter if specified
-    pub fn get_side_exit(&mut self, side_exit_context: &SideExitContext, counter: Option<Counter>, ocb: &mut OutlinedCb) -> CodePtr {
+    pub fn get_side_exit(&mut self, side_exit_context: &SideExitContext, counter: Option<Counter>, ocb: &mut OutlinedCb) -> Option<CodePtr> {
         // Get a cached side exit
         let side_exit = match self.side_exits.get(&side_exit_context) {
             None => {
-                let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.get_ctx(), ocb);
+                let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.get_ctx(), ocb)?;
                 self.side_exits.insert(side_exit_context.clone(), exit_code);
                 exit_code
             }
@@ -1509,16 +1509,16 @@ impl Assembler
         asm
     }
 
-    /// Compile the instructions down to machine code
-    /// NOTE: should compile return a list of block labels to enable
-    ///       compiling multiple blocks at a time?
-    pub fn compile(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>) -> Vec<u32>
+    /// Compile the instructions down to machine code.
+    /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
+    #[must_use]
+    pub fn compile(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>) -> Option<(CodePtr, Vec<u32>)>
     {
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
 
         let alloc_regs = Self::get_alloc_regs();
-        let gc_offsets = self.compile_with_regs(cb, ocb, alloc_regs);
+        let ret = self.compile_with_regs(cb, ocb, alloc_regs);
 
         #[cfg(feature = "disasm")]
         if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
@@ -1526,15 +1526,16 @@ impl Assembler
             let end_addr = cb.get_write_ptr();
             dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm)
         }
-        gc_offsets
+        ret
     }
 
     /// Compile with a limited number of registers. Used only for unit tests.
-    pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> Vec<u32>
+    #[cfg(test)]
+    pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<u32>)
     {
         let mut alloc_regs = Self::get_alloc_regs();
         let alloc_regs = alloc_regs.drain(0..num_regs).collect();
-        self.compile_with_regs(cb, None, alloc_regs)
+        self.compile_with_regs(cb, None, alloc_regs).unwrap()
     }
 
     /// Consume the assembler by creating a new draining iterator.
