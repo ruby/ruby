@@ -1796,10 +1796,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     if (opt->yjit)
         rb_yjit_init();
 #endif
-    // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
-    // or rjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
-    // Therefore we need to call this again here to set the initial root fiber's jit_cont.
-    rb_jit_cont_init(); // must be after rjit_enabled = true and rb_yjit_init()
 
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);

@@ -200,7 +200,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         struct rb_id_table *cm_tbl;
         if ((cm_tbl = RCLASS_CALLABLE_M_TBL(klass)) != NULL) {
             VALUE cme;
-            if (rb_yjit_enabled_p() && rb_id_table_lookup(cm_tbl, mid, &cme)) {
+            if (rb_yjit_enabled_p && rb_id_table_lookup(cm_tbl, mid, &cme)) {
                 rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
             }
             if (rb_rjit_enabled && rb_id_table_lookup(cm_tbl, mid, &cme)) {
