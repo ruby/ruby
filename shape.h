@@ -6,11 +6,12 @@
 #if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
 #define SIZEOF_SHAPE_T 4
 #define SHAPE_IN_BASIC_FLAGS 1
+typedef uint32_t attr_index_t;
 #else
 #define SIZEOF_SHAPE_T 2
 #define SHAPE_IN_BASIC_FLAGS 0
+typedef uint16_t attr_index_t;
 #endif
-typedef uint8_t attr_index_t;
 
 #define MAX_IVARS (attr_index_t)(-1)
 
@@ -43,7 +44,7 @@ struct rb_shape {
     struct rb_id_table * edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t next_iv_index;
-    attr_index_t capacity; // Total capacity of the object with this shape
+    uint32_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t size_pool_index;
     shape_id_t parent_id;
