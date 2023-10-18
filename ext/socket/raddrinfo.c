@@ -302,6 +302,22 @@ rb_freeaddrinfo(struct rb_addrinfo *ai)
     xfree(ai);
 }
 
+static int
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
+{
+#ifdef GETADDRINFO_EMU
+    return getaddrinfo(hostp, portp, hints, ai);
+#else
+    struct getaddrinfo_arg arg;
+    MEMZERO(&arg, struct getaddrinfo_arg, 1);
+    arg.node = hostp;
+    arg.service = portp;
+    arg.hints = hints;
+    arg.res = ai;
+    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
+#endif
+}
+
 #ifndef GETADDRINFO_EMU
 struct getnameinfo_arg
 {
@@ -550,17 +566,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         }
 
         if (!resolved) {
-#ifdef GETADDRINFO_EMU
-            error = getaddrinfo(hostp, portp, hints, &ai);
-#else
-            struct getaddrinfo_arg arg;
-            MEMZERO(&arg, struct getaddrinfo_arg, 1);
-            arg.node = hostp;
-            arg.service = portp;
-            arg.hints = hints;
-            arg.res = &ai;
-            error = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
-#endif
+            error = rb_getaddrinfo(hostp, portp, hints, &ai);
             if (error == 0) {
                 res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
                 res->allocated_by_malloc = 0;
