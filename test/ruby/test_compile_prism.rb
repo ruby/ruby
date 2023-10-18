@@ -3,10 +3,6 @@
 # This file is organized to match itemization in https://github.com/ruby/prism/issues/1335
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
-    def test_empty_program
-      test_prism_eval("")
-    end
-
     ############################################################################
     # Literals                                                                 #
     ############################################################################
@@ -59,8 +55,8 @@ module Prism
       test_prism_eval("__FILE__")
     end
 
-    # TODO
     def test_SourceLineNode
+      # TODO:
       # test_prism_eval("__LINE__")
     end
 
@@ -89,7 +85,8 @@ module Prism
     end
 
     def test_DefinedNode
-      # TODO
+      # TODO:
+      # test_prism_eval("defined? foo")
     end
 
     def test_GlobalVariableReadNode
@@ -105,7 +102,8 @@ module Prism
     end
 
     def test_NumberedReferenceReadNode
-      # TODO
+      test_prism_eval("$1")
+      test_prism_eval("$99999")
     end
 
     ############################################################################
@@ -130,15 +128,15 @@ module Prism
     end
 
     def test_ConstantAndWriteNode
-      # TODO
+      test_prism_eval("Constant = 1; Constant &&= 1")
     end
 
     def test_ConstantOperatorWriteNode
-      # TODO
+      test_prism_eval("Constant = 1; Constant += 1")
     end
 
     def test_ConstantOrWriteNode
-      # TODO
+      test_prism_eval("Constant = 1; Constant ||= 1")
     end
 
     def test_ConstantWriteNode
@@ -267,7 +265,7 @@ module Prism
     end
 
     def test_MultiWriteNode
-      # TODO
+      test_prism_eval("foo, bar = [1,2]")
     end
 
     ############################################################################
@@ -275,7 +273,7 @@ module Prism
     ############################################################################
 
     def test_EmbeddedStatementsNode
-      # TODO
+      test_prism_eval('"foo #{to_s} baz"')
     end
 
     def test_EmbeddedVariableNode
@@ -365,11 +363,12 @@ module Prism
     end
 
     def test_AssocNode
-      # TODO
+      test_prism_eval("{ foo: :bar }")
     end
 
     def test_AssocSplatNode
-      # TODO
+      # TODO:
+      # test_prism_eval("foo = { a: 1 }; { **foo }")
     end
 
     def test_HashNode
@@ -384,11 +383,16 @@ module Prism
     end
 
     def test_ImplicitNode
-      # TODO
+      test_prism_eval("{ to_s: }")
     end
 
     def test_RangeNode
-      # TODO
+      test_prism_eval("1..2")
+      test_prism_eval("1...2")
+      test_prism_eval("..2")
+      test_prism_eval("...2")
+      test_prism_eval("1..")
+      test_prism_eval("1...")
     end
 
     def test_SplatNode
@@ -427,15 +431,19 @@ module Prism
     end
 
     def test_UnlessNode
-      # TODO
+      # TODO:
+      # test_prism_eval("1 unless true")
+      # test_prism_eval("1 unless false")
+      # test_prism_eval("unless true; 1; end")
+      # test_prism_eval("unless false; 1; end")
     end
 
     def test_UntilNode
-      # TODO
+      test_prism_eval("a = 0; until a == 1; a = a + 1; end")
     end
 
     def test_WhileNode
-      # TODO
+      test_prism_eval("a = 0; while a != 1; a = a + 1; end")
     end
 
     ############################################################################
@@ -443,23 +451,36 @@ module Prism
     ############################################################################
 
     def test_BeginNode
-      # TODO
+      test_prism_eval("begin; 1; end")
     end
 
     def test_BreakNode
-      # TODO
+      test_prism_eval("while true; break; end")
+      test_prism_eval("while true; break 1; end")
     end
 
     def test_NextNode
-      # TODO
+      # TODO:
+      # test_prism_eval("2.times do |i|; next if i == 1; end")
     end
 
     def test_RedoNode
-      # TODO
+      # TODO:
+      # test_prism_eval(<<-CODE
+      # counter = 0
+
+      # 5.times do |i|
+      #   counter += 1
+      #   if i == 2 && counter < 3
+      #     redo
+      #   end
+      # end
+      # CODE
+      # )
     end
 
     def test_ReturnNode
-      # TODO
+      test_prism_eval("def return_node; return 1; end")
     end
 
     ############################################################################
@@ -485,7 +506,7 @@ module Prism
     end
 
     def test_LambdaNode
-      # TODO
+      test_prism_eval("-> { to_s }.call")
     end
 
     def test_ModuleNode
@@ -500,19 +521,21 @@ module Prism
     end
 
     def test_ProgramNode
-      # TODO
+      test_prism_eval("")
+      test_prism_eval("1")
     end
 
     def test_SingletonClassNode
-      # TODO
+      # TODO:
+      # test_prism_eval("class << self; end")
     end
 
     def test_StatementsNode
-      # TODO
+      test_prism_eval("1")
     end
 
     def test_YieldNode
-      # TODO
+      test_prism_eval("def prism_test_yield_node; yield; end")
     end
 
     ############################################################################
@@ -520,7 +543,7 @@ module Prism
     ############################################################################
 
     def test_ArgumentsNode
-      # TODO
+      test_prism_eval("[].push 1")
     end
 
     def test_BlockArgumentNode
@@ -528,11 +551,11 @@ module Prism
     end
 
     def test_CallNode
-      # TODO
+      test_prism_eval("to_s")
     end
 
     def test_KeywordHashNode
-      # TODO
+      test_prism_eval("[a: [:b, :c]]")
     end
 
     ############################################################################
@@ -548,7 +571,7 @@ module Prism
     end
 
     def test_OptionalParameterNode
-      # TODO
+      test_prism_eval("def prism_test_optional_param_node(bar = nil); end")
     end
 
     def test_UndefNode
