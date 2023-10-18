@@ -34,7 +34,7 @@
     if (!popped) ADD_INSN(ret, &dummy_line_node, putnil);
 
 rb_iseq_t *
-pm_iseq_new_with_opt(pm_scope_node_t node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option);
 
@@ -579,7 +579,7 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t node, pm_parser_t *parser,
 {
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
-    rb_iseq_t * ret_iseq = pm_iseq_new_with_opt(node, parser, name,
+    rb_iseq_t * ret_iseq = pm_iseq_new_with_opt(&node, parser, name,
             rb_iseq_path(iseq), rb_iseq_realpath(iseq),
             line_no, parent,
             isolated_depth ? isolated_depth + 1 : 0,
@@ -2530,11 +2530,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 }
 
 static VALUE
-rb_translate_prism(rb_iseq_t *iseq, const pm_scope_node_t scope_node, LINK_ANCHOR *const ret)
+rb_translate_prism(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, LINK_ANCHOR *const ret)
 {
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
 
-    pm_compile_node(iseq, (pm_node_t *)&scope_node, ret, scope_node.base.location.start, false, (pm_scope_node_t *)&scope_node);
+    pm_compile_node(iseq, (pm_node_t *)scope_node, ret, scope_node->base.location.start, false, (pm_scope_node_t *)scope_node);
     iseq_set_sequence(iseq, ret);
     return Qnil;
 }
