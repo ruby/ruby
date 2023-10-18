@@ -1547,7 +1547,7 @@ module Test
           _start_method(inst)
           inst._assertions = 0
 
-          print "#{suite}##{method} = " if @verbose
+          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if @verbose
 
           start_time = Time.now if @verbose
           result =
