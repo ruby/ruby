@@ -244,7 +244,7 @@ module Bundler
       [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
         kernel_class.send(:define_method, :require) do |name|
-          if message = ::Gem::BUNDLED_GEMS.warning?(name)
+          if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: specs)
             warn message, :uplevel => 1
           end
           kernel_class.send(:no_warning_require, name)

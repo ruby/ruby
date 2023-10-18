@@ -68,7 +68,8 @@ module Gem::BUNDLED_GEMS
     EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
   end
 
-  def self.warning?(name)
+  def self.warning?(name, specs: nil)
+    return if specs.to_a.map(&:name).include?(name)
     name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
     return unless gem = find_gem(path)
