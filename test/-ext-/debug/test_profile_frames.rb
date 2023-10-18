@@ -145,7 +145,15 @@ class TestProfileFrames < Test::Unit::TestCase
     # Keep these in the same line, so the backtraces match exactly
     backtrace_locations, profile_frames = [Thread.current.backtrace_locations, Bug::Debug.profile_frames(0, 100)]
 
-    assert_equal(backtrace_locations.size, profile_frames.size)
+    errmsg  = "backtrace_locations:\n  " + backtrace_locations.map.with_index{|loc, i| "#{i} #{loc}"}.join("\n  ")
+    errmsg += "\n\nprofile_frames:\n  "      + profile_frames.map.with_index{|(path, absolute_path, _, base_label, _, _, _, _, _, full_label, lineno), i|
+      if lineno
+        "#{i} #{absolute_path}:#{lineno} // #{full_label}"
+      else
+        "#{i} #{absolute_path} #{full_label}"
+      end
+    }.join("\n  ")
+    assert_equal(backtrace_locations.size, profile_frames.size, errmsg)
 
     # The first entries are not going to match, since one is #backtrace_locations and the other #profile_frames
     backtrace_locations.shift
