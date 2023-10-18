@@ -327,6 +327,8 @@ end
   net/if_dl.h
   arpa/nameser.h
   resolv.h
+  pthread.h
+  sched.h
 ].each {|h|
   if have_header(h, headers)
     headers << h
@@ -699,6 +701,11 @@ SRC
       "not needed"
     end
   end
+
+  have_func("pthread_create")
+  have_func("pthread_detach")
+  have_func("pthread_setaffinity_np")
+  have_func("sched_getcpu")
 
   $VPATH << '$(topdir)' << '$(top_srcdir)'
   create_makefile("socket")
