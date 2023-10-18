@@ -327,7 +327,8 @@ class TestGc < Test::Unit::TestCase
       # Run full GC again to collect stats about weak references
       GC.start
 
-      assert_equal(0, wmap.size)
+      # Sometimes the WeakMap has one element, which might be held on by registers.
+      assert_operator(wmap.size, :<=, 1)
 
       assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
