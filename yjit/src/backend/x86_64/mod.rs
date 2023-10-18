@@ -498,8 +498,21 @@ impl Assembler
                     cb.write_byte(0);
                 },
 
-                Insn::FrameSetup => {},
-                Insn::FrameTeardown => {},
+                // Set up RBP to work with frame pointer unwinding
+                // (e.g. with Linux `perf record --call-graph fp`)
+                Insn::FrameSetup => {
+                    if get_option!(frame_pointer) {
+                        push(cb, RBP);
+                        mov(cb, RBP, RSP);
+                        push(cb, RBP);
+                    }
+                },
+                Insn::FrameTeardown => {
+                    if get_option!(frame_pointer) {
+                        pop(cb, RBP);
+                        pop(cb, RBP);
+                    }
+                },
 
                 Insn::Add { left, right, .. } => {
                     let opnd1 = emit_64bit_immediate(cb, right);

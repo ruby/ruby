@@ -21,6 +21,7 @@ use std::mem;
 use std::os::raw::c_int;
 use std::ptr;
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -97,6 +98,9 @@ pub struct JITState {
 
     /// When true, the block is valid only when there is a total of one ractor running
     pub block_assumes_single_ractor: bool,
+
+    /// Address range for Linux perf's [JIT interface](https://github.com/torvalds/linux/blob/master/tools/perf/Documentation/jit-interface.txt)
+    perf_map: Rc::<RefCell::<Vec<(CodePtr, Option<CodePtr>, String)>>>,
 }
 
 impl JITState {
@@ -118,6 +122,7 @@ impl JITState {
             bop_assumptions: vec![],
             stable_constant_names_assumption: None,
             block_assumes_single_ractor: false,
+            perf_map: Rc::default(),
         }
     }
 
@@ -230,6 +235,40 @@ impl JITState {
 
     pub fn queue_outgoing_branch(&mut self, branch: PendingBranchRef) {
         self.pending_outgoing.push(branch)
+    }
+
+    /// Mark the start address of a symbol to be reported to perf
+    fn perf_symbol_range_start(&self, asm: &mut Assembler, symbol_name: &str) {
+        let symbol_name = symbol_name.to_string();
+        let syms = self.perf_map.clone();
+        asm.pos_marker(move |start| syms.borrow_mut().push((start, None, symbol_name.clone())));
+    }
+
+    /// Mark the end address of a symbol to be reported to perf
+    fn perf_symbol_range_end(&self, asm: &mut Assembler) {
+        let syms = self.perf_map.clone();
+        asm.pos_marker(move |end| {
+            if let Some((_, ref mut end_store, _)) = syms.borrow_mut().last_mut() {
+                assert_eq!(None, *end_store);
+                *end_store = Some(end);
+            }
+        });
+    }
+
+    /// Flush addresses and symbols to /tmp/perf-{pid}.map
+    fn flush_perf_symbols(&self, cb: &CodeBlock) {
+        let path = format!("/tmp/perf-{}.map", std::process::id());
+        let mut f = std::fs::File::options().create(true).append(true).open(path).unwrap();
+        for sym in self.perf_map.borrow().iter() {
+            if let (start, Some(end), name) = sym {
+                // In case the code straddles two pages, part of it belongs to the symbol.
+                for (inline_start, inline_end) in cb.writable_addrs(*start, *end) {
+                    use std::io::Write;
+                    let code_size = inline_end - inline_start;
+                    writeln!(f, "{inline_start:x} {code_size:x} {name}").unwrap();
+                }
+            }
+        }
     }
 }
 
@@ -883,6 +922,19 @@ pub fn gen_single_block(
         asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
     }
 
+    // Mark the start of a method name symbol for --yjit-perf
+    if get_option!(perf_map) {
+        let comptime_recv_class = jit.peek_at_self().class_of();
+        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_class)) };
+        match (class_name, unsafe { rb_iseq_label(iseq) }) {
+            (Some(class_name), iseq_label) if iseq_label != Qnil => {
+                let iseq_label = ruby_str_to_rust(iseq_label);
+                jit.perf_symbol_range_start(&mut asm, &format!("[JIT] {}#{}", class_name, iseq_label));
+            }
+            _ => {},
+        }
+    }
+
     if asm.ctx.is_return_landing() {
         // Continuation of the end of gen_leave().
         // Reload REG_SP for the current frame and transfer the return value
@@ -1004,9 +1056,19 @@ pub fn gen_single_block(
         asm.pad_inval_patch();
     }
 
+    // Mark the end of a method name symbol for --yjit-perf
+    if get_option!(perf_map) {
+        jit.perf_symbol_range_end(&mut asm);
+    }
+
     // Compile code into the code block
     let gc_offsets = asm.compile(cb, Some(ocb));
     let end_addr = cb.get_write_ptr();
+
+    // Flush perf symbols after asm.compile() writes addresses
+    if get_option!(perf_map) {
+        jit.flush_perf_symbols(cb);
+    }
 
     // If code for the block doesn't fit, fail
     if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
@@ -8681,8 +8743,6 @@ impl CodegenGlobals {
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
-            use std::cell::RefCell;
-
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming

@@ -73,7 +73,7 @@ pub(crate) use offset_of;
 // Convert a CRuby UTF-8-encoded RSTRING into a Rust string.
 // This should work fine on ASCII strings and anything else
 // that is considered legal UTF-8, including embedded nulls.
-fn ruby_str_to_rust(v: VALUE) -> String {
+pub fn ruby_str_to_rust(v: VALUE) -> String {
     let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
     let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
     let str_slice: &[u8] = unsafe { slice::from_raw_parts(str_ptr, str_len) };
