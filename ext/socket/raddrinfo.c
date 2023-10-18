@@ -527,7 +527,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
 }
 
-#elif GETADDRINFO_IMPL == 1 || GETADDRINFO_IMPL == 2 // tmp
+#elif GETADDRINFO_IMPL == 1
 
 struct getnameinfo_arg
 {
@@ -565,6 +565,174 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.flags = flags;
     ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getnameinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
+}
+
+#elif GETADDRINFO_IMPL == 2
+
+struct getnameinfo_arg
+{
+    struct sockaddr *sa;
+    socklen_t salen;
+    int flags;
+    char *host;
+    size_t hostlen;
+    char *serv;
+    size_t servlen;
+    int err, refcount, done, cancelled;
+    rb_nativethread_lock_t lock;
+    rb_nativethread_cond_t cond;
+};
+
+static struct getnameinfo_arg *
+allocate_getnameinfo_arg(const struct sockaddr *sa, socklen_t salen, size_t hostlen, size_t servlen, int flags)
+{
+    size_t sa_offset = sizeof(struct getnameinfo_arg);
+    size_t host_offset = sa_offset + salen;
+    size_t serv_offset = host_offset + hostlen;
+    size_t bufsize = serv_offset + servlen;
+
+    char *buf = malloc(bufsize);
+    if (!buf) {
+        rb_gc();
+        buf = malloc(bufsize);
+        if (!buf) return NULL;
+    }
+    struct getnameinfo_arg *arg = (struct getnameinfo_arg *)buf;
+
+    arg->sa = (struct sockaddr *)(buf + sa_offset);
+    memcpy(arg->sa, sa, salen);
+    arg->salen = salen;
+    arg->host = buf + host_offset;
+    arg->hostlen = hostlen;
+    arg->serv = buf + serv_offset;
+    arg->servlen = servlen;
+    arg->flags = flags;
+
+    arg->refcount = 2;
+    arg->done = arg->cancelled = 0;
+
+    rb_nativethread_lock_initialize(&arg->lock);
+    rb_native_cond_initialize(&arg->cond);
+
+    return arg;
+}
+
+static void
+free_getnameinfo_arg(struct getnameinfo_arg *arg)
+{
+    rb_native_cond_destroy(&arg->cond);
+    rb_nativethread_lock_destroy(&arg->lock);
+
+    free(arg);
+}
+
+static void *
+do_getnameinfo(void *ptr)
+{
+    struct getnameinfo_arg *arg = (struct getnameinfo_arg *)ptr;
+
+    int err;
+    err = getnameinfo(arg->sa, arg->salen, arg->host, (socklen_t)arg->hostlen, arg->serv, (socklen_t)arg->servlen, arg->flags);
+
+    int need_free = 0;
+    rb_nativethread_lock_lock(&arg->lock);
+    arg->err = err;
+    if (!arg->cancelled) {
+        arg->done = 1;
+        rb_native_cond_signal(&arg->cond);
+    }
+    if (--arg->refcount == 0) need_free = 1;
+    rb_nativethread_lock_unlock(&arg->lock);
+
+    if (need_free) free_getnameinfo_arg(arg);
+
+    return 0;
+}
+
+static void *
+wait_getnameinfo(void *ptr)
+{
+    struct getnameinfo_arg *arg = (struct getnameinfo_arg *)ptr;
+    rb_nativethread_lock_lock(&arg->lock);
+    while (!arg->done && !arg->cancelled) {
+        rb_native_cond_wait(&arg->cond, &arg->lock);
+    }
+    rb_nativethread_lock_unlock(&arg->lock);
+    return 0;
+}
+
+static void
+cancel_getnameinfo(void *ptr)
+{
+    struct getnameinfo_arg *arg = (struct getnameinfo_arg *)ptr;
+    rb_nativethread_lock_lock(&arg->lock);
+    arg->cancelled = 1;
+    rb_native_cond_signal(&arg->cond);
+    rb_nativethread_lock_unlock(&arg->lock);
+}
+
+int
+rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
+               char *host, size_t hostlen,
+               char *serv, size_t servlen, int flags)
+{
+    int retry;
+    struct getnameinfo_arg *arg = allocate_getnameinfo_arg(sa, salen, hostlen, servlen, flags);
+    int err;
+
+start:
+    retry = 0;
+
+    arg = allocate_getnameinfo_arg(sa, salen, hostlen, servlen, flags);
+    if (!arg) {
+        return ENOMEM;
+    }
+
+    pthread_t th;
+    if (pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
+        free_getnameinfo_arg(arg);
+        return EAGAIN;
+    }
+
+    pthread_detach(th);
+#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
+    cpu_set_t tmp_cpu_set;
+    CPU_ZERO(&tmp_cpu_set);
+    CPU_SET(sched_getcpu(), &tmp_cpu_set);
+    pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
+#endif
+
+    rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
+
+    int need_free = 0;
+    rb_nativethread_lock_lock(&arg->lock);
+    if (arg->done) {
+        err = arg->err;
+        if (err == 0) {
+            if (host) memcpy(host, arg->host, hostlen);
+            if (serv) memcpy(serv, arg->serv, servlen);
+        }
+    }
+    else if (arg->cancelled) {
+        err = EAGAIN;
+    }
+    else {
+        // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getnameinfo.
+        // In this case, it could be !arg->done && !arg->cancelled.
+        arg->cancelled = 1;
+        retry = 1;
+    }
+    if (--arg->refcount == 0) need_free = 1;
+    rb_nativethread_lock_unlock(&arg->lock);
+
+    if (need_free) free_getnameinfo_arg(arg);
+
+    // If the current thread is interrupted by asynchronous exception, the following raises the exception.
+    // But if the current thread is interrupted by timer thread, the following returns; we need to manually retry.
+    rb_thread_check_ints();
+    if (retry) goto start;
+
+    return err;
 }
 
 #endif
