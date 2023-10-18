@@ -241,8 +241,8 @@ module Prism
     ############################################################################
 
     def test_EmbeddedVariableNode
-      # test_prism_eval('class Prism::TestCompilePrism; @pit = 1; "#@pit"; end')
-      # test_prism_eval('class Prism::TestCompilePrism; @@pit = 1; "#@@pit"; end')
+      test_prism_eval('class Prism::TestCompilePrism; @pit = 1; "#@pit"; end')
+      test_prism_eval('class Prism::TestCompilePrism; @@pit = 1; "#@@pit"; end')
       test_prism_eval('$pit = 1; "#$pit"')
     end
 
@@ -284,7 +284,7 @@ module Prism
     end
 
     def test_StringConcatNode
-      # test_prism_eval('"Prism" "::" "TestCompilePrism"')
+      test_prism_eval('"Prism" "::" "TestCompilePrism"')
     end
 
     def test_StringNode
@@ -296,12 +296,12 @@ module Prism
     end
 
     def test_XStringNode
-      # test_prism_eval(<<~RUBY)
-      #   class Prism::TestCompilePrism
-      #     def self.`(command) = command * 2
-      #     `pit`
-      #   end
-      # RUBY
+      test_prism_eval(<<~RUBY)
+        class Prism::TestCompilePrism
+          def self.`(command) = command * 2
+          `pit`
+        end
+      RUBY
     end
 
     ############################################################################
