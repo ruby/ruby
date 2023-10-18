@@ -967,10 +967,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-static VALUE rb_translate_prism(rb_iseq_t *iseq, const pm_scope_node_t node, LINK_ANCHOR *const ret);
+static VALUE rb_translate_prism(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, LINK_ANCHOR *const ret);
 
 VALUE
-rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t scope_node, pm_parser_t *parser)
+rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
@@ -983,7 +983,7 @@ rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t scope_node, pm_pars
         constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
     }
 
-    scope_node.constants = (void *)constants;
+    scope_node->constants = (void *)constants;
 
     CHECK(rb_translate_prism(iseq, scope_node, ret));
     free(constants);
