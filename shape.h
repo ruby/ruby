@@ -35,7 +35,7 @@ typedef uint16_t redblack_id_t;
 # define SHAPE_MAX_VARIATIONS 8
 # define SHAPE_MAX_NUM_IVS (SHAPE_BUFFER_SIZE - 1)
 
-# define MAX_SHAPE_ID SHAPE_BUFFER_SIZE
+# define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
 
@@ -191,7 +191,7 @@ ROBJECT_IV_HASH(VALUE obj)
 }
 
 static inline void
-ROBJECT_SET_IV_HASH(VALUE obj, const struct rb_id_table *tbl)
+ROBJECT_SET_IV_HASH(VALUE obj, const st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
