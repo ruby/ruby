@@ -172,8 +172,7 @@ compiled, lower values mean less code is compiled (default 200000)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
-- `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
-- `--yjit-perf`: Enable frame pointers and perf profiling
+- `--yjit-perf`: Enable frame pointers and profiling with the `perf` tool
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.

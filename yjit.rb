@@ -245,13 +245,8 @@ module RubyVM::YJIT
       $stderr.puts("YJIT exit locations dumped to `#{filename}`.")
     end
 
-    # Format and print out counters
-    def _print_stats(out: $stderr) # :nodoc:
-      stats = runtime_stats(context: true)
-      return unless Primitive.rb_yjit_stats_enabled_p
-
-      out.puts("***YJIT: Printing YJIT statistics on exit***")
-
+    # Print a summary of reasons for adverse performance events (e.g. exits)
+    def _print_stats_reasons(stats, out) # :nodoc:
       print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
       print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
       print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
@@ -286,6 +281,16 @@ module RubyVM::YJIT
       end
       print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
+    end
+
+    # Format and print out counters
+    def _print_stats(out: $stderr) # :nodoc:
+      stats = runtime_stats(context: true)
+      return unless Primitive.rb_yjit_stats_enabled_p
+
+      out.puts("***YJIT: Printing YJIT statistics on exit***")
+
+      _print_stats_reasons(stats, out)
 
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]

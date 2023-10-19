@@ -10,6 +10,8 @@ require_relative '../lib/jit_support'
 
 return unless JITSupport.yjit_supported?
 
+require 'stringio'
+
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the RJIT tests in test/ruby/test_rjit.rb
 class TestYJIT < Test::Unit::TestCase
@@ -1470,8 +1472,15 @@ class TestYJIT < Test::Unit::TestCase
       if exits != :any &&
         exits != recorded_exits &&
         (exits.keys != recorded_exits.keys || !exits.all? { |k, v| v === recorded_exits[k] }) # triple-equal checks range membership or integer equality
-        flunk "Expected #{exits.empty? ? "no" : exits.inspect} exits" \
-          ", but got\n#{recorded_exits.inspect}"
+        stats_reasons = StringIO.new
+        ::RubyVM::YJIT.send(:_print_stats_reasons, runtime_stats, stats_reasons)
+        stats_reasons = stats_reasons.string
+        flunk <<~EOM
+          Expected #{exits.empty? ? "no" : exits.inspect} exits, but got:
+          #{recorded_exits.inspect}
+          Reasons:
+          #{stats_reasons}
+        EOM
       end
     end
 
@@ -1501,7 +1510,7 @@ class TestYJIT < Test::Unit::TestCase
     args = [
       "--disable-gems",
       "--yjit-call-threshold=#{call_threshold}",
-      "--yjit-stats"
+      "--yjit-stats=quiet"
     ]
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)

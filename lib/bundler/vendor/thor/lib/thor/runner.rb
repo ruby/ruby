@@ -23,7 +23,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
       initialize_thorfiles(meth)
       klass, command = Bundler::Thor::Util.find_class_and_command_by_namespace(meth)
       self.class.handle_no_command_error(command, false) if klass.nil?
-      klass.start(["-h", command].compact, :shell => shell)
+      klass.start(["-h", command].compact, shell: shell)
     else
       super
     end
@@ -38,11 +38,11 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
     klass, command = Bundler::Thor::Util.find_class_and_command_by_namespace(meth)
     self.class.handle_no_command_error(command, false) if klass.nil?
     args.unshift(command) if command
-    klass.start(args, :shell => shell)
+    klass.start(args, shell: shell)
   end
 
   desc "install NAME", "Install an optionally named Bundler::Thor file into your system commands"
-  method_options :as => :string, :relative => :boolean, :force => :boolean
+  method_options as: :string, relative: :boolean, force: :boolean
   def install(name) # rubocop:disable Metrics/MethodLength
     initialize_thorfiles
 
@@ -53,7 +53,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
       package = :file
       require "open-uri"
       begin
-        contents = URI.send(:open, name, &:read) # Using `send` for Ruby 2.4- support
+        contents = URI.open(name, &:read)
       rescue OpenURI::HTTPError
         raise Error, "Error opening URI '#{name}'"
       end
@@ -69,7 +69,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
           base = name
           package = :file
           require "open-uri"
-          contents = URI.send(:open, name, &:read) # for ruby 2.1-2.4
+          contents = URI.open(name, &:read)
         end
       rescue Errno::ENOENT
         raise Error, "Error opening file '#{name}'"
@@ -101,9 +101,9 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
     end
 
     thor_yaml[as] = {
-      :filename   => Digest::SHA256.hexdigest(name + as),
-      :location   => location,
-      :namespaces => Bundler::Thor::Util.namespaces_in_content(contents, base)
+      filename: Digest::SHA256.hexdigest(name + as),
+      location: location,
+      namespaces: Bundler::Thor::Util.namespaces_in_content(contents, base)
     }
 
     save_yaml(thor_yaml)
@@ -164,14 +164,14 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
   end
 
   desc "installed", "List the installed Bundler::Thor modules and commands"
-  method_options :internal => :boolean
+  method_options internal: :boolean
   def installed
     initialize_thorfiles(nil, true)
     display_klasses(true, options["internal"])
   end
 
   desc "list [SEARCH]", "List the available thor commands (--substring means .*SEARCH)"
-  method_options :substring => :boolean, :group => :string, :all => :boolean, :debug => :boolean
+  method_options substring: :boolean, group: :string, all: :boolean, debug: :boolean
   def list(search = "")
     initialize_thorfiles
 
@@ -313,7 +313,7 @@ private
     say shell.set_color(namespace, :blue, true)
     say "-" * namespace.size
 
-    print_table(list, :truncate => true)
+    print_table(list, truncate: true)
     say
   end
   alias_method :display_tasks, :display_commands
