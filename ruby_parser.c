@@ -110,6 +110,7 @@ rcomplex_get_imag(VALUE obj)
     return RCOMPLEX(obj)->imag;
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
 static VALUE
 syntax_error_append(VALUE exc, VALUE file, int line, int column,
                        void *enc, const char *fmt, va_list args)

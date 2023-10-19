@@ -1191,6 +1191,7 @@ typedef struct rb_parser_config_struct {
     ID (*sym2id)(VALUE sym);
 
     /* String */
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
     VALUE (*str_subseq)(VALUE str, long beg, long len);
@@ -1209,8 +1210,10 @@ typedef struct rb_parser_config_struct {
     VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
     VALUE (*enc_str_buf_cat)(VALUE str, const char *ptr, long len, rb_encoding *enc);
     VALUE (*str_buf_append)(VALUE str, VALUE str2);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
     VALUE (*str_vcatf)(VALUE str, const char *fmt, va_list ap);
     char *(*string_value_cstr)(volatile VALUE *ptr);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
     char *(*rstring_end)(VALUE str);
@@ -1314,7 +1317,9 @@ typedef struct rb_parser_config_struct {
 
     /* Error (Exception) */
     const char *(*builtin_class_name)(VALUE x);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
     VALUE (*syntax_error_append)(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     void (*raise)(VALUE exc, const char *fmt, ...);
     VALUE (*syntax_error_new)(void);
 
