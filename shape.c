@@ -348,7 +348,7 @@ shape_alloc(void)
     shape_id_t shape_id = GET_SHAPE_TREE()->next_shape_id;
     GET_SHAPE_TREE()->next_shape_id++;
 
-    if (shape_id == MAX_SHAPE_ID) {
+    if (shape_id == (MAX_SHAPE_ID + 1)) {
         // TODO: Make an OutOfShapesError ??
         rb_bug("Out of shapes");
     }
@@ -445,7 +445,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
     *variation_created = false;
 
-    if (new_shape_necessary || (new_shapes_allowed && (shape->next_iv_index < SHAPE_MAX_NUM_IVS))) {
+    if (new_shape_necessary || (new_shapes_allowed && (GET_SHAPE_TREE()->next_shape_id <= MAX_SHAPE_ID))) {
         RB_VM_LOCK_ENTER();
         {
             // If the current shape has children
@@ -633,6 +633,7 @@ rb_shape_t *
 rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
+    RUBY_ASSERT(shape->type != SHAPE_OBJ_TOO_COMPLEX);
 
     bool allow_new_shape = true;
 
@@ -643,11 +644,10 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 
     bool variation_created = false;
     // For non T_OBJECTS, force a new shape
-    bool new_shape_necessary = BUILTIN_TYPE(obj) != T_OBJECT;
+    bool new_shape_necessary = false;
     rb_shape_t * new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape, new_shape_necessary);
 
     if (!new_shape) {
-        RUBY_ASSERT(BUILTIN_TYPE(obj) == T_OBJECT);
         new_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
     }
 
@@ -850,7 +850,6 @@ rb_shape_obj_too_complex(VALUE obj)
 void
 rb_shape_set_too_complex(VALUE obj)
 {
-    RUBY_ASSERT(BUILTIN_TYPE(obj) == T_OBJECT);
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
 }
@@ -1003,6 +1002,13 @@ static VALUE
 rb_shape_root_shape(VALUE self)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_root_shape());
+}
+
+/* :nodoc: */
+static VALUE
+rb_shape_shapes_available(VALUE self)
+{
+    return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
 VALUE rb_obj_shape(rb_shape_t* shape);
@@ -1183,5 +1189,6 @@ Init_shape(void)
     rb_define_singleton_method(rb_cShape, "find_by_id", rb_shape_find_by_id, 1);
     rb_define_singleton_method(rb_cShape, "of", rb_shape_debug_shape, 1);
     rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
+    rb_define_singleton_method(rb_cShape, "shapes_available", rb_shape_shapes_available, 0);
 #endif
 }
