@@ -472,13 +472,13 @@ start:
 
     arg = allocate_getaddrinfo_arg(hostp, portp, hints);
     if (!arg) {
-        return ENOMEM;
+        return EAI_MEMORY;
     }
 
     pthread_t th;
     if (pthread_create(&th, 0, do_getaddrinfo, arg) != 0) {
         free_getaddrinfo_arg(arg);
-        return EAGAIN;
+        return EAI_AGAIN;
     }
 
     pthread_detach(th);
@@ -499,7 +499,7 @@ start:
             if (err == 0) *ai = arg->ai;
         }
         else if (arg->cancelled) {
-            err = EAGAIN;
+            err = EAI_AGAIN;
         }
         else {
             // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
@@ -691,13 +691,13 @@ start:
 
     arg = allocate_getnameinfo_arg(sa, salen, hostlen, servlen, flags);
     if (!arg) {
-        return ENOMEM;
+        return EAI_MEMORY;
     }
 
     pthread_t th;
     if (pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
-        return EAGAIN;
+        return EAI_AGAIN;
     }
 
     pthread_detach(th);
@@ -720,7 +720,7 @@ start:
         }
     }
     else if (arg->cancelled) {
-        err = EAGAIN;
+        err = EAI_AGAIN;
     }
     else {
         // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getnameinfo.
