@@ -32,8 +32,9 @@ jobs:
         test_task: ['check']
         configure: ['']
         os: ['macos-11','macos-12']
+        # github.repository == 'ruby/ruby' &&
         include: >-
-          ${{ github.repository == 'ruby/ruby' &&
+          ${{
           fromJSON(
           '[{test_task: "check", os:"macos-arm-oss", configure: ""},{test_task: "check", os:"macos-arm-oss", configure: "--with-arch=arm64,x86_64"}]'
           || '') }}
