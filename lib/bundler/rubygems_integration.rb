@@ -373,7 +373,7 @@ module Bundler
     def replace_entrypoints(specs)
       specs_by_name = add_default_gems_to(specs)
 
-      if defined?(::Gem::BUNDLED_GEMS::SINCE)
+      if defined?(::Gem::BUNDLED_GEMS)
         replace_require(specs)
       else
         reverse_rubygems_kernel_mixin
