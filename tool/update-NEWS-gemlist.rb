@@ -32,9 +32,9 @@ ARGV.each do |type|
   update[changed, type] or next
   if added and !added.empty?
     if type == 'bundled'
-      update[added, 'default', 'now bundled'] or next
+      update[added, type, 'promoted from default gems'] or next
     else
-      update[added, 'default', 'added'] or next
+      update[added, type, 'added'] or next
     end
   end
   File.write("NEWS.md", news)

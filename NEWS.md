@@ -128,6 +128,10 @@ The following default gems are updated.
 * timeout 0.4.0
 * uri 0.12.2
 
+The following bundled gem is promoted from default gems.
+
+* racc 1.7.1
+
 The following bundled gems are updated.
 
 * minitest 5.20.0
@@ -140,10 +144,6 @@ The following bundled gems are updated.
 * typeprof 0.21.8
 * debug 1.8.0
 
-The following default gem is now bundled.
-
-* racc 1.7.1
-
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
 
@@ -153,7 +153,7 @@ changelog for details of the default gems or bundled gems.
 
 ## Stdlib compatibility issues
 
-* `racc` is promoted bundled gems.
+* `racc` is promoted to bundled gems.
   * You need to add `racc` to your `Gemfile` if you use `racc` under bundler environment.
 * `ext/readline` is retired
   * We have `reline` that is pure Ruby implementation compatible with `ext/readline` API. We rely on `reline` in the future. If you need to use `ext/readline`, you can install `ext/readline` via rubygems.org with `gem install readline-ext`.
