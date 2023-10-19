@@ -31,7 +31,12 @@ jobs:
       matrix:
         test_task: ['check']
         configure: ['']
-        os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
+        os: ['macos-11','macos-12']
+        include: >-
+          ${{ github.repository == 'ruby/ruby' &&
+          fromJSON(
+          '[{test_task: "check", os:"macos-arm-oss", configure: ""},{test_task: "check", os:"macos-arm-oss", configure: "--with-arch=arm64,x86_64"}]'
+          || '') }}
       fail-fast: false
 
     env:
