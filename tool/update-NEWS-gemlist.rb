@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 require 'json'
 news = File.read("NEWS.md")
 prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
