@@ -130,9 +130,10 @@ class Bundler::Thor
       #
       def find_class_and_command_by_namespace(namespace, fallback = true)
         if namespace.include?(":") # look for a namespaced command
-          pieces  = namespace.split(":")
-          command = pieces.pop
-          klass   = Bundler::Thor::Util.find_by_namespace(pieces.join(":"))
+          *pieces, command  = namespace.split(":")
+          namespace = pieces.join(":")
+          namespace = "default" if namespace.empty?
+          klass = Bundler::Thor::Base.subclasses.detect { |thor| thor.namespace == namespace && thor.commands.keys.include?(command) }
         end
         unless klass # look for a Bundler::Thor::Group with the right name
           klass = Bundler::Thor::Util.find_by_namespace(namespace)
