@@ -1023,6 +1023,16 @@ console_goto(VALUE io, VALUE y, VALUE x)
     return io;
 }
 
+/*
+ * call-seq:
+ *   io.cursor -> [row, column]
+ *
+ * Returns the current cursor position as a two-element array of integers (row, column)
+ *
+ *   io.cursor # => [3, 5]
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_pos(VALUE io)
 {
@@ -1267,6 +1277,16 @@ console_vt_response(int argc, VALUE *argv, VALUE io, const struct query_args *qa
     return ret;
 }
 
+/*
+ * call-seq:
+ *   io.cursor -> [row, column]
+ *
+ * Returns the current cursor position as a two-element array of integers (row, column)
+ *
+ *   io.cursor # => [3, 5]
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_pos(VALUE io)
 {
