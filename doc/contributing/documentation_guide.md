@@ -20,9 +20,9 @@ build directory:
 make html
 ```
 
-Then you can preview your changes by opening
+If you don't have a build directory, follow the [quick start guide](building_ruby.md#label-Quick+start+guide)
+up to step 4. Then you can preview your changes by opening
 `{build folder}/.ext/html/index.html` file in your browser.
-
 
 ## Goal
 
