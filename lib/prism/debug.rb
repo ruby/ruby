@@ -69,6 +69,8 @@ module Prism
     # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
     def self.prism_locals(source)
+      check_to_debug = ENV["RUBY_ISEQ_DUMP_DEBUG"] == "to_binary"
+
       locals = []
       stack = [Prism.parse(source).value]
 
@@ -106,7 +108,7 @@ module Prism
               *params.keywords.select(&:value).map(&:name)
             ]
 
-            sorted << AnonymousLocal if params.keywords.any?
+            sorted << AnonymousLocal if params.keywords.any? && !check_to_debug
 
             # Recurse down the parameter tree to find any destructured
             # parameters and add them after the other parameters.
@@ -127,17 +129,17 @@ module Prism
 
           names.map!.with_index do |name, index|
             if name == AnonymousLocal
-              names.length - index + 1
+              names.length - index + 1 unless check_to_debug
             else
               name
             end
           end
 
-          locals << names
+          locals << names.compact
         when ClassNode, ModuleNode, ProgramNode, SingletonClassNode
           locals << node.locals
         when ForNode
-          locals << [2]
+          locals << (check_to_debug ? [] : [2])
         when PostExecutionNode
           locals.push([], [])
         when InterpolatedRegularExpressionNode
