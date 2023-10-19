@@ -81,6 +81,20 @@ Note: We're only listing outstanding class updates.
 * RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
   in the future version of Ruby. [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
 
+  Targeted libraries are:
+    * abbrev
+    * base64
+    * bigdecimal
+    * csv
+    * drb
+    * getoptlong
+    * mutex_m
+    * nkf
+    * observer
+    * resolv-replace
+    * rinda
+    * syslog
+
 * Socket#recv and Socket#recv_nonblock returns `nil` instead of an empty string on closed
   connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
   connections. [[Bug #19012]]
