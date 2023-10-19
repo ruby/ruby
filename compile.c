@@ -11065,7 +11065,7 @@ rb_local_defined(ID id, const rb_iseq_t *iseq)
 #define IBF_ISEQ_ENABLE_LOCAL_BUFFER 0
 #endif
 
-typedef unsigned int ibf_offset_t;
+typedef uint32_t ibf_offset_t;
 #define IBF_OFFSET(ptr) ((ibf_offset_t)(VALUE)(ptr))
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
@@ -11078,13 +11078,13 @@ typedef unsigned int ibf_offset_t;
 
 struct ibf_header {
     char magic[4]; /* YARB */
-    unsigned int major_version;
-    unsigned int minor_version;
-    unsigned int size;
-    unsigned int extra_size;
+    uint32_t major_version;
+    uint32_t minor_version;
+    uint32_t size;
+    uint32_t extra_size;
 
-    unsigned int iseq_list_size;
-    unsigned int global_object_list_size;
+    uint32_t iseq_list_size;
+    uint32_t global_object_list_size;
     ibf_offset_t iseq_list_offset;
     ibf_offset_t global_object_list_offset;
 };
