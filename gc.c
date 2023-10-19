@@ -3533,9 +3533,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_CLASS:
         rb_id_table_free(RCLASS_M_TBL(obj));
         cc_table_free(objspace, obj, FALSE);
-        if (RCLASS_IVPTR(obj)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            st_free_table((st_table *)RCLASS_IVPTR(obj));
+        }
+        else if (RCLASS_IVPTR(obj)) {
             xfree(RCLASS_IVPTR(obj));
         }
+
         if (RCLASS_CONST_TBL(obj)) {
             rb_free_const_table(RCLASS_CONST_TBL(obj));
         }
@@ -7256,8 +7260,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         mark_cvc_tbl(objspace, obj);
         cc_table_mark(objspace, obj);
-        for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
-            gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
+        if (rb_shape_obj_too_complex(obj)) {
+            mark_tbl(objspace, (st_table *)RCLASS_IVPTR(obj));
+        }
+        else {
+            for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
+                gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
+            }
         }
         mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 

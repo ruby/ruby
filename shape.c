@@ -592,7 +592,7 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE
     }
 }
 
-void
+rb_shape_t *
 rb_shape_transition_shape_frozen(VALUE obj)
 {
     rb_shape_t* shape = rb_shape_get_shape(obj);
@@ -600,21 +600,23 @@ rb_shape_transition_shape_frozen(VALUE obj)
     RUBY_ASSERT(RB_OBJ_FROZEN(obj));
 
     if (rb_shape_frozen_shape_p(shape) || rb_shape_obj_too_complex(obj)) {
-        return;
+        return shape;
     }
 
     rb_shape_t* next_shape;
 
     if (shape == rb_shape_get_root_shape()) {
-        rb_shape_set_shape_id(obj, SPECIAL_CONST_SHAPE_ID);
-        return;
+        return rb_shape_get_shape_by_id(SPECIAL_CONST_SHAPE_ID);
     }
 
     bool dont_care;
     next_shape = get_next_shape_internal(shape, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true, false);
 
+    if (!next_shape) {
+        next_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
+    }
     RUBY_ASSERT(next_shape);
-    rb_shape_set_shape(obj, next_shape);
+    return next_shape;
 }
 
 /*

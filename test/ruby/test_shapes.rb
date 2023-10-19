@@ -126,13 +126,24 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_too_many_ivs_on_obj
-    obj = Object.new
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi; end
 
-    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 1).times do
-      obj.instance_variable_set(:"@a#{_1}", 1)
-    end
+      obj = Hi.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 2
+        obj.instance_variable_set(:"@a#{i}", 1)
+        i += 1
+      end
 
-    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+      obj = Hi.new
+      obj.instance_variable_set(:"@b", 1)
+      obj.instance_variable_set(:"@c", 1)
+      obj.instance_variable_set(:"@d", 1)
+
+      assert_predicate RubyVM::Shape.of(obj), :too_complex?
+    end;
   end
 
   def test_too_many_ivs_on_class
@@ -169,6 +180,79 @@ class TestShapes < Test::Unit::TestCase
     end
 
     assert_empty obj.instance_variables
+  end
+
+  def test_use_all_shapes_then_freeze
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi; end
+
+      obj = Hi.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 2
+        obj.instance_variable_set(:"@a#{i}", 1)
+        i += 1
+      end
+
+      obj = Hi.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        obj.instance_variable_set(:"@b#{i}", 1)
+        i += 1
+      end
+      obj.freeze
+      obj.frozen?
+    end;
+  end
+
+  def test_use_all_shapes_module
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi; end
+
+      obj = Hi.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 2
+        obj.instance_variable_set(:"@a#{i}", 1)
+        i += 1
+      end
+
+      obj = Module.new
+      3.times do
+        obj.instance_variable_set(:"@a#{_1}", _1)
+      end
+
+      ivs = 3.times.map do
+        obj.instance_variable_get(:"@a#{_1}")
+      end
+
+      assert_equal [0, 1, 2], ivs
+    end;
+  end
+
+  def test_complex_freeze_after_clone
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi; end
+
+      obj = Hi.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 2
+        obj.instance_variable_set(:"@a#{i}", 1)
+        i += 1
+      end
+
+      obj = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        obj.instance_variable_set(:"@b#{i}", i)
+        i += 1
+      end
+
+      v = obj.clone(freeze: true)
+      assert_predicate v, :frozen?
+      assert_equal 0, v.instance_variable_get(:@b0)
+    end;
   end
 
   def test_too_complex_ractor
