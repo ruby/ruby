@@ -13346,35 +13346,36 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 static void
 ibf_load_setup_bytes(struct ibf_load *load, VALUE loader_obj, const char *bytes, size_t size)
 {
+    struct ibf_header *header = (struct ibf_header *)bytes;
     load->loader_obj = loader_obj;
     load->global_buffer.buff = bytes;
-    load->header = (struct ibf_header *)load->global_buffer.buff;
-    load->global_buffer.size = load->header->size;
-    load->global_buffer.obj_list_offset = load->header->global_object_list_offset;
-    load->global_buffer.obj_list_size = load->header->global_object_list_size;
-    RB_OBJ_WRITE(loader_obj, &load->iseq_list, pinned_list_new(load->header->iseq_list_size));
+    load->header = header;
+    load->global_buffer.size = header->size;
+    load->global_buffer.obj_list_offset = header->global_object_list_offset;
+    load->global_buffer.obj_list_size = header->global_object_list_size;
+    RB_OBJ_WRITE(loader_obj, &load->iseq_list, pinned_list_new(header->iseq_list_size));
     RB_OBJ_WRITE(loader_obj, &load->global_buffer.obj_list, pinned_list_new(load->global_buffer.obj_list_size));
     load->iseq = NULL;
 
     load->current_buffer = &load->global_buffer;
 
-    if (size < load->header->size) {
+    if (size < header->size) {
         rb_raise(rb_eRuntimeError, "broken binary format");
     }
-    if (strncmp(load->header->magic, "YARB", 4) != 0) {
+    if (strncmp(header->magic, "YARB", 4) != 0) {
         rb_raise(rb_eRuntimeError, "unknown binary format");
     }
-    if (load->header->major_version != IBF_MAJOR_VERSION ||
-        load->header->minor_version != IBF_MINOR_VERSION) {
+    if (header->major_version != IBF_MAJOR_VERSION ||
+        header->minor_version != IBF_MINOR_VERSION) {
         rb_raise(rb_eRuntimeError, "unmatched version file (%u.%u for %u.%u)",
-                 load->header->major_version, load->header->minor_version, IBF_MAJOR_VERSION, IBF_MINOR_VERSION);
+                 header->major_version, header->minor_version, IBF_MAJOR_VERSION, IBF_MINOR_VERSION);
     }
     if (strcmp(load->global_buffer.buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
         rb_raise(rb_eRuntimeError, "unmatched platform");
     }
-    if (load->header->iseq_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
+    if (header->iseq_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
         rb_raise(rb_eArgError, "unaligned iseq list offset: %u",
-                 load->header->iseq_list_offset);
+                 header->iseq_list_offset);
     }
     if (load->global_buffer.obj_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
         rb_raise(rb_eArgError, "unaligned object list offset: %u",
