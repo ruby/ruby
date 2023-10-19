@@ -2390,7 +2390,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
  *    m.deconstruct_keys([:hours, :minutes]) # => {:hours => "18", :minutes => "37"}
  *    m.deconstruct_keys(nil) # => {:hours => "18", :minutes => "37", :seconds => "22"}
  *
- *  Returns an empty hash of no named captures were defined:
+ *  Returns an empty hash if no named captures were defined:
  *
  *    m = /(\d{2}):(\d{2}):(\d{2})/.match("18:37:22")
  *    m.deconstruct_keys(nil) # => {}
