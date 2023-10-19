@@ -22,9 +22,6 @@ pub struct Options {
     // Note that the command line argument is expressed in MiB and not bytes
     pub exec_mem_size: usize,
 
-    // Generate versions greedily until the limit is hit
-    pub greedy_versioning: bool,
-
     // Disable the propagation of type information
     pub no_type_prop: bool,
 
@@ -73,7 +70,6 @@ pub struct Options {
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
     exec_mem_size: 128 * 1024 * 1024,
-    greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -91,7 +87,7 @@ pub static mut OPTIONS: Options = Options {
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 9] = [
+static YJIT_OPTIONS: [(&str, &str); 8] = [
     ("--yjit-stats",                    "Enable collecting YJIT statistics"),
     ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
     ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
@@ -99,7 +95,6 @@ static YJIT_OPTIONS: [(&str, &str); 9] = [
     ("--yjit-call-threshold=num",       "Number of calls to trigger JIT (default: 30)"),
     ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
     ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
-    ("--yjit-greedy-versioning",        "Greedy versioning mode (default: disabled)"),
     ("--yjit-perf",                     "Enable frame pointers and perf profiling"),
 ];
 
@@ -224,7 +219,6 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
         },
 
-        ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
         ("stats", _) => match opt_val {
             "" => unsafe { OPTIONS.gen_stats = true },

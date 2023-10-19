@@ -1393,14 +1393,6 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
         }
     }
 
-    // If greedy versioning is enabled
-    if get_option!(greedy_versioning) {
-        // If we're below the version limit, don't settle for an imperfect match
-        if versions.len() + 1 < get_option!(max_versions) && best_diff > 0 {
-            return None;
-        }
-    }
-
     return best_version;
 }
 
