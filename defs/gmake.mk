@@ -543,3 +543,9 @@ $(foreach r,$(RIPPER_SRCS),$(eval $(value r): | $(value ripper_src))\
 	$(eval ripper_src := $(value r)))
 ripper_srcs: $(ripper_src)
 endif
+
+# binary iseq is platform-dependent for now.
+ifneq ($(UNIVERSAL_ARCHNAMES),)
+builtin_binary.inc: CROSS_COMPILING := yes
+builtin.$(OBJEXT): CPPFLAGS+=-DCROSS_COMPILING
+endif
