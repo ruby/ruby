@@ -103,6 +103,8 @@ VALUE rb_mmtk_harness_begin(VALUE _);
 VALUE rb_mmtk_harness_end(VALUE _);
 
 // Debugging
+bool rb_mmtk_is_mmtk_worker(void);
+bool rb_mmtk_is_mutator(void);
 void rb_mmtk_assert_mmtk_worker(void);
 void rb_mmtk_assert_mutator(void);
 

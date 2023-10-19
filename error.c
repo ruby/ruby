@@ -50,6 +50,10 @@
 #include "ruby_assert.h"
 #include "vm_core.h"
 
+#if USE_MMTK
+#include "internal/mmtk_support.h"
+#endif
+
 #include "builtin.h"
 
 /*!
@@ -1036,6 +1040,11 @@ rb_bug_without_die(const char *fmt, va_list args)
     const char *file = NULL;
     int line = 0;
 
+#if USE_MMTK
+    if (rb_mmtk_enabled_p() && rb_mmtk_is_mmtk_worker()) {
+        file = NULL;
+    } else
+#endif
     if (GET_EC()) {
         file = rb_source_location_cstr(&line);
     }

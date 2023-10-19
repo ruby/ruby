@@ -1223,13 +1223,13 @@ rb_mmtk_harness_end(VALUE _)
 // Debugging
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline bool
+bool
 rb_mmtk_is_mmtk_worker(void)
 {
     return rb_mmtk_gc_thread_tls != NULL;
 }
 
-static inline bool
+bool
 rb_mmtk_is_mutator(void)
 {
     return ruby_native_thread_p();
