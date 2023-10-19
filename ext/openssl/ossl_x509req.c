@@ -259,6 +259,7 @@ ossl_x509req_get_signature_algorithm(VALUE self)
 {
     X509_REQ *req;
     const X509_ALGOR *alg;
+    const ASN1_OBJECT *obj;
     BIO *out;
 
     GetX509Req(self, req);
@@ -267,7 +268,8 @@ ossl_x509req_get_signature_algorithm(VALUE self)
 	ossl_raise(eX509ReqError, NULL);
     }
     X509_REQ_get0_signature(req, NULL, &alg);
-    if (!i2a_ASN1_OBJECT(out, alg->algorithm)) {
+    X509_ALGOR_get0(&obj, NULL, NULL, alg);
+    if (!i2a_ASN1_OBJECT(out, obj)) {
 	BIO_free(out);
 	ossl_raise(eX509ReqError, NULL);
     }

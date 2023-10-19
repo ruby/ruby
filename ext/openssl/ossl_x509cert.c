@@ -328,13 +328,15 @@ ossl_x509_get_signature_algorithm(VALUE self)
 {
     X509 *x509;
     BIO *out;
+    const ASN1_OBJECT *obj;
     VALUE str;
 
     GetX509(self, x509);
     out = BIO_new(BIO_s_mem());
     if (!out) ossl_raise(eX509CertError, NULL);
 
-    if (!i2a_ASN1_OBJECT(out, X509_get0_tbs_sigalg(x509)->algorithm)) {
+    X509_ALGOR_get0(&obj, NULL, NULL, X509_get0_tbs_sigalg(x509));
+    if (!i2a_ASN1_OBJECT(out, obj)) {
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }

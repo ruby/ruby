@@ -152,7 +152,7 @@ obj_to_asn1obj_i(VALUE obj)
 }
 
 static VALUE
-get_asn1obj(ASN1_OBJECT *obj)
+get_asn1obj(const ASN1_OBJECT *obj)
 {
     BIO *out;
     VALUE ret;
@@ -236,11 +236,13 @@ ossl_ts_req_get_algorithm(VALUE self)
     TS_REQ *req;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algor;
+    const ASN1_OBJECT *obj;
 
     GetTSRequest(self, req);
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
-    return get_asn1obj(algor->algorithm);
+    X509_ALGOR_get0(&obj, NULL, NULL, algor);
+    return get_asn1obj(obj);
 }
 
 /*
@@ -490,13 +492,15 @@ ossl_ts_req_to_der(VALUE self)
     TS_REQ *req;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algo;
+    const ASN1_OBJECT *obj;
     ASN1_OCTET_STRING *hashed_msg;
 
     GetTSRequest(self, req);
     mi = TS_REQ_get_msg_imprint(req);
 
     algo = TS_MSG_IMPRINT_get_algo(mi);
-    if (OBJ_obj2nid(algo->algorithm) == NID_undef)
+    X509_ALGOR_get0(&obj, NULL, NULL, algo);
+    if (OBJ_obj2nid(obj) == NID_undef)
         ossl_raise(eTimestampError, "Message imprint missing algorithm");
 
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
@@ -969,11 +973,13 @@ ossl_ts_token_info_get_algorithm(VALUE self)
     TS_TST_INFO *info;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algo;
+    const ASN1_OBJECT *obj;
 
     GetTSTokenInfo(self, info);
     mi = TS_TST_INFO_get_msg_imprint(info);
     algo = TS_MSG_IMPRINT_get_algo(mi);
-    return get_asn1obj(algo->algorithm);
+    X509_ALGOR_get0(&obj, NULL, NULL, algo);
+    return get_asn1obj(obj);
 }
 
 /*
