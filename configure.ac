@@ -1489,6 +1489,25 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
+AC_SUBST(X_BUILTIN_BINARY, yes)
+AS_IF([test "$cross_compiling" = yes],
+[dnl miniruby cannot run if cross compiling
+    X_BUILTIN_BINARY=no
+],
+[
+    AS_CASE([ac_cv_sizeof_voidp],
+    [[1-9]*], [dnl fixed value
+    ],
+    [
+        AC_CACHE_CHECK([word size], [rb_cv_word_size],
+            [for w in 4 8; do
+                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@if SIZEOF_VOIDP != ${w}
+                @%:@error SIZEOF_VOIDP
+                @%:@endif]])], [rb_cv_word_size=${w}; break])
+            done])
+        AS_IF([test -z $rb_cv_word_size], [X_BUILTIN_BINARY=no])
+    ])
+])
 
 AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
     [rb_cv_packed_struct=no
@@ -4482,7 +4501,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  grep -v "^#define PACKAGE_" confdefs.h
+  sed "/^@%:@define PACKAGE_/d;s/  *$//" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 (
