@@ -1510,7 +1510,7 @@ class TestYJIT < Test::Unit::TestCase
     args = [
       "--disable-gems",
       "--yjit-call-threshold=#{call_threshold}",
-      "--yjit-stats"
+      "--yjit-stats=quiet"
     ]
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)
