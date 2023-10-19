@@ -102,6 +102,10 @@ Note: We're only listing outstanding class updates.
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
   keyword argument. [[Feature #18183]]
 
+The following default gem is added.
+
+* prism 0.15.1
+
 The following default gems are updated.
 
 * RubyGems 3.5.0.dev
@@ -115,7 +119,6 @@ The following default gems are updated.
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
-* prism 0.15.1
 * psych 5.1.1.1
 * reline 0.3.9
 * stringio 3.0.9
