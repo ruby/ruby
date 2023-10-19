@@ -655,8 +655,8 @@ module Prism
       assert_separately(%w[], "#{<<-'begin;'}\n#{<<-'end;'}")
                         begin;
     def compare_eval(source)
-      ruby_eval = RubyVM::InstructionSequence.compile(source).eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
+      ruby_eval = RubyVM::InstructionSequence.compile("module A; " + source + "; end").eval
+      prism_eval = RubyVM::InstructionSequence.compile_prism("module B; " + source + "; end").eval
 
       assert_equal ruby_eval, prism_eval
     end
@@ -673,7 +673,7 @@ module Prism
         $VERBOSE = verbose_bak
       end
     end
-      test_prism_eval("a = 1; tap do; { a: }; end")
+      test_prism_eval("a = 1; 1.times do; { a: }; end")
       test_prism_eval("a = 1; def foo(a); a; end")
                         end;
     end
@@ -684,6 +684,15 @@ module Prism
 
     def test_MissingNode
       # TODO
+    end
+
+    ############################################################################
+    #  Encoding                                                                #
+    ############################################################################
+
+    def test_encoding
+      test_prism_eval('"però"')
+      test_prism_eval(":però")
     end
 
     private
