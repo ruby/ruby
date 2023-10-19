@@ -170,26 +170,29 @@ changelog for details of the default gems or bundled gems.
   * More calls with optional arguments are compiled.
   * Exception handlers are also compiled.
   * Instance variables no longer exit to the interpreter
-    with megamorphic Object Shapes.
+    with megamorphic object shapes.
   * Unsupported call types no longer exit to the interpreter.
-  * Integer#!=, String#!=, Kernel#block_given?, Kernel#is_a?,
-    Kernel#instance_of?, Module#=== are specially optimized.
+  * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
+    `Kernel#instance_of?`, `Module#===` are specially optimized.
   * Now more than 3x faster than the interpreter on optcarrot!
-* Metadata for compiled code uses a lot less memory.
-* Generate more compact code on ARM64
+* Significantly improved memory usage over 3.2
+    * Metadata for compiled code uses a lot less memory.
+    * Generate more compact code on ARM64
+* Compilation speed is now slightly faster than 3.2.
 * Add `RubyVM::YJIT.enable` that can enable YJIT later
   * You can start YJIT without modifying command-line arguments or environment variables.
   * This can also be used to enable YJIT only once your application is
     done booting. `--yjit-disable` can be used if you want to use other
     YJIT options while disabling YJIT at boot.
-* `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
-  a special stats or dev build is no longer required.
+* Option to disable code GC and treat `--yjit-exec-mem-size` as a hard limit
+  * Can produce better copy-on-write behavior on servers using unicorn and forking
+* `ratio_in_yjit` stat produced by `--yjit-stats` is now avaiable in release builds,
+  a special stats or dev build is no longer required to access most stats.
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
+* More thorough testing and multiple bug fixes
 * `--yjit-stats=quiet` is added to avoid printing stats on exit.
 * `--yjit-perf` is added to facilitate profiling with Linux perf.
-* The default value for `--yjit-exec-mem-size` is changed from 64 to 128.
-* More thorough testing and multiple bug fixes
 
 ### MJIT
 
