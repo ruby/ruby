@@ -418,15 +418,17 @@ do_getaddrinfo(void *ptr)
 
     int need_free = 0;
     rb_nativethread_lock_lock(&arg->lock);
-    arg->err = err;
-    if (arg->cancelled) {
-        freeaddrinfo(arg->ai);
+    {
+        arg->err = err;
+        if (arg->cancelled) {
+            freeaddrinfo(arg->ai);
+        }
+        else {
+            arg->done = 1;
+            rb_native_cond_signal(&arg->cond);
+        }
+        if (--arg->refcount == 0) need_free = 1;
     }
-    else {
-        arg->done = 1;
-        rb_native_cond_signal(&arg->cond);
-    }
-    if (--arg->refcount == 0) need_free = 1;
     rb_nativethread_lock_unlock(&arg->lock);
 
     if (need_free) free_getaddrinfo_arg(arg);
@@ -451,8 +453,10 @@ cancel_getaddrinfo(void *ptr)
 {
     struct getaddrinfo_arg *arg = (struct getaddrinfo_arg *)ptr;
     rb_nativethread_lock_lock(&arg->lock);
-    arg->cancelled = 1;
-    rb_native_cond_signal(&arg->cond);
+    {
+        arg->cancelled = 1;
+        rb_native_cond_signal(&arg->cond);
+    }
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
@@ -489,20 +493,22 @@ start:
 
     int need_free = 0;
     rb_nativethread_lock_lock(&arg->lock);
-    if (arg->done) {
-        err = arg->err;
-        if (err == 0) *ai = arg->ai;
+    {
+        if (arg->done) {
+            err = arg->err;
+            if (err == 0) *ai = arg->ai;
+        }
+        else if (arg->cancelled) {
+            err = EAGAIN;
+        }
+        else {
+            // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
+            // In this case, it could be !arg->done && !arg->cancelled.
+            arg->cancelled = 1; // to make do_getaddrinfo call freeaddrinfo
+            retry = 1;
+        }
+        if (--arg->refcount == 0) need_free = 1;
     }
-    else if (arg->cancelled) {
-        err = EAGAIN;
-    }
-    else {
-        // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
-        // In this case, it could be !arg->done && !arg->cancelled.
-        arg->cancelled = 1; // to make do_getaddrinfo call freeaddrinfo
-        retry = 1;
-    }
-    if (--arg->refcount == 0) need_free = 1;
     rb_nativethread_lock_unlock(&arg->lock);
 
     if (need_free) free_getaddrinfo_arg(arg);
