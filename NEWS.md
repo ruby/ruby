@@ -177,14 +177,17 @@ changelog for details of the default gems or bundled gems.
   * Now more than 3x faster than the interpreter on optcarrot!
 * Metadata for compiled code uses a lot less memory.
 * Generate more compact code on ARM64
-* Option to start YJIT in paused mode and then later enable it manually
-  * `--yjit-pause` and RubyVM::YJIT.resume
-  * This can be used to enable YJIT only once your application is done booting
+* Add `RubyVM::YJIT.enable` that can enable YJIT later
+  * You can start YJIT without modifying command-line arguments or environment variables.
+  * This can also be used to enable YJIT only once your application is
+    done booting. `--yjit-disable` can be used if you want to use other
+    YJIT options while disabling YJIT at boot.
 * `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
   a special stats or dev build is no longer required.
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
 * `--yjit-stats=quiet` is added to avoid printing stats on exit.
+* `--yjit-perf` is added to facilitate profiling with Linux perf.
 * The default value for `--yjit-exec-mem-size` is changed from 64 to 128.
 * More thorough testing and multiple bug fixes
 
