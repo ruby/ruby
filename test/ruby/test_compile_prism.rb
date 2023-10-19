@@ -488,32 +488,24 @@ module Prism
     ############################################################################
 
     def test_ScopeNode
-      assert_separately(%w[], "#{<<-'begin;'}\n#{<<-'end;'}")
+      assert_separately(%w[], "#{<<-"begin;"}\n#{<<-'end;'}")
+      #{self.class.assertions}
       begin;
-        def compare_eval(source)
-          ruby_eval = RubyVM::InstructionSequence.compile(source).eval
-          prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
-
-          assert_equal ruby_eval, prism_eval
-        end
-
-        def assert_prism_eval(source)
-          $VERBOSE, verbose_bak = nil, $VERBOSE
-
-          begin
-            compare_eval(source)
-
-            # Test "popped" functionality
-            compare_eval("#{source}; 1")
-          ensure
-            $VERBOSE = verbose_bak
-          end
-        end
         assert_prism_eval("a = 1; tap do; { a: }; end")
         assert_prism_eval("a = 1; def foo(a); a; end")
       end;
     end
 
+    def self.assertions
+      File.open(__FILE__) do |f|
+        f.select do |line|
+          true if /^\s*\#+\s*assertions\s*begin\n/.match?(line) ..
+                  /\s*\#+\s*assertions\s*end$/.match?(line)
+        end
+      end.join
+    end
+
+    ### assertions begin
     private
 
     def compare_eval(source)
@@ -535,5 +527,6 @@ module Prism
         $VERBOSE = verbose_bak
       end
     end
+    ### assertions end
   end
 end
