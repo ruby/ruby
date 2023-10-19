@@ -11,7 +11,7 @@
 module RubyVM::YJIT
   # Check if YJIT is enabled
   def self.enabled?
-    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
+    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
   end
 
   # Check if --yjit-stats is used.
@@ -29,9 +29,9 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Resume YJIT compilation after paused on startup with --yjit-pause
-  def self.resume
-    Primitive.rb_yjit_resume
+  # Enable YJIT compilation.
+  def self.enable
+    Primitive.rb_yjit_enable
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from

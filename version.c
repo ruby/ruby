@@ -141,19 +141,14 @@ Init_version(void)
 
 int ruby_mn_threads_enabled;
 
-void
-Init_ruby_description(ruby_cmdline_options_t *opt)
+static void
+define_ruby_description(const char *const jit_opt)
 {
     static char desc[
         sizeof(ruby_description)
         + rb_strlen_lit(YJIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         ];
-
-    const char *const jit_opt =
-        RJIT_OPTS_ON ? " +RJIT" :
-        YJIT_OPTS_ON ? YJIT_DESCRIPTION :
-        "";
 
     const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
 
@@ -174,6 +169,23 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
     rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
+}
+
+void
+Init_ruby_description(ruby_cmdline_options_t *opt)
+{
+    const char *const jit_opt =
+        RJIT_OPTS_ON ? " +RJIT" :
+        YJIT_OPTS_ON ? YJIT_DESCRIPTION :
+        "";
+    define_ruby_description(jit_opt);
+}
+
+void
+ruby_set_yjit_description(void)
+{
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    define_ruby_description(YJIT_DESCRIPTION);
 }
 
 void
