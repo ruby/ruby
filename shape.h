@@ -33,7 +33,7 @@ typedef uint16_t redblack_id_t;
 # define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 # define SHAPE_MAX_VARIATIONS 8
-# define SHAPE_MAX_NUM_IVS (SHAPE_BUFFER_SIZE - 1)
+# define SHAPE_MAX_NUM_IVS 80
 
 # define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK
@@ -165,7 +165,7 @@ bool rb_shape_obj_too_complex(VALUE obj);
 void rb_shape_set_shape(VALUE obj, rb_shape_t* shape);
 rb_shape_t* rb_shape_get_shape(VALUE obj);
 int rb_shape_frozen_shape_p(rb_shape_t* shape);
-void rb_shape_transition_shape_frozen(VALUE obj);
+rb_shape_t* rb_shape_transition_shape_frozen(VALUE obj);
 void rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
 rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
