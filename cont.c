@@ -3443,8 +3443,6 @@ Init_Cont(void)
         }
     }
 
-    rb_jit_cont_init();
-
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);

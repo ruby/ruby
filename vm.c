@@ -4110,6 +4110,7 @@ Init_BareVM(void)
     th->vm = vm;
     th->ractor = vm->ractor.main_ractor = rb_ractor_main_alloc();
     Init_native_thread(th);
+    rb_jit_cont_init();
     th_init(th, 0, vm);
 
     rb_ractor_set_current_ec(th->ractor, th->ec);
