@@ -48,6 +48,8 @@
 #define PM_SWAP_UNLESS_POPPED \
     if (!popped) PM_SWAP;
 
+#define TEMP_CONSTANT_IDENTIFIER ((pm_constant_id_t)(1 << 31))
+
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
@@ -2006,6 +2008,48 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
+      case PM_FOR_NODE: {
+        pm_for_node_t *for_node = (pm_for_node_t *)node;
+
+        const rb_iseq_t *child_iseq;
+        const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+
+        LABEL *retry_label = NEW_LABEL(lineno);
+        LABEL *retry_end_l = NEW_LABEL(lineno);
+
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init((pm_node_t *)for_node, &next_scope_node, scope_node, parser);
+
+        pm_constant_id_list_t locals;
+        pm_constant_id_list_init(&locals);
+        pm_constant_id_list_append(&locals, TEMP_CONSTANT_IDENTIFIER);
+        next_scope_node.locals = locals;
+
+        ADD_LABEL(ret, retry_label);
+
+        PM_COMPILE(for_node->collection);
+        child_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
+        ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_iseq);
+
+        INSN *iobj;
+        LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
+        iobj = IS_INSN(last_elem) ? (INSN *)last_elem : (INSN *)get_prev_insn((INSN*)last_elem);
+        while (INSN_OF(iobj) != BIN(send) &&
+                INSN_OF(iobj) != BIN(invokesuper)) {
+            iobj = (INSN *)get_prev_insn(iobj);
+        }
+        ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*)retry_end_l);
+
+        if (popped) {
+            ADD_INSN(ret, &dummy_line_node, pop);
+        }
+
+        ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+        ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
+
+        return;
+      }
       case PM_GLOBAL_VARIABLE_AND_WRITE_NODE: {
         pm_global_variable_and_write_node_t *global_variable_and_write_node = (pm_global_variable_and_write_node_t*) node;
 
@@ -2494,6 +2538,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_target_node_t *local_write_node = (pm_local_variable_target_node_t *) node;
 
         pm_constant_id_t constant_id = local_write_node->name;
+        for (size_t index = 0; index < local_write_node->depth; index++) scope_node = scope_node->previous;
         int index = pm_lookup_local_index(iseq, scope_node, constant_id);
 
         ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
@@ -2879,12 +2924,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_constant_id_list_t locals = scope_node->locals;
 
         pm_parameters_node_t *parameters_node = (pm_parameters_node_t *)scope_node->parameters;
-        pm_node_list_t requireds_list = PM_EMPTY_NODE_LIST;
         pm_node_list_t optionals_list = PM_EMPTY_NODE_LIST;
 
         if (parameters_node) {
-            requireds_list = parameters_node->requireds;
             optionals_list = parameters_node->optionals;
+            ISEQ_BODY(iseq)->param.lead_num = (int) parameters_node->requireds.size;
+            ISEQ_BODY(iseq)->param.opt_num = (int) optionals_list.size;
+        } else if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+            ISEQ_BODY(iseq)->param.lead_num = 1;
+            ISEQ_BODY(iseq)->param.opt_num = 0;
+        } else {
+            ISEQ_BODY(iseq)->param.lead_num = 0;
+            ISEQ_BODY(iseq)->param.opt_num = 0;
         }
 
         size_t size = locals.size;
@@ -2898,15 +2949,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         for (size_t i = 0; i < size; i++) {
             pm_constant_id_t constant_id = locals.ids[i];
-            ID local = pm_constant_id_lookup(scope_node, constant_id);
+            ID local;
+            if (constant_id & TEMP_CONSTANT_IDENTIFIER) {
+                local = rb_make_temporary_id(i);
+            } else {
+                local = pm_constant_id_lookup(scope_node, constant_id);
+            }
             tbl->ids[i] = local;
             st_insert(index_lookup_table, constant_id, i);
         }
 
         scope_node->index_lookup_table = index_lookup_table;
 
-        ISEQ_BODY(iseq)->param.lead_num = (int)requireds_list.size;
-        ISEQ_BODY(iseq)->param.opt_num = (int)optionals_list.size;
         // TODO: Set all the other nums (good comment by lead_num illustrating what they are)
         ISEQ_BODY(iseq)->param.size = (unsigned int)size;
 
@@ -2951,7 +3005,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_LABEL(ret, start);
 
             if (scope_node->body) {
-                PM_COMPILE((pm_node_t *)scope_node->body);
+                if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+                    pm_for_node_t *for_node = (pm_for_node_t *)scope_node->ast_node;
+
+                    ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
+                    pm_compile_node(iseq, for_node->index, ret, src, popped, scope_node);
+                    ADD_INSN(ret, &dummy_line_node, nop);
+                }
+
+                pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
             }
             else {
                 PM_PUTNIL;
