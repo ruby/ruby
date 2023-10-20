@@ -423,6 +423,13 @@ module Prism
     def test_IfNode
       test_prism_eval("if true; 1; end")
       test_prism_eval("1 if true")
+      test_prism_eval('a = b = 1; if a..b; end')
+      test_prism_eval('if "a".."b"; end')
+      test_prism_eval('if "a"..; end')
+      test_prism_eval('if .."b"; end')
+      test_prism_eval('if ..1; end')
+      test_prism_eval('if 1..; end')
+      test_prism_eval('if 1..2; end')
     end
 
     def test_OrNode
@@ -431,11 +438,10 @@ module Prism
     end
 
     def test_UnlessNode
-      # TODO:
-      # test_prism_eval("1 unless true")
-      # test_prism_eval("1 unless false")
-      # test_prism_eval("unless true; 1; end")
-      # test_prism_eval("unless false; 1; end")
+      test_prism_eval("1 unless true")
+      test_prism_eval("1 unless false")
+      test_prism_eval("unless true; 1; end")
+      test_prism_eval("unless false; 1; end")
     end
 
     def test_UntilNode
