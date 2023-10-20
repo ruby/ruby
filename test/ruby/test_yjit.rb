@@ -1388,6 +1388,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_no_exits('0xfff_ffff_ffff_ffff * 0x10')
   end
 
+  def test_disable_stats
+    assert_in_out_err(%w[--yjit-stats --yjit-disable])
+  end
+
   private
 
   def code_gc_helpers

@@ -515,7 +515,7 @@ pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALU
 /// Check if stats generation should print at exit
 #[no_mangle]
 pub extern "C" fn rb_yjit_print_stats_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if get_option!(print_stats) {
+    if yjit_enabled_p() && get_option!(print_stats) {
         return Qtrue;
     } else {
         return Qfalse;
