@@ -984,8 +984,14 @@ rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_par
         constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
     }
 
-    scope_node->constants = constants;
+    st_table *index_lookup_table = st_init_numtable();
+    pm_constant_id_list_t *locals = &scope_node->locals;
+    for (size_t i = 0; i < locals->size; i++) {
+        st_insert(index_lookup_table, locals->ids[i], i);
+    }
 
+    scope_node->constants = (void *)constants;
+    scope_node->index_lookup_table = index_lookup_table;
     CHECK(rb_translate_prism(iseq, scope_node, ret));
     free(constants);
 
