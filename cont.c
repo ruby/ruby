@@ -2552,9 +2552,6 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // This is the first fiber. Hence it's the first jit_cont_new() as well.
-    // Initialize the mutex for jit_cont_new() in cont_init_jit_cont().
-    rb_jit_cont_init();
     cont_init_jit_cont(&fiber->cont);
 }
 
@@ -3445,6 +3442,8 @@ Init_Cont(void)
             rb_warn("Setting RUBY_SHARED_FIBER_POOL_FREE_STACKS to a value greater than 1 is operating system specific, and may cause crashes.");
         }
     }
+
+    rb_jit_cont_init();
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
