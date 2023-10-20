@@ -535,6 +535,15 @@ module Prism
       assert_prism_eval("a = 0; while a != 1; a = a + 1; end")
     end
 
+    def test_ForNode
+      assert_prism_eval("for i in [1,2] do; i; end")
+      assert_prism_eval("for @i in [1,2] do; @i; end")
+      assert_prism_eval("for $i in [1,2] do; $i; end")
+
+      # TODO: multiple assignment in ForNode index
+      #assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
+    end
+
     ############################################################################
     #  Throws                                                                  #
     ############################################################################
