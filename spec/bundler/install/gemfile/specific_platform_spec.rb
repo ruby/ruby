@@ -956,7 +956,7 @@ RSpec.describe "bundle install with specific platforms" do
           rack (3.0.7)
 
       PLATFORMS
-        #{formatted_lockfile_platforms(*["ruby", generic_local_platform].uniq)}
+        #{lockfile_platforms("ruby", generic_local_platform, :defaults => [])}
 
       DEPENDENCIES
         concurrent-ruby
