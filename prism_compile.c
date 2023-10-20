@@ -1211,7 +1211,7 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_defined_node_t *defined_node, 
  *
  * iseq -            The current instruction sequence object (used for locals)
  * node -            The prism node to compile
- * ret -             The linked list of instruction sequences to append instructions onto
+ * ret -             The linked list of instructions to append instructions onto
  * popped -          True if compiling something with no side effects, so instructions don't
  *                   need to be added
  * scope_node - Stores parser and local information
