@@ -781,11 +781,13 @@ eom
       ].find do |c|
         if Process.const_defined?(c)
           [c.to_sym, Process.const_get(c)].find do |clk|
-            Process.clock_gettime(clk)
-          rescue
-            # Constants may be defined but not implemented, e.g., mingw.
-          else
-            PERFORMANCE_CLOCK = clk
+            begin
+              Process.clock_gettime(clk)
+            rescue
+              # Constants may be defined but not implemented, e.g., mingw.
+            else
+              PERFORMANCE_CLOCK = clk
+            end
           end
         end
       end
