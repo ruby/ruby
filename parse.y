@@ -12291,14 +12291,6 @@ block_append(struct parser_params *p, NODE *head, NODE *tail)
 
     if (h == 0) return tail;
     switch (nd_type(h)) {
-      case NODE_LIT:
-      case NODE_STR:
-      case NODE_SELF:
-      case NODE_TRUE:
-      case NODE_FALSE:
-      case NODE_NIL:
-        parser_warning(p, h, "unused literal ignored");
-        return tail;
       default:
         h = end = NEW_BLOCK(head, &head->nd_loc);
         RNODE_BLOCK(end)->nd_end = end;
