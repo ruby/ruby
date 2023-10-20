@@ -409,6 +409,11 @@ module Prism
       test_prism_eval("alias :prism_a :to_s")
     end
 
+    def test_DefNode
+      test_prism_eval("def prism_method; end")
+      test_prism_eval("a = Object.new; def a.prism_singleton; :ok; end; a.prism_singleton")
+    end
+
     def test_UndefNode
       test_prism_eval("def prism_undef_node_1; end; undef prism_undef_node_1")
       test_prism_eval(<<-HERE

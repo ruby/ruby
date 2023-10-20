@@ -1346,7 +1346,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_init((pm_node_t *)def_node, &next_scope_node, scope_node, parser);
         rb_iseq_t *method_iseq = NEW_ISEQ(next_scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
 
-        ADD_INSN2(ret, &dummy_line_node, definemethod, ID2SYM(method_name), method_iseq);
+        if (def_node->receiver) {
+            pm_compile_node(iseq, def_node->receiver, ret, src, false, scope_node);
+            ADD_INSN2(ret, &dummy_line_node, definesmethod, ID2SYM(method_name), method_iseq);
+        }
+        else {
+            ADD_INSN2(ret, &dummy_line_node, definemethod, ID2SYM(method_name), method_iseq);
+        }
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)method_iseq);
 
         if (!popped) {
