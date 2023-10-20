@@ -821,7 +821,7 @@ gem 'other', version
     File.chmod(0o555, Gem.plugindir)
     system_path = File.join(Gem.plugindir, "a_plugin.rb")
     user_path = File.join(Gem.plugindir(Gem.user_dir), "a_plugin.rb")
-    installer = util_installer spec, Gem.dir, :user
+    installer = Gem::Installer.at spec.cache_file, :user_install => true, :force => true
 
     assert_equal spec, installer.install
 
