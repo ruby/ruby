@@ -526,6 +526,7 @@ module Prism
     def test_prism_eval(source)
       $VERBOSE, verbose_bak = nil, $VERBOSE
 
+      source = "class Prism::TestCompilePrism\n#{source}\nend"
       begin
         compare_eval(source)
 
