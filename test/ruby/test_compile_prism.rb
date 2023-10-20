@@ -56,8 +56,10 @@ module Prism
     end
 
     def test_SourceLineNode
-      # TODO:
-      # test_prism_eval("__LINE__")
+      ruby_eval = RubyVM::InstructionSequence.compile_prism("__LINE__").eval
+      prism_eval = RubyVM::InstructionSequence.compile_prism("__LINE__").eval
+
+      assert_equal ruby_eval, prism_eval
     end
 
     def test_TrueNode
@@ -69,7 +71,7 @@ module Prism
     ############################################################################
 
     def test_BackReferenceReadNode
-      # TOO
+      test_prism_eval("$+")
     end
 
     def test_ClassVariableReadNode
@@ -538,8 +540,7 @@ module Prism
     end
 
     def test_SingletonClassNode
-      # TODO:
-      # test_prism_eval("class << self; end")
+      test_prism_eval("class << self; end")
     end
 
     def test_StatementsNode
