@@ -21,6 +21,7 @@ module Gem::BUNDLED_GEMS
     "csv" => "3.4.0",
     "base64" => "3.4.0",
     "bigdecimal" => "3.4.0",
+    "racc" => "3.4.0",
   }.freeze
 
   EXACT = {
