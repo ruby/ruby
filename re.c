@@ -2489,10 +2489,10 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
- * call-seq:
- *   inspect -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Returns a string representation of +self+:
+ *  Returns a string representation of +self+:
  *
  *    m = /.$/.match("foo")
  *    # => #<MatchData "o">
@@ -2507,7 +2507,6 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
  *
  *  Related: MatchData#to_s.
- *
  */
 
 static VALUE
