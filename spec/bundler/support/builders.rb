@@ -191,25 +191,25 @@ module Spec
       end
     end
 
-    def build_repo2(&blk)
+    def build_repo2(**kwargs, &blk)
       FileUtils.rm_rf gem_repo2
       FileUtils.cp_r gem_repo1, gem_repo2
-      update_repo2(&blk) if block_given?
+      update_repo2(**kwargs, &blk) if block_given?
     end
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
-    def build_repo4(&blk)
+    def build_repo4(**kwargs, &blk)
       FileUtils.rm_rf gem_repo4
-      build_repo(gem_repo4, &blk)
+      build_repo(gem_repo4, **kwargs, &blk)
     end
 
     def update_repo4(&blk)
       update_repo(gem_repo4, &blk)
     end
 
-    def update_repo2(&blk)
-      update_repo(gem_repo2, &blk)
+    def update_repo2(**kwargs, &blk)
+      update_repo(gem_repo2, **kwargs, &blk)
     end
 
     def build_security_repo
@@ -227,12 +227,12 @@ module Spec
       end
     end
 
-    def build_repo(path, &blk)
+    def build_repo(path, **kwargs, &blk)
       return if File.directory?(path)
 
       FileUtils.mkdir_p("#{path}/gems")
 
-      update_repo(path, &blk)
+      update_repo(path,**kwargs, &blk)
     end
 
     def check_test_gems!
@@ -249,7 +249,7 @@ module Spec
       end
     end
 
-    def update_repo(path)
+    def update_repo(path, build_compact_index: true)
       if path == gem_repo1 && caller.first.split(" ").last == "`build_repo`"
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
@@ -258,7 +258,12 @@ module Spec
       @_build_repo = File.basename(path)
       yield
       with_gem_path_as Path.base_system_gem_path do
-        gem_command :generate_index, dir: path
+        Dir[Spec::Path.base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
+          raise("Could not find rubygems-generate_index lib directory in #{Spec::Path.base_system_gem_path}")
+
+        command = "generate_index"
+        command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")
+        gem_command command, dir: path
       end
     ensure
       @_build_path = nil

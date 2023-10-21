@@ -249,6 +249,7 @@ class Gem::CommandManager
   def invoke_command(args, build_args)
     cmd_name = args.shift.downcase
     cmd = find_command cmd_name
+    terminate_interaction 1 unless cmd
     cmd.deprecation_warning if cmd.deprecated?
     cmd.invoke_with_build_args args, build_args
   end

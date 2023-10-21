@@ -556,7 +556,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "fails gracefully when downloading an invalid specification from the full index" do
-      build_repo2 do
+      build_repo2(build_compact_index: false) do
         build_gem "ajp-rails", "0.0.0", gemspec: false, skip_validation: true do |s|
           bad_deps = [["ruby-ajp", ">= 0.2.0"], ["rails", ">= 0.14"]]
           s.
