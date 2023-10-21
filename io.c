@@ -2878,7 +2878,7 @@ rb_io_descriptor(VALUE io)
 
     rb_raise(rb_eTypeError, "expected IO or #fileno, %"PRIsVALUE" given", rb_obj_class(io));
 
-    return -1;
+    UNREACHABLE_RETURN(-1);
 }
 
 int
