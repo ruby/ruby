@@ -2,6 +2,7 @@
 
 module Bundler
   class Checksum
+    ALGO_SEPARATOR = "="
     DEFAULT_ALGORITHM = "sha256"
     private_constant :DEFAULT_ALGORITHM
     DEFAULT_BLOCK_SIZE = 16_384
@@ -15,20 +16,24 @@ module Bundler
         Checksum.new(algo, digest.hexdigest!, Source.new(:gem, pathname))
       end
 
-      def from_api(digest, source_uri)
-        # transform the bytes from base64 to hex, switch to unpack1 when we drop older rubies
-        hexdigest = digest.length == 44 ? digest.unpack("m0").first.unpack("H*").first : digest
-
-        if hexdigest.length != 64
-          raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hexdigest nor base64digest"
-        end
-
-        Checksum.new(DEFAULT_ALGORITHM, hexdigest, Source.new(:api, source_uri))
+      def from_api(digest, source_uri, algo = DEFAULT_ALGORITHM)
+        Checksum.new(algo, to_hexdigest(digest, algo), Source.new(:api, source_uri))
       end
 
       def from_lock(lock_checksum, lockfile_location)
-        algo, digest = lock_checksum.strip.split("-", 2)
-        Checksum.new(algo, digest, Source.new(:lock, lockfile_location))
+        algo, digest = lock_checksum.strip.split(ALGO_SEPARATOR, 2)
+        Checksum.new(algo, to_hexdigest(digest, algo), Source.new(:lock, lockfile_location))
+      end
+
+      def to_hexdigest(digest, algo = DEFAULT_ALGORITHM)
+        return digest unless algo == DEFAULT_ALGORITHM
+        return digest if digest.match?(/\A[0-9a-f]{64}\z/i)
+        if digest.match?(%r{\A[-0-9a-z_+/]{43}={0,2}\z}i)
+          digest = digest.tr("-_", "+/") # fix urlsafe base64
+          # transform to hex. Use unpack1 when we drop older rubies
+          return digest.unpack("m0").first.unpack("H*").first
+        end
+        raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hex or base64 digest"
       end
     end
 
@@ -59,7 +64,7 @@ module Bundler
     end
 
     def to_lock
-      "#{algo}-#{digest}"
+      "#{algo}#{ALGO_SEPARATOR}#{digest}"
     end
 
     def merge!(other)
@@ -87,7 +92,7 @@ module Bundler
     end
 
     def inspect
-      abbr = "#{algo}-#{digest[0, 8]}"
+      abbr = "#{algo}#{ALGO_SEPARATOR}#{digest[0, 8]}"
       from = "from #{sources.join(" and ")}"
       "#<#{self.class}:#{object_id} #{abbr} #{from}>"
     end
@@ -109,7 +114,7 @@ module Bundler
       end
 
       # phrased so that the usual string format is grammatically correct
-      #   rake (10.3.2) sha256-abc123 from #{to_s}
+      #   rake (10.3.2) sha256=abc123 from #{to_s}
       def to_s
         case type
         when :lock

@@ -23,7 +23,7 @@ RSpec.describe Bundler::LockfileParser do
       rake
 
     CHECKSUMS
-      rake (10.3.2) sha256-814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
+      rake (10.3.2) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
 
     RUBY VERSION
        ruby 2.1.3p242
@@ -121,8 +121,8 @@ RSpec.describe Bundler::LockfileParser do
     let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
     let(:rake_checksum) do
       Bundler::Checksum.from_lock(
-        "sha256-814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
-        "#{lockfile_path}:??:1"
+        "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
+        "#{lockfile_path}:20:17"
       )
     end
 
@@ -163,8 +163,33 @@ RSpec.describe Bundler::LockfileParser do
       include_examples "parsing"
     end
 
+    context "when the checksum is urlsafe base64 encoded" do
+      let(:lockfile_contents) do
+        super().sub(
+          "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
+          "sha256=gUgow08TFdfnt-gpUYRXfMTpabrWFWrAadAtY_WNgug="
+        )
+      end
+      include_examples "parsing"
+    end
+
+    context "when the checksum is of an unknown algorithm" do
+      let(:lockfile_contents) do
+        super().sub(
+          "sha256=",
+          "sha512=pVDn9GLmcFkz8vj1ueiVxj5uGKkAyaqYjEX8zG6L5O4BeVg3wANaKbQdpj/B82Nd/MHVszy6polHcyotUdwilQ==,sha256="
+        )
+      end
+      include_examples "parsing"
+
+      it "preserves the checksum as is" do
+        checksum = subject.sources.last.checksum_store.fetch(specs.last, "sha512")
+        expect(checksum.algo).to eq("sha512")
+      end
+    end
+
     context "when CHECKSUMS has duplicate checksums in the lockfile that don't match" do
-      let(:bad_checksum) { "sha256-c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11" }
+      let(:bad_checksum) { "sha256=c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11" }
       let(:lockfile_contents) { super().split(/(?<=CHECKSUMS\n)/m).insert(1, "  rake (10.3.2) #{bad_checksum}\n").join }
 
       it "raises a security error" do

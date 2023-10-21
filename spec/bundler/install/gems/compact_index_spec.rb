@@ -876,13 +876,25 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   describe "checksum validation" do
+    it "handles checksums from the server in base64" do
+      api_checksum = checksum_for_repo_gem(gem_repo1, "rack", "1.0.0").split("sha256=").last
+      rack_checksum = [[api_checksum].pack("H*")].pack("m0")
+      install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => rack_checksum }
+        source "#{source_uri}"
+        gem "rack"
+      G
+
+      expect(out).to include("Fetching gem metadata from #{source_uri}")
+      expect(the_bundle).to include_gems("rack 1.0.0")
+    end
+
     it "raises when the checksum does not match" do
       install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum", :raise_on_error => false
         source "#{source_uri}"
         gem "rack"
       G
 
-      api_checksum = checksum_for_repo_gem(gem_repo1, "rack", "1.0.0").split("sha256-").last
+      api_checksum = checksum_for_repo_gem(gem_repo1, "rack", "1.0.0").split("sha256=").last
 
       gem_path = if Bundler.feature_flag.global_gem_cache?
         default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "rack-1.0.0.gem")
@@ -893,9 +905,9 @@ The checksum of /versions does not match the checksum provided by the server! So
       expect(exitstatus).to eq(37)
       expect(err).to eq <<~E.strip
         Bundler found mismatched checksums. This is a potential security risk.
-          rack (1.0.0) sha256-2222222222222222222222222222222222222222222222222222222222222222
+          rack (1.0.0) sha256=2222222222222222222222222222222222222222222222222222222222222222
             from the API at http://localgemserver.test/
-          rack (1.0.0) sha256-#{api_checksum}
+          rack (1.0.0) sha256=#{api_checksum}
             from the gem at #{gem_path}
 
         If you trust the API at http://localgemserver.test/, to resolve this issue you can:
@@ -913,7 +925,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
       expect(exitstatus).to eq(14)
-      expect(err).to include("Invalid checksum for rack-0.9.1: \"checksum!\" is not a valid SHA256 hexdigest nor base64digest")
+      expect(err).to include('Invalid checksum for rack-0.9.1: "checksum!" is not a valid SHA256 hex or base64 digest')
     end
 
     it "does not raise when disable_checksum_validation is set" do

@@ -214,7 +214,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "preserves unknown checksum algorithms" do
-    lockfile @lockfile.gsub(/(sha256-[a-f0-9]+)$/, "constant-true,\\1,xyz-123")
+    lockfile @lockfile.gsub(/(sha256=[a-f0-9]+)$/, "constant=true,\\1,xyz=123")
 
     previous_lockfile = read_lockfile
 

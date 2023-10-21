@@ -129,7 +129,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     it "works in standalone mode", :bundler => "< 3" do
-      gem_checksum = checksum_for_repo_gem(gem_repo4, "foo", "1.0").split("-").last
+      gem_checksum = checksum_for_repo_gem(gem_repo4, "foo", "1.0").split(Bundler::Checksum::ALGO_SEPARATOR).last
       bundle "install --standalone", :artifice => "compact_index", :env => { "BUNDLER_SPEC_FOO_CHECKSUM" => gem_checksum }
     end
   end
@@ -337,7 +337,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(err).to eq(<<~E.strip)
             [DEPRECATED] Your Gemfile contains multiple global sources. Using `source` more than once without a block is a security risk, and may result in installing unexpected gems. To resolve this warning, use a block to indicate which gems should come from the secondary source.
             Bundler found mismatched checksums. This is a potential security risk.
-              rack (1.0.0) sha256-#{rack_checksum}
+              rack (1.0.0) sha256=#{rack_checksum}
                 from the API at https://gem.repo2/
                 and the API at https://gem.repo1/
               #{checksum_for_repo_gem(gem_repo2, "rack", "1.0.0")}
@@ -354,7 +354,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs from the other source and warns about ambiguous gems when the sources have the same checksum", :bundler => "< 3" do
-          gem_checksum = checksum_for_repo_gem(gem_repo2, "rack", "1.0.0").split("-").last
+          gem_checksum = checksum_for_repo_gem(gem_repo2, "rack", "1.0.0").split(Bundler::Checksum::ALGO_SEPARATOR).last
           bundle :install, :artifice => "compact_index", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => gem_checksum, "DEBUG" => "1" }
 
           expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
@@ -1302,16 +1302,16 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         bundle "install", :artifice => "compact_index", :raise_on_error => false
 
-        api_checksum1 = checksum_for_repo_gem(gem_repo1, "rack", "0.9.1").split("sha256-").last
-        api_checksum3 = checksum_for_repo_gem(gem_repo3, "rack", "0.9.1").split("sha256-").last
+        api_checksum1 = checksum_for_repo_gem(gem_repo1, "rack", "0.9.1").split("sha256=").last
+        api_checksum3 = checksum_for_repo_gem(gem_repo3, "rack", "0.9.1").split("sha256=").last
 
         expect(exitstatus).to eq(37)
         expect(err).to eq(<<~E.strip)
           [DEPRECATED] Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.
           Bundler found mismatched checksums. This is a potential security risk.
-            rack (0.9.1) sha256-#{api_checksum3}
+            rack (0.9.1) sha256=#{api_checksum3}
               from the API at https://gem.repo3/
-            rack (0.9.1) sha256-#{api_checksum1}
+            rack (0.9.1) sha256=#{api_checksum1}
               from the API at https://gem.repo1/
 
           Mismatched checksums each have an authoritative source:

@@ -61,7 +61,7 @@ module Spec
 
       checksums = checksums.each_line.map do |line|
         if prefixes.nil? || line.match?(prefixes)
-          line.gsub(/ sha256-[a-f0-9]{64}/i, "")
+          line.gsub(/ sha256=[a-f0-9]{64}/i, "")
         else
           line
         end
