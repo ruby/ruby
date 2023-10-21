@@ -529,7 +529,7 @@ module Prism
                     line.each_char.with_index do |char, i|
                       case char
                       when "\r"
-                        if line.chars[i + 1] == "\n"
+                        if line[i + 1] == "\n"
                           break
                         end
                       when "\n"
