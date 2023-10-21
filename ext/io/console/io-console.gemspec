@@ -13,6 +13,7 @@ Gem::Specification.new do |s|
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
   s.files = %w[
+    .document
     LICENSE.txt
     README.md
     ext/io/console/console.c
