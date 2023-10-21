@@ -2871,7 +2871,7 @@ rb_io_descriptor(VALUE io)
     }
     else {
         VALUE fileno = rb_check_funcall(io, id_fileno, 0, NULL);
-        if (fileno != Qundef) {
+        if (!UNDEF_P(fileno)) {
             return RB_NUM2INT(fileno);
         }
     }
