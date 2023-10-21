@@ -80,7 +80,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_invalid
-    assert_raise NoMethodError do
+    assert_raise TypeError do
       IO::Buffer.map("foobar")
     end
   end

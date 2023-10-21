@@ -2870,8 +2870,15 @@ rb_io_descriptor(VALUE io)
         return fptr->fd;
     }
     else {
-        return RB_NUM2INT(rb_funcall(io, id_fileno, 0));
+        VALUE fileno = rb_check_funcall(io, id_fileno, 0, NULL);
+        if (fileno != Qundef) {
+            return RB_NUM2INT(fileno);
+        }
     }
+
+    rb_raise(rb_eTypeError, "expected IO or #fileno, %"PRIsVALUE" given", rb_obj_class(io));
+
+    return -1;
 }
 
 int
