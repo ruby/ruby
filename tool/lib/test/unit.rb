@@ -948,7 +948,7 @@ module Test
       end
 
       def _prepare_run(suites, type)
-        options[:job_status] ||= :replace if @tty && !@verbose
+        options[:job_status] ||= @tty ? :replace : :normal unless @verbose
         case options[:color]
         when :always
           color = true
