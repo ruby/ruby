@@ -453,7 +453,7 @@ module TestIRB
         "show_source IRB.conf\n",
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_method
@@ -461,7 +461,7 @@ module TestIRB
         "p show_source('IRB.conf')\n",
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_string
@@ -469,7 +469,7 @@ module TestIRB
         "show_source 'IRB.conf'\n",
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_alias
@@ -478,7 +478,7 @@ module TestIRB
         conf: { COMMAND_ALIASES: { :'$' => :show_source } }
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_end_finder
