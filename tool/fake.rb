@@ -13,7 +13,8 @@ end
   env or next
   e = ENV[env] or next
   e = e.split(File::PATH_SEPARATOR)
-  e.delete(File.expand_path(path, builddir)) or next
+  path = File.realpath(path, builddir)
+  e.delete(path) or next
   ENV[env] = (e.join(File::PATH_SEPARATOR) unless e.empty?)
 end
 
