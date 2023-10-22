@@ -1,6 +1,43 @@
 # frozen_string_literal: true
 
 module Test
+
+  class << self
+    ##
+    # Filter object for backtraces.
+
+    attr_accessor :backtrace_filter
+  end
+
+  class BacktraceFilter # :nodoc:
+    def filter bt
+      return ["No backtrace"] unless bt
+
+      new_bt = []
+      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
+
+      unless $DEBUG then
+        bt.each do |line|
+          break if pattern.match?(line)
+          new_bt << line
+        end
+
+        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
+        new_bt = bt.dup if new_bt.empty?
+      else
+        new_bt = bt.dup
+      end
+
+      new_bt
+    end
+  end
+
+  self.backtrace_filter = BacktraceFilter.new
+
+  def self.filter_backtrace bt # :nodoc:
+    backtrace_filter.filter bt
+  end
+
   module Unit
     module Assertions
       def assert_raises(*exp, &b)
@@ -741,14 +778,16 @@ eom
       %w[
         CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
         CLOCK_MONOTONIC
-      ].find do |clk|
-        if Process.const_defined?(clk)
-          [clk.to_sym, Process.const_get(clk)].find do |clk|
-            Process.clock_gettime(clk)
-          rescue
-            # Constants may be defined but not implemented, e.g., mingw.
-          else
-            PERFORMANCE_CLOCK = clk
+      ].find do |c|
+        if Process.const_defined?(c)
+          [c.to_sym, Process.const_get(c)].find do |clk|
+            begin
+              Process.clock_gettime(clk)
+            rescue
+              # Constants may be defined but not implemented, e.g., mingw.
+            else
+              PERFORMANCE_CLOCK = clk
+            end
           end
         end
       end

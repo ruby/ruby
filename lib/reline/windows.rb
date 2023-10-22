@@ -295,7 +295,7 @@ class Reline::Windows
     yield
   end
 
-  def self.getc
+  def self.getc(_timeout_second)
     check_input_event
     @@output_buf.shift
   end

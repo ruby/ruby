@@ -13,4 +13,3 @@ class RbID2StrCommand(RbBaseCommand):
         val = self.frame.EvaluateExpression(command)
         inspector = RbInspector(debugger, result, self.ruby_globals)
         inspector.inspect(val)
-

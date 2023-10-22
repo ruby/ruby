@@ -100,12 +100,12 @@ module Bundler
       end
     end
 
-    def incomplete_ruby_specs?(deps)
+    def incomplete_for_platform?(deps, platform)
       return false if @specs.empty?
 
       @incomplete_specs = []
 
-      self.for(deps, true, [Gem::Platform::RUBY])
+      self.for(deps, true, [platform])
 
       @incomplete_specs.any?
     end
@@ -202,6 +202,7 @@ module Bundler
       specs_for_name = lookup[dep.name]
       target_platform = dep.force_ruby_platform ? Gem::Platform::RUBY : (platform || Bundler.local_platform)
       matching_specs = GemHelpers.select_best_platform_match(specs_for_name, target_platform)
+      matching_specs.each {|s| s.force_ruby_platform = true } if dep.force_ruby_platform
       matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
       matching_specs
     end

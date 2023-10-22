@@ -90,14 +90,26 @@ module Bundler
     def initialize(root = nil)
       @root            = root
       @local_config    = load_config(local_config_file)
-      @env_config      = ENV.to_h.select {|key, _value| key =~ /\ABUNDLE_.+/ }
+
+      @env_config      = ENV.to_h
+      @env_config.select! {|key, _value| key.start_with?("BUNDLE_") }
+      @env_config.delete("BUNDLE_")
+
       @global_config   = load_config(global_config_file)
       @temporary       = {}
+
+      @key_cache = {}
     end
 
     def [](name)
       key = key_for(name)
-      value = configs.values.map {|config| config[key] }.compact.first
+
+      value = nil
+      configs.each do |_, config|
+        value = config[key]
+        next if value.nil?
+        break
+      end
 
       converted_value(value, name)
     end
@@ -140,17 +152,22 @@ module Bundler
     end
 
     def all
-      keys = @temporary.keys | @global_config.keys | @local_config.keys | @env_config.keys
+      keys = @temporary.keys.union(@global_config.keys, @local_config.keys, @env_config.keys)
 
-      keys.map do |key|
-        key.sub(/^BUNDLE_/, "").gsub(/___/, "-").gsub(/__/, ".").downcase
-      end.sort
+      keys.map! do |key|
+        key = key.delete_prefix("BUNDLE_")
+        key.gsub!("___", "-")
+        key.gsub!("__", ".")
+        key.downcase!
+        key
+      end.sort!
+      keys
     end
 
     def local_overrides
       repos = {}
       all.each do |k|
-        repos[$'] = self[k] if k =~ /^local\./
+        repos[k.delete_prefix("local.")] = self[k] if k.start_with?("local.")
       end
       repos
     end
@@ -297,13 +314,13 @@ module Bundler
     end
 
     def key_for(key)
-      self.class.key_for(key)
+      @key_cache[key] ||= self.class.key_for(key)
     end
 
     private
 
     def configs
-      {
+      @configs ||= {
         :temporary => @temporary,
         :local => @local_config,
         :env => @env_config,
@@ -329,16 +346,20 @@ module Bundler
     end
 
     def is_bool(name)
-      BOOL_KEYS.include?(name.to_s) || BOOL_KEYS.include?(parent_setting_for(name.to_s))
+      name = self.class.key_to_s(name)
+      BOOL_KEYS.include?(name) || BOOL_KEYS.include?(parent_setting_for(name))
     end
 
     def is_string(name)
-      STRING_KEYS.include?(name.to_s) || name.to_s.start_with?("local.") || name.to_s.start_with?("mirror.") || name.to_s.start_with?("build.")
+      name = self.class.key_to_s(name)
+      STRING_KEYS.include?(name) || name.start_with?("local.") || name.start_with?("mirror.") || name.start_with?("build.")
     end
 
     def to_bool(value)
       case value
-      when nil, /\A(false|f|no|n|0|)\z/i, false
+      when String
+        value.match?(/\A(false|f|no|n|0|)\z/i) ? false : true
+      when nil, false
         false
       else
         true
@@ -346,11 +367,11 @@ module Bundler
     end
 
     def is_num(key)
-      NUMBER_KEYS.include?(key.to_s)
+      NUMBER_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_array(key)
-      ARRAY_KEYS.include?(key.to_s)
+      ARRAY_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_credential(key)
@@ -373,7 +394,7 @@ module Bundler
     end
 
     def set_key(raw_key, value, hash, file)
-      raw_key = raw_key.to_s
+      raw_key = self.class.key_to_s(raw_key)
       value = array_to_s(value) if is_array(raw_key)
 
       key = key_for(raw_key)
@@ -393,6 +414,8 @@ module Bundler
     end
 
     def converted_value(value, key)
+      key = self.class.key_to_s(key)
+
       if is_array(key)
         to_array(value)
       elsif value.nil?
@@ -451,17 +474,16 @@ module Bundler
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
         serializer_class.load(file.read).inject({}) do |config, (k, v)|
-          new_k = k
-
           if k.include?("-")
             Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
               "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
               "Please edit #{file} and replace any dashes in configuration keys with a triple underscore (`___`)."
 
-            new_k = k.gsub("-", "___")
+            # string hash keys are frozen
+            k = k.gsub("-", "___")
           end
 
-          config[new_k] = v
+          config[k] = v
           config
         end
       end
@@ -491,8 +513,11 @@ module Bundler
 
     def self.key_for(key)
       key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")
-      key = key.to_s.gsub(".", "__").gsub("-", "___").upcase
-      "BUNDLE_#{key}"
+      key = key_to_s(key).gsub(".", "__")
+      key.gsub!("-", "___")
+      key.upcase!
+
+      key.prepend("BUNDLE_")
     end
 
     # TODO: duplicates Rubygems#normalize_uri
@@ -511,6 +536,35 @@ module Bundler
         raise ArgumentError, format("Gem sources must be absolute. You provided '%s'.", uri)
       end
       "#{prefix}#{uri}#{suffix}"
+    end
+
+    # This is a hot method, so avoid respond_to? checks on every invocation
+    if :read.respond_to?(:name)
+      def self.key_to_s(key)
+        case key
+        when String
+          key
+        when Symbol
+          key.name
+        when Bundler::URI::HTTP
+          key.to_s
+        else
+          raise ArgumentError, "Invalid key: #{key.inspect}"
+        end
+      end
+    else
+      def self.key_to_s(key)
+        case key
+        when String
+          key
+        when Symbol
+          key.to_s
+        when Bundler::URI::HTTP
+          key.to_s
+        else
+          raise ArgumentError, "Invalid key: #{key.inspect}"
+        end
+      end
     end
   end
 end

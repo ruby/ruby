@@ -138,20 +138,6 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(1234, Integer(1234))
     assert_equal(1, Integer(1.234))
 
-    # base argument
-    assert_equal(1234, Integer("1234", 10))
-    assert_equal(668, Integer("1234", 8))
-    assert_equal(4660, Integer("1234", 16))
-    assert_equal(49360, Integer("1234", 36))
-    # decimal, not octal
-    assert_equal(1234, Integer("01234", 10))
-    assert_raise(ArgumentError) { Integer("0x123", 10) }
-    assert_raise(ArgumentError) { Integer(1234, 10) }
-    assert_raise(ArgumentError) { Integer(12.34, 10) }
-    assert_raise(ArgumentError) { Integer(Object.new, 1) }
-
-    assert_raise(ArgumentError) { Integer(1, 1, 1) }
-
     assert_equal(2 ** 50, Integer(2.0 ** 50))
     assert_raise(TypeError) { Integer(nil) }
 
@@ -252,6 +238,32 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(16, Integer(obj))
   end
 
+  def test_Integer_with_base
+    assert_equal(1234, Integer("1234", 10))
+    assert_equal(668, Integer("1234", 8))
+    assert_equal(4660, Integer("1234", 16))
+    assert_equal(49360, Integer("1234", 36))
+    # decimal, not octal
+    assert_equal(1234, Integer("01234", 10))
+    assert_raise(ArgumentError) { Integer("0x123", 10) }
+    assert_raise(ArgumentError) { Integer(1234, 10) }
+    assert_raise(ArgumentError) { Integer(12.34, 10) }
+    assert_raise(ArgumentError) { Integer(Object.new, 1) }
+
+    assert_raise(ArgumentError) { Integer(1, 1, 1) }
+
+    def (base = Object.new).to_int
+      8
+    end
+    assert_equal(8, Integer("10", base))
+
+    assert_raise(TypeError) { Integer("10", "8") }
+    def (base = Object.new).to_int
+      "8"
+    end
+    assert_raise(TypeError) { Integer("10", base) }
+  end
+
   def test_int_p
     assert_not_predicate(1.0, :integer?)
     assert_predicate(1, :integer?)
@@ -309,23 +321,34 @@ class TestInteger < Test::Unit::TestCase
     begin;
       called = false
       Integer.class_eval do
-        alias old_plus +
-        undef +
-        define_method(:+){|x| called = true; 1}
+        alias old_succ succ
+        undef succ
+        define_method(:succ){|x| called = true; x+1}
         alias old_lt <
         undef <
         define_method(:<){|x| called = true}
       end
+
+      fix = 1
+      fix.times{break 0}
+      fix_called = called
+
+      called = false
+
       big = 2**65
       big.times{break 0}
+      big_called = called
+
       Integer.class_eval do
-        undef +
-        alias + old_plus
+        undef succ
+        alias succ old_succ
         undef <
         alias < old_lt
       end
+
+      # Asssert that Fixnum and Bignum behave consistently
       bug18377 = "[ruby-core:106361]"
-      assert_equal(false, called, bug18377)
+      assert_equal(fix_called, big_called, bug18377)
     end;
   end
 

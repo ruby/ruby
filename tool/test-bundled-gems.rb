@@ -36,7 +36,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "rbs"
     # TODO: We should skip test file instead of test class/methods
     skip_test_files = %w[
-      test/stdlib/Prime_test.rb
+      test/stdlib/RbConfig_test.rb
     ]
 
     skip_test_files.each do |file|

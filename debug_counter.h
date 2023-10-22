@@ -100,6 +100,13 @@ RB_DEBUG_COUNTER(ccf_opt_block_call)
 RB_DEBUG_COUNTER(ccf_opt_struct_aref)
 RB_DEBUG_COUNTER(ccf_opt_struct_aset)
 RB_DEBUG_COUNTER(ccf_super_method)
+RB_DEBUG_COUNTER(ccf_cfunc_other)
+RB_DEBUG_COUNTER(ccf_cfunc_only_splat)
+RB_DEBUG_COUNTER(ccf_cfunc_only_splat_kw)
+RB_DEBUG_COUNTER(ccf_iseq_bmethod)
+RB_DEBUG_COUNTER(ccf_noniseq_bmethod)
+RB_DEBUG_COUNTER(ccf_opt_send_complex)
+RB_DEBUG_COUNTER(ccf_opt_send_simple)
 
 /*
  * control frame push counts.

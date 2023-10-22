@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'delegate'
 require 'timeout'
+require 'date'
 require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
@@ -495,6 +496,143 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2, 3, 4], result)
   end
 
+  def test_reverse_each
+    a = []
+    (1..3).reverse_each {|x| a << x }
+    assert_equal([3, 2, 1], a)
+
+    a = []
+    (1...3).reverse_each {|x| a << x }
+    assert_equal([2, 1], a)
+
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+
+    a = []
+    (fmax+1..fmax+3).reverse_each {|x| a << x }
+    assert_equal([fmax+3, fmax+2, fmax+1], a)
+
+    a = []
+    (fmax+1...fmax+3).reverse_each {|x| a << x }
+    assert_equal([fmax+2, fmax+1], a)
+
+    a = []
+    (fmax-1..fmax+1).reverse_each {|x| a << x }
+    assert_equal([fmax+1, fmax, fmax-1], a)
+
+    a = []
+    (fmax-1...fmax+1).reverse_each {|x| a << x }
+    assert_equal([fmax, fmax-1], a)
+
+    a = []
+    (fmin-1..fmin+1).reverse_each{|x| a << x }
+    assert_equal([fmin+1, fmin, fmin-1], a)
+
+    a = []
+    (fmin-1...fmin+1).reverse_each{|x| a << x }
+    assert_equal([fmin, fmin-1], a)
+
+    a = []
+    (fmin-3..fmin-1).reverse_each{|x| a << x }
+    assert_equal([fmin-1, fmin-2, fmin-3], a)
+
+    a = []
+    (fmin-3...fmin-1).reverse_each{|x| a << x }
+    assert_equal([fmin-2, fmin-3], a)
+
+    a = []
+    ("a".."c").reverse_each {|x| a << x }
+    assert_equal(["c", "b", "a"], a)
+  end
+
+  def test_reverse_each_for_beginless_range
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+
+    a = []
+    (..3).reverse_each {|x| a << x; break if x <= 0 }
+    assert_equal([3, 2, 1, 0], a)
+
+    a = []
+    (...3).reverse_each {|x| a << x; break if x <= 0 }
+    assert_equal([2, 1, 0], a)
+
+    a = []
+    (..fmax+1).reverse_each {|x| a << x; break if x <= fmax-1 }
+    assert_equal([fmax+1, fmax, fmax-1], a)
+
+    a = []
+    (...fmax+1).reverse_each {|x| a << x; break if x <= fmax-1 }
+    assert_equal([fmax, fmax-1], a)
+
+    a = []
+    (..fmin+1).reverse_each {|x| a << x; break if x <= fmin-1 }
+    assert_equal([fmin+1, fmin, fmin-1], a)
+
+    a = []
+    (...fmin+1).reverse_each {|x| a << x; break if x <= fmin-1 }
+    assert_equal([fmin, fmin-1], a)
+
+    a = []
+    (..fmin-1).reverse_each {|x| a << x; break if x <= fmin-3 }
+    assert_equal([fmin-1, fmin-2, fmin-3], a)
+
+    a = []
+    (...fmin-1).reverse_each {|x| a << x; break if x <= fmin-3 }
+    assert_equal([fmin-2, fmin-3], a)
+  end
+
+  def test_reverse_each_for_single_point_range
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+
+    values = [fmin*2, fmin-1, fmin, 0, fmax, fmax+1, fmax*2]
+
+    values.each do |b|
+      r = b..b
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([b], a, "failed on #{r}")
+
+      r = b...b+1
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([b], a, "failed on #{r}")
+    end
+  end
+
+  def test_reverse_each_for_empty_range
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+
+    values = [fmin*2, fmin-1, fmin, 0, fmax, fmax+1, fmax*2]
+
+    values.each do |b|
+      r = b..b-1
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([], a, "failed on #{r}")
+    end
+
+    values.repeated_permutation(2).to_a.product([true, false]).each do |(b, e), excl|
+      next unless b > e || (b == e && excl)
+
+      r = Range.new(b, e, excl)
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([], a, "failed on #{r}")
+    end
+  end
+
+  def test_reverse_each_with_no_block
+    enum = (1..5).reverse_each
+    assert_equal 5, enum.size
+
+    a = []
+    enum.each {|x| a << x }
+    assert_equal [5, 4, 3, 2, 1], a
+  end
+
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
@@ -622,6 +760,28 @@ class TestRange < Test::Unit::TestCase
       end
     }
     assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
+  end
+
+  def test_eqq_unbounded_ruby_bug_19864
+    t1 = Date.today
+    t2 = t1 + 1
+    assert_equal(true, (..t1) === t1)
+    assert_equal(false, (..t1) === t2)
+    assert_equal(true, (..t2) === t1)
+    assert_equal(true, (..t2) === t2)
+    assert_equal(false, (...t1) === t1)
+    assert_equal(false, (...t1) === t2)
+    assert_equal(true, (...t2) === t1)
+    assert_equal(false, (...t2) === t2)
+
+    assert_equal(true, (t1..) === t1)
+    assert_equal(true, (t1..) === t2)
+    assert_equal(false, (t2..) === t1)
+    assert_equal(true, (t2..) === t2)
+    assert_equal(true, (t1...) === t1)
+    assert_equal(true, (t1...) === t2)
+    assert_equal(false, (t2...) === t1)
+    assert_equal(true, (t2...) === t2)
   end
 
   def test_eqq_non_iteratable
@@ -817,6 +977,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal 41, (1...42).size
     assert_equal 6, (1...6.3).size
     assert_equal 5, (1.1...6).size
+    assert_equal 3, (1..3r).size
+    assert_equal 2, (1...3r).size
+    assert_equal 3, (1..3.1r).size
+    assert_equal 3, (1...3.1r).size
     assert_equal 42, (1..42).each.size
     assert_nil ("a"..."z").size
     assert_nil ("a"...).size
@@ -1024,7 +1188,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
     assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+
+    assert_equal(bignum * 2 + 1, (0...).bsearch {|i| i > bignum * 2 })
     assert_equal(bignum * 2 + 1, (bignum...).bsearch {|i| i > bignum * 2 })
+    assert_equal(-bignum * 2 + 1, (...0).bsearch {|i| i > -bignum * 2 })
     assert_equal(-bignum * 2 + 1, (...-bignum).bsearch {|i| i > -bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
@@ -1049,6 +1216,79 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_count
+    assert_equal 42, (1..42).count
+    assert_equal 41, (1...42).count
+    assert_equal 0, (42..1).count
+    assert_equal 0, (42...1).count
+    assert_equal 2**100, (1..2**100).count
+    assert_equal 6, (1...6.3).count
+    assert_equal 4, ('a'..'d').count
+    assert_equal 3, ('a'...'d').count
+
     assert_equal(Float::INFINITY, (1..).count)
+    assert_equal(Float::INFINITY, (..1).count)
+  end
+
+  def test_overlap?
+    assert_not_operator(0..2, :overlap?, -2..-1)
+    assert_not_operator(0..2, :overlap?, -2...0)
+    assert_operator(0..2, :overlap?, -1..0)
+    assert_operator(0..2, :overlap?, 1..2)
+    assert_operator(0..2, :overlap?, 2..3)
+    assert_not_operator(0..2, :overlap?, 3..4)
+    assert_not_operator(0...2, :overlap?, 2..3)
+
+    assert_operator(..0, :overlap?, -1..0)
+    assert_operator(...0, :overlap?, -1..0)
+    assert_operator(..0, :overlap?, 0..1)
+    assert_operator(..0, :overlap?, ..1)
+    assert_not_operator(..0, :overlap?, 1..2)
+    assert_not_operator(...0, :overlap?, 0..1)
+
+    assert_not_operator(0.., :overlap?, -2..-1)
+    assert_not_operator(0.., :overlap?, ...0)
+    assert_operator(0.., :overlap?, -1..0)
+    assert_operator(0.., :overlap?, ..0)
+    assert_operator(0.., :overlap?, 0..1)
+    assert_operator(0.., :overlap?, 1..2)
+    assert_operator(0.., :overlap?, 1..)
+
+    assert_not_operator((1..3), :overlap?, ('a'..'d'))
+
+    assert_raise(TypeError) { (0..).overlap?(1) }
+    assert_raise(TypeError) { (0..).overlap?(nil) }
+
+    assert_operator((1..3), :overlap?, (2..4))
+    assert_operator((1...3), :overlap?, (2..3))
+    assert_operator((2..3), :overlap?, (1..2))
+    assert_operator((..3), :overlap?, (3..))
+    assert_operator((nil..nil), :overlap?, (3..))
+    assert_operator((nil...nil), :overlap?, (nil..))
+
+    assert_raise(TypeError) { (1..3).overlap?(1) }
+
+    assert_not_operator((1..2), :overlap?, (2...2))
+    assert_not_operator((2...2), :overlap?, (1..2))
+
+    assert_not_operator((4..1), :overlap?, (2..3))
+    assert_not_operator((4..1), :overlap?, (..3))
+    assert_not_operator((4..1), :overlap?, (2..))
+
+    assert_not_operator((1..4), :overlap?, (3..2))
+    assert_not_operator((..4), :overlap?, (3..2))
+    assert_not_operator((1..), :overlap?, (3..2))
+
+    assert_not_operator((4..5), :overlap?, (2..3))
+    assert_not_operator((4..5), :overlap?, (2...4))
+
+    assert_not_operator((1..2), :overlap?, (3..4))
+    assert_not_operator((1...3), :overlap?, (3..4))
+
+    assert_not_operator((4..5), :overlap?, (2..3))
+    assert_not_operator((4..5), :overlap?, (2...4))
+
+    assert_not_operator((1..2), :overlap?, (3..4))
+    assert_not_operator((1...3), :overlap?, (3..4))
+    assert_not_operator((...3), :overlap?, (3..))
   end
 end

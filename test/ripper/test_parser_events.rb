@@ -152,6 +152,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       thru_args_forward = false
       parse(code, :on_args_forward) {thru_args_forward = true}
       assert_equal true, thru_args_forward, "no args_forward for: #{code}"
+      parse(code, :on_params) {|*, block| assert_nil(block)}
     end
   end
 

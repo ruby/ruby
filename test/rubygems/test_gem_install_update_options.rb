@@ -159,6 +159,37 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     FileUtils.chmod 0o755, @gemhome
   end
 
+  def test_auto_install_dir_unless_gem_home_writable
+    if Process.uid.zero?
+      pend("test_auto_install_dir_unless_gem_home_writable test skipped in root privilege")
+      return
+    end
+
+    orig_gem_home = ENV["GEM_HOME"]
+    ENV.delete("GEM_HOME")
+
+    @spec = quick_gem "a" do |spec|
+      util_make_exec spec
+    end
+
+    util_build_gem @spec
+    @gem = @spec.cache_file
+
+    @cmd.handle_options %w[]
+
+    assert_not_equal Gem.paths.home, Gem.user_dir
+
+    FileUtils.chmod 0o755, @userhome
+    FileUtils.chmod 0o000, @gemhome
+
+    Gem.use_paths nil, @userhome
+
+    assert_equal Gem.paths.home, Gem.user_dir
+  ensure
+    FileUtils.chmod 0o755, @gemhome
+    ENV["GEM_HOME"] = orig_gem_home if orig_gem_home
+  end
+
   def test_vendor
     vendordir(File.join(@tempdir, "vendor")) do
       @cmd.handle_options %w[--vendor]

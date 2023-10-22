@@ -1,6 +1,0 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [IfNode(0...10)((0...2), IntegerNode(3...5)(), nil, nil, (7...10))]
-  )
-)

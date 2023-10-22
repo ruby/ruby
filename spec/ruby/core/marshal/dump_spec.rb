@@ -271,6 +271,18 @@ describe "Marshal.dump" do
     end
   end
 
+  describe "with a Rational" do
+    it "dumps a Rational" do
+      Marshal.dump(Rational(2, 3)).should == "\x04\bU:\rRational[\ai\ai\b"
+    end
+  end
+
+  describe "with a Complex" do
+    it "dumps a Complex" do
+      Marshal.dump(Complex(2, 3)).should == "\x04\bU:\fComplex[\ai\ai\b"
+    end
+  end
+
   describe "with a String" do
     it "dumps a blank String" do
       Marshal.dump("".force_encoding("binary")).should == "\004\b\"\000"
@@ -769,7 +781,6 @@ describe "Marshal.dump" do
   end
 
   describe "when passed an IO" do
-
     it "writes the serialized data to the IO-Object" do
       (obj = mock('test')).should_receive(:write).at_least(1)
       Marshal.dump("test", obj)
@@ -792,8 +803,6 @@ describe "Marshal.dump" do
       obj.should_receive(:binmode).at_least(1)
       Marshal.dump("test", obj)
     end
-
-
   end
 
   describe "when passed a StringIO" do

@@ -314,7 +314,7 @@ describe "File.open" do
     end
   end
 
-  it "raises an IOError when read in a block opened with File::RDONLY|File::APPEND mode" do
+  it "raises an IOError when write in a block opened with File::RDONLY|File::APPEND mode" do
     -> {
       File.open(@file, File::RDONLY|File::APPEND ) do |f|
         f.puts("writing")

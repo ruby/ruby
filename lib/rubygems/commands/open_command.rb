@@ -70,9 +70,7 @@ class Gem::Commands::OpenCommand < Gem::Command
   end
 
   def open_editor(path)
-    Dir.chdir(path) do
-      system(*@editor.split(/\s+/) + [path])
-    end
+    system(*@editor.split(/\s+/) + [path], { :chdir => path })
   end
 
   def spec_for(name)

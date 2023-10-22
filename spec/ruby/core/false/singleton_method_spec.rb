@@ -3,10 +3,10 @@ require_relative '../../spec_helper'
 describe "FalseClass#singleton_method" do
   ruby_version_is '3.3' do
     it "raises regardless of whether FalseClass defines the method" do
-      proc{false.singleton_method(:foo)}.should raise_error(NameError)
+      -> { false.singleton_method(:foo) }.should raise_error(NameError)
       begin
-        def false.foo; end
-        proc{false.singleton_method(:foo)}.should raise_error(NameError)
+        def (false).foo; end
+        -> { false.singleton_method(:foo) }.should raise_error(NameError)
       ensure
         FalseClass.send(:remove_method, :foo)
       end

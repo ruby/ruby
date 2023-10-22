@@ -110,17 +110,12 @@ rcomplex_get_imag(VALUE obj)
     return RCOMPLEX(obj)->imag;
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
 static VALUE
 syntax_error_append(VALUE exc, VALUE file, int line, int column,
                        void *enc, const char *fmt, va_list args)
 {
     return rb_syntax_error_append(exc, file, line, column, (rb_encoding *)enc, fmt, args);
-}
-
-static int
-vm_keep_script_lines(void)
-{
-    return ruby_vm_keep_script_lines;
 }
 
 static int
@@ -362,7 +357,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
-    return arg.succ_block->nd_next;
+    return RNODE_BLOCK(arg.succ_block)->nd_next;
 }
 
 static VALUE
@@ -399,24 +394,6 @@ static VALUE
 int2fix(long i)
 {
     return INT2FIX(i);
-}
-
-static int
-script_lines_defined(void)
-{
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-
-    return rb_const_defined_at(rb_cObject, script_lines);
-}
-
-static VALUE
-script_lines_get(void)
-{
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-
-    return rb_const_get_at(rb_cObject, script_lines);
 }
 
 static VALUE
@@ -497,37 +474,10 @@ zalloc(size_t elemsiz)
     return ruby_xcalloc(1, elemsiz);
 }
 
-static VALUE
-new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
-{
-    rb_strterm_t *imemo = (rb_strterm_t *)rb_imemo_new(imemo_parser_strterm, v1, v2, v3, v0);
-    if (heredoc) {
-        imemo->flags |= STRTERM_HEREDOC;
-    }
-
-    return (VALUE)imemo;
-}
-
-static int
-strterm_is_heredoc(VALUE strterm)
-{
-    return ((rb_strterm_t *)strterm)->flags & STRTERM_HEREDOC;
-}
-
 static void
 gc_guard(VALUE obj)
 {
     RB_GC_GUARD(obj);
-}
-
-void
-rb_strterm_mark(VALUE obj)
-{
-    rb_strterm_t *strterm = (rb_strterm_t*)obj;
-    if (RBASIC(obj)->flags & STRTERM_HEREDOC) {
-        rb_strterm_heredoc_t *heredoc = &strterm->u.heredoc;
-        rb_gc_mark(heredoc->lastline);
-    }
 }
 
 static rb_imemo_tmpbuf_t *
@@ -588,17 +538,11 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->nonempty_memcpy = nonempty_memcpy;
     config->xmalloc_mul_add = rb_xmalloc_mul_add;
 
-    config->new_strterm = new_strterm;
-    config->strterm_is_heredoc = strterm_is_heredoc;
-    config->tmpbuf_auto_free_pointer = rb_imemo_tmpbuf_auto_free_pointer;
-    config->tmpbuf_set_ptr = rb_imemo_tmpbuf_set_ptr;
     config->tmpbuf_parser_heap = tmpbuf_parser_heap;
     config->ast_new = ast_new;
 
     config->compile_callback         = rb_suppress_tracing;
     config->reg_named_capture_assign = reg_named_capture_assign;
-    config->script_lines_defined     = script_lines_defined;
-    config->script_lines_get         = script_lines_get;
 
     config->obj_freeze = rb_obj_freeze;
     config->obj_hide = rb_obj_hide;
@@ -675,6 +619,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->hash_new       = rb_hash_new;
     config->hash_aset      = rb_hash_aset;
     config->hash_lookup    = rb_hash_lookup;
+    config->hash_delete    = rb_hash_delete;
     config->ident_hash_new = rb_ident_hash_new;
 
     config->int2fix = int2fix;
@@ -743,7 +688,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->ractor_make_shareable = rb_ractor_make_shareable;
 
-    config->vm_keep_script_lines = vm_keep_script_lines;
     config->local_defined        = local_defined;
     config->dvar_defined         = dvar_defined;
 
@@ -801,7 +745,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->long2int = rb_long2int;
     config->special_const_p = special_const_p;
     config->builtin_type = builtin_type;
-    config->snprintf = snprintf;
 
     config->node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal;
 
@@ -853,12 +796,12 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
 }
 
 void
-rb_parser_keep_script_lines(VALUE vparser)
+rb_parser_set_script_lines(VALUE vparser, VALUE lines)
 {
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    rb_ruby_parser_keep_script_lines(parser->parser_params);
+    rb_ruby_parser_set_script_lines(parser->parser_params, lines);
 }
 
 void

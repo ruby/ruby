@@ -12,6 +12,7 @@ require_relative "irb/context"
 require_relative "irb/extend-command"
 
 require_relative "irb/ruby-lex"
+require_relative "irb/statement"
 require_relative "irb/input-method"
 require_relative "irb/locale"
 require_relative "irb/color"
@@ -196,7 +197,6 @@ require_relative "irb/debug"
 #
 #     IRB.conf[:PROMPT_MODE][:DEFAULT] = {
 #       :PROMPT_I => "%N(%m):%03n> ",
-#       :PROMPT_N => "%N(%m):%03n> ",
 #       :PROMPT_S => "%N(%m):%03n%l ",
 #       :PROMPT_C => "%N(%m):%03n* ",
 #       :RETURN => "%s\n" # used to printf
@@ -206,35 +206,30 @@ require_relative "irb/debug"
 #
 #   # :NULL:
 #   #   :PROMPT_I:
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |
 #   #     %s
 #   # :DEFAULT:
 #   #   :PROMPT_I: ! '%N(%m):%03n> '
-#   #   :PROMPT_N: ! '%N(%m):%03n> '
 #   #   :PROMPT_S: ! '%N(%m):%03n%l '
 #   #   :PROMPT_C: ! '%N(%m):%03n* '
 #   #   :RETURN: |
 #   #     => %s
 #   # :CLASSIC:
 #   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
-#   #   :PROMPT_N: ! '%N(%m):%03n:%i> '
 #   #   :PROMPT_S: ! '%N(%m):%03n:%i%l '
 #   #   :PROMPT_C: ! '%N(%m):%03n:%i* '
 #   #   :RETURN: |
 #   #     %s
 #   # :SIMPLE:
 #   #   :PROMPT_I: ! '>> '
-#   #   :PROMPT_N: ! '>> '
 #   #   :PROMPT_S:
 #   #   :PROMPT_C: ! '?> '
 #   #   :RETURN: |
 #   #     => %s
 #   # :INF_RUBY:
 #   #   :PROMPT_I: ! '%N(%m):%03n> '
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |
@@ -242,7 +237,6 @@ require_relative "irb/debug"
 #   #   :AUTO_INDENT: true
 #   # :XMP:
 #   #   :PROMPT_I:
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |2
@@ -373,24 +367,6 @@ module IRB
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end
 
-  @CONF = {}
-  # Displays current configuration.
-  #
-  # Modifying the configuration is achieved by sending a message to IRB.conf.
-  #
-  # See IRB@Configuration for more information.
-  def IRB.conf
-    @CONF
-  end
-
-  # Returns the current version of IRB, including release version and last
-  # updated date.
-  def IRB.version
-    if v = @CONF[:VERSION] then return v end
-
-    @CONF[:VERSION] = format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
-  end
-
   # The current IRB::Context of the session, see IRB.conf
   #
   #   irb
@@ -437,17 +413,23 @@ module IRB
     PROMPT_MAIN_TRUNCATE_OMISSION = '...'.freeze
     CONTROL_CHARACTERS_PATTERN = "\x00-\x1F".freeze
 
+    # Returns the current context of this irb session
+    attr_reader :context
+    # The lexer used by this irb session
+    attr_accessor :scanner
+
     # Creates a new irb session
     def initialize(workspace = nil, input_method = nil)
       @context = Context.new(self, workspace, input_method)
       @context.workspace.load_commands_to_main
       @signal_status = :IN_IRB
-      @scanner = RubyLex.new(@context)
+      @scanner = RubyLex.new
+      @line_no = 1
     end
 
-    # A hook point for `debug` command's TracePoint after :IRB_EXIT as well as its clean-up
+    # A hook point for `debug` command's breakpoint after :IRB_EXIT as well as its clean-up
     def debug_break
-      # it means the debug command is executed
+      # it means the debug integration has been activated
       if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:capture_frames_without_irb)
         # after leaving this initial breakpoint, revert the capture_frames patch
         DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :capture_frames_without_irb)
@@ -460,7 +442,7 @@ module IRB
       workspace = IRB::WorkSpace.new(binding)
       context.workspace = workspace
       context.workspace.load_commands_to_main
-      scanner.increase_line_no(1)
+      @line_no += 1
 
       # When users run:
       # 1. Debugging commands, like `step 2`
@@ -482,7 +464,7 @@ module IRB
       end
 
       if input&.include?("\n")
-        scanner.increase_line_no(input.count("\n") - 1)
+        @line_no += input.count("\n") - 1
       end
 
       input
@@ -514,73 +496,20 @@ module IRB
       end
     end
 
-    # Returns the current context of this irb session
-    attr_reader :context
-    # The lexer used by this irb session
-    attr_accessor :scanner
-
     # Evaluates input for this session.
     def eval_input
-      @scanner.set_prompt do
-        |ltype, indent, continue, line_no|
-        if ltype
-          f = @context.prompt_s
-        elsif continue
-          f = @context.prompt_c
-        elsif indent > 0
-          f = @context.prompt_n
-        else
-          f = @context.prompt_i
-        end
-        f = "" unless f
-        if @context.prompting?
-          @context.io.prompt = p = prompt(f, ltype, indent, line_no)
-        else
-          @context.io.prompt = p = ""
-        end
-        if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
-          unless ltype
-            prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
-            ind = prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
-              indent * 2 - p.size
-            ind += 2 if continue
-            @context.io.prompt = p + " " * ind if ind > 0
-          end
-        end
-        @context.io.prompt
-      end
-
-      @scanner.set_input do
-        signal_status(:IN_INPUT) do
-          if l = @context.io.gets
-            print l if @context.verbose?
-          else
-            if @context.ignore_eof? and @context.io.readable_after_eof?
-              l = "\n"
-              if @context.verbose?
-                printf "Use \"exit\" to leave %s\n", @context.ap_name
-              end
-            else
-              print "\n" if @context.prompting?
-            end
-          end
-          l
-        end
-      end
-
       configure_io
 
-      @scanner.each_top_level_statement do |statement, line_no|
+      each_top_level_statement do |statement, line_no|
         signal_status(:IN_EVAL) do
           begin
-            # If the integration with debugger is activated, we need to handle certain input differently
+            # If the integration with debugger is activated, we return certain input if it should be dealt with by debugger
             if @context.with_debugger && statement.should_be_handled_by_debugger?
               return statement.code
             end
 
             @context.evaluate(statement.evaluable_code, line_no)
 
-            # Don't echo if the line ends with a semicolon
             if @context.echo? && !statement.suppresses_echo?
               if statement.is_assignment?
                 if @context.echo_on_assignment?
@@ -600,11 +529,93 @@ module IRB
       end
     end
 
+    def read_input(prompt)
+      signal_status(:IN_INPUT) do
+        @context.io.prompt = prompt
+        if l = @context.io.gets
+          print l if @context.verbose?
+        else
+          if @context.ignore_eof? and @context.io.readable_after_eof?
+            l = "\n"
+            if @context.verbose?
+              printf "Use \"exit\" to leave %s\n", @context.ap_name
+            end
+          else
+            print "\n" if @context.prompting?
+          end
+        end
+        l
+      end
+    end
+
+    def readmultiline
+      prompt = generate_prompt([], false, 0)
+
+      # multiline
+      return read_input(prompt) if @context.io.respond_to?(:check_termination)
+
+      # nomultiline
+      code = ''
+      line_offset = 0
+      loop do
+        line = read_input(prompt)
+        unless line
+          return code.empty? ? nil : code
+        end
+
+        code << line
+
+        # Accept any single-line input for symbol aliases or commands that transform args
+        return code if single_line_command?(code)
+
+        tokens, opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
+        return code if terminated
+
+        line_offset += 1
+        continue = @scanner.should_continue?(tokens)
+        prompt = generate_prompt(opens, continue, line_offset)
+      end
+    end
+
+    def each_top_level_statement
+      loop do
+        code = readmultiline
+        break unless code
+
+        if code != "\n"
+          yield build_statement(code), @line_no
+        end
+        @line_no += code.count("\n")
+      rescue RubyLex::TerminateLineInput
+      end
+    end
+
+    def build_statement(code)
+      code.force_encoding(@context.io.encoding)
+      command_or_alias, arg = code.split(/\s/, 2)
+      # Transform a non-identifier alias (@, $) or keywords (next, break)
+      command_name = @context.command_aliases[command_or_alias.to_sym]
+      command = command_name || command_or_alias
+      command_class = ExtendCommandBundle.load_command(command)
+
+      if command_class
+        Statement::Command.new(code, command, arg, command_class)
+      else
+        is_assignment_expression = @scanner.assignment_expression?(code, local_variables: @context.local_variables)
+        Statement::Expression.new(code, is_assignment_expression)
+      end
+    end
+
+    def single_line_command?(code)
+      command = code.split(/\s/, 2).first
+      @context.symbol_alias?(command) || @context.transform_args?(command)
+    end
+
     def configure_io
       if @context.io.respond_to?(:check_termination)
         @context.io.check_termination do |code|
           if Reline::IOGate.in_pasting?
-            rest = @scanner.check_termination_in_prev_line(code)
+            rest = @scanner.check_termination_in_prev_line(code, local_variables: @context.local_variables)
             if rest
               Reline.delete_text
               rest.bytes.reverse_each do |c|
@@ -616,9 +627,9 @@ module IRB
             end
           else
             # Accept any single-line input for symbol aliases or commands that transform args
-            next true if @scanner.single_line_command?(code)
+            next true if single_line_command?(code)
 
-            _tokens, _opens, terminated = @scanner.check_code_state(code)
+            _tokens, _opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
             terminated
           end
         end
@@ -626,7 +637,7 @@ module IRB
       if @context.io.respond_to?(:dynamic_prompt)
         @context.io.dynamic_prompt do |lines|
           lines << '' if lines.empty?
-          tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, context: @context)
+          tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, local_variables: @context.local_variables)
           line_results = IRB::NestingParser.parse_by_line(tokens)
           tokens_until_line = []
           line_results.map.with_index do |(line_tokens, _prev_opens, next_opens, _min_depth), line_num_offset|
@@ -635,7 +646,7 @@ module IRB
               tokens_until_line << token if token != tokens_until_line.last
             end
             continue = @scanner.should_continue?(tokens_until_line)
-            @scanner.prompt(next_opens, continue, line_num_offset)
+            generate_prompt(next_opens, continue, line_num_offset)
           end
         end
       end
@@ -646,7 +657,7 @@ module IRB
           next nil if !is_newline && lines[line_index]&.byteslice(0, byte_pointer)&.match?(/\A\s*\z/)
 
           code = lines[0..line_index].map { |l| "#{l}\n" }.join
-          tokens = RubyLex.ripper_lex_without_warning(code, context: @context)
+          tokens = RubyLex.ripper_lex_without_warning(code, local_variables: @context.local_variables)
           @scanner.process_indent_level(tokens, lines, line_index, is_newline)
         end
       end
@@ -776,16 +787,6 @@ module IRB
       end
     end
 
-    # Evaluates the given block using the given +context+ as the Context.
-    def suspend_context(context)
-      @context, back_context = context, @context
-      begin
-        yield back_context
-      ensure
-        @context = back_context
-      end
-    end
-
     # Handler for the signal SIGINT, see Kernel#trap for more information.
     def signal_handle
       unless @context.ignore_sigint?
@@ -819,54 +820,6 @@ module IRB
       ensure
         @signal_status = signal_status_back
       end
-    end
-
-    def truncate_prompt_main(str) # :nodoc:
-      str = str.tr(CONTROL_CHARACTERS_PATTERN, ' ')
-      if str.size <= PROMPT_MAIN_TRUNCATE_LENGTH
-        str
-      else
-        str[0, PROMPT_MAIN_TRUNCATE_LENGTH - PROMPT_MAIN_TRUNCATE_OMISSION.size] + PROMPT_MAIN_TRUNCATE_OMISSION
-      end
-    end
-
-    def prompt(prompt, ltype, indent, line_no) # :nodoc:
-      p = prompt.dup
-      p.gsub!(/%([0-9]+)?([a-zA-Z])/) do
-        case $2
-        when "N"
-          @context.irb_name
-        when "m"
-          truncate_prompt_main(@context.main.to_s)
-        when "M"
-          truncate_prompt_main(@context.main.inspect)
-        when "l"
-          ltype
-        when "i"
-          if indent < 0
-            if $1
-              "-".rjust($1.to_i)
-            else
-              "-"
-            end
-          else
-            if $1
-              format("%" + $1 + "d", indent)
-            else
-              indent.to_s
-            end
-          end
-        when "n"
-          if $1
-            format("%" + $1 + "d", line_no)
-          else
-            line_no.to_s
-          end
-        when "%"
-          "%"
-        end
-      end
-      p
     end
 
     def output_value(omit = false) # :nodoc:
@@ -921,28 +874,84 @@ module IRB
       end
       format("#<%s: %s>", self.class, ary.join(", "))
     end
-  end
 
-  def @CONF.inspect
-    IRB.version unless self[:VERSION]
+    private
 
-    array = []
-    for k, v in sort{|a1, a2| a1[0].id2name <=> a2[0].id2name}
-      case k
-      when :MAIN_CONTEXT, :__TMP__EHV__
-        array.push format("CONF[:%s]=...myself...", k.id2name)
-      when :PROMPT
-        s = v.collect{
-          |kk, vv|
-          ss = vv.collect{|kkk, vvv| ":#{kkk.id2name}=>#{vvv.inspect}"}
-          format(":%s=>{%s}", kk.id2name, ss.join(", "))
-        }
-        array.push format("CONF[:%s]={%s}", k.id2name, s.join(", "))
+    def generate_prompt(opens, continue, line_offset)
+      ltype = @scanner.ltype_from_open_tokens(opens)
+      indent = @scanner.calc_indent_level(opens)
+      continue = opens.any? || continue
+      line_no = @line_no + line_offset
+
+      if ltype
+        f = @context.prompt_s
+      elsif continue
+        f = @context.prompt_c
       else
-        array.push format("CONF[:%s]=%s", k.id2name, v.inspect)
+        f = @context.prompt_i
+      end
+      f = "" unless f
+      if @context.prompting?
+        p = format_prompt(f, ltype, indent, line_no)
+      else
+        p = ""
+      end
+      if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
+        unless ltype
+          prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
+          ind = format_prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
+            indent * 2 - p.size
+          p += " " * ind if ind > 0
+        end
+      end
+      p
+    end
+
+    def truncate_prompt_main(str) # :nodoc:
+      str = str.tr(CONTROL_CHARACTERS_PATTERN, ' ')
+      if str.size <= PROMPT_MAIN_TRUNCATE_LENGTH
+        str
+      else
+        str[0, PROMPT_MAIN_TRUNCATE_LENGTH - PROMPT_MAIN_TRUNCATE_OMISSION.size] + PROMPT_MAIN_TRUNCATE_OMISSION
       end
     end
-    array.join("\n")
+
+    def format_prompt(format, ltype, indent, line_no) # :nodoc:
+      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
+        case $2
+        when "N"
+          @context.irb_name
+        when "m"
+          truncate_prompt_main(@context.main.to_s)
+        when "M"
+          truncate_prompt_main(@context.main.inspect)
+        when "l"
+          ltype
+        when "i"
+          if indent < 0
+            if $1
+              "-".rjust($1.to_i)
+            else
+              "-"
+            end
+          else
+            if $1
+              format("%" + $1 + "d", indent)
+            else
+              indent.to_s
+            end
+          end
+        when "n"
+          if $1
+            format("%" + $1 + "d", line_no)
+          else
+            line_no.to_s
+          end
+        when "%"
+          "%"
+        end
+      end
+    end
   end
 end
 

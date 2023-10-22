@@ -38,9 +38,9 @@ module Bundler
 
       private
 
-      def log_specs(debug_msg)
+      def log_specs(&block)
         if Bundler.ui.debug?
-          Bundler.ui.debug debug_msg
+          Bundler.ui.debug yield
         else
           Bundler.ui.info ".", false
         end

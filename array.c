@@ -1200,7 +1200,6 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         FL_SET_EMBED(result);
         ary_memcpy(result, 0, len, RARRAY_CONST_PTR(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
-        return result;
     }
     else {
         VALUE shared = ary_make_shared(ary);
@@ -1215,9 +1214,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         ARY_SET_LEN(result, len);
 
         ary_verify(shared);
-        ary_verify(result);
-        return result;
     }
+
+    ary_verify(result);
+    return result;
 }
 
 static VALUE
@@ -2176,9 +2176,14 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
             ARY_SET_LEN(ary, alen);
         }
         if (rlen > 0) {
-            if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
-            /* give up wb-protected ary */
-            RB_OBJ_WB_UNPROTECT_FOR(ARRAY, ary);
+            if (rofs == -1) {
+                rb_gc_writebarrier_remember(ary);
+            }
+            else {
+                /* In this case, we're copying from a region in this array, so
+                 * we don't need to fire the write barrier. */
+                rptr = RARRAY_CONST_PTR(ary) + rofs;
+            }
 
             /* do not use RARRAY_PTR() because it can causes GC.
              * ary can contain T_NONE object because it is not cleared.
@@ -3522,8 +3527,8 @@ rb_ary_bsearch_index(VALUE ary)
             const VALUE zero = INT2FIX(0);
             switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
               case 0: return INT2FIX(mid);
-              case 1: smaller = 1; break;
-              case -1: smaller = 0;
+              case 1: smaller = 0; break;
+              case -1: smaller = 1;
             }
         }
         else {
@@ -4310,7 +4315,7 @@ rb_ary_reject(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.delete_if # => #<Enumerator: [:foo, "bar", 2]:delete_if>
  *
-3 */
+ */
 
 static VALUE
 rb_ary_delete_if(VALUE ary)

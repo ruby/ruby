@@ -3336,6 +3336,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, a.bsearch {|x|   1  * (2**100) })
     assert_equal(nil, a.bsearch {|x| (-1) * (2**100) })
 
+    assert_equal(4, a.bsearch {|x| (4 - x).to_r })
+
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
@@ -3370,6 +3372,8 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (1 - x / 4) * (2**100) })
     assert_equal(nil, a.bsearch_index {|x|   1  * (2**100) })
     assert_equal(nil, a.bsearch_index {|x| (-1) * (2**100) })
+
+    assert_equal(1, a.bsearch_index {|x| (4 - x).to_r })
 
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end

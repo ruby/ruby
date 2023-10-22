@@ -46,8 +46,11 @@
 const char *rb_method_type_name(rb_method_type_t type);
 int ruby_on_ci;
 
-static void
-control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+#define kprintf(...) if (fprintf(errout, __VA_ARGS__) < 0) goto error
+#define kputs(s) if (fputs(s, errout) < 0) goto error
+
+static bool
+control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *errout)
 {
     ptrdiff_t pc = -1;
     ptrdiff_t ep = cfp->ep - ec->vm_stack;
@@ -140,30 +143,30 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         line = -1;
     }
 
-    fprintf(stderr, "c:%04"PRIdPTRDIFF" ",
+    kprintf("c:%04"PRIdPTRDIFF" ",
             ((rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp));
     if (pc == -1) {
-        fprintf(stderr, "p:---- ");
+        kprintf("p:---- ");
     }
     else {
-        fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
+        kprintf("p:%04"PRIdPTRDIFF" ", pc);
     }
-    fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
-    fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
-    fprintf(stderr, "%-6s", magic);
+    kprintf("s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
+    kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    kprintf("%-6s", magic);
     if (line) {
-        fprintf(stderr, " %s", posbuf);
+        kprintf(" %s", posbuf);
     }
     if (VM_FRAME_FINISHED_P(cfp)) {
-        fprintf(stderr, " [FINISH]");
+        kprintf(" [FINISH]");
     }
     if (0) {
-        fprintf(stderr, "              \t");
-        fprintf(stderr, "iseq: %-24s ", iseq_name);
-        fprintf(stderr, "self: %-24s ", selfstr);
-        fprintf(stderr, "%-1s ", biseq_name);
+        kprintf("              \t");
+        kprintf("iseq: %-24s ", iseq_name);
+        kprintf("self: %-24s ", selfstr);
+        kprintf("%-1s ", biseq_name);
     }
-    fprintf(stderr, "\n");
+    kprintf("\n");
 
     // additional information for CI machines
     if (ruby_on_ci) {
@@ -171,112 +174,127 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 
         if (me) {
             if (IMEMO_TYPE_P(me, imemo_ment)) {
-                fprintf(stderr, "  me:\n");
-                fprintf(stderr, "    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
-                fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
+                kprintf("  me:\n");
+                kprintf("    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
+                kprintf("    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
                 if (me->owner != me->defined_class) {
-                    fprintf(stderr, "    defined_class: %s\n", rb_raw_obj_info(buff, 0x100, me->defined_class));
+                    kprintf("    defined_class: %s\n", rb_raw_obj_info(buff, 0x100, me->defined_class));
                 }
             }
             else {
-                fprintf(stderr, " me is corrupted (%s)\n", rb_raw_obj_info(buff, 0x100, (VALUE)me));
+                kprintf(" me is corrupted (%s)\n", rb_raw_obj_info(buff, 0x100, (VALUE)me));
             }
         }
 
-        fprintf(stderr, "  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
+        kprintf("  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
 
         if (iseq) {
             if (ISEQ_BODY(iseq)->local_table_size > 0) {
-                fprintf(stderr, "  lvars:\n");
+                kprintf("  lvars:\n");
                 for (unsigned int i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
                     const VALUE *argv = cfp->ep - ISEQ_BODY(cfp->iseq)->local_table_size - VM_ENV_DATA_SIZE + 1;
-                    fprintf(stderr, "    %s: %s\n",
+                    kprintf("    %s: %s\n",
                             rb_id2name(ISEQ_BODY(iseq)->local_table[i]),
                             rb_raw_obj_info(buff, 0x100, argv[i]));
                 }
             }
         }
     }
+    return true;
+  error:
+    return false;
 }
 
-void
-rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+bool
+rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *errout)
 {
 #if 0
     VALUE *sp = cfp->sp;
     const VALUE *ep = cfp->ep;
     VALUE *p, *st, *t;
 
-    fprintf(stderr, "-- stack frame ------------\n");
+    kprintf("-- stack frame ------------\n");
     for (p = st = ec->vm_stack; p < sp; p++) {
-        fprintf(stderr, "%04ld (%p): %08"PRIxVALUE, (long)(p - st), p, *p);
+        kprintf("%04ld (%p): %08"PRIxVALUE, (long)(p - st), p, *p);
 
         t = (VALUE *)*p;
         if (ec->vm_stack <= t && t < sp) {
-            fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF((VALUE)t) - ec->vm_stack));
+            kprintf(" (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF((VALUE)t) - ec->vm_stack));
         }
 
         if (p == ep)
-            fprintf(stderr, " <- ep");
+            kprintf(" <- ep");
 
-        fprintf(stderr, "\n");
+        kprintf("\n");
     }
 #endif
 
-    fprintf(stderr, "-- Control frame information "
+    kprintf("-- Control frame information "
             "-----------------------------------------------\n");
     while ((void *)cfp < (void *)(ec->vm_stack + ec->vm_stack_size)) {
-        control_frame_dump(ec, cfp);
+        control_frame_dump(ec, cfp, errout);
         cfp++;
     }
-    fprintf(stderr, "\n");
+    kprintf("\n");
+    return true;
+
+  error:
+    return false;
 }
 
-void
+bool
 rb_vmdebug_stack_dump_raw_current(void)
 {
     const rb_execution_context_t *ec = GET_EC();
-    rb_vmdebug_stack_dump_raw(ec, ec->cfp);
+    return rb_vmdebug_stack_dump_raw(ec, ec->cfp, stderr);
 }
 
-void
-rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep)
+bool
+rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep, FILE *errout)
 {
     unsigned int i;
-    fprintf(stderr, "-- env --------------------\n");
+    kprintf("-- env --------------------\n");
 
     while (env) {
-        fprintf(stderr, "--\n");
+        kprintf("--\n");
         for (i = 0; i < env->env_size; i++) {
-            fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
-            if (&env->env[i] == ep) fprintf(stderr, " <- ep");
-            fprintf(stderr, "\n");
+            kprintf("%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
+            if (&env->env[i] == ep) kprintf(" <- ep");
+            kprintf("\n");
         }
 
         env = rb_vm_env_prev_env(env);
     }
-    fprintf(stderr, "---------------------------\n");
+    kprintf("---------------------------\n");
+    return true;
+
+  error:
+    return false;
 }
 
-void
-rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
+bool
+rb_vmdebug_proc_dump_raw(rb_proc_t *proc, FILE *errout)
 {
     const rb_env_t *env;
     char *selfstr;
     VALUE val = rb_inspect(vm_block_self(&proc->block));
     selfstr = StringValueCStr(val);
 
-    fprintf(stderr, "-- proc -------------------\n");
-    fprintf(stderr, "self: %s\n", selfstr);
+    kprintf("-- proc -------------------\n");
+    kprintf("self: %s\n", selfstr);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&proc->block));
-    rb_vmdebug_env_dump_raw(env, vm_block_ep(&proc->block));
+    rb_vmdebug_env_dump_raw(env, vm_block_ep(&proc->block), errout);
+    return true;
+
+  error:
+    return false;
 }
 
-void
-rb_vmdebug_stack_dump_th(VALUE thval)
+bool
+rb_vmdebug_stack_dump_th(VALUE thval, FILE *errout)
 {
     rb_thread_t *target_th = rb_thread_ptr(thval);
-    rb_vmdebug_stack_dump_raw(target_th->ec, target_th->ec->cfp);
+    return rb_vmdebug_stack_dump_raw(target_th->ec, target_th->ec->cfp, errout);
 }
 
 #if VMDEBUG > 2
@@ -295,7 +313,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 }
 
 static void
-vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *errout)
 {
     int i, argc = 0, local_table_size = 0;
     VALUE rstr;
@@ -321,17 +339,17 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
     {
         const VALUE *ptr = ep - local_table_size;
 
-        control_frame_dump(ec, cfp);
+        control_frame_dump(ec, cfp, errout);
 
         for (i = 0; i < argc; i++) {
             rstr = rb_inspect(*ptr);
-            fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
-                   (void *)ptr++);
+            kprintf("  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
+                    (void *)ptr++);
         }
         for (; i < local_table_size - 1; i++) {
             rstr = rb_inspect(*ptr);
-            fprintf(stderr, "  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
-                   (void *)ptr++);
+            kprintf("  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
+                    (void *)ptr++);
         }
 
         ptr = vm_base_ptr(cfp);
@@ -347,13 +365,13 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
                 rstr = rb_inspect(*ptr);
                 break;
             }
-            fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
+            kprintf("  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
                     (ptr - ec->vm_stack));
         }
     }
     else if (VM_FRAME_FINISHED_P(cfp)) {
         if (ec->vm_stack + ec->vm_stack_size > (VALUE *)(cfp + 1)) {
-            vm_stack_dump_each(ec, cfp + 1);
+            vm_stack_dump_each(ec, cfp + 1, errout);
         }
         else {
             /* SDR(); */
@@ -365,8 +383,8 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 }
 #endif
 
-void
-rb_vmdebug_debug_print_register(const rb_execution_context_t *ec)
+bool
+rb_vmdebug_debug_print_register(const rb_execution_context_t *ec, FILE *errout)
 {
     rb_control_frame_t *cfp = ec->cfp;
     ptrdiff_t pc = -1;
@@ -382,18 +400,22 @@ rb_vmdebug_debug_print_register(const rb_execution_context_t *ec)
     }
 
     cfpi = ((rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size)) - cfp;
-    fprintf(stderr, "  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [EP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
+    kprintf("  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [EP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
             pc, (cfp->sp - ec->vm_stack), ep, cfpi);
+    return true;
+
+  error:
+    return false;
 }
 
-void
-rb_vmdebug_thread_dump_regs(VALUE thval)
+bool
+rb_vmdebug_thread_dump_regs(VALUE thval, FILE *errout)
 {
-    rb_vmdebug_debug_print_register(rb_thread_ptr(thval)->ec);
+    return rb_vmdebug_debug_print_register(rb_thread_ptr(thval)->ec, errout);
 }
 
-void
-rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc)
+bool
+rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc, FILE *errout)
 {
     const rb_iseq_t *iseq = cfp->iseq;
 
@@ -402,10 +424,10 @@ rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_fr
         int i;
 
         for (i=0; i<(int)VM_CFP_CNT(ec, cfp); i++) {
-            printf(" ");
+            kprintf(" ");
         }
-        printf("| ");
-        if(0)printf("[%03ld] ", (long)(cfp->sp - ec->vm_stack));
+        kprintf("| ");
+        if(0) kprintf("[%03ld] ", (long)(cfp->sp - ec->vm_stack));
 
         /* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(ec, cfp)); */
         if (pc >= 0) {
@@ -416,43 +438,54 @@ rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_fr
     }
 
 #if VMDEBUG > 3
-    fprintf(stderr, "        (1)");
-    rb_vmdebug_debug_print_register(ec);
+    kprintf("        (1)");
+    rb_vmdebug_debug_print_register(errout, ec);
 #endif
+    return true;
+
+  error:
+    return false;
 }
 
-void
-rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+bool
+rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *errout)
 {
 #if VMDEBUG > 9
-    SDR2(cfp);
+    if (!rb_vmdebug_stack_dump_raw(ec, cfp, errout)) goto errout;
 #endif
 
 #if VMDEBUG > 3
-    fprintf(stderr, "        (2)");
-    rb_vmdebug_debug_print_register(ec);
+    kprintf("        (2)");
+    rb_vmdebug_debug_print_register(errout, ec);
 #endif
     /* stack_dump_raw(ec, cfp); */
 
 #if VMDEBUG > 2
     /* stack_dump_thobj(ec); */
-    vm_stack_dump_each(ec, ec->cfp);
+    vm_stack_dump_each(ec, ec->cfp, errout);
 
-    printf
+    kprintf
         ("--------------------------------------------------------------\n");
+#endif
+    return true;
+
+#if VMDEBUG > 2
+  error:
+    return false;
 #endif
 }
 
 VALUE
-rb_vmdebug_thread_dump_state(VALUE self)
+rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 {
     rb_thread_t *th = rb_thread_ptr(self);
     rb_control_frame_t *cfp = th->ec->cfp;
 
-    fprintf(stderr, "Thread state dump:\n");
-    fprintf(stderr, "pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
-    fprintf(stderr, "cfp: %p, ep : %p\n", (void *)cfp, (void *)cfp->ep);
+    kprintf("Thread state dump:\n");
+    kprintf("pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
+    kprintf("cfp: %p, ep : %p\n", (void *)cfp, (void *)cfp->ep);
 
+  error:
     return Qnil;
 }
 
@@ -664,6 +697,11 @@ typedef void *PGET_MODULE_BASE_ROUTINE64;
 typedef void *PTRANSLATE_ADDRESS_ROUTINE64;
 # endif
 
+struct dump_thead_arg {
+    DWORD tid;
+    FILE *errout;
+};
+
 static void
 dump_thread(void *arg)
 {
@@ -675,7 +713,8 @@ dump_thread(void *arg)
     BOOL (WINAPI *pSymFromAddr)(HANDLE, DWORD64, DWORD64 *, SYMBOL_INFO *);
     BOOL (WINAPI *pSymGetLineFromAddr64)(HANDLE, DWORD64, DWORD *, IMAGEHLP_LINE64 *);
     HANDLE (WINAPI *pOpenThread)(DWORD, BOOL, DWORD);
-    DWORD tid = *(DWORD *)arg;
+    DWORD tid = ((struct dump_thead_arg *)arg)->tid;
+    FILE *errout = ((struct dump_thead_arg *)arg)->errout;
     HANDLE ph;
     HANDLE th;
 
@@ -740,19 +779,20 @@ dump_thread(void *arg)
                         info->MaxNameLen = MAX_SYM_NAME;
                         if (pSymFromAddr(ph, addr, &displacement, info)) {
                             if (GetModuleFileName((HANDLE)(uintptr_t)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
-                                fprintf(stderr, "%s", libpath);
-                            fprintf(stderr, "(%s+0x%"PRI_64_PREFIX"x)",
+                                kprintf("%s", libpath);
+                            kprintf("(%s+0x%"PRI_64_PREFIX"x)",
                                     info->Name, displacement);
                         }
-                        fprintf(stderr, " [0x%p]", (void *)(VALUE)addr);
+                        kprintf(" [0x%p]", (void *)(VALUE)addr);
                         memset(&line, 0, sizeof(line));
                         line.SizeOfStruct = sizeof(line);
                         if (pSymGetLineFromAddr64(ph, addr, &tmp, &line))
-                            fprintf(stderr, " %s:%lu", line.FileName, line.LineNumber);
-                        fprintf(stderr, "\n");
+                            kprintf(" %s:%lu", line.FileName, line.LineNumber);
+                        kprintf("\n");
                     }
                 }
 
+              error:
                 ResumeThread(th);
             }
             CloseHandle(th);
@@ -764,53 +804,61 @@ dump_thread(void *arg)
 #endif
 
 void
-rb_print_backtrace(void)
+rb_print_backtrace(FILE *errout)
 {
 #if USE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
 #if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc)
-    rb_dump_backtrace_with_lines(n, trace);
+    rb_dump_backtrace_with_lines(n, trace, errout);
 #else
     char **syms = backtrace_symbols(trace, n);
     if (syms) {
         int i;
         for (i=0; i<n; i++) {
-            fprintf(stderr, "%s\n", syms[i]);
+            kprintf("%s\n", syms[i]);
         }
         free(syms);
     }
+  error:
+    /* ignore errors at writing */;
 #endif
 #elif defined(_WIN32)
-    DWORD tid = GetCurrentThreadId();
-    HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
+    struct dump_thead_arg arg = {
+        .tid = GetCurrentThreadId(),
+        .errout = errout,
+    };
+    HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &arg);
     if (th != (HANDLE)-1)
         WaitForSingleObject(th, INFINITE);
 #endif
 }
 
 #ifdef HAVE_LIBPROCSTAT
+struct procstat;
+struct kinfo_proc;
+static void procstat_vm(struct procstat *, struct kinfo_proc *, FILE *);
 #include "missing/procstat_vm.c"
 #endif
 
 #if defined __linux__
 # if defined(__x86_64__) || defined(__i386__)
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+#   define dump_machine_register(reg) (col_count = print_machine_register(errout, mctx->gregs[REG_##reg], #reg, col_count, 80))
 # elif defined(__aarch64__) || defined(__arm__) || defined(__riscv) || defined(__loongarch64)
-#   define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
+#   define dump_machine_register(reg, regstr) (col_count = print_machine_register(errout, reg, regstr, col_count, 80))
 # endif
 #elif defined __APPLE__
 # if defined(__aarch64__)
-#   define dump_machine_register(reg, regstr) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), regstr, col_count, 80))
+#   define dump_machine_register(reg, regstr) (col_count = print_machine_register(errout, mctx->MCTX_SS_REG(reg), regstr, col_count, 80))
 # else
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
+#   define dump_machine_register(reg) (col_count = print_machine_register(errout, mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
 # endif
 #endif
 
 #ifdef dump_machine_register
 static int
-print_machine_register(size_t reg, const char *reg_name, int col_count, int max_col)
+print_machine_register(FILE *errout, size_t reg, const char *reg_name, int col_count, int max_col)
 {
     int ret;
     char buf[64];
@@ -818,21 +866,24 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 
     ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%.*" PRIxSIZE, reg_name, size_width, reg);
     if (col_count + ret > max_col) {
-        fputs("\n", stderr);
+        kputs("\n");
         col_count = 0;
     }
     col_count += ret;
-    fputs(buf, stderr);
+    kputs(buf);
     return col_count;
+
+  error:
+    return -1;
 }
 
-static void
-rb_dump_machine_register(const ucontext_t *ctx)
+static bool
+rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
 {
     int col_count = 0;
-    if (!ctx) return;
+    if (!ctx) return true;
 
-    fprintf(stderr, "-- Machine register context "
+    kprintf("-- Machine register context "
             "------------------------------------------------\n");
 
 # if defined __linux__
@@ -1025,14 +1076,18 @@ rb_dump_machine_register(const ucontext_t *ctx)
 #   endif
     }
 # endif
-    fprintf(stderr, "\n\n");
+    kprintf("\n\n");
+    return true;
+
+  error:
+    return false;
 }
 #else
-# define rb_dump_machine_register(ctx) ((void)0)
+# define rb_dump_machine_register(errout, ctx) ((void)0)
 #endif /* dump_machine_register */
 
-void
-rb_vm_bugreport(const void *ctx)
+bool
+rb_vm_bugreport(const void *ctx, FILE *errout)
 {
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
@@ -1049,8 +1104,8 @@ rb_vm_bugreport(const void *ctx)
     {
         static bool crashing = false;
         if (crashing) {
-            fprintf(stderr, "Crashed while printing bug report\n");
-            return;
+            kprintf("Crashed while printing bug report\n");
+            return true;
         }
         crashing = true;
     }
@@ -1067,32 +1122,32 @@ rb_vm_bugreport(const void *ctx)
     const rb_execution_context_t *ec = rb_current_execution_context(false);
 
     if (vm && ec) {
-        SDR();
-        rb_backtrace_print_as_bugreport();
-        fputs("\n", stderr);
+        rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
+        rb_backtrace_print_as_bugreport(errout);
+        kputs("\n");
         // If we get here, hopefully things are intact enough that
         // we can read these two numbers. It is an estimate because
         // we are reading without synchronization.
-        fprintf(stderr, "-- Threading information "
+        kprintf("-- Threading information "
                 "---------------------------------------------------\n");
-        fprintf(stderr, "Total ractor count: %u\n", vm->ractor.cnt);
-        fprintf(stderr, "Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
-        fputs("\n", stderr);
+        kprintf("Total ractor count: %u\n", vm->ractor.cnt);
+        kprintf("Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
+        kputs("\n");
     }
 
-    rb_dump_machine_register(ctx);
+    rb_dump_machine_register(errout, ctx);
 
 #if USE_BACKTRACE || defined(_WIN32)
-    fprintf(stderr, "-- C level backtrace information "
+    kprintf("-- C level backtrace information "
             "-------------------------------------------\n");
-    rb_print_backtrace();
+    rb_print_backtrace(errout);
 
 
-    fprintf(stderr, "\n");
+    kprintf("\n");
 #endif /* USE_BACKTRACE */
 
     if (other_runtime_info || vm) {
-        fprintf(stderr, "-- Other runtime information "
+        kprintf("-- Other runtime information "
                 "-----------------------------------------------\n\n");
     }
     if (vm && !rb_during_gc()) {
@@ -1105,16 +1160,16 @@ rb_vm_bugreport(const void *ctx)
 
         name = vm->progname;
         if (name) {
-            fprintf(stderr, "* Loaded script: %.*s\n",
+            kprintf("* Loaded script: %.*s\n",
                     LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-            fprintf(stderr, "\n");
+            kprintf("\n");
         }
         if (vm->loaded_features) {
-            fprintf(stderr, "* Loaded features:\n\n");
+            kprintf("* Loaded features:\n\n");
             for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
                 name = RARRAY_AREF(vm->loaded_features, i);
                 if (RB_TYPE_P(name, T_STRING)) {
-                    fprintf(stderr, " %4d %.*s\n", i,
+                    kprintf(" %4d %.*s\n", i,
                             LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
                 }
                 else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
@@ -1122,26 +1177,26 @@ rb_vm_bugreport(const void *ctx)
                         "class" : "module";
                     name = rb_search_class_path(rb_class_real(name));
                     if (!RB_TYPE_P(name, T_STRING)) {
-                        fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
+                        kprintf(" %4d %s:<unnamed>\n", i, type);
                         continue;
                     }
-                    fprintf(stderr, " %4d %s:%.*s\n", i, type,
+                    kprintf(" %4d %s:%.*s\n", i, type,
                             LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
                 }
                 else {
                     VALUE klass = rb_search_class_path(rb_obj_class(name));
                     if (!RB_TYPE_P(klass, T_STRING)) {
-                        fprintf(stderr, " %4d #<%p:%p>\n", i,
+                        kprintf(" %4d #<%p:%p>\n", i,
                                 (void *)CLASS_OF(name), (void *)name);
                         continue;
                     }
-                    fprintf(stderr, " %4d #<%.*s:%p>\n", i,
+                    kprintf(" %4d #<%.*s:%p>\n", i,
                             LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
                             (void *)name);
                 }
             }
         }
-        fprintf(stderr, "\n");
+        kprintf("\n");
     }
 
     {
@@ -1149,17 +1204,17 @@ rb_vm_bugreport(const void *ctx)
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
             if (fp) {
-                fprintf(stderr, "* Process memory map:\n\n");
+                kprintf("* Process memory map:\n\n");
 
                 while (!feof(fp)) {
                     char buff[0x100];
                     size_t rn = fread(buff, 1, 0x100, fp);
-                    if (fwrite(buff, 1, rn, stderr) != rn)
+                    if (fwrite(buff, 1, rn, errout) != rn)
                         break;
                 }
 
                 fclose(fp);
-                fprintf(stderr, "\n\n");
+                kprintf("\n\n");
             }
         }
 #endif /* __linux__ */
@@ -1173,14 +1228,14 @@ rb_vm_bugreport(const void *ctx)
         mib[2] = KERN_PROC_PID;
         mib[3] = getpid();
         if (sysctl(mib, MIB_KERN_PROC_PID_LEN, &kp, &len, NULL, 0) == -1) {
-            perror("sysctl");
+            kprintf("sysctl: %s\n", strerror(errno));
         }
         else {
             struct procstat *prstat = procstat_open_sysctl();
-            fprintf(stderr, "* Process memory map:\n\n");
-            procstat_vm(prstat, &kp);
+            kprintf("* Process memory map:\n\n");
+            procstat_vm(prstat, &kp, errout);
             procstat_close(prstat);
-            fprintf(stderr, "\n");
+            kprintf("\n");
         }
 #endif /* __FreeBSD__ */
 #ifdef __APPLE__
@@ -1190,7 +1245,7 @@ rb_vm_bugreport(const void *ctx)
         mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT;
         natural_t depth = 0;
 
-        fprintf(stderr, "* Process memory map:\n\n");
+        kprintf("* Process memory map:\n\n");
         while (1) {
             if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
                         (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
@@ -1202,17 +1257,17 @@ rb_vm_bugreport(const void *ctx)
                 depth++;
             }
             else {
-                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+                kprintf("%lx-%lx %s%s%s", addr, (addr+size),
                         ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
                         ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
                     ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
 #ifdef HAVE_LIBPROC_H
                 char buff[PATH_MAX];
                 if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
-                    fprintf(stderr, " %s", buff);
+                    kprintf(" %s", buff);
                 }
 #endif
-                fprintf(stderr, "\n");
+                kprintf("\n");
             }
 
             addr += size;
@@ -1220,21 +1275,30 @@ rb_vm_bugreport(const void *ctx)
         }
 #endif
     }
+    return true;
+
+  error:
+    return false;
 }
 
-void
+bool
 rb_vmdebug_stack_dump_all_threads(void)
 {
     rb_thread_t *th = NULL;
     rb_ractor_t *r = GET_RACTOR();
+    FILE *errout = stderr;
 
     // TODO: now it only shows current ractor
     ccan_list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
-        fprintf(stderr, "th: %p, native_id: N/A\n", th);
+        kprintf("th: %p, native_id: N/A\n", th);
 #else
-        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->nt->thread_id);
+        kprintf("th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->nt->thread_id);
 #endif
-        rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
+        if (!rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp, errout)) goto error;
     }
+    return true;
+
+  error:
+    return false;
 }

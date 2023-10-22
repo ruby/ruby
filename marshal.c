@@ -173,7 +173,7 @@ struct dump_arg {
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
-    unsigned long num_entries;
+    st_index_t num_entries;
 };
 
 struct dump_call_arg {

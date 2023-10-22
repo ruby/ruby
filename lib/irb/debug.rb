@@ -2,10 +2,6 @@
 
 module IRB
   module Debug
-    BINDING_IRB_FRAME_REGEXPS = [
-      '<internal:prelude>',
-      binding.method(:irb).source_location.first,
-    ].map { |file| /\A#{Regexp.escape(file)}:\d+:in `irb'\z/ }
     IRB_DIR = File.expand_path('..', __dir__)
 
     class << self
@@ -36,17 +32,14 @@ module IRB
           end
           DEBUGGER__::CONFIG.set_config
           configure_irb_for_debugger(irb)
-          thread = Thread.current
 
-          DEBUGGER__.initialize_session{ IRB::Debug::UI.new(thread, irb) }
+          DEBUGGER__.initialize_session{ IRB::Debug::UI.new(irb) }
         end
 
         # When debug session was previously started but not by IRB
         if defined?(DEBUGGER__::SESSION) && !irb.context.with_debugger
           configure_irb_for_debugger(irb)
-          thread = Thread.current
-
-          DEBUGGER__::SESSION.reset_ui(IRB::Debug::UI.new(thread, irb))
+          DEBUGGER__::SESSION.reset_ui(IRB::Debug::UI.new(irb))
         end
 
         # Apply patches to debug gem so it skips IRB frames
@@ -73,15 +66,7 @@ module IRB
         require 'irb/debug/ui'
         IRB.instance_variable_set(:@debugger_irb, irb)
         irb.context.with_debugger = true
-        irb.context.irb_name = "irb:rdbg"
-      end
-
-      def binding_irb?
-        caller.any? do |frame|
-          BINDING_IRB_FRAME_REGEXPS.any? do |regexp|
-            frame.match?(regexp)
-          end
-        end
+        irb.context.irb_name += ":rdbg"
       end
 
       module SkipPathHelperForIRB

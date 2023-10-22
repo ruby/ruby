@@ -96,7 +96,7 @@ pub type size_t = u64;
 pub type RedefinitionFlag = u32;
 
 #[allow(dead_code)]
-#[allow(clippy::useless_transmute)]
+#[allow(clippy::all)]
 mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
@@ -135,7 +135,6 @@ extern "C" {
         ic: ICVARC,
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
-    pub fn rb_str_bytesize(str: VALUE) -> VALUE;
 }
 
 // Renames
@@ -578,7 +577,6 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
 }
 
 /// Produce an owned Rust String from a C char pointer
-#[cfg(feature = "disasm")]
 pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     assert!(c_char_ptr != std::ptr::null());
 
@@ -736,3 +734,51 @@ mod manual_defs {
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
 }
 pub use manual_defs::*;
+
+/// Interned ID values for Ruby symbols and method names.
+/// See [crate::cruby::ID] and usages outside of YJIT.
+pub(crate) mod ids {
+    use std::sync::atomic::AtomicU64;
+    /// Globals to cache IDs on boot. Atomic to use with relaxed ordering
+    /// so reads can happen without `unsafe`. Initialization is done
+    /// single-threaded and release-acquire on [crate::yjit::YJIT_ENABLED]
+    /// makes sure we read the cached values after initialization is done.
+    macro_rules! def_ids {
+        ($(name: $ident:ident content: $str:literal)*) => {
+            $(
+                #[doc = concat!("[crate::cruby::ID] for `", stringify!($str), "`")]
+                pub static $ident: AtomicU64 = AtomicU64::new(0);
+            )*
+
+            pub(crate) fn init() {
+                $(
+                    let content = &$str;
+                    let ptr: *const u8 = content.as_ptr();
+
+                    // Lookup and cache each ID
+                    $ident.store(
+                        unsafe { $crate::cruby::rb_intern2(ptr.cast(), content.len() as _) },
+                        std::sync::atomic::Ordering::Relaxed
+                    );
+                )*
+
+            }
+        }
+    }
+
+    def_ids! {
+        name: NULL               content: b""
+        name: min                content: b"min"
+        name: max                content: b"max"
+        name: hash               content: b"hash"
+        name: respond_to_missing content: b"respond_to_missing?"
+    }
+}
+
+/// Get an CRuby `ID` to an interned string, e.g. a particular method name.
+macro_rules! ID {
+    ($id_name:ident) => {
+        $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+pub(crate) use ID;

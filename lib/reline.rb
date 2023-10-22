@@ -1,5 +1,4 @@
 require 'io/console'
-require 'timeout'
 require 'forwardable'
 require 'reline/version'
 require 'reline/config'
@@ -397,7 +396,7 @@ module Reline
     private def read_io(keyseq_timeout, &block)
       buffer = []
       loop do
-        c = io_gate.getc
+        c = io_gate.getc(Float::INFINITY)
         if c == -1
           result = :unmatched
           @bracketed_paste_finished = true
@@ -434,15 +433,8 @@ module Reline
     end
 
     private def read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
-      begin
-        succ_c = nil
-        Timeout.timeout(keyseq_timeout / 1000.0) {
-          succ_c = io_gate.getc
-        }
-      rescue Timeout::Error # cancel matching only when first byte
-        block.([Reline::Key.new(c, c, false)])
-        return :break
-      else
+      succ_c = io_gate.getc(keyseq_timeout.fdiv(1000))
+      if succ_c
         case key_stroke.match_status(buffer.dup.push(succ_c))
         when :unmatched
           if c == "\e".ord
@@ -462,27 +454,23 @@ module Reline
           block.(expanded)
           return :break
         end
+      else
+        block.([Reline::Key.new(c, c, false)])
+        return :break
       end
     end
 
     private def read_escaped_key(keyseq_timeout, c, block)
-      begin
-        escaped_c = nil
-        Timeout.timeout(keyseq_timeout / 1000.0) {
-          escaped_c = io_gate.getc
-        }
-      rescue Timeout::Error # independent ESC
+      escaped_c = io_gate.getc(keyseq_timeout.fdiv(1000))
+
+      if escaped_c.nil?
         block.([Reline::Key.new(c, c, false)])
+      elsif escaped_c >= 128 # maybe, first byte of multi byte
+        block.([Reline::Key.new(c, c, false), Reline::Key.new(escaped_c, escaped_c, false)])
+      elsif escaped_c == "\e".ord # escape twice
+        block.([Reline::Key.new(c, c, false), Reline::Key.new(c, c, false)])
       else
-        if escaped_c.nil?
-          block.([Reline::Key.new(c, c, false)])
-        elsif escaped_c >= 128 # maybe, first byte of multi byte
-          block.([Reline::Key.new(c, c, false), Reline::Key.new(escaped_c, escaped_c, false)])
-        elsif escaped_c == "\e".ord # escape twice
-          block.([Reline::Key.new(c, c, false), Reline::Key.new(c, c, false)])
-        else
-          block.([Reline::Key.new(escaped_c, escaped_c | 0b10000000, true)])
-        end
+        block.([Reline::Key.new(escaped_c, escaped_c | 0b10000000, true)])
       end
     end
 

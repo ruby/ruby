@@ -545,7 +545,7 @@ rb_call0(rb_execution_context_t *ec,
         RB_DEBUG_COUNTER_INC(call0_public);
 
         const rb_callable_method_entry_t *cc_cme = cc ? vm_cc_cme(cc) : NULL;
-        const rb_callable_method_entry_t *cme = callable_method_entry_refeinements0(CLASS_OF(recv), mid, NULL, true, cc_cme);
+        const rb_callable_method_entry_t *cme = callable_method_entry_refinements0(CLASS_OF(recv), mid, NULL, true, cc_cme);
         call_status = rb_method_call_status(ec, cme, scope, self);
 
         if (UNLIKELY(call_status != MISSING_NONE)) {
@@ -1681,6 +1681,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     }
 
     rb_parser_set_context(parser, parent, FALSE);
+    rb_parser_set_script_lines(parser, RBOOL(ruby_vm_keep_script_lines));
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
         ast->body.coverage_enabled = coverage_enabled;

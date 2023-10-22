@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 require 'test/unit'
 require 'stringio'
+require 'tmpdir'
 require_relative '../sync_default_gems'
 
 module Test_SyncDefaultGems
@@ -72,6 +73,15 @@ module Test_SyncDefaultGems
       ]
       assert_message_filter(expected, trailers, [expected, "", trailers].join("\n"))
     end
+
+    def test_dot_ending_subject
+      expected = [
+        "subject with a dot.",
+        "",
+        "- next body line",
+      ]
+      assert_message_filter(expected, nil, [expected[0], expected[2], ""].join("\n"))
+    end
   end
 
   class TestSyncWithCommits < Test::Unit::TestCase
@@ -83,37 +93,44 @@ module Test_SyncDefaultGems
       @git_config = %W"HOME GIT_CONFIG_GLOBAL".each_with_object({}) {|k, c| c[k] = ENV[k]}
       ENV["HOME"] = @testdir
       ENV["GIT_CONFIG_GLOBAL"] = @testdir + "/gitconfig"
-      system(*%W"git config --global user.email test@ruby-lang.org")
-      system(*%W"git config --global user.name", "Ruby")
-      system(*%W"git config --global init.defaultBranch default")
+      git(*%W"config --global user.email test@ruby-lang.org")
+      git(*%W"config --global user.name", "Ruby")
+      git(*%W"config --global init.defaultBranch default")
       @target = "sync-test"
-      SyncDefaultGems::REPOSITORIES[@target.to_sym] = ["ruby/#{@target}", "default"]
+      SyncDefaultGems::REPOSITORIES[@target] = ["ruby/#{@target}", "default"]
       @sha = {}
       @origdir = Dir.pwd
       Dir.chdir(@testdir)
       ["src", @target].each do |dir|
-        system(*%W"git init -q #{dir}", exception: true)
+        git(*%W"init -q #{dir}")
+        File.write("#{dir}/.gitignore", "*~\n")
+        Dir.mkdir("#{dir}/lib")
+        File.write("#{dir}/lib/common.rb", ":ok\n")
+        Dir.mkdir("#{dir}/.github")
+        Dir.mkdir("#{dir}/.github/workflows")
+        File.write("#{dir}/.github/workflows/default.yml", "default:\n")
+        git(*%W"add .gitignore lib/common.rb .github", chdir: dir)
+        git(*%W"commit -q -m", "Initialize", chdir: dir)
         if dir == "src"
-          Dir.mkdir("#{dir}/lib")
           File.write("#{dir}/lib/fine.rb", "return\n")
           Dir.mkdir("#{dir}/test")
           File.write("#{dir}/test/test_fine.rb", "return\n")
-          system(*%W"git add lib/fine.rb test/test_fine.rb", exception: true, chdir: dir)
-          system(*%W"git commit -q -m", "Looks fine", exception: true, chdir: dir)
+          git(*%W"add lib/fine.rb test/test_fine.rb", chdir: dir)
+          git(*%W"commit -q -m", "Looks fine", chdir: dir)
         end
         Dir.mkdir("#{dir}/tool")
         File.write("#{dir}/tool/ok", "#!/bin/sh\n""echo ok\n")
-        system(*%W"git add tool/ok", exception: true, chdir: dir)
-        system(*%W"git commit -q -m", "Add tool #{dir}", exception: true, chdir: dir)
-        @sha[dir] = IO.popen(%W[git log --format=%H -1], chdir: dir, &:read).chomp
+        git(*%W"add tool/ok", chdir: dir)
+        git(*%W"commit -q -m", "Add tool #{dir}", chdir: dir)
+        @sha[dir] = top_commit(dir)
       end
-      system(*%W"git remote add #{@target} ../#{@target}", exception: true, chdir: "src")
+      git(*%W"remote add #{@target} ../#{@target}", chdir: "src")
     end
 
     def teardown
       if @target
         Dir.chdir(@origdir)
-        SyncDefaultGems::REPOSITORIES.delete(@target.to_sym)
+        SyncDefaultGems::REPOSITORIES.delete(@target)
         ENV.update(@git_config)
         FileUtils.rm_rf(@testdir)
       end
@@ -121,6 +138,7 @@ module Test_SyncDefaultGems
     end
 
     def capture_process_output_to(outputs)
+      return yield unless outputs&.empty? == false
       IO.pipe do |r, w|
         orig = outputs.map {|out| out.dup}
         outputs.each {|out| out.reopen(w)}
@@ -145,60 +163,90 @@ module Test_SyncDefaultGems
       return out, err
     end
 
-    def test_skip_tool
-      system(*%W"git rm -q tool/ok", exception: true, chdir: @target)
-      system(*%W"git commit -q -m", "Remove tool", exception: true, chdir: @target)
+    def git(*commands, **opts)
+      system("git", *commands, exception: true, **opts)
+    end
+
+    def top_commit(dir, format: "%H")
+      IO.popen(%W[git log --format=#{format} -1], chdir: dir, &:read)&.chomp
+    end
+
+    def assert_sync(commits = true, success: true)
+      result = nil
       out = capture_process_output_to([STDOUT, STDERR]) do
         Dir.chdir("src") do
-          SyncDefaultGems.sync_default_gems_with_commits(@target, true)
+          result = SyncDefaultGems.sync_default_gems_with_commits(@target, commits)
         end
       end
-      assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+      assert_equal(success, result, out)
+      out
+    end
+
+    def test_sync
+      File.write("#@target/lib/common.rb", "# OK!\n")
+      git(*%W"commit -q -m", "OK", "lib/common.rb", chdir: @target)
+      out = assert_sync()
+      assert_not_equal(@sha["src"], top_commit("src"), out)
+      assert_equal("# OK!\n", File.read("src/lib/common.rb"))
+      log = top_commit("src", format: "%B").lines
+      assert_equal("[ruby/#@target] OK\n", log.first, out)
+      assert_match(%r[/ruby/#{@target}/commit/\h+$], log.last, out)
+      assert_operator(top_commit(@target), :start_with?, log.last[/\h+$/], out)
+    end
+
+    def test_skip_tool
+      git(*%W"rm -q tool/ok", chdir: @target)
+      git(*%W"commit -q -m", "Remove tool", chdir: @target)
+      out = assert_sync()
+      assert_equal(@sha["src"], top_commit("src"), out)
     end
 
     def test_skip_test_fixtures
       Dir.mkdir("#@target/test")
       Dir.mkdir("#@target/test/fixtures")
       File.write("#@target/test/fixtures/fixme.rb", "")
-      system(*%W"git add test/fixtures/fixme.rb", exception: true, chdir: @target)
-      system(*%W"git commit -q -m", "Add fitures", exception: true, chdir: @target)
-      out = capture_process_output_to([STDOUT, STDERR]) do
-        Dir.chdir("src") do
-          SyncDefaultGems.sync_default_gems_with_commits(@target, ["#{@sha[@target]}..#{@target}/default"])
-        end
-      end
-      assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+      git(*%W"add test/fixtures/fixme.rb", chdir: @target)
+      git(*%W"commit -q -m", "Add fixtures", chdir: @target)
+      out = assert_sync(["#{@sha[@target]}..#{@target}/default"])
+      assert_equal(@sha["src"], top_commit("src"), out)
     end
 
     def test_skip_toplevel
       Dir.mkdir("#@target/docs")
       File.write("#@target/docs/NEWS.md", "= NEWS!!!\n")
-      system(*%W"git add --", "docs/NEWS.md", exception: true, chdir: @target)
-      system(*%W"git commit -q -m", "It's a news", exception: true, chdir: @target)
-      out = capture_process_output_to([STDOUT, STDERR]) do
-        Dir.chdir("src") do
-          SyncDefaultGems.sync_default_gems_with_commits(@target, true)
-        end
-      end
-      assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+      git(*%W"add --", "docs/NEWS.md", chdir: @target)
+      File.write("#@target/docs/hello.md", "Hello\n")
+      git(*%W"add --", "docs/hello.md", chdir: @target)
+      git(*%W"commit -q -m", "It's a news", chdir: @target)
+      out = assert_sync()
+      assert_equal(@sha["src"], top_commit("src"), out)
     end
 
     def test_adding_toplevel
       Dir.mkdir("#@target/docs")
       File.write("#@target/docs/NEWS.md", "= New library\n")
-      Dir.mkdir("#@target/lib")
       File.write("#@target/lib/news.rb", "return\n")
-      system(*%W"git add --", "docs/NEWS.md", "lib/news.rb", exception: true, chdir: @target)
-      system(*%W"git commit -q -m", "New lib", exception: true, chdir: @target)
-      out = capture_process_output_to([STDOUT, STDERR]) do
-        Dir.chdir("src") do
-          SyncDefaultGems.sync_default_gems_with_commits(@target, true)
-        end
-      end
-      assert_not_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+      git(*%W"add --", "docs/NEWS.md", "lib/news.rb", chdir: @target)
+      git(*%W"commit -q -m", "New lib", chdir: @target)
+      out = assert_sync()
+      assert_not_equal(@sha["src"], top_commit("src"), out)
       assert_equal "return\n", File.read("src/lib/news.rb")
-      assert_include IO.popen(%W[git log -1 --oneline], chdir: "src", &:read), "[ruby/#{@target}] New lib"
+      assert_include top_commit("src", format: "oneline"), "[ruby/#{@target}] New lib"
       assert_not_operator File, :exist?, "src/docs"
+    end
+
+    def test_gitignore
+      File.write("#@target/.gitignore", "*.bak\n", mode: "a")
+      File.write("#@target/lib/common.rb", "Should.be_merged\n", mode: "a")
+      File.write("#@target/.github/workflows/main.yml", "# Should not merge\n", mode: "a")
+      git(*%W"add .github", chdir: @target)
+      git(*%W"commit -q -m", "Should be common.rb only",
+          *%W".gitignore lib/common.rb .github", chdir: @target)
+      out = assert_sync()
+      assert_not_equal(@sha["src"], top_commit("src"), out)
+      assert_equal("*~\n", File.read("src/.gitignore"), out)
+      assert_equal("#!/bin/sh\n""echo ok\n", File.read("src/tool/ok"), out)
+      assert_not_operator(File, :exist?, "src/.github/workflows/.yml", out)
     end
   end
 end

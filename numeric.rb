@@ -217,6 +217,29 @@ class Integer
     Primitive.cexpr! 'rb_int_size(self)'
   end
 
+  # call-seq:
+  #   times {|i| ... } -> self
+  #   times            -> enumerator
+  #
+  # Calls the given block +self+ times with each integer in <tt>(0..self-1)</tt>:
+  #
+  #   a = []
+  #   5.times {|i| a.push(i) } # => 5
+  #   a                        # => [0, 1, 2, 3, 4]
+  #
+  # With no block given, returns an Enumerator.
+  def times
+    unless block_given?
+      return to_enum(:times) { self < 0 ? 0 : self }
+    end
+    i = 0
+    while i < self
+      yield i
+      i = i.succ
+    end
+    self
+  end
+
   #  call-seq:
   #    to_i -> self
   #

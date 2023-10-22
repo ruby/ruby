@@ -1,3 +1,43 @@
+Version 3.2.0
+=============
+
+Compatibility
+-------------
+
+* Ruby >= 2.7
+  - Support for Ruby 2.6 has been removed. Note that Ruby 2.6 reached the
+    end-of-life in 2022-04.
+    [[GitHub #639]](https://github.com/ruby/openssl/pull/639)
+* OpenSSL >= 1.0.2 or LibreSSL >= 3.1
+
+Notable changes
+---------------
+
+* Add a stub gemspec for JRuby, which depends on the `jruby-openssl` gem.
+  [[GitHub #598]](https://github.com/ruby/openssl/pull/598)
+* Add support for the FIPS module in OpenSSL 3.0/3.1.
+  [[GitHub #608]](https://github.com/ruby/openssl/pull/608)
+* Rework `OpenSSL::PKey` routines for loading DER or PEM encoded keys for better
+  compatibility with OpenSSL 3.0/3.1 with the FIPS module.
+  [[GitHub #615]](https://github.com/ruby/openssl/pull/615)
+  [[GitHub #669]](https://github.com/ruby/openssl/pull/669)
+* Add `OpenSSL::Provider` module for loading and unloading OpenSSL 3 providers.
+  [[GitHub #635]](https://github.com/ruby/openssl/pull/635)
+* Add `OpenSSL::PKey.new_raw_private_key`, `.new_raw_public_key`,
+  `OpenSSL::PKey::PKey#raw_private_key`, and `#raw_public_key` for public key
+  algorithms that use "raw private/public key", such as X25519 and Ed25519.
+  [[GitHub #646]](https://github.com/ruby/openssl/pull/646)
+* Improve OpenSSL error messages to include additional information when
+  it is available in OpenSSL's error queue.
+  [[GitHub #648]](https://github.com/ruby/openssl/pull/648)
+* Change `OpenSSL::SSL::SSLContext#ca_file=` and `#ca_path=` to raise
+  `OpenSSL::SSL::SSLError` instead of printing a warning message.
+  [[GitHub #659]](https://github.com/ruby/openssl/pull/659)
+* Allow `OpenSSL::X509::ExtensionFactory#create_extension` to take OIDs in the
+  dotted-decimal notation.
+  [[GitHub #141]](https://github.com/ruby/openssl/pull/141)
+
+
 Version 3.1.0
 =============
 

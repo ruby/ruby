@@ -6,14 +6,12 @@
 # wrap the data returned from the indexes.
 
 class Gem::NameTuple
-  def initialize(name, version, platform="ruby")
+  def initialize(name, version, platform=Gem::Platform::RUBY)
     @name = name
     @version = version
 
-    unless platform.is_a? Gem::Platform
-      platform = "ruby" if !platform || platform.empty?
-    end
-
+    platform &&= platform.to_s
+    platform = Gem::Platform::RUBY if !platform || platform.empty?
     @platform = platform
   end
 
@@ -49,7 +47,7 @@ class Gem::NameTuple
 
   def full_name
     case @platform
-    when nil, "ruby", ""
+    when nil, "", Gem::Platform::RUBY
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@platform}"

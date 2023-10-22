@@ -24,6 +24,11 @@ static VALUE ruby_dln_librefs;
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 
+enum {
+    loadable_ext_rb = (0+ /* .rb extension is the first in both tables */
+                       1) /* offset by rb_find_file_ext() */
+};
+
 static const char *const loadable_ext[] = {
     ".rb", DLEXT,
     0
@@ -475,6 +480,12 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
     return ST_STOP;
 }
 
+/*
+ * Returns the type of already provided feature.
+ * 'r': ruby script (".rb")
+ * 's': shared object (".so"/"."DLEXT)
+ * 'u': unsuffixed
+ */
 static int
 rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
@@ -996,7 +1007,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
 {
     VALUE tmp;
     char *ext, *ftptr;
-    int type, ft = 0;
+    int ft = 0;
     const char *loading;
 
     *path = 0;
@@ -1048,11 +1059,11 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
+    const unsigned int type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
 
     // Check if it's a statically linked extension when
     // not already a feature and not found as a dynamic library.
-    if (!ft && type != 1 && vm->static_ext_inits) {
+    if (!ft && type != loadable_ext_rb && vm->static_ext_inits) {
         VALUE lookup_name = tmp;
         // Append ".so" if not already present so for example "etc" can find "etc.so".
         // We always register statically linked extensions with a ".so" extension.
@@ -1080,13 +1091,13 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
             goto feature_present;
         }
         /* fall through */
-      case 1:
+      case loadable_ext_rb:
         ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-        if (rb_feature_p(vm, ftptr, ext, !--type, TRUE, &loading) && !loading)
+        if (rb_feature_p(vm, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
         *path = tmp;
     }
-    return type ? 's' : 'r';
+    return type > loadable_ext_rb ? 's' : 'r';
 
   feature_present:
     if (loading) *path = rb_filesystem_str_new_cstr(loading);

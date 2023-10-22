@@ -4,6 +4,69 @@ require "irb"
 require_relative "helper"
 
 module TestIRB
+  class InputTest < IntegrationTestCase
+    def test_symbol_aliases_are_handled_correctly
+      write_rc <<~RUBY
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+      RUBY
+
+      write_ruby <<~'RUBY'
+        class Foo
+        end
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "$ Foo"
+        type "exit!"
+      end
+
+      assert_include output, "From: #{@ruby_file.path}:1"
+    end
+
+    def test_symbol_aliases_are_handled_correctly_with_singleline_mode
+      write_rc <<~RUBY
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+        IRB.conf[:USE_SINGLELINE] = true
+      RUBY
+
+      write_ruby <<~'RUBY'
+        class Foo
+        end
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "irb_info"
+        type "$ Foo"
+        type "exit!"
+      end
+
+      # Make sure it's tested in singleline mode
+      assert_include output, "InputMethod: ReadlineInputMethod"
+      assert_include output, "From: #{@ruby_file.path}:1"
+    end
+
+    def test_symbol_aliases_dont_affect_ruby_syntax
+      write_ruby <<~'RUBY'
+        $foo = "It's a foo"
+        @bar = "It's a bar"
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "$foo"
+        type "@bar"
+        type "exit!"
+      end
+
+      assert_include output, "=> \"It's a foo\""
+      assert_include output, "=> \"It's a bar\""
+    end
+  end
+
   class IrbIOConfigurationTest < TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :indent_level)
 
@@ -12,7 +75,6 @@ module TestIRB
 
       def initialize(*params)
         @params = params
-        @calculated_indent
       end
 
       def auto_indent(&block)
@@ -21,20 +83,20 @@ module TestIRB
     end
 
     class MockIO_DynamicPrompt
+      attr_reader :prompt_list
+
       def initialize(params, &assertion)
         @params = params
-        @assertion = assertion
       end
 
       def dynamic_prompt(&block)
-        result = block.call(@params)
-        @assertion.call(result)
+        @prompt_list = block.call(@params)
       end
     end
 
     def setup
-      @irb = build_irb
       save_encodings
+      @irb = build_irb
     end
 
     def teardown
@@ -521,7 +583,7 @@ module TestIRB
 
       def assert_indent_level(lines, expected)
         code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
-        _tokens, opens, _ = @irb.scanner.check_code_state(code)
+        _tokens, opens, _ = @irb.scanner.check_code_state(code, local_variables: [])
         indent_level = @irb.scanner.calc_indent_level(opens)
         error_message = "Calculated the wrong number of indent level for:\n #{lines.join("\n")}"
         assert_equal(expected, indent_level, error_message)
@@ -647,35 +709,40 @@ module TestIRB
 
       def assert_dynamic_prompt(input_with_prompt)
         expected_prompt_list, lines = input_with_prompt.transpose
-        dynamic_prompt_executed = false
-        io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
-          error_message = <<~EOM
-            Expected dynamic prompt:
-            #{expected_prompt_list.join("\n")}
-
-            Actual dynamic prompt:
-            #{prompt_list.join("\n")}
-          EOM
-          dynamic_prompt_executed = true
-          assert_equal(expected_prompt_list, prompt_list, error_message)
-        end
-        @irb.context.io = io
-        @irb.scanner.set_prompt do |ltype, indent, continue, line_no|
+        def @irb.generate_prompt(opens, continue, line_offset)
+          ltype = @scanner.ltype_from_open_tokens(opens)
+          indent = @scanner.calc_indent_level(opens)
+          continue = opens.any? || continue
+          line_no = @line_no + line_offset
           '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
         end
+        io = MockIO_DynamicPrompt.new(lines)
+        @irb.context.io = io
         @irb.configure_io
-        assert dynamic_prompt_executed, "dynamic_prompt's assertions were not executed."
+
+        error_message = <<~EOM
+          Expected dynamic prompt:
+          #{expected_prompt_list.join("\n")}
+
+          Actual dynamic prompt:
+          #{io.prompt_list.join("\n")}
+        EOM
+        assert_equal(expected_prompt_list, io.prompt_list, error_message)
       end
     end
 
     private
 
+    def build_binding
+      Object.new.instance_eval { binding }
+    end
+
     def build_irb
       IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(TOPLEVEL_BINDING.dup)
+      workspace = IRB::WorkSpace.new(build_binding)
 
       IRB.conf[:VERBOSE] = false
-      IRB::Irb.new(workspace)
+      IRB::Irb.new(workspace, TestInputMethod.new)
     end
   end
 end

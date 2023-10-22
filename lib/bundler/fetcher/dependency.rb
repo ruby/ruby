@@ -24,7 +24,7 @@ module Bundler
       def specs(gem_names, full_dependency_list = [], last_spec_list = [])
         query_list = gem_names.uniq - full_dependency_list
 
-        log_specs "Query List: #{query_list.inspect}"
+        log_specs { "Query List: #{query_list.inspect}" }
 
         return last_spec_list if query_list.empty?
 

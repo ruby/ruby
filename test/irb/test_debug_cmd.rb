@@ -289,6 +289,25 @@ module TestIRB
       assert_match(/irb:rdbg\(main\):005> next/, output)
     end
 
+    def test_prompt_irb_name_is_kept
+      write_rc <<~RUBY
+        IRB.conf[:IRB_NAME] = "foo"
+      RUBY
+
+      write_ruby <<~'ruby'
+        binding.irb
+        puts "Hello"
+      ruby
+
+      output = run_ruby_file do
+        type "next"
+        type "continue"
+      end
+
+      assert_match(/foo\(main\):001> next/, output)
+      assert_match(/foo:rdbg\(main\):002> continue/, output)
+    end
+
     def test_irb_commands_are_available_after_moving_around_with_the_debugger
       write_ruby <<~'ruby'
         class Foo
@@ -310,6 +329,39 @@ module TestIRB
       end
 
       assert_include(output, "InputMethod: RelineInputMethod")
+    end
+
+    def test_help_command_is_delegated_to_the_debugger
+      write_ruby <<~'ruby'
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "help"
+        type "continue"
+      end
+
+      assert_include(output, "### Frame control")
+    end
+
+    def test_show_cmds_display_different_content_when_debugger_is_enabled
+      write_ruby <<~'ruby'
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "show_cmds"
+        type "continue"
+      end
+
+      # IRB's commands should still be listed
+      assert_match(/show_cmds\s+List all available commands and their description\./, output)
+      # debug gem's commands should be appended at the end
+      assert_match(/Debugging \(from debug\.gem\)\s+### Control flow/, output)
     end
 
     def test_input_is_evaluated_in_the_context_of_the_current_thread

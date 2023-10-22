@@ -562,6 +562,27 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_callinfo_includes_mid
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        class Foo
+          def foo
+            super(bar: 123) # should not crash on 0 mid
+          end
+
+          def bar
+            baz(bar: 123) # mid: baz
+          end
+        end
+
+        ObjectSpace.dump_all(output: $stdout)
+      end;
+      assert_empty error
+      assert(output.count > 1)
+      assert_equal 1, output.count { |l| l.include?('"mid":"baz"') }
+    end
+  end
+
   def test_dump_string_coderange
     assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
     unknown = "TEST STRING".dup.force_encoding(Encoding::BINARY)

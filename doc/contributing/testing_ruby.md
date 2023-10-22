@@ -82,10 +82,10 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     We can display the help of the `TESTS` option:
 
     ```
-    $ make test-all TESTS=--help
+    make test-all TESTS=--help
     ```
 
-    If we would like to run both the `test/` and `bootstraptest/` test suites, we can run
+    If we would like to run the `test/`, `bootstraptest/` and `spec/` test suites (the `spec/` is explained in a later section), we can run
 
     ```
     make check
@@ -140,5 +140,17 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     To run a specific bundler spec file, we can use `BUNDLER_SPECS` as follows:
 
     ```
-    $ make test-bundler BUNDLER_SPECS=commands/exec_spec.rb
+    make test-bundler BUNDLER_SPECS=commands/exec_spec.rb
     ```
+
+## Troubleshooting
+
+### Running test suites on s390x CPU Architecture
+
+If we see failing tests related to the zlib library on s390x CPU architecture, we can run the test suites with `DFLTCC=0` to pass:
+
+```
+DFLTCC=0 make check
+```
+
+The failures can happen with the zlib library applying the patch [madler/zlib#410](https://github.com/madler/zlib/pull/410) to enable the deflate algorithm producing a different compressed byte stream. We manage this issue at [[ruby-core:114942][Bug #19909]](https://bugs.ruby-lang.org/issues/19909).

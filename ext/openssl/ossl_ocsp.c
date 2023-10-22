@@ -1701,7 +1701,7 @@ Init_ossl_ocsp(void)
      *   require 'net/http'
      *
      *   http_response =
-     *     Net::HTTP.start ocsp_uri.hostname, ocsp.port do |http|
+     *     Net::HTTP.start ocsp_uri.hostname, ocsp_uri.port do |http|
      *       http.post ocsp_uri.path, request.to_der,
      *                 'content-type' => 'application/ocsp-request'
      *   end

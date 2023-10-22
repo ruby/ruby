@@ -32,6 +32,25 @@ describe "BasicSocket#recv" do
     ScratchPad.recorded.should == 'hello'
   end
 
+  ruby_version_is "3.3" do
+    it "returns nil on a closed stream socket" do
+      t = Thread.new do
+        client = @server.accept
+        packet = client.recv(10)
+        client.close
+        packet
+      end
+
+      Thread.pass while t.status and t.status != "sleep"
+      t.status.should_not be_nil
+
+      socket = TCPSocket.new('127.0.0.1', @port)
+      socket.close
+
+      t.value.should be_nil
+    end
+  end
+
   platform_is_not :solaris do
     it "accepts flags to specify unusual receiving behaviour" do
       t = Thread.new do

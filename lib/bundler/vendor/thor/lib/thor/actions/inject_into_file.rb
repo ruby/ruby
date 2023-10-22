@@ -21,7 +21,7 @@ class Bundler::Thor
     #     gems.split(" ").map{ |gem| "  config.gem :#{gem}" }.join("\n")
     #   end
     #
-    WARNINGS = { unchanged_no_flag: 'File unchanged! Either the supplied flag value not found or the content has already been inserted!' }
+    WARNINGS = {unchanged_no_flag: "File unchanged! Either the supplied flag value not found or the content has already been inserted!"}
 
     def insert_into_file(destination, *args, &block)
       data = block_given? ? block : args.shift
@@ -37,7 +37,7 @@ class Bundler::Thor
       attr_reader :replacement, :flag, :behavior
 
       def initialize(base, destination, data, config)
-        super(base, destination, {:verbose => true}.merge(config))
+        super(base, destination, {verbose: true}.merge(config))
 
         @behavior, @flag = if @config.key?(:after)
           [:after, @config.delete(:after)]
@@ -59,6 +59,8 @@ class Bundler::Thor
         if exists?
           if replace!(/#{flag}/, content, config[:force])
             say_status(:invoke)
+          elsif replacement_present?
+            say_status(:unchanged, color: :blue)
           else
             say_status(:unchanged, warning: WARNINGS[:unchanged_no_flag], color: :red)
           end
@@ -96,6 +98,8 @@ class Bundler::Thor
           end
         elsif warning
           warning
+        elsif behavior == :unchanged
+          :unchanged
         else
           :subtract
         end
@@ -103,11 +107,18 @@ class Bundler::Thor
         super(status, (color || config[:verbose]))
       end
 
+      def content
+        @content ||= File.read(destination)
+      end
+
+      def replacement_present?
+        content.include?(replacement)
+      end
+
       # Adds the content to the file.
       #
       def replace!(regexp, string, force)
-        content = File.read(destination)
-        if force || !content.include?(replacement)
+        if force || !replacement_present?
           success = content.gsub!(regexp, string)
 
           File.open(destination, "wb") { |file| file.write(content) } unless pretend?

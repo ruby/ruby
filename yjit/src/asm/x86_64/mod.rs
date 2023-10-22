@@ -635,7 +635,7 @@ fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_r
                 panic!("immediate value too large (num_bits={}, num={uimm:?})", num_bits);
             }
         },
-        _ => unreachable!()
+        _ => panic!("unknown encoding combo: {opnd0:?} {opnd1:?}")
     };
 }
 

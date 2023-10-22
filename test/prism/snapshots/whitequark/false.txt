@@ -1,0 +1,6 @@
+@ ProgramNode (location: (1,0)-(1,5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,5))
+    └── body: (length: 1)
+        └── @ FalseNode (location: (1,0)-(1,5))

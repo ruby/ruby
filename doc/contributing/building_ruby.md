@@ -91,6 +91,8 @@
 
     - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
 
+    - Also `-C` (or `--config-cache`) would reduce time to configure from the next time.
+
 5. Build Ruby:
 
     ``` shell
@@ -156,6 +158,14 @@ with the Ruby script you'd like to run. You can use the following make targets:
 * `make runruby`: Runs `test.rb` using Ruby
 * `make lldb-ruby`: Runs `test.rb` using Ruby in lldb
 * `make gdb-ruby`: Runs `test.rb` using Ruby in gdb
+
+### Compiling for Debugging
+
+You should configure Ruby without optimization and other flags that may interfere with debugging:
+
+``` shell
+./configure --enable-debug-env optflags="-O0 -fno-omit-frame-pointer"
+```
 
 ### Building with Address Sanitizer
 

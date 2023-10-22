@@ -503,7 +503,10 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    ],
+],
+[darwin*], [
+    : ${enable_shared=yes}
+],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
 
@@ -682,6 +685,10 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_IF([test $gcc_major -le 6], [
 	extra_warnflags="$extra_warnflags -Wno-maybe-uninitialized"
     ])
+    AS_CASE([ $CFLAGS ], [*" -save-temps="*|*" -save-temps "*], [], [
+	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
+    ])
+
     # ICC doesn't support -Werror=
     AS_IF([test $icc_version -gt 0], [
 	particular_werror_flags=no
@@ -693,7 +700,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=duplicated-cond \
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
-		 -Werror=misleading-indentation \
 		 -Werror=pointer-arith \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
@@ -964,9 +970,10 @@ AS_IF([test "x$OPT_DIR" != x], [
     LDFLAGS="${LDFLAGS:+$LDFLAGS }$val"
     DLDFLAGS="${DLDFLAGS:+$DLDFLAGS }$val"
     LDFLAGS_OPTDIR="$val"
-    CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
+    INCFLAGS="${INCFLAGS:+$INCFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
         sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
 ])
+AC_SUBST(incflags, "$INCFLAGS")
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -1338,6 +1345,8 @@ AC_CHECK_HEADERS(syscall.h)
 AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(ucontext.h)
 AC_CHECK_HEADERS(utime.h)
+AC_CHECK_HEADERS(sys/epoll.h)
+
 AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
   AC_CHECK_HEADERS(x86intrin.h)
 ])
@@ -2075,6 +2084,7 @@ AC_CHECK_FUNCS(lstat)
 AC_CHECK_FUNCS(lutimes)
 AC_CHECK_FUNCS(malloc_usable_size)
 AC_CHECK_FUNCS(malloc_size)
+AC_CHECK_FUNCS(malloc_trim)
 AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(memset_s)
@@ -2153,9 +2163,6 @@ AC_CHECK_FUNCS(__sinpi)
 AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
     [AC_CHECK_FUNCS(statx)])
 
-AS_CASE(["$ac_cv_func_memset_s:$ac_cv_func_qsort_s"], [*yes*],
-    [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
-
 AS_IF([test "$ac_cv_func_getcwd" = yes], [
     AC_CACHE_CHECK(if getcwd allocates buffer if NULL is given, [rb_cv_getcwd_malloc],
 	[AC_RUN_IFELSE([AC_LANG_SOURCE([[
@@ -2223,6 +2230,27 @@ AS_IF([test x$rb_cv_builtin___builtin_choose_expr = xyes], [
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_trap, [__builtin_trap()])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(0, 0)])
+
+AS_IF([test "$rb_cv_builtin___builtin_mul_overflow" != no], [
+  AC_CACHE_CHECK(for __builtin_mul_overflow with long long arguments, rb_cv_use___builtin_mul_overflow_long_long, [
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#pragma clang optimize off
+
+int
+main(void)
+{
+    long long x = 0, y;
+    __builtin_mul_overflow(x, x, &y);
+
+    return 0;
+}
+]])],
+	rb_cv_use___builtin_mul_overflow_long_long=yes,
+	rb_cv_use___builtin_mul_overflow_long_long=no)])
+])
+AS_IF([test "$rb_cv_use___builtin_mul_overflow_long_long" = yes], [
+  AC_DEFINE(USE___BUILTIN_MUL_OVERFLOW_LONG_LONG, 1)
+])
 
 AS_IF([test "$ac_cv_func_qsort_r" != no], [
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,
@@ -3058,7 +3086,7 @@ AC_SUBST(EXTOBJS)
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
 			: ${LDFLAGS=""}
-			: ${LIBPATHENV=DYLD_FALLBACK_LIBRARY_PATH}
+			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			: ${PRELOADENV=DYLD_INSERT_LIBRARIES}
                         AS_IF([test x"$enable_shared" = xyes], [
                             # Resolve symbols from libruby.dylib in $(LIBS) when --enable-shared
@@ -3924,6 +3952,23 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 ])
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
+
+AS_IF([test x"$enable_shared" = xyes], [
+    AC_CACHE_CHECK([for default symbols in empty shared library], rb_cv_symbols_in_emptylib, [
+        save_CC="$CC"
+        eval CC=\"`printf "%s" "${DLDSHARED}" | sed ['s/\$(CC)/${CC}/']`\"
+        AC_LINK_IFELSE([AC_LANG_PROGRAM()],[
+            rb_cv_symbols_in_emptylib=`$NM -Pgp conftest$ac_exeext |
+                sed ["/ [A-TV-Z] .*/!d;s///;s/^${SYMBOL_PREFIX}//;/^main$/d"]`
+        ])
+        set dummy ${rb_cv_symbols_in_emptylib}
+        shift
+        rb_cv_symbols_in_emptylib="$*"
+        CC="$save_CC"
+    ])
+])
+AC_SUBST(XSYMBOLS_IN_EMPTYLIB, "${rb_cv_symbols_in_emptylib}")
+
 DLNOBJ=dln.o
 AC_ARG_ENABLE(dln,
 	      AS_HELP_STRING([--disable-dln], [disable dynamic link feature]),
@@ -4320,6 +4365,10 @@ AS_IF([test "${universal_binary-no}" = yes ], [
         arch="${target_cpu}-${target_os}"
     ])
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
+
+    AS_IF([test "$arch" = "s390x-linux"], [
+       AC_DEFINE_UNQUOTED(USE_MN_THREADS, 0)
+    ])
 ])
 
 unset sitearch

@@ -2390,7 +2390,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
  *    m.deconstruct_keys([:hours, :minutes]) # => {:hours => "18", :minutes => "37"}
  *    m.deconstruct_keys(nil) # => {:hours => "18", :minutes => "37", :seconds => "22"}
  *
- *  Returns an empty hash of no named captures were defined:
+ *  Returns an empty hash if no named captures were defined:
  *
  *    m = /(\d{2}):(\d{2}):(\d{2})/.match("18:37:22")
  *    m.deconstruct_keys(nil) # => {}
@@ -2489,10 +2489,10 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
- * call-seq:
- *   inspect -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Returns a string representation of +self+:
+ *  Returns a string representation of +self+:
  *
  *    m = /.$/.match("foo")
  *    # => #<MatchData "o">
@@ -2507,7 +2507,6 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
  *
  *  Related: MatchData#to_s.
- *
  */
 
 static VALUE

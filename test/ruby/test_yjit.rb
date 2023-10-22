@@ -10,6 +10,8 @@ require_relative '../lib/jit_support'
 
 return unless JITSupport.yjit_supported?
 
+require 'stringio'
+
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the RJIT tests in test/ruby/test_rjit.rb
 class TestYJIT < Test::Unit::TestCase
@@ -51,31 +53,40 @@ class TestYJIT < Test::Unit::TestCase
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
-  def test_starting_paused
-    program = <<~RUBY
+  def test_yjit_enable
+    args = []
+    args << "--disable=yjit" if RubyVM::YJIT.enabled?
+    assert_separately(args, <<~RUBY)
+      assert_false RubyVM::YJIT.enabled?
+      assert_false RUBY_DESCRIPTION.include?("+YJIT")
+
+      RubyVM::YJIT.enable
+
+      assert_true RubyVM::YJIT.enabled?
+      assert_true RUBY_DESCRIPTION.include?("+YJIT")
+    RUBY
+  end
+
+  def test_yjit_enable_with_call_threshold
+    assert_separately(%w[--yjit-disable --yjit-call-threshold=1], <<~RUBY)
       def not_compiled = nil
       def will_compile = nil
-      def compiled_counts = RubyVM::YJIT.runtime_stats[:compiled_iseq_count]
-      counts = []
-      not_compiled
-      counts << compiled_counts
+      def compiled_counts = RubyVM::YJIT.runtime_stats&.dig(:compiled_iseq_count)
 
-      RubyVM::YJIT.resume
+      not_compiled
+      assert_nil compiled_counts
+      assert_false RubyVM::YJIT.enabled?
+
+      RubyVM::YJIT.enable
 
       will_compile
-      counts << compiled_counts
-
-      if counts[0] == 0 && counts[1] > 0
-        p :ok
-      end
+      assert compiled_counts > 0
+      assert_true RubyVM::YJIT.enabled?
     RUBY
-    assert_in_out_err(%w[--yjit-pause --yjit-stats --yjit-call-threshold=1], program, success: true) do |stdout, stderr|
-      assert_equal([":ok"], stdout)
-    end
   end
 
   def test_yjit_stats_and_v_no_error
-    _stdout, stderr, _status = EnvUtil.invoke_ruby(%w(-v --yjit-stats), '', true, true)
+    _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
   end
 
@@ -476,6 +487,32 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_getconstant_path_general
+    assert_compiles(<<~RUBY, result: [1, 1])
+      module Base
+        Const = 1
+      end
+
+      class Sub
+        def const
+          _const = nil # make a non-entry block for opt_getconstant_path
+          Const
+        end
+
+        def self.const_missing(n)
+          Base.const_get(n)
+        end
+      end
+
+
+      sub = Sub.new
+      result = []
+      result << sub.const # generate the general case
+      result << sub.const # const_missing does not invalidate the block
+      result
+    RUBY
+  end
+
   def test_string_interpolation
     assert_compiles(<<~'RUBY', insns: %i[objtostring anytostring concatstrings], result: "foobar", call_threshold: 2)
       def make_str(foo, bar)
@@ -547,8 +584,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_getblockparamproxy
-    # Currently two side exits as OPTIMIZED_METHOD_TYPE_CALL is unimplemented
-    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy])
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: {})
       def foo &blk
         p blk.call
         p blk.call
@@ -556,6 +592,24 @@ class TestYJIT < Test::Unit::TestCase
 
       foo { 1 }
       foo { 2 }
+    RUBY
+  end
+
+  def test_ifunc_getblockparamproxy
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: {})
+      class Foo
+        include Enumerable
+
+        def each(&block)
+          block.call 1
+          block.call 2
+          block.call 3
+        end
+      end
+
+      foo = Foo.new
+      foo.map { _1 * 2 }
+      foo.map { _1 * 2 }
     RUBY
   end
 
@@ -661,7 +715,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_send_block
     # Setlocal_wc_0 sometimes side-exits on write barrier
-    assert_compiles(<<~'RUBY', result: "b:n/b:y/b:y/b:n", exits: { :setlocal_WC_0 => 0..1 })
+    assert_compiles(<<~'RUBY', result: "b:n/b:y/b:y/b:n")
       def internal_method(&b)
         "b:#{block_given? ? "y" : "n"}"
       end
@@ -1106,7 +1160,7 @@ class TestYJIT < Test::Unit::TestCase
   def test_bug_19316
     n = 2 ** 64
     # foo's extra param and the splats are relevant
-    assert_compiles(<<~'RUBY', result: [[n, -n], [n, -n]])
+    assert_compiles(<<~'RUBY', result: [[n, -n], [n, -n]], exits: :any)
       def foo(_, a, b, c)
         [a & b, ~c]
       end
@@ -1136,7 +1190,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_invalidate_cyclic_branch
-    assert_compiles(<<~'RUBY', result: 2)
+    assert_compiles(<<~'RUBY', result: 2, exits: { opt_plus: 1 })
       def foo
         i = 0
         while i < 2
@@ -1154,7 +1208,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_tracing_str_uplus
-    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok)
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1, definemethod: 1 })
       def str_uplus
         _ = 1
         _ = 2
@@ -1199,7 +1253,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_return_to_invalidated_block
     # [Bug #19463]
-    assert_compiles(<<~RUBY, result: [1, 1, :ugokanai])
+    assert_compiles(<<~RUBY, result: [1, 1, :ugokanai], exits: { definesmethod: 1, getlocal_WC_0: 1 })
       klass = Class.new do
         def self.lookup(hash, key) = hash[key]
 
@@ -1263,7 +1317,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_nested_send
     #[Bug #19464]
-    assert_compiles(<<~RUBY, result: [:ok, :ok])
+    assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { defineclass: 1 })
       klass = Class.new do
         class << self
           alias_method :my_send, :send
@@ -1301,7 +1355,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_io_reopen_clobbering_singleton_class
-    assert_compiles(<<~RUBY, result: [:ok, :ok])
+    assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { definesmethod: 1, opt_eq: 2 })
       def $stderr.to_i = :i
 
       def test = $stderr.to_i
@@ -1318,6 +1372,24 @@ class TestYJIT < Test::Unit::TestCase
 
       h["foo"]
     RUBY
+  end
+
+  def test_proc_block_arg
+    assert_compiles(<<~RUBY, result: [:proc, :no_block])
+      def yield_if_given = block_given? ? yield : :no_block
+
+      def call(block_arg = nil) = yield_if_given(&block_arg)
+
+      [call(-> { :proc }), call]
+    RUBY
+  end
+
+  def test_opt_mult_overflow
+    assert_no_exits('0xfff_ffff_ffff_ffff * 0x10')
+  end
+
+  def test_disable_stats
+    assert_in_out_err(%w[--yjit-stats --yjit-disable])
   end
 
   private
@@ -1403,9 +1475,16 @@ class TestYJIT < Test::Unit::TestCase
       # barriers, cache misses.)
       if exits != :any &&
         exits != recorded_exits &&
-        !exits.all? { |k, v| v === recorded_exits[k] } # triple-equal checks range membership or integer equality
-        flunk "Expected #{exits.empty? ? "no" : exits.inspect} exits" \
-          ", but got\n#{recorded_exits.inspect}"
+        (exits.keys != recorded_exits.keys || !exits.all? { |k, v| v === recorded_exits[k] }) # triple-equal checks range membership or integer equality
+        stats_reasons = StringIO.new
+        ::RubyVM::YJIT.send(:_print_stats_reasons, runtime_stats, stats_reasons)
+        stats_reasons = stats_reasons.string
+        flunk <<~EOM
+          Expected #{exits.empty? ? "no" : exits.inspect} exits, but got:
+          #{recorded_exits.inspect}
+          Reasons:
+          #{stats_reasons}
+        EOM
       end
     end
 
@@ -1435,7 +1514,7 @@ class TestYJIT < Test::Unit::TestCase
     args = [
       "--disable-gems",
       "--yjit-call-threshold=#{call_threshold}",
-      "--yjit-stats"
+      "--yjit-stats=quiet"
     ]
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)
@@ -1447,9 +1526,7 @@ class TestYJIT < Test::Unit::TestCase
       stats = stats_r.read
       stats_r.close
     end
-    out, err, status = EnvUtil.invoke_ruby(args,
-      '', true, true, timeout: timeout, ios: {3 => stats_w}
-    )
+    out, err, status = invoke_ruby(args, '', true, true, timeout: timeout, ios: { 3 => stats_w })
     stats_w.close
     stats_reader.join(timeout)
     stats = Marshal.load(stats) if !stats.empty?
@@ -1459,5 +1536,11 @@ class TestYJIT < Test::Unit::TestCase
     stats_reader&.join(timeout)
     stats_r&.close
     stats_w&.close
+  end
+
+  # A wrapper of EnvUtil.invoke_ruby that uses RbConfig.ruby instead of EnvUtil.ruby
+  # that might use a wrong Ruby depending on your environment.
+  def invoke_ruby(*args, **kwargs)
+    EnvUtil.invoke_ruby(*args, rubybin: RbConfig.ruby, **kwargs)
   end
 end

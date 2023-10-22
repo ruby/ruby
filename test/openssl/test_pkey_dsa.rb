@@ -58,7 +58,7 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     signature = dsa512.sign("SHA256", data)
     assert_equal true, dsa512.verify("SHA256", signature, data)
 
-    signature0 = (<<~'end;').unpack("m")[0]
+    signature0 = (<<~'end;').unpack1("m")
       MCwCFH5h40plgU5Fh0Z4wvEEpz0eE9SnAhRPbkRB8ggsN/vsSEYMXvJwjGg/
       6g==
     end;

@@ -90,6 +90,18 @@ module TestIRB
         ], out)
     end
 
+    def test_prompt_n_deprecation
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new)
+
+      _, err = capture_output do
+        irb.context.prompt_n = "foo"
+        irb.context.prompt_n
+      end
+
+      assert_include err, "IRB::Context#prompt_n is deprecated"
+      assert_include err, "IRB::Context#prompt_n= is deprecated"
+    end
+
     def test_output_to_pipe
       require 'stringio'
       input = TestInputMethod.new(["n=1"])
@@ -454,7 +466,6 @@ module TestIRB
     def test_default_return_format
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
-        :PROMPT_N => "%03n> ",
         :PROMPT_S => "%03n> ",
         :PROMPT_C => "%03n> "
         # without :RETURN
@@ -603,21 +614,21 @@ module TestIRB
     def test_prompt_main_escape
       main = Struct.new(:to_s).new("main\a\t\r\n")
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
-      assert_equal("irb(main    )>", irb.prompt('irb(%m)>', nil, 1, 1))
+      assert_equal("irb(main    )>", irb.send(:format_prompt, 'irb(%m)>', nil, 1, 1))
     end
 
     def test_prompt_main_inspect_escape
       main = Struct.new(:inspect).new("main\\n\nmain")
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
-      assert_equal("irb(main\\n main)>", irb.prompt('irb(%M)>', nil, 1, 1))
+      assert_equal("irb(main\\n main)>", irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
     end
 
     def test_prompt_main_truncate
       main = Struct.new(:to_s).new("a" * 100)
       def main.inspect; to_s.inspect; end
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
-      assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%m)>', nil, 1, 1))
-      assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%M)>', nil, 1, 1))
+      assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.send(:format_prompt, 'irb(%m)>', nil, 1, 1))
+      assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
     end
 
     def test_lineno

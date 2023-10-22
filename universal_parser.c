@@ -77,6 +77,7 @@
 #undef T_RATIONAL
 #define T_RATIONAL 0x0f
 
+#ifndef INTERNAL_IMEMO_H
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE reserved;
@@ -84,6 +85,7 @@ struct rb_imemo_tmpbuf_struct {
     struct rb_imemo_tmpbuf_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
 };
+#endif
 
 #undef xmalloc
 #define xmalloc p->config->malloc
@@ -109,10 +111,6 @@ struct rb_imemo_tmpbuf_struct {
 #undef MEMCPY
 #define MEMCPY(p1,p2,type,n) (p->config->nonempty_memcpy((p1), (p2), sizeof(type), (n)))
 
-#define new_strterm p->config->new_strterm
-#define strterm_is_heredoc p->config->strterm_is_heredoc
-#define rb_imemo_tmpbuf_auto_free_pointer p->config->tmpbuf_auto_free_pointer
-#define rb_imemo_tmpbuf_set_ptr p->config->tmpbuf_set_ptr
 #define rb_imemo_tmpbuf_parser_heap p->config->tmpbuf_parser_heap
 
 #define compile_callback         p->config->compile_callback

@@ -4,35 +4,10 @@ begin
 rescue LoadError
 end
 
-# Compile OpenSSL with crypto-mdebug and run this test suite with OSSL_MDEBUG=1
-# environment variable to enable memory leak check.
-if ENV["OSSL_MDEBUG"] == "1"
-  if OpenSSL.respond_to?(:print_mem_leaks)
-    OpenSSL.mem_check_start
-
-    END {
-      GC.start
-      case OpenSSL.print_mem_leaks
-      when nil
-        warn "mdebug: check what is printed"
-      when true
-        raise "mdebug: memory leaks detected"
-      end
-    }
-  else
-    warn "OSSL_MDEBUG=1 is specified but OpenSSL is not built with crypto-mdebug"
-  end
-end
-
 require "test/unit"
+require "core_assertions"
 require "tempfile"
 require "socket"
-
-begin
-  require_relative "../lib/core_assertions"
-rescue LoadError
-  # for ruby/ruby repository
-end
 
 if defined?(OpenSSL)
 
@@ -144,22 +119,6 @@ module OpenSSL::TestUtils
     return false unless version
     !major || (version.map(&:to_i) <=> [major, minor, fix]) >= 0
   end
-
-  # OpenSSL 3: x25519 a decode from and then encode to a pem file corrupts the
-  # key if fips+base provider is used
-  # This issue happens in OpenSSL between 3.0,0 and 3.0.10 or between 3.1.0 and
-  # 3.1.2.
-  # https://github.com/openssl/openssl/issues/21493
-  # https://github.com/openssl/openssl/pull/21519
-  def pend_on_openssl_issue_21493
-    if OpenSSL.fips_mode &&
-      (
-        (openssl?(3, 0, 0, 0) && !openssl?(3, 0, 0, 11)) ||
-        (openssl?(3, 1, 0, 0) && !openssl?(3, 1, 0, 3))
-      )
-      pend('See <https://github.com/openssl/openssl/issues/21493>')
-    end
-  end
 end
 
 class OpenSSL::TestCase < Test::Unit::TestCase
@@ -179,6 +138,26 @@ class OpenSSL::TestCase < Test::Unit::TestCase
     end
     # OpenSSL error stack must be empty
     assert_equal([], OpenSSL.errors)
+  end
+
+  # Omit the tests in FIPS.
+  #
+  # For example, the password based encryption used in the PEM format uses MD5
+  # for deriving the encryption key from the password, and MD5 is not
+  # FIPS-approved.
+  #
+  # See https://github.com/openssl/openssl/discussions/21830#discussioncomment-6865636
+  # for details.
+  def omit_on_fips
+    return unless OpenSSL.fips_mode
+
+    omit 'An encryption used in the test is not FIPS-approved'
+  end
+
+  def omit_on_non_fips
+    return if OpenSSL.fips_mode
+
+    omit "Only for OpenSSL FIPS"
   end
 end
 

@@ -14,6 +14,10 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_version
+    assert_kind_of(String, StringIO::VERSION)
+  end
+
   def test_initialize
     assert_kind_of StringIO, StringIO.new
     assert_kind_of StringIO, StringIO.new('str')
@@ -746,6 +750,13 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(EOFError) { f.pread(1, 5) }
     assert_raise(ArgumentError) { f.pread(-1, 0) }
     assert_raise(Errno::EINVAL) { f.pread(3, -1) }
+
+    assert_equal "".b, StringIO.new("").pread(0, 0)
+    assert_equal "".b, StringIO.new("").pread(0, -10)
+
+    buf = "stale".b
+    assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
+    assert_equal "stale".b, buf
   end
 
   def test_size

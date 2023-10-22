@@ -83,6 +83,9 @@ module TestIRB
     TIMEOUT_SEC = 3
 
     def setup
+      @envs = {}
+      @tmpfiles = []
+
       unless defined?(PTY)
         omit "Integration tests require PTY."
       end
@@ -90,8 +93,12 @@ module TestIRB
       if ruby_core?
         omit "This test works only under ruby/irb"
       end
+    end
 
-      @envs = {}
+    def teardown
+      @tmpfiles.each do |tmpfile|
+        File.unlink(tmpfile)
+      end
     end
 
     def run_ruby_file(&block)
@@ -102,6 +109,11 @@ module TestIRB
       lines = []
 
       yield
+
+      # Test should not depend on user's irbrc file
+      @envs["HOME"] ||= tmp_dir
+      @envs["XDG_CONFIG_HOME"] ||= tmp_dir
+      @envs["IRBRC"] = nil unless @envs.key?("IRBRC")
 
       PTY.spawn(@envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
         Timeout.timeout(TIMEOUT_SEC) do
@@ -133,7 +145,6 @@ module TestIRB
       MSG
       assert_block(message) { false }
     ensure
-      File.unlink(@ruby_file) if @ruby_file
       FileUtils.remove_entry tmp_dir
     end
 
@@ -180,8 +191,17 @@ module TestIRB
 
     def write_ruby(program)
       @ruby_file = Tempfile.create(%w{irb- .rb})
+      @tmpfiles << @ruby_file
       @ruby_file.write(program)
       @ruby_file.close
+    end
+
+    def write_rc(content)
+      @irbrc = Tempfile.new('irbrc')
+      @tmpfiles << @irbrc
+      @irbrc.write(content)
+      @irbrc.close
+      @envs['IRBRC'] = @irbrc.path
     end
   end
 end

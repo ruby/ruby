@@ -93,9 +93,7 @@ module OpenSSL::Buffering
       nil
     else
       size = @rbuffer.size unless size
-      ret = @rbuffer[0, size]
-      @rbuffer[0, size] = ""
-      ret
+      @rbuffer.slice!(0, size)
     end
   end
 
@@ -106,8 +104,7 @@ module OpenSSL::Buffering
   #
   # Get the next 8bit byte from `ssl`.  Returns `nil` on EOF
   def getbyte
-    byte = read(1)
-    byte && byte.unpack1("C")
+    read(1)&.ord
   end
 
   ##

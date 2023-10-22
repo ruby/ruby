@@ -770,4 +770,25 @@ class TestISeq < Test::Unit::TestCase
     assert_syntax_error("false and break", mesg)
     assert_syntax_error("if false and break; end", mesg)
   end
+
+  def test_unreachable_pattern_matching
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[1])
+    begin;
+      if true or {a: 0} in {a:}
+        p 1
+      else
+        p a
+      end
+    end;
+  end
+
+  def test_loading_kwargs_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
+    a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
+    begin;
+      1_000_000.times do
+        RubyVM::InstructionSequence.load_from_binary(a)
+      end
+    end;
+  end
 end

@@ -43,6 +43,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "prism/prism.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -167,6 +168,8 @@ rb_iseq_free(const rb_iseq_t *iseq)
         rb_rjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
+        RUBY_ASSERT(rb_yjit_live_iseq_count > 0);
+        rb_yjit_live_iseq_count--;
 #endif
         ruby_xfree((void *)body->iseq_encoded);
         ruby_xfree((void *)body->insns_info.body);
@@ -187,7 +190,11 @@ rb_iseq_free(const rb_iseq_t *iseq)
             ruby_xfree((void *)body->mark_bits.list);
         }
 
+        ruby_xfree(body->variable.original_iseq);
+
         if (body->param.keyword != NULL) {
+            if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
+                ruby_xfree((void *)body->param.keyword->table);
             ruby_xfree((void *)body->param.keyword->default_values);
             ruby_xfree((void *)body->param.keyword);
         }
@@ -729,7 +736,7 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
       else if (flag == Qfalse)  { (o)->mem = 0; } \
   }
 #define SET_COMPILE_OPTION_NUM(o, h, mem) \
-  { VALUE num = rb_hash_aref(opt, ID2SYM(rb_intern(#mem))); \
+  { VALUE num = rb_hash_aref((h), ID2SYM(rb_intern(#mem))); \
       if (!NIL_P(num)) (o)->mem = NUM2INT(num); \
   }
     SET_COMPILE_OPTION(option, opt, inline_const_cache);
@@ -746,20 +753,15 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
 #undef SET_COMPILE_OPTION_NUM
 }
 
-static VALUE
-make_compile_option_from_ast(const rb_ast_body_t *ast)
+static rb_compile_option_t *
+set_compile_option_from_ast(rb_compile_option_t *option, const rb_ast_body_t *ast)
 {
-    VALUE opt = rb_obj_hide(rb_ident_hash_new());
-    if (ast->frozen_string_literal >= 0) rb_hash_aset(opt, rb_sym_intern_ascii_cstr("frozen_string_literal"), RBOOL(ast->frozen_string_literal));
-    if (ast->coverage_enabled >= 0) rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), RBOOL(ast->coverage_enabled));
-    return opt;
-}
-
-static void
-rb_iseq_make_compile_option(rb_compile_option_t *option, VALUE opt)
-{
-    Check_Type(opt, T_HASH);
-    set_compile_option_from_hash(option, opt);
+#define SET_COMPILE_OPTION(o, a, mem) \
+    ((a)->mem < 0 ? 0 : ((o)->mem = (a)->mem > 0))
+    SET_COMPILE_OPTION(option, ast, frozen_string_literal);
+    SET_COMPILE_OPTION(option, ast, coverage_enabled);
+#undef SET_COMPILE_OPTION
+    return option;
 }
 
 static void
@@ -915,13 +917,11 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     rb_iseq_t *iseq = iseq_alloc();
     rb_compile_option_t new_opt;
 
-    if (option) {
+    if (!option) option = &COMPILE_OPTION_DEFAULT;
+    if (ast) {
         new_opt = *option;
+        option = set_compile_option_from_ast(&new_opt, ast);
     }
-    else {
-        new_opt = COMPILE_OPTION_DEFAULT;
-    }
-    if (ast) rb_iseq_make_compile_option(&new_opt, make_compile_option_from_ast(ast));
 
     VALUE script_lines = Qnil;
 
@@ -933,9 +933,48 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     }
 
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1,
-                       parent, isolated_depth, type, script_lines, &new_opt);
+                       parent, isolated_depth, type, script_lines, option);
 
     rb_iseq_compile_node(iseq, node);
+    finish_iseq_build(iseq);
+
+    return iseq_translate(iseq);
+}
+
+VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser);
+
+rb_iseq_t *
+pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum rb_iseq_type type, const rb_compile_option_t *option)
+{
+    rb_iseq_t *iseq = iseq_alloc();
+    VALUE script_lines = Qnil;
+    rb_code_location_t code_loc;
+
+    if (!option) option = &COMPILE_OPTION_DEFAULT;
+
+    pm_line_column_t start_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node->base.location.start);
+    pm_line_column_t end_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node->base.location.end);
+
+    code_loc = (rb_code_location_t) {
+        .beg_pos = {
+            .lineno = (int) start_line_col.line,
+            .column = (int) start_line_col.column
+        },
+        .end_pos = {
+            .lineno = (int) end_line_col.line,
+            .column = (int) end_line_col.column
+        },
+    };
+
+    // TODO: node_id
+    int node_id = -1;
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_loc, node_id,
+            parent, isolated_depth, type, script_lines, option);
+
+    rb_iseq_compile_prism_node(iseq, scope_node, parser);
+
     finish_iseq_build(iseq);
 
     return iseq_translate(iseq);
@@ -1122,6 +1161,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         const rb_iseq_t *outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
         VALUE outer_scope_v = (VALUE)outer_scope;
         rb_parser_set_context(parser, outer_scope, FALSE);
+        rb_parser_set_script_lines(parser, RBOOL(ruby_vm_keep_script_lines));
         RB_GC_GUARD(outer_scope_v);
         ast = (*parse)(parser, file, src, ln);
     }
@@ -1294,8 +1334,8 @@ rb_iseqw_new(const rb_iseq_t *iseq)
  *     InstructionSequence.compile(source[, file[, path[, line[, options]]]]) -> iseq
  *     InstructionSequence.new(source[, file[, path[, line[, options]]]]) -> iseq
  *
- *  Takes +source+, a String of Ruby code and compiles it to an
- *  InstructionSequence.
+ *  Takes +source+, which can be a string of Ruby code, or an open +File+ object.
+ *  that contains Ruby source code.
  *
  *  Optionally takes +file+, +path+, and +line+ which describe the file path,
  *  real path and first line number of the ruby code in +source+ which are
@@ -1317,6 +1357,10 @@ rb_iseqw_new(const rb_iseq_t *iseq)
  *     RubyVM::InstructionSequence.compile(File.read(path), path, File.expand_path(path))
  *     #=> <RubyVM::InstructionSequence:<compiled>@test.rb:1>
  *
+ *     file = File.open("test.rb")
+ *     RubyVM::InstructionSequence.compile(file)
+ *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>:1>
+ *
  *     path = File.expand_path("test.rb")
  *     RubyVM::InstructionSequence.compile(File.read(path), path, path)
  *     #=> <RubyVM::InstructionSequence:<compiled>@/absolute/path/to/test.rb:1>
@@ -1325,7 +1369,7 @@ rb_iseqw_new(const rb_iseq_t *iseq)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = INT2FIX(1), opt = Qnil;
+    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
     int i;
 
     i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
@@ -1345,6 +1389,70 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     Check_Type(file, T_STRING);
 
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
+}
+
+static VALUE
+iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
+{
+    VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
+    int i;
+
+    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
+    if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
+    switch (i) {
+      case 5: opt = argv[--i];
+      case 4: line = argv[--i];
+      case 3: path = argv[--i];
+      case 2: file = argv[--i];
+    }
+
+    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
+    if (NIL_P(path)) path = file;
+    if (NIL_P(line)) line = INT2FIX(1);
+
+    Check_Type(path, T_STRING);
+    Check_Type(file, T_STRING);
+
+    rb_iseq_t *iseq = iseq_alloc();
+
+    pm_parser_t parser;
+    size_t len = RSTRING_LEN(src);
+    VALUE name = rb_fstring_lit("<compiled>");
+
+    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), len, "");
+
+    pm_node_t *node = pm_parse(&parser);
+
+    int first_lineno = NUM2INT(line);
+    pm_line_column_t start_loc = pm_newline_list_line_column(&parser.newline_list, node->location.start);
+    pm_line_column_t end_loc = pm_newline_list_line_column(&parser.newline_list, node->location.end);
+
+    rb_code_location_t node_location;
+    node_location.beg_pos.lineno = (int)start_loc.line;
+    node_location.beg_pos.column = (int)start_loc.column;
+    node_location.end_pos.lineno = (int)end_loc.line;
+    node_location.end_pos.column = (int)end_loc.column;
+
+    int node_id = 0;
+
+    rb_iseq_t *parent = NULL;
+    enum rb_iseq_type iseq_type = ISEQ_TYPE_TOP;
+    rb_compile_option_t option;
+
+    make_compile_option(&option, opt);
+
+    prepare_iseq_build(iseq, name, file, path, first_lineno, &node_location, node_id,
+                       parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
+
+    pm_scope_node_t scope_node;
+    pm_scope_node_init(node, &scope_node, NULL, &parser);
+    rb_iseq_compile_prism_node(iseq, &scope_node, &parser);
+
+    finish_iseq_build(iseq);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+
+    return iseqw_new(iseq);
 }
 
 /*
@@ -3919,6 +4027,7 @@ Init_ISeq(void)
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_prism", iseqw_s_compile_prism, -1);
     rb_define_singleton_method(rb_cISeq, "new", iseqw_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_file", iseqw_s_compile_file, -1);
     rb_define_singleton_method(rb_cISeq, "compile_option", iseqw_s_compile_option_get, 0);

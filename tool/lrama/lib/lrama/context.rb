@@ -401,14 +401,12 @@ module Lrama
       end
       print sprintf("]\n\n")
 
-
       print sprintf("width [\n")
       vectors_count.times do |i|
         print sprintf("%d, ", ary[i] ? ary[i][3] : 0)
         print "\n" if i % 10 == 9
       end
       print sprintf("]\n\n")
-
 
       print sprintf("tally [\n")
       vectors_count.times do |i|

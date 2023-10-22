@@ -133,7 +133,7 @@ class Gem::Uninstaller
 
       if index == list.size
         remove_all list
-      elsif index >= 0 && index < list.size
+      elsif index && index >= 0 && index < list.size
         uninstall_gem list[index]
       else
         say "Error: must enter a number [1-#{list.size + 1}]"

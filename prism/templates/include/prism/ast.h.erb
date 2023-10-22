@@ -1,0 +1,118 @@
+#ifndef PRISM_AST_H
+#define PRISM_AST_H
+
+#include "prism/defines.h"
+#include "prism/util/pm_constant_pool.h"
+#include "prism/util/pm_string.h"
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+// This enum represents every type of token in the Ruby source.
+typedef enum pm_token_type {
+<%- tokens.each do |token| -%>
+    <%= token.declaration %>
+<%- end -%>
+    PM_TOKEN_MAXIMUM, // the maximum token value
+} pm_token_type_t;
+
+// This struct represents a token in the Ruby source. We use it to track both
+// type and location information.
+typedef struct {
+    pm_token_type_t type;
+    const uint8_t *start;
+    const uint8_t *end;
+} pm_token_t;
+
+// This represents a range of bytes in the source string to which a node or
+// token corresponds.
+typedef struct {
+    const uint8_t *start;
+    const uint8_t *end;
+} pm_location_t;
+
+struct pm_node;
+
+typedef struct pm_node_list {
+    struct pm_node **nodes;
+    size_t size;
+    size_t capacity;
+} pm_node_list_t;
+
+enum pm_node_type {
+<%- nodes.each_with_index do |node, index| -%>
+    <%= node.type %> = <%= index + 1 %>,
+<%- end -%>
+    PM_SCOPE_NODE
+};
+
+typedef uint16_t pm_node_type_t;
+typedef uint16_t pm_node_flags_t;
+
+// We store the flags enum in every node in the tree. Some flags are common to
+// all nodes (the ones listed below). Others are specific to certain node types.
+#define PM_NODE_FLAG_BITS (sizeof(pm_node_flags_t) * 8)
+static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = (1 << (PM_NODE_FLAG_BITS - 1));
+static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = (1 << (PM_NODE_FLAG_BITS - 2));
+static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS - 1)) | (1 << (PM_NODE_FLAG_BITS - 2));
+
+// For easy access, we define some macros to check node type
+#define PM_NODE_TYPE(node) ((enum pm_node_type)node->type)
+#define PM_NODE_TYPE_P(node, type) (PM_NODE_TYPE(node) == (type))
+
+// This is the overall tagged union representing a node in the syntax tree.
+typedef struct pm_node {
+    // This represents the type of the node. It somewhat maps to the nodes that
+    // existed in the original grammar and ripper, but it's not a 1:1 mapping.
+    pm_node_type_t type;
+
+    // This represents any flags on the node
+    pm_node_flags_t flags;
+
+    // This is the location of the node in the source. It's a range of bytes
+    // containing a start and an end.
+    pm_location_t location;
+} pm_node_t;
+<%- nodes.each do |node| -%>
+
+// <%= node.name %>
+//
+// Type: <%= node.type %>
+<%- if (node_flags = node.fields.find { |field| field.is_a? Prism::FlagsField }) -%>
+// Flags:
+<%- found = flags.find { |flag| flag.name == node_flags.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
+<%- found.values.each do |value| -%>
+//    PM_<%= found.human.upcase %>_<%= value.name %>
+<%- end -%>
+<%- end -%>
+typedef struct pm_<%= node.human %> {
+    pm_node_t base;
+<%- node.fields.grep_v(Prism::FlagsField).each do |field| -%>
+    <%= case field
+    when Prism::NodeField, Prism::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when Prism::NodeListField then "struct pm_node_list #{field.name}"
+    when Prism::ConstantField, Prism::OptionalConstantField then "pm_constant_id_t #{field.name}"
+    when Prism::ConstantListField then "pm_constant_id_list_t #{field.name}"
+    when Prism::StringField then "pm_string_t #{field.name}"
+    when Prism::LocationField, Prism::OptionalLocationField then "pm_location_t #{field.name}"
+    when Prism::UInt32Field then "uint32_t #{field.name}"
+    else raise field.class.name
+    end
+    %>;
+<%- end -%>
+} pm_<%= node.human %>_t;
+<%- end -%>
+<%- flags.each do |flag| -%>
+
+// <%= flag.name %>
+typedef enum pm_<%= flag.human %> {
+    <%- flag.values.each_with_index do |value, index| -%>
+    PM_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,
+    <%- end -%>
+} pm_<%= flag.human %>_t;
+<%- end -%>
+
+#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS %>
+
+#endif // PRISM_AST_H

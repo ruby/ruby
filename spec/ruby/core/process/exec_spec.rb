@@ -30,7 +30,7 @@ describe "Process.exec" do
   end
 
   it "raises Errno::EACCES when passed a directory" do
-    -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+    -> { Process.exec __dir__ }.should raise_error(Errno::EACCES)
   end
 
   it "runs the specified command, replacing current process" do

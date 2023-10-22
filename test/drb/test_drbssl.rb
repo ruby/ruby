@@ -23,6 +23,10 @@ class DRbSSLService < DRbService
     config[:SSLVerifyCallback] = lambda{ |ok,x509_store|
       true
     }
+    if RUBY_PLATFORM.match?(/openbsd/)
+      config[:SSLMinVersion] = OpenSSL::SSL::TLS1_2_VERSION
+      config[:SSLMaxVersion] = OpenSSL::SSL::TLS1_2_VERSION
+    end
     begin
       data = open("sample.key"){|io| io.read }
       config[:SSLPrivateKey] = OpenSSL::PKey::RSA.new(data)

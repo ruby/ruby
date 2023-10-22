@@ -28,7 +28,13 @@ module Lrama
               if lhs.referred_by?(ref_name)
                 '$'
               else
-                rhs.find_index {|token| token.referred_by?(ref_name) } + 1
+                index = rhs.find_index {|token| token.referred_by?(ref_name) }
+
+                if index
+                  index + 1
+                else
+                  raise "'#{ref_name}' is invalid name."
+                end
               end
             [ref[0], value, ref[2], ref[3], ref[4]]
           else
@@ -61,6 +67,7 @@ module Lrama
       define_type(:P_nonassoc)       # %nonassoc
       define_type(:P_left)           # %left
       define_type(:P_right)          # %right
+      define_type(:P_precedence)     # %precedence
       define_type(:P_prec)           # %prec
       define_type(:User_code)        # { ... }
       define_type(:Tag)              # <int>

@@ -129,6 +129,13 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
     end
 
+    it "ignores malformed lockfile version" do
+      lockfile_bundled_with("2.3.")
+
+      bundle "install --verbose"
+      expect(out).to include("Using bundler #{Bundler::VERSION}")
+    end
+
     private
 
     def lockfile_bundled_with(version)

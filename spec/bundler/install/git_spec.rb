@@ -170,5 +170,36 @@ RSpec.describe "bundle install" do
 
       expect(out).to include("Bundle complete!")
     end
+
+    it "allows older revisions of git source when clean true" do
+      build_git "foo", "1.0", :path => lib_path("foo")
+      rev = revision_for(lib_path("foo"))
+
+      bundle "config set path vendor/bundle"
+      bundle "config set clean true"
+      install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
+      G
+
+      expect(out).to include("Using foo 1.0 from #{file_uri_for(lib_path("foo"))} (at main@#{rev[0..6]})")
+      expect(the_bundle).to include_gems "foo 1.0", :source => "git@#{lib_path("foo")}"
+
+      old_lockfile = lockfile
+
+      update_git "foo", "2.0", :path => lib_path("foo"), :gemspec => true
+      rev2 = revision_for(lib_path("foo"))
+
+      bundle :update, :all => true, :verbose => true
+      expect(out).to include("Using foo 2.0 (was 1.0) from #{file_uri_for(lib_path("foo"))} (at main@#{rev2[0..6]})")
+      expect(out).to include("Removing foo (#{rev[0..11]})")
+      expect(the_bundle).to include_gems "foo 2.0", :source => "git@#{lib_path("foo")}"
+
+      lockfile(old_lockfile)
+
+      bundle :install, :verbose => true
+      expect(out).to include("Using foo 1.0 from #{file_uri_for(lib_path("foo"))} (at main@#{rev[0..6]})")
+      expect(the_bundle).to include_gems "foo 1.0", :source => "git@#{lib_path("foo")}"
+    end
   end
 end

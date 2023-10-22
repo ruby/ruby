@@ -12,7 +12,7 @@ ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
-	$(Q) $(BISON) -t -v -o$@ -h$*.h - $< < $<
+	$(Q) $(BISON) -t -v -o$@ - $< < $<
 
 all: check
 static: check
@@ -796,6 +796,8 @@ ripper_init.o: $(hdrdir)/ruby/ruby.h
 ripper_init.o: $(hdrdir)/ruby/st.h
 ripper_init.o: $(hdrdir)/ruby/subst.h
 ripper_init.o: $(top_srcdir)/internal.h
+ripper_init.o: $(top_srcdir)/internal/array.h
+ripper_init.o: $(top_srcdir)/internal/imemo.h
 ripper_init.o: $(top_srcdir)/internal/parse.h
 ripper_init.o: $(top_srcdir)/internal/ruby_parser.h
 ripper_init.o: $(top_srcdir)/internal/serial.h

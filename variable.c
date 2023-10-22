@@ -1395,36 +1395,20 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     }
 }
 
-static VALUE *
-obj_ivar_heap_alloc(VALUE obj, size_t newsize)
-{
-    return ALLOC_N(VALUE, newsize);
-}
-
-static VALUE *
-obj_ivar_heap_realloc(VALUE obj, int32_t len, size_t newsize)
-{
-    REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, newsize);
-    VALUE *newptr = ROBJECT(obj)->as.heap.ivptr;
-
-    return newptr;
-}
-
 void
 rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capacity)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-    VALUE *newptr;
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-        newptr = obj_ivar_heap_alloc(obj, new_capacity);
+        VALUE *ptr = ROBJECT_IVPTR(obj);
+        VALUE *newptr = ALLOC_N(VALUE, new_capacity);
         MEMCPY(newptr, ptr, VALUE, current_capacity);
         RB_FL_UNSET_RAW(obj, ROBJECT_EMBED);
         ROBJECT(obj)->as.heap.ivptr = newptr;
     }
     else {
-        newptr = obj_ivar_heap_realloc(obj, current_capacity, new_capacity);
+        REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, new_capacity);
     }
 }
 
@@ -1460,13 +1444,10 @@ rb_shape_t *
 rb_grow_iv_list(VALUE obj)
 {
     rb_shape_t * initial_shape = rb_shape_get_shape(obj);
-    uint32_t len = initial_shape->capacity;
-    RUBY_ASSERT(len > 0);
-    uint32_t newsize = (uint32_t)(len * 2);
+    RUBY_ASSERT(initial_shape->capacity > 0);
+    rb_shape_t * res = rb_shape_transition_shape_capa(initial_shape);
 
-    rb_shape_t * res = rb_shape_transition_shape_capa(initial_shape, newsize);
-
-    rb_ensure_iv_list_size(obj, len, newsize);
+    rb_ensure_iv_list_size(obj, initial_shape->capacity, res->capacity);
 
     rb_shape_set_shape(obj, res);
 
