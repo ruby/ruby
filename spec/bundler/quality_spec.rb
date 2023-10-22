@@ -41,11 +41,9 @@ RSpec.describe "The library itself" do
   end
 
   def check_for_extraneous_quotes(filename)
-    return if File.expand_path(filename) == __FILE__
-
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if /’/.match?(line)
+      failing_lines << number + 1 if /\u{2019}/.match?(line)
     end
 
     return if failing_lines.empty?
