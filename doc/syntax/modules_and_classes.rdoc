@@ -40,9 +40,9 @@ functionality:
     remove_method :my_method
   end
 
-Reopening modules (or classes) is a very powerful feature of Ruby, but it is best to only
-reopen modules you own.  Reopening modules you do not own may lead to naming
-conflicts or difficult to diagnose bugs.
+Reopening modules (or classes) is a very powerful feature of Ruby, but it is
+best to only reopen modules you own.  Reopening modules you do not own may lead
+to naming conflicts or difficult to diagnose bugs.
 
 == Nesting
 
