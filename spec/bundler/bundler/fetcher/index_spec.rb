@@ -8,8 +8,9 @@ RSpec.describe Bundler::Fetcher::Index do
   let(:display_uri) { "http://sample_uri.com" }
   let(:rubygems)    { double(:rubygems) }
   let(:gem_names)   { %w[foo bar] }
+  let(:gem_remote_fetcher) { nil }
 
-  subject { described_class.new(downloader, remote, display_uri) }
+  subject { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }
 
   before { allow(Bundler).to receive(:rubygems).and_return(rubygems) }
 

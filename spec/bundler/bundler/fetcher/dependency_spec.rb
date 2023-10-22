@@ -4,8 +4,9 @@ RSpec.describe Bundler::Fetcher::Dependency do
   let(:downloader)  { double(:downloader) }
   let(:remote)      { double(:remote, :uri => Bundler::URI("http://localhost:5000")) }
   let(:display_uri) { "http://sample_uri.com" }
+  let(:gem_remote_fetcher) { nil }
 
-  subject { described_class.new(downloader, remote, display_uri) }
+  subject { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }
 
   describe "#available?" do
     let(:dependency_api_uri) { double(:dependency_api_uri) }
