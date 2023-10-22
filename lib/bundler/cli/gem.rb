@@ -233,9 +233,7 @@ module Bundler
       end
 
       if use_git
-        Dir.chdir(target) do
-          `git add .`
-        end
+        IO.popen(%w[git add .], { :chdir => target }, &:read)
       end
 
       # Open gemspec in editor
@@ -348,7 +346,7 @@ module Bundler
         Bundler.ui.confirm "Do you want to add a code linter and formatter to your gem? " \
           "Supported Linters:\n" \
           "* RuboCop:       https://rubocop.org\n" \
-          "* Standard:      https://github.com/testdouble/standard\n" \
+          "* Standard:      https://github.com/standardrb/standard\n" \
           "\n"
         Bundler.ui.info hint_text("linter")
 

@@ -224,13 +224,20 @@ class Dir
   end
 
   # call-seq:
-  #   Dir.glob(*patterns, _flags = 0, flags: _flags, base: nil, sort: true) -> array
-  #   Dir.glob(*patterns, _flags = 0, flags: _flags, base: nil, sort: true) {|entry_name| ... } -> nil
+  #   Dir.glob(*patterns, flags: 0, base: nil, sort: true) -> array
+  #   Dir.glob(*patterns, flags: 0, base: nil, sort: true) {|entry_name| ... } -> nil
   #
   # Forms an array _entry_names_ of the entry names selected by the arguments.
   #
-  # Argument +patterns+ is a pattern string or an array of pattern strings;
-  # note that these are not regexps.
+  # Argument +patterns+ is a string pattern or an array of string patterns;
+  # note that these are not regexps; see below.
+  #
+  # Notes for the following examples:
+  #
+  # - <tt>'*'</tt> is the pattern that matches any entry name
+  #   except those that begin with <tt>'.'</tt>.
+  # - We use method Array#take to shorten returned arrays
+  #   that otherwise would be very large.
   #
   # With no block, returns array _entry_names_;
   # example (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
@@ -248,10 +255,30 @@ class Dir
   #   lib
   #   main.rb
   #
+  # If optional keyword argument +flags+ is given,
+  # the value modifies the matching; see below.
+  #
+  # If optional keyword argument +base+ is given,
+  # its value specifies the base directory.
+  # Each pattern string specifies entries relative to the base directory;
+  # the default is <tt>'.'</tt>.
+  # The base directory is not prepended to the entry names in the result:
+  #
+  #   Dir.glob(pattern, base: 'lib').take(5)
+  #   # => ["abbrev.gemspec", "abbrev.rb", "base64.gemspec", "base64.rb", "benchmark.gemspec"]
+  #   Dir.glob(pattern, base: 'lib/irb').take(5)
+  #   # => ["cmd", "color.rb", "color_printer.rb", "completion.rb", "context.rb"]
+  #
+  # If optional keyword +sort+ is given, its value specifies whether
+  # the array is to be sorted; the default is +true+.
+  # Passing value +false+ with that keyword disables sorting
+  # (though the underlying file system may already have sorted the array).
+  #
+  # <b>Patterns</b>
+  #
   # Each pattern string is expanded
   # according to certain metacharacters;
-  # examples below use the
-  # {Ruby project file tree}[https://github.com/ruby/ruby]:
+  # examples below use the {Ruby file tree}[rdoc-ref:Dir@About+the+Examples]:
   #
   # - <tt>'*'</tt>: Matches any substring in an entry name,
   #   similar in meaning to regexp <tt>/.*/mx</tt>;
@@ -313,15 +340,6 @@ class Dir
   #   in a string pattern:
   #   <tt>Dir['c:\\foo*']</tt> will not work, use <tt>Dir['c:/foo*']</tt> instead.
   #
-  # If optional keyword argument +base+ is given,
-  # each pattern string specifies entries relative to the specified directory;
-  # the default is <tt>'.'</tt>.
-  # The base directory is not prepended to the entry names in the result.
-  #
-  # If optional keyword +sort+ is given, its value specifies whether
-  # the array is to be sorted;
-  # the default is +true+.
-  #
   # More examples (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
   #
   #   # We're in the example directory.
@@ -344,6 +362,50 @@ class Dir
   #   Dir.glob('**/lib/**/*.rb')        # => ["lib/song/karaoke.rb", "lib/song.rb"]
   #
   #   Dir.glob('**/lib/*.rb')           # => ["lib/song.rb"]
+  #
+  # <b>Flags</b>
+  #
+  # If optional keyword argument +flags+ is given (the default is zero -- no flags),
+  # its value should be the bitwise OR of one or more of the constants
+  # defined in module File::Constants.
+  #
+  # Example:
+  #
+  #   flags = File::FNM_EXTGLOB | File::FNM_DOTMATCH
+  #
+  # Specifying flags can extend, restrict, or otherwise modify the matching.
+  #
+  # The flags for this method (other constants in File::Constants do not apply):
+  #
+  # - File::FNM_DOTMATCH:
+  #   specifies that entry names beginning with <tt>'.'</tt>
+  #   should be considered for matching:
+  #
+  #     Dir.glob('*').take(5)
+  #     # => ["BSDL", "CONTRIBUTING.md", "COPYING", "COPYING.ja", "GPL"]
+  #     Dir.glob('*', flags: File::FNM_DOTMATCH).take(5)
+  #     # => [".", ".appveyor.yml", ".cirrus.yml", ".dir-locals.el", ".document"]
+  #
+  # - File::FNM_EXTGLOB:
+  #   enables the pattern extension
+  #   <tt>'{_a_,_b_}'</tt>, which matches pattern _a_ and pattern _b_;
+  #   behaves like a
+  #   {regexp union}[rdoc-ref:Regexp.union]
+  #   (e.g., <tt>'(?:_a_|_b_)'</tt>):
+  #
+  #     pattern = '{LEGAL,BSDL}'
+  #     Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
+  #
+  # - File::FNM_NOESCAPE:
+  #   specifies that escaping with the backslash character <tt>'\'</tt>
+  #   is disabled; the character is not an escape character.
+  #
+  # - File::FNM_PATHNAME:
+  #   specifies that metacharacters <tt>'*'</tt> and <tt>'?'</tt>
+  #   do not match directory separators.
+  #
+  # - File::FNM_SHORTNAME:
+  #   specifies that patterns may match short names if they exist; Windows only.
   #
   def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)
     Primitive.dir_s_glob(pattern, flags, base, sort)

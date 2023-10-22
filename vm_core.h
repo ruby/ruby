@@ -182,9 +182,6 @@ void *rb_register_sigaltstack(void *);
 #if    OPT_DIRECT_THREADED_CODE
 #undef OPT_DIRECT_THREADED_CODE
 #endif /* OPT_DIRECT_THREADED_CODE */
-#if    OPT_STACK_CACHING
-#undef OPT_STACK_CACHING
-#endif /* OPT_STACK_CACHING */
 #endif /* OPT_CALL_THREADED_CODE */
 
 void rb_vm_encoded_insn_data_table_init(void);
@@ -281,7 +278,7 @@ union iseq_inline_storage_entry {
 };
 
 struct rb_calling_info {
-    const struct rb_callinfo *ci;
+    const struct rb_call_data *cd;
     const struct rb_callcache *cc;
     VALUE block_handler;
     VALUE recv;
@@ -506,10 +503,17 @@ struct rb_iseq_constant_body {
     const rb_iseq_t *mandatory_only_iseq;
 
 #if USE_RJIT || USE_YJIT
-    // Function pointer for JIT code
-    rb_jit_func_t jit_func;
-    // Number of total calls with jit_exec()
-    long unsigned total_calls;
+    // Function pointer for JIT code on jit_exec()
+    rb_jit_func_t jit_entry;
+    // Number of calls on jit_exec()
+    long unsigned jit_entry_calls;
+#endif
+
+#if USE_YJIT
+    // Function pointer for JIT code on jit_exec_exception()
+    rb_jit_func_t jit_exception;
+    // Number of calls on jit_exec_exception()
+    long unsigned jit_exception_calls;
 #endif
 
 #if USE_RJIT
@@ -520,6 +524,8 @@ struct rb_iseq_constant_body {
 #if USE_YJIT
     // YJIT stores some data on each iseq.
     void *yjit_payload;
+    // Used to estimate how frequently this ISEQ gets called
+    uint64_t yjit_calls_at_interv;
 #endif
 };
 
@@ -630,15 +636,51 @@ typedef struct rb_vm_struct {
             struct rb_ractor_struct *lock_owner;
             unsigned int lock_rec;
 
-            // barrier
-            bool barrier_waiting;
-            unsigned int barrier_cnt;
-            rb_nativethread_cond_t barrier_cond;
-
             // join at exit
             rb_nativethread_cond_t terminate_cond;
             bool terminate_waiting;
+
+#ifndef RUBY_THREAD_PTHREAD_H
+            bool barrier_waiting;
+            unsigned int barrier_cnt;
+            rb_nativethread_cond_t barrier_cond;
+#endif
         } sync;
+
+        // ractor scheduling
+        struct {
+            rb_nativethread_lock_t lock;
+            struct rb_ractor_struct *lock_owner;
+            bool locked;
+
+            rb_nativethread_cond_t cond; // GRQ
+            unsigned int snt_cnt; // count of shared NTs
+            unsigned int dnt_cnt; // count of dedicated NTs
+
+            unsigned int running_cnt;
+
+            unsigned int max_cpu;
+            struct ccan_list_head grq; // // Global Ready Queue
+            unsigned int grq_cnt;
+
+            // running threads
+            struct ccan_list_head running_threads;
+
+            // threads which switch context by timeslice
+            struct ccan_list_head timeslice_threads;
+
+            struct ccan_list_head zombie_threads;
+
+            // true if timeslice timer is not enable
+            bool timeslice_wait_inf;
+
+            // barrier
+            rb_nativethread_cond_t barrier_complete_cond;
+            rb_nativethread_cond_t barrier_release_cond;
+            bool barrier_waiting;
+            unsigned int barrier_waiting_cnt;
+            unsigned int barrier_serial;
+        } sched;
     } ractor;
 
 #ifdef USE_SIGALTSTACK
@@ -809,19 +851,16 @@ struct rb_block {
 };
 
 typedef struct rb_control_frame_struct {
-    const VALUE *pc;		/* cfp[0] */
-    VALUE *sp;			/* cfp[1] */
-    const rb_iseq_t *iseq;	/* cfp[2] */
-    VALUE self;			/* cfp[3] / block[0] */
-    const VALUE *ep;		/* cfp[4] / block[1] */
-    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc or forwarded block handler */
-    VALUE *__bp__;              /* cfp[6] */ /* outside vm_push_frame, use vm_base_ptr instead. */
-
+    const VALUE *pc;        // cfp[0]
+    VALUE *sp;              // cfp[1]
+    const rb_iseq_t *iseq;  // cfp[2]
+    VALUE self;             // cfp[3] / block[0]
+    const VALUE *ep;        // cfp[4] / block[1]
+    const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
+    void *jit_return;       // cfp[6] -- return address for JIT code
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[7] */
+    VALUE *bp_check;        // cfp[7]
 #endif
-    // Return address for YJIT code
-    void *jit_return;
 } rb_control_frame_t;
 
 extern const rb_data_type_t ruby_threadptr_data_type;
@@ -1549,12 +1588,6 @@ vm_block_handler_verify(MAYBE_UNUSED(VALUE block_handler))
               (vm_block_handler_type(block_handler), 1));
 }
 
-static inline int
-vm_cfp_forwarded_bh_p(const rb_control_frame_t *cfp, VALUE block_handler)
-{
-    return ((VALUE) cfp->block_code) == block_handler;
-}
-
 static inline enum rb_block_type
 vm_block_type(const struct rb_block *block)
 {
@@ -1683,17 +1716,13 @@ VALUE rb_proc_alloc(VALUE klass);
 VALUE rb_proc_dup(VALUE self);
 
 /* for debug */
-extern void rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
-extern void rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc);
-extern void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp
-#if OPT_STACK_CACHING
-    , VALUE reg_a, VALUE reg_b
-#endif
-);
+extern bool rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *);
+extern bool rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc, FILE *);
+extern bool rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *);
 
-#define SDR() rb_vmdebug_stack_dump_raw(GET_EC(), GET_EC()->cfp)
-#define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_EC(), (cfp))
-void rb_vm_bugreport(const void *);
+#define SDR() rb_vmdebug_stack_dump_raw(GET_EC(), GET_EC()->cfp, stderr)
+#define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_EC(), (cfp), stderr)
+bool rb_vm_bugreport(const void *, FILE *);
 typedef void (*ruby_sighandler_t)(int);
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 5)
 NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const void *, const char *fmt, ...));
@@ -1748,6 +1777,7 @@ rb_vm_living_threads_init(rb_vm_t *vm)
     ccan_list_head_init(&vm->waiting_fds);
     ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
+    ccan_list_head_init(&vm->ractor.sched.zombie_threads);
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
@@ -1761,6 +1791,7 @@ rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
+void rb_vm_env_write(const VALUE *ep, int index, VALUE v);
 VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
@@ -1847,6 +1878,20 @@ rb_current_execution_context(bool expect_ec)
   #else
     rb_execution_context_t *ec = ruby_current_ec;
   #endif
+
+    /* On the shared objects, `__tls_get_addr()` is used to access the TLS
+     * and the address of the `ruby_current_ec` can be stored on a function
+     * frame. However, this address can be mis-used after native thread
+     * migration of a coroutine.
+     *   1) Get `ptr =&ruby_current_ec` op NT1 and store it on the frame.
+     *   2) Context switch and resume it on the NT2.
+     *   3) `ptr` is used on NT2 but it accesses to the TLS on NT1.
+     * This assertion checks such misusage.
+     *
+     * To avoid accidents, `GET_EC()` should be called once on the frame.
+     * Note that inlining can produce the problem.
+     */
+    VM_ASSERT(ec == rb_current_ec_noinline());
 #else
     rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
 #endif

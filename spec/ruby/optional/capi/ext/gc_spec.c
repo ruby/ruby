@@ -51,7 +51,7 @@ static VALUE gc_spec_rb_gc(VALUE self) {
   return Qnil;
 }
 
-static VALUE gc_spec_rb_gc_latest_gc_info(VALUE self, VALUE hash_or_key){
+static VALUE gc_spec_rb_gc_latest_gc_info(VALUE self, VALUE hash_or_key) {
   return rb_gc_latest_gc_info(hash_or_key);
 }
 

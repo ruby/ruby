@@ -888,12 +888,16 @@ onig_region_free(OnigRegion* r, int free_self)
     if (r->allocated > 0) {
       xfree(r->beg);
       xfree(r->end);
-      r->allocated = 0;
     }
 #ifdef USE_CAPTURE_HISTORY
     history_root_free(r);
 #endif
-    if (free_self) xfree(r);
+    if (free_self) {
+      xfree(r);
+    }
+    else {
+      memset(r, 0, sizeof(OnigRegion));
+    }
   }
 }
 

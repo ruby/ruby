@@ -80,7 +80,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_invalid
-    assert_raise NoMethodError do
+    assert_raise TypeError do
       IO::Buffer.map("foobar")
     end
   end
@@ -102,17 +102,22 @@ class TestIOBuffer < Test::Unit::TestCase
     IO::Buffer.for(string) do |buffer|
       refute buffer.readonly?
 
-      # Cannot modify string as it's locked by the buffer:
-      assert_raise RuntimeError do
-        string[0] = "h"
-      end
-
       buffer.set_value(:U8, 0, "h".ord)
 
       # Buffer releases it's ownership of the string:
       buffer.free
 
       assert_equal "hello World", string
+    end
+  end
+
+  def test_string_mapped_buffer_locked
+    string = "Hello World"
+    IO::Buffer.for(string) do |buffer|
+      # Cannot modify string as it's locked by the buffer:
+      assert_raise RuntimeError do
+        string[0] = "h"
+      end
     end
   end
 
@@ -251,6 +256,18 @@ class TestIOBuffer < Test::Unit::TestCase
 
     chunk = buffer.get_string(0, message.bytesize, Encoding::BINARY)
     assert_equal Encoding::BINARY, chunk.encoding
+
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
+      buffer.get_string(0, 129)
+    end
+
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
+      buffer.get_string(129)
+    end
+
+    assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
+      buffer.get_string(-1)
+    end
   end
 
   # We check that values are correctly round tripped.

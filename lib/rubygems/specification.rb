@@ -426,11 +426,11 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The path in the gem for executable scripts.  Usually 'bin'
+  # The path in the gem for executable scripts.  Usually 'exe'
   #
   # Usage:
   #
-  #   spec.bindir = 'bin'
+  #   spec.bindir = 'exe'
 
   attr_accessor :bindir
 
@@ -1300,10 +1300,23 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self._load(str)
     Gem.load_yaml
+    Gem.load_safe_marshal
+
+    yaml_set = false
+    retry_count = 0
 
     array = begin
-      Marshal.load str
+      Gem::SafeMarshal.safe_load str
     rescue ArgumentError => e
+      # Avoid an infinite retry loop when the argument error has nothing to do
+      # with the classes not being defined.
+      # 1 retry each allowed in case all 3 of
+      # - YAML
+      # - YAML::Syck::DefaultKey
+      # - YAML::PrivateType
+      # need to be defined
+      raise if retry_count >= 3
+
       #
       # Some very old marshaled specs included references to `YAML::PrivateType`
       # and `YAML::Syck::DefaultKey` constants due to bugs in the old emitter
@@ -1313,17 +1326,23 @@ class Gem::Specification < Gem::BasicSpecification
       message = e.message
       raise unless message.include?("YAML::")
 
-      Object.const_set "YAML", Psych unless Object.const_defined?(:YAML)
+      unless Object.const_defined?(:YAML)
+        Object.const_set "YAML", Psych
+        yaml_set = true
+      end
 
       if message.include?("YAML::Syck::")
         YAML.const_set "Syck", YAML unless YAML.const_defined?(:Syck)
 
-        YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey")
-      elsif message.include?("YAML::PrivateType")
+        YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey") && !YAML::Syck.const_defined?(:DefaultKey)
+      elsif message.include?("YAML::PrivateType") && !YAML.const_defined?(:PrivateType)
         YAML.const_set "PrivateType", Class.new
       end
 
+      retry_count += 1
       retry
+    ensure
+      Object.__send__(:remove_const, "YAML") if yaml_set
     end
 
     spec = Gem::Specification.new
@@ -2344,12 +2363,12 @@ class Gem::Specification < Gem::BasicSpecification
     when Hash               then
       seg = obj.keys.sort.map {|k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
       "{ #{seg.join(", ")} }"
-    when Gem::Version       then obj.to_s.dump
+    when Gem::Version       then ruby_code(obj.to_s)
     when DateLike           then obj.strftime("%Y-%m-%d").dump
     when Time               then obj.strftime("%Y-%m-%d").dump
     when Numeric            then obj.inspect
     when true, false, nil   then obj.inspect
-    when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
+    when Gem::Platform      then "Gem::Platform.new(#{ruby_code obj.to_a})"
     when Gem::Requirement   then
       list = obj.as_list
       "Gem::Requirement.new(#{ruby_code(list.size == 1 ? obj.to_s : list)})"
@@ -2514,12 +2533,12 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     if String === signing_key
-      result << "  s.signing_key = #{signing_key.dump}.freeze"
+      result << "  s.signing_key = #{ruby_code signing_key}"
     end
 
     if @installed_by_version
       result << nil
-      result << "  s.installed_by_version = \"#{Gem::VERSION}\" if s.respond_to? :installed_by_version"
+      result << "  s.installed_by_version = #{ruby_code Gem::VERSION} if s.respond_to? :installed_by_version"
     end
 
     unless dependencies.empty?
@@ -2528,9 +2547,8 @@ class Gem::Specification < Gem::BasicSpecification
       result << nil
 
       dependencies.each do |dep|
-        req = dep.requirements_list.inspect
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
+        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{ruby_code dep.requirements_list})"
       end
     end
 

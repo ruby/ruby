@@ -40,13 +40,18 @@ jobs:
 
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
 
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
 
     name: VisualStudio ${{ matrix.vs }}
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      PATCH: C:\msys64\usr\bin\patch.exe
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
       # FIXME: This is a workaround for the vcpkg's issue present as of openssl 3.1.1
       # where OpenSSL's default modules directory is incorrectly set to C:\vcpkg\packages\openssl_x64-windows\bin
@@ -57,20 +62,35 @@ jobs:
       - run: md build
         working-directory:
 
+      - name: find tools
+        id: find-tools
+        run: |
+          ::- find needed tools
+          set NEEDS=
+          for %%I in (%NEEDED_TOOLS%) do if "%%~$PATH:I" == "" (
+            call set NEEDS=%%NEEDS%% %%~nI
+          ) else (
+            echo %%I: %%~$PATH:I
+          )
+          echo.needs=%NEEDS%>>%GITHUB_OUTPUT%
+          if "%NEEDS%" == "" (
+            echo [debug] All needed tools found
+          ) else (
+            echo [warning^]Needs%NEEDS%
+          )
+        env:
+          NEEDED_TOOLS: >-
+            patch.exe
+
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
           update: true
           install: >-
-            patch
-        if: ${{ env.OS_VER != 'windows-2019' }}
+            ${{ steps.find-tools.outputs.needs }}
+        if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - name: patch path
-        shell: msys2 {0}
-        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
-        if: ${{ steps.setup-msys2.outcome == 'success' }}
-
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
@@ -78,7 +98,7 @@ jobs:
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
 
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
@@ -96,7 +116,7 @@ jobs:
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
 
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -118,8 +138,10 @@ jobs:
           :vcset
           set | C:\msys64\usr\bin\sort > old.env
           call %VCVARS%
+          nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
@@ -133,9 +155,14 @@ jobs:
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
+      # We use OpenSSL instealled by vcpkg instead
+      - name: disable system OpenSSL
+        run: |
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
             ren c:\Windows\System32\%%I.dll %%I.dll_
           )
+        # windows-2019 image doesn't have OpenSSL as of 2023/9/14
+        if: ${{ matrix.vs != 2019 }}
 
       - name: Configure
         run: >-
@@ -151,7 +178,7 @@ jobs:
       - run: nmake test
         timeout-minutes: 5
 
-      - run: nmake test-spec MSPECOPT="-V -fspec"
+      - run: nmake test-spec
         timeout-minutes: 10
 
       - run: nmake test-all
@@ -163,7 +190,7 @@ jobs:
         with:
           label: VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:

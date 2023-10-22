@@ -1,0 +1,234 @@
+require "stringio"
+
+# Polyfill for String#unpack1 with the offset parameter.
+if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset }
+  String.prepend(
+    Module.new {
+      def unpack1(format, offset: 0)
+        offset == 0 ? super(format) : self[offset..].unpack1(format)
+      end
+    }
+  )
+end
+
+module Prism
+  module Serialize
+    MAJOR_VERSION = 0
+    MINOR_VERSION = 15
+    PATCH_VERSION = 1
+
+    def self.load(input, serialized)
+      input = input.dup
+      source = Source.new(input)
+      loader = Loader.new(source, serialized)
+      result = loader.load_result
+
+      input.force_encoding(loader.encoding)
+      result
+    end
+
+    def self.load_tokens(source, serialized)
+      Loader.new(source, serialized).load_tokens_result
+    end
+
+    class Loader
+      attr_reader :encoding, :input, :serialized, :io
+      attr_reader :constant_pool_offset, :constant_pool, :source
+
+      def initialize(source, serialized)
+        @encoding = Encoding::UTF_8
+
+        @input = source.source.dup
+        @serialized = serialized
+        @io = StringIO.new(serialized)
+        @io.set_encoding(Encoding::BINARY)
+
+        @constant_pool_offset = nil
+        @constant_pool = nil
+
+        @source = source
+      end
+
+      def load_encoding
+        Encoding.find(io.read(load_varint))
+      end
+
+      def load_metadata
+        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        magic_comments = load_varint.times.map { MagicComment.new(load_location, load_location) }
+        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        [comments, magic_comments, errors, warnings]
+      end
+
+      def load_tokens
+        tokens = []
+        while type = TOKEN_TYPES.fetch(load_varint)
+          start = load_varint
+          length = load_varint
+          lex_state = load_varint
+          location = Location.new(@source, start, length)
+          tokens << [Prism::Token.new(type, location.slice, location), lex_state]
+        end
+
+        tokens
+      end
+
+      def load_tokens_result
+        tokens = load_tokens
+        encoding = load_encoding
+        comments, magic_comments, errors, warnings = load_metadata
+
+        if encoding != @encoding
+          tokens.each { |token,| token.value.force_encoding(encoding) }
+        end
+
+        raise "Expected to consume all bytes while deserializing" unless @io.eof?
+        Prism::ParseResult.new(tokens, comments, magic_comments, errors, warnings, @source)
+      end
+
+      def load_nodes
+        raise "Invalid serialization" if io.read(5) != "PRISM"
+        raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
+        only_semantic_fields = io.read(1).unpack1("C")
+        unless only_semantic_fields == 0
+          raise "Invalid serialization (location fields must be included but are not)"
+        end
+
+        @encoding = load_encoding
+        @input = input.force_encoding(@encoding).freeze
+
+        comments, magic_comments, errors, warnings = load_metadata
+
+        @constant_pool_offset = io.read(4).unpack1("L")
+        @constant_pool = Array.new(load_varint, nil)
+
+        [load_node, comments, magic_comments, errors, warnings]
+      end
+
+      def load_result
+        node, comments, magic_comments, errors, warnings = load_nodes
+        Prism::ParseResult.new(node, comments, magic_comments, errors, warnings, @source)
+      end
+
+      private
+
+      # variable-length integer using https://en.wikipedia.org/wiki/LEB128
+      # This is also what protobuf uses: https://protobuf.dev/programming-guides/encoding/#varints
+      def load_varint
+        n = io.getbyte
+        if n < 128
+          n
+        else
+          n -= 128
+          shift = 0
+          while (b = io.getbyte) >= 128
+            n += (b - 128) << (shift += 7)
+          end
+          n + (b << (shift + 7))
+        end
+      end
+
+      def load_serialized_length
+        io.read(4).unpack1("L")
+      end
+
+      def load_optional_node
+        if io.getbyte != 0
+          io.pos -= 1
+          load_node
+        end
+      end
+
+      def load_embedded_string
+        io.read(load_varint).force_encoding(encoding)
+      end
+
+      def load_string
+        type = io.getbyte
+        case type
+        when 1
+          input.byteslice(load_varint, load_varint).force_encoding(encoding)
+        when 2
+          load_embedded_string
+        else
+          raise "Unknown serialized string type: #{type}"
+        end
+      end
+
+      def load_location
+        Location.new(source, load_varint, load_varint)
+      end
+
+      def load_optional_location
+        load_location if io.getbyte != 0
+      end
+
+      def load_constant(index)
+        constant = constant_pool[index]
+
+        unless constant
+          offset = constant_pool_offset + index * 8
+          start = serialized.unpack1("L", offset: offset)
+          length = serialized.unpack1("L", offset: offset + 4)
+
+          constant =
+            if start.nobits?(1 << 31)
+              input.byteslice(start, length).to_sym
+            else
+              serialized.byteslice(start & ((1 << 31) - 1), length).to_sym
+            end
+
+          constant_pool[index] = constant
+        end
+
+        constant
+      end
+
+      def load_required_constant
+        load_constant(load_varint - 1)
+      end
+
+      def load_optional_constant
+        index = load_varint
+        load_constant(index - 1) if index != 0
+      end
+
+      def load_node
+        type = io.getbyte
+        location = load_location
+
+        case type
+        <%- nodes.each_with_index do |node, index| -%>
+        when <%= index + 1 %> then
+          <%- if node.needs_serialized_length? -%>
+          load_serialized_length
+          <%- end -%>
+          <%= node.name %>.new(<%= (node.fields.map { |field|
+            case field
+            when Prism::NodeField then "load_node"
+            when Prism::OptionalNodeField then "load_optional_node"
+            when Prism::StringField then "load_string"
+            when Prism::NodeListField then "Array.new(load_varint) { load_node }"
+            when Prism::ConstantField then "load_required_constant"
+            when Prism::OptionalConstantField then "load_optional_constant"
+            when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
+            when Prism::LocationField then "load_location"
+            when Prism::OptionalLocationField then "load_optional_location"
+            when Prism::UInt32Field, Prism::FlagsField then "load_varint"
+            else raise
+            end
+          } + ["location"]).join(", ") -%>)
+          <%- end -%>
+        end
+      end
+    end
+
+    TOKEN_TYPES = [
+      nil,
+      <%- tokens.each do |token| -%>
+      <%= token.name.to_sym.inspect %>,
+      <%- end -%>
+    ]
+  end
+end

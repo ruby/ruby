@@ -294,14 +294,9 @@ describe "StringIO#initialize sets" do
     io.string.encoding.should == Encoding::EUC_JP
   end
 
-  guard_not -> { # [Bug #16497]
-    stringio_version = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
-    version_is(stringio_version, "0.0.3"..."0.1.1")
-  } do
-    it "the #external_encoding to the encoding of the String when passed a String" do
-      s = ''.force_encoding(Encoding::EUC_JP)
-      io = StringIO.new(s)
-      io.external_encoding.should == Encoding::EUC_JP
-    end
+  it "the #external_encoding to the encoding of the String when passed a String" do
+    s = ''.force_encoding(Encoding::EUC_JP)
+    io = StringIO.new(s)
+    io.external_encoding.should == Encoding::EUC_JP
   end
 end

@@ -547,8 +547,8 @@ class TestEval < Test::Unit::TestCase
   end
 
   def test_eval_location_binding
-    assert_equal(['(eval)', 1], eval("[__FILE__, __LINE__]", nil))
-    assert_equal(['(eval)', 1], eval("[__FILE__, __LINE__]", binding))
+    assert_equal(["(eval at #{__FILE__}:#{__LINE__})", 1], eval("[__FILE__, __LINE__]", nil))
+    assert_equal(["(eval at #{__FILE__}:#{__LINE__})", 1], eval("[__FILE__, __LINE__]", binding))
     assert_equal(['foo', 1], eval("[__FILE__, __LINE__]", nil, 'foo'))
     assert_equal(['foo', 1], eval("[__FILE__, __LINE__]", binding, 'foo'))
     assert_equal(['foo', 2], eval("[__FILE__, __LINE__]", nil, 'foo', 2))

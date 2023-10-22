@@ -14,11 +14,6 @@ class Gem::Package::TarReader
   include Enumerable
 
   ##
-  # Raised if the tar IO is not seekable
-
-  class UnexpectedEOF < StandardError; end
-
-  ##
   # Creates a new TarReader on +io+ and yields it to the block, if given.
 
   def self.new(io)

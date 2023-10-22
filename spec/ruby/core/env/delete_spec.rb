@@ -41,6 +41,14 @@ describe "ENV.delete" do
     ENV["foo"].should == nil
   end
 
+  it "removes the variable coerced with #to_str" do
+    ENV["foo"] = "bar"
+    k = mock('key')
+    k.should_receive(:to_str).and_return("foo")
+    ENV.delete(k)
+    ENV["foo"].should == nil
+  end
+
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
     -> { ENV.delete(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
   end

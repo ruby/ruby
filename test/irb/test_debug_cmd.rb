@@ -1,32 +1,20 @@
 # frozen_string_literal: true
 
-begin
-  require "pty"
-rescue LoadError
-  return
-end
-
 require "tempfile"
 require "tmpdir"
 
 require_relative "helper"
 
 module TestIRB
-  LIB = File.expand_path("../../lib", __dir__)
-
-  class DebugCommandTestCase < TestCase
-    IRB_AND_DEBUGGER_OPTIONS = {
-      "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
-    }
-
+  class DebugCommandTest < IntegrationTestCase
     def setup
-      if ruby_core?
-        omit "This test works only under ruby/irb"
-      end
+      super
 
       if RUBY_ENGINE == 'truffleruby'
         omit "This test runs with ruby/debug, which doesn't work with truffleruby"
       end
+
+      @envs.merge!("NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => '')
     end
 
     def test_backtrace
@@ -39,10 +27,10 @@ module TestIRB
 
       output = run_ruby_file do
         type "backtrace"
-        type "q!"
+        type "exit!"
       end
 
-      assert_match(/\(rdbg:irb\) backtrace/, output)
+      assert_match(/irb\(main\):001> backtrace/, output)
       assert_match(/Object#foo at #{@ruby_file.to_path}/, output)
     end
 
@@ -58,8 +46,25 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg\) next/, output)
+      assert_match(/irb\(main\):001> debug/, output)
+      assert_match(/irb:rdbg\(main\):002> next/, output)
       assert_match(/=>   2\| puts "hello"/, output)
+    end
+
+    def test_debug_command_only_runs_once
+      write_ruby <<~'ruby'
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "debug"
+        type "continue"
+      end
+
+      assert_match(/irb\(main\):001> debug/, output)
+      assert_match(/irb:rdbg\(main\):002> debug/, output)
+      assert_match(/IRB is already running with a debug session/, output)
     end
 
     def test_next
@@ -73,7 +78,7 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) next/, output)
+      assert_match(/irb\(main\):001> next/, output)
       assert_match(/=>   2\| puts "hello"/, output)
     end
 
@@ -89,7 +94,7 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) break/, output)
+      assert_match(/irb\(main\):001> break/, output)
       assert_match(/=>   2\| puts "Hello"/, output)
     end
 
@@ -108,7 +113,7 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) delete/, output)
+      assert_match(/irb:rdbg\(main\):003> delete/, output)
       assert_match(/deleted: #0  BP - Line/, output)
     end
 
@@ -127,9 +132,42 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) step/, output)
+      assert_match(/irb\(main\):001> step/, output)
       assert_match(/=>   5\| foo/, output)
       assert_match(/=>   2\|   puts "Hello"/, output)
+    end
+
+    def test_long_stepping
+      write_ruby <<~'RUBY'
+        class Foo
+          def foo(num)
+            bar(num + 10)
+          end
+
+          def bar(num)
+            num
+          end
+        end
+
+        binding.irb
+        Foo.new.foo(100)
+      RUBY
+
+      output = run_ruby_file do
+        type "step"
+        type "step"
+        type "step"
+        type "step"
+        type "num"
+        type "continue"
+      end
+
+      assert_match(/irb\(main\):001> step/, output)
+      assert_match(/irb:rdbg\(main\):002> step/, output)
+      assert_match(/irb:rdbg\(#<Foo:.*>\):003> step/, output)
+      assert_match(/irb:rdbg\(#<Foo:.*>\):004> step/, output)
+      assert_match(/irb:rdbg\(#<Foo:.*>\):005> num/, output)
+      assert_match(/=> 110/, output)
     end
 
     def test_continue
@@ -145,8 +183,9 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) continue/, output)
+      assert_match(/irb\(main\):001> continue/, output)
       assert_match(/=> 3: binding.irb/, output)
+      assert_match(/irb:rdbg\(main\):002> continue/, output)
     end
 
     def test_finish
@@ -163,7 +202,7 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) finish/, output)
+      assert_match(/irb\(main\):001> finish/, output)
       assert_match(/=>   4\| end/, output)
     end
 
@@ -181,7 +220,7 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) info/, output)
+      assert_match(/irb\(main\):001> info/, output)
       assert_match(/%self = main/, output)
       assert_match(/a = "Hello"/, output)
     end
@@ -198,102 +237,204 @@ module TestIRB
         type "continue"
       end
 
-      assert_match(/\(rdbg:irb\) catch/, output)
+      assert_match(/irb\(main\):001> catch/, output)
       assert_match(/Stop by #0  BP - Catch  "ZeroDivisionError"/, output)
     end
 
-    private
+    def test_exit
+      write_ruby <<~'RUBY'
+        binding.irb
+        puts "hello"
+      RUBY
 
-    TIMEOUT_SEC = 3
+      output = run_ruby_file do
+        type "next"
+        type "exit"
+      end
 
-    def run_ruby_file(&block)
-      cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
-      tmp_dir = Dir.mktmpdir
+      assert_match(/irb\(main\):001> next/, output)
+    end
 
-      @commands = []
-      lines = []
+    def test_quit
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
 
-      yield
+      output = run_ruby_file do
+        type "next"
+        type "quit!"
+      end
 
-      PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
-        Timeout.timeout(TIMEOUT_SEC) do
-          while line = safe_gets(read)
-            lines << line
+      assert_match(/irb\(main\):001> next/, output)
+    end
 
-            # means the breakpoint is triggered
-            if line.match?(/binding\.irb/)
-              while command = @commands.shift
-                write.puts(command)
-              end
-            end
+    def test_prompt_line_number_continues
+      write_ruby <<~'ruby'
+        binding.irb
+        puts "Hello"
+        puts "World"
+      ruby
+
+      output = run_ruby_file do
+        type "123"
+        type "456"
+        type "next"
+        type "info"
+        type "next"
+        type "continue"
+      end
+
+      assert_match(/irb\(main\):003> next/, output)
+      assert_match(/irb:rdbg\(main\):004> info/, output)
+      assert_match(/irb:rdbg\(main\):005> next/, output)
+    end
+
+    def test_prompt_irb_name_is_kept
+      write_rc <<~RUBY
+        IRB.conf[:IRB_NAME] = "foo"
+      RUBY
+
+      write_ruby <<~'ruby'
+        binding.irb
+        puts "Hello"
+      ruby
+
+      output = run_ruby_file do
+        type "next"
+        type "continue"
+      end
+
+      assert_match(/foo\(main\):001> next/, output)
+      assert_match(/foo:rdbg\(main\):002> continue/, output)
+    end
+
+    def test_irb_commands_are_available_after_moving_around_with_the_debugger
+      write_ruby <<~'ruby'
+        class Foo
+          def bar
+            puts "bar"
           end
         end
-      ensure
-        read.close
-        write.close
-        kill_safely(pid)
+
+        binding.irb
+        Foo.new.bar
+      ruby
+
+      output = run_ruby_file do
+        # Due to the way IRB defines its commands, moving into the Foo instance from main is necessary for proper testing.
+        type "next"
+        type "step"
+        type "irb_info"
+        type "continue"
       end
 
-      lines.join
-    rescue Timeout::Error
-      message = <<~MSG
-      Test timedout.
-
-      #{'=' * 30} OUTPUT #{'=' * 30}
-        #{lines.map { |l| "  #{l}" }.join}
-      #{'=' * 27} END OF OUTPUT #{'=' * 27}
-      MSG
-      assert_block(message) { false }
-    ensure
-      File.unlink(@ruby_file) if @ruby_file
-      FileUtils.remove_entry tmp_dir
+      assert_include(output, "InputMethod: RelineInputMethod")
     end
 
-    # read.gets could raise exceptions on some platforms
-    # https://github.com/ruby/ruby/blob/master/ext/pty/pty.c#L729-L736
-    def safe_gets(read)
-      read.gets
-    rescue Errno::EIO
-      nil
+    def test_help_command_is_delegated_to_the_debugger
+      write_ruby <<~'ruby'
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "help"
+        type "continue"
+      end
+
+      assert_include(output, "### Frame control")
     end
 
-    def kill_safely pid
-      return if wait_pid pid, TIMEOUT_SEC
+    def test_show_cmds_display_different_content_when_debugger_is_enabled
+      write_ruby <<~'ruby'
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+        binding.irb
+      ruby
 
-      Process.kill :TERM, pid
-      return if wait_pid pid, 0.2
+      output = run_ruby_file do
+        type "debug"
+        type "show_cmds"
+        type "continue"
+      end
 
-      Process.kill :KILL, pid
-      Process.waitpid(pid)
-    rescue Errno::EPERM, Errno::ESRCH
+      # IRB's commands should still be listed
+      assert_match(/show_cmds\s+List all available commands and their description\./, output)
+      # debug gem's commands should be appended at the end
+      assert_match(/Debugging \(from debug\.gem\)\s+### Control flow/, output)
     end
 
-    def wait_pid pid, sec
-      total_sec = 0.0
-      wait_sec = 0.001 # 1ms
+    def test_input_is_evaluated_in_the_context_of_the_current_thread
+      write_ruby <<~'ruby'
+        current_thread = Thread.current
+        binding.irb
+      ruby
 
-      while total_sec < sec
-        if Process.waitpid(pid, Process::WNOHANG) == pid
-          return true
+      output = run_ruby_file do
+        type "debug"
+        type '"Threads match: #{current_thread == Thread.current}"'
+        type "continue"
+      end
+
+      assert_match(/irb\(main\):001> debug/, output)
+      assert_match(/Threads match: true/, output)
+    end
+
+    def test_irb_switches_debugger_interface_if_debug_was_already_activated
+      write_ruby <<~'ruby'
+        require 'debug'
+        class Foo
+          def bar
+            puts "bar"
+          end
         end
-        sleep wait_sec
-        total_sec += wait_sec
-        wait_sec *= 2
+
+        binding.irb
+        Foo.new.bar
+      ruby
+
+      output = run_ruby_file do
+        # Due to the way IRB defines its commands, moving into the Foo instance from main is necessary for proper testing.
+        type "next"
+        type "step"
+        type 'irb_info'
+        type "continue"
       end
 
-      false
-    rescue Errno::ECHILD
-      true
+      assert_match(/irb\(main\):001> next/, output)
+      assert_include(output, "InputMethod: RelineInputMethod")
     end
 
-    def type(command)
-      @commands << command
+    def test_debugger_cant_be_activated_while_multi_irb_is_active
+      write_ruby <<~'ruby'
+        binding.irb
+        a = 1
+      ruby
+
+      output = run_ruby_file do
+        type "jobs"
+        type "next"
+        type "exit"
+      end
+
+      assert_match(/irb\(main\):001> jobs/, output)
+      assert_include(output, "Can't start the debugger when IRB is running in a multi-IRB session.")
     end
 
-    def write_ruby(program)
-      @ruby_file = Tempfile.create(%w{irb- .rb})
-      @ruby_file.write(program)
-      @ruby_file.close
+    def test_multi_irb_commands_are_not_available_after_activating_the_debugger
+      write_ruby <<~'ruby'
+        binding.irb
+        a = 1
+      ruby
+
+      output = run_ruby_file do
+        type "next"
+        type "jobs"
+        type "continue"
+      end
+
+      assert_match(/irb\(main\):001> next/, output)
+      assert_include(output, "Multi-IRB commands are not available when the debugger is enabled.")
     end
   end
 end

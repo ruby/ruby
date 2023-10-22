@@ -31,6 +31,7 @@ module URI
       super
     end
   end
+  singleton_class.send(:ruby2_keywords, :open) if respond_to?(:ruby2_keywords, true)
 end
 
 # OpenURI is an easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP.

@@ -24,6 +24,11 @@ static VALUE ruby_dln_librefs;
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 
+enum {
+    loadable_ext_rb = (0+ /* .rb extension is the first in both tables */
+                       1) /* offset by rb_find_file_ext() */
+};
+
 static const char *const loadable_ext[] = {
     ".rb", DLEXT,
     0
@@ -475,6 +480,12 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
     return ST_STOP;
 }
 
+/*
+ * Returns the type of already provided feature.
+ * 'r': ruby script (".rb")
+ * 's': shared object (".so"/"."DLEXT)
+ * 'u': unsuffixed
+ */
 static int
 rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
@@ -689,6 +700,19 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
+static inline VALUE
+realpath_internal_cached(VALUE hash, VALUE path)
+{
+    VALUE ret = rb_hash_aref(hash, path);
+    if(RTEST(ret)) {
+        return ret;
+    }
+
+    VALUE realpath = rb_realpath_internal(Qnil, path, 1);
+    rb_hash_aset(hash, rb_fstring(path), rb_fstring(realpath));
+    return realpath;
+}
+
 static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
@@ -701,8 +725,12 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE parser = rb_parser_new();
         rb_parser_set_context(parser, NULL, FALSE);
         ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+
+        rb_thread_t *th = rb_ec_thread_ptr(ec);
+        VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
+
         iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
-                               fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+                               fname, realpath_internal_cached(realpath_map, fname), NULL);
         rb_ast_dispose(ast);
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);
@@ -979,7 +1007,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
 {
     VALUE tmp;
     char *ext, *ftptr;
-    int type, ft = 0;
+    int ft = 0;
     const char *loading;
 
     *path = 0;
@@ -1031,11 +1059,11 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
+    const unsigned int type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
 
     // Check if it's a statically linked extension when
     // not already a feature and not found as a dynamic library.
-    if (!ft && type != 1 && vm->static_ext_inits) {
+    if (!ft && type != loadable_ext_rb && vm->static_ext_inits) {
         VALUE lookup_name = tmp;
         // Append ".so" if not already present so for example "etc" can find "etc.so".
         // We always register statically linked extensions with a ".so" extension.
@@ -1063,13 +1091,13 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
             goto feature_present;
         }
         /* fall through */
-      case 1:
+      case loadable_ext_rb:
         ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-        if (rb_feature_p(vm, ftptr, ext, !--type, TRUE, &loading) && !loading)
+        if (rb_feature_p(vm, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
         *path = tmp;
     }
-    return type ? 's' : 'r';
+    return type > loadable_ext_rb ? 's' : 'r';
 
   feature_present:
     if (loading) *path = rb_filesystem_str_new_cstr(loading);
@@ -1167,8 +1195,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile const struct {
         VALUE wrapper, self, errinfo;
+        rb_execution_context_t *ec;
     } saved = {
         th->top_wrapper, th->top_self, ec->errinfo,
+        ec,
     };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
@@ -1208,7 +1238,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                 result = TAG_RETURN;
             }
             else if (RTEST(rb_hash_aref(realpaths,
-                                        realpath = rb_realpath_internal(Qnil, path, 1)))) {
+                                        realpath = realpath_internal_cached(realpath_map, path)))) {
                 result = 0;
             }
             else {
@@ -1231,6 +1261,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     }
     EC_POP_TAG();
 
+    ec = saved.ec;
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
     th2->top_self = saved.self;
     th2->top_wrapper = saved.wrapper;
@@ -1268,7 +1299,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         if (real) {
             real = rb_fstring(real);
             rb_hash_aset(realpaths, real, Qtrue);
-            rb_hash_aset(realpath_map, path, real);
         }
     }
     ec->errinfo = saved.errinfo;

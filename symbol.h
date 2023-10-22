@@ -109,10 +109,9 @@ is_global_name_punct(const int c)
     return (ruby_global_name_punct_bits[(c - 0x20) / 32] >> (c % 32)) & 1;
 }
 
-int rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
-
 RUBY_SYMBOL_EXPORT_BEGIN
 
+int rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
 size_t rb_sym_immortal_count(void);
 
 RUBY_SYMBOL_EXPORT_END

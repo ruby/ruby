@@ -289,7 +289,6 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
     assert_equal(false, proc(&l).lambda?)
-    assert_equal(false, assert_deprecated_warning {lambda(&l)}.lambda?)
     assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
@@ -299,47 +298,21 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, Proc.new(&l).lambda?)
   end
 
-  def self.helper_test_warn_lamda_with_passed_block &b
+  def helper_test_warn_lambda_with_passed_block &b
     lambda(&b)
   end
 
-  def self.def_lambda_warning name, warn
-    define_method(name, proc do
-      prev = Warning[:deprecated]
-      assert_warn warn do
-        Warning[:deprecated] = true
-        yield
-      end
-    ensure
-      Warning[:deprecated] = prev
-    end)
+  def test_lambda_warning_pass_proc
+    assert_raise(ArgumentError) do
+      b = proc{}
+      lambda(&b)
+    end
   end
 
-  def_lambda_warning 'test_lambda_warning_normal', '' do
-    lambda{}
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_lambda', '' do
-    b = lambda{}
-    lambda(&b)
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_symbol_proc', '' do
-    lambda(&:to_s)
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
-    b = proc{}
-    lambda(&b)
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_block', /deprecated/ do
-    helper_test_warn_lamda_with_passed_block{}
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_block_symbol_proc', '' do
-    # Symbol#to_proc returns lambda
-    helper_test_warn_lamda_with_passed_block(&:to_s)
+  def test_lambda_warning_pass_block
+    assert_raise(ArgumentError) do
+      helper_test_warn_lambda_with_passed_block{}
+    end
   end
 
   def test_curry_ski_fib
@@ -1319,6 +1292,32 @@ class TestProc < Test::Unit::TestCase
 
     pr = eval("proc{|"+"(_),"*30+"|}")
     assert_empty(pr.parameters.map{|_,n|n}.compact)
+  end
+
+  def test_proc_autosplat_with_multiple_args_with_ruby2_keywords_splat_bug_19759
+    def self.yielder_ab(splat)
+      yield([:a, :b], *splat)
+    end
+
+    res = yielder_ab([[:aa, :bb], Hash.ruby2_keywords_hash({k: :k})]) do |a, b, k:|
+      [a, b, k]
+    end
+    assert_equal([[:a, :b], [:aa, :bb], :k], res)
+
+    def self.yielder(splat)
+      yield(*splat)
+    end
+    res = yielder([ [:a, :b] ]){|a, b, **| [a, b]}
+    assert_equal([:a, :b], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({}) ]){|a, b, **| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({c: 1}) ]){|a, b, **| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({}) ]){|a, b, **nil| [a, b]}
+    assert_equal([[:a, :b], nil], res)
   end
 
   def test_parameters_lambda

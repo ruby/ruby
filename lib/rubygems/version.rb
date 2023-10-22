@@ -131,7 +131,7 @@ require_relative "deprecate"
 #
 # == Preventing Version Catastrophe:
 #
-# From: http://blog.zenspider.com/2008/10/rubygems-howto-preventing-cata.html
+# From: https://www.zenspider.com/ruby/2008/10/rubygems-how-to-preventing-catastrophe.html
 #
 # Let's say you're depending on the fnord gem version 2.y.z. If you
 # specify your dependency as ">= 2.0.0" then, you're good, right? What
@@ -162,7 +162,7 @@ class Gem::Version
   # A string representation of this Version.
 
   def version
-    @version.dup
+    @version
   end
 
   alias_method :to_s, :version
@@ -173,7 +173,7 @@ class Gem::Version
   def self.correct?(version)
     nil_versions_are_discouraged! if version.nil?
 
-    !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
+    ANCHORED_VERSION_PATTERN.match?(version.to_s)
   end
 
   ##
@@ -224,9 +224,17 @@ class Gem::Version
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version.is_a?(String) && version =~ /\A\s*\Z/
+    version = 0 if version.is_a?(String) && /\A\s*\Z/.match?(version)
 
-    @version = version.to_s.strip.gsub("-",".pre.")
+    @version = version.to_s
+
+    # optimization to avoid allocation when given an integer, since we know
+    # it's to_s won't have any spaces or dashes
+    unless version.is_a?(Integer)
+      @version = @version.strip
+      @version.gsub!("-",".pre.")
+    end
+    @version = -@version
     @segments = nil
   end
 
@@ -252,7 +260,7 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql?(other)
-    self.class === other && @version == other._version
+    self.class === other && @version == other.version
   end
 
   def hash # :nodoc:
@@ -284,7 +292,7 @@ class Gem::Version
   end
 
   def yaml_initialize(tag, map) # :nodoc:
-    @version = map["version"]
+    @version = -map["version"]
     @segments = nil
     @hash = nil
   end
@@ -302,7 +310,7 @@ class Gem::Version
 
   def prerelease?
     unless instance_variable_defined? :@prerelease
-      @prerelease = !(@version =~ /[a-zA-Z]/).nil?
+      @prerelease = /[a-zA-Z]/.match?(version)
     end
     @prerelease
   end
@@ -354,7 +362,7 @@ class Gem::Version
     return self <=> self.class.new(other) if (String === other) && self.class.correct?(other)
 
     return unless Gem::Version === other
-    return 0 if @version == other._version || canonical_segments == other.canonical_segments
+    return 0 if @version == other.version || canonical_segments == other.canonical_segments
 
     lhsegments = canonical_segments
     rhsegments = other.canonical_segments
@@ -380,39 +388,37 @@ class Gem::Version
     0
   end
 
+  # remove trailing zeros segments before first letter or at the end of the version
   def canonical_segments
-    @canonical_segments ||=
-      _split_segments.map! do |segments|
-        segments.reverse_each.drop_while {|s| s == 0 }.reverse
-      end.reduce(&:concat)
+    @canonical_segments ||= begin
+      # remove trailing 0 segments, using dot or letter as anchor
+      # may leave a trailing dot which will be ignored by partition_segments
+      canonical_version = @version.sub(/(?<=[a-zA-Z.])[.0]+\z/, "")
+      # remove 0 segments before the first letter in a prerelease version
+      canonical_version.sub!(/(?<=\.|\A)[0.]+(?=[a-zA-Z])/, "") if prerelease?
+      partition_segments(canonical_version)
+    end
   end
 
   def freeze
     prerelease?
+    _segments
     canonical_segments
     super
   end
 
   protected
 
-  def _version
-    @version
-  end
-
   def _segments
     # segments is lazy so it can pick up version values that come from
     # old marshaled versions, which don't go through marshal_load.
     # since this version object is cached in @@all, its @segments should be frozen
-
-    @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map do |s|
-      /^\d+$/.match?(s) ? s.to_i : s
-    end.freeze
+    @segments ||= partition_segments(@version)
   end
 
-  def _split_segments
-    string_start = _segments.index {|s| s.is_a?(String) }
-    string_segments = segments
-    numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
-    [numeric_segments, string_segments]
+  def partition_segments(ver)
+    ver.scan(/\d+|[a-z]+/i).map! do |s|
+      /\A\d/.match?(s) ? s.to_i : -s
+    end.freeze
   end
 end

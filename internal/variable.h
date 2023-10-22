@@ -15,10 +15,6 @@
 #include "ruby/ruby.h"          /* for VALUE */
 #include "shape.h"              /* for rb_shape_t */
 
-/* global variable */
-
-#define ROBJECT_TRANSIENT_FLAG    FL_USER2
-
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
 void rb_gc_update_global_tbl(void);
@@ -32,9 +28,6 @@ rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 void rb_gvar_ractor_local(const char *name);
-static inline bool ROBJ_TRANSIENT_P(VALUE obj);
-static inline void ROBJ_TRANSIENT_SET(VALUE obj);
-static inline void ROBJ_TRANSIENT_UNSET(VALUE obj);
 
 /**
  * Sets the name of a module.
@@ -74,31 +67,5 @@ rb_shape_t * rb_grow_iv_list(VALUE obj);
 void rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize);
 struct gen_ivtbl *rb_ensure_generic_iv_list_size(VALUE obj, rb_shape_t *shape, uint32_t newsize);
 attr_index_t rb_obj_ivar_set(VALUE obj, ID id, VALUE val);
-
-static inline bool
-ROBJ_TRANSIENT_P(VALUE obj)
-{
-#if USE_TRANSIENT_HEAP
-    return FL_TEST_RAW(obj, ROBJECT_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-static inline void
-ROBJ_TRANSIENT_SET(VALUE obj)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-ROBJ_TRANSIENT_UNSET(VALUE obj)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
-#endif
-}
 
 #endif /* INTERNAL_VARIABLE_H */

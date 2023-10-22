@@ -35,7 +35,6 @@ module RubyVM::RJIT
       case self
       in Type::UnknownHeap then true
       in Type::TArray then true
-      in Type::CArray then true
       in Type::Hash then true
       in Type::HeapSymbol then true
       in Type::TString then true
@@ -45,11 +44,10 @@ module RubyVM::RJIT
       end
     end
 
-    # Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
+    # Check if it's a T_ARRAY object
     def array?
       case self
       in Type::TArray then true
-      in Type::CArray then true
       else false
       end
     end
@@ -73,7 +71,6 @@ module RubyVM::RJIT
       in Type::Flonum then C.rb_cFloat
       in Type::ImmSymbol | Type::HeapSymbol then C.rb_cSymbol
       in Type::CString then C.rb_cString
-      in Type::CArray then C.rb_cArray
       else nil
       end
     end
@@ -112,11 +109,6 @@ module RubyVM::RJIT
 
       # A CString is also a TString.
       if self == Type::CString && dst == Type::TString
-        return TypeDiff::Compatible[1]
-      end
-
-      # A CArray is also a TArray.
-      if self == Type::CArray && dst == Type::TArray
         return TypeDiff::Compatible[1]
       end
 
@@ -169,11 +161,8 @@ module RubyVM::RJIT
         end
       else
         val_class = C.to_value(C.rb_class_of(val))
-        if val_class == C.rb_cString
+        if val_class == C.rb_cString && C.rb_obj_frozen_p(val)
           return Type::CString
-        end
-        if val_class == C.rb_cArray
-          return Type::CArray
         end
         if C.to_value(val) == C.rb_block_param_proxy
           return Type::BlockParamProxy
@@ -222,7 +211,6 @@ module RubyVM::RJIT
   Type::TString = Type[:TString] # An object with the T_STRING flag set, possibly an rb_cString
   Type::CString = Type[:CString] # An un-subclassed string of type rb_cString (can have instance vars in some cases)
   Type::TArray  = Type[:TArray]  # An object with the T_ARRAY flag set, possibly an rb_cArray
-  Type::CArray  = Type[:CArray]  # An un-subclassed string of type rb_cArray (can have instance vars in some cases)
 
   Type::BlockParamProxy = Type[:BlockParamProxy] # A special sentinel value indicating the block parameter should be read from
 

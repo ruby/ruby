@@ -12,7 +12,7 @@ static VALUE encoding_spec_MBCLEN_CHARFOUND_P(VALUE self, VALUE obj) {
 }
 
 static VALUE encoding_spec_ENC_CODERANGE_ASCIIONLY(VALUE self, VALUE obj) {
-  if(ENC_CODERANGE_ASCIIONLY(obj)) {
+  if (ENC_CODERANGE_ASCIIONLY(obj)) {
     return Qtrue;
   } else {
     return Qfalse;
@@ -61,13 +61,13 @@ static VALUE encoding_spec_rb_filesystem_encindex(VALUE self) {
 
 static VALUE encoding_spec_rb_default_internal_encoding(VALUE self) {
   rb_encoding* enc = rb_default_internal_encoding();
-  if(enc == 0) return Qnil;
+  if (enc == 0) return Qnil;
   return rb_str_new2(enc->name);
 }
 
 static VALUE encoding_spec_rb_default_external_encoding(VALUE self) {
   rb_encoding* enc = rb_default_external_encoding();
-  if(enc == 0) return Qnil;
+  if (enc == 0) return Qnil;
   return rb_str_new2(enc->name);
 }
 
@@ -86,7 +86,7 @@ static VALUE encoding_spec_rb_enc_associate_index(VALUE self, VALUE obj, VALUE i
 static VALUE encoding_spec_rb_enc_compatible(VALUE self, VALUE a, VALUE b) {
   rb_encoding* enc = rb_enc_compatible(a, b);
 
-  if(!enc) return INT2FIX(0);
+  if (!enc) return INT2FIX(0);
 
   return rb_enc_from_encoding(enc);
 }

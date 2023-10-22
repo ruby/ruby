@@ -421,7 +421,8 @@ rb_fstring(VALUE str)
             OBJ_FREEZE_RAW(str);
             return str;
         }
-        if (FL_TEST_RAW(str, STR_NOEMBED|STR_SHARED_ROOT|STR_SHARED) == (STR_NOEMBED|STR_SHARED_ROOT)) {
+
+        if (FL_TEST_RAW(str, STR_SHARED_ROOT | STR_SHARED) == STR_SHARED_ROOT) {
             assert(OBJ_FROZEN(str));
             return str;
         }
@@ -1739,11 +1740,11 @@ static inline VALUE
 ec_str_duplicate(struct rb_execution_context_struct *ec, VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (FL_TEST(str, STR_NOEMBED)) {
-        dup = ec_str_alloc_heap(ec, klass);
+    if (STR_EMBED_P(str)) {
+        dup = ec_str_alloc_embed(ec, klass, RSTRING_LEN(str) + TERM_LEN(str));
     }
     else {
-        dup = ec_str_alloc_embed(ec, klass, RSTRING_LEN(str) + TERM_LEN(str));
+        dup = ec_str_alloc_heap(ec, klass);
     }
 
     return str_duplicate_setup(klass, str, dup);
@@ -1753,11 +1754,11 @@ static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (FL_TEST(str, STR_NOEMBED)) {
-        dup = str_alloc_heap(klass);
+    if (STR_EMBED_P(str)) {
+        dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
     }
     else {
-       dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
+        dup = str_alloc_heap(klass);
     }
 
     return str_duplicate_setup(klass, str, dup);
@@ -2276,7 +2277,7 @@ rb_str_times(VALUE str, VALUE times)
  *    "%05d" % 123 # => "00123"
  *
  *  If +self+ contains multiple substitutions, +object+ must be
- *  an \Array or \Hash containing the values to be substituted:
+ *  an Array or Hash containing the values to be substituted:
  *
  *    "%-5s: %016x" % [ "ID", self.object_id ] # => "ID   : 00002b054ec93168"
  *    "foo = %{foo}" % {foo: 'bar'} # => "foo = bar"
@@ -2732,15 +2733,30 @@ str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    const long rstring_embed_capa_max = ((sizeof(struct RString) - offsetof(struct RString, as.embed.ary)) / sizeof(char)) - 1;
+    assert(beg >= 0);
+    assert(len >= 0);
+    assert(beg+len <= RSTRING_LEN(str));
 
-    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str)) ||
-            len <= rstring_embed_capa_max) {
+    const int termlen = TERM_LEN(str);
+    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
         str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        RB_GC_GUARD(str);
+        return str2;
+    }
+
+    str2 = str_alloc_heap(rb_cString);
+    if (str_embed_capa(str2) >= len + termlen) {
+        char *ptr2 = RSTRING(str2)->as.embed.ary;
+        STR_SET_EMBED(str2);
+        memcpy(ptr2, RSTRING_PTR(str) + beg, len);
+        TERM_FILL(ptr2+len, termlen);
+
+        STR_SET_LEN(str2, len);
         RB_GC_GUARD(str);
     }
     else {
-        str2 = str_new_shared(rb_cString, str);
+        str_replace_shared(str2, str);
+        assert(!STR_EMBED_P(str2));
         ENC_CODERANGE_CLEAR(str2);
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING_LEN(str2) > len) {
@@ -2969,6 +2985,33 @@ rb_str_set_len(VALUE str, long len)
     if (len > (capa = (long)str_capacity(str, termlen)) || len < 0) {
         rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
+
+    int cr = ENC_CODERANGE(str);
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+        /* Leave unknown. */
+    }
+    else if (len > RSTRING_LEN(str)) {
+        if (ENC_CODERANGE_CLEAN_P(cr)) {
+            /* Update the coderange regarding the extended part. */
+            const char *const prev_end = RSTRING_END(str);
+            const char *const new_end = RSTRING_PTR(str) + len;
+            rb_encoding *enc = rb_enc_get(str);
+            rb_str_coderange_scan_restartable(prev_end, new_end, enc, &cr);
+            ENC_CODERANGE_SET(str, cr);
+        }
+        else if (cr == ENC_CODERANGE_BROKEN) {
+            /* May be valid now, by appended part. */
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_UNKNOWN);
+        }
+    }
+    else if (len < RSTRING_LEN(str)) {
+        if (cr != ENC_CODERANGE_7BIT) {
+            /* ASCII-only string is keeping after truncated.  Valid
+             * and broken may be invalid or valid, leave unknown. */
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_UNKNOWN);
+        }
+    }
+
     STR_SET_LEN(str, len);
     TERM_FILL(&RSTRING_PTR(str)[len], termlen);
 }
@@ -3227,6 +3270,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
           case ENC_CODERANGE_7BIT:
             // If RHS is 7bit we can do simple concatenation
             str_buf_cat4(str, RSTRING_PTR(str2), RSTRING_LEN(str2), true);
+            RB_GC_GUARD(str2);
             return str;
           case ENC_CODERANGE_VALID:
             // If RHS is valid, we can do simple concatenation if encodings are the same
@@ -3236,6 +3280,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
                 if (UNLIKELY(str_cr != ENC_CODERANGE_VALID)) {
                     ENC_CODERANGE_SET(str, RB_ENC_CODERANGE_AND(str_cr, str2_cr));
                 }
+                RB_GC_GUARD(str2);
                 return str;
             }
         }
@@ -3293,7 +3338,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *    s.concat('bar', 'baz') # => "foobarbaz"
  *    s                      # => "foobarbaz"
  *
- *  For each given object +object+ that is an \Integer,
+ *  For each given object +object+ that is an Integer,
  *  the value is considered a codepoint and converted to a character before concatenation:
  *
  *    s = 'foo'
@@ -3332,7 +3377,7 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *    s << 'bar' # => "foobar"
  *    s          # => "foobar"
  *
- *  If +object+ is an \Integer,
+ *  If +object+ is an Integer,
  *  the value is considered a codepoint and converted to a character before concatenation:
  *
  *    s = 'foo'
@@ -3807,7 +3852,9 @@ strseq_core(const char *str_ptr, const char *str_ptr_end, long str_len,
     return pos + offset;
 }
 
+/* found index in byte */
 #define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
+#define rb_str_byteindex(str, sub, offset) rb_strseq_index(str, sub, offset, 1)
 
 static long
 rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
@@ -3861,36 +3908,28 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
+    rb_encoding *enc = STR_ENC_GET(str);
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        long slen = str_strlen(str, enc); /* str's enc */
         pos = NUM2LONG(initpos);
-    }
-    else {
-        pos = 0;
-    }
-    if (pos < 0) {
-        pos += str_strlen(str, NULL);
-        if (pos < 0) {
+        if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
             }
             return Qnil;
         }
     }
+    else {
+        pos = 0;
+    }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        if (pos > str_strlen(str, NULL)) {
-            rb_backref_set(Qnil);
-            return Qnil;
-        }
         pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-                         rb_enc_check(str, sub), single_byte_optimizable(str));
+                         enc, single_byte_optimizable(str));
 
-        if (rb_reg_search(sub, str, pos, 0) < 0) {
-            return Qnil;
-        }
-        else {
+        if (rb_reg_search(sub, str, pos, 0) >= 0) {
             VALUE match = rb_backref_get();
             struct re_registers *regs = RMATCH_REGS(match);
             pos = rb_str_sublen(str, BEG(0));
@@ -3900,11 +3939,12 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     else {
         StringValue(sub);
         pos = rb_str_index(str, sub, pos);
-        pos = rb_str_sublen(str, pos);
+        if (pos >= 0) {
+            pos = rb_str_sublen(str, pos);
+            return LONG2NUM(pos);
+        }
     }
-
-    if (pos == -1) return Qnil;
-    return LONG2NUM(pos);
+    return Qnil;
 }
 
 /* Ensure that the given pos is a valid character boundary.
@@ -3917,8 +3957,7 @@ str_ensure_byte_pos(VALUE str, long pos)
     const char *s = RSTRING_PTR(str);
     const char *e = RSTRING_END(str);
     const char *p = s + pos;
-    const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
-    if (p != pp) {
+    if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
         rb_raise(rb_eIndexError,
                  "offset %ld does not land on character boundary", pos);
     }
@@ -3929,7 +3968,7 @@ str_ensure_byte_pos(VALUE str, long pos)
  *    byteindex(substring, offset = 0) -> integer or nil
  *    byteindex(regexp, offset = 0) -> integer or nil
  *
- *  Returns the \Integer byte-based index of the first occurrence of the given +substring+,
+ *  Returns the Integer byte-based index of the first occurrence of the given +substring+,
  *  or +nil+ if none found:
  *
  *    'foo'.byteindex('f') # => 0
@@ -3937,7 +3976,7 @@ str_ensure_byte_pos(VALUE str, long pos)
  *    'foo'.byteindex('oo') # => 1
  *    'foo'.byteindex('ooo') # => nil
  *
- *  Returns the \Integer byte-based index of the first match for the given \Regexp +regexp+,
+ *  Returns the Integer byte-based index of the first match for the given Regexp +regexp+,
  *  or +nil+ if none found:
  *
  *    'foo'.byteindex(/f/) # => 0
@@ -3945,7 +3984,7 @@ str_ensure_byte_pos(VALUE str, long pos)
  *    'foo'.byteindex(/oo/) # => 1
  *    'foo'.byteindex(/ooo/) # => nil
  *
- *  \Integer argument +offset+, if given, specifies the byte-based position in the
+ *  Integer argument +offset+, if given, specifies the byte-based position in the
  *  string to begin the search:
  *
  *    'foo'.byteindex('o', 1) # => 1
@@ -3975,10 +4014,7 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
         long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
-        if (pos < 0) {
-            pos += slen;
-        }
-        if (pos < 0 || pos > slen) {
+        if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
             }
@@ -3992,10 +4028,7 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     str_ensure_byte_pos(str, pos);
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        if (rb_reg_search(sub, str, pos, 0) < 0) {
-            return Qnil;
-        }
-        else {
+        if (rb_reg_search(sub, str, pos, 0) >= 0) {
             VALUE match = rb_backref_get();
             struct re_registers *regs = RMATCH_REGS(match);
             pos = BEG(0);
@@ -4004,11 +4037,10 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     }
     else {
         StringValue(sub);
-        pos = rb_strseq_index(str, sub, pos, 1);
+        pos = rb_str_byteindex(str, sub, pos);
+        if (pos >= 0) return LONG2NUM(pos);
     }
-
-    if (pos == -1) return Qnil;
-    return LONG2NUM(pos);
+    return Qnil;
 }
 
 #ifdef HAVE_MEMRCHR
@@ -4067,6 +4099,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 }
 #endif
 
+/* found index in byte */
 static long
 rb_str_rindex(VALUE str, VALUE sub, long pos)
 {
@@ -4096,7 +4129,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
-    return rb_str_sublen(str, str_rindex(str, sub, s, enc));
+    return str_rindex(str, sub, s, enc);
 }
 
 /*
@@ -4104,7 +4137,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    rindex(substring, offset = self.length) -> integer or nil
  *    rindex(regexp, offset = self.length) -> integer or nil
  *
- *  Returns the \Integer index of the _last_ occurrence of the given +substring+,
+ *  Returns the Integer index of the _last_ occurrence of the given +substring+,
  *  or +nil+ if none found:
  *
  *    'foo'.rindex('f') # => 0
@@ -4112,7 +4145,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    'foo'.rindex('oo') # => 1
  *    'foo'.rindex('ooo') # => nil
  *
- *  Returns the \Integer index of the _last_ match for the given \Regexp +regexp+,
+ *  Returns the Integer index of the _last_ match for the given Regexp +regexp+,
  *  or +nil+ if none found:
  *
  *    'foo'.rindex(/f/) # => 0
@@ -4137,7 +4170,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    'foo'.index(/o+(?!.*o)/) # => 1
  *    $~ #=> #<MatchData "oo">
  *
- *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
+ *  Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
  *   string to _end_ the search:
  *
  *    'foo'.rindex('o', 0) # => nil
@@ -4145,7 +4178,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    'foo'.rindex('o', 2) # => 2
  *    'foo'.rindex('o', 3) # => 2
  *
- *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  If +offset+ is a negative Integer, the maximum starting position in the
  *  string to _end_ the search is the sum of the string's length and +offset+:
  *
  *    'foo'.rindex('o', -1) # => 2
@@ -4160,20 +4193,17 @@ static VALUE
 rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
-    VALUE vpos;
+    VALUE initpos;
     rb_encoding *enc = STR_ENC_GET(str);
     long pos, len = str_strlen(str, enc); /* str's enc */
 
-    if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
-        pos = NUM2LONG(vpos);
-        if (pos < 0) {
-            pos += len;
-            if (pos < 0) {
-                if (RB_TYPE_P(sub, T_REGEXP)) {
-                    rb_backref_set(Qnil);
-                }
-                return Qnil;
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = NUM2LONG(initpos);
+        if (pos < 0 && (pos += len) < 0) {
+            if (RB_TYPE_P(sub, T_REGEXP)) {
+                rb_backref_set(Qnil);
             }
+            return Qnil;
         }
         if (pos > len) pos = len;
     }
@@ -4182,7 +4212,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        /* enc = rb_get_check(str, sub); */
+        /* enc = rb_enc_check(str, sub); */
         pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
                          enc, single_byte_optimizable(str));
 
@@ -4196,7 +4226,10 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     else {
         StringValue(sub);
         pos = rb_str_rindex(str, sub, pos);
-        if (pos >= 0) return LONG2NUM(pos);
+        if (pos >= 0) {
+            pos = rb_str_sublen(str, pos);
+            return LONG2NUM(pos);
+        }
     }
     return Qnil;
 }
@@ -4237,7 +4270,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    byterindex(substring, offset = self.bytesize) -> integer or nil
  *    byterindex(regexp, offset = self.bytesize) -> integer or nil
  *
- *  Returns the \Integer byte-based index of the _last_ occurrence of the given +substring+,
+ *  Returns the Integer byte-based index of the _last_ occurrence of the given +substring+,
  *  or +nil+ if none found:
  *
  *    'foo'.byterindex('f') # => 0
@@ -4245,7 +4278,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    'foo'.byterindex('oo') # => 1
  *    'foo'.byterindex('ooo') # => nil
  *
- *  Returns the \Integer byte-based index of the _last_ match for the given \Regexp +regexp+,
+ *  Returns the Integer byte-based index of the _last_ match for the given Regexp +regexp+,
  *  or +nil+ if none found:
  *
  *    'foo'.byterindex(/f/) # => 0
@@ -4270,7 +4303,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    'foo'.byteindex(/o+(?!.*o)/) # => 1
  *    $~ #=> #<MatchData "oo">
  *
- *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
+ *  Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
  *   string to _end_ the search:
  *
  *    'foo'.byterindex('o', 0) # => nil
@@ -4278,7 +4311,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    'foo'.byterindex('o', 2) # => 2
  *    'foo'.byterindex('o', 3) # => 2
  *
- *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  If +offset+ is a negative Integer, the maximum starting position in the
  *  string to _end_ the search is the sum of the string's length and +offset+:
  *
  *    'foo'.byterindex('o', -1) # => 2
@@ -4296,19 +4329,16 @@ static VALUE
 rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
-    VALUE vpos;
+    VALUE initpos;
     long pos, len = RSTRING_LEN(str);
 
-    if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
-        pos = NUM2LONG(vpos);
-        if (pos < 0) {
-            pos += len;
-            if (pos < 0) {
-                if (RB_TYPE_P(sub, T_REGEXP)) {
-                    rb_backref_set(Qnil);
-                }
-                return Qnil;
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = NUM2LONG(initpos);
+        if (pos < 0 && (pos += len) < 0) {
+            if (RB_TYPE_P(sub, T_REGEXP)) {
+                rb_backref_set(Qnil);
             }
+            return Qnil;
         }
         if (pos > len) pos = len;
     }
@@ -4339,7 +4369,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    string =~ regexp -> integer or nil
  *    string =~ object -> integer or nil
  *
- *  Returns the \Integer index of the first substring that matches
+ *  Returns the Integer index of the first substring that matches
  *  the given +regexp+, or +nil+ if no match found:
  *
  *    'foo' =~ /f/ # => 0
@@ -4348,7 +4378,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *
  *  Note: also updates Regexp@Global+Variables.
  *
- *  If the given +object+ is not a \Regexp, returns the value
+ *  If the given +object+ is not a Regexp, returns the value
  *  returned by <tt>object =~ self</tt>.
  *
  *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
@@ -4386,13 +4416,13 @@ static VALUE get_pat(VALUE);
  *    match(pattern, offset = 0) -> matchdata or nil
  *    match(pattern, offset = 0) {|matchdata| ... } -> object
  *
- *  Returns a \MatchData object (or +nil+) based on +self+ and the given +pattern+.
+ *  Returns a MatchData object (or +nil+) based on +self+ and the given +pattern+.
  *
  *  Note: also updates Regexp@Global+Variables.
  *
- *  - Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
+ *  - Computes +regexp+ by converting +pattern+ (if not already a Regexp).
  *      regexp = Regexp.new(pattern)
- *  - Computes +matchdata+, which will be either a \MatchData object or +nil+
+ *  - Computes +matchdata+, which will be either a MatchData object or +nil+
  *    (see Regexp#match):
  *      matchdata = <tt>regexp.match(self)
  *
@@ -4402,7 +4432,7 @@ static VALUE get_pat(VALUE);
  *    'foo'.match('o') # => #<MatchData "o">
  *    'foo'.match('x') # => nil
  *
- *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *  If Integer argument +offset+ is given, the search begins at index +offset+:
  *
  *    'foo'.match('f', 1) # => nil
  *    'foo'.match('o', 1) # => #<MatchData "o">
@@ -4439,17 +4469,17 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *  Note: does not update Regexp@Global+Variables.
  *
- *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
+ *  Computes +regexp+ by converting +pattern+ (if not already a Regexp).
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \MatchData object,
+ *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a MatchData object,
  *  +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
  *    'foo'.match?(/x/) # => false
  *
- *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *  If Integer argument +offset+ is given, the search begins at index +offset+:
  *    'foo'.match?('f', 1) # => false
  *    'foo'.match?('o', 1) # => true
  *
@@ -4865,7 +4895,7 @@ str_upto_i(VALUE str, VALUE arg)
  *    '25'.upto('5') {|s| fail s }
  *    'aa'.upto('a') {|s| fail s }
  *
- *  With no block given, returns a new \Enumerator:
+ *  With no block given, returns a new Enumerator:
  *
  *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
  *
@@ -5162,7 +5192,9 @@ rb_str_drop_bytes(VALUE str, long len)
     }
     STR_SET_LEN(str, nlen);
 
-    ptr[nlen] = 0;
+    if (!SHARABLE_MIDDLE_SUBSTRING) {
+        TERM_FILL(ptr + nlen, TERM_LEN(str));
+    }
     ENC_CODERANGE_CLEAR(str);
     return str;
 }
@@ -5375,11 +5407,11 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
  *
  *  Inserts the given +other_string+ into +self+; returns +self+.
  *
- *  If the \Integer +index+ is positive, inserts +other_string+ at offset +index+:
+ *  If the Integer +index+ is positive, inserts +other_string+ at offset +index+:
  *
  *    'foo'.insert(1, 'bar') # => "fbaroo"
  *
- *  If the \Integer +index+ is negative, counts backward from the end of +self+
+ *  If the Integer +index+ is negative, counts backward from the end of +self+
  *  and inserts +other_string+ at offset <tt>index+1</tt>
  *  (that is, _after_ <tt>self[index]</tt>):
  *
@@ -5564,7 +5596,7 @@ static long
 rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 {
     if (BUILTIN_TYPE(pat) == T_STRING) {
-        pos = rb_strseq_index(str, pat, pos, 1);
+        pos = rb_str_byteindex(str, pat, pos);
         if (set_backref_str) {
             if (pos >= 0) {
                 str = rb_str_new_frozen_String(str);
@@ -6455,7 +6487,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
  *  Returns the result of interpreting leading characters in +self+ as a Float:
  *
  *    '3.14159'.to_f  # => 3.14159
-      '1.234e-2'.to_f # => 0.01234
+ *    '1.234e-2'.to_f # => 0.01234
  *
  *  Characters past a leading valid number (in the given +base+) are ignored:
  *
@@ -7728,8 +7760,10 @@ trnext(struct tr *t, rb_encoding *enc)
                         }
                         continue; /* not reached */
                     }
-                    t->gen = 1;
-                    t->max = c;
+                    else if (t->now < c) {
+                        t->gen = 1;
+                        t->max = c;
+                    }
                 }
             }
             return t->now;
@@ -9513,7 +9547,7 @@ chompped_length(VALUE str, VALUE rs)
     if (p[len-1] == newline &&
         (rslen <= 1 ||
          memcmp(rsptr, pp, rslen) == 0)) {
-        if (rb_enc_left_char_head(p, pp, e, enc) == pp)
+        if (at_char_boundary(p, pp, e, enc))
             return len - rslen;
         RB_GC_GUARD(rs);
     }
@@ -10424,7 +10458,6 @@ rb_str_rpartition(VALUE str, VALUE sep)
         if (pos < 0) {
             goto failed;
         }
-        pos = rb_str_offset(str, pos);
     }
 
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
@@ -10455,10 +10488,20 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
                 return Qtrue;
         }
         else {
+            const char *p, *s, *e;
+            long slen, tlen;
+            rb_encoding *enc;
+
             StringValue(tmp);
-            rb_enc_check(str, tmp);
-            if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
-            if (memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+            enc = rb_enc_check(str, tmp);
+            if ((tlen = RSTRING_LEN(tmp)) == 0) return Qtrue;
+            if ((slen = RSTRING_LEN(str)) < tlen) continue;
+            p = RSTRING_PTR(str);
+            e = p + slen;
+            s = p + tlen;
+            if (!at_char_right_boundary(p, s, e, enc))
+                continue;
+            if (memcmp(p, RSTRING_PTR(tmp), tlen) == 0)
                 return Qtrue;
         }
     }
@@ -10477,12 +10520,13 @@ static VALUE
 rb_str_end_with(int argc, VALUE *argv, VALUE str)
 {
     int i;
-    char *p, *s, *e;
-    rb_encoding *enc;
 
     for (i=0; i<argc; i++) {
         VALUE tmp = argv[i];
+        const char *p, *s, *e;
         long slen, tlen;
+        rb_encoding *enc;
+
         StringValue(tmp);
         enc = rb_enc_check(str, tmp);
         if ((tlen = RSTRING_LEN(tmp)) == 0) return Qtrue;
@@ -10490,9 +10534,9 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
         p = RSTRING_PTR(str);
         e = p + slen;
         s = e - tlen;
-        if (rb_enc_left_char_head(p, s, e, enc) != s)
+        if (!at_char_boundary(p, s, e, enc))
             continue;
-        if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+        if (memcmp(s, RSTRING_PTR(tmp), tlen) == 0)
             return Qtrue;
     }
     return Qfalse;
@@ -10510,12 +10554,17 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 static long
 deleted_prefix_length(VALUE str, VALUE prefix)
 {
-    char *strptr, *prefixptr;
+    const char *strptr, *prefixptr;
     long olen, prefixlen;
+    rb_encoding *enc = rb_enc_get(str);
 
     StringValue(prefix);
-    if (is_broken_string(prefix)) return 0;
-    rb_enc_check(str, prefix);
+
+    if (!is_broken_string(prefix) ||
+        !rb_enc_asciicompat(enc) ||
+        !rb_enc_asciicompat(rb_enc_get(prefix))) {
+        enc = rb_enc_check(str, prefix);
+    }
 
     /* return 0 if not start with prefix */
     prefixlen = RSTRING_LEN(prefix);
@@ -10525,6 +10574,19 @@ deleted_prefix_length(VALUE str, VALUE prefix)
     strptr = RSTRING_PTR(str);
     prefixptr = RSTRING_PTR(prefix);
     if (memcmp(strptr, prefixptr, prefixlen) != 0) return 0;
+    if (is_broken_string(prefix)) {
+        if (!is_broken_string(str)) {
+            /* prefix in a valid string cannot be broken */
+            return 0;
+        }
+        const char *strend = strptr + olen;
+        const char *after_prefix = strptr + prefixlen;
+        if (!at_char_right_boundary(strptr, after_prefix, strend, enc)) {
+            /* prefix does not end at char-boundary */
+            return 0;
+        }
+    }
+    /* prefix part in `str` also should be valid. */
 
     return prefixlen;
 }
@@ -10581,7 +10643,7 @@ rb_str_delete_prefix(VALUE str, VALUE prefix)
 static long
 deleted_suffix_length(VALUE str, VALUE suffix)
 {
-    char *strptr, *suffixptr, *s;
+    const char *strptr, *suffixptr;
     long olen, suffixlen;
     rb_encoding *enc;
 
@@ -10596,9 +10658,10 @@ deleted_suffix_length(VALUE str, VALUE suffix)
     if (olen < suffixlen) return 0;
     strptr = RSTRING_PTR(str);
     suffixptr = RSTRING_PTR(suffix);
-    s = strptr + olen - suffixlen;
-    if (memcmp(s, suffixptr, suffixlen) != 0) return 0;
-    if (rb_enc_left_char_head(strptr, s, strptr + olen, enc) != s) return 0;
+    const char *strend = strptr + olen;
+    const char *before_suffix = strend - suffixlen;
+    if (memcmp(before_suffix, suffixptr, suffixlen) != 0) return 0;
+    if (!at_char_boundary(strptr, before_suffix, strend, enc)) return 0;
 
     return suffixlen;
 }
@@ -10705,11 +10768,11 @@ static VALUE
 rb_str_b(VALUE str)
 {
     VALUE str2;
-    if (FL_TEST(str, STR_NOEMBED)) {
-        str2 = str_alloc_heap(rb_cString);
+    if (STR_EMBED_P(str)) {
+        str2 = str_alloc_embed(rb_cString, RSTRING_LEN(str) + TERM_LEN(str));
     }
     else {
-        str2 = str_alloc_embed(rb_cString, RSTRING_LEN(str) + TERM_LEN(str));
+        str2 = str_alloc_heap(rb_cString);
     }
     str_replace_shared_without_enc(str2, str);
 
@@ -11232,17 +11295,17 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- * Symbol objects represent named identifiers inside the Ruby interpreter.
+ * \Symbol objects represent named identifiers inside the Ruby interpreter.
  *
  * You can create a \Symbol object explicitly with:
  *
  * - A {symbol literal}[rdoc-ref:syntax/literals.rdoc@Symbol+Literals].
  *
- * The same Symbol object will be
+ * The same \Symbol object will be
  * created for a given name or string for the duration of a program's
  * execution, regardless of the context or meaning of that name. Thus
  * if <code>Fred</code> is a constant in one context, a method in
- * another, and a class in a third, the Symbol <code>:Fred</code>
+ * another, and a class in a third, the \Symbol <code>:Fred</code>
  * will be the same object in all three contexts.
  *
  *     module One
@@ -11285,8 +11348,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *     local_variables
  *     # => [:seven]
  *
- * Symbol objects are different from String objects in that
- * Symbol objects represent identifiers, while String objects
+ * \Symbol objects are different from String objects in that
+ * \Symbol objects represent identifiers, while String objects
  * represent text or data.
  *
  * == What's Here

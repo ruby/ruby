@@ -193,16 +193,17 @@ class TestWeakMap < Test::Unit::TestCase
     end;
   end
 
-  def test_compaction_bug_19529
+  def test_compaction
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
 
+    # [Bug #19529]
     obj = Object.new
     100.times do |i|
       GC.compact
       @wm[i] = obj
     end
 
-    assert_separately(%w(--disable-gems), <<-'end;')
+    assert_separately([], <<-'end;')
       wm = ObjectSpace::WeakMap.new
       obj = Object.new
       100.times do
@@ -210,6 +211,29 @@ class TestWeakMap < Test::Unit::TestCase
         GC.start
       end
       GC.compact
+    end;
+
+    assert_separately(%w(-robjspace), <<-'end;')
+      wm = ObjectSpace::WeakMap.new
+      key = Object.new
+      val = Object.new
+      wm[key] = val
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_equal(val, wm[key])
+    end;
+
+    assert_separately(["-W0"], <<-'end;')
+      wm = ObjectSpace::WeakMap.new
+
+      ary = 10_000.times.map do
+        o = Object.new
+        wm[o] = 1
+        o
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
     end;
   end
 

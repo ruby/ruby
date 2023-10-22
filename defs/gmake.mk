@@ -8,14 +8,12 @@ MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
 ifeq ($(GITHUB_ACTIONS),true)
-override ACTIONS_GROUP = @echo "\#\#[group]$(patsubst yes-%,%,$@)"
-override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
+# 93(bright yellow) is copied from .github/workflows/mingw.yml
+override ACTIONS_GROUP = @echo "::group::[93m$(@:yes-%=%)[m"
+override ACTIONS_ENDGROUP = @echo "::endgroup::"
 endif
 
 ifneq ($(filter darwin%,$(target_os)),)
-# Remove debug option not to generate thousands of .dSYM
-RJIT_DEBUGFLAGS := $(filter-out -g%,$(RJIT_DEBUGFLAGS))
-
 INSTRUBY_ENV += SDKROOT=
 endif
 INSTRUBY_ARGS += --gnumake
@@ -27,7 +25,7 @@ TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
 TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst exam,test-bundled-gems yes-test-bundler-parallel check,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst exam,test-bundled-gems test-bundler-parallel check,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst check,test-syntax-suggest test-spec test-all test-tool test-short,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
@@ -38,6 +36,7 @@ TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-basic,test-basic test-leaked-globals,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
@@ -45,6 +44,7 @@ TEST_TARGETS := $(patsubst test-bundler-parallel,test-bundler-parallel $(PREPARE
 TEST_TARGETS := $(patsubst test-syntax-suggest,test-syntax-suggest $(PREPARE_SYNTAX_SUGGEST),$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+TEST_TARGETS := $(patsubst yes-%,%,$(filter-out no-%,$(TEST_TARGETS)))
 endif
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
@@ -91,16 +91,31 @@ $(addprefix yes-,$(TEST_TARGETS)): $(TEST_DEPENDS)
 endif
 
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
-	btest-ruby test-knownbug test-basic \
+	btest-ruby test-knownbug test-leaked-globals test-basic \
 	test-testframework test-tool test-ruby test-all \
 	test-spec test-syntax-suggest-prepare test-syntax-suggest \
 	test-bundler-prepare test-bundler test-bundler-parallel \
 	test-bundled-gems-precheck test-bundled-gems-fetch \
 	test-bundled-gems-prepare test-bundled-gems-run \
 	)
-prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
+
+# grep ^yes-test-.*-precheck: template/Makefile.in defs/gmake.mk common.mk
+test_prechecks := $(filter $(ORDERED_TEST_TARGETS),\
+	test-leaked-globals \
+	test-all \
+	test-spec \
+	test-syntax-suggest \
+	test-bundler \
+	test-bundler-parallel \
+	test-bundled-gems\
+	)
+prev_test := $(subst test-bundler-parallel,test-bundler,$(test_prechecks))
+prev_test := $(addsuffix -precheck,$(prev_test))
+first_test_prechecks := $(prev_test)
+
 $(foreach test,$(ORDERED_TEST_TARGETS), \
-	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
+	$(eval yes-$(value test): $(addprefix yes-,$(value prev_test))); \
+	$(eval no-$(value test): $(addprefix no-,$(value prev_test))); \
 	$(eval prev_test := $(value test)))
 endif
 
@@ -178,15 +193,22 @@ $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
 .PHONY: commit
-commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS))) up
+COMMIT_PREPARE := $(filter-out commit do-commit,$(MAKECMDGOALS)) up
+
+commit: pre-commit $(DOT_WAIT) do-commit $(DOT_WAIT) post_commit
+pre-commit: $(COMMIT_PREPARE)
+do-commit: $(if $(DOT_WAIT),,pre-commit)
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
+post-commit: $(if $(DOT_WAIT),,do-commit)
 	+$(Q) \
 	{ \
 	  $(in-srcdir) \
 	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
-	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
-		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
+	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) \
+		top_srcdir="$(top_srcdir)" srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
+		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" BOOTSTRAPRUBY_OPT="$(BOOTSTRAPRUBY_OPT)" \
+		MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" HAVE_BASERUBY="$(HAVE_BASERUBY)" \
 		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
 
@@ -304,6 +326,7 @@ foreach-bundled-gems-rev-0 = \
 bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
 bundled-gem-gemspec = $(srcdir)/gems/src/$(1)/$(1).gemspec
 bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
+bundled-gem-revision = $(srcdir)/.bundle/.timestamp/$(1).revision
 
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
 update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
@@ -343,24 +366,25 @@ $(srcdir)/gems/src/$(1)/.git: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
 	$(Q) $(GIT) clone $(4) $$(@D)
 
-$(srcdir)/.bundle/.timestamp/$(1).revision: \
+$(bundled-gem-revision): \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
 	| $(srcdir)/.bundle/.timestamp $(srcdir)/gems/src/$(1)/.git
 	$(ECHO) Update $(1) to $(3)
 	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
-	    $(GIT) fetch origin $(3) && \
-	    $(GIT) checkout --detach $(3) && \
-	:
+	    if [ `$(GIT) rev-parse HEAD` != $(3) ]; then \
+	        $(GIT) fetch origin $(3) && \
+	        $(GIT) checkout --detach $(3) && \
+	        :; \
+	    fi
 	echo $(3) | $(IFCHANGE) $$(@) -
 
 # The repository of minitest does not include minitest.gemspec because it uses hoe.
 # This creates a dummy gemspec.
-$(srcdir)/gems/src/$(1)/$(1).gemspec: $(srcdir)/.bundle/.timestamp/$(1).revision \
+$(bundled-gem-gemspec): $(bundled-gem-revision) \
 	| $(srcdir)/gems/src/$(1)/.git
 	$(Q) $(BASERUBY) -I$(tooldir)/lib -rbundled_gem -e 'BundledGem.dummy_gemspec(*ARGV)' $$(@)
 
-$(srcdir)/gems/$(1)-$(2).gem: $(srcdir)/gems/src/$(1)/$(1).gemspec \
-		$(srcdir)/.bundle/.timestamp/$(1).revision
+$(bundled-gem-gemfile): $(bundled-gem-gemspec) $(bundled-gem-revision)
 	$(ECHO) Building $(1)@$(3) to $$(@)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
@@ -391,6 +415,17 @@ endif
 .SECONDARY: update-unicode-auxiliary-files
 .SECONDARY: update-unicode-ucd-emoji-files
 .SECONDARY: update-unicode-emoji-files
+
+ifneq ($(DOT_WAIT),)
+.NOTPARALLEL: update-unicode
+.NOTPARALLEL: update-unicode-files
+.NOTPARALLEL: update-unicode-auxiliary-files
+.NOTPARALLEL: update-unicode-ucd-emoji-files
+.NOTPARALLEL: update-unicode-emoji-files
+.NOTPARALLEL: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+.NOTPARALLEL: $(UNICODE_AUXILIARY_FILES)
+.NOTPARALLEL: $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
+endif
 
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
@@ -495,3 +530,16 @@ matz: up
 
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk
+
+
+# ripper_srcs makes all sources at once. invoking this target multiple
+# times in parallel means all sources will be built for the number of
+# sources times respectively.
+ifneq ($(DOT_WAIT),)
+.NOTPARALLEL: ripper_srcs
+else
+ripper_src =
+$(foreach r,$(RIPPER_SRCS),$(eval $(value r): | $(value ripper_src))\
+	$(eval ripper_src := $(value r)))
+ripper_srcs: $(ripper_src)
+endif

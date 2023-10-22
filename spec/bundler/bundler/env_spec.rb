@@ -139,7 +139,7 @@ RSpec.describe Bundler::Env do
 
     context "when Gemfile contains a gemspec and print_gemspecs is true" do
       let(:gemspec) do
-        strip_whitespace(<<-GEMSPEC)
+        <<~GEMSPEC
           Gem::Specification.new do |gem|
             gem.name = "foo"
             gem.author = "Fumofu"
@@ -178,7 +178,7 @@ RSpec.describe Bundler::Env do
         allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
 
         output = described_class.report(:print_gemspecs => true)
-        expect(output).to include(strip_whitespace(<<-ENV))
+        expect(output).to include(<<~ENV)
           ## Gemfile
 
           ### Gemfile

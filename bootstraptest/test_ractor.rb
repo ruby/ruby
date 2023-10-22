@@ -1730,7 +1730,7 @@ assert_equal '600', %q{
   h.sum{|k, v| v}
 } unless yjit_enabled # http://ci.rvm.jp/results/trunk-yjit@ruby-sp2-docker/4466770
 
-# Selector should be GCed (free'ed) withtou trouble
+# Selector should be GCed (free'ed) without trouble
 assert_equal 'ok', %q{
   RN = 30
   rs = RN.times.map{

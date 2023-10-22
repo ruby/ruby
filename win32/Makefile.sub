@@ -514,8 +514,6 @@ VCSUP = rem
 !endif
 ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
-YARP_BUILD_DIR = $(MAKEDIR)/yarp
-
 MESSAGE_BEGIN = @(for %I in (
 MESSAGE_END = ) do @echo.%~I)
 ECHO_BEGIN = @echo.
@@ -547,8 +545,9 @@ GOLF_PRELUDE_C = golf_prelude.c
 RBCONFIG      = ./.rbconfig.time
 
 !if "$(GITHUB_ACTIONS)" == "true"
-ACTIONS_GROUP = @echo ^#^#[group]$(@:yes-=)
-ACTIONS_ENDGROUP = @echo ^#^#[endgroup]
+# 93(bright yellow) is copied from .github/workflows/mingw.yml
+ACTIONS_GROUP = @echo ::group::[93m$(@:yes-=)[m
+ACTIONS_ENDGROUP = @echo ::endgroup::
 !else
 ACTIONS_GROUP = @:: $(empty)
 ACTIONS_ENDGROUP = @::
@@ -1280,13 +1279,13 @@ $(ruby_pc): $(RBCONFIG)
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 
-{$(srcdir)/yarp}.c.obj:
+{$(srcdir)/prism}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)/yarp/enc}.c.obj:
+{$(srcdir)/prism/enc}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)/yarp/util}.c.obj:
+{$(srcdir)/prism/util}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)/enc/trans}.c.obj:
@@ -1365,7 +1364,7 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
+INSNS	= optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
 !if [exit > insns_rules.mk]

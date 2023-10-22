@@ -54,8 +54,8 @@ module Gem
       str.split(/\r?\n/).each do |line|
         if match = HASH_REGEX.match(line)
           indent, key, quote, val = match.captures
-          key = convert_to_backward_compatible_key(key)
-          depth = indent.scan(/  /).length
+          convert_to_backward_compatible_key!(key)
+          depth = indent.size / 2
           if quote.empty? && val.empty?
             new_hash = {}
             stack[depth][key] = new_hash
@@ -76,14 +76,13 @@ module Gem
     end
 
     # for settings' keys
-    def convert_to_backward_compatible_key(key)
-      key = "#{key}/" if key =~ /https?:/i && key !~ %r{/\Z}
-      key = key.gsub(".", "__") if key.include?(".")
-      key
+    def convert_to_backward_compatible_key!(key)
+      key << "/" if /https?:/i.match?(key) && !%r{/\Z}.match?(key)
+      key.gsub!(".", "__")
     end
 
     class << self
-      private :dump_hash, :convert_to_backward_compatible_key
+      private :dump_hash, :convert_to_backward_compatible_key!
     end
   end
 end

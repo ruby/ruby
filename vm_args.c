@@ -165,7 +165,7 @@ args_copy(struct args_info *args)
 static inline const VALUE *
 args_rest_argv(struct args_info *args)
 {
-    return RARRAY_CONST_PTR_TRANSIENT(args->rest) + args->rest_index;
+    return RARRAY_CONST_PTR(args->rest) + args->rest_index;
 }
 
 static inline VALUE
@@ -230,7 +230,7 @@ args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
     long len;
     len = RARRAY_LEN(args->rest);
-    MEMCPY(locals, RARRAY_CONST_PTR_TRANSIENT(args->rest) + len - argc, VALUE, argc);
+    MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);
 }
 
@@ -251,7 +251,7 @@ args_setup_opt_parameters(struct args_info *args, int opt_max, VALUE *locals)
 
         if (args->rest) {
             int len = RARRAY_LENINT(args->rest);
-            const VALUE *argv = RARRAY_CONST_PTR_TRANSIENT(args->rest);
+            const VALUE *argv = RARRAY_CONST_PTR(args->rest);
 
             for (; i<opt_max && args->rest_index < len; i++, args->rest_index++) {
                 locals[i] = argv[args->rest_index];
@@ -560,11 +560,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         args->rest = locals[--args->argc];
         int len = RARRAY_LENINT(args->rest);
         given_argc += len - 1;
-        rest_last = RARRAY_AREF(args->rest, len - 1);
 
         if (!kw_flag && len > 0) {
-            if (RB_TYPE_P(rest_last, T_HASH) &&
-                (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+            rest_last = RARRAY_AREF(args->rest, len - 1);
+            if (RB_TYPE_P(rest_last, T_HASH) && FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS)) {
                 // def f(**kw); a = [..., kw]; g(*a)
                 splat_flagged_keyword_hash = rest_last;
                 rest_last = rb_hash_dup(rest_last);
@@ -594,9 +593,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                     }
                 }
             }
-        }
-        else {
-            rest_last = 0;
         }
     }
     else {
@@ -628,8 +624,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
     }
 
-    if (flag_keyword_hash && RB_TYPE_P(flag_keyword_hash, T_HASH)) {
-        ((struct RHash *)flag_keyword_hash)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+    if (flag_keyword_hash) {
+        FL_SET_RAW(flag_keyword_hash, RHASH_PASS_AS_KEYWORDS);
     }
 
     if (kw_flag && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
@@ -640,8 +636,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
       case arg_setup_method:
         break; /* do nothing special */
       case arg_setup_block:
-        if (given_argc == (NIL_P(keyword_hash) ? 1 : 2) &&
+        if (given_argc == 1 &&
             allow_autosplat &&
+            !splat_flagged_keyword_hash &&
             (min_argc > 0 || ISEQ_BODY(iseq)->param.opt_num > 1) &&
             !ISEQ_BODY(iseq)->param.flags.ambiguous_param0 &&
             !((ISEQ_BODY(iseq)->param.flags.has_kw ||
@@ -888,10 +885,7 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
             return VM_BLOCK_HANDLER_NONE;
         }
         else if (block_code == rb_block_param_proxy) {
-            VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_EC(), reg_cfp));
-            VALUE handler = VM_CF_BLOCK_HANDLER(reg_cfp);
-            reg_cfp->block_code = (const void *) handler;
-            return handler;
+            return VM_CF_BLOCK_HANDLER(reg_cfp);
         }
         else if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
             const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);

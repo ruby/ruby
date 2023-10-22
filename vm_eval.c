@@ -96,7 +96,10 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
     }
 
     struct rb_calling_info calling = {
-        .ci = &VM_CI_ON_STACK(id, flags, argc, NULL),
+        .cd = &(struct rb_call_data) {
+            .ci = &VM_CI_ON_STACK(id, flags, argc, NULL),
+            .cc = NULL,
+        },
         .cc = cc,
         .block_handler = vm_passed_block_handler(ec),
         .recv = recv,
@@ -117,7 +120,7 @@ vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const 
 static VALUE
 vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, VALUE klass, enum method_missing_reason ex)
 {
-    ID mid = vm_ci_mid(calling->ci);
+    ID mid = vm_ci_mid(calling->cd->ci);
     klass = RCLASS_SUPER(klass);
 
     if (klass) {
@@ -136,7 +139,7 @@ vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, cons
 static VALUE
 vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, const VALUE *argv)
 {
-    const struct rb_callinfo *ci = calling->ci;
+    const struct rb_callinfo *ci = calling->cd->ci;
     VALUE val;
     const rb_callable_method_entry_t *me = vm_cc_cme(calling->cc);
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
@@ -201,7 +204,7 @@ vm_call_check_arity(struct rb_calling_info *calling, int argc, const VALUE *argv
 static VALUE
 vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
 {
-    const struct rb_callinfo *ci = calling->ci;
+    const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
     VALUE ret;
 
@@ -425,7 +428,7 @@ cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
 
         if (cc == NULL) {
             const struct rb_callinfo *ci = vm_ci_new(mid, 0, argc, NULL); // TODO: proper ci
-            cc = vm_cc_new(klass, cme, vm_call_general);
+            cc = vm_cc_new(klass, cme, vm_call_general, cc_type_normal);
             METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
             vm_ccs_push(klass, ccs, ci, cc);
         }
@@ -542,7 +545,7 @@ rb_call0(rb_execution_context_t *ec,
         RB_DEBUG_COUNTER_INC(call0_public);
 
         const rb_callable_method_entry_t *cc_cme = cc ? vm_cc_cme(cc) : NULL;
-        const rb_callable_method_entry_t *cme = callable_method_entry_refeinements0(CLASS_OF(recv), mid, NULL, true, cc_cme);
+        const rb_callable_method_entry_t *cme = callable_method_entry_refinements0(CLASS_OF(recv), mid, NULL, true, cc_cme);
         call_status = rb_method_call_status(ec, cme, scope, self);
 
         if (UNLIKELY(call_status != MISSING_NONE)) {
@@ -1101,7 +1104,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
         return ret;
     }
     argv = ALLOCA_N(VALUE, argc);
-    MEMCPY(argv, RARRAY_CONST_PTR_TRANSIENT(args), VALUE, argc);
+    MEMCPY(argv, RARRAY_CONST_PTR(args), VALUE, argc);
 
     return rb_funcallv(recv, mid, argc, argv);
 }
@@ -1613,7 +1616,27 @@ rb_each(VALUE obj)
     return rb_call(obj, idEach, 0, 0, CALL_FCALL);
 }
 
-static VALUE eval_default_path;
+static VALUE eval_default_path = Qfalse;
+
+#define EVAL_LOCATION_MARK "eval at "
+#define EVAL_LOCATION_MARK_LEN (int)rb_strlen_lit(EVAL_LOCATION_MARK)
+
+static VALUE
+get_eval_default_path(void)
+{
+    int location_lineno;
+    VALUE location_path = rb_source_location(&location_lineno);
+    if (!NIL_P(location_path)) {
+        return rb_fstring(rb_sprintf("("EVAL_LOCATION_MARK"%"PRIsVALUE":%d)",
+                                     location_path, location_lineno));
+    }
+
+    if (!eval_default_path) {
+        eval_default_path = rb_fstring_lit("(eval)");
+        rb_gc_register_mark_object(eval_default_path);
+    }
+    return eval_default_path;
+}
 
 static const rb_iseq_t *
 eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
@@ -1653,16 +1676,12 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
         if (!NIL_P(fname)) fname = rb_fstring(fname);
     }
     else {
-        fname = rb_fstring_lit("(eval)");
-        if (!eval_default_path) {
-            eval_default_path = rb_fstring_lit("(eval)");
-            rb_gc_register_mark_object(eval_default_path);
-        }
-        fname = eval_default_path;
+        fname = get_eval_default_path();
         coverage_enabled = FALSE;
     }
 
     rb_parser_set_context(parser, parent, FALSE);
+    rb_parser_set_script_lines(parser, RBOOL(ruby_vm_keep_script_lines));
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
         ast->body.coverage_enabled = coverage_enabled;
@@ -1970,7 +1989,7 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
         return yield_under(self, singleton, 1, &self, kw_splat);
     }
     else {
-        VALUE file = Qundef;
+        VALUE file = Qnil;
         int line = 1;
         VALUE code;
 
@@ -1983,6 +2002,11 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
             file = argv[1];
             if (!NIL_P(file)) StringValue(file);
         }
+
+        if (NIL_P(file)) {
+            file = get_eval_default_path();
+        }
+
         return eval_under(self, singleton, code, file, line);
     }
 }
@@ -2509,9 +2533,18 @@ rb_current_realfilepath(void)
         if (path == eval_default_path) {
             return Qnil;
         }
-        else {
-            return path;
+
+        // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
+        const long len = RSTRING_LEN(path);
+        if (len > EVAL_LOCATION_MARK_LEN+1) {
+            const char *const ptr = RSTRING_PTR(path);
+            if (ptr[len - 1] == ')' &&
+                memcmp(ptr, "("EVAL_LOCATION_MARK, EVAL_LOCATION_MARK_LEN+1) == 0) {
+                return Qnil;
+            }
         }
+
+        return path;
     }
     return Qnil;
 }

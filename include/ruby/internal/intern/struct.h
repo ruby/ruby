@@ -198,6 +198,20 @@ RBIMPL_ATTR_NONNULL((2))
  */
 VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);
 
+/**
+ * Defines an anonymous data class.
+ *
+ * @endinternal
+ *
+ * @param[in]  super           Superclass  of the  defining  class.   Must be  a
+ *                             descendant of ::rb_cData, or 0 as ::rb_cData.
+ * @param[in]  ...             Arbitrary number of  `const char*`, terminated by
+ *                             NULL.  Each of which are the name of fields.
+ * @exception  rb_eArgError    Duplicated field name.
+ * @return     The defined class.
+ */
+VALUE rb_data_define(VALUE super, ...);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_STRUCT_H */

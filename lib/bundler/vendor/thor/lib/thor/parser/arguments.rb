@@ -30,11 +30,7 @@ class Bundler::Thor
 
       arguments.each do |argument|
         if !argument.default.nil?
-          begin
-            @assigns[argument.human_name] = argument.default.dup
-          rescue TypeError  # Compatibility shim for un-dup-able Fixnum in Ruby < 2.4
-            @assigns[argument.human_name] = argument.default
-          end
+          @assigns[argument.human_name] = argument.default.dup
         elsif argument.required?
           @non_assigned_required << argument
         end
@@ -121,8 +117,18 @@ class Bundler::Thor
     #
     def parse_array(name)
       return shift if peek.is_a?(Array)
+
       array = []
-      array << shift while current_is_value?
+
+      while current_is_value?
+        value = shift
+
+        if !value.empty?
+          validate_enum_value!(name, value, "Expected all values of '%s' to be one of %s; got %s")
+        end
+
+        array << value
+      end
       array
     end
 
@@ -138,11 +144,9 @@ class Bundler::Thor
       end
 
       value = $&.index(".") ? shift.to_f : shift.to_i
-      if @switches.is_a?(Hash) && switch = @switches[name]
-        if switch.enum && !switch.enum.include?(value)
-          raise MalformattedArgumentError, "Expected '#{name}' to be one of #{switch.enum.join(', ')}; got #{value}"
-        end
-      end
+
+      validate_enum_value!(name, value, "Expected '%s' to be one of %s; got %s")
+
       value
     end
 
@@ -156,12 +160,24 @@ class Bundler::Thor
         nil
       else
         value = shift
-        if @switches.is_a?(Hash) && switch = @switches[name]
-          if switch.enum && !switch.enum.include?(value)
-            raise MalformattedArgumentError, "Expected '#{name}' to be one of #{switch.enum.join(', ')}; got #{value}"
-          end
-        end
+
+        validate_enum_value!(name, value, "Expected '%s' to be one of %s; got %s")
+
         value
+      end
+    end
+
+    # Raises an error if the switch is an enum and the values aren't included on it.
+    #
+    def validate_enum_value!(name, value, message)
+      return unless @switches.is_a?(Hash)
+
+      switch = @switches[name]
+
+      return unless switch
+
+      if switch.enum && !switch.enum.include?(value)
+        raise MalformattedArgumentError, message % [name, switch.enum_to_s, value]
       end
     end
 

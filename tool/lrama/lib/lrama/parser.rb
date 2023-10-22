@@ -1,4 +1,4 @@
-require "lrama/report"
+require "lrama/report/duration"
 require "lrama/parser/token_scanner"
 
 module Lrama
@@ -22,6 +22,7 @@ module Lrama
         process_epilogue(grammar, lexer)
         grammar.prepare
         grammar.compute_nullable
+        grammar.compute_first_set
         grammar.validate!
 
         grammar
@@ -59,6 +60,13 @@ module Lrama
           code = grammar.build_code(:printer, code)
           ident_or_tags = ts.consume_multi(T::Ident, T::Tag)
           grammar.add_printer(ident_or_tags: ident_or_tags, code: code, lineno: lineno)
+        when T::P_error_token
+          lineno = ts.current_token.line
+          ts.next
+          code = ts.consume!(T::User_code)
+          code = grammar.build_code(:printer, code)
+          ident_or_tags = ts.consume_multi(T::Ident, T::Tag)
+          grammar.add_error_token(ident_or_tags: ident_or_tags, code: code, lineno: lineno)
         when T::P_lex_param
           ts.next
           code = ts.consume!(T::User_code)
@@ -149,6 +157,14 @@ module Lrama
           while (id = ts.consume(T::Ident, T::Char, T::String)) do
             sym = grammar.add_term(id: id)
             grammar.add_right(sym, precedence_number)
+          end
+          precedence_number += 1
+        when T::P_precedence
+          # %precedence (ident|char|string)+
+          ts.next
+          while (id = ts.consume(T::Ident, T::Char, T::String)) do
+            sym = grammar.add_term(id: id)
+            grammar.add_precedence(sym, precedence_number)
           end
           precedence_number += 1
         when nil

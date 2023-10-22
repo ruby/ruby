@@ -134,7 +134,7 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
     rb_sys_fail("set_non_blocking failed");
 
 #ifndef SET_NON_BLOCKING_FAILS_ALWAYS
-  if(RTEST(read_p)) {
+  if (RTEST(read_p)) {
     if (read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
       return Qnil;
     }
@@ -145,7 +145,7 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
 
   ret = rb_io_wait_readable(fd);
 
-  if(RTEST(read_p)) {
+  if (RTEST(read_p)) {
     ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
     if (r != RB_IO_WAIT_READABLE_BUF) {
       perror("read");
@@ -185,7 +185,7 @@ VALUE io_spec_rb_io_maybe_wait_readable(VALUE self, VALUE error, VALUE io, VALUE
     rb_sys_fail("set_non_blocking failed");
 
 #ifndef SET_NON_BLOCKING_FAILS_ALWAYS
-  if(RTEST(read_p)) {
+  if (RTEST(read_p)) {
     if (read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
       return Qnil;
     }
@@ -197,7 +197,7 @@ VALUE io_spec_rb_io_maybe_wait_readable(VALUE self, VALUE error, VALUE io, VALUE
   // main part
   ret = rb_io_maybe_wait_readable(NUM2INT(error), io, timeout);
 
-  if(RTEST(read_p)) {
+  if (RTEST(read_p)) {
     ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
     if (r != RB_IO_WAIT_READABLE_BUF) {
       perror("read");

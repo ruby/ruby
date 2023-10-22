@@ -118,12 +118,16 @@
     MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
 #endif
 
-#ifdef MUL_OVERFLOW_P
+#if defined(MUL_OVERFLOW_P) && defined(USE___BUILTIN_MUL_OVERFLOW_LONG_LONG)
 # define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
+#else
+# define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LLONG_MIN, LLONG_MAX)
+#endif
+
+#ifdef MUL_OVERFLOW_P
 # define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_P(a, b)
 # define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_P(a, b)
 #else
-# define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LLONG_MIN, LLONG_MAX)
 # define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
@@ -394,9 +398,9 @@ rb_popcount32(uint32_t x)
 #else
     x = (x & 0x55555555) + (x >> 1 & 0x55555555);
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);
-    x = (x & 0x0f0f0f0f) + (x >> 4 & 0x0f0f0f0f);
-    x = (x & 0x001f001f) + (x >> 8 & 0x001f001f);
-    x = (x & 0x0000003f) + (x >>16 & 0x0000003f);
+    x = (x & 0x07070707) + (x >> 4 & 0x07070707);
+    x = (x & 0x000f000f) + (x >> 8 & 0x000f000f);
+    x = (x & 0x0000001f) + (x >>16 & 0x0000001f);
     return (unsigned int)x;
 
 #endif
@@ -424,9 +428,9 @@ rb_popcount64(uint64_t x)
     x = (x & 0x5555555555555555) + (x >> 1 & 0x5555555555555555);
     x = (x & 0x3333333333333333) + (x >> 2 & 0x3333333333333333);
     x = (x & 0x0707070707070707) + (x >> 4 & 0x0707070707070707);
-    x = (x & 0x001f001f001f001f) + (x >> 8 & 0x001f001f001f001f);
-    x = (x & 0x0000003f0000003f) + (x >>16 & 0x0000003f0000003f);
-    x = (x & 0x000000000000007f) + (x >>32 & 0x000000000000007f);
+    x = (x & 0x000f000f000f000f) + (x >> 8 & 0x000f000f000f000f);
+    x = (x & 0x0000001f0000001f) + (x >>16 & 0x0000001f0000001f);
+    x = (x & 0x000000000000003f) + (x >>32 & 0x000000000000003f);
     return (unsigned int)x;
 
 #endif

@@ -35,7 +35,6 @@ when true
   elsif have_func("rb_scheduler_timeout") # 3.0
     have_func("rb_io_wait")
   end
-  $defs << "-D""ENABLE_IO_GETPASS=1"
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }

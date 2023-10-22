@@ -89,7 +89,9 @@ pub fn assume_bop_not_redefined(
     bop: ruby_basic_operators,
 ) -> bool {
     if unsafe { BASIC_OP_UNREDEFINED_P(bop, klass) } {
-        jit_ensure_block_entry_exit(jit, asm, ocb);
+        if jit_ensure_block_entry_exit(jit, asm, ocb).is_none() {
+            return false;
+        }
         jit.bop_assumptions.push((klass, bop));
 
         return true;
@@ -153,7 +155,9 @@ pub fn assume_single_ractor_mode(jit: &mut JITState, asm: &mut Assembler, ocb: &
     if unsafe { rb_yjit_multi_ractor_p() } {
         false
     } else {
-        jit_ensure_block_entry_exit(jit, asm, ocb);
+        if jit_ensure_block_entry_exit(jit, asm, ocb).is_none() {
+            return false;
+        }
         jit.block_assumes_single_ractor = true;
 
         true
@@ -174,7 +178,7 @@ pub fn track_stable_constant_names_assumption(uninit_block: BlockRef, idlist: *c
         uninit_block: BlockRef,
         id: ID,
     ) {
-        if id == idNULL as u64 {
+        if id == ID!(NULL) {
             // Used for :: prefix
             return;
         }
@@ -527,7 +531,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
 
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
-            asm.compile(cb, None);
+            asm.compile(cb, None).expect("can rewrite existing code");
             last_patch_end = cb.get_write_ptr().raw_ptr();
         }
         cb.set_pos(old_pos);

@@ -8,12 +8,8 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -33,13 +29,9 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
-        os:
-          - macos-11
-          - macos-12
-        configure:
-          - ''
-          - '--enable-shared'
+        test_task: ['check']
+        configure: ['']
+        os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
       fail-fast: false
 
     env:
@@ -47,10 +39,16 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
 
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -63,6 +61,7 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
@@ -75,7 +74,7 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
-        timeout-minutes: 40
+        timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
@@ -95,9 +94,18 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }}
+          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: macos-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:

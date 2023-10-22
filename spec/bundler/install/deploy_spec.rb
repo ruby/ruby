@@ -11,12 +11,12 @@ RSpec.describe "install in deployment or frozen mode" do
   context "with CLI flags", :bundler => "< 3" do
     it "fails without a lockfile and says that --deployment requires a lock" do
       bundle "install --deployment", :raise_on_error => false
-      expect(err).to include("The --deployment flag requires a Gemfile.lock")
+      expect(err).to include("The --deployment flag requires a lockfile")
     end
 
     it "fails without a lockfile and says that --frozen requires a lock" do
       bundle "install --frozen", :raise_on_error => false
-      expect(err).to include("The --frozen flag requires a Gemfile.lock")
+      expect(err).to include("The --frozen flag requires a lockfile")
     end
 
     it "disallows --deployment --system" do
@@ -506,15 +506,15 @@ RSpec.describe "install in deployment or frozen mode" do
       G
 
       run "require 'rack'", :raise_on_error => false
-      expect(err).to include strip_whitespace(<<-E).strip
-The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set (Bundler::ProductionError)
+      expect(err).to include <<~E.strip
+        The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set (Bundler::ProductionError)
 
-You have added to the Gemfile:
-* rack (= 1.0.0)
-* rack-obama
+        You have added to the Gemfile:
+        * rack (= 1.0.0)
+        * rack-obama
 
-You have deleted from the Gemfile:
-* rack
+        You have deleted from the Gemfile:
+        * rack
       E
     end
   end

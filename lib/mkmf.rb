@@ -1792,7 +1792,8 @@ SRC
   # application.
   #
   def dir_config(target, idefault=nil, ldefault=nil)
-    if conf = $config_dirs[target]
+    key = [target, idefault, ldefault].compact.join("\0")
+    if conf = $config_dirs[key]
       return conf
     end
 
@@ -1802,9 +1803,13 @@ SRC
     end
 
     idir = with_config(target + "-include", idefault)
-    $arg_config.last[1] ||= "${#{target}-dir}/include"
+    if conf = $arg_config.assoc("--with-#{target}-include")
+      conf[1] ||= "${#{target}-dir}/include"
+    end
     ldir = with_config(target + "-lib", ldefault)
-    $arg_config.last[1] ||= "${#{target}-dir}/#{_libdir_basename}"
+    if conf = $arg_config.assoc("--with-#{target}-lib")
+      conf[1] ||= "${#{target}-dir}/#{_libdir_basename}"
+    end
 
     idirs = idir ? Array === idir ? idir.dup : idir.split(File::PATH_SEPARATOR) : []
     if defaults
@@ -1826,7 +1831,7 @@ SRC
     end
     $LIBPATH = ldirs | $LIBPATH
 
-    $config_dirs[target] = [idir, ldir]
+    $config_dirs[key] = [idir, ldir]
   end
 
   # Returns compile/link information about an installed library in a tuple of <code>[cflags,
@@ -2699,7 +2704,7 @@ MESSAGE
   when $mswin
     $nmake = ?m if /nmake/i =~ make
   end
-  $ignore_error = $nmake ? '' : ' 2> /dev/null || true'
+  $ignore_error = " 2> #{File::NULL} || #{$mswin ? 'exit /b0' : 'true'}"
 
   RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
     $srcdir = arg_config("--srcdir", File.dirname($0))

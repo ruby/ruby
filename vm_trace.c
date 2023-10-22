@@ -510,66 +510,65 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
 /* (2-1) set_trace_func (old API) */
 
 /*
- *  call-seq:
- *     set_trace_func(proc)    -> proc
- *     set_trace_func(nil)     -> nil
+ * call-seq:
+ *    set_trace_func(proc)    -> proc
+ *    set_trace_func(nil)     -> nil
  *
- *  Establishes _proc_ as the handler for tracing, or disables
- *  tracing if the parameter is +nil+.
+ * Establishes _proc_ as the handler for tracing, or disables
+ * tracing if the parameter is +nil+.
  *
- *  *Note:* this method is obsolete, please use TracePoint instead.
+ * *Note:* this method is obsolete, please use TracePoint instead.
  *
- *  _proc_ takes up to six parameters:
+ * _proc_ takes up to six parameters:
  *
- *  *	an event name
- *  *	a filename
- *  *	a line number
- *  *	an object id
- *  *	a binding
- *  *	the name of a class
+ * * an event name string
+ * * a filename string
+ * * a line number
+ * * a method name symbol, or nil
+ * * a binding, or nil
+ * * the class, module, or nil
  *
- *  _proc_ is invoked whenever an event occurs.
+ * _proc_ is invoked whenever an event occurs.
  *
- *  Events are:
+ * Events are:
  *
- *  +c-call+:: call a C-language routine
- *  +c-return+:: return from a C-language routine
- *  +call+:: call a Ruby method
- *  +class+:: start a class or module definition
- *  +end+:: finish a class or module definition
- *  +line+:: execute code on a new line
- *  +raise+:: raise an exception
- *  +return+:: return from a Ruby method
+ * <code>"c-call"</code>:: call a C-language routine
+ * <code>"c-return"</code>:: return from a C-language routine
+ * <code>"call"</code>:: call a Ruby method
+ * <code>"class"</code>:: start a class or module definition
+ * <code>"end"</code>:: finish a class or module definition
+ * <code>"line"</code>:: execute code on a new line
+ * <code>"raise"</code>:: raise an exception
+ * <code>"return"</code>:: return from a Ruby method
  *
- *  Tracing is disabled within the context of _proc_.
+ * Tracing is disabled within the context of _proc_.
  *
- *      class Test
- *	def test
- *	  a = 1
- *	  b = 2
- *	end
- *      end
+ *   class Test
+ *     def test
+ *       a = 1
+ *       b = 2
+ *     end
+ *   end
  *
- *      set_trace_func proc { |event, file, line, id, binding, classname|
- *	   printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
- *      }
- *      t = Test.new
- *      t.test
+ *   set_trace_func proc { |event, file, line, id, binding, class_or_module|
+ *     printf "%8s %s:%-2d %16p %14p\n", event, file, line, id, class_or_module
+ *   }
+ *   t = Test.new
+ *   t.test
  *
- *	  line prog.rb:11               false
- *      c-call prog.rb:11        new    Class
- *      c-call prog.rb:11 initialize   Object
- *    c-return prog.rb:11 initialize   Object
- *    c-return prog.rb:11        new    Class
- *	  line prog.rb:12               false
- *  	  call prog.rb:2        test     Test
- *	  line prog.rb:3        test     Test
- *	  line prog.rb:4        test     Test
- *      return prog.rb:4        test     Test
+ * Produces:
  *
- * Note that for +c-call+ and +c-return+ events, the binding returned is the
- * binding of the nearest Ruby method calling the C method, since C methods
- * themselves do not have bindings.
+ *   c-return prog.rb:8   :set_trace_func         Kernel
+ *       line prog.rb:11              nil            nil
+ *     c-call prog.rb:11             :new          Class
+ *     c-call prog.rb:11      :initialize    BasicObject
+ *   c-return prog.rb:11      :initialize    BasicObject
+ *   c-return prog.rb:11             :new          Class
+ *       line prog.rb:12              nil            nil
+ *       call prog.rb:2             :test           Test
+ *       line prog.rb:3             :test           Test
+ *       line prog.rb:4             :test           Test
+ *     return prog.rb:5             :test           Test
  */
 
 static VALUE
@@ -681,6 +680,7 @@ get_event_id(rb_event_flag_t event)
         C(thread_end, THREAD_END);
         C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
+        C(rescue, RESCUE);
 #undef C
       default:
         return 0;
@@ -697,8 +697,8 @@ get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *
         *pathp = rb_iseq_path(iseq);
 
         if (event & (RUBY_EVENT_CLASS |
-                                RUBY_EVENT_CALL  |
-                                RUBY_EVENT_B_CALL)) {
+                     RUBY_EVENT_CALL  |
+                     RUBY_EVENT_B_CALL)) {
             *linep = FIX2INT(rb_iseq_first_lineno(iseq));
         }
         else {
@@ -823,6 +823,7 @@ symbol2event_flag(VALUE v)
     C(thread_end, THREAD_END);
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
+    C(rescue, RESCUE);
 
     /* joke */
     C(a_call, A_CALL);
@@ -943,6 +944,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
       case RUBY_EVENT_CLASS:
       case RUBY_EVENT_END:
       case RUBY_EVENT_SCRIPT_COMPILED:
+      case RUBY_EVENT_RESCUE:
         rb_raise(rb_eRuntimeError, "not supported by this event");
         break;
     }
@@ -1013,7 +1015,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RAISE)) {
+    if (trace_arg->event & (RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE)) {
         /* ok */
     }
     else {

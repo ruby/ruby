@@ -1554,7 +1554,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_suggest_update_if_enabled
-    TestUpdateSuggestion.with_eglible_environment(cmd: @cmd) do
+    TestUpdateSuggestion.with_eligible_environment(cmd: @cmd) do
       spec_fetcher do |fetcher|
         fetcher.gem "a", 2
       end

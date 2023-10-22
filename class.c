@@ -232,7 +232,6 @@ class_alloc(VALUE flags, VALUE klass)
     size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     flags &= T_MASK;
-    flags |= FL_PROMOTED1 /* start from age == 2 */;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
@@ -472,6 +471,7 @@ copy_tables(VALUE clone, VALUE orig)
         rb_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
         RCLASS_CVC_TBL(clone) = rb_cvc_tbl_dup;
     }
+    rb_id_table_free(RCLASS_M_TBL(clone));
     RCLASS_M_TBL(clone) = 0;
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         st_data_t id;
@@ -1130,15 +1130,9 @@ rb_define_module_id_under(VALUE outer, ID id)
 }
 
 VALUE
-rb_iclass_alloc(VALUE klass)
-{
-    return class_alloc(T_ICLASS, klass);
-}
-
-VALUE
 rb_include_class_new(VALUE module, VALUE super)
 {
-    VALUE klass = rb_iclass_alloc(rb_cClass);
+    VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
     RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
 
@@ -1415,7 +1409,7 @@ ensure_origin(VALUE klass)
 {
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
-        origin = rb_iclass_alloc(klass);
+        origin = class_alloc(T_ICLASS, klass);
         RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
         RCLASS_SET_SUPER(klass, origin);
         RCLASS_SET_ORIGIN(klass, origin);

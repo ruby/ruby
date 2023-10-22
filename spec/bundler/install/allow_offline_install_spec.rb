@@ -51,7 +51,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
     def break_git_remote_ops!
       FileUtils.mkdir_p(tmp("broken_path"))
       File.open(tmp("broken_path/git"), "w", 0o755) do |f|
-        f.puts strip_whitespace(<<-RUBY)
+        f.puts <<~RUBY
           #!/usr/bin/env ruby
           fetch_args = %w(fetch --force --quiet)
           clone_args = %w(clone --bare --no-hardlinks --quiet)

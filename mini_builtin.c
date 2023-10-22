@@ -35,7 +35,6 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         TRUE, /* unsigned int specialized_instruction; */
         TRUE, /* unsigned int operands_unification; */
         TRUE, /* unsigned int instructions_unification; */
-        TRUE, /* unsigned int stack_caching; */
         TRUE, /* unsigned int frozen_string_literal; */
         FALSE, /* unsigned int debug_frozen_string_literal; */
         FALSE, /* unsigned int coverage_enabled; */

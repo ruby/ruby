@@ -1,0 +1,49 @@
+@ ProgramNode (location: (1,0)-(1,37))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,37))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (1,0)-(1,37))
+            ├── predicate:
+            │   @ CallNode (location: (1,5)-(1,8))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (1,5)-(1,8) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: :foo
+            ├── conditions: (length: 1)
+            │   └── @ WhenNode (location: (1,10)-(1,32))
+            │       ├── keyword_loc: (1,10)-(1,14) = "when"
+            │       ├── conditions: (length: 2)
+            │       │   ├── @ StringNode (location: (1,15)-(1,20))
+            │       │   │   ├── flags: ∅
+            │       │   │   ├── opening_loc: (1,15)-(1,16) = "'"
+            │       │   │   ├── content_loc: (1,16)-(1,19) = "bar"
+            │       │   │   ├── closing_loc: (1,19)-(1,20) = "'"
+            │       │   │   └── unescaped: "bar"
+            │       │   └── @ StringNode (location: (1,22)-(1,27))
+            │       │       ├── flags: ∅
+            │       │       ├── opening_loc: (1,22)-(1,23) = "'"
+            │       │       ├── content_loc: (1,23)-(1,26) = "baz"
+            │       │       ├── closing_loc: (1,26)-(1,27) = "'"
+            │       │       └── unescaped: "baz"
+            │       └── statements:
+            │           @ StatementsNode (location: (1,29)-(1,32))
+            │           └── body: (length: 1)
+            │               └── @ CallNode (location: (1,29)-(1,32))
+            │                   ├── receiver: ∅
+            │                   ├── call_operator_loc: ∅
+            │                   ├── message_loc: (1,29)-(1,32) = "bar"
+            │                   ├── opening_loc: ∅
+            │                   ├── arguments: ∅
+            │                   ├── closing_loc: ∅
+            │                   ├── block: ∅
+            │                   ├── flags: variable_call
+            │                   └── name: :bar
+            ├── consequent: ∅
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (1,34)-(1,37) = "end"

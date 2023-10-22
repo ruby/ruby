@@ -220,7 +220,7 @@ static VALUE kernel_spec_rb_eval_string_protect(VALUE self, VALUE str, VALUE ary
 
 VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
   errno = 1;
-  if(msg == Qnil) {
+  if (msg == Qnil) {
     rb_sys_fail(0);
   } else if (self != Qundef) {
     rb_sys_fail(StringValuePtr(msg));
@@ -229,7 +229,7 @@ VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
 }
 
 VALUE kernel_spec_rb_syserr_fail(VALUE self, VALUE err, VALUE msg) {
-  if(msg == Qnil) {
+  if (msg == Qnil) {
     rb_syserr_fail(NUM2INT(err), NULL);
   } else if (self != Qundef) {
     rb_syserr_fail(NUM2INT(err), StringValuePtr(msg));
@@ -292,9 +292,9 @@ static VALUE kernel_spec_rb_yield_values2(VALUE self, VALUE ary) {
 }
 
 static VALUE do_rec(VALUE obj, VALUE arg, int is_rec) {
-  if(is_rec) {
+  if (is_rec) {
     return obj;
-  } else if(arg == Qtrue) {
+  } else if (arg == Qtrue) {
     return rb_exec_recursive(do_rec, obj, Qnil);
   } else {
     return Qnil;

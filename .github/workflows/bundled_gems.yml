@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - uses: ./.github/actions/setup/directories
 
@@ -66,7 +66,7 @@ jobs:
         continue-on-error: true
 
       - name: Install libraries
-        uses: ./.gituhb/actions/setup/ubuntu
+        uses: ./.github/actions/setup/ubuntu
         if: ${{ steps.diff.outcome == 'failure' }}
 
       - name: Build
@@ -116,4 +116,4 @@ jobs:
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}

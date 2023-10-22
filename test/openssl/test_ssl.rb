@@ -481,6 +481,40 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_ca_file
+    start_server(ignore_listener_error: true) { |port|
+      # X509_STORE is shared; setting ca_file to SSLContext affects store
+      store = OpenSSL::X509::Store.new
+      assert_equal false, store.verify(@svr_cert)
+
+      ctx = Tempfile.create("ca_cert.pem") { |f|
+        f.puts(@ca_cert.to_pem)
+        f.close
+
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        ctx.cert_store = store
+        ctx.ca_file = f.path
+        ctx.setup
+        ctx
+      }
+      assert_nothing_raised {
+        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+      assert_equal true, store.verify(@svr_cert)
+    }
+  end
+
+  def test_ca_file_not_found
+    path = Tempfile.create("ca_cert.pem") { |f| f.path }
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ca_file = path
+    # OpenSSL >= 1.1.0: /no certificate or crl found/
+    assert_raise(OpenSSL::SSL::SSLError) {
+      ctx.setup
+    }
+  end
+
   def test_finished_messages
     server_finished = nil
     server_peer_finished = nil
@@ -1046,7 +1080,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(ignore_listener_error: true) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params
-      assert_raise_with_message(OpenSSL::SSL::SSLError, /certificate/) {
+      # OpenSSL <= 1.1.0: "self signed certificate in certificate chain"
+      # OpenSSL >= 3.0.0: "self-signed certificate in certificate chain"
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /self.signed/) {
         server_connect(port, ctx)
       }
     }

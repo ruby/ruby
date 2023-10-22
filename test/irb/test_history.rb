@@ -1,8 +1,11 @@
 # frozen_string_literal: false
 require 'irb'
 require 'readline'
+require "tempfile"
 
 require_relative "helper"
+
+return if RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
 
 module TestIRB
   class HistoryTest < TestCase
@@ -14,8 +17,16 @@ module TestIRB
       IRB.conf[:RC_NAME_GENERATOR] = nil
     end
 
-    class TestInputMethodWithHistory < TestInputMethod
-      HISTORY = Array.new
+    class TestInputMethodWithRelineHistory < TestInputMethod
+      # When IRB.conf[:USE_MULTILINE] is true, IRB::RelineInputMethod uses Reline::History
+      HISTORY = Reline::History.new(Reline.core.config)
+
+      include IRB::HistorySavingAbility
+    end
+
+    class TestInputMethodWithReadlineHistory < TestInputMethod
+      # When IRB.conf[:USE_MULTILINE] is false, IRB::ReadlineInputMethod uses Readline::HISTORY
+      HISTORY = Readline::HISTORY
 
       include IRB::HistorySavingAbility
     end
@@ -99,35 +110,16 @@ module TestIRB
       INPUT
     end
 
-    def test_history_concurrent_use
+    def test_history_concurrent_use_reline
       omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
       IRB.conf[:SAVE_HISTORY] = 1
-      assert_history(<<~EXPECTED_HISTORY, <<~INITIAL_HISTORY, <<~INPUT) do |history_file|
-        exit
-        5
-        exit
-      EXPECTED_HISTORY
-        1
-        2
-        3
-        4
-      INITIAL_HISTORY
-        5
-        exit
-      INPUT
-        assert_history(<<~EXPECTED_HISTORY2, <<~INITIAL_HISTORY2, <<~INPUT2)
-        exit
-      EXPECTED_HISTORY2
-        1
-        2
-        3
-        4
-      INITIAL_HISTORY2
-        5
-        exit
-      INPUT2
-        File.utime(File.atime(history_file), File.mtime(history_file) + 2, history_file)
-      end
+      history_concurrent_use_for_input_method(TestInputMethodWithRelineHistory)
+    end
+
+    def test_history_concurrent_use_readline
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+      IRB.conf[:SAVE_HISTORY] = 1
+      history_concurrent_use_for_input_method(TestInputMethodWithReadlineHistory)
     end
 
     def test_history_concurrent_use_not_present
@@ -138,10 +130,11 @@ module TestIRB
       IRB.conf[:SAVE_HISTORY] = 1
       Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
-        io = TestInputMethodWithHistory.new
+        io = TestInputMethodWithRelineHistory.new
         io.class::HISTORY.clear
         io.load_history
-        io.class::HISTORY.concat(%w"line1 line2")
+        io.class::HISTORY << 'line1'
+        io.class::HISTORY << 'line2'
 
         history_file = IRB.rc_file("_history")
         assert_not_send [File, :file?, history_file]
@@ -157,7 +150,36 @@ module TestIRB
 
     private
 
-    def assert_history(expected_history, initial_irb_history, input)
+    def history_concurrent_use_for_input_method(input_method)
+      assert_history(<<~EXPECTED_HISTORY, <<~INITIAL_HISTORY, <<~INPUT, input_method) do |history_file|
+        exit
+        5
+        exit
+      EXPECTED_HISTORY
+        1
+        2
+        3
+        4
+      INITIAL_HISTORY
+        5
+        exit
+      INPUT
+        assert_history(<<~EXPECTED_HISTORY2, <<~INITIAL_HISTORY2, <<~INPUT2, input_method)
+        exit
+      EXPECTED_HISTORY2
+        1
+        2
+        3
+        4
+      INITIAL_HISTORY2
+        5
+        exit
+      INPUT2
+        File.utime(File.atime(history_file), File.mtime(history_file) + 2, history_file)
+      end
+    end
+
+    def assert_history(expected_history, initial_irb_history, input, input_method = TestInputMethodWithRelineHistory)
       backup_verbose, $VERBOSE = $VERBOSE, nil
       backup_home = ENV["HOME"]
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
@@ -169,15 +191,17 @@ module TestIRB
           f.write(initial_irb_history)
         end
 
-        io = TestInputMethodWithHistory.new
+        io = input_method.new
         io.class::HISTORY.clear
         io.load_history
         if block_given?
-          history = io.class::HISTORY.dup
+          previous_history = []
+          io.class::HISTORY.each { |line| previous_history << line }
           yield IRB.rc_file("_history")
-          io.class::HISTORY.replace(history)
+          io.class::HISTORY.clear
+          previous_history.each { |line| io.class::HISTORY << line }
         end
-        io.class::HISTORY.concat(input.split)
+        input.split.each { |line| io.class::HISTORY << line }
         io.save_history
 
         io.load_history
@@ -205,4 +229,127 @@ module TestIRB
       end
     end
   end
-end if not RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
+
+  class IRBHistoryIntegrationTest < IntegrationTestCase
+    def test_history_saving_with_debug
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+        end
+
+        binding.irb
+
+        foo
+      RUBY
+
+      output = run_ruby_file do
+        type "'irb session'"
+        type "next"
+        type "'irb:debug session'"
+        type "step"
+        type "irb_info"
+        type "puts Reline::HISTORY.to_a.to_s"
+        type "q!"
+      end
+
+      assert_include(output, "InputMethod: RelineInputMethod")
+      # check that in-memory history is preserved across sessions
+      assert_include output, %q(
+        ["'irb session'", "next", "'irb:debug session'", "step", "irb_info", "puts Reline::HISTORY.to_a.to_s"]
+      ).strip
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'irb session'
+        next
+        'irb:debug session'
+        step
+        irb_info
+        puts Reline::HISTORY.to_a.to_s
+        q!
+      HISTORY
+    end
+
+    def test_history_saving_with_nested_sessions
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit
+      HISTORY
+    end
+
+    def test_history_saving_with_nested_sessions_and_prior_history
+      write_history <<~HISTORY
+        old_history_1
+        old_history_2
+        old_history_3
+      HISTORY
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        old_history_1
+        old_history_2
+        old_history_3
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit
+      HISTORY
+    end
+
+    private
+
+    def write_history(history)
+      @history_file = Tempfile.new('irb_history')
+      @history_file.write(history)
+      @history_file.close
+      write_rc <<~RUBY
+        IRB.conf[:HISTORY_FILE] = "#{@history_file.path}"
+      RUBY
+    end
+  end
+end

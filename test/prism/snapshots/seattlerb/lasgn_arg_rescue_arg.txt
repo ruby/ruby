@@ -1,0 +1,19 @@
+@ ProgramNode (location: (1,0)-(1,14))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,14))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,14))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (1,0)-(1,1) = "a"
+            ├── value:
+            │   @ RescueModifierNode (location: (1,4)-(1,14))
+            │   ├── expression:
+            │   │   @ IntegerNode (location: (1,4)-(1,5))
+            │   │   └── flags: decimal
+            │   ├── keyword_loc: (1,6)-(1,12) = "rescue"
+            │   └── rescue_expression:
+            │       @ IntegerNode (location: (1,13)-(1,14))
+            │       └── flags: decimal
+            └── operator_loc: (1,2)-(1,3) = "="

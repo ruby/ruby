@@ -5,4 +5,3 @@ class LLDBInterface:
         self.process = self.target.GetProcess()
         self.thread = self.process.GetSelectedThread()
         self.frame = self.thread.GetSelectedFrame()
-

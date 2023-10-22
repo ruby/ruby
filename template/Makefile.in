@@ -89,6 +89,7 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
+incflags = @incflags@
 RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
 _RUBY_DEVEL_enabled = $(RUBY_DEVEL:no=)
 XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1)
@@ -96,18 +97,11 @@ USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
 RJIT_SUPPORT = @RJIT_SUPPORT@
-RJIT_CC = @RJIT_CC@
-RJIT_CFLAGS = @RJIT_CFLAGS@
-RJIT_OPTFLAGS = @RJIT_OPTFLAGS@
-RJIT_DEBUGFLAGS = @RJIT_DEBUGFLAGS@
-RJIT_LDSHARED = @RJIT_LDSHARED@
-RJIT_DLDFLAGS = $(XDLDFLAGS)
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
 YJIT_LIBOBJ = $(YJIT_LIBS:.a=.@OBJEXT@)
 CARGO_TARGET_DIR=@abs_top_builddir@/yjit/target
-YARP_BUILD_DIR=@abs_top_builddir@/yarp
 CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXE_LDFLAGS = $(LDFLAGS)
@@ -132,6 +126,9 @@ BUILTIN_ENCOBJS = @BUILTIN_ENCOBJS@
 BUILTIN_TRANSSRCS = @BUILTIN_TRANSSRCS@
 BUILTIN_TRANSOBJS = @BUILTIN_TRANSOBJS@
 POSTLINK = @POSTLINK@
+
+LIBPATHENV = @LIBPATHENV@
+PRELOADENV = @PRELOADENV@
 
 RUBY_BASE_NAME=@RUBY_BASE_NAME@
 RUBY_API_VERSION=@RUBY_API_VERSION@
@@ -292,13 +289,13 @@ all:
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 $(PROGRAM): @XRUBY_LIBPATHENV_WRAPPER@
@@ -319,7 +316,7 @@ $(LIBRUBY_A):
 
 verify-static-library: $(LIBRUBY_A)
 		$(ECHO) verifying static-library $@
-		@$(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
+		@$(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(OUTFLAG)conftest$(EXEEXT)
 		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
@@ -580,7 +577,7 @@ update-known-errors:
 	errno --list | cut -d' ' -f1 | sort -u - $(srcdir)/defs/known_errors.def | \
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
 
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
+INSNS	= optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
@@ -620,7 +617,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_trace_instruction.erb \
 	  $(tooldir)/ruby_vm/views/insns.inc.erb \
 	  $(tooldir)/ruby_vm/views/insns_info.inc.erb \
-	  $(tooldir)/ruby_vm/views/opt_sc.inc.erb \
 	  $(tooldir)/ruby_vm/views/optinsn.inc.erb \
 	  $(tooldir)/ruby_vm/views/optunifs.inc.erb \
 	  $(tooldir)/ruby_vm/views/vm.inc.erb \
@@ -638,9 +634,15 @@ un-runnable:
 	$(Q) exit 1
 
 LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=)
-yes-test-basic: $(DOT_WAIT) leaked-globals
-leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals
+yes-test-basic: $(DOT_WAIT) test-leaked-globals
+leaked-globals: test-leaked-globals
+yes-test-leaked-globals-precheck: $(COMMONOBJS) prog $(tooldir)/leaked-globals
+test-leaked-globals: yes-test-leaked-globals
+yes-test-leaked-globals: yes-test-leaked-globals-precheck
+	$(ACTIONS_GROUP)
 	$(Q) $(XRUBY) $(tooldir)/leaked-globals \
 	  SOEXT=$(SOEXT) NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) \
+	  SYMBOLS_IN_EMPTYLIB="@XSYMBOLS_IN_EMPTYLIB@" \
 	  PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac \
 	  $(COMMONOBJS) $(LIBRUBY_FOR_LEAKED_GLOBALS:yes=$(LIBRUBY_SO))
+	$(ACTIONS_ENDGROUP)

@@ -247,6 +247,8 @@ module Fiddle
         return TYPE_INTPTR_T
       when /\Auintptr_t(?:\s+\w+)?\z/
         return TYPE_UINTPTR_T
+      when "bool"
+        return TYPE_BOOL
       when /\*/, /\[[\s\d]*\]/
         return TYPE_VOIDP
       when "..."

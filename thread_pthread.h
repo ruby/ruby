@@ -19,14 +19,59 @@
 
 // per-Thead scheduler helper data
 struct rb_thread_sched_item {
-    union {
+    struct {
         struct ccan_list_node ubf;
-        struct ccan_list_node readyq; // protected by sched->lock
+
+        // connected to ractor->threads.sched.reqdyq
+        // locked by ractor->threads.sched.lock
+        struct ccan_list_node readyq;
+
+        // connected to vm->ractor.sched.timeslice_threads
+        // locked by vm->ractor.sched.lock
+        struct ccan_list_node timeslice_threads;
+
+        // connected to vm->ractor.sched.running_threads
+        // locked by vm->ractor.sched.lock
+        struct ccan_list_node running_threads;
+
+        // connected to vm->ractor.sched.zombie_threads
+        struct ccan_list_node zombie_threads;
     } node;
+
+    // this data should be protected by timer_th.waiting_lock
+    struct {
+        enum thread_sched_waiting_flag {
+            thread_sched_waiting_none     = 0x00,
+            thread_sched_waiting_timeout  = 0x01,
+            thread_sched_waiting_io_read  = 0x02,
+            thread_sched_waiting_io_write = 0x08,
+            thread_sched_waiting_io_force = 0x40, // ignore readable
+        } flags;
+
+        struct {
+            // should be compat with hrtime.h
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+            int128_t timeout;
+#else
+            uint64_t timeout;
+#endif
+            int fd; // -1 for timeout only
+            int result;
+        } data;
+
+        // connected to timer_th.waiting
+        struct ccan_list_node node;
+    } waiting_reason;
+
+    bool finished;
+    bool malloc_stack;
+    void *context_stack;
+    struct coroutine_context *context;
 };
 
 struct rb_native_thread {
     rb_atomic_t serial;
+    struct rb_vm_struct *vm;
 
     rb_nativethread_id_t thread_id;
 
@@ -54,6 +99,11 @@ struct rb_native_thread {
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
+
+    struct coroutine_context *nt_context;
+    int dedicated;
+
+    size_t machine_stack_maxsize;
 };
 
 #undef except
@@ -63,45 +113,35 @@ struct rb_native_thread {
 
 // per-Ractor
 struct rb_thread_sched {
-    /* fast path */
+    rb_nativethread_lock_t lock_;
+#if VM_CHECK_MODE
+    struct rb_thread_struct *lock_owner;
+#endif
+    struct rb_thread_struct *running; // running thread or NULL
+    bool is_running;
+    bool is_running_timeslice;
+    bool enable_mn_threads;
 
-    const struct rb_thread_struct *running; // running thread or NULL
-    rb_nativethread_lock_t lock;
-
-    /*
-     * slow path, protected by ractor->thread_sched->lock
-     * - @readyq - FIFO queue of threads waiting for running
-     * - @timer - it handles timeslices for @current.  It is any one thread
-     *   in @waitq, there is no @timer if @waitq is empty, but always
-     *   a @timer if @waitq has entries
-     * - @timer_err tracks timeslice limit, the timeslice only resets
-     *   when pthread_cond_timedwait returns ETIMEDOUT, so frequent
-     *   switching between contended/uncontended GVL won't reset the
-     *   timer.
-     */
     struct ccan_list_head readyq;
-    const struct rb_thread_struct *timer;
-    int timer_err;
-
-    /* yield */
-    rb_nativethread_cond_t switch_cond;
-    rb_nativethread_cond_t switch_wait_cond;
-    int need_yield;
-    int wait_yield;
+    int readyq_cnt;
+    // ractor scheduling
+    struct ccan_list_node grq_node;
 };
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-# ifdef __APPLE__
-// on Darwin, TLS can not be accessed across .so
-struct rb_execution_context_struct *rb_current_ec(void);
-void rb_current_ec_set(struct rb_execution_context_struct *);
-# else
-RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
+  NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
+  NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
 
-// for RUBY_DEBUG_LOG()
-RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
-#define RUBY_NT_SERIAL 1
-# endif
+  # ifdef __APPLE__
+    // on Darwin, TLS can not be accessed across .so
+    struct rb_execution_context_struct *rb_current_ec(void);
+  # else
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
+
+    // for RUBY_DEBUG_LOG()
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
+    #define RUBY_NT_SERIAL 1
+  # endif
 #else
 typedef pthread_key_t native_tls_key_t;
 

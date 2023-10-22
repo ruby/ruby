@@ -542,6 +542,13 @@ static const <%= output.int_type_for(output.context.yytranslate) %> yytranslate[
 <%= output.yytranslate %>
 };
 
+<%- if output.error_recovery -%>
+/* YYTRANSLATE_INVERTED[SYMBOL-NUM] -- Token number corresponding to SYMBOL-NUM */
+static const <%= output.int_type_for(output.context.yytranslate_inverted) %> yytranslate_inverted[] =
+{
+<%= output.yytranslate_inverted %>
+};
+<%- end -%>
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const <%= output.int_type_for(output.context.yyrline) %> yyrline[] =
@@ -1211,6 +1218,307 @@ yydestruct (const char *yymsg,
 
 
 
+<%- if output.error_recovery -%>
+#ifndef YYMAXREPAIR
+# define YYMAXREPAIR(<%= output.parse_param_name %>) (3)
+#endif
+
+#ifndef YYERROR_RECOVERY_ENABLED
+# define YYERROR_RECOVERY_ENABLED(<%= output.parse_param_name %>) (1)
+#endif
+
+enum yy_repair_type {
+  insert,
+  delete,
+  shift,
+};
+
+struct yy_repair {
+  enum yy_repair_type type;
+  yysymbol_kind_t term;
+};
+typedef struct yy_repair yy_repair;
+
+struct yy_repairs {
+  /* For debug */
+  int id;
+  /* For breadth-first traversing */
+  struct yy_repairs *next;
+  YYPTRDIFF_T stack_length;
+  /* Bottom of states */
+  yy_state_t *states;
+  /* Top of states */
+  yy_state_t *state;
+  /* repair length */
+  int repair_length;
+  /*  */
+  struct yy_repairs *prev_repair;
+  struct yy_repair repair;
+};
+typedef struct yy_repairs yy_repairs;
+
+struct yy_term {
+  yysymbol_kind_t kind;
+  YYSTYPE value;
+  YYLTYPE location;
+};
+typedef struct yy_term yy_term;
+
+struct yy_repair_terms {
+  int id;
+  int length;
+  yy_term terms[];
+};
+typedef struct yy_repair_terms yy_repair_terms;
+
+static void
+yy_error_token_initialize (yysymbol_kind_t yykind, YYSTYPE * const yyvaluep, YYLTYPE * const yylocationp<%= output.user_formals %>)
+{
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+switch (yykind)
+    {
+<%= output.symbol_actions_for_error_token -%>
+      default:
+        break;
+    }
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
+}
+
+static yy_repair_terms *
+yy_create_repair_terms(yy_repairs *reps<%= output.user_formals %>)
+{
+  yy_repairs *r = reps;
+  yy_repair_terms *rep_terms;
+  int count = 0;
+
+  while (r->prev_repair)
+  {
+    count++;
+    r = r->prev_repair;
+  }
+
+  rep_terms = (yy_repair_terms *) YYMALLOC (sizeof (yy_repair_terms) + sizeof (yy_term) * count);
+  rep_terms->id = reps->id;
+  rep_terms->length = count;
+
+  r = reps;
+  while (r->prev_repair)
+  {
+    rep_terms->terms[count-1].kind = r->repair.term;
+    count--;
+    r = r->prev_repair;
+  }
+
+  return rep_terms;
+}
+
+static void
+yy_print_repairs(yy_repairs *reps<%= output.user_formals %>)
+{
+  yy_repairs *r = reps;
+
+  YYDPRINTF ((stderr,
+        "id: %d, repair_length: %d, repair_state: %d, prev_repair_id: %d\n",
+        reps->id, reps->repair_length, *reps->state, reps->prev_repair->id));
+
+  while (r->prev_repair)
+  {
+    YYDPRINTF ((stderr, "%s ", yysymbol_name (r->repair.term)));
+    r = r->prev_repair;
+  }
+
+  YYDPRINTF ((stderr, "\n"));
+}
+
+static void
+yy_print_repair_terms(yy_repair_terms *rep_terms<%= output.user_formals %>)
+{
+  for (int i = 0; i < rep_terms->length; i++)
+    YYDPRINTF ((stderr, "%s ", yysymbol_name (rep_terms->terms[i].kind)));
+
+  YYDPRINTF ((stderr, "\n"));
+}
+
+static void
+yy_free_repairs(yy_repairs *reps<%= output.user_formals %>)
+{
+  while (reps)
+    {
+      yy_repairs *r = reps;
+      reps = reps->next;
+      YYFREE (r->states);
+      YYFREE (r);
+    }
+}
+
+static int
+yy_process_repairs(yy_repairs *reps, yysymbol_kind_t token)
+{
+  int yyn;
+  int yystate = *reps->state;
+  int yylen = 0;
+  yysymbol_kind_t yytoken = token;
+
+  goto yyrecover_backup;
+
+yyrecover_newstate:
+  // TODO: check reps->stack_length
+  reps->state += 1;
+  *reps->state = (yy_state_t) yystate;
+
+
+yyrecover_backup:
+  yyn = yypact[yystate];
+  if (yypact_value_is_default (yyn))
+    goto yyrecover_default;
+
+  /* "Reading a token" */
+  if (yytoken == YYSYMBOL_YYEMPTY)
+    return 1;
+
+  yyn += yytoken;
+  if (yyn < 0 || YYLAST < yyn || yycheck[yyn] != yytoken)
+    goto yyrecover_default;
+  yyn = yytable[yyn];
+  if (yyn <= 0)
+    {
+      if (yytable_value_is_error (yyn))
+        goto yyrecover_errlab;
+      yyn = -yyn;
+      goto yyrecover_reduce;
+    }
+
+  /* shift */
+  yystate = yyn;
+  yytoken = YYSYMBOL_YYEMPTY;
+  goto yyrecover_newstate;
+
+
+yyrecover_default:
+  yyn = yydefact[yystate];
+  if (yyn == 0)
+    goto yyrecover_errlab;
+  goto yyrecover_reduce;
+
+
+yyrecover_reduce:
+  yylen = yyr2[yyn];
+  /* YYPOPSTACK */
+  reps->state -= yylen;
+  yylen = 0;
+
+  {
+    const int yylhs = yyr1[yyn] - YYNTOKENS;
+    const int yyi = yypgoto[yylhs] + *reps->state;
+    yystate = (0 <= yyi && yyi <= YYLAST && yycheck[yyi] == *reps->state
+               ? yytable[yyi]
+               : yydefgoto[yylhs]);
+  }
+
+  goto yyrecover_newstate;
+
+yyrecover_errlab:
+  return 0;
+}
+
+static yy_repair_terms *
+yyrecover(yy_state_t *yyss, yy_state_t *yyssp, int yychar<%= output.user_formals %>)
+{
+  yysymbol_kind_t yytoken = YYTRANSLATE (yychar);
+  yy_repair_terms *rep_terms = YY_NULLPTR;
+  int count = 0;
+
+  yy_repairs *head = (yy_repairs *) YYMALLOC (sizeof (yy_repairs));
+  yy_repairs *current = head;
+  yy_repairs *tail = head;
+  YYPTRDIFF_T stack_length = yyssp - yyss + 1;
+
+  head->id = count;
+  head->next = 0;
+  head->stack_length = stack_length;
+  head->states = (yy_state_t *) YYMALLOC (sizeof (yy_state_t) * (stack_length));
+  head->state = head->states + (yyssp - yyss);
+  YYCOPY (head->states, yyss, stack_length);
+  head->repair_length = 0;
+  head->prev_repair = 0;
+
+  stack_length = (stack_length * 2 > 100) ? (stack_length * 2) : 100;
+  count++;
+
+  while (current)
+    {
+      int yystate = *current->state;
+      int yyn = yypact[yystate];
+      /* See also: yypcontext_expected_tokens */
+      if (!yypact_value_is_default (yyn))
+        {
+          int yyxbegin = yyn < 0 ? -yyn : 0;
+          int yychecklim = YYLAST - yyn + 1;
+          int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+          int yyx;
+          for (yyx = yyxbegin; yyx < yyxend; ++yyx)
+            {
+              if (yyx != YYSYMBOL_YYerror)
+                {
+                  if (current->repair_length + 1 > YYMAXREPAIR(<%= output.parse_param_name %>))
+                    continue;
+
+                  yy_repairs *new = (yy_repairs *) YYMALLOC (sizeof (yy_repairs));
+                  new->id = count;
+                  new->next = 0;
+                  new->stack_length = stack_length;
+                  new->states = (yy_state_t *) YYMALLOC (sizeof (yy_state_t) * (stack_length));
+                  new->state = new->states + (current->state - current->states);
+                  YYCOPY (new->states, current->states, current->state - current->states + 1);
+                  new->repair_length = current->repair_length + 1;
+                  new->prev_repair = current;
+                  new->repair.type = insert;
+                  new->repair.term = (yysymbol_kind_t) yyx;
+
+                  /* Process PDA assuming next token is yyx */
+                  if (! yy_process_repairs (new, yyx))
+                    {
+                      YYFREE (new);
+                      continue;
+                    }
+
+                  tail->next = new;
+                  tail = new;
+                  count++;
+
+                  if (yyx == yytoken)
+                    {
+                      rep_terms = yy_create_repair_terms (current<%= output.user_args %>);
+                      YYDPRINTF ((stderr, "repair_terms found. id: %d, length: %d\n", rep_terms->id, rep_terms->length));
+                      yy_print_repairs (current<%= output.user_args %>);
+                      yy_print_repair_terms (rep_terms<%= output.user_args %>);
+
+                      goto done;
+                    }
+
+                  YYDPRINTF ((stderr,
+                        "New repairs is enqueued. count: %d, yystate: %d, yyx: %d\n",
+                        count, yystate, yyx));
+                  yy_print_repairs (new<%= output.user_args %>);
+                }
+            }
+        }
+
+      current = current->next;
+    }
+
+done:
+
+  yy_free_repairs(head<%= output.user_args %>);
+
+  if (!rep_terms)
+    {
+      YYDPRINTF ((stderr, "repair_terms not found\n"));
+    }
+
+  return rep_terms;
+}
+<%- end -%>
 
 
 
@@ -1281,6 +1589,12 @@ YYLTYPE yylloc = yyloc_default;
 
   /* The locations where the error started and ended.  */
   YYLTYPE yyerror_range[3];
+<%- if output.error_recovery -%>
+  yy_repair_terms *rep_terms = 0;
+  yy_term term_backup;
+  int rep_terms_index;
+  int yychar_backup;
+<%- end -%>
 
   /* Buffer for error messages, and its allocated size.  */
   char yymsgbuf[128];
@@ -1415,6 +1729,39 @@ yybackup:
 
   /* Not known => get a lookahead token if don't already have one.  */
 
+<%- if output.error_recovery -%>
+  if (YYERROR_RECOVERY_ENABLED(<%= output.parse_param_name %>))
+    {
+      if (yychar == YYEMPTY && rep_terms)
+        {
+
+          if (rep_terms_index < rep_terms->length)
+            {
+              YYDPRINTF ((stderr, "An error recovery token is used\n"));
+              yy_term term = rep_terms->terms[rep_terms_index];
+              yytoken = term.kind;
+              yylval = term.value;
+              yylloc = term.location;
+              yychar = yytranslate_inverted[yytoken];
+              YY_SYMBOL_PRINT ("Next error recovery token is", yytoken, &yylval, &yylloc<%= output.user_args %>);
+              rep_terms_index++;
+            }
+          else
+            {
+              YYDPRINTF ((stderr, "Error recovery is completed\n"));
+              yytoken = term_backup.kind;
+              yylval = term_backup.value;
+              yylloc = term_backup.location;
+              yychar = yychar_backup;
+              YY_SYMBOL_PRINT ("Next token is", yytoken, &yylval, &yylloc<%= output.user_args %>);
+
+              YYFREE (rep_terms);
+              rep_terms = 0;
+              yychar_backup = 0;
+            }
+        }
+    }
+<%- end -%>
   /* YYCHAR is either empty, or end-of-input, or a valid lookahead.  */
   if (yychar == YYEMPTY)
     {
@@ -1639,6 +1986,30 @@ yyerrorlab:
 | yyerrlab1 -- common code for both syntax error and YYERROR.  |
 `-------------------------------------------------------------*/
 yyerrlab1:
+<%- if output.error_recovery -%>
+  if (YYERROR_RECOVERY_ENABLED(<%= output.parse_param_name %>))
+    {
+      rep_terms = yyrecover (yyss, yyssp, yychar<%= output.user_args %>);
+      if (rep_terms)
+        {
+          for (int i = 0; i < rep_terms->length; i++)
+            {
+              yy_term *term = &rep_terms->terms[i];
+              yy_error_token_initialize (term->kind, &term->value, &term->location<%= output.user_args %>);
+            }
+
+          yychar_backup = yychar;
+          /* Can be packed into (the tail of) rep_terms? */
+          term_backup.kind = yytoken;
+          term_backup.value = yylval;
+          term_backup.location = yylloc;
+          rep_terms_index = 0;
+          yychar = YYEMPTY;
+
+          goto yybackup;
+        }
+    }
+<%- end -%>
   yyerrstatus = 3;      /* Each real token shifted decrements this.  */
 
   /* Pop stack until we find a state that shifts the error token.  */

@@ -417,13 +417,9 @@ RSTRING_PTR(VALUE str)
 {
     char *ptr = rbimpl_rstring_getmem(str).as.heap.ptr;
 
-    if (RB_UNLIKELY(! ptr)) {
+    if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
-         * function to return  NULL.  In the 20th century that  was a pointless
-         * concern.  However struct RString can hold fake strings nowadays.  It
-         * seems no  check against NULL  are exercised around handling  of them
-         * (one  of  such   usages  is  located  in   marshal.c,  which  scares
-         * @shyouhei).  Better check here for maximum safety.
+         * function to return  NULL.  Better check here for maximum safety.
          *
          * Also,  this is  not rb_warn()  because RSTRING_PTR()  can be  called
          * during GC (see  what obj_info() does).  rb_warn()  needs to allocate
@@ -447,7 +443,7 @@ RSTRING_END(VALUE str)
 {
     struct RString buf = rbimpl_rstring_getmem(str);
 
-    if (RB_UNLIKELY(! buf.as.heap.ptr)) {
+    if (RUBY_DEBUG && RB_UNLIKELY(! buf.as.heap.ptr)) {
         /* Ditto. */
         rb_debug_rstring_null_ptr("RSTRING_END");
     }

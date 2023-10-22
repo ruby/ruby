@@ -114,6 +114,36 @@ class TestGemStreamUI < Gem::TestCase
     assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
   end
 
+  def test_choose_from_list_0
+    @in.puts "0"
+    @in.rewind
+
+    result = @sui.choose_from_list "which one?", %w[foo bar]
+
+    assert_equal [nil, nil], result
+    assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
+  end
+
+  def test_choose_from_list_over
+    @in.puts "3"
+    @in.rewind
+
+    result = @sui.choose_from_list "which one?", %w[foo bar]
+
+    assert_equal [nil, nil], result
+    assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
+  end
+
+  def test_choose_from_list_negative
+    @in.puts "-1"
+    @in.rewind
+
+    result = @sui.choose_from_list "which one?", %w[foo bar]
+
+    assert_equal [nil, nil], result
+    assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
+  end
+
   def test_progress_reporter_silent_nil
     @cfg.verbose = nil
     reporter = @sui.progress_reporter 10, "hi"

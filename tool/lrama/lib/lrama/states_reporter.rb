@@ -14,13 +14,13 @@ module Lrama
 
     private
 
-    def _report(io, grammar: false, states: false, itemsets: false, lookaheads: false, solved: false, verbose: false)
+    def _report(io, grammar: false, states: false, itemsets: false, lookaheads: false, solved: false, counterexamples: false, verbose: false)
       # TODO: Unused terms
       # TODO: Unused rules
 
       report_conflicts(io)
       report_grammar(io) if grammar
-      report_states(io, itemsets, lookaheads, solved, verbose)
+      report_states(io, itemsets, lookaheads, solved, counterexamples, verbose)
     end
 
     def report_conflicts(io)
@@ -71,7 +71,11 @@ module Lrama
       io << "\n\n"
     end
 
-    def report_states(io, itemsets, lookaheads, solved, verbose)
+    def report_states(io, itemsets, lookaheads, solved, counterexamples, verbose)
+      if counterexamples
+        cex = Counterexamples.new(@states)
+      end
+
       @states.states.each do |state|
         # Report State
         io << "State #{state.id}\n\n"
@@ -106,7 +110,6 @@ module Lrama
         end
         io << "\n"
 
-
         # Report shifts
         tmp = state.term_transitions.select do |shift, _|
           !shift.not_selected
@@ -118,7 +121,6 @@ module Lrama
           io << "    #{term.display_name.ljust(max_len)}  shift, and go to state #{state_id}\n"
         end
         io << "\n" if !tmp.empty?
-
 
         # Report error caused by %nonassoc
         nl = false
@@ -133,7 +135,6 @@ module Lrama
           io << "    #{name.ljust(max_len)}  error (nonassociative)\n"
         end
         io << "\n" if !tmp.empty?
-
 
         # Report reduces
         nl = false
@@ -167,7 +168,6 @@ module Lrama
         end
         io << "\n" if nl
 
-
         # Report nonterminal transitions
         tmp = []
         max_len = 0
@@ -185,7 +185,6 @@ module Lrama
         end
         io << "\n" if !tmp.empty?
 
-
         if solved
           # Report conflict resolutions
           state.resolved_conflicts.each do |resolved|
@@ -194,6 +193,27 @@ module Lrama
           io << "\n" if !state.resolved_conflicts.empty?
         end
 
+        if counterexamples && state.has_conflicts?
+          # Report counterexamples
+          examples = cex.compute(state)
+          examples.each do |example|
+            label0 = example.type == :shift_reduce ? "shift/reduce" : "reduce/reduce"
+            label1 = example.type == :shift_reduce ? "Shift derivation"  : "First Reduce derivation"
+            label2 = example.type == :shift_reduce ? "Reduce derivation" : "Second Reduce derivation"
+
+            io << "    #{label0} conflict on token #{example.conflict_symbol.id.s_value}:\n"
+            io << "        #{example.path1_item}\n"
+            io << "        #{example.path2_item}\n"
+            io << "      #{label1}\n"
+            example.derivations1.render_strings_for_report.each do |str|
+              io << "        #{str}\n"
+            end
+            io << "      #{label2}\n"
+            example.derivations2.render_strings_for_report.each do |str|
+              io << "        #{str}\n"
+            end
+          end
+        end
 
         if verbose
           # Report direct_read_sets
@@ -209,7 +229,6 @@ module Lrama
           end
           io << "\n"
 
-
           # Report reads_relation
           io << "  [Reads Relation]\n"
           @states.nterms.each do |nterm|
@@ -222,7 +241,6 @@ module Lrama
             end
           end
           io << "\n"
-
 
           # Report read_sets
           io << "  [Read sets]\n"
@@ -238,7 +256,6 @@ module Lrama
           end
           io << "\n"
 
-
           # Report includes_relation
           io << "  [Includes Relation]\n"
           @states.nterms.each do |nterm|
@@ -252,7 +269,6 @@ module Lrama
           end
           io << "\n"
 
-
           # Report lookback_relation
           io << "  [Lookback Relation]\n"
           @states.rules.each do |rule|
@@ -261,11 +277,10 @@ module Lrama
 
             a.each do |state_id2, nterm_id2|
               n = @states.nterms.find {|n| n.token_id == nterm_id2 }
-              io << "    (Rule: #{rule.to_s}) -> (State #{state_id2}, #{n.id.s_value})\n"
+              io << "    (Rule: #{rule}) -> (State #{state_id2}, #{n.id.s_value})\n"
             end
           end
           io << "\n"
-
 
           # Report follow_sets
           io << "  [Follow sets]\n"
@@ -280,7 +295,6 @@ module Lrama
             end
           end
           io << "\n"
-
 
           # Report LA
           io << "  [Look-Ahead Sets]\n"
@@ -300,7 +314,6 @@ module Lrama
           end
           io << "\n" if !tmp.empty?
         end
-
 
         # End of Report State
         io << "\n"

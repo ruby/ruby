@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 # This class is the base class for \Net::HTTP response classes.
 #
@@ -273,7 +273,7 @@ class Net::HTTPResponse
 
   def error!   #:nodoc:
     message = @code
-    message += ' ' + @message.dump if @message
+    message = "#{message} #{@message.dump}" if @message
     raise error_type().new(message, self)
   end
 
@@ -366,6 +366,7 @@ class Net::HTTPResponse
       @body = nil
     end
     @read = true
+    return if @body.nil?
 
     case enc = @body_encoding
     when Encoding, false, nil
@@ -639,7 +640,7 @@ class Net::HTTPResponse
   end
 
   def stream_check
-    raise IOError, 'attempt to read body out of block' if @socket.closed?
+    raise IOError, 'attempt to read body out of block' if @socket.nil? || @socket.closed?
   end
 
   def procdest(dest, block)
@@ -648,7 +649,7 @@ class Net::HTTPResponse
     if block
       Net::ReadAdapter.new(block)
     else
-      dest || ''
+      dest || +''
     end
   end
 

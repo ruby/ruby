@@ -116,6 +116,13 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   end
 
   ##
+  # Whether the method has a call-seq.
+
+  def has_call_seq?
+    !!(@call_seq || is_alias_for&._call_seq)
+  end
+
+  ##
   # Loads is_alias_for from the internal name.  Returns nil if the alias
   # cannot be found.
 
@@ -294,6 +301,14 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     end
 
     params
+  end
+
+  ##
+  # Whether to skip the method description, true for methods that have
+  # aliases with a call-seq that doesn't include the method name.
+
+  def skip_description?
+    has_call_seq? && call_seq.nil? && !!(is_alias_for || !aliases.empty?)
   end
 
   ##

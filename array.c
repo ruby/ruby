@@ -28,7 +28,6 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "transient_heap.h"
 #include "builtin.h"
 
 #if !ARRAY_DEBUG
@@ -58,8 +57,6 @@ VALUE rb_cArray;
  *                they cannot be modified. Not updating the reference count
  *                improves copy-on-write performance. Their reference count is
  *                assumed to be infinity.
- * 13:  RARRAY_TRANSIENT_FLAG
- *          The buffer of the array is allocated on the transient heap.
  * 14:  RARRAY_PTR_IN_USE_FLAG
  *          The buffer of the array is in use. This is only used during
  *          debugging.
@@ -97,7 +94,6 @@ should_be_T_ARRAY(VALUE ary)
 #define FL_SET_EMBED(a) do { \
     assert(!ARY_SHARED_P(a)); \
     FL_SET((a), RARRAY_EMBED_FLAG); \
-    RARY_TRANSIENT_UNSET(a); \
     ary_verify(a); \
 } while (0)
 
@@ -166,7 +162,6 @@ should_be_T_ARRAY(VALUE ary)
 #define FL_SET_SHARED_ROOT(ary) do { \
     assert(!OBJ_FROZEN(ary)); \
     assert(!ARY_EMBED_P(ary)); \
-    assert(!RARRAY_TRANSIENT_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
 
@@ -243,20 +238,19 @@ ary_verify_(VALUE ary, const char *file, int line)
     if (ARY_SHARED_P(ary)) {
         VALUE root = ARY_SHARED_ROOT(ary);
         const VALUE *ptr = ARY_HEAP_PTR(ary);
-        const VALUE *root_ptr = RARRAY_CONST_PTR_TRANSIENT(root);
+        const VALUE *root_ptr = RARRAY_CONST_PTR(root);
         long len = ARY_HEAP_LEN(ary), root_len = RARRAY_LEN(root);
         assert(ARY_SHARED_ROOT_P(root) || OBJ_FROZEN(root));
         assert(root_ptr <= ptr && ptr + len <= root_ptr + root_len);
         ary_verify(root);
     }
     else if (ARY_EMBED_P(ary)) {
-        assert(!RARRAY_TRANSIENT_P(ary));
         assert(!ARY_SHARED_P(ary));
         assert(RARRAY_LEN(ary) <= ary_embed_capa(ary));
     }
     else {
 #if 1
-        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        const VALUE *ptr = RARRAY_CONST_PTR(ary);
         long i, len = RARRAY_LEN(ary);
         volatile VALUE v;
         if (len > 1) len = 1; /* check only HEAD */
@@ -266,14 +260,6 @@ ary_verify_(VALUE ary, const char *file, int line)
         v = v;
 #endif
     }
-
-#if USE_TRANSIENT_HEAP
-    if (RARRAY_TRANSIENT_P(ary)) {
-        assert(rb_transient_heap_managed_ptr_p(RARRAY_CONST_PTR_TRANSIENT(ary)));
-    }
-#endif
-
-    rb_transient_heap_verify();
 
     return ary;
 }
@@ -293,7 +279,7 @@ rb_ary_ptr_use_start(VALUE ary)
 #if ARRAY_DEBUG
     FL_SET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
 #endif
-    return (VALUE *)RARRAY_CONST_PTR_TRANSIENT(ary);
+    return (VALUE *)RARRAY_CONST_PTR(ary);
 }
 
 void
@@ -315,7 +301,7 @@ rb_mem_clear(VALUE *mem, long size)
 static void
 ary_mem_clear(VALUE ary, long beg, long size)
 {
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+    RARRAY_PTR_USE(ary, ptr, {
         rb_mem_clear(ptr + beg, size);
     });
 }
@@ -331,7 +317,7 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 static void
 ary_memfill(VALUE ary, long beg, long size, VALUE val)
 {
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+    RARRAY_PTR_USE(ary, ptr, {
         memfill(ptr + beg, size, val);
         RB_OBJ_WRITTEN(ary, Qundef, val);
     });
@@ -344,13 +330,13 @@ ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_
 
     if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
         rb_gc_writebarrier_remember(buff_owner_ary);
-        RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+        RARRAY_PTR_USE(ary, ptr, {
             MEMCPY(ptr+beg, argv, VALUE, argc);
         });
     }
     else {
         int i;
-        RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+        RARRAY_PTR_USE(ary, ptr, {
             for (i=0; i<argc; i++) {
                 RB_OBJ_WRITE(buff_owner_ary, &ptr[i+beg], argv[i]);
             }
@@ -365,124 +351,31 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 }
 
 static VALUE *
-ary_heap_alloc(VALUE ary, size_t capa)
+ary_heap_alloc(size_t capa)
 {
-    VALUE *ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * capa);
-
-    if (ptr != NULL) {
-        RARY_TRANSIENT_SET(ary);
-    }
-    else {
-        RARY_TRANSIENT_UNSET(ary);
-        ptr = ALLOC_N(VALUE, capa);
-    }
-
-    return ptr;
+    return ALLOC_N(VALUE, capa);
 }
 
 static void
 ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
 {
-    if (RARRAY_TRANSIENT_P(ary)) {
-        /* ignore it */
-    }
-    else {
-        ruby_sized_xfree((void *)ptr, size);
-    }
+    ruby_sized_xfree((void *)ptr, size);
 }
 
 static void
 ary_heap_free(VALUE ary)
 {
-    if (RARRAY_TRANSIENT_P(ary)) {
-        RARY_TRANSIENT_UNSET(ary);
-    }
-    else {
-        ary_heap_free_ptr(ary, ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
-    }
+    ary_heap_free_ptr(ary, ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
 }
 
 static size_t
 ary_heap_realloc(VALUE ary, size_t new_capa)
 {
-    size_t alloc_capa = new_capa;
-    size_t old_capa = ARY_HEAP_CAPA(ary);
-
-    if (RARRAY_TRANSIENT_P(ary)) {
-        if (new_capa <= old_capa) {
-            /* do nothing */
-            alloc_capa = old_capa;
-        }
-        else {
-            VALUE *new_ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * new_capa);
-
-            if (new_ptr == NULL) {
-                new_ptr = ALLOC_N(VALUE, new_capa);
-                RARY_TRANSIENT_UNSET(ary);
-            }
-
-            MEMCPY(new_ptr, ARY_HEAP_PTR(ary), VALUE, old_capa);
-            ARY_SET_PTR(ary, new_ptr);
-        }
-    }
-    else {
-        SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, old_capa);
-    }
+    SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, ARY_HEAP_CAPA(ary));
     ary_verify(ary);
 
-    return alloc_capa;
+    return new_capa;
 }
-
-#if USE_TRANSIENT_HEAP
-static inline void
-rb_ary_transient_heap_evacuate_(VALUE ary, int transient, int promote)
-{
-    if (transient) {
-        assert(!ARY_SHARED_ROOT_P(ary));
-
-        VALUE *new_ptr;
-        const VALUE *old_ptr = ARY_HEAP_PTR(ary);
-        long capa = ARY_HEAP_CAPA(ary);
-
-        assert(ARY_OWNS_HEAP_P(ary));
-        assert(RARRAY_TRANSIENT_P(ary));
-        assert(!ARY_PTR_USING_P(ary));
-
-        if (promote) {
-            new_ptr = ALLOC_N(VALUE, capa);
-            RARY_TRANSIENT_UNSET(ary);
-        }
-        else {
-            new_ptr = ary_heap_alloc(ary, capa);
-        }
-
-        MEMCPY(new_ptr, old_ptr, VALUE, capa);
-        /* do not use ARY_SET_PTR() because they assert !frozen */
-        RARRAY(ary)->as.heap.ptr = new_ptr;
-    }
-
-    ary_verify(ary);
-}
-
-void
-rb_ary_transient_heap_evacuate(VALUE ary, int promote)
-{
-    rb_ary_transient_heap_evacuate_(ary, RARRAY_TRANSIENT_P(ary), promote);
-}
-
-void
-rb_ary_detransient(VALUE ary)
-{
-    assert(RARRAY_TRANSIENT_P(ary));
-    rb_ary_transient_heap_evacuate_(ary, TRUE, TRUE);
-}
-#else
-void
-rb_ary_detransient(VALUE ary)
-{
-    /* do nothing */
-}
-#endif
 
 void
 rb_ary_make_embedded(VALUE ary)
@@ -491,17 +384,13 @@ rb_ary_make_embedded(VALUE ary)
     if (!ARY_EMBED_P(ary)) {
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
-        bool was_transient = RARRAY_TRANSIENT_P(ary);
 
-        // FL_SET_EMBED also unsets the transient flag
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
 
         MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
 
-        if (!was_transient) {
-            ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
-        }
+        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
     }
 }
 
@@ -516,7 +405,7 @@ ary_resize_capa(VALUE ary, long capacity)
         size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
-            VALUE *ptr = ary_heap_alloc(ary, capacity);
+            VALUE *ptr = ary_heap_alloc(capacity);
 
             MEMCPY(ptr, ARY_EMBED_PTR(ary), VALUE, len);
             FL_UNSET_EMBED(ary);
@@ -656,18 +545,18 @@ rb_ary_cancel_sharing(VALUE ary)
             ARY_SET_EMBED_LEN(ary, len);
         }
         else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
-            long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root);
+            long shift = RARRAY_CONST_PTR(ary) - RARRAY_CONST_PTR(shared_root);
             FL_UNSET_SHARED(ary);
-            ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared_root));
+            ARY_SET_PTR(ary, RARRAY_CONST_PTR(shared_root));
             ARY_SET_CAPA(ary, shared_len);
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE(ary, ptr, {
                 MEMMOVE(ptr, ptr+shift, VALUE, len);
             });
             FL_SET_EMBED(shared_root);
             rb_ary_decrement_share(shared_root);
         }
         else {
-            VALUE *ptr = ary_heap_alloc(ary, len);
+            VALUE *ptr = ary_heap_alloc(len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
             rb_ary_unshare(ary);
             ARY_SET_CAPA(ary, len);
@@ -700,7 +589,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
         if (new_len > ary_embed_capa(ary)) {
             VALUE shared_root = ARY_SHARED_ROOT(ary);
             if (ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
-                if (ARY_HEAP_PTR(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root) + new_len <= RARRAY_LEN(shared_root)) {
+                if (ARY_HEAP_PTR(ary) - RARRAY_CONST_PTR(shared_root) + new_len <= RARRAY_LEN(shared_root)) {
                     rb_ary_modify_check(ary);
 
                     ary_verify(ary);
@@ -807,7 +696,7 @@ empty_ary_alloc(VALUE klass)
 static VALUE
 ary_new(VALUE klass, long capa)
 {
-    VALUE ary,*ptr;
+    VALUE ary;
 
     if (capa < 0) {
         rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -826,8 +715,7 @@ ary_new(VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         assert(!ARY_EMBED_P(ary));
 
-        ptr = ary_heap_alloc(ary, capa);
-        ARY_SET_PTR(ary, ptr);
+        ARY_SET_PTR(ary, ary_heap_alloc(capa));
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -912,7 +800,7 @@ ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 static VALUE
 ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
 {
-    VALUE ary,*ptr;
+    VALUE ary;
 
     if (capa < 0) {
         rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -931,8 +819,7 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         assert(!ARY_EMBED_P(ary));
 
-        ptr = ary_heap_alloc(ary, capa);
-        ARY_SET_PTR(ary, ptr);
+        ARY_SET_PTR(ary, ary_heap_alloc(capa));
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -957,7 +844,6 @@ VALUE
 rb_ary_hidden_new(long capa)
 {
     VALUE ary = ary_new(0, capa);
-    rb_ary_transient_heap_evacuate(ary, TRUE);
     return ary;
 }
 
@@ -980,13 +866,8 @@ rb_ary_free(VALUE ary)
             RB_DEBUG_COUNTER_INC(obj_ary_extracapa);
         }
 
-        if (RARRAY_TRANSIENT_P(ary)) {
-            RB_DEBUG_COUNTER_INC(obj_ary_transient);
-        }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_ary_ptr);
-            ary_heap_free(ary);
-        }
+        RB_DEBUG_COUNTER_INC(obj_ary_ptr);
+        ary_heap_free(ary);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_ary_embed);
@@ -1024,14 +905,11 @@ ary_make_shared(VALUE ary)
     }
     else if (OBJ_FROZEN(ary)) {
         if (!ARY_EMBED_P(ary)) {
-            rb_ary_transient_heap_evacuate(ary, TRUE);
             ary_shrink_capa(ary);
         }
         return ary;
     }
     else {
-        rb_ary_transient_heap_evacuate(ary, TRUE);
-
         long capa = ARY_CAPA(ary);
         long len = RARRAY_LEN(ary);
 
@@ -1041,9 +919,7 @@ ary_make_shared(VALUE ary)
         FL_SET_SHARED_ROOT(shared);
 
         if (ARY_EMBED_P(ary)) {
-            /* Cannot use ary_heap_alloc because we don't want to allocate
-             * on the transient heap. */
-            VALUE *ptr = ALLOC_N(VALUE, capa);
+            VALUE *ptr = ary_heap_alloc(capa);
             ARY_SET_PTR(shared, ptr);
             ary_memcpy(shared, 0, len, RARRAY_CONST_PTR(ary));
 
@@ -1075,7 +951,7 @@ ary_make_substitution(VALUE ary)
         VALUE subst = rb_ary_new_capa(len);
         assert(ARY_EMBED_P(subst));
 
-        ary_memcpy(subst, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary));
+        ary_memcpy(subst, 0, len, RARRAY_CONST_PTR(ary));
         ARY_SET_EMBED_LEN(subst, len);
         return subst;
     }
@@ -1178,7 +1054,7 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
  *    a.class # => Array
  *    a # => [:foo, "bar", 2]
  *
- *  With no block and a single \Integer argument +size+,
+ *  With no block and a single Integer argument +size+,
  *  returns a new \Array of the given size
  *  whose elements are all +nil+:
  *
@@ -1318,21 +1194,19 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
-    const size_t rarray_embed_capa_max = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
-
-    if ((size_t)len <= rarray_embed_capa_max && ary_embeddable_p(len)) {
-        VALUE result = ary_alloc_embed(klass, len);
-        ary_memcpy(result, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary) + offset);
+    VALUE result = ary_alloc_heap(klass);
+    size_t embed_capa = ary_embed_capa(result);
+    if ((size_t)len <= embed_capa) {
+        FL_SET_EMBED(result);
+        ary_memcpy(result, 0, len, RARRAY_CONST_PTR(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
-        return result;
     }
     else {
         VALUE shared = ary_make_shared(ary);
 
-        VALUE result = ary_alloc_heap(klass);
         assert(!ARY_EMBED_P(result));
 
-        ARY_SET_PTR(result, RARRAY_CONST_PTR_TRANSIENT(ary));
+        ARY_SET_PTR(result, RARRAY_CONST_PTR(ary));
         ARY_SET_LEN(result, RARRAY_LEN(ary));
         rb_ary_set_shared(result, shared);
 
@@ -1340,9 +1214,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         ARY_SET_LEN(result, len);
 
         ary_verify(shared);
-        ary_verify(result);
-        return result;
     }
+
+    ary_verify(result);
+    return result;
 }
 
 static VALUE
@@ -1353,7 +1228,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     assert(offset+len <= RARRAY_LEN(ary));
     assert(step != 0);
 
-    const VALUE *values = RARRAY_CONST_PTR_TRANSIENT(ary);
+    const VALUE *values = RARRAY_CONST_PTR(ary);
     const long orig_len = len;
 
     if (step > 0 && step >= len) {
@@ -1383,7 +1258,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
         ARY_SET_EMBED_LEN(result, len);
     }
     else {
-        RARRAY_PTR_USE_TRANSIENT(result, ptr, {
+        RARRAY_PTR_USE(result, ptr, {
             for (i = 0; i < len; ++i) {
                 RB_OBJ_WRITE(result, ptr+i, values[j]);
                 j += step;
@@ -1458,7 +1333,7 @@ rb_ary_push(VALUE ary, VALUE item)
 {
     long idx = RARRAY_LEN((ary_verify(ary), ary));
     VALUE target_ary = ary_ensure_room_for_push(ary, 1);
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+    RARRAY_PTR_USE(ary, ptr, {
         RB_OBJ_WRITE(target_ary, &ptr[idx], item);
     });
     ARY_SET_LEN(ary, idx + 1);
@@ -1537,7 +1412,7 @@ rb_ary_pop(VALUE ary)
  *
  *  Returns +nil+ if the array is empty.
  *
- *  When a non-negative \Integer argument +n+ is given and is in range,
+ *  When a non-negative Integer argument +n+ is given and is in range,
  *
  *  removes and returns the last +n+ elements in a new \Array:
  *    a = [:foo, 'bar', 2]
@@ -1601,7 +1476,7 @@ rb_ary_shift(VALUE ary)
  *
  *  Returns +nil+ if +self+ is empty.
  *
- *  When positive \Integer argument +n+ is given, removes the first +n+ elements;
+ *  When positive Integer argument +n+ is given, removes the first +n+ elements;
  *  returns those elements in a new \Array:
  *
  *    a = [:foo, 'bar', 2]
@@ -1648,7 +1523,7 @@ rb_ary_behead(VALUE ary, long n)
 
     if (!ARY_SHARED_P(ary)) {
         if (ARY_EMBED_P(ary) || RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE(ary, ptr, {
                 MEMMOVE(ptr, ptr + n, VALUE, RARRAY_LEN(ary) - n);
             }); /* WB: no new reference */
             ARY_INCREASE_LEN(ary, -n);
@@ -1709,12 +1584,12 @@ ary_modify_for_unshift(VALUE ary, int argc)
         capa = ARY_CAPA(ary);
         ary_make_shared(ary);
 
-        head = sharedp = RARRAY_CONST_PTR_TRANSIENT(ary);
+        head = sharedp = RARRAY_CONST_PTR(ary);
         return make_room_for_unshift(ary, head, (void *)sharedp, argc, capa, len);
     }
     else {
         /* sliding items */
-        RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+        RARRAY_PTR_USE(ary, ptr, {
             MEMMOVE(ptr + argc, ptr, VALUE, len);
         });
 
@@ -1746,8 +1621,8 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
             return ary_modify_for_unshift(ary, argc);
         }
         else {
-            const VALUE * head = RARRAY_CONST_PTR_TRANSIENT(ary);
-            void *sharedp = (void *)RARRAY_CONST_PTR_TRANSIENT(shared_root);
+            const VALUE * head = RARRAY_CONST_PTR(ary);
+            void *sharedp = (void *)RARRAY_CONST_PTR(shared_root);
 
             rb_ary_modify_check(ary);
             return make_room_for_unshift(ary, head, sharedp, argc, capa, len);
@@ -1851,7 +1726,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  Returns elements from +self+; does not modify +self+.
  *
- *  When a single \Integer argument +index+ is given, returns the element at offset +index+:
+ *  When a single Integer argument +index+ is given, returns the element at offset +index+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
@@ -1866,7 +1741,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +index+ is out of range, returns +nil+.
  *
- *  When two \Integer arguments +start+ and +length+ are given,
+ *  When two Integer arguments +start+ and +length+ are given,
  *  returns a new \Array of size +length+ containing successive elements beginning at offset +start+:
  *
  *    a = [:foo, 'bar', 2]
@@ -1886,7 +1761,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +length+ is negative, returns +nil+.
  *
- *  When a single \Range argument +range+ is given,
+ *  When a single Range argument +range+ is given,
  *  treats <tt>range.min</tt> as +start+ above
  *  and <tt>range.size</tt> as +length+ above:
  *
@@ -1989,7 +1864,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *  call-seq:
  *    array.at(index) -> object
  *
- *  Returns the element at \Integer offset +index+; does not modify +self+.
+ *  Returns the element at Integer offset +index+; does not modify +self+.
  *    a = [:foo, 'bar', 2]
  *    a.at(0) # => :foo
  *    a.at(2) # => 2
@@ -2048,7 +1923,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
  *
  *  Returns the element at offset  +index+.
  *
- *  With the single \Integer argument +index+,
+ *  With the single Integer argument +index+,
  *  returns the element at offset +index+:
  *
  *    a = [:foo, 'bar', 2]
@@ -2192,7 +2067,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
- *  When neither an argument nor a block is given, returns a new \Enumerator:
+ *  When neither an argument nor a block is given, returns a new Enumerator:
  *
  *    a = [:foo, 'bar', 2, 'bar']
  *    e = a.rindex
@@ -2264,7 +2139,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
     }
 
     {
-        const VALUE *optr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        const VALUE *optr = RARRAY_CONST_PTR(ary);
         rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
     }
 
@@ -2277,7 +2152,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         len = beg + rlen;
         ary_mem_clear(ary, olen, beg - olen);
         if (rlen > 0) {
-            if (rofs != -1) rptr = RARRAY_CONST_PTR_TRANSIENT(ary) + rofs;
+            if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
             ary_memcpy0(ary, beg, rlen, rptr, target_ary);
         }
         ARY_SET_LEN(ary, len);
@@ -2295,20 +2170,25 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         }
 
         if (len != rlen) {
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr,
+            RARRAY_PTR_USE(ary, ptr,
                                      MEMMOVE(ptr + beg + rlen, ptr + beg + len,
                                              VALUE, olen - (beg + len)));
             ARY_SET_LEN(ary, alen);
         }
         if (rlen > 0) {
-            if (rofs != -1) rptr = RARRAY_CONST_PTR_TRANSIENT(ary) + rofs;
-            /* give up wb-protected ary */
-            RB_OBJ_WB_UNPROTECT_FOR(ARRAY, ary);
+            if (rofs == -1) {
+                rb_gc_writebarrier_remember(ary);
+            }
+            else {
+                /* In this case, we're copying from a region in this array, so
+                 * we don't need to fire the write barrier. */
+                rptr = RARRAY_CONST_PTR(ary) + rofs;
+            }
 
             /* do not use RARRAY_PTR() because it can causes GC.
              * ary can contain T_NONE object because it is not cleared.
              */
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr,
+            RARRAY_PTR_USE(ary, ptr,
                                      MEMMOVE(ptr + beg, rptr, VALUE, rlen));
         }
     }
@@ -2353,9 +2233,8 @@ rb_ary_resize(VALUE ary, long len)
     else if (len <= ary_embed_capa(ary)) {
         const VALUE *ptr = ARY_HEAP_PTR(ary);
         long ptr_capa = ARY_HEAP_SIZE(ary);
-        bool is_malloc_ptr = !ARY_SHARED_P(ary) && !RARRAY_TRANSIENT_P(ary);
+        bool is_malloc_ptr = !ARY_SHARED_P(ary);
 
-        FL_UNSET(ary, RARRAY_TRANSIENT_FLAG);
         FL_SET_EMBED(ary);
 
         MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len); /* WB: no new reference */
@@ -2385,7 +2264,7 @@ static VALUE
 ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 {
     VALUE rpl = rb_ary_to_ary(val);
-    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR_TRANSIENT(rpl), RARRAY_LEN(rpl));
+    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl));
     RB_GC_GUARD(rpl);
     return val;
 }
@@ -2398,7 +2277,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *
  *  Assigns elements in +self+; returns the given +object+.
  *
- *  When \Integer argument +index+ is given, assigns +object+ to an element in +self+.
+ *  When Integer argument +index+ is given, assigns +object+ to an element in +self+.
  *
  *  If +index+ is non-negative, assigns +object+ the element at offset +index+:
  *
@@ -2418,7 +2297,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[-1] = 'two' # => "two"
  *    a # => [:foo, "bar", "two"]
  *
- *  When \Integer arguments +start+ and +length+ are given and +object+ is not an \Array,
+ *  When Integer arguments +start+ and +length+ are given and +object+ is not an \Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2453,7 +2332,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[1, 5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
  *
- *  When \Range argument +range+ is given and +object+ is an \Array,
+ *  When Range argument +range+ is given and +object+ is an \Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2533,7 +2412,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array.insert(index, *objects) -> self
  *
- *  Inserts given +objects+ before or after the element at \Integer index +offset+;
+ *  Inserts given +objects+ before or after the element at Integer index +offset+;
  *  returns +self+.
  *
  *  When +index+ is non-negative, inserts all given +objects+
@@ -2627,7 +2506,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *    foo
  *    bar
  *
- *  When no block given, returns a new \Enumerator:
+ *  When no block given, returns a new Enumerator:
  *    a = [:foo, 'bar', 2]
  *
  *    e = a.each
@@ -2684,7 +2563,7 @@ rb_ary_each(VALUE ary)
  *    0
  *    1
  *
- *  When no block given, returns a new \Enumerator:
+ *  When no block given, returns a new Enumerator:
  *
  *    a = [:foo, 'bar', 2]
  *    e = a.each_index
@@ -2741,7 +2620,7 @@ rb_ary_each_index(VALUE ary)
  *    2
  *    bar
  *
- *  When no block given, returns a new \Enumerator:
+ *  When no block given, returns a new Enumerator:
  *
  *    a = [:foo, 'bar', 2]
  *    e = a.reverse_each
@@ -2808,7 +2687,7 @@ rb_ary_dup(VALUE ary)
 {
     long len = RARRAY_LEN(ary);
     VALUE dup = rb_ary_new2(len);
-    ary_memcpy(dup, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary));
+    ary_memcpy(dup, 0, len, RARRAY_CONST_PTR(ary));
     ARY_SET_LEN(dup, len);
 
     ary_verify(ary);
@@ -2961,7 +2840,7 @@ rb_ary_join(VALUE ary, VALUE sep)
  *    array.join ->new_string
  *    array.join(separator = $,) -> new_string
  *
- *  Returns the new \String formed by joining the array elements after conversion.
+ *  Returns the new String formed by joining the array elements after conversion.
  *  For each element +element+:
  *
  *  - Uses <tt>element.to_s</tt> if +element+ is not a <tt>kind_of?(Array)</tt>.
@@ -3021,7 +2900,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *  call-seq:
  *    array.inspect -> new_string
  *
- *  Returns the new \String formed by calling method <tt>#inspect</tt>
+ *  Returns the new String formed by calling method <tt>#inspect</tt>
  *  on each array element:
  *
  *    a = [:foo, 'bar', 2]
@@ -3079,18 +2958,18 @@ rb_ary_to_a(VALUE ary)
  *    array.to_h -> new_hash
  *    array.to_h {|item| ... } -> new_hash
  *
- *  Returns a new \Hash formed from +self+.
+ *  Returns a new Hash formed from +self+.
  *
  *  When a block is given, calls the block with each array element;
  *  the block must return a 2-element \Array whose two elements
- *  form a key-value pair in the returned \Hash:
+ *  form a key-value pair in the returned Hash:
  *
  *    a = ['foo', :bar, 1, [2, 3], {baz: 4}]
  *    h = a.to_h {|item| [item, item] }
  *    h # => {"foo"=>"foo", :bar=>:bar, 1=>1, [2, 3]=>[2, 3], {:baz=>4}=>{:baz=>4}}
  *
  *  When no block is given, +self+ must be an \Array of 2-element sub-arrays,
- *  each sub-array is formed into a key-value pair in the new \Hash:
+ *  each sub-array is formed into a key-value pair in the new Hash:
  *
  *    [].to_h # => {}
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
@@ -3154,7 +3033,7 @@ rb_ary_reverse(VALUE ary)
 
     rb_ary_modify(ary);
     if (len > 1) {
-        RARRAY_PTR_USE_TRANSIENT(ary, p1, {
+        RARRAY_PTR_USE(ary, p1, {
             p2 = p1 + len - 1;	/* points last item */
             ary_reverse(p1, p2);
         }); /* WB: no new reference */
@@ -3198,8 +3077,8 @@ rb_ary_reverse_m(VALUE ary)
     VALUE dup = rb_ary_new2(len);
 
     if (len > 0) {
-        const VALUE *p1 = RARRAY_CONST_PTR_TRANSIENT(ary);
-        VALUE *p2 = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(dup) + len - 1;
+        const VALUE *p1 = RARRAY_CONST_PTR(ary);
+        VALUE *p2 = (VALUE *)RARRAY_CONST_PTR(dup) + len - 1;
         do *p2-- = *p1++; while (--len > 0);
     }
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
@@ -3241,7 +3120,7 @@ rb_ary_rotate(VALUE ary, long cnt)
     if (cnt != 0) {
         long len = RARRAY_LEN(ary);
         if (len > 1 && (cnt = rotate_count(cnt, len)) > 0) {
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr, ary_rotate_ptr(ptr, len, cnt));
+            RARRAY_PTR_USE(ary, ptr, ary_rotate_ptr(ptr, len, cnt));
             return ary;
         }
     }
@@ -3260,7 +3139,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.rotate! # => ["bar", 2, "bar", :foo]
  *
- *  When given a non-negative \Integer +count+,
+ *  When given a non-negative Integer +count+,
  *  rotates +count+ elements from the beginning to the end:
  *
  *    a = [:foo, 'bar', 2]
@@ -3317,7 +3196,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.rotate
  *    a1 # => ["bar", 2, "bar", :foo]
  *
- *  When given a non-negative \Integer +count+,
+ *  When given a non-negative Integer +count+,
  *  returns a new \Array with +count+ elements rotated from the beginning to the end:
  *
  *    a = [:foo, 'bar', 2]
@@ -3336,7 +3215,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.rotate(0)
  *    a1 # => [:foo, "bar", 2]
  *
- *  When given a negative \Integer +count+, rotates in the opposite direction,
+ *  When given a negative Integer +count+, rotates in the opposite direction,
  *  from end to beginning:
  *
  *    a = [:foo, 'bar', 2]
@@ -3363,7 +3242,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
     rotated = rb_ary_new2(len);
     if (len > 0) {
         cnt = rotate_count(cnt, len);
-        ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        ptr = RARRAY_CONST_PTR(ary);
         len -= cnt;
         ary_memcpy(rotated, 0, len, ptr + cnt);
         ary_memcpy(rotated, len, cnt, ptr);
@@ -3648,8 +3527,8 @@ rb_ary_bsearch_index(VALUE ary)
             const VALUE zero = INT2FIX(0);
             switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
               case 0: return INT2FIX(mid);
-              case 1: smaller = 1; break;
-              case -1: smaller = 0;
+              case 1: smaller = 0; break;
+              case -1: smaller = 1;
             }
         }
         else {
@@ -3694,7 +3573,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
  *    a.sort_by! {|element| element.size }
  *    a # => ["d", "cc", "bbb", "aaaa"]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = ['aaaa', 'bbb', 'cc', 'd']
  *    a.sort_by! # => #<Enumerator: ["aaaa", "bbb", "cc", "d"]:sort_by!>
@@ -3726,7 +3605,7 @@ rb_ary_sort_by_bang(VALUE ary)
  *    a1 = a.map {|element| element.class }
  *    a1 # => [Symbol, String, Integer]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.map
  *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
@@ -3759,7 +3638,7 @@ rb_ary_collect(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.map! { |element| element.class } # => [Symbol, String, Integer]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a.map!
@@ -3816,7 +3695,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
     /* check if idx is Range */
     else if (rb_range_beg_len(idx, &beg, &len, olen, 1)) {
         if (len > 0) {
-            const VALUE *const src = RARRAY_CONST_PTR_TRANSIENT(ary);
+            const VALUE *const src = RARRAY_CONST_PTR(ary);
             const long end = beg + len;
             const long prevlen = RARRAY_LEN(result);
             if (beg < olen) {
@@ -3839,7 +3718,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *    array.values_at(*indexes) -> new_array
  *
  *  Returns a new \Array whose elements are the elements
- *  of +self+ at the given \Integer or \Range +indexes+.
+ *  of +self+ at the given Integer or Range +indexes+.
  *
  *  For each positive +index+, returns the element at offset +index+:
  *
@@ -3903,7 +3782,7 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.select {|element| element.to_s.start_with?('b') }
  *    a1 # => ["bar", :bam]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
@@ -3962,7 +3841,7 @@ select_bang_ensure(VALUE a)
         rb_ary_modify(ary);
         if (i1 < len) {
             tail = len - i1;
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE(ary, ptr, {
                     MEMMOVE(ptr + i2, ptr + i1, VALUE, tail);
                 });
         }
@@ -3986,7 +3865,7 @@ select_bang_ensure(VALUE a)
  *
  *  Returns +nil+ if no elements were removed.
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select! # => #<Enumerator: [:foo, "bar", 2, :bam]:select!>
@@ -4017,7 +3896,7 @@ rb_ary_select_bang(VALUE ary)
  *    a = [:foo, 'bar', 2, :bam]
  *    a.keep_if {|element| element.to_s.start_with?('b') } # => ["bar", :bam]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [:foo, 'bar', 2, :bam]
  *    a.keep_if # => #<Enumerator: [:foo, "bar", 2, :bam]:keep_if>
@@ -4149,7 +4028,7 @@ rb_ary_delete_at(VALUE ary, long pos)
 
     rb_ary_modify(ary);
     del = RARRAY_AREF(ary, pos);
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+    RARRAY_PTR_USE(ary, ptr, {
         MEMMOVE(ptr+pos, ptr+pos+1, VALUE, len-pos-1);
     });
     ARY_INCREASE_LEN(ary, -1);
@@ -4161,7 +4040,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *  call-seq:
  *    array.delete_at(index) -> deleted_object or nil
  *
- *  Deletes an element from +self+, per the given \Integer +index+.
+ *  Deletes an element from +self+, per the given Integer +index+.
  *
  *  When +index+ is non-negative, deletes the element at offset +index+:
  *
@@ -4210,7 +4089,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
         return rb_ary_new2(0);
     }
     else {
-        VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
+        VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
         rb_ary_splice(ary, pos, len, 0, 0);
         return arg2;
     }
@@ -4224,7 +4103,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *
  *  Removes and returns elements from +self+.
  *
- *  When the only argument is an \Integer +n+,
+ *  When the only argument is an Integer +n+,
  *  removes and returns the _nth_ element in +self+:
  *
  *    a = [:foo, 'bar', 2]
@@ -4259,7 +4138,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *
  *  If +length+ is negative, returns +nil+.
  *
- *  When the only argument is a \Range object +range+,
+ *  When the only argument is a Range object +range+,
  *  treats <tt>range.min</tt> as +start+ above and <tt>range.size</tt> as +length+ above:
  *
  *    a = [:foo, 'bar', 2]
@@ -4375,7 +4254,7 @@ ary_reject_bang(VALUE ary)
  *
  *  Returns +nil+ if no elements removed.
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [:foo, 'bar', 2]
  *    a.reject! # => #<Enumerator: [:foo, "bar", 2]:reject!>
@@ -4402,7 +4281,7 @@ rb_ary_reject_bang(VALUE ary)
  *    a1 = a.reject {|element| element.to_s.start_with?('b') }
  *    a1 # => [:foo, 2]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *     a = [:foo, 'bar', 2]
  *     a.reject # => #<Enumerator: [:foo, "bar", 2]:reject>
@@ -4431,12 +4310,12 @@ rb_ary_reject(VALUE ary)
  *    a = [:foo, 'bar', 2, 'bat']
  *    a.delete_if {|element| element.to_s.start_with?('b') } # => [:foo, 2]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [:foo, 'bar', 2]
  *    a.delete_if # => #<Enumerator: [:foo, "bar", 2]:delete_if>
  *
-3 */
+ */
 
 static VALUE
 rb_ary_delete_if(VALUE ary)
@@ -4651,14 +4530,14 @@ rb_ary_replace(VALUE copy, VALUE orig)
     /* orig has enough space to embed the contents of orig. */
     if (RARRAY_LEN(orig) <= ary_embed_capa(copy)) {
         assert(ARY_EMBED_P(copy));
-        ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
+        ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR(orig));
         ARY_SET_EMBED_LEN(copy, RARRAY_LEN(orig));
     }
     /* orig is embedded but copy does not have enough space to embed the
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
         long len = ARY_EMBED_LEN(orig);
-        VALUE *ptr = ary_heap_alloc(copy, len);
+        VALUE *ptr = ary_heap_alloc(len);
 
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ptr);
@@ -4667,7 +4546,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
         // No allocation and exception expected that could leave `copy` in a
         // bad state from the edits above.
-        ary_memcpy(copy, 0, len, RARRAY_CONST_PTR_TRANSIENT(orig));
+        ary_memcpy(copy, 0, len, RARRAY_CONST_PTR(orig));
     }
     /* Otherwise, orig is on heap and copy does not have enough space to embed
      * the contents of orig. */
@@ -4733,7 +4612,7 @@ rb_ary_clear(VALUE ary)
  *    a # => ["a", "b", "c", "d"]
  *    a.fill(:X) # => [:X, :X, :X, :X]
  *
- *  With arguments +obj+ and \Integer +start+, and no block given,
+ *  With arguments +obj+ and Integer +start+, and no block given,
  *  replaces elements based on the given start.
  *
  *  If +start+ is in range (<tt>0 <= start < array.size</tt>),
@@ -4761,7 +4640,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, -50) # => [:X, :X, :X, :X]
  *
- *  With arguments +obj+, \Integer +start+, and \Integer +length+, and no block given,
+ *  With arguments +obj+, Integer +start+, and Integer +length+, and no block given,
  *  replaces elements based on the given +start+ and +length+.
  *
  *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
@@ -4787,7 +4666,7 @@ rb_ary_clear(VALUE ary)
  *    a.fill(:X, 1, 0) # => ["a", "b", "c", "d"]
  *    a.fill(:X, 1, -1) # => ["a", "b", "c", "d"]
  *
- *  With arguments +obj+ and \Range +range+, and no block given,
+ *  With arguments +obj+ and Range +range+, and no block given,
  *  replaces elements based on the given range.
  *
  *  If the range is positive and ascending (<tt>0 < range.begin <= range.end</tt>),
@@ -4999,8 +4878,8 @@ rb_ary_plus(VALUE x, VALUE y)
     len = xlen + ylen;
     z = rb_ary_new2(len);
 
-    ary_memcpy(z, 0, xlen, RARRAY_CONST_PTR_TRANSIENT(x));
-    ary_memcpy(z, xlen, ylen, RARRAY_CONST_PTR_TRANSIENT(y));
+    ary_memcpy(z, 0, xlen, RARRAY_CONST_PTR(x));
+    ary_memcpy(z, xlen, ylen, RARRAY_CONST_PTR(y));
     ARY_SET_LEN(z, len);
     return z;
 }
@@ -5010,7 +4889,7 @@ ary_append(VALUE x, VALUE y)
 {
     long n = RARRAY_LEN(y);
     if (n > 0) {
-        rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR_TRANSIENT(y), n);
+        rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n);
     }
     RB_GC_GUARD(y);
     return x;
@@ -5058,13 +4937,13 @@ rb_ary_concat(VALUE x, VALUE y)
  *    array * n -> new_array
  *    array * string_separator -> new_string
  *
- *  When non-negative argument \Integer +n+ is given,
+ *  When non-negative argument Integer +n+ is given,
  *  returns a new \Array built by concatenating the +n+ copies of +self+:
  *
  *    a = ['x', 'y']
  *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
  *
- *  When \String argument +string_separator+ is given,
+ *  When String argument +string_separator+ is given,
  *  equivalent to <tt>array.join(string_separator)</tt>:
  *
  *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
@@ -5099,16 +4978,16 @@ rb_ary_times(VALUE ary, VALUE times)
     ary2 = ary_new(rb_cArray, len);
     ARY_SET_LEN(ary2, len);
 
-    ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+    ptr = RARRAY_CONST_PTR(ary);
     t = RARRAY_LEN(ary);
     if (0 < t) {
         ary_memcpy(ary2, 0, t, ptr);
         while (t <= len/2) {
-            ary_memcpy(ary2, t, t, RARRAY_CONST_PTR_TRANSIENT(ary2));
+            ary_memcpy(ary2, t, t, RARRAY_CONST_PTR(ary2));
             t *= 2;
         }
         if (t < len) {
-            ary_memcpy(ary2, t, len-t, RARRAY_CONST_PTR_TRANSIENT(ary2));
+            ary_memcpy(ary2, t, len-t, RARRAY_CONST_PTR(ary2));
         }
     }
   out:
@@ -5239,7 +5118,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
         return rb_equal(ary2, ary1);
     }
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    if (RARRAY_CONST_PTR_TRANSIENT(ary1) == RARRAY_CONST_PTR_TRANSIENT(ary2)) return Qtrue;
+    if (RARRAY_CONST_PTR(ary1) == RARRAY_CONST_PTR(ary2)) return Qtrue;
     return rb_exec_recursive_paired(recursive_equal, ary1, ary2, ary2);
 }
 
@@ -5279,7 +5158,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     if (ary1 == ary2) return Qtrue;
     if (!RB_TYPE_P(ary2, T_ARRAY)) return Qfalse;
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    if (RARRAY_CONST_PTR_TRANSIENT(ary1) == RARRAY_CONST_PTR_TRANSIENT(ary2)) return Qtrue;
+    if (RARRAY_CONST_PTR(ary1) == RARRAY_CONST_PTR(ary2)) return Qtrue;
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
@@ -5930,20 +5809,20 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  - A new \Array of maximum-valued elements selected from +self+.
  *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
- *  with an \Integer.
+ *  with an Integer.
  *
  *  With no argument and no block, returns the element in +self+
  *  having the maximum value per method <tt><=></tt>:
  *
  *    [0, 1, 2].max # => 2
  *
- *  With an argument \Integer +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  With an argument Integer +n+ and no block, returns a new \Array with at most +n+ elements,
  *  in descending order per method <tt><=></tt>:
  *
  *    [0, 1, 2, 3].max(3) # => [3, 2, 1]
  *    [0, 1, 2, 3].max(6) # => [3, 2, 1, 0]
  *
- *  When a block is given, the block must return an \Integer.
+ *  When a block is given, the block must return an Integer.
  *
  *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
  *  returns the element having the maximum value per the block:
@@ -6098,14 +5977,14 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  - A new \Array of minimum-valued elements selected from +self+.
  *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
- *  with an \Integer.
+ *  with an Integer.
  *
  *  With no argument and no block, returns the element in +self+
  *  having the minimum value per method <tt><=></tt>:
  *
  *    [0, 1, 2].min # => 0
  *
- *  With \Integer argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  With Integer argument +n+ and no block, returns a new \Array with at most +n+ elements,
  *  in ascending order per method <tt><=></tt>:
  *
  *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
@@ -6173,13 +6052,13 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *  from +self+, either per method <tt><=></tt> or per a given block:.
  *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
- *  with an \Integer;
+ *  with an Integer;
  *  returns a new 2-element \Array containing the minimum and maximum values
  *  from +self+, per method <tt><=></tt>:
  *
  *    [0, 1, 2].minmax # => [0, 2]
  *
- *  When a block is given, the block must return an \Integer;
+ *  When a block is given, the block must return an Integer;
  *  the block is called <tt>self.size-1</tt> times to compare elements;
  *  returns a new 2-element \Array containing the minimum and maximum values
  *  from +self+, per the block:
@@ -6322,14 +6201,14 @@ rb_ary_compact_bang(VALUE ary)
     long n;
 
     rb_ary_modify(ary);
-    p = t = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(ary); /* WB: no new reference */
+    p = t = (VALUE *)RARRAY_CONST_PTR(ary); /* WB: no new reference */
     end = p + RARRAY_LEN(ary);
 
     while (t < end) {
         if (NIL_P(*t)) t++;
         else *p++ = *t++;
     }
-    n = p - RARRAY_CONST_PTR_TRANSIENT(ary);
+    n = p - RARRAY_CONST_PTR(ary);
     if (RARRAY_LEN(ary) == n) {
         return Qnil;
     }
@@ -6439,7 +6318,7 @@ flatten(VALUE ary, int level)
     }
 
     result = ary_new(0, RARRAY_LEN(ary));
-    ary_memcpy(result, 0, i, RARRAY_CONST_PTR_TRANSIENT(ary));
+    ary_memcpy(result, 0, i, RARRAY_CONST_PTR(ary));
     ARY_SET_LEN(result, i);
 
     stack = ary_new(0, ARY_DEFAULT_SIZE);
@@ -6517,7 +6396,7 @@ flatten(VALUE ary, int level)
  *  Replaces each nested \Array in +self+ with the elements from that \Array;
  *  returns +self+ if any changes, +nil+ otherwise.
  *
- *  With non-negative \Integer argument +level+, flattens recursively through +level+ levels:
+ *  With non-negative Integer argument +level+, flattens recursively through +level+ levels:
  *
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(1) # => [0, 1, [2, 3], 4, 5]
@@ -6571,7 +6450,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  - Each non-Array element is unchanged.
  *  - Each \Array is replaced by its individual elements.
  *
- *  With non-negative \Integer argument +level+, flattens recursively through +level+ levels:
+ *  With non-negative Integer argument +level+, flattens recursively through +level+ levels:
  *
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(0) # => [0, [1, [2, 3], 4], 5]
@@ -6627,7 +6506,7 @@ rb_ary_shuffle_bang(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
         while (i) {
             long j = RAND_UPTO(i);
             VALUE tmp;
-            if (len != RARRAY_LEN(ary) || ptr != RARRAY_CONST_PTR_TRANSIENT(ary)) {
+            if (len != RARRAY_LEN(ary) || ptr != RARRAY_CONST_PTR(ary)) {
                 rb_raise(rb_eRuntimeError, "modified during shuffle");
             }
             tmp = ptr[--i];
@@ -6719,7 +6598,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
             sorted[j] = idx[i] = k;
         }
         result = rb_ary_new_capa(n);
-        RARRAY_PTR_USE_TRANSIENT(result, ptr_result, {
+        RARRAY_PTR_USE(result, ptr_result, {
             for (i=0; i<n; i++) {
                 ptr_result[i] = RARRAY_AREF(ary, idx[i]);
             }
@@ -6742,7 +6621,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
             len = RARRAY_LEN(ary);
             if (len <= max_idx) n = 0;
             else if (n > len) n = len;
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr_ary, {
+            RARRAY_PTR_USE(ary, ptr_ary, {
                 for (i=0; i<n; i++) {
                     long j2 = j = ptr_result[i];
                     long i2 = i;
@@ -6805,7 +6684,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    array.cycle -> new_enumerator
  *    array.cycle(count) -> new_enumerator
  *
- *  When called with positive \Integer argument +count+ and a block,
+ *  When called with positive Integer argument +count+ and a block,
  *  calls the block with each element, then does so again,
  *  until it has done so +count+ times; returns +nil+:
  *
@@ -6824,7 +6703,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    [0, 1].cycle {|element| puts element }
  *    [0, 1].cycle(nil) {|element| puts element }
  *
- *  When no block is given, returns a new \Enumerator:
+ *  When no block is given, returns a new Enumerator:
  *
  *    [0, 1].cycle(2) # => #<Enumerator: [0, 1]:cycle(2)>
  *    [0, 1].cycle # => # => #<Enumerator: [0, 1]:cycle>
@@ -6981,7 +6860,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  When invoked with a block, yield all permutations of elements of +self+; returns +self+.
  *  The order of permutations is indeterminate.
  *
- *  When a block and an in-range positive \Integer argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  When a block and an in-range positive Integer argument +n+ (<tt>0 < n <= self.size</tt>)
  *  are given, calls the block with all +n+-tuple permutations of +self+.
  *
  *  Example:
@@ -7043,7 +6922,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    [2, 0, 1]
  *    [2, 1, 0]
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [0, 1, 2]
  *    a.permutation # => #<Enumerator: [0, 1, 2]:permutation>
@@ -7127,7 +7006,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  Calls the block, if given, with combinations of elements of +self+;
  *  returns +self+. The order of combinations is indeterminate.
  *
- *  When a block and an in-range positive \Integer argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  When a block and an in-range positive Integer argument +n+ (<tt>0 < n <= self.size</tt>)
  *  are given, calls the block with all +n+-tuple combinations of +self+.
  *
  *  Example:
@@ -7166,7 +7045,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    a.combination(-1) {|combination| fail 'Cannot happen' }
  *    a.combination(4) {|combination| fail 'Cannot happen' }
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [0, 1, 2]
  *    a.combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
@@ -7264,7 +7143,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  each permutation is an \Array;
  *  returns +self+. The order of the permutations is indeterminate.
  *
- *  When a block and a positive \Integer argument +n+ are given, calls the block with each
+ *  When a block and a positive Integer argument +n+ are given, calls the block with each
  *  +n+-tuple repeated permutation of the elements of +self+.
  *  The number of permutations is <tt>self.size**n</tt>.
  *
@@ -7301,7 +7180,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *    a.repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [0, 1, 2]
  *    a.repeated_permutation(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
@@ -7396,7 +7275,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  each combination is an \Array;
  *  returns +self+. The order of the combinations is indeterminate.
  *
- *  When a block and a positive \Integer argument +n+ are given, calls the block with each
+ *  When a block and a positive Integer argument +n+ are given, calls the block with each
  *  +n+-tuple repeated combination of the elements of +self+.
  *  The number of combinations is <tt>(n+1)(n+2)/2</tt>.
  *
@@ -7430,7 +7309,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *    a.repeated_combination(-1) {|combination| fail 'Cannot happen' }
  *
- *  Returns a new \Enumerator if no block given:
+ *  Returns a new Enumerator if no block given:
  *
  *    a = [0, 1, 2]
  *    a.repeated_combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
@@ -7638,7 +7517,7 @@ done:
  *    array.take(n) -> new_array
  *
  *  Returns a new \Array containing the first +n+ element of +self+,
- *  where +n+ is a non-negative \Integer;
+ *  where +n+ is a non-negative Integer;
  *  does not modify +self+.
  *
  *  Examples:
@@ -7678,7 +7557,7 @@ rb_ary_take(VALUE obj, VALUE n)
  *    a.take_while {|element| true } # => [0, 1, 2, 3, 4, 5]
  *    a # => [0, 1, 2, 3, 4, 5]
  *
- *  With no block given, returns a new \Enumerator:
+ *  With no block given, returns a new Enumerator:
  *
  *    [0, 1].take_while # => #<Enumerator: [0, 1]:take_while>
  *
@@ -7701,7 +7580,7 @@ rb_ary_take_while(VALUE ary)
  *    array.drop(n) -> new_array
  *
  *  Returns a new \Array containing all but the first +n+ element of +self+,
- *  where +n+ is a non-negative \Integer;
+ *  where +n+ is a non-negative Integer;
  *  does not modify +self+.
  *
  *  Examples:
@@ -7742,7 +7621,7 @@ rb_ary_drop(VALUE ary, VALUE n)
  *    a = [0, 1, 2, 3, 4, 5]
  *    a.drop_while {|element| element < 3 } # => [3, 4, 5]
  *
- *  With no block given, returns a new \Enumerator:
+ *  With no block given, returns a new Enumerator:
  *
  *    [0, 1].drop_while # => # => #<Enumerator: [0, 1]:drop_while>
  *

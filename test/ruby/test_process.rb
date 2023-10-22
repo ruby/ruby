@@ -665,6 +665,7 @@ class TestProcess < Test::Unit::TestCase
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_raise
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -682,15 +683,21 @@ class TestProcess < Test::Unit::TestCase
           puts "ok"
         end
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.5
         Process.kill(:USR1, io.pid)
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)} if pid
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_print
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -703,14 +710,25 @@ class TestProcess < Test::Unit::TestCase
         puts "start"
         system("cat", :in => "fifo")
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
+        sleep 0.2 # wait for the child to return to opening "fifo".
+        # On arm64-darwin22, often deadlocks while the child is
+        # opening "fifo".  Not sure to where "ok" line being written
+        # at the next has gone.
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    if pid
+      assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)}
+    end
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_pipe
@@ -1437,8 +1455,15 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s, s)
       assert_equal(s, s.to_i)
 
-      assert_equal(s.to_i & 0x55555555, s & 0x55555555)
-      assert_equal(s.to_i >> 1, s >> 1)
+      assert_deprecated_warn(/\buse .*Process::Status/) do
+        assert_equal(s.to_i & 0x55555555, s & 0x55555555)
+      end
+      assert_deprecated_warn(/\buse .*Process::Status/) do
+        assert_equal(s.to_i >> 1, s >> 1)
+      end
+      assert_raise(ArgumentError) do
+        s >> -1
+      end
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
 
@@ -1799,7 +1824,11 @@ class TestProcess < Test::Unit::TestCase
           loop do
             Process.spawn(cmds.join(sep), opts)
             min = [cmds.size, min].max
-            cmds *= 100
+            begin
+              cmds *= 100
+            rescue ArgumentError
+              raise NoMemoryError
+            end
           end
         rescue NoMemoryError
           size = cmds.size
@@ -2355,7 +2384,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(--disable=gems - #{RUBY}), <<-INPUT, timeout: 100)
+    assert_separately(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2686,4 +2715,69 @@ EOS
       end
     end;
   end if Process.respond_to?(:_fork)
+
+  def test_warmup_promote_all_objects_to_oldgen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
+    begin;
+      obj = Object.new
+
+      assert_not_include(ObjectSpace.dump(obj), '"old":true')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"old":true')
+    end;
+  end
+
+  def test_warmup_run_major_gc_and_compact
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # Run a GC to ensure that we are not in the middle of a GC run
+      GC.start
+
+      major_gc_count = GC.stat(:major_gc_count)
+      compact_count = GC.stat(:compact_count)
+      Process.warmup
+      assert_equal major_gc_count + 1, GC.stat(:major_gc_count)
+      assert_equal compact_count + 1, GC.stat(:compact_count)
+    end;
+  end
+
+  def test_warmup_precompute_string_coderange
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
+    begin;
+      obj = "a" * 12
+      obj.force_encoding(Encoding::BINARY)
+      assert_include(ObjectSpace.dump(obj), '"coderange":"unknown"')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"coderange":"7bit"')
+    end;
+  end
+
+  def test_warmup_frees_pages
+    assert_separately([{"RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO" => "1.0"}, "-W0"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      GC.start
+
+      TIMES = 10_000
+      ary = Array.new(TIMES)
+      TIMES.times do |i|
+        ary[i] = Object.new
+      end
+      ary.clear
+      ary = nil
+
+      # Disable GC so we can make sure GC only runs in Process.warmup
+      GC.disable
+
+      total_pages_before = GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages)
+
+      Process.warmup
+
+      # Number of pages freed should cause equal increase in number of allocatable pages.
+      assert_equal(total_pages_before, GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages))
+      assert_equal(0, GC.stat(:heap_tomb_pages), GC.stat)
+      assert_operator(GC.stat(:total_freed_pages), :>, 0)
+    end;
+  end
 end

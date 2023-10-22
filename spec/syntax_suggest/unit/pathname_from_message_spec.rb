@@ -43,6 +43,15 @@ module SyntaxSuggest
       expect(file).to be_falsey
     end
 
+    it "does not output error message on syntax error inside of an (eval at __FILE__:__LINE__)" do
+      message = "(eval at #{__FILE__}:#{__LINE__}):1: invalid multibyte char (UTF-8) (SyntaxError)\n"
+      io = StringIO.new
+      file = PathnameFromMessage.new(message, io: io).call.name
+
+      expect(io.string).to eq("")
+      expect(file).to be_falsey
+    end
+
     it "does not output error message on syntax error inside of streamed code" do
       # An example of streamed code is: $ echo "def foo" | ruby
       message = "-:1: syntax error, unexpected end-of-input\n"

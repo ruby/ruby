@@ -1071,19 +1071,46 @@ dependencies: []
   end
 
   def test_handles_private_null_type
+    yaml_defined = Object.const_defined?("YAML")
+
     path = File.expand_path "data/pry-0.4.7.gemspec.rz", __dir__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 
     assert_instance_of Gem::Specification, data
+
+    assert_equal(yaml_defined, Object.const_defined?("YAML"))
   end
 
   def test_handles_dependencies_with_syck_requirements_bug
+    yaml_defined = Object.const_defined?("YAML")
+
     path = File.expand_path "data/excon-0.7.7.gemspec.rz", __dir__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 
     assert_instance_of Gem::Specification, data
+
+    assert_equal(yaml_defined, Object.const_defined?("YAML"))
+  end
+
+  def test_handles_dependencies_with_other_syck_requirements_argument_error
+    yaml_defined = Object.const_defined?("YAML")
+
+    data = Marshal.dump(Gem::Specification.new do |s|
+      v = Gem::Version.allocate
+      v.instance_variable_set :@version, "YAML::Syck::DefaultKey"
+      s.instance_variable_set :@version, v
+    end)
+
+    assert_raise(ArgumentError) { Marshal.load(data) }
+    out, err = capture_output do
+      assert_raise(ArgumentError) { Marshal.load(data) }
+    end
+    assert_empty out
+    assert_empty err
+
+    assert_equal(yaml_defined, Object.const_defined?("YAML"))
   end
 
   def test_initialize
@@ -2264,7 +2291,7 @@ dependencies: []
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "2"
+  s.version = "2".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze, "other".freeze]
@@ -2279,7 +2306,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
+  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\".freeze])
 end
     SPEC
 
@@ -2304,7 +2331,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "2"
+  s.version = "2".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
@@ -2337,7 +2364,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "2"
+  s.version = "2".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
@@ -2349,11 +2376,11 @@ Gem::Specification.new do |s|
   s.rubygems_version = "#{Gem::VERSION}".freeze
   s.summary = "this is a summary".freeze
 
-  s.installed_by_version = "#{Gem::VERSION}" if s.respond_to? :installed_by_version
+  s.installed_by_version = "#{Gem::VERSION}".freeze if s.respond_to? :installed_by_version
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
+  s.add_runtime_dependency(%q<b>.freeze, ["= 1".freeze])
 end
     SPEC
 
@@ -2373,7 +2400,7 @@ end
     ruby_code = @c1.to_ruby
 
     local = Gem::Platform.local
-    expected_platform = "[#{local.cpu.inspect}, #{local.os.inspect}, #{local.version.inspect}]"
+    expected_platform = "[#{local.cpu.inspect}.freeze, #{local.os.inspect}.freeze, #{local.version.inspect}.freeze]"
     stub_require_paths =
       @c1.instance_variable_get(:@require_paths).join "\u0000"
     extensions = @c1.extensions.join "\u0000"
@@ -2385,7 +2412,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "a".freeze
-  s.version = "1"
+  s.version = "1".freeze
   s.platform = Gem::Platform.new(#{expected_platform})
 
   s.required_rubygems_version = Gem::Requirement.new(\">= 0\".freeze) if s.respond_to? :required_rubygems_version=
@@ -2406,9 +2433,9 @@ Gem::Specification.new do |s|
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
-  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
-  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
+  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\".freeze])
+  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\".freeze])
+  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
 end
     SPEC
 
@@ -2424,7 +2451,7 @@ end
       s.add_dependency "b", ["~> 1.0", ">= 1.0.0"]
     end
 
-    assert_includes spec.to_ruby, '"~> 1.0", ">= 1.0.0"'
+    assert_includes spec.to_ruby, '"~> 1.0".freeze, ">= 1.0.0".freeze'
   end
 
   def test_to_ruby_legacy
@@ -3077,9 +3104,21 @@ Please report a bug if this causes problems.
     end
 
     assert_match <<-WARNING, @ui.error
-WARNING:  licenses is empty, but is recommended.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+WARNING:  licenses is empty, but is recommended. Use an license identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
+  end
+
+  def test_validate_nil_license
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.license = nil
+      @a1.validate
+    end
+
+    assert_empty @ui.error
   end
 
   def test_validate_license_in_a_non_packaging_context
@@ -3117,8 +3156,9 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     end
 
     assert_match <<-WARNING, @ui.error
-WARNING:  license value 'BSD' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+WARNING:  License identifier 'BSD' is invalid. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
@@ -3133,7 +3173,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     assert_empty @ui.error
   end
 
-  def test_validate_license_values_plus
+  def test_validate_deprecated_license_values_plus
     util_setup_validate
 
     use_ui @ui do
@@ -3141,7 +3181,11 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_empty @ui.error
+    assert_match <<-WARNING, @ui.error
+WARNING:  License identifier 'GPL-2.0+' is deprecated. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
+    WARNING
   end
 
   def test_validate_license_values_or_later
@@ -3159,7 +3203,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ["GPL-2.0+ WITH Autoconf-exception-2.0"]
+      @a1.licenses = ["GPL-2.0-or-later WITH Autoconf-exception-2.0"]
       @a1.validate
     end
 
@@ -3175,12 +3219,14 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     end
 
     assert_match <<-WARNING, @ui.error
-WARNING:  license value 'GPL-2.0+ FOO' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+WARNING:  License identifier 'GPL-2.0+ FOO' is invalid. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
     assert_match <<-WARNING, @ui.error
-WARNING:  license value 'GPL-2.0 FOO' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+WARNING:  License identifier 'GPL-2.0+ FOO' is invalid. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
@@ -3188,13 +3234,29 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ["GPL-2.0+ WITH Autocofn-exception-2.0"]
+      @a1.licenses = ["GPL-2.0-only WITH Autocofn-exception-2.0"]
       @a1.validate
     end
 
     assert_match <<-WARNING, @ui.error
-WARNING:  license value 'GPL-2.0+ WITH Autocofn-exception-2.0' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+WARNING:  License identifier 'GPL-2.0-only WITH Autocofn-exception-2.0' is invalid. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
+    WARNING
+  end
+
+  def test_validate_license_with_deprecated_exception
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.licenses = ["GPL-2.0-only WITH Nokia-Qt-exception-1.1"]
+      @a1.validate
+    end
+
+    assert_match <<-WARNING, @ui.error
+WARNING:  Exception identifier at 'GPL-2.0-only WITH Nokia-Qt-exception-1.1' is deprecated. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
@@ -3207,8 +3269,9 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     end
 
     assert_match <<-WARNING, @ui.error
-WARNING:  license value 'ruby' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+WARNING:  License identifier 'ruby' is invalid. Use an identifier from
+https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
 Did you mean 'Ruby'?
     WARNING
   end
@@ -3621,7 +3684,7 @@ Did you mean 'Ruby'?
 
 Gem::Specification.new do |s|
   s.name = "m".freeze
-  s.version = "1"
+  s.version = "1".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "one" => "two", "two" => "three" } if s.respond_to? :metadata=

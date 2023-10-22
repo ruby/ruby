@@ -189,6 +189,17 @@ struct rb_objspace; /* in vm_core.h */
 # define SIZE_POOL_COUNT 5
 #endif
 
+/* Used in places that could malloc during, which can cause the GC to run. We
+ * need to temporarily disable the GC to allow the malloc to happen.
+ * Allocating memory during GC is a bad idea, so use this only when absolutely
+ * necessary. */
+#define DURING_GC_COULD_MALLOC_REGION_START() \
+    assert(rb_during_gc()); \
+    VALUE _already_disabled = rb_gc_disable_no_rest()
+
+#define DURING_GC_COULD_MALLOC_REGION_END() \
+    if (_already_disabled == Qfalse) rb_gc_enable()
+
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;
     struct heap_page *using_page;
@@ -204,6 +215,7 @@ extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
+void rb_gc_prepare_heap(void);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 VALUE rb_objspace_gc_enable(struct rb_objspace *);
 VALUE rb_objspace_gc_disable(struct rb_objspace *);
@@ -233,6 +245,9 @@ VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
 VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
 
 void rb_gc_mark_and_move(VALUE *ptr);
+
+void rb_gc_mark_weak(VALUE *ptr);
+void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
@@ -271,6 +286,7 @@ void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
+void rb_gc_update_values(long n, VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);

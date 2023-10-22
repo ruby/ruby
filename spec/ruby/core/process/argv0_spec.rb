@@ -8,7 +8,7 @@ describe "Process.argv0" do
   it "is the path given as the main script and the same as __FILE__" do
     script = "fixtures/argv0.rb"
 
-    Dir.chdir(File.dirname(__FILE__)) do
+    Dir.chdir(__dir__) do
       ruby_exe(script).should == "#{script}\n#{script}\nOK"
     end
   end

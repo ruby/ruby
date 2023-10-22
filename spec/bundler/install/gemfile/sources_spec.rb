@@ -35,6 +35,15 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
 
+      it "does not use the full index unnecessarily", :bundler => "< 3" do
+        bundle :install, :artifice => "compact_index", :verbose => true
+
+        expect(out).to include("https://gem.repo1/versions")
+        expect(out).to include("https://gem.repo3/versions")
+        expect(out).not_to include("https://gem.repo1/quick/Marshal.4.8/")
+        expect(out).not_to include("https://gem.repo3/quick/Marshal.4.8/")
+      end
+
       it "fails", :bundler => "3" do
         bundle :install, :artifice => "compact_index", :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")
@@ -66,6 +75,33 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(err).to include("Each source after the first must include a block")
         expect(exitstatus).to eq(4)
       end
+    end
+  end
+
+  context "without source affinity, and a stdlib gem present in one of the sources", :ruby_repo do
+    let(:default_json_version) { ruby "gem 'json'; require 'json'; puts JSON::VERSION" }
+
+    before do
+      build_repo2 do
+        build_gem "json", default_json_version
+      end
+
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.add_dependency "json", default_json_version
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+    end
+
+    it "works in standalone mode", :bundler => "< 3" do
+      bundle "install --standalone", :artifice => "compact_index"
     end
   end
 
@@ -1374,7 +1410,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           gem "thin"
         end
       G
-      expect(err).to eq strip_whitespace(<<-EOS).strip
+      expect(err).to eq <<~EOS.strip
         Warning: The gem 'rack' was found in multiple relevant sources.
           * rubygems repository https://gem.repo1/
           * rubygems repository https://gem.repo4/
@@ -1404,7 +1440,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
       G
       expect(last_command).to be_failure
-      expect(err).to eq strip_whitespace(<<-EOS).strip
+      expect(err).to eq <<~EOS.strip
         The gem 'rack' was found in multiple relevant sources.
           * rubygems repository https://gem.repo1/
           * rubygems repository https://gem.repo4/

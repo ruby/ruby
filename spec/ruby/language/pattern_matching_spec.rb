@@ -8,12 +8,26 @@ describe "Pattern matching" do
     ScratchPad.record []
   end
 
-  it "can be standalone assoc operator that deconstructs value" do
-    suppress_warning do
-      eval(<<-RUBY).should == [0, 1]
-        [0, 1] => [a, b]
-        [a, b]
-      RUBY
+  describe "can be standalone assoc operator that" do
+    it "deconstructs value" do
+      suppress_warning do
+        eval(<<-RUBY).should == [0, 1]
+          [0, 1] => [a, b]
+          [a, b]
+        RUBY
+      end
+    end
+
+    it "deconstructs value and properly scopes variables" do
+      suppress_warning do
+        eval(<<-RUBY).should == [0, nil]
+          a = nil
+          eval(<<-PATTERN)
+            [0, 1] => [a, b]
+          PATTERN
+          [a, defined?(b)]
+        RUBY
+      end
     end
   end
 

@@ -43,11 +43,7 @@ $" << "mkmf.rb"
 load File.expand_path("lib/mkmf.rb", srcdir)
 require 'optparse/shellwords'
 
-if defined?(File::NULL)
-  @null = File::NULL
-elsif !File.chardev?(@null = "/dev/null")
-  @null = "nul"
-end
+@null = File::NULL
 
 def verbose?
   $mflags.defined?("V") == "1"

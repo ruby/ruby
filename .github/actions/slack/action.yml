@@ -36,3 +36,4 @@ runs:
           }
       env:
         SLACK_WEBHOOK_URL: ${{ inputs.SLACK_WEBHOOK_URL }}
+      if: ${{github.event_name == 'push' && startsWith(github.repository, 'ruby/')}}

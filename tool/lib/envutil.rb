@@ -15,23 +15,22 @@ end
 module EnvUtil
   def rubybin
     if ruby = ENV["RUBY"]
-      return ruby
-    end
-    ruby = "ruby"
-    exeext = RbConfig::CONFIG["EXEEXT"]
-    rubyexe = (ruby + exeext if exeext and !exeext.empty?)
-    3.times do
-      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
-        return File.expand_path(ruby)
-      end
-      if rubyexe and File.exist? rubyexe and File.executable? rubyexe
-        return File.expand_path(rubyexe)
-      end
-      ruby = File.join("..", ruby)
-    end
-    if defined?(RbConfig.ruby)
+      ruby
+    elsif defined?(RbConfig.ruby)
       RbConfig.ruby
     else
+      ruby = "ruby"
+      exeext = RbConfig::CONFIG["EXEEXT"]
+      rubyexe = (ruby + exeext if exeext and !exeext.empty?)
+      3.times do
+        if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+          return File.expand_path(ruby)
+        end
+        if rubyexe and File.exist? rubyexe and File.executable? rubyexe
+          return File.expand_path(rubyexe)
+        end
+        ruby = File.join("..", ruby)
+      end
       "ruby"
     end
   end
@@ -155,7 +154,7 @@ module EnvUtil
 
     # remain env
     %w(ASAN_OPTIONS RUBY_ON_BUG).each{|name|
-      child_env[name] = ENV[name] if ENV[name]
+      child_env[name] = ENV[name] if !child_env.key?(name) and ENV.key?(name)
     }
 
     args = [args] if args.kind_of?(String)

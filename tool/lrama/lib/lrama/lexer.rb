@@ -1,83 +1,11 @@
 require "strscan"
-require "lrama/report"
+require "lrama/report/duration"
+require "lrama/lexer/token"
 
 module Lrama
   # Lexer for parse.y
   class Lexer
     include Lrama::Report::Duration
-
-    # s_value is semantic value
-    Token = Struct.new(:type, :s_value, :alias, keyword_init: true) do
-      Type = Struct.new(:id, :name, keyword_init: true)
-
-      attr_accessor :line, :column, :referred
-      # For User_code
-      attr_accessor :references
-
-      def to_s
-        "#{super} line: #{line}, column: #{column}"
-      end
-
-      def referred_by?(string)
-        [self.s_value, self.alias].include?(string)
-      end
-
-      def ==(other)
-        self.class == other.class && self.type == other.type && self.s_value == other.s_value
-      end
-
-      def numberize_references(lhs, rhs)
-        self.references.map! {|ref|
-          ref_name = ref[1]
-          if ref_name.is_a?(String) && ref_name != '$'
-            value =
-              if lhs.referred_by?(ref_name)
-                '$'
-              else
-                rhs.find_index {|token| token.referred_by?(ref_name) } + 1
-              end
-            [ref[0], value, ref[2], ref[3], ref[4]]
-          else
-            ref
-          end
-        }
-      end
-
-      @i = 0
-      @types = []
-
-      def self.define_type(name)
-        type = Type.new(id: @i, name: name.to_s)
-        const_set(name, type)
-        @types << type
-        @i += 1
-      end
-
-      # Token types
-      define_type(:P_expect)         # %expect
-      define_type(:P_define)         # %define
-      define_type(:P_printer)        # %printer
-      define_type(:P_lex_param)      # %lex-param
-      define_type(:P_parse_param)    # %parse-param
-      define_type(:P_initial_action) # %initial-action
-      define_type(:P_union)          # %union
-      define_type(:P_token)          # %token
-      define_type(:P_type)           # %type
-      define_type(:P_nonassoc)       # %nonassoc
-      define_type(:P_left)           # %left
-      define_type(:P_right)          # %right
-      define_type(:P_prec)           # %prec
-      define_type(:User_code)        # { ... }
-      define_type(:Tag)              # <int>
-      define_type(:Number)           # 0
-      define_type(:Ident_Colon)      # k_if:, k_if  : (spaces can be there)
-      define_type(:Ident)            # api.pure, tNUMBER
-      define_type(:Named_Ref)        # [foo]
-      define_type(:Semicolon)        # ;
-      define_type(:Bar)              # |
-      define_type(:String)           # "str"
-      define_type(:Char)             # '+'
-    end
 
     # States
     #
@@ -102,7 +30,6 @@ module Lrama
       @grammar_rules = []
       @epilogue = []
 
-      #
       @bison_declarations_tokens = []
       @grammar_rules_tokens = []
 
@@ -207,6 +134,8 @@ module Lrama
           tokens << create_token(Token::P_define, ss[0], line, ss.pos - column)
         when ss.scan(/%printer/)
           tokens << create_token(Token::P_printer, ss[0], line, ss.pos - column)
+        when ss.scan(/%error-token/)
+          tokens << create_token(Token::P_error_token, ss[0], line, ss.pos - column)
         when ss.scan(/%lex-param/)
           tokens << create_token(Token::P_lex_param, ss[0], line, ss.pos - column)
         when ss.scan(/%parse-param/)
@@ -225,6 +154,8 @@ module Lrama
           tokens << create_token(Token::P_left, ss[0], line, ss.pos - column)
         when ss.scan(/%right/)
           tokens << create_token(Token::P_right, ss[0], line, ss.pos - column)
+        when ss.scan(/%precedence/)
+          tokens << create_token(Token::P_precedence, ss[0], line, ss.pos - column)
         when ss.scan(/%prec/)
           tokens << create_token(Token::P_prec, ss[0], line, ss.pos - column)
         when ss.scan(/{/)
@@ -282,19 +213,33 @@ module Lrama
           string, line = lex_string(ss, "'", line, lines)
           str << string
           next
+
+        # $ references
+        # It need to wrap an identifier with brackets to use ".-" for identifiers
         when ss.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, "$", tag, str.length, str.length + ss[0].length - 1]
         when ss.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, Integer(ss[2]), tag, str.length, str.length + ss[0].length - 1]
-        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_.][-a-zA-Z0-9_.]*)/) # $foo, $expr, $<long>program
+        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, ss[2], tag, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
+          tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
+          references << [:dollar, ss[2], tag, str.length, str.length + ss[0].length - 1]
+
+        # @ references
+        # It need to wrap an identifier with brackets to use ".-" for identifiers
         when ss.scan(/@\$/) # @$
           references << [:at, "$", nil, str.length, str.length + ss[0].length - 1]
-        when ss.scan(/@(\d)+/) # @1
+        when ss.scan(/@(\d+)/) # @1
           references << [:at, Integer(ss[1]), nil, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
+          references << [:at, ss[1], nil, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
+          references << [:at, ss[1], nil, str.length, str.length + ss[0].length - 1]
+
         when ss.scan(/{/)
           brace_count += 1
         when ss.scan(/}/)
@@ -384,8 +329,6 @@ module Lrama
           str << ss.getch
           next
         end
-
-        str << ss[0]
       end
 
       line # Reach to end of input

@@ -775,6 +775,7 @@ module StringScannerTests
   def test_named_captures
     omit("not implemented on TruffleRuby") if ["truffleruby"].include?(RUBY_ENGINE)
     scan = StringScanner.new("foobarbaz")
+    assert_equal({}, scan.named_captures)
     assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
     assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
   end

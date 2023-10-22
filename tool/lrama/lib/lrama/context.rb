@@ -1,4 +1,4 @@
-require "lrama/report"
+require "lrama/report/duration"
 
 module Lrama
   # This is passed to a template
@@ -84,6 +84,16 @@ module Lrama
 
       @states.terms.each do |term|
         a[term.token_id] = term.number
+      end
+
+      return a
+    end
+
+    def yytranslate_inverted
+      a = Array.new(@states.symbols.count, @states.undef_symbol.token_id)
+
+      @states.terms.each do |term|
+        a[term.number] = term.token_id
       end
 
       return a
@@ -391,14 +401,12 @@ module Lrama
       end
       print sprintf("]\n\n")
 
-
       print sprintf("width [\n")
       vectors_count.times do |i|
         print sprintf("%d, ", ary[i] ? ary[i][3] : 0)
         print "\n" if i % 10 == 9
       end
       print sprintf("]\n\n")
-
 
       print sprintf("tally [\n")
       vectors_count.times do |i|

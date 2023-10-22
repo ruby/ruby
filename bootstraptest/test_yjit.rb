@@ -1,3 +1,125 @@
+# regression test for callee block handler overlapping with arguments
+assert_equal '3', %q{
+  def foo(_req, *args) = args.last
+
+  def call_foo = foo(0, 1, 2, 3, &->{})
+
+  call_foo
+}
+
+# call leaf builtin with a block argument
+assert_equal '0', "0.abs(&nil)"
+
+# regression test for invokeblock iseq guard
+assert_equal 'ok', %q{
+  return :ok unless defined?(GC.compact)
+  def foo = yield
+  10.times do |i|
+    ret = eval("foo { #{i} }")
+    raise "failed at #{i}" unless ret == i
+    GC.compact
+  end
+  :ok
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
+# regression test for overly generous guard elision
+assert_equal '[0, :sum, 0, :sum]', %q{
+  # In faulty versions, the following happens:
+  #  1. YJIT puts object on the temp stack with type knowledge
+  #     (CArray or CString) about RBASIC_CLASS(object).
+  #  2. In iter=0, due to the type knowledge, YJIT generates
+  #     a call to sum() without any guard on RBASIC_CLASS(object).
+  #  3. In iter=1, a singleton class is added to the object,
+  #     changing RBASIC_CLASS(object), falsifying the type knowledge.
+  #  4. Because the code from (1) has no class guard, it is incorrectly
+  #     reused and the wrong method is invoked.
+  # Putting a literal is important for gaining type knowledge.
+  def carray(iter)
+    array = []
+    array.sum(iter.times { def array.sum(_) = :sum })
+  end
+
+  def cstring(iter)
+    string = ""
+    string.sum(iter.times { def string.sum(_) = :sum })
+  end
+
+  [carray(0), carray(1), cstring(0), cstring(1)]
+}
+
+# regression test for return type of Integer#/
+# It can return a T_BIGNUM when inputs are T_FIXNUM.
+assert_equal 0x3fffffffffffffff.to_s, %q{
+  def call(fixnum_min)
+    (fixnum_min / -1) - 1
+  end
+
+  call(-(2**62))
+}
+
+# regression test for return type of String#<<
+assert_equal 'Sub', %q{
+  def call(sub) = (sub << sub).itself
+
+  class Sub < String; end
+
+  call(Sub.new('o')).class
+}
+
+# test splat filling required and feeding rest
+assert_equal '[0, 1, 2, [3, 4]]', %q{
+  public def lead_rest(a, b, *rest)
+    [self, a, b, rest]
+  end
+
+  def call(args) = 0.lead_rest(*args)
+
+  call([1, 2, 3, 4])
+}
+
+# test missing opts are nil initialized
+assert_equal '[[0, 1, nil, 3], [0, 1, nil, 3], [0, 1, nil, 3, []], [0, 1, nil, 3, []]]', %q{
+  public def lead_opts(a, b=binding.local_variable_get(:c), c=3)
+    [self, a, b, c]
+  end
+
+  public def opts_rest(a=raise, b=binding.local_variable_get(:c), c=3, *rest)
+    [self, a, b, c, rest]
+  end
+
+  def call(args)
+    [
+      0.lead_opts(1),
+      0.lead_opts(*args),
+
+      0.opts_rest(1),
+      0.opts_rest(*args),
+    ]
+  end
+
+  call([1])
+}
+
+# test filled optionals with unspecified keyword param
+assert_equal 'ok', %q{
+  def opt_rest_opt_kw(_=1, *, k: :ok) = k
+
+  def call = opt_rest_opt_kw(0)
+
+  call
+}
+
+# test splat empty array with rest param
+assert_equal '[0, 1, 2, []]', %q{
+  public def foo(a=1, b=2, *rest)
+    [self, a, b, rest]
+  end
+
+  def call(args) = 0.foo(*args)
+
+  call([])
+}
+
 # Regression test for yielding with autosplat to block with
 # optional parameters. https://github.com/Shopify/yjit/issues/313
 assert_equal '[:a, :b, :a, :b]', %q{
@@ -1100,6 +1222,18 @@ assert_equal '[42, :default]', %q{
   ]
 }
 
+# Test default value block for Hash with opt_aref_with
+assert_equal "false", %q{
+  def index_with_string(h)
+    h["foo"]
+  end
+
+  h = Hash.new { |h, k| k.frozen? }
+
+  index_with_string(h)
+  index_with_string(h)
+}
+
 # A regression test for making sure cfp->sp is proper when
 # hitting stubs. See :stub-sp-flush:
 assert_equal 'ok', %q{
@@ -1722,6 +1856,24 @@ assert_equal 'true', %q{
   jittable_method
 }
 
+# test getbyte on string class
+assert_equal '[97, :nil, 97, :nil, :raised]', %q{
+  def getbyte(s, i)
+   byte = begin
+    s.getbyte(i)
+   rescue TypeError
+    :raised
+   end
+
+   byte || :nil
+  end
+
+  getbyte("a", 0)
+  getbyte("a", 0)
+
+  [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
 # Test << operator on string subclass
 assert_equal 'abab', %q{
   class MyString < String; end
@@ -2262,6 +2414,17 @@ assert_equal '[1, 2, nil]', %q{
 
   expandarray_rhs_too_small
   expandarray_rhs_too_small
+}
+
+assert_equal '[nil, 2, nil]', %q{
+  def foo(arr)
+    a, b, c = arr
+  end
+
+  a, b, c1 = foo([0, 1])
+  a, b, c2 = foo([0, 1, 2])
+  a, b, c3 = foo([0, 1])
+  [c1, c2, c3]
 }
 
 assert_equal '[1, [2]]', %q{
@@ -3981,3 +4144,55 @@ assert_equal '[]', %q{
     _x, _y = func.call
   end.call
 }
+
+# Catch TAG_BREAK in a non-FINISH frame with JIT code
+assert_equal '1', %q{
+  def entry
+    catch_break
+  end
+
+  def catch_break
+    while_true do
+      break
+    end
+    1
+  end
+
+  def while_true
+    while true
+      yield
+    end
+  end
+
+  entry
+}
+
+assert_equal '6', %q{
+  class Base
+    def number = 1 + yield
+  end
+
+  class Sub < Base
+    def number = super + 2
+  end
+
+  Sub.new.number { 3 }
+}
+
+# Integer multiplication and overflow
+assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]', %q{
+  def foo(a, b)
+    a * b
+  end
+
+  r1 = foo(2, 3)
+  r2 = foo(2, -3)
+  r3 = foo(2 << 40, 2 << 41)
+  r4 = foo(2 << 40, -2 << 41)
+  r5 = foo(1 << 62, 1 << 62)
+
+  [r1, r2, r3, r4, r5]
+}
+
+# Integer multiplication and overflow (minimized regression test from test-basic)
+assert_equal '8515157028618240000', %q{2128789257154560000 * 4}

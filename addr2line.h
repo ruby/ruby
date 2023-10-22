@@ -12,8 +12,10 @@
 
 #if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H))
 
+#include <stdio.h>
+
 void
-rb_dump_backtrace_with_lines(int num_traces, void **traces);
+rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout);
 
 #endif /* USE_ELF */
 

@@ -173,10 +173,9 @@ rbimpl_typeddata_flags {
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
-     * This flag  is mysterious.  It seems  nobody is currently using  it.  The
-     * intention of this flag is also unclear.  We need further investigations.
+     * This flag no longer in use
      */
-    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1,     /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_UNUSED           = RUBY_FL_UNUSED6,
 
     /**
      * This flag determines whether marking and compaction should be carried out

@@ -105,7 +105,7 @@ describe "Module#const_get" do
     -> { ConstantSpecs.const_get("CS_CONST1", false) }.should raise_error(NameError)
   end
 
-  it "returns a constant whose module is defined the the toplevel" do
+  it "returns a constant whose module is defined the toplevel" do
     ConstantSpecs.const_get("ConstantSpecsTwo::Foo").should == :cs_two_foo
     ConstantSpecsThree.const_get("ConstantSpecsTwo::Foo").should == :cs_three_foo
   end

@@ -1,14 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle lock" do
-  def strip_lockfile(lockfile)
-    strip_whitespace(lockfile).sub(/\n\Z/, "")
-  end
-
-  def read_lockfile(file = "Gemfile.lock")
-    strip_lockfile bundled_app(file).read
-  end
-
   let(:repo) { gem_repo1 }
 
   before :each do
@@ -19,7 +11,7 @@ RSpec.describe "bundle lock" do
       gem "foo"
     G
 
-    @lockfile = strip_lockfile(<<-L)
+    @lockfile = <<~L
       GEM
         remote: #{file_uri_for(repo)}/
         specs:
@@ -58,7 +50,7 @@ RSpec.describe "bundle lock" do
   it "prints a lockfile when there is no existing lockfile with --print" do
     bundle "lock --print"
 
-    expect(out).to eq(@lockfile)
+    expect(out).to eq(@lockfile.strip)
   end
 
   it "prints a lockfile when there is an existing lockfile with --print" do
@@ -66,7 +58,7 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --print"
 
-    expect(out).to eq(@lockfile)
+    expect(out).to eq(@lockfile.strip)
   end
 
   it "writes a lockfile when there is no existing lockfile" do
@@ -79,6 +71,12 @@ RSpec.describe "bundle lock" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1")
 
     bundle "lock --update"
+
+    expect(read_lockfile).to eq(@lockfile)
+
+    lockfile @lockfile.gsub("2.3.2", "2.3.1")
+
+    bundle "lock --update", :env => { "BUNDLE_FROZEN" => "true" }
 
     expect(read_lockfile).to eq(@lockfile)
   end
@@ -94,7 +92,7 @@ RSpec.describe "bundle lock" do
       source "#{file_uri_for(repo)}"
       gem "foo"
     G
-    lockfile = strip_lockfile(<<-L)
+    lockfile = <<~L
       GEM
         remote: #{file_uri_for(repo)}/
         specs:
@@ -294,6 +292,47 @@ RSpec.describe "bundle lock" do
 
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
       end
+    end
+  end
+
+  context "conservative updates when minor update adds a new dependency" do
+    before do
+      build_repo4 do
+        build_gem "sequel", "5.71.0"
+        build_gem "sequel", "5.72.0" do |s|
+          s.add_dependency "bigdecimal", ">= 0"
+        end
+        build_gem "bigdecimal", %w[1.4.4 3.1.4]
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'sequel'
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            sequel (5.71.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          sequel
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    end
+
+    it "adds the latest version of the new dependency" do
+      bundle "lock --minor --update sequel"
+
+      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-3.1.4].sort)
     end
   end
 

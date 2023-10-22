@@ -64,7 +64,7 @@ module RubyVM::RJIT
       asm = Assembler.new
       compile_prologue(asm, iseq, pc)
       compile_block(asm, jit:, pc:)
-      iseq.body.jit_func = @cb.write(asm)
+      iseq.body.jit_entry = @cb.write(asm)
     rescue Exception => e
       $stderr.puts e.full_message
       exit 1
@@ -176,8 +176,8 @@ module RubyVM::RJIT
 
       # If they were the ISEQ's first blocks, re-compile RJIT entry as well
       if iseq.body.iseq_encoded.to_i == pc
-        iseq.body.jit_func = 0
-        iseq.body.total_calls = 0
+        iseq.body.jit_entry = 0
+        iseq.body.jit_entry_calls = 0
       end
     end
 

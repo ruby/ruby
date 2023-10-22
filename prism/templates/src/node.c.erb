@@ -1,0 +1,157 @@
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#include "prism/node.h"
+
+// Clear the node but preserves the location.
+void pm_node_clear(pm_node_t *node) {
+    pm_location_t location = node->location;
+    memset(node, 0, sizeof(pm_node_t));
+    node->location = location;
+}
+
+static void
+pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize);
+
+// Calculate the size of the node list in bytes.
+static size_t
+pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
+    size_t size = sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
+    for (size_t index = 0; index < node_list->size; index++) {
+        pm_node_memsize_node(node_list->nodes[index], memsize);
+    }
+    return size;
+}
+
+// Append a new node onto the end of the node list.
+void
+pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
+    if (list->size == list->capacity) {
+        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+        list->nodes = (pm_node_t **) realloc(list->nodes, sizeof(pm_node_t *) * list->capacity);
+    }
+    list->nodes[list->size++] = node;
+}
+
+PRISM_EXPORTED_FUNCTION void
+pm_node_destroy(pm_parser_t *parser, pm_node_t *node);
+
+// Deallocate the inner memory of a list of nodes. The parser argument is not
+// used, but is here for the future possibility of pre-allocating memory pools.
+static void
+pm_node_list_free(pm_parser_t *parser, pm_node_list_t *list) {
+    if (list->capacity > 0) {
+        for (size_t index = 0; index < list->size; index++) {
+            pm_node_destroy(parser, list->nodes[index]);
+        }
+        free(list->nodes);
+    }
+}
+
+// Deallocate the space for a pm_node_t. Similarly to pm_node_alloc, we're not
+// using the parser argument, but it's there to allow for the future possibility
+// of pre-allocating larger memory pools.
+PRISM_EXPORTED_FUNCTION void
+pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+        case <%= node.type %>: {
+            <%- if node.fields.any? { |field| ![Prism::LocationField, Prism::OptionalLocationField, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField].include?(field.class) } -%>
+            pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
+            <%- end -%>
+            <%- node.fields.each do |field| -%>
+            <%- case field -%>
+            <%- when Prism::LocationField, Prism::OptionalLocationField, Prism::UInt32Field, Prism::FlagsField, Prism::ConstantField, Prism::OptionalConstantField -%>
+            <%- when Prism::NodeField -%>
+            pm_node_destroy(parser, (pm_node_t *)cast-><%= field.name %>);
+            <%- when Prism::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_node_destroy(parser, (pm_node_t *)cast-><%= field.name %>);
+            }
+            <%- when Prism::StringField -%>
+            pm_string_free(&cast-><%= field.name %>);
+            <%- when Prism::NodeListField -%>
+            pm_node_list_free(parser, &cast-><%= field.name %>);
+            <%- when Prism::ConstantListField -%>
+            pm_constant_id_list_free(&cast-><%= field.name %>);
+            <%- else -%>
+            <%- raise -%>
+            <%- end -%>
+            <%- end -%>
+            break;
+        }
+        <%- end -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+        default:
+            assert(false && "unreachable");
+            break;
+    }
+    free(node);
+}
+
+static void
+pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize) {
+    memsize->node_count++;
+
+    switch (PM_NODE_TYPE(node)) {
+        // We do not calculate memsize of a ScopeNode
+        // as it should never be generated
+        case PM_SCOPE_NODE:
+            return;
+        <%- nodes.each do |node| -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+        case <%= node.type %>: {
+            pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
+            memsize->memsize += sizeof(*cast);
+            <%- if node.fields.any? { |f| f.is_a?(Prism::NodeListField) } -%>
+            // Node lists will add in their own sizes below.
+            memsize->memsize -= sizeof(pm_node_list_t) * <%= node.fields.count { |f| f.is_a?(Prism::NodeListField) } %>;
+            <%- end -%>
+            <%- if node.fields.any? { |f| f.is_a?(Prism::ConstantListField) } -%>
+            // Constant id lists will add in their own sizes below.
+            memsize->memsize -= sizeof(pm_constant_id_list_t) * <%= node.fields.count { |f| f.is_a?(Prism::ConstantListField) } %>;
+            <%- end -%>
+            <%- node.fields.each do |field| -%>
+            <%- case field -%>
+            <%- when Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt32Field, Prism::FlagsField, Prism::LocationField, Prism::OptionalLocationField -%>
+            <%- when Prism::NodeField -%>
+            pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
+            <%- when Prism::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_node_memsize_node((pm_node_t *)cast-><%= field.name %>, memsize);
+            }
+            <%- when Prism::StringField -%>
+            memsize->memsize += pm_string_memsize(&cast-><%= field.name %>);
+            <%- when Prism::NodeListField -%>
+            memsize->memsize += pm_node_list_memsize(&cast-><%= field.name %>, memsize);
+            <%- when Prism::ConstantListField -%>
+            memsize->memsize += pm_constant_id_list_memsize(&cast-><%= field.name %>);
+            <%- else -%>
+            <%- raise -%>
+            <%- end -%>
+            <%- end -%>
+            break;
+        }
+        <%- end -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+    }
+}
+
+// Calculates the memory footprint of a given node.
+PRISM_EXPORTED_FUNCTION void
+pm_node_memsize(pm_node_t *node, pm_memsize_t *memsize) {
+    *memsize = (pm_memsize_t) { .memsize = 0, .node_count = 0 };
+    pm_node_memsize_node(node, memsize);
+}
+
+// Returns a string representation of the given node type.
+PRISM_EXPORTED_FUNCTION const char *
+pm_node_type_to_str(pm_node_type_t node_type)
+{
+    switch (node_type) {
+<%- nodes.each do |node| -%>
+        case <%= node.type %>:
+            return "<%= node.type %>";
+<%- end -%>
+    }
+    return "";
+}

@@ -58,6 +58,7 @@
 #define RUBY_EVENT_THREAD_END        0x0800 /**< Encountered an end of a thread. */
 #define RUBY_EVENT_FIBER_SWITCH      0x1000 /**< Encountered a `Fiber#yield`. */
 #define RUBY_EVENT_SCRIPT_COMPILED   0x2000 /**< Encountered an `eval`. */
+#define RUBY_EVENT_RESCUE            0x4000 /**< Encountered a `rescue` statement. */
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff /**< Bitmask of extended events. */
 
 /** @} */

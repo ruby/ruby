@@ -48,7 +48,7 @@
 #
 # == OptionParser
 #
-# === New to \OptionParser?
+# === New to +OptionParser+?
 #
 # See the {Tutorial}[optparse/tutorial.rdoc].
 #

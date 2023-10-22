@@ -211,16 +211,58 @@ ossl_dsa_is_private(VALUE self)
  *    dsa.to_pem([cipher, password]) -> aString
  *    dsa.to_s([cipher, password]) -> aString
  *
- * Encodes this DSA to its PEM encoding.
+ * Serializes a private or public key to a PEM-encoding.
  *
- * === Parameters
- * * _cipher_ is an OpenSSL::Cipher.
- * * _password_ is a string containing your password.
+ * [When the key contains public components only]
  *
- * === Examples
- *  DSA.to_pem -> aString
- *  DSA.to_pem(cipher, 'mypassword') -> aString
+ *   Serializes it into an X.509 SubjectPublicKeyInfo.
+ *   The parameters _cipher_ and _password_ are ignored.
  *
+ *   A PEM-encoded key will look like:
+ *
+ *     -----BEGIN PUBLIC KEY-----
+ *     [...]
+ *     -----END PUBLIC KEY-----
+ *
+ *   Consider using #public_to_pem instead. This serializes the key into an
+ *   X.509 SubjectPublicKeyInfo regardless of whether it is a public key
+ *   or a private key.
+ *
+ * [When the key contains private components, and no parameters are given]
+ *
+ *   Serializes it into a traditional \OpenSSL DSAPrivateKey.
+ *
+ *   A PEM-encoded key will look like:
+ *
+ *     -----BEGIN DSA PRIVATE KEY-----
+ *     [...]
+ *     -----END DSA PRIVATE KEY-----
+ *
+ * [When the key contains private components, and _cipher_ and _password_ are given]
+ *
+ *   Serializes it into a traditional \OpenSSL DSAPrivateKey and encrypts it in
+ *   OpenSSL's traditional PEM encryption format.
+ *   _cipher_ must be a cipher name understood by OpenSSL::Cipher.new or an
+ *   instance of OpenSSL::Cipher.
+ *
+ *   An encrypted PEM-encoded key will look like:
+ *
+ *     -----BEGIN DSA PRIVATE KEY-----
+ *     Proc-Type: 4,ENCRYPTED
+ *     DEK-Info: AES-128-CBC,733F5302505B34701FC41F5C0746E4C0
+ *
+ *     [...]
+ *     -----END DSA PRIVATE KEY-----
+ *
+ *   Note that this format uses MD5 to derive the encryption key, and hence
+ *   will not be available on FIPS-compliant systems.
+ *
+ * <b>This method is kept for compatibility.</b>
+ * This should only be used when the traditional, non-standard \OpenSSL format
+ * is required.
+ *
+ * Consider using #public_to_pem (X.509 SubjectPublicKeyInfo) or #private_to_pem
+ * (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) instead.
  */
 static VALUE
 ossl_dsa_export(int argc, VALUE *argv, VALUE self)
@@ -238,8 +280,15 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *    dsa.to_der -> aString
  *
- * Encodes this DSA to its DER encoding.
+ * Serializes a private or public key to a DER-encoding.
  *
+ * See #to_pem for details.
+ *
+ * <b>This method is kept for compatibility.</b>
+ * This should only be used when the traditional, non-standard \OpenSSL format
+ * is required.
+ *
+ * Consider using #public_to_der or #private_to_der instead.
  */
 static VALUE
 ossl_dsa_to_der(VALUE self)

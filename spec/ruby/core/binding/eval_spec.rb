@@ -60,10 +60,12 @@ describe "Binding#eval" do
     bind.eval("#foo\n__LINE__", "(test)", 88).should == 89
   end
 
-  it "uses (eval) as __FILE__ if single argument given" do
-    obj = BindingSpecs::Demo.new(1)
-    bind = obj.get_binding
-    bind.eval("__FILE__").should == '(eval)'
+  ruby_version_is ""..."3.3" do
+    it "uses (eval) as __FILE__ if single argument given" do
+      obj = BindingSpecs::Demo.new(1)
+      bind = obj.get_binding
+      bind.eval("__FILE__").should == '(eval)'
+    end
   end
 
   it "uses 1 as __LINE__" do
@@ -103,5 +105,11 @@ describe "Binding#eval" do
     bind = BindingSpecs::Refined.refined_binding
 
     bind.eval("'bar'.foo").should == "foo"
+  end
+
+  ruby_version_is "3.3" do
+    it "uses the caller location as default filename" do
+      binding.eval("[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
+    end
   end
 end

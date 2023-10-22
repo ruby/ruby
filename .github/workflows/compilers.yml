@@ -31,7 +31,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-16
+  default_cc: clang-17
   append_cc: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
@@ -85,6 +85,7 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
+          - { name: clang-18,  env: { default_cc: clang-18 } }
           - { name: clang-17,  env: { default_cc: clang-17 } }
           - { name: clang-16,  env: { default_cc: clang-16 } }
           - { name: clang-15,  env: { default_cc: clang-15 } }
@@ -123,15 +124,17 @@ jobs:
           # warning generates a lot of noise from use of ANYARGS in
           # rb_define_method() and friends.
           # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-          - { name: c99,   env: { append_cc: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c11,   env: { append_cc: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c17,   env: { append_cc: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-          - { name: c2x,   env: { append_cc: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c99,   env: { CFLAGS:   '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c11,   env: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c17,   env: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c23,   env: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
           - { name: c++98, env: { CXXFLAGS: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++11, env: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++14, env: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++17, env: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-          - { name: c++2a, env: { CXXFLAGS: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++20, env: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++23, env: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+          - { name: c++26, env: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 
           - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
 #         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
@@ -141,7 +144,7 @@ jobs:
           - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
           - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
           - { name: 'coroutine=pthread',  env: { append_configure: '--with-coroutine=pthread' } }
-          - { name: disable-jit-support,  env: { append_configure: '--disable-jit-support' } }
+          - { name: disable-jit,          env: { append_configure: '--disable-yjit --disable-rjit' } }
           - { name: disable-dln,          env: { append_configure: '--disable-dln' } }
           - { name: enable-mkmf-verbose,  env: { append_configure: '--enable-mkmf-verbose' } }
           - { name: disable-rubygems,     env: { append_configure: '--disable-rubygems' } }
@@ -165,7 +168,6 @@ jobs:
 #         - { name: SYMBOL_DEBUG,                   env: { cppflags: '-DSYMBOL_DEBUG' } }
 
 #         - { name: RGENGC_CHECK_MODE,              env: { cppflags: '-DRGENGC_CHECK_MODE' } }
-#         - { name: TRANSIENT_HEAP_CHECK_MODE,      env: { cppflags: '-DTRANSIENT_HEAP_CHECK_MODE' } }
 #         - { name: VM_CHECK_MODE,                  env: { cppflags: '-DVM_CHECK_MODE' } }
 
 #         - { name: USE_EMBED_CI=0,                 env: { cppflags: '-DUSE_EMBED_CI=0' } }
@@ -178,9 +180,9 @@ jobs:
 #         - { name: USE_LAZY_LOAD,                  env: { cppflags: '-DUSE_LAZY_LOAD' } }
 #         - { name: USE_SYMBOL_GC=0,                env: { cppflags: '-DUSE_SYMBOL_GC=0' } }
 #         - { name: USE_THREAD_CACHE=0,             env: { cppflags: '-DUSE_THREAD_CACHE=0' } }
-#         - { name: USE_TRANSIENT_HEAP=0,           env: { cppflags: '-DUSE_TRANSIENT_HEAP=0' } }
           - { name: USE_RUBY_DEBUG_LOG=1,           env: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
 #         - { name: USE_DEBUG_COUNTER,              env: { cppflags: '-DUSE_DEBUG_COUNTER=1', RUBY_DEBUG_COUNTER_DISABLE: '1' } }
+          - { name: SHARABLE_MIDDLE_SUBSTRING,      env: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' } }
 
 #         - { name: DEBUG_FIND_TIME_NUMGUESS,       env: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
 #         - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
@@ -199,26 +201,32 @@ jobs:
 #         - { name: RGENGC_ESTIMATE_OLDMALLOC,      env: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
 #         - { name: RGENGC_FORCE_MAJOR_GC,          env: { cppflags: '-DRGENGC_FORCE_MAJOR_GC' } }
 #         - { name: RGENGC_OBJ_INFO,                env: { cppflags: '-DRGENGC_OBJ_INFO' } }
-#         - { name: RGENGC_OLD_NEWOBJ_CHECK,        env: { cppflags: '-DRGENGC_OLD_NEWOBJ_CHECK' } }
 #         - { name: RGENGC_PROFILE,                 env: { cppflags: '-DRGENGC_PROFILE' } }
 
 #         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
 #         - { name: VM_DEBUG_VERIFY_METHOD_CACHE,   env: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
 
-          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' }, rust: true }
+          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' } }
           - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
-          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' }, rust: true }
+          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
 #         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
+          - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
 
     name: ${{ matrix.entry.name }}
 
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-16' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-17' }}
       options: --user root
 
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
 
     env: ${{ matrix.entry.env || matrix.env }}
 
@@ -226,7 +234,7 @@ jobs:
       - run: id
         working-directory:
 
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -236,10 +244,6 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
-
-      - name: Install Rust
-        if: ${{ matrix.entry.rust }}
-        run: sudo apt-get update && sudo apt install -y rustc
 
       - name: Run configure
         run: >
@@ -282,7 +286,7 @@ jobs:
         with:
           label: ${{ matrix.entry.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:

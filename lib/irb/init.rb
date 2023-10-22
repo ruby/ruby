@@ -5,6 +5,41 @@
 #
 
 module IRB # :nodoc:
+  @CONF = {}
+  # Displays current configuration.
+  #
+  # Modifying the configuration is achieved by sending a message to IRB.conf.
+  #
+  # See IRB@Configuration for more information.
+  def IRB.conf
+    @CONF
+  end
+
+  def @CONF.inspect
+    array = []
+    for k, v in sort{|a1, a2| a1[0].id2name <=> a2[0].id2name}
+      case k
+      when :MAIN_CONTEXT, :__TMP__EHV__
+        array.push format("CONF[:%s]=...myself...", k.id2name)
+      when :PROMPT
+        s = v.collect{
+          |kk, vv|
+          ss = vv.collect{|kkk, vvv| ":#{kkk.id2name}=>#{vvv.inspect}"}
+          format(":%s=>{%s}", kk.id2name, ss.join(", "))
+        }
+        array.push format("CONF[:%s]={%s}", k.id2name, s.join(", "))
+      else
+        array.push format("CONF[:%s]=%s", k.id2name, v.inspect)
+      end
+    end
+    array.join("\n")
+  end
+
+  # Returns the current version of IRB, including release version and last
+  # updated date.
+  def IRB.version
+    format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
+  end
 
   # initialize config
   def IRB.setup(ap_path, argv: ::ARGV)
@@ -28,6 +63,7 @@ module IRB # :nodoc:
     unless ap_path and @CONF[:AP_NAME]
       ap_path = File.join(File.dirname(File.dirname(__FILE__)), "irb.rb")
     end
+    @CONF[:VERSION] = version
     @CONF[:AP_NAME] = File::basename(ap_path, ".rb")
 
     @CONF[:IRB_NAME] = "irb"
@@ -58,35 +94,30 @@ module IRB # :nodoc:
     @CONF[:PROMPT] = {
       :NULL => {
         :PROMPT_I => nil,
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "%s\n"
       },
       :DEFAULT => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
-        :PROMPT_S => "%N(%m):%03n:%i%l ",
-        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :PROMPT_I => "%N(%m):%03n> ",
+        :PROMPT_S => "%N(%m):%03n%l ",
+        :PROMPT_C => "%N(%m):%03n* ",
         :RETURN => "=> %s\n"
       },
       :CLASSIC => {
         :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
         :PROMPT_S => "%N(%m):%03n:%i%l ",
         :PROMPT_C => "%N(%m):%03n:%i* ",
         :RETURN => "%s\n"
       },
       :SIMPLE => {
         :PROMPT_I => ">> ",
-        :PROMPT_N => ">> ",
         :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
       :INF_RUBY => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => nil,
+        :PROMPT_I => "%N(%m):%03n> ",
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "%s\n",
@@ -94,7 +125,6 @@ module IRB # :nodoc:
       },
       :XMP => {
         :PROMPT_I => nil,
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "    ==>%s\n"

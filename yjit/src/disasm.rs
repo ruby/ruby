@@ -180,23 +180,24 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
-    // Colorize outlined code in blue
-    if cb.outlined {
-        write!(&mut out, "\x1b[34m").unwrap();
-    }
     // For each instruction in this block
     for insn in insns.as_ref() {
         // Comments for this block
         if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
             for comment in comment_list {
+                if cb.outlined {
+                    write!(&mut out, "\x1b[34m").unwrap(); // Make outlined code blue
+                }
                 writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
             }
         }
+        if cb.outlined {
+            write!(&mut out, "\x1b[34m").unwrap(); // Make outlined code blue
+        }
         writeln!(&mut out, "  {insn}").unwrap();
-    }
-    // Disable blue color
-    if cb.outlined {
-        write!(&mut out, "\x1b[0m").unwrap();
+        if cb.outlined {
+            write!(&mut out, "\x1b[0m").unwrap(); // Disable blue
+        }
     }
 
     return out;

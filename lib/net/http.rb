@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = net/http.rb
 #
@@ -1615,8 +1615,8 @@ module Net   #:nodoc:
                                       write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
-          buf = "CONNECT #{conn_address}:#{@port} HTTP/#{HTTPVersion}\r\n"
-          buf << "Host: #{@address}:#{@port}\r\n"
+          buf = +"CONNECT #{conn_address}:#{@port} HTTP/#{HTTPVersion}\r\n" \
+            "Host: #{@address}:#{@port}\r\n"
           if proxy_user
             credential = ["#{proxy_user}:#{proxy_pass}"].pack('m0')
             buf << "Proxy-Authorization: Basic #{credential}\r\n"
@@ -1798,7 +1798,7 @@ module Net   #:nodoc:
     def proxy_uri # :nodoc:
       return if @proxy_uri == false
       @proxy_uri ||= URI::HTTP.new(
-        "http".freeze, nil, address, port, nil, nil, nil, nil, nil
+        "http", nil, address, port, nil, nil, nil, nil, nil
       ).find_proxy || false
       @proxy_uri || nil
     end

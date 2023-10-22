@@ -9,6 +9,7 @@ require "rubygems/request"
 module Bundler
   # Handles all the fetching with the rubygems server
   class Fetcher
+    autoload :Base, File.expand_path("fetcher/base", __dir__)
     autoload :CompactIndex, File.expand_path("fetcher/compact_index", __dir__)
     autoload :Downloader, File.expand_path("fetcher/downloader", __dir__)
     autoload :Dependency, File.expand_path("fetcher/dependency", __dir__)
@@ -61,6 +62,16 @@ module Bundler
       end
     end
 
+    # This error is raised if HTTP authentication is correct, but lacks
+    # necessary permissions.
+    class AuthenticationForbiddenError < HTTPError
+      def initialize(remote_uri)
+        remote_uri = filter_uri(remote_uri)
+        super "Access token could not be authenticated for #{remote_uri}.\n" \
+          "Make sure it's valid and has the necessary scopes configured."
+      end
+    end
+
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.
     NET_ERRORS = [:HTTPBadGateway, :HTTPBadRequest, :HTTPFailedDependency,
@@ -70,7 +81,7 @@ module Bundler
                   :HTTPRequestURITooLong, :HTTPUnauthorized, :HTTPUnprocessableEntity,
                   :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
     FAIL_ERRORS = begin
-      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, FallbackError]
+      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError]
       fail_errors << Gem::Requirement::BadRequirementError
       fail_errors.concat(NET_ERRORS.map {|e| Net.const_get(e) })
     end.freeze
@@ -100,7 +111,7 @@ module Bundler
       spec_file_name = "#{spec.join "-"}.gemspec"
 
       uri = Bundler::URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
-      if uri.scheme == "file"
+      spec = if uri.scheme == "file"
         path = Bundler.rubygems.correct_for_windows_path(uri.path)
         Bundler.safe_load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
@@ -108,6 +119,8 @@ module Bundler
       else
         Bundler.safe_load_marshal Bundler.rubygems.inflate(downloader.fetch(uri).body)
       end
+      raise MarshalError, "is #{spec.inspect}" unless spec.is_a?(Gem::Specification)
+      spec
     rescue MarshalError
       raise HTTPError, "Gemspec #{spec} contained invalid data.\n" \
         "Your network or your gem server is probably having issues right now."
@@ -124,18 +137,7 @@ module Bundler
     def specs(gem_names, source)
       index = Bundler::Index.new
 
-      if Bundler::Fetcher.disable_endpoint
-        @use_api = false
-        specs = fetchers.last.specs(gem_names)
-      else
-        specs = []
-        @fetchers = fetchers.drop_while do |f|
-          !f.available? || (f.api_fetcher? && !gem_names) || !specs = f.specs(gem_names)
-        end
-        @use_api = false if fetchers.none?(&:api_fetcher?)
-      end
-
-      specs.each do |name, version, platform, dependencies, metadata|
+      fetch_specs(gem_names).each do |name, version, platform, dependencies, metadata|
         spec = if dependencies
           EndpointSpecification.new(name, version, platform, self, dependencies, metadata)
         else
@@ -148,20 +150,8 @@ module Bundler
 
       index
     rescue CertificateFailureError
-      Bundler.ui.info "" if gem_names && use_api # newline after dots
+      Bundler.ui.info "" if gem_names && api_fetcher? # newline after dots
       raise
-    end
-
-    def use_api
-      return @use_api if defined?(@use_api)
-
-      fetchers.shift until fetchers.first.available?
-
-      @use_api = if remote_uri.scheme == "file" || Bundler::Fetcher.disable_endpoint
-        false
-      else
-        fetchers.first.api_fetcher?
-      end
     end
 
     def user_agent
@@ -199,10 +189,6 @@ module Bundler
       end
     end
 
-    def fetchers
-      @fetchers ||= FETCHERS.map {|f| f.new(downloader, @remote, uri) }
-    end
-
     def http_proxy
       return unless uri = connection.proxy_uri
       uri.to_s
@@ -212,9 +198,36 @@ module Bundler
       "#<#{self.class}:0x#{object_id} uri=#{uri}>"
     end
 
+    def api_fetcher?
+      fetchers.first.api_fetcher?
+    end
+
     private
 
-    FETCHERS = [CompactIndex, Dependency, Index].freeze
+    def available_fetchers
+      if Bundler::Fetcher.disable_endpoint
+        [Index]
+      elsif remote_uri.scheme == "file"
+        Bundler.ui.debug("Using a local server, bundler won't use the CompactIndex API")
+        [Index]
+      else
+        [CompactIndex, Dependency, Index]
+      end
+    end
+
+    def fetchers
+      @fetchers ||= available_fetchers.map {|f| f.new(downloader, @remote, uri) }.drop_while {|f| !f.available? }
+    end
+
+    def fetch_specs(gem_names)
+      fetchers.reject!(&:api_fetcher?) unless gem_names
+      fetchers.reject! do |f|
+        specs = f.specs(gem_names)
+        return specs if specs
+        true
+      end
+      []
+    end
 
     def cis
       env_cis = {

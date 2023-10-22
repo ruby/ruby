@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.8"
+#define STRINGIO_VERSION "3.0.9"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -603,7 +603,7 @@ strio_to_read(VALUE self)
  *   eof? -> true or false
  *
  * Returns +true+ if positioned at end-of-stream, +false+ otherwise;
- * see {Position}[rdoc-ref:File@Position].
+ * see {Position}[rdoc-ref:IO@Position].
  *
  * Raises IOError if the stream is not opened for reading.
  */
@@ -1584,6 +1584,55 @@ strio_read(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  call-seq:
+ *    pread(maxlen, offset)             -> string
+ *    pread(maxlen, offset, out_string) -> string
+ *
+ *  See IO#pread.
+ */
+static VALUE
+strio_pread(int argc, VALUE *argv, VALUE self)
+{
+    VALUE rb_len, rb_offset, rb_buf;
+    rb_scan_args(argc, argv, "21", &rb_len, &rb_offset, &rb_buf);
+    long len = NUM2LONG(rb_len);
+    long offset = NUM2LONG(rb_offset);
+
+    if (len < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big): %" PRIsVALUE, rb_len);
+    }
+
+    if (len == 0) {
+        if (NIL_P(rb_buf)) {
+            return rb_str_new("", 0);
+        }
+        return rb_buf;
+    }
+
+    if (offset < 0) {
+        rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
+    }
+
+    struct StringIO *ptr = readable(self);
+
+    if (offset >= RSTRING_LEN(ptr->string)) {
+        rb_eof_error();
+    }
+
+    if (NIL_P(rb_buf)) {
+        return strio_substr(ptr, offset, len, rb_ascii8bit_encoding());
+    }
+
+    long rest = RSTRING_LEN(ptr->string) - offset;
+    if (len > rest) len = rest;
+    rb_str_resize(rb_buf, len);
+    rb_enc_associate(rb_buf, rb_ascii8bit_encoding());
+    MEMCPY(RSTRING_PTR(rb_buf), RSTRING_PTR(ptr->string) + offset, char, len);
+    return rb_buf;
+}
+
+
+/*
  * call-seq:
  *   strio.sysread(integer[, outbuf])    -> string
  *   strio.readpartial(integer[, outbuf])    -> string
@@ -1843,6 +1892,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "gets", strio_gets, -1);
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
     rb_define_method(StringIO, "read", strio_read, -1);
+    rb_define_method(StringIO, "pread", strio_pread, -1);
 
     rb_define_method(StringIO, "write", strio_write_m, -1);
     rb_define_method(StringIO, "putc", strio_putc, 1);

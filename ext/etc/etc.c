@@ -54,7 +54,7 @@ static VALUE sGroup;
 #  include <stdlib.h>
 # endif
 #endif
-char *getlogin();
+char *getlogin(void);
 
 #define RUBY_ETC_VERSION "1.4.2"
 
@@ -68,7 +68,8 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 
 #ifndef HAVE_RB_IO_DESCRIPTOR
 static int
-io_descriptor_fallback(VALUE io) {
+io_descriptor_fallback(VALUE io)
+{
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     return fptr->fd;

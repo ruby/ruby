@@ -58,6 +58,8 @@ VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
 
+void rb_lastline_set_up(VALUE val, unsigned int up);
+
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
@@ -76,6 +78,11 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      VALUE data2);
 void rb_check_stack_overflow(void);
 
+#if USE_YJIT
+/* vm_exec.c */
+extern uint64_t rb_vm_insns_count;
+#endif
+
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
@@ -90,7 +97,7 @@ int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID i
 void rb_clear_constant_cache(void);
 
 /* vm_dump.c */
-void rb_print_backtrace(void);
+void rb_print_backtrace(FILE *);
 
 /* vm_backtrace.c */
 VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
@@ -98,7 +105,7 @@ VALUE rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
 VALUE rb_vm_backtrace(int argc, const VALUE * argv, struct rb_execution_context_struct * ec);
 VALUE rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_execution_context_struct * ec);
 VALUE rb_make_backtrace(void);
-void rb_backtrace_print_as_bugreport(void);
+void rb_backtrace_print_as_bugreport(FILE*);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);

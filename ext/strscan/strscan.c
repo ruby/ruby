@@ -539,6 +539,68 @@ adjust_register_position(struct strscanner *p, long position)
     }
 }
 
+/* rb_reg_onig_match is available in Ruby 3.3 and later. */
+#ifndef HAVE_RB_REG_ONIG_MATCH
+static OnigPosition
+rb_reg_onig_match(VALUE re, VALUE str,
+                  OnigPosition (*match)(regex_t *reg, VALUE str, struct re_registers *regs, void *args),
+                  void *args, struct re_registers *regs)
+{
+    regex_t *reg = rb_reg_prepare_re(re, str);
+
+    bool tmpreg = reg != RREGEXP_PTR(re);
+    if (!tmpreg) RREGEXP(re)->usecnt++;
+
+    OnigPosition result = match(reg, str, regs, args);
+
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+        if (RREGEXP(re)->usecnt) {
+            onig_free(reg);
+        }
+        else {
+            onig_free(RREGEXP_PTR(re));
+            RREGEXP_PTR(re) = reg;
+        }
+    }
+
+    if (result < 0) {
+        if (result != ONIG_MISMATCH) {
+            rb_raise(ScanError, "regexp buffer overflow");
+        }
+    }
+
+    return result;
+}
+#endif
+
+static OnigPosition
+strscan_match(regex_t *reg, VALUE str, struct re_registers *regs, void *args_ptr)
+{
+    struct strscanner *p = (struct strscanner *)args_ptr;
+
+    return onig_match(reg,
+                      match_target(p),
+                      (UChar* )(CURPTR(p) + S_RESTLEN(p)),
+                      (UChar* )CURPTR(p),
+                      regs,
+                      ONIG_OPTION_NONE);
+}
+
+static OnigPosition
+strscan_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_ptr)
+{
+    struct strscanner *p = (struct strscanner *)args_ptr;
+
+    return onig_search(reg,
+                       match_target(p),
+                       (UChar *)(CURPTR(p) + S_RESTLEN(p)),
+                       (UChar *)CURPTR(p),
+                       (UChar *)(CURPTR(p) + S_RESTLEN(p)),
+                       regs,
+                       ONIG_OPTION_NONE);
+}
+
 static VALUE
 strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly)
 {
@@ -560,47 +622,14 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
     }
 
     if (RB_TYPE_P(pattern, T_REGEXP)) {
-        regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
-        regex_t *re;
-        long ret;
-        int tmpreg;
-
         p->regex = pattern;
-        re = rb_reg_prepare_re(pattern, p->str);
-        tmpreg = re != RREGEXP_PTR(pattern);
-        if (!tmpreg) RREGEXP(pattern)->usecnt++;
+        OnigPosition ret = rb_reg_onig_match(pattern,
+                                             p->str,
+                                             headonly ? strscan_match : strscan_search,
+                                             (void *)p,
+                                             &(p->regs));
 
-        if (headonly) {
-            ret = onig_match(re,
-                             match_target(p),
-                             (UChar* )(CURPTR(p) + S_RESTLEN(p)),
-                             (UChar* )CURPTR(p),
-                             &(p->regs),
-                             ONIG_OPTION_NONE);
-        }
-        else {
-            ret = onig_search(re,
-                              match_target(p),
-                              (UChar* )(CURPTR(p) + S_RESTLEN(p)),
-                              (UChar* )CURPTR(p),
-                              (UChar* )(CURPTR(p) + S_RESTLEN(p)),
-                              &(p->regs),
-                              ONIG_OPTION_NONE);
-        }
-        if (!tmpreg) RREGEXP(pattern)->usecnt--;
-        if (tmpreg) {
-            if (RREGEXP(pattern)->usecnt) {
-                onig_free(re);
-            }
-            else {
-                onig_free(RREGEXP_PTR(pattern));
-                RREGEXP_PTR(pattern) = re;
-            }
-        }
-
-        if (ret == -2) rb_raise(ScanError, "regexp buffer overflow");
-        if (ret < 0) {
-            /* not matched */
+        if (ret == ONIG_MISMATCH) {
             return Qnil;
         }
     }
@@ -1502,7 +1531,9 @@ strscan_named_captures(VALUE self)
     named_captures_data data;
     data.self = self;
     data.captures = rb_hash_new();
-    onig_foreach_name(RREGEXP_PTR(p->regex), named_captures_iter, &data);
+    if (!RB_NIL_P(p->regex)) {
+        onig_foreach_name(RREGEXP_PTR(p->regex), named_captures_iter, &data);
+    }
 
     return data.captures;
 }

@@ -2545,13 +2545,18 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     size_t ndigits;
     size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
 
-    while ((ptr < end) && ISSPACE(*ptr)) ptr++;
+    if ((ptr < end) && (ISSPACE(*ptr) || ISSPACE(*(end-1)))) {
+        rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
+    }
     year = parse_int(ptr, end, &ptr, &ndigits, true);
     if (NIL_P(year)) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
     }
     else if (ndigits < 4) {
         rb_raise(rb_eArgError, "year must be 4 or more digits: %.*s", (int)ndigits, ptr - ndigits);
+    }
+    else if (ptr == end) {
+        goto only_year;
     }
     do {
 #define peekable_p(n) ((ptrdiff_t)(n) < (end - ptr))
@@ -2613,6 +2618,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     if (zend > zstr) {
         zone = rb_str_subseq(str, zstr - begin, zend - zstr);
     }
+    else if (hour == -1) {
+        rb_raise(rb_eArgError, "no time information");
+    }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
         static const size_t TIME_SCALE_NUMDIGITS =
@@ -2628,6 +2636,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
             subsec = rb_rational_new(subsec, num);
         }
     }
+
+only_year:
+    ;
 
     struct vtm vtm = {
         .wday = VTM_WDAY_INITVAL,
@@ -3626,7 +3637,7 @@ tmcmp(struct tm *a, struct tm *b)
  *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
  *     # => 0000-01-01 00:00:00 UTC
  *
- * - \String integers:
+ * - String integers:
  *
  *     a = %w[0 1 1 0 0 0 0 0]
  *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
@@ -4399,7 +4410,7 @@ time_plus(VALUE time1, VALUE time2)
  *
  *  When +other_time+ is given,
  *  returns a Float whose value is the difference
- *  of the numeric values of +self+ and +other_time+:
+ *  of the numeric values of +self+ and +other_time+ in seconds:
  *
  *    t - t # => 0.0
  *

@@ -14,7 +14,7 @@ module TestIRB
     end
 
     def parse_by_line(code)
-      IRB::NestingParser.parse_by_line(RubyLex.ripper_lex_without_warning(code))
+      IRB::NestingParser.parse_by_line(IRB::RubyLex.ripper_lex_without_warning(code))
     end
 
     def test_open_tokens
@@ -27,7 +27,7 @@ module TestIRB
                   x: "
                     #{p(1, 2, 3
       EOS
-      opens = IRB::NestingParser.open_tokens(RubyLex.ripper_lex_without_warning(code))
+      opens = IRB::NestingParser.open_tokens(IRB::RubyLex.ripper_lex_without_warning(code))
       assert_equal(%w[class def if do { " #{ (], opens.map(&:tok))
     end
 

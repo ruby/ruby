@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "reline"
+require "stringio"
 require_relative "nop"
+require_relative "../pager"
 require_relative "../color"
 
 module IRB
@@ -33,7 +35,7 @@ module IRB
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
-        nil
+        o.print_result
       end
 
       def dump_methods(o, klass, obj)
@@ -77,6 +79,11 @@ module IRB
         def initialize(grep: nil)
           @grep = grep
           @line_width = screen_width - MARGIN.length # right padding
+          @io = StringIO.new
+        end
+
+        def print_result
+          Pager.page_content(@io.string)
         end
 
         def dump(name, strs)
@@ -85,12 +92,12 @@ module IRB
           return if strs.empty?
 
           # Attempt a single line
-          print "#{Color.colorize(name, [:BOLD, :BLUE])}: "
+          @io.print "#{Color.colorize(name, [:BOLD, :BLUE])}: "
           if fits_on_line?(strs, cols: strs.size, offset: "#{name}: ".length)
-            puts strs.join(MARGIN)
+            @io.puts strs.join(MARGIN)
             return
           end
-          puts
+          @io.puts
 
           # Dump with the largest # of columns that fits on a line
           cols = strs.size
@@ -99,7 +106,7 @@ module IRB
           end
           widths = col_widths(strs, cols: cols)
           strs.each_slice(cols) do |ss|
-            puts ss.map.with_index { |s, i| "#{MARGIN}%-#{widths[i]}s" % s }.join
+            @io.puts ss.map.with_index { |s, i| "#{MARGIN}%-#{widths[i]}s" % s }.join
           end
         end
 

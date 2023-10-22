@@ -651,7 +651,7 @@ RSpec.describe "bundle gem" do
 
       system_gems ["rake-13.0.1"]
 
-      rakefile = strip_whitespace <<-RAKEFILE
+      rakefile = <<~RAKEFILE
         task :default do
           puts 'SUCCESS'
         end
@@ -797,7 +797,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "creates a default rake task to run the test suite" do
-        rakefile = strip_whitespace <<-RAKEFILE
+        rakefile = <<~RAKEFILE
           # frozen_string_literal: true
 
           require "bundler/gem_tasks"
@@ -855,7 +855,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "creates a default rake task to run the test suite" do
-        rakefile = strip_whitespace <<-RAKEFILE
+        rakefile = <<~RAKEFILE
           # frozen_string_literal: true
 
           require "bundler/gem_tasks"
@@ -1419,7 +1419,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "depends on compile task for build" do
-        rakefile = strip_whitespace <<-RAKEFILE
+        rakefile = <<~RAKEFILE
           # frozen_string_literal: true
 
           require "bundler/gem_tasks"
@@ -1427,7 +1427,9 @@ RSpec.describe "bundle gem" do
 
           task build: :compile
 
-          Rake::ExtensionTask.new("#{gem_name}") do |ext|
+          GEMSPEC = Gem::Specification.load("#{gem_name}.gemspec")
+
+          Rake::ExtensionTask.new("#{gem_name}", GEMSPEC) do |ext|
             ext.lib_dir = "lib/#{gem_name}"
           end
 
@@ -1477,7 +1479,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "depends on compile task for build" do
-        rakefile = strip_whitespace <<-RAKEFILE
+        rakefile = <<~RAKEFILE
           # frozen_string_literal: true
 
           require "bundler/gem_tasks"
@@ -1485,7 +1487,9 @@ RSpec.describe "bundle gem" do
 
           task build: :compile
 
-          RbSys::ExtensionTask.new("#{gem_name}") do |ext|
+          GEMSPEC = Gem::Specification.load("#{gem_name}.gemspec")
+
+          RbSys::ExtensionTask.new("#{gem_name}", GEMSPEC) do |ext|
             ext.lib_dir = "lib/#{gem_name}"
           end
 
@@ -1583,7 +1587,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/spec/spec_helper.rb")).to exist
-      rakefile = strip_whitespace <<-RAKEFILE
+      rakefile = <<~RAKEFILE
         # frozen_string_literal: true
 
         require "bundler/gem_tasks"

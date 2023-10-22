@@ -138,7 +138,7 @@ A Ruby String object has an encoding that is an instance of class \Encoding.
 The encoding may be retrieved by method String#encoding.
 
 The default encoding for a string literal is the script encoding;
-see (Script Encoding)[rdoc-ref:encodings.rdoc@Script+Encoding].
+see {Script Encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].
 
   's'.encoding # => #<Encoding:UTF-8>
 

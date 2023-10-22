@@ -57,8 +57,7 @@
 
 #define FL_SINGLETON    RBIMPL_CAST((VALUE)RUBY_FL_SINGLETON)            /**< @old{RUBY_FL_SINGLETON} */
 #define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED)         /**< @old{RUBY_FL_WB_PROTECTED} */
-#define FL_PROMOTED0    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED0)            /**< @old{RUBY_FL_PROMOTED0} */
-#define FL_PROMOTED1    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED1)            /**< @old{RUBY_FL_PROMOTED1} */
+#define FL_PROMOTED     RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED)             /**< @old{RUBY_FL_PROMOTED} */
 #define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)             /**< @old{RUBY_FL_FINALIZE} */
 #define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)                /**< @old{RUBY_FL_TAINT} */
 #define FL_SHAREABLE    RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)            /**< @old{RUBY_FL_SHAREABLE} */
@@ -200,12 +199,15 @@ ruby_fl_type {
     RUBY_FL_WB_PROTECTED = (1<<5),
 
     /**
-     * This flag  has something to do  with our garbage collector.   These days
-     * ruby  objects are  "generational".  There  are those  who are  young and
-     * those who are old.  Young objects are prone to die; monitored relatively
-     * extensively by  the garbage  collector.  OTOH old  objects tend  to live
-     * longer.  They are relatively rarely considered.  This flag is set when a
-     * object experienced promotion i.e. survived a garbage collection.
+     * Ruby objects are "generational".  There are young objects & old objects.
+     * Young objects are prone to die & monitored relatively extensively by the
+     * garbage collector.  Old objects tend to live longer & are monitored less
+     * frequently.  When an object survives a GC, its age is incremented.  When
+     * age is equal to RVALUE_OLD_AGE, the object becomes Old. This flag is set
+     * when an object becomes old, and is used by the write barrier to check if
+     * an old object should be considered for marking more frequently  - as old
+     * objects that have references added between major GCs need to be remarked
+     * to prevent the referred object being mistakenly swept.
      *
      * @internal
      *
@@ -213,41 +215,14 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_PROMOTED0    = (1<<5),
+    RUBY_FL_PROMOTED    = (1<<5),
 
     /**
-     * This flag  has something to do  with our garbage collector.   These days
-     * ruby  objects are  "generational".  There  are those  who are  young and
-     * those who are old.  Young objects are prone to die; monitored relatively
-     * extensively by  the garbage  collector.  OTOH old  objects tend  to live
-     * longer.  They are relatively rarely considered.  This flag is set when a
-     * object  experienced two  promotions  i.e.  survived garbage  collections
-     * twice.
+     * This flag is no longer in use
      *
      * @internal
-     *
-     * But honestly, @shyouhei  doesn't think this flag should  be visible from
-     * 3rd parties.  It must be an implementation detail that they should never
-     * know.  Might better be hidden.
      */
-    RUBY_FL_PROMOTED1    = (1<<6),
-
-    /**
-     * This flag  has something to do  with our garbage collector.   These days
-     * ruby  objects are  "generational".  There  are those  who are  young and
-     * those who are old.  Young objects are prone to die; monitored relatively
-     * extensively by  the garbage  collector.  OTOH old  objects tend  to live
-     * longer.  They are relatively rarely considered.  This flag is set when a
-     * object  experienced  promotions i.e.   survived  more  than one  garbage
-     * collections.
-     *
-     * @internal
-     *
-     * But honestly, @shyouhei  doesn't think this flag should  be visible from
-     * 3rd parties.  It must be an implementation detail that they should never
-     * know.  Might better be hidden.
-     */
-    RUBY_FL_PROMOTED     = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1,
+    RUBY_FL_UNUSED6    = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have

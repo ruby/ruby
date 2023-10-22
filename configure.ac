@@ -47,11 +47,22 @@ m4_include([tool/m4/ruby_universal_arch.m4])dnl
 m4_include([tool/m4/ruby_wasm_tools.m4])dnl
 m4_include([tool/m4/ruby_werror_flag.m4])dnl
 
+AS_IF([test "x${GITHUB_ACTIONS}" = xtrue],
+[AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
+dnl 93(bright yellow) is copied from .github/workflows/mingw.yml
+    begin_group() { AS_ECHO(["::group::@<:@93m$[]1@<:@m"]);}
+    end_group() { AS_ECHO(["::endgroup::"]);}
+],
+[dnl
+    begin_group() { :;}
+    end_group() { :;}
+])
+
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])dnl
 
-: "environment section" && {
+[begin]_group "environment section" && {
 HAVE_BASERUBY=yes
 BASERUBY_VERSION=
 AC_ARG_WITH(baseruby,
@@ -409,21 +420,6 @@ AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
-: ${RJIT_CC=$CC}
-AS_IF([test "x$cross_compiling" = xno], [
-    AC_PATH_PROG([RJIT_CC], ${RJIT_CC})
-
-    # if $CC is in /usr/lib/ccache/$CC, search original $CC (disable ccache)
-    AS_IF([echo $RUBY_DEBUG | grep ci > /dev/null &&
-           echo $RJIT_CC | grep ^/usr/lib/ccache > /dev/null], [
-           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` RJIT_CC=`which $CC`])
-
-    AS_CASE([$target_os],
-	[*mingw*], [command -v cygpath > /dev/null && RJIT_CC=`cygpath -ma $RJIT_CC`])
-    shift 2
-    RJIT_CC="$RJIT_CC${1+ }$*"
-])
-
 AS_CASE(["$build_os"],
   [darwin1*.*], [
     # Xcode linker warns for deprecated architecture and wrongly
@@ -507,7 +503,10 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    ],
+],
+[darwin*], [
+    : ${enable_shared=yes}
+],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
 
@@ -591,7 +590,7 @@ AC_MSG_RESULT([$CHDIR])
 AC_SUBST(CHDIR)
 }
 
-: "compiler section" && {
+[begin]_group "compiler section" && {
 RUBY_WERROR_FLAG([
     AC_MSG_CHECKING([whether CFLAGS is valid])
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
@@ -686,6 +685,10 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_IF([test $gcc_major -le 6], [
 	extra_warnflags="$extra_warnflags -Wno-maybe-uninitialized"
     ])
+    AS_CASE([ $CFLAGS ], [*" -save-temps="*|*" -save-temps "*], [], [
+	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
+    ])
+
     # ICC doesn't support -Werror=
     AS_IF([test $icc_version -gt 0], [
 	particular_werror_flags=no
@@ -697,7 +700,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=duplicated-cond \
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
-		 -Werror=misleading-indentation \
 		 -Werror=pointer-arith \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
@@ -968,9 +970,10 @@ AS_IF([test "x$OPT_DIR" != x], [
     LDFLAGS="${LDFLAGS:+$LDFLAGS }$val"
     DLDFLAGS="${DLDFLAGS:+$DLDFLAGS }$val"
     LDFLAGS_OPTDIR="$val"
-    CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
+    INCFLAGS="${INCFLAGS:+$INCFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
         sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
 ])
+AC_SUBST(incflags, "$INCFLAGS")
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -985,7 +988,7 @@ AS_IF([test "$rb_cv_have_stmt_and_decl_in_expr" = yes], [
   AC_DEFINE(HAVE_STMT_AND_DECL_IN_EXPR)
 ])
 
-: "header and library section" && {
+[begin]_group "header and library section" && {
 AC_ARG_WITH(winnt-ver,
   AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0600)]),
   [with_winnt_ver="$withval"], [with_winnt_ver="0x0600"])
@@ -1342,6 +1345,8 @@ AC_CHECK_HEADERS(syscall.h)
 AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(ucontext.h)
 AC_CHECK_HEADERS(utime.h)
+AC_CHECK_HEADERS(sys/epoll.h)
+
 AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
   AC_CHECK_HEADERS(x86intrin.h)
 ])
@@ -2079,6 +2084,7 @@ AC_CHECK_FUNCS(lstat)
 AC_CHECK_FUNCS(lutimes)
 AC_CHECK_FUNCS(malloc_usable_size)
 AC_CHECK_FUNCS(malloc_size)
+AC_CHECK_FUNCS(malloc_trim)
 AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(memset_s)
@@ -2157,9 +2163,6 @@ AC_CHECK_FUNCS(__sinpi)
 AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
     [AC_CHECK_FUNCS(statx)])
 
-AS_CASE(["$ac_cv_func_memset_s:$ac_cv_func_qsort_s"], [*yes*],
-    [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
-
 AS_IF([test "$ac_cv_func_getcwd" = yes], [
     AC_CACHE_CHECK(if getcwd allocates buffer if NULL is given, [rb_cv_getcwd_malloc],
 	[AC_RUN_IFELSE([AC_LANG_SOURCE([[
@@ -2227,6 +2230,27 @@ AS_IF([test x$rb_cv_builtin___builtin_choose_expr = xyes], [
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_trap, [__builtin_trap()])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(0, 0)])
+
+AS_IF([test "$rb_cv_builtin___builtin_mul_overflow" != no], [
+  AC_CACHE_CHECK(for __builtin_mul_overflow with long long arguments, rb_cv_use___builtin_mul_overflow_long_long, [
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#pragma clang optimize off
+
+int
+main(void)
+{
+    long long x = 0, y;
+    __builtin_mul_overflow(x, x, &y);
+
+    return 0;
+}
+]])],
+	rb_cv_use___builtin_mul_overflow_long_long=yes,
+	rb_cv_use___builtin_mul_overflow_long_long=no)])
+])
+AS_IF([test "$rb_cv_use___builtin_mul_overflow_long_long" = yes], [
+  AC_DEFINE(USE___BUILTIN_MUL_OVERFLOW_LONG_LONG, 1)
+])
 
 AS_IF([test "$ac_cv_func_qsort_r" != no], [
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,
@@ -2913,7 +2937,7 @@ AS_IF([test "x$ac_cv_func_ioctl" = xyes], [
 
 }
 
-: "runtime section" && {
+[begin]_group "runtime section" && {
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out,
 	AS_HELP_STRING([--with-dln-a-out], [dln_a_out is deprecated]),
@@ -2949,14 +2973,6 @@ LIBEXT=a
 
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
-AC_SUBST(RJIT_CC)dnl
-AS_CASE(["$GCC:$target_os"],
-    [yes:aix*], [rjit_std_cflag="-std=gnu99"],
-    [rjit_std_cflag=])
-AC_SUBST(RJIT_CFLAGS, [${RJIT_CFLAGS-"-w ${rjit_std_cflag} ${orig_cflags}"}])dnl
-AC_SUBST(RJIT_OPTFLAGS, [${RJIT_OPTFLAGS-'$(optflags)'}])dnl
-AC_SUBST(RJIT_DEBUGFLAGS, [${RJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
-AC_SUBST(RJIT_LDSHARED)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -3070,11 +3086,10 @@ AC_SUBST(EXTOBJS)
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
 			: ${LDFLAGS=""}
-			: ${LIBPATHENV=DYLD_FALLBACK_LIBRARY_PATH}
+			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			: ${PRELOADENV=DYLD_INSERT_LIBRARIES}
                         AS_IF([test x"$enable_shared" = xyes], [
-                            # Resolve symbols from libruby.dylib when --enable-shared
-                            EXTDLDFLAGS='$(LIBRUBYARG_SHARED)'
+                            # Resolve symbols from libruby.dylib in $(LIBS) when --enable-shared
                         ], [test "x$EXTSTATIC" = x], [
                             # When building exts as bundles, a mach-o bundle needs to know its loader
                             # program to bind symbols from the ruby executable
@@ -3702,7 +3717,7 @@ AS_IF([test x"$gcov" = xyes], [
 RUBY_SETJMP_TYPE
 }
 
-: "build section" && {
+[begin]_group "installation section" && {
 dnl build rdoc index if requested
 RDOCTARGET=""
 CAPITARGET=""
@@ -3750,6 +3765,19 @@ AC_SUBST(CAPITARGET)
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
 
+AC_ARG_ENABLE(install-static-library,
+	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
+	[INSTALL_STATIC_LIBRARY=$enableval
+         AS_IF([test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno],
+                 [AC_MSG_ERROR([must install either static or shared library])],
+                 [])],
+	AS_IF([test x"$enable_shared" = xyes],
+	    [INSTALL_STATIC_LIBRARY=no],
+	    [INSTALL_STATIC_LIBRARY=yes]))
+AC_SUBST(INSTALL_STATIC_LIBRARY)
+}
+
+[begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
@@ -3911,18 +3939,9 @@ AS_CASE(["$RJIT_SUPPORT"],
 ])
 
 AC_SUBST(RJIT_SUPPORT)
+}
 
-AC_ARG_ENABLE(install-static-library,
-	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
-	[INSTALL_STATIC_LIBRARY=$enableval
-         AS_IF([test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno],
-                 [AC_MSG_ERROR([must install either static or shared library])],
-                 [])],
-	AS_IF([test x"$enable_shared" = xyes],
-	    [INSTALL_STATIC_LIBRARY=no],
-	    [INSTALL_STATIC_LIBRARY=yes]))
-AC_SUBST(INSTALL_STATIC_LIBRARY)
-
+[begin]_group "build section" && {
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
 	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
@@ -3933,6 +3952,23 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 ])
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
+
+AS_IF([test x"$enable_shared" = xyes], [
+    AC_CACHE_CHECK([for default symbols in empty shared library], rb_cv_symbols_in_emptylib, [
+        save_CC="$CC"
+        eval CC=\"`printf "%s" "${DLDSHARED}" | sed ['s/\$(CC)/${CC}/']`\"
+        AC_LINK_IFELSE([AC_LANG_PROGRAM()],[
+            rb_cv_symbols_in_emptylib=`$NM -Pgp conftest$ac_exeext |
+                sed ["/ [A-TV-Z] .*/!d;s///;s/^${SYMBOL_PREFIX}//;/^main$/d"]`
+        ])
+        set dummy ${rb_cv_symbols_in_emptylib}
+        shift
+        rb_cv_symbols_in_emptylib="$*"
+        CC="$save_CC"
+    ])
+])
+AC_SUBST(XSYMBOLS_IN_EMPTYLIB, "${rb_cv_symbols_in_emptylib}")
+
 DLNOBJ=dln.o
 AC_ARG_ENABLE(dln,
 	      AS_HELP_STRING([--disable-dln], [disable dynamic link feature]),
@@ -4110,8 +4146,9 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 		const char arch[[]] = __ARCHITECTURE__;]], [[puts(arch);]])],
 		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 ])
+}
 
-: ${RJIT_LDSHARED=`echo "$LDSHARED" | sed ['s|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(RJIT_CC)|g']`}
+[end]_group
 
 MAINLIBS="$LIBS"
 LIBS=$ORIG_LIBS
@@ -4328,6 +4365,10 @@ AS_IF([test "${universal_binary-no}" = yes ], [
         arch="${target_cpu}-${target_os}"
     ])
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
+
+    AS_IF([test "$arch" = "s390x-linux"], [
+       AC_DEFINE_UNQUOTED(USE_MN_THREADS, 0)
+    ])
 ])
 
 unset sitearch
@@ -4549,7 +4590,6 @@ AC_ARG_WITH(destdir,
 AC_SUBST(DESTDIR)
 
 AC_OUTPUT
-}
 }
 
 AS_IF([test "$silent" = yes], [], [

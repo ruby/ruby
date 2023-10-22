@@ -483,8 +483,10 @@ class TestGemPlatform < Gem::TestCase
   def test_gem_platform_match_with_string_argument
     util_set_arch "x86_64-linux-musl"
 
-    assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
-    assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
+    Gem::Deprecate.skip_during do
+      assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
+      assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
+    end
   end
 
   def assert_local_match(name)

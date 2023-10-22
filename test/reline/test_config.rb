@@ -160,6 +160,23 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal :audible, @config.instance_variable_get(:@bell_style)
   end
 
+  def test_include_expand_path
+    home_backup = ENV['HOME']
+    File.open('included_partial', 'wt') do |f|
+      f.write(<<~PARTIAL_LINES)
+        set bell-style on
+      PARTIAL_LINES
+    end
+    ENV['HOME'] = Dir.pwd
+    @config.read_lines(<<~LINES.lines)
+      $include ~/included_partial
+    LINES
+
+    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+  ensure
+    ENV['HOME'] = home_backup
+  end
+
   def test_if
     @config.read_lines(<<~LINES.lines)
       $if Ruby
