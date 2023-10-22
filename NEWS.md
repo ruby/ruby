@@ -115,6 +115,7 @@ The following default gems are updated.
 * erb 4.0.3
 * fiddle 1.1.2
 * fileutils 1.7.1
+* io-console 0.6.1.dev
 * irb 1.8.3
 * nkf 0.1.3
 * openssl 3.2.0
