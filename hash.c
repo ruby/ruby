@@ -6827,7 +6827,7 @@ static const rb_data_type_t env_data_type = {
  *      alias eql? ==
  *
  *      def hash
- *        @author.hash ^ @title.hash # XOR
+ *        [self.class, @author, @title].hash
  *      end
  *    end
  *
