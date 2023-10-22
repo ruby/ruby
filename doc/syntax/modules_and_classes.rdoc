@@ -259,9 +259,9 @@ includes a minimum of built-in methods.  You can use BasicObject to create an
 independent inheritance structure.  See the BasicObject documentation for
 further details.
 
-Just like modules, classes can also be reopened.
-You can omit its superclass when you reopen a class.
-Specifying a different superclass than the previous definition will raise an error.
+Just like modules, classes can also be reopened.  You can omit its superclass
+when you reopen a class.  Specifying a different superclass than the previous
+definition will raise an error.
 
   class C
   end
