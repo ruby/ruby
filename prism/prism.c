@@ -40,6 +40,7 @@ debug_context(pm_context_t context) {
         case PM_CONTEXT_BLOCK_BRACES: return "BLOCK_BRACES";
         case PM_CONTEXT_BLOCK_KEYWORDS: return "BLOCK_KEYWORDS";
         case PM_CONTEXT_FOR: return "FOR";
+        case PM_CONTEXT_FOR_INDEX: return "FOR_INDEX";
         case PM_CONTEXT_IF: return "IF";
         case PM_CONTEXT_MAIN: return "MAIN";
         case PM_CONTEXT_MODULE: return "MODULE";
@@ -5602,6 +5603,8 @@ context_terminator(pm_context_t context, pm_token_t *token) {
         case PM_CONTEXT_FOR:
         case PM_CONTEXT_ENSURE:
             return token->type == PM_TOKEN_KEYWORD_END;
+        case PM_CONTEXT_FOR_INDEX:
+            return token->type == PM_TOKEN_KEYWORD_IN;
         case PM_CONTEXT_CASE_WHEN:
             return token->type == PM_TOKEN_KEYWORD_WHEN || token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_ELSE;
         case PM_CONTEXT_CASE_IN:
@@ -9585,7 +9588,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
     }
 }
 
-// Parse a write targets and validate that it is in a valid position for
+// Parse a write target and validate that it is in a valid position for
 // assignment.
 static pm_node_t *
 parse_target_validate(pm_parser_t *parser, pm_node_t *target) {
@@ -12544,10 +12547,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                     multi_target->base.location.end = rparen_loc.end;
 
                     if (match1(parser, PM_TOKEN_COMMA)) {
-                        return parse_targets_validate(parser, (pm_node_t *) multi_target, PM_BINDING_POWER_INDEX);
-                    } else {
-                        return parse_target_validate(parser, (pm_node_t *) multi_target);
+                        if (binding_power == PM_BINDING_POWER_STATEMENT) {
+                            return parse_targets_validate(parser, (pm_node_t *) multi_target, PM_BINDING_POWER_INDEX);
+                        }
+                        return (pm_node_t *) multi_target;
                     }
+
+                    return parse_target_validate(parser, (pm_node_t *) multi_target);
                 }
 
                 // If we have a single statement and are ending on a right parenthesis
@@ -13634,7 +13640,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
             pm_token_t for_keyword = parser->previous;
             pm_node_t *index;
+
             pm_parser_scope_push_transparent(parser);
+            context_push(parser, PM_CONTEXT_FOR_INDEX);
 
             // First, parse out the first index expression.
             if (accept1(parser, PM_TOKEN_USTAR)) {
@@ -13660,6 +13668,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 index = parse_target(parser, index);
             }
 
+            context_pop(parser);
             pm_parser_scope_pop(parser);
             pm_do_loop_stack_push(parser, true);
 

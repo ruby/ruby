@@ -212,6 +212,7 @@ typedef enum {
     PM_CONTEXT_EMBEXPR,        // an interpolated expression
     PM_CONTEXT_ENSURE,         // an ensure statement
     PM_CONTEXT_FOR,            // a for loop
+    PM_CONTEXT_FOR_INDEX,      // a for loop's index
     PM_CONTEXT_IF,             // an if statement
     PM_CONTEXT_LAMBDA_BRACES,  // a lambda expression with braces
     PM_CONTEXT_LAMBDA_DO_END,  // a lambda expression with do..end

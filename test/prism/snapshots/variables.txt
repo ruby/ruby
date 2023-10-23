@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(45,9))
-├── locals: [:abc, :foo, :bar, :baz]
+@ ProgramNode (location: (1,0)-(47,17))
+├── locals: [:abc, :foo, :bar, :baz, :a, :b, :c, :d]
 └── statements:
-    @ StatementsNode (location: (1,0)-(45,9))
-    └── body: (length: 24)
+    @ StatementsNode (location: (1,0)-(47,17))
+    └── body: (length: 25)
         ├── @ ClassVariableReadNode (location: (1,0)-(1,5))
         │   └── name: :@@abc
         ├── @ ClassVariableWriteNode (location: (3,0)-(3,9))
@@ -300,39 +300,69 @@
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (43,4)-(43,5) = "="
-        └── @ ParenthesesNode (location: (45,0)-(45,9))
-            ├── body:
-            │   @ StatementsNode (location: (45,1)-(45,8))
-            │   └── body: (length: 3)
-            │       ├── @ CallNode (location: (45,1)-(45,2))
-            │       │   ├── receiver: ∅
-            │       │   ├── call_operator_loc: ∅
-            │       │   ├── message_loc: (45,1)-(45,2) = "a"
-            │       │   ├── opening_loc: ∅
-            │       │   ├── arguments: ∅
-            │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   ├── flags: variable_call
-            │       │   └── name: :a
-            │       ├── @ CallNode (location: (45,4)-(45,5))
-            │       │   ├── receiver: ∅
-            │       │   ├── call_operator_loc: ∅
-            │       │   ├── message_loc: (45,4)-(45,5) = "b"
-            │       │   ├── opening_loc: ∅
-            │       │   ├── arguments: ∅
-            │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   ├── flags: variable_call
-            │       │   └── name: :b
-            │       └── @ CallNode (location: (45,7)-(45,8))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (45,7)-(45,8) = "c"
-            │           ├── opening_loc: ∅
-            │           ├── arguments: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :c
-            ├── opening_loc: (45,0)-(45,1) = "("
-            └── closing_loc: (45,8)-(45,9) = ")"
+        ├── @ ParenthesesNode (location: (45,0)-(45,9))
+        │   ├── body:
+        │   │   @ StatementsNode (location: (45,1)-(45,8))
+        │   │   └── body: (length: 3)
+        │   │       ├── @ CallNode (location: (45,1)-(45,2))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── message_loc: (45,1)-(45,2) = "a"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments: ∅
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   ├── flags: variable_call
+        │   │       │   └── name: :a
+        │   │       ├── @ CallNode (location: (45,4)-(45,5))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── message_loc: (45,4)-(45,5) = "b"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments: ∅
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   ├── flags: variable_call
+        │   │       │   └── name: :b
+        │   │       └── @ CallNode (location: (45,7)-(45,8))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (45,7)-(45,8) = "c"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: :c
+        │   ├── opening_loc: (45,0)-(45,1) = "("
+        │   └── closing_loc: (45,8)-(45,9) = ")"
+        └── @ MultiWriteNode (location: (47,0)-(47,17))
+            ├── requireds: (length: 3)
+            │   ├── @ LocalVariableTargetNode (location: (47,0)-(47,1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   ├── @ MultiTargetNode (location: (47,3)-(47,9))
+            │   │   ├── requireds: (length: 2)
+            │   │   │   ├── @ LocalVariableTargetNode (location: (47,4)-(47,5))
+            │   │   │   │   ├── name: :b
+            │   │   │   │   └── depth: 0
+            │   │   │   └── @ LocalVariableTargetNode (location: (47,7)-(47,8))
+            │   │   │       ├── name: :c
+            │   │   │       └── depth: 0
+            │   │   ├── rest: ∅
+            │   │   ├── posts: (length: 0)
+            │   │   ├── lparen_loc: (47,3)-(47,4) = "("
+            │   │   └── rparen_loc: (47,8)-(47,9) = ")"
+            │   └── @ LocalVariableTargetNode (location: (47,11)-(47,12))
+            │       ├── name: :d
+            │       └── depth: 0
+            ├── rest: ∅
+            ├── posts: (length: 0)
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (47,13)-(47,14) = "="
+            └── value:
+                @ ArrayNode (location: (47,15)-(47,17))
+                ├── elements: (length: 0)
+                ├── opening_loc: (47,15)-(47,16) = "["
+                └── closing_loc: (47,16)-(47,17) = "]"
