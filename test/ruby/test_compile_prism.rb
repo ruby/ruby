@@ -534,6 +534,18 @@ module Prism
       test_prism_eval("(1)")
     end
 
+    def test_PreExecutionNode
+      # BEGIN {} must be defined at the top level, so we need to manually
+      # call the evals here instead of calling `test_prism_eval`
+      ruby_eval = RubyVM::InstructionSequence.compile("BEGIN { a = 1 }; 2").eval
+      prism_eval = RubyVM::InstructionSequence.compile_prism("BEGIN { a = 1 }; 2").eval
+      assert_equal ruby_eval, prism_eval
+
+      ruby_eval = RubyVM::InstructionSequence.compile("b = 2; BEGIN { a = 1 }; a + b").eval
+      prism_eval = RubyVM::InstructionSequence.compile_prism("b = 2; BEGIN { a = 1 }; a + b").eval
+      assert_equal ruby_eval, prism_eval
+    end
+
     def test_ProgramNode
       test_prism_eval("")
       test_prism_eval("1")
