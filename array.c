@@ -448,19 +448,17 @@ ary_shrink_capa(VALUE ary)
 }
 
 static void
-ary_double_capa(VALUE ary, long min)
+ary_increase_capa(VALUE ary, size_t min)
 {
-    long new_capa = ARY_CAPA(ary) / 2;
+    if (min < ARY_DEFAULT_SIZE) {
+        min = ARY_DEFAULT_SIZE;
+    }
 
-    if (new_capa < ARY_DEFAULT_SIZE) {
-        new_capa = ARY_DEFAULT_SIZE;
-    }
-    if (new_capa >= ARY_MAX_SIZE - min) {
-        new_capa = (ARY_MAX_SIZE - min) / 2;
-    }
-    new_capa += min;
+    size_t new_capa = ARY_CAPA(ary);
+    do {
+        new_capa = rb_malloc_grow_capa(new_capa, sizeof(VALUE));
+    } while (new_capa < min);
     ary_resize_capa(ary, new_capa);
-
     ary_verify(ary);
 }
 
@@ -601,7 +599,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
                     rb_ary_modify(ary);
                     capa = ARY_CAPA(ary);
                     if (new_len > capa - (capa >> 6)) {
-                        ary_double_capa(ary, new_len);
+                        ary_increase_capa(ary, new_len);
                     }
                     ary_verify(ary);
                     return ary;
@@ -616,7 +614,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     }
     capa = ARY_CAPA(ary);
     if (new_len > capa) {
-        ary_double_capa(ary, new_len);
+        ary_increase_capa(ary, new_len);
     }
 
     ary_verify(ary);
@@ -1175,7 +1173,7 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 
     rb_ary_modify(ary);
     if (idx >= ARY_CAPA(ary)) {
-        ary_double_capa(ary, idx);
+        ary_increase_capa(ary, idx);
     }
     if (idx > len) {
         ary_mem_clear(ary, len, idx - len + 1);
@@ -1573,7 +1571,7 @@ ary_modify_for_unshift(VALUE ary, int argc)
     rb_ary_modify(ary);
     capa = ARY_CAPA(ary);
     if (capa - (capa >> 6) <= new_len) {
-        ary_double_capa(ary, new_len);
+        ary_increase_capa(ary, new_len);
     }
 
     /* use shared array for big "queues" */
@@ -2166,7 +2164,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         rb_ary_modify(ary);
         alen = olen + rlen - len;
         if (alen >= ARY_CAPA(ary)) {
-            ary_double_capa(ary, alen);
+            ary_increase_capa(ary, alen);
         }
 
         if (len != rlen) {
@@ -2222,7 +2220,7 @@ rb_ary_resize(VALUE ary, long len)
     }
     if (len > olen) {
         if (len >= ARY_CAPA(ary)) {
-            ary_double_capa(ary, len);
+            ary_increase_capa(ary, len);
         }
         ary_mem_clear(ary, olen, len - olen);
         ARY_SET_LEN(ary, len);
