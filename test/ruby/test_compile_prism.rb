@@ -628,6 +628,11 @@ module Prism
       test_prism_eval("def prism_test_optional_param_node(bar = nil); end")
     end
 
+    def test_ParametersNode
+      test_prism_eval("def prism_test_parameters_node(bar, baz); end")
+      test_prism_eval("def prism_test_parameters_node(a, b = 2); end")
+    end
+
     def test_UndefNode
       test_prism_eval("def prism_undef_node_1; end; undef prism_undef_node_1")
       test_prism_eval(<<-HERE

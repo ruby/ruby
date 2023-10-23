@@ -2227,6 +2227,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_PARAMETERS_NODE: {
+        rb_bug("Should not ever enter a parameters node directly");
+
+        return;
+      }
       case PM_PARENTHESES_NODE: {
         pm_parentheses_node_t *parentheses_node = (pm_parentheses_node_t *) node;
 
@@ -2266,7 +2271,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_PROGRAM_NODE: {
-        rb_bug("Should not ever enter a program node");
+        rb_bug("Should not ever enter a program node directly");
 
         return;
       }
