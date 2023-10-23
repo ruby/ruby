@@ -52,12 +52,16 @@ module Lrama
           Usage: lrama [options] FILE
         BANNER
         o.separator ''
+        o.separator 'STDIN mode:'
+        o.separator 'lrama [options] - FILE               read grammar from STDIN'
+        o.separator ''
         o.separator 'Tuning the Parser:'
         o.on('-S', '--skeleton=FILE', 'specify the skeleton to use') {|v| @options.skeleton = v }
         o.on('-t', 'reserved, do nothing') { }
         o.separator ''
         o.separator 'Output:'
-        o.on('-h', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
+        o.on('-H', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
+        o.on('-h=[FILE]', 'also produce a header file named FILE (deprecated)') {|v| @options.header = true; @options.header_file = v }
         o.on('-d', 'also produce a header file') { @options.header = true }
         o.on('-r', '--report=THINGS', Array, 'also produce details on the automaton') {|v| @report = v }
         o.on('--report-file=FILE', 'also produce details on the automaton output to a file named FILE') {|v| @options.report_file = v }

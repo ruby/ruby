@@ -6,8 +6,9 @@ module Lrama
       Report::Duration.enable if options.trace_opts[:time]
 
       warning = Lrama::Warning.new
-      grammar = Lrama::Parser.new(options.y.read).parse
+      text = options.y.read
       options.y.close if options.y != STDIN
+      grammar = Lrama::Parser.new(text).parse
       states = Lrama::States.new(grammar, warning, trace_state: (options.trace_opts[:automaton] || options.trace_opts[:closure]))
       states.compute
       context = Lrama::Context.new(states)

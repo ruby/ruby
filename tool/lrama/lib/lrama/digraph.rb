@@ -40,8 +40,7 @@ module Lrama
       end
 
       if @h[x] == d
-        while true do
-          z = @stack.pop
+        while (z = @stack.pop) do
           @h[z] = Float::INFINITY
           break if z == x
           @result[z] = @result[x] # F (Top of S) = F x
