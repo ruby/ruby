@@ -56,7 +56,7 @@ module Prism
     end
 
     def test_SourceLineNode
-      ruby_eval = RubyVM::InstructionSequence.compile_prism("__LINE__").eval
+      ruby_eval = RubyVM::InstructionSequence.compile("__LINE__").eval
       prism_eval = RubyVM::InstructionSequence.compile_prism("__LINE__").eval
 
       assert_equal ruby_eval, prism_eval

@@ -278,8 +278,13 @@ pm_static_literal_value(const pm_node_t *node, pm_scope_node_t *scope_node)
         pm_source_file_node_t *cast = (pm_source_file_node_t *)node;
         return cast->filepath.length ? parse_string(&cast->filepath) : rb_fstring_lit("<compiled>");
       }
-      case PM_SOURCE_LINE_NODE:
-        return INT2FIX((int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line);
+      case PM_SOURCE_LINE_NODE: {
+        int source_line = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
+        // Ruby treats file lines as 1-indexed
+        // TODO: Incorporate options which allow for passing a line number
+        source_line += 1;
+        return INT2FIX(source_line);
+      }
       case PM_STRING_NODE:
         return parse_string(&((pm_string_node_t *) node)->unescaped);
       case PM_SYMBOL_NODE:
