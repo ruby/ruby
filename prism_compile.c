@@ -1003,16 +1003,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_ASSOC_SPLAT_NODE: {
         pm_assoc_splat_node_t *assoc_splat_node = (pm_assoc_splat_node_t *)node;
-        if (assoc_splat_node->value) {
-            PM_COMPILE(assoc_splat_node->value);
-        }
 
-        // TODO: Not sure this is accurate, look at FLUSH_CHUNK in the compiler
-        if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
-        }
-
-        PM_POP_IF_POPPED;
+        PM_COMPILE(assoc_splat_node->value);
         return;
       }
       case PM_BACK_REFERENCE_READ_NODE: {
@@ -1603,14 +1595,63 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // all side-effects (like method calls) that are contained within
             // the hash contents.
             pm_hash_node_t *cast = (pm_hash_node_t *) node;
+            // Elements must be non-empty, otherwise it would be static literal
             pm_node_list_t *elements = &cast->elements;
 
+            pm_node_t *cur_node = elements->nodes[0];
+            pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
+            int elements_of_cur_type = 0;
+            int allocated_hashes = 0;
+
+            if (!PM_NODE_TYPE_P(cur_node, PM_ASSOC_NODE)) {
+                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                allocated_hashes++;
+            }
+
             for (size_t index = 0; index < elements->size; index++) {
-                PM_COMPILE(elements->nodes[index]);
+                pm_node_t *cur_node = elements->nodes[index];
+                if (!popped) {
+                    if (!PM_NODE_TYPE_P(cur_node, cur_type)) {
+                        if (!allocated_hashes) {
+                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements_of_cur_type * 2));
+                        }
+                        else {
+                            if (cur_type == PM_ASSOC_NODE) {
+                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(3));
+                            }
+                            else {
+                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                            }
+                        }
+
+                        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        ADD_INSN(ret, &dummy_line_node, swap);
+                        PM_COMPILE(elements->nodes[index]);
+
+                        allocated_hashes++;
+                        elements_of_cur_type = 0;
+                        cur_type = PM_NODE_TYPE(cur_node);
+                    }
+                    else {
+                        elements_of_cur_type++;
+                        PM_COMPILE(elements->nodes[index]);
+                    }
+                }
             }
 
             if (!popped) {
-                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements->size * 2));
+                if (!allocated_hashes) {
+                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements_of_cur_type * 2));
+                }
+                else {
+                    if (cur_type == PM_ASSOC_NODE) {
+                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(3));
+                    }
+                    else {
+                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                    }
+                }
             }
         }
 
