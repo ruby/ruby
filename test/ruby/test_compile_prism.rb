@@ -619,6 +619,11 @@ module Prism
       test_prism_eval("[1].map { |a; b| b = 2; a + b}")
     end
 
+    def test_NoKeywordsParameterNode
+      test_prism_eval("def prism_test_no_keywords(**nil); end")
+      test_prism_eval("def prism_test_no_keywords(a, b = 2, **nil); end")
+    end
+
     def test_OptionalParameterNode
       test_prism_eval("def prism_test_optional_param_node(bar = nil); end")
     end
