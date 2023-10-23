@@ -89,8 +89,8 @@ jobs:
       - name: Check diffs
         id: diff
         run: |
-          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
-        continue-on-error: true
+          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md ||
+          echo update=true >> $GITHUB_OUTPUT
         if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Commit
@@ -102,7 +102,12 @@ jobs:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-        if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
+        if: >-
+          ${{
+          github.repository == 'ruby/ruby' &&
+          !startsWith(github.event_name, 'pull') &&
+          steps.diff.outputs.update
+          }}
 
       - uses: ./.github/actions/slack
         with:

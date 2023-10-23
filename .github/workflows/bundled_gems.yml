@@ -61,47 +61,46 @@ jobs:
       - name: Check diffs
         id: diff
         run: |
-          git add -- NEWS.md
-          git diff --no-ext-diff --ignore-submodules --quiet -- gems/bundled_gems
-        continue-on-error: true
+          news= gems=
+          git diff --color --no-ext-diff --ignore-submodules --exit-code -- NEWS.md ||
+          news=true
+          git diff --color --no-ext-diff --ignore-submodules --exit-code -- gems/bundled_gems ||
+          gems=true
+          git add -- NEWS.md gems/bundled_gems
+          echo news=$news >> $GITHUB_OUTPUT
+          echo gems=$gems >> $GITHUB_OUTPUT
+          echo update=${news:-$gems} >> $GITHUB_OUTPUT
 
       - name: Install libraries
         uses: ./.github/actions/setup/ubuntu
-        if: ${{ steps.diff.outcome == 'failure' }}
+        if: ${{ steps.diff.outputs.gems }}
 
       - name: Build
         run: |
           ./autogen.sh
           ./configure -C --disable-install-doc
           make
-        if: ${{ steps.diff.outcome == 'failure' }}
+        if: ${{ steps.diff.outputs.gems }}
 
       - name: Prepare bundled gems
         run: |
           make -s prepare-gems
-        if: ${{ steps.diff.outcome == 'failure' }}
+        if: ${{ steps.diff.outputs.gems }}
 
       - name: Test bundled gems
         run: |
           make -s test-bundled-gems
-          git add -- gems/bundled_gems
         timeout-minutes: 30
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
-        if: ${{ steps.diff.outcome == 'failure' }}
-
-      - name: Show diffs
-        id: show
-        run: |
-          git diff --cached --color --no-ext-diff --ignore-submodules --exit-code --
-        continue-on-error: true
+        if: ${{ steps.diff.outputs.gems }}
 
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
           message="Update bundled gems list at "
-          if [ ${{ steps.diff.outcome }} = success ]; then
+          if [ -z "${gem}" ]; then
             git commit --message="${message}${GITHUB_SHA:0:30} [ci skip]"
           else
             git commit --message="${message}${TODAY}"
@@ -111,7 +110,13 @@ jobs:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-        if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.show.outcome == 'failure' }}
+          gems: ${{ steps.diff.outputs.gems }}
+        if: >-
+          ${{
+          github.repository == 'ruby/ruby' &&
+          !startsWith(github.event_name, 'pull') &&
+          steps.diff.outputs.update
+          }}
 
       - uses: ./.github/actions/slack
         with:
