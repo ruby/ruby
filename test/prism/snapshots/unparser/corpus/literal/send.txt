@@ -21,13 +21,15 @@
         │   │           │   │   @ StatementsNode (location: (2,11)-(2,21))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ MultiWriteNode (location: (2,11)-(2,21))
-        │   │           │   │           ├── targets: (length: 2)
+        │   │           │   │           ├── requireds: (length: 2)
         │   │           │   │           │   ├── @ LocalVariableTargetNode (location: (2,12)-(2,13))
         │   │           │   │           │   │   ├── name: :a
         │   │           │   │           │   │   └── depth: 0
         │   │           │   │           │   └── @ LocalVariableTargetNode (location: (2,15)-(2,16))
         │   │           │   │           │       ├── name: :_
         │   │           │   │           │       └── depth: 0
+        │   │           │   │           ├── rest: ∅
+        │   │           │   │           ├── posts: (length: 0)
         │   │           │   │           ├── lparen_loc: (2,11)-(2,12) = "("
         │   │           │   │           ├── rparen_loc: (2,16)-(2,17) = ")"
         │   │           │   │           ├── operator_loc: (2,18)-(2,19) = "="

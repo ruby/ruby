@@ -1922,7 +1922,11 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: MultiTargetNode
     fields:
-      - name: targets
+      - name: requireds
+        type: node[]
+      - name: rest
+        type: node?
+      - name: posts
         type: node[]
       - name: lparen_loc
         type: location?
@@ -1935,7 +1939,11 @@ nodes:
              ^^^^^^
   - name: MultiWriteNode
     fields:
-      - name: targets
+      - name: requireds
+        type: node[]
+      - name: rest
+        type: node?
+      - name: posts
         type: node[]
       - name: lparen_loc
         type: location?

@@ -6,13 +6,15 @@
         └── @ ForNode (location: (1,0)-(1,28))
             ├── index:
             │   @ MultiTargetNode (location: (1,4)-(1,8))
-            │   ├── targets: (length: 2)
+            │   ├── requireds: (length: 2)
             │   │   ├── @ LocalVariableTargetNode (location: (1,4)-(1,5))
             │   │   │   ├── name: :a
             │   │   │   └── depth: 1
             │   │   └── @ LocalVariableTargetNode (location: (1,7)-(1,8))
             │   │       ├── name: :b
             │   │       └── depth: 1
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── lparen_loc: ∅
             │   └── rparen_loc: ∅
             ├── collection:

@@ -407,7 +407,7 @@
         │   ├── flags: ∅
         │   └── name: :[]=
         ├── @ MultiWriteNode (location: (41,0)-(41,21))
-        │   ├── targets: (length: 2)
+        │   ├── requireds: (length: 2)
         │   │   ├── @ CallNode (location: (41,0)-(41,6))
         │   │   │   ├── receiver:
         │   │   │   │   @ CallNode (location: (41,0)-(41,3))
@@ -458,6 +458,8 @@
         │   │       ├── block: ∅
         │   │       ├── flags: ∅
         │   │       └── name: :[]=
+        │   ├── rest: ∅
+        │   ├── posts: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (41,15)-(41,16) = "="

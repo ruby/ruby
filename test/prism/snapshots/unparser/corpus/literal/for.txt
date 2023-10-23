@@ -85,16 +85,18 @@
         ├── @ ForNode (location: (7,0)-(9,3))
         │   ├── index:
         │   │   @ MultiTargetNode (location: (7,4)-(7,11))
-        │   │   ├── targets: (length: 2)
-        │   │   │   ├── @ LocalVariableTargetNode (location: (7,5)-(7,6))
-        │   │   │   │   ├── name: :a
-        │   │   │   │   └── depth: 1
-        │   │   │   └── @ SplatNode (location: (7,8)-(7,10))
-        │   │   │       ├── operator_loc: (7,8)-(7,9) = "*"
-        │   │   │       └── expression:
-        │   │   │           @ LocalVariableTargetNode (location: (7,9)-(7,10))
-        │   │   │           ├── name: :b
-        │   │   │           └── depth: 1
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ LocalVariableTargetNode (location: (7,5)-(7,6))
+        │   │   │       ├── name: :a
+        │   │   │       └── depth: 1
+        │   │   ├── rest:
+        │   │   │   @ SplatNode (location: (7,8)-(7,10))
+        │   │   │   ├── operator_loc: (7,8)-(7,9) = "*"
+        │   │   │   └── expression:
+        │   │   │       @ LocalVariableTargetNode (location: (7,9)-(7,10))
+        │   │   │       ├── name: :b
+        │   │   │       └── depth: 1
+        │   │   ├── posts: (length: 0)
         │   │   ├── lparen_loc: (7,4)-(7,5) = "("
         │   │   └── rparen_loc: (7,10)-(7,11) = ")"
         │   ├── collection:
@@ -128,13 +130,15 @@
         └── @ ForNode (location: (10,0)-(12,3))
             ├── index:
             │   @ MultiTargetNode (location: (10,4)-(10,10))
-            │   ├── targets: (length: 2)
+            │   ├── requireds: (length: 2)
             │   │   ├── @ LocalVariableTargetNode (location: (10,5)-(10,6))
             │   │   │   ├── name: :a
             │   │   │   └── depth: 1
             │   │   └── @ LocalVariableTargetNode (location: (10,8)-(10,9))
             │   │       ├── name: :b
             │   │       └── depth: 1
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
             │   ├── lparen_loc: (10,4)-(10,5) = "("
             │   └── rparen_loc: (10,9)-(10,10) = ")"
             ├── collection:
