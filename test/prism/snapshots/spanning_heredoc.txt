@@ -1,8 +1,8 @@
-@ ProgramNode (location: (4,0)-(51,2))
-├── locals: []
+@ ProgramNode (location: (4,0)-(55,13))
+├── locals: [:a]
 └── statements:
-    @ StatementsNode (location: (4,0)-(51,2))
-    └── body: (length: 8)
+    @ StatementsNode (location: (4,0)-(55,13))
+    └── body: (length: 10)
         ├── @ CallNode (location: (4,0)-(7,7))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -270,41 +270,86 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: :pp
-        └── @ CallNode (location: (48,0)-(51,2))
-            ├── receiver: ∅
-            ├── call_operator_loc: ∅
-            ├── message_loc: (48,0)-(48,2) = "pp"
-            ├── opening_loc: ∅
-            ├── arguments:
-            │   @ ArgumentsNode (location: (48,3)-(51,2))
-            │   ├── arguments: (length: 2)
-            │   │   ├── @ StringNode (location: (48,3)-(48,7))
-            │   │   │   ├── flags: ∅
-            │   │   │   ├── opening_loc: (48,3)-(48,7) = "<<-A"
-            │   │   │   ├── content_loc: (49,0)-(50,0) = "o\n"
-            │   │   │   ├── closing_loc: (50,0)-(51,0) = "A\n"
-            │   │   │   └── unescaped: "o\n"
-            │   │   └── @ ArrayNode (location: (48,9)-(51,2))
-            │   │       ├── elements: (length: 1)
-            │   │       │   └── @ InterpolatedSymbolNode (location: (48,12)-(48,14))
-            │   │       │       ├── opening_loc: ∅
-            │   │       │       ├── parts: (length: 2)
-            │   │       │       │   ├── @ SymbolNode (location: (48,12)-(48,14))
-            │   │       │       │   │   ├── opening_loc: ∅
-            │   │       │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
-            │   │       │       │   │   ├── closing_loc: ∅
-            │   │       │       │   │   └── unescaped: "p\n"
-            │   │       │       │   └── @ StringNode (location: (48,12)-(48,14))
-            │   │       │       │       ├── flags: ∅
-            │   │       │       │       ├── opening_loc: ∅
-            │   │       │       │       ├── content_loc: (48,12)-(48,14) = "p\\"
-            │   │       │       │       ├── closing_loc: ∅
-            │   │       │       │       └── unescaped: "p"
-            │   │       │       └── closing_loc: ∅
-            │   │       ├── opening_loc: (48,9)-(48,12) = "%I["
-            │   │       └── closing_loc: (51,1)-(51,2) = "]"
-            │   └── flags: ∅
-            ├── closing_loc: ∅
-            ├── block: ∅
-            ├── flags: ∅
-            └── name: :pp
+        ├── @ CallNode (location: (48,0)-(51,2))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (48,0)-(48,2) = "pp"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (48,3)-(51,2))
+        │   │   ├── arguments: (length: 2)
+        │   │   │   ├── @ StringNode (location: (48,3)-(48,7))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── opening_loc: (48,3)-(48,7) = "<<-A"
+        │   │   │   │   ├── content_loc: (49,0)-(50,0) = "o\n"
+        │   │   │   │   ├── closing_loc: (50,0)-(51,0) = "A\n"
+        │   │   │   │   └── unescaped: "o\n"
+        │   │   │   └── @ ArrayNode (location: (48,9)-(51,2))
+        │   │   │       ├── elements: (length: 1)
+        │   │   │       │   └── @ InterpolatedSymbolNode (location: (48,12)-(48,14))
+        │   │   │       │       ├── opening_loc: ∅
+        │   │   │       │       ├── parts: (length: 2)
+        │   │   │       │       │   ├── @ SymbolNode (location: (48,12)-(48,14))
+        │   │   │       │       │   │   ├── opening_loc: ∅
+        │   │   │       │       │   │   ├── value_loc: (48,12)-(48,14) = "p\\"
+        │   │   │       │       │   │   ├── closing_loc: ∅
+        │   │   │       │       │   │   └── unescaped: "p\n"
+        │   │   │       │       │   └── @ StringNode (location: (48,12)-(48,14))
+        │   │   │       │       │       ├── flags: ∅
+        │   │   │       │       │       ├── opening_loc: ∅
+        │   │   │       │       │       ├── content_loc: (48,12)-(48,14) = "p\\"
+        │   │   │       │       │       ├── closing_loc: ∅
+        │   │   │       │       │       └── unescaped: "p"
+        │   │   │       │       └── closing_loc: ∅
+        │   │   │       ├── opening_loc: (48,9)-(48,12) = "%I["
+        │   │   │       └── closing_loc: (51,1)-(51,2) = "]"
+        │   │   └── flags: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: :pp
+        ├── @ StringNode (location: (53,0)-(53,3))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (53,0)-(53,3) = "<<A"
+        │   ├── content_loc: (54,0)-(54,0) = ""
+        │   ├── closing_loc: (54,0)-(55,0) = "A\n"
+        │   └── unescaped: ""
+        └── @ MatchWriteNode (location: (53,5)-(55,13))
+            ├── call:
+            │   @ CallNode (location: (53,5)-(55,13))
+            │   ├── receiver:
+            │   │   @ InterpolatedRegularExpressionNode (location: (53,5)-(55,7))
+            │   │   ├── opening_loc: (53,5)-(53,6) = "/"
+            │   │   ├── parts: (length: 2)
+            │   │   │   ├── @ StringNode (location: (53,6)-(53,7))
+            │   │   │   │   ├── flags: ∅
+            │   │   │   │   ├── opening_loc: ∅
+            │   │   │   │   ├── content_loc: (53,6)-(53,7) = "\\"
+            │   │   │   │   ├── closing_loc: ∅
+            │   │   │   │   └── unescaped: ""
+            │   │   │   └── @ StringNode (location: (55,0)-(55,6))
+            │   │   │       ├── flags: ∅
+            │   │   │       ├── opening_loc: ∅
+            │   │   │       ├── content_loc: (55,0)-(55,6) = "(?<a>)"
+            │   │   │       ├── closing_loc: ∅
+            │   │   │       └── unescaped: "(?<a>)"
+            │   │   ├── closing_loc: (55,6)-(55,7) = "/"
+            │   │   └── flags: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (55,8)-(55,10) = "=~"
+            │   ├── opening_loc: ∅
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (55,11)-(55,13))
+            │   │   ├── arguments: (length: 1)
+            │   │   │   └── @ StringNode (location: (55,11)-(55,13))
+            │   │   │       ├── flags: ∅
+            │   │   │       ├── opening_loc: (55,11)-(55,12) = "'"
+            │   │   │       ├── content_loc: (55,12)-(55,12) = ""
+            │   │   │       ├── closing_loc: (55,12)-(55,13) = "'"
+            │   │   │       └── unescaped: ""
+            │   │   └── flags: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: :=~
+            └── locals: [:a]
