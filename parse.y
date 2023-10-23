@@ -4739,7 +4739,7 @@ numparam	:   {
 lambda		: tLAMBDA[dyna]
                     {
                         token_info_push(p, "->", &@1);
-                        $<vars>1 = dyna_push(p);
+                        $<vars>dyna = dyna_push(p);
                         $<num>$ = p->lex.lpar_beg;
                         p->lex.lpar_beg = p->lex.paren_nest;
                     }[lpar]
