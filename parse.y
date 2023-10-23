@@ -562,27 +562,11 @@ static void numparam_name(struct parser_params *p, ID id);
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
 #define VALID_SYMNAME_P(s, l, enc, type) (rb_enc_symname_type(s, l, enc, (1U<<(type))) == (int)(type))
 
-static st_table *
-push_pvtbl(struct parser_params *p)
-{
-    st_table *tbl = p->pvtbl;
-    p->pvtbl = st_init_numtable();
-    return tbl;
-}
-
 static void
 pop_pvtbl(struct parser_params *p, st_table *tbl)
 {
     st_free_table(p->pvtbl);
     p->pvtbl = tbl;
-}
-
-static st_table *
-push_pktbl(struct parser_params *p)
-{
-    st_table *tbl = p->pktbl;
-    p->pktbl = 0;
-    return tbl;
 }
 
 static void
@@ -2096,7 +2080,7 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var def_name
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
 %type <ctxt> p_assoc p_in
-%type <tbl>  p_lparen p_lbracket
+%type <tbl>  p_lparen p_lbracket p_pktbl p_pvtbl
 /* ripper */ %type <num>  max_numparam
 /* ripper */ %type <node> numparam
 %token END_OF_INPUT 0	"end-of-input"
@@ -2655,15 +2639,12 @@ expr		: command_call
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
                         p->ctxt.in_kwarg = 1;
-                        $<tbl>$ = push_pvtbl(p);
-                    }[pvtbl]
-                    {
-                        $<tbl>$ = push_pktbl(p);
-                    }[pktbl]
+                    }
+                  p_pvtbl p_pktbl
                   p_top_expr_body[body]
                     {
-                        pop_pktbl(p, $<tbl>pktbl);
-                        pop_pvtbl(p, $<tbl>pvtbl);
+                        pop_pktbl(p, $p_pktbl);
+                        pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
                     /*%%%*/
                         $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body), &@$);
@@ -2676,15 +2657,12 @@ expr		: command_call
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
                         p->ctxt.in_kwarg = 1;
-                        $<tbl>$ = push_pvtbl(p);
-                    }[pvtbl]
-                    {
-                        $<tbl>$ = push_pktbl(p);
-                    }[pktbl]
+                    }
+                  p_pvtbl p_pktbl
                   p_top_expr_body[body]
                     {
-                        pop_pktbl(p, $<tbl>pktbl);
-                        pop_pvtbl(p, $<tbl>pvtbl);
+                        pop_pktbl(p, $p_pktbl);
+                        pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
                     /*%%%*/
                         $$ = NEW_CASE3($arg, NEW_IN($body, NEW_TRUE(&@body), NEW_FALSE(&@body), &@body), &@$);
@@ -5056,6 +5034,9 @@ cases		: opt_else
                 | case_body
                 ;
 
+p_pvtbl 	: {$$ = p->pvtbl; p->pvtbl = st_init_numtable();};
+p_pktbl 	: {$$ = p->pktbl; p->pktbl = 0;};
+
 p_assoc 	: tASSOC lex_ctxt {$$ = $2;};
 p_in		: keyword_in lex_ctxt {$$ = $2;};
 
@@ -5064,16 +5045,13 @@ p_case_body	: p_in[ctxt]
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
                         p->ctxt.in_kwarg = 1;
-                        $<tbl>$ = push_pvtbl(p);
-                    }[pvtbl]
-                    {
-                        $<tbl>$ = push_pktbl(p);
-                    }[pktbl]
+                    }
+                  p_pvtbl p_pktbl
                   p_top_expr[expr] then
                     {
-                        pop_pktbl(p, $<tbl>pktbl);
-                        pop_pvtbl(p, $<tbl>pvtbl);
-                        p->ctxt.in_kwarg = $<ctxt>ctxt.in_kwarg;
+                        pop_pktbl(p, $p_pktbl);
+                        pop_pvtbl(p, $p_pvtbl);
+                        p->ctxt.in_kwarg = $ctxt.in_kwarg;
                     }
                   compstmt
                   p_cases[cases]
@@ -5161,67 +5139,67 @@ p_alt		: p_alt '|' p_expr_basic
                 | p_expr_basic
                 ;
 
-p_lparen	: '(' {$$ = push_pktbl(p);};
-p_lbracket	: '[' {$$ = push_pktbl(p);};
+p_lparen	: '(' p_pktbl { $$ = $2;};
+p_lbracket	: '[' p_pktbl { $$ = $2;};
 
 p_expr_basic	: p_value
                 | p_variable
-                | p_const p_lparen p_args rparen
+                | p_const p_lparen[p_pktbl] p_args rparen
                     {
-                        pop_pktbl(p, $2);
-                        $$ = new_array_pattern(p, $1, Qnone, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = new_array_pattern(p, $p_const, Qnone, $p_args, &@$);
                     /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
+                        nd_set_first_loc($$, @p_const.beg_pos);
                     /*%
                     %*/
                     }
-                | p_const p_lparen p_find rparen
+                | p_const p_lparen[p_pktbl] p_find rparen
                     {
-                        pop_pktbl(p, $2);
-                        $$ = new_find_pattern(p, $1, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = new_find_pattern(p, $p_const, $p_find, &@$);
                     /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
+                        nd_set_first_loc($$, @p_const.beg_pos);
                     /*%
                     %*/
                     }
-                | p_const p_lparen p_kwargs rparen
+                | p_const p_lparen[p_pktbl] p_kwargs rparen
                     {
-                        pop_pktbl(p, $2);
-                        $$ = new_hash_pattern(p, $1, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = new_hash_pattern(p, $p_const, $p_kwargs, &@$);
                     /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
+                        nd_set_first_loc($$, @p_const.beg_pos);
                     /*%
                     %*/
                     }
                 | p_const '(' rparen
                     {
                         $$ = new_array_pattern_tail(p, Qnone, 0, Qnone, Qnone, &@$);
-                        $$ = new_array_pattern(p, $1, Qnone, $$, &@$);
+                        $$ = new_array_pattern(p, $p_const, Qnone, $$, &@$);
                     }
-                | p_const p_lbracket p_args rbracket
+                | p_const p_lbracket[p_pktbl] p_args rbracket
                     {
-                        pop_pktbl(p, $2);
-                        $$ = new_array_pattern(p, $1, Qnone, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = new_array_pattern(p, $p_const, Qnone, $p_args, &@$);
                     /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
+                        nd_set_first_loc($$, @p_const.beg_pos);
                     /*%
                     %*/
                     }
-                | p_const p_lbracket p_find rbracket
+                | p_const p_lbracket[p_pktbl] p_find rbracket
                     {
-                        pop_pktbl(p, $2);
-                        $$ = new_find_pattern(p, $1, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = new_find_pattern(p, $p_const, $p_find, &@$);
                     /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
+                        nd_set_first_loc($$, @p_const.beg_pos);
                     /*%
                     %*/
                     }
-                | p_const p_lbracket p_kwargs rbracket
+                | p_const p_lbracket[p_pktbl] p_kwargs rbracket
                     {
-                        pop_pktbl(p, $2);
-                        $$ = new_hash_pattern(p, $1, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = new_hash_pattern(p, $p_const, $p_kwargs, &@$);
                     /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
+                        nd_set_first_loc($$, @p_const.beg_pos);
                     /*%
                     %*/
                     }
@@ -5232,38 +5210,36 @@ p_expr_basic	: p_value
                     }
                 | tLBRACK p_args rbracket
                     {
-                        $$ = new_array_pattern(p, Qnone, Qnone, $2, &@$);
+                        $$ = new_array_pattern(p, Qnone, Qnone, $p_args, &@$);
                     }
                 | tLBRACK p_find rbracket
                     {
-                        $$ = new_find_pattern(p, Qnone, $2, &@$);
+                        $$ = new_find_pattern(p, Qnone, $p_find, &@$);
                     }
                 | tLBRACK rbracket
                     {
                         $$ = new_array_pattern_tail(p, Qnone, 0, Qnone, Qnone, &@$);
                         $$ = new_array_pattern(p, Qnone, Qnone, $$, &@$);
                     }
-                | tLBRACE
+                | tLBRACE p_pktbl lex_ctxt[ctxt]
                     {
-                        $<tbl>$ = push_pktbl(p);
-                        $<ctxt>1 = p->ctxt;
                         p->ctxt.in_kwarg = 0;
                     }
                   p_kwargs rbrace
                     {
-                        pop_pktbl(p, $<tbl>2);
-                        p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
-                        $$ = new_hash_pattern(p, Qnone, $3, &@$);
+                        pop_pktbl(p, $p_pktbl);
+                        p->ctxt.in_kwarg = $ctxt.in_kwarg;
+                        $$ = new_hash_pattern(p, Qnone, $p_kwargs, &@$);
                     }
                 | tLBRACE rbrace
                     {
                         $$ = new_hash_pattern_tail(p, Qnone, 0, &@$);
                         $$ = new_hash_pattern(p, Qnone, $$, &@$);
                     }
-                | tLPAREN {$<tbl>$ = push_pktbl(p);} p_expr rparen
+                | tLPAREN p_pktbl p_expr rparen
                     {
-                        pop_pktbl(p, $<tbl>2);
-                        $$ = $3;
+                        pop_pktbl(p, $p_pktbl);
+                        $$ = $p_expr;
                     }
                 ;
 
