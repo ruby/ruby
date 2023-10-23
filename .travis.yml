@@ -63,8 +63,7 @@ env:
   - &ppc64le-linux
     name: ppc64le-linux
     arch: ppc64le
-    dist: focal
-    compiler: gcc
+    <<: *gcc-11
 
   - &s390x-linux
     name: s390x-linux
