@@ -16,7 +16,7 @@ language: c
 
 os: linux
 
-dist: focal
+dist: jammy
 
 git:
   quiet: true
@@ -37,14 +37,14 @@ env:
     - RUBY_TESTOPTS="$JOBS -q --tty=no"
 
 .org.ruby-lang.ci.matrix-definitions:
-  - &gcc-10
-    compiler: gcc-10
+  - &gcc-11
+    compiler: gcc-11
     before_install:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        gcc-10
-        g++-10
+        gcc-11
+        g++-11
         libffi-dev
         libncurses-dev
         libncursesw5-dev
@@ -53,21 +53,22 @@ env:
         libyaml-dev
         openssl
         zlib1g-dev
+      - gcc-11 --version
 
   - &arm64-linux
     name: arm64-linux
     arch: arm64
-    <<: *gcc-10
+    <<: *gcc-11
 
   - &ppc64le-linux
     name: ppc64le-linux
     arch: ppc64le
+    dist: focal
     compiler: gcc
 
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    dist: jammy
     compiler: gcc
     env:
       # Avoid possible test failures with the zlib applying the following patch
@@ -78,7 +79,7 @@ env:
   - &arm32-linux
     name: arm32-linux
     arch: arm64
-    # https://packages.ubuntu.com/focal/crossbuild-essential-armhf
+    # https://packages.ubuntu.com/jammy/crossbuild-essential-armhf
     compiler: arm-linux-gnueabihf-gcc
     env:
       - SETARCH='setarch linux32 --verbose --32bit'
