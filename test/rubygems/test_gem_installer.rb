@@ -995,6 +995,19 @@ end
     assert_equal @tempdir, installer.bin_dir
   end
 
+  def test_install_dir_takes_precedence_to_user_install
+    gemhome2 = "#{@gemhome}2"
+
+    @gem = setup_base_gem
+
+    installer =
+      Gem::Installer.at @gem, :install_dir => gemhome2, :user_install => true
+    installer.install
+
+    assert_path_exist File.join(gemhome2, "gems", @spec.full_name)
+    assert_path_not_exist File.join(Gem.user_dir, "gems", @spec.full_name)
+  end
+
   def test_install
     installer = util_setup_installer
 
