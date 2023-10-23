@@ -158,12 +158,12 @@ module Prism
     # in InstanceVariableReadNode[name: Symbol]
     # in { name: Symbol }
     def compile_hash_pattern_node(node)
-      compile_error(node) unless node.kwrest.nil?
+      compile_error(node) if node.rest
       compiled_constant = compile_node(node.constant) if node.constant
 
       preprocessed =
-        node.assocs.to_h do |assoc|
-          [assoc.key.unescaped.to_sym, compile_node(assoc.value)]
+        node.elements.to_h do |element|
+          [element.key.unescaped.to_sym, compile_node(element.value)]
         end
 
       compiled_keywords = ->(other) do

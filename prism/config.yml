@@ -1356,9 +1356,9 @@ nodes:
     fields:
       - name: constant
         type: node?
-      - name: assocs
+      - name: elements
         type: node[]
-      - name: kwrest
+      - name: rest
         type: node?
       - name: opening_loc
         type: location?

@@ -20,7 +20,7 @@
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (2,3)-(2,5))
         │   │   │   │   ├── constant: ∅
-        │   │   │   │   ├── assocs: (length: 1)
+        │   │   │   │   ├── elements: (length: 1)
         │   │   │   │   │   └── @ AssocNode (location: (2,3)-(2,5))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (2,3)-(2,5))
@@ -30,7 +30,7 @@
         │   │   │   │   │       │   └── unescaped: "a"
         │   │   │   │   │       ├── value: ∅
         │   │   │   │   │       └── operator_loc: ∅
-        │   │   │   │   ├── kwrest: ∅
+        │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   └── closing_loc: ∅
         │   │   │   ├── statements:
@@ -45,7 +45,7 @@
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (5,3)-(5,7))
         │   │       │   ├── constant: ∅
-        │   │       │   ├── assocs: (length: 1)
+        │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ AssocNode (location: (5,3)-(5,7))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (5,3)-(5,7))
@@ -55,7 +55,7 @@
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value: ∅
         │   │       │   │       └── operator_loc: ∅
-        │   │       │   ├── kwrest: ∅
+        │   │       │   ├── rest: ∅
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements:

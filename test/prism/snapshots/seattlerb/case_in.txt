@@ -15,7 +15,7 @@
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (2,4)-(2,8))
         │   │       │   ├── constant: ∅
-        │   │       │   ├── assocs: (length: 1)
+        │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ AssocNode (location: (2,4)-(2,8))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (2,4)-(2,8))
@@ -25,7 +25,7 @@
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value: ∅
         │   │       │   │       └── operator_loc: ∅
-        │   │       │   ├── kwrest: ∅
+        │   │       │   ├── rest: ∅
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
@@ -282,11 +282,11 @@
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (42,3)-(42,8))
         │   │       │   ├── constant: ∅
-        │   │       │   ├── assocs: (length: 1)
-        │   │       │   │   └── @ NoKeywordsParameterNode (location: (42,3)-(42,8))
-        │   │       │   │       ├── operator_loc: (42,3)-(42,5) = "**"
-        │   │       │   │       └── keyword_loc: (42,5)-(42,8) = "nil"
-        │   │       │   ├── kwrest: ∅
+        │   │       │   ├── elements: (length: 0)
+        │   │       │   ├── rest:
+        │   │       │   │   @ NoKeywordsParameterNode (location: (42,3)-(42,8))
+        │   │       │   │   ├── operator_loc: (42,3)-(42,5) = "**"
+        │   │       │   │   └── keyword_loc: (42,5)-(42,8) = "nil"
         │   │       │   ├── opening_loc: ∅
         │   │       │   └── closing_loc: ∅
         │   │       ├── statements: ∅
@@ -849,7 +849,7 @@
         │   │       ├── pattern:
         │   │       │   @ HashPatternNode (location: (106,3)-(106,11))
         │   │       │   ├── constant: ∅
-        │   │       │   ├── assocs: (length: 1)
+        │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ AssocNode (location: (106,5)-(106,9))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (106,5)-(106,9))
@@ -859,7 +859,7 @@
         │   │       │   │       │   └── unescaped: "b"
         │   │       │   │       ├── value: ∅
         │   │       │   │       └── operator_loc: ∅
-        │   │       │   ├── kwrest: ∅
+        │   │       │   ├── rest: ∅
         │   │       │   ├── opening_loc: (106,3)-(106,4) = "{"
         │   │       │   └── closing_loc: (106,10)-(106,11) = "}"
         │   │       ├── statements: ∅
@@ -880,8 +880,8 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (110,3)-(110,5))
             │       │   ├── constant: ∅
-            │       │   ├── assocs: (length: 0)
-            │       │   ├── kwrest: ∅
+            │       │   ├── elements: (length: 0)
+            │       │   ├── rest: ∅
             │       │   ├── opening_loc: (110,3)-(110,4) = "{"
             │       │   └── closing_loc: (110,4)-(110,5) = "}"
             │       ├── statements: ∅

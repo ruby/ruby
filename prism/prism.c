@@ -2588,10 +2588,10 @@ pm_hash_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening
             },
         },
         .constant = NULL,
-        .kwrest = NULL,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .assocs = PM_EMPTY_NODE_LIST
+        .elements = PM_EMPTY_NODE_LIST,
+        .rest = NULL
     };
 
     return node;
@@ -2599,27 +2599,44 @@ pm_hash_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening
 
 // Allocate and initialize a new hash pattern node.
 static pm_hash_pattern_node_t *
-pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *assocs) {
+pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *elements, pm_node_t *rest) {
     pm_hash_pattern_node_t *node = PM_ALLOC_NODE(parser, pm_hash_pattern_node_t);
+
+    const uint8_t *start;
+    const uint8_t *end;
+
+    if (elements->size > 0) {
+        if (rest) {
+            start = elements->nodes[0]->location.start;
+            end = rest->location.end;
+        } else {
+            start = elements->nodes[0]->location.start;
+            end = elements->nodes[elements->size - 1]->location.end;
+        }
+    } else {
+        assert(rest != NULL);
+        start = rest->location.start;
+        end = rest->location.end;
+    }
 
     *node = (pm_hash_pattern_node_t) {
         {
             .type = PM_HASH_PATTERN_NODE,
             .location = {
-                .start = assocs->nodes[0]->location.start,
-                .end = assocs->nodes[assocs->size - 1]->location.end
+                .start = start,
+                .end = end
             },
         },
         .constant = NULL,
-        .kwrest = NULL,
-        .assocs = PM_EMPTY_NODE_LIST,
+        .elements = PM_EMPTY_NODE_LIST,
+        .rest = rest,
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
-    for (size_t index = 0; index < assocs->size; index++) {
-        pm_node_t *assoc = assocs->nodes[index];
-        pm_node_list_append(&node->assocs, assoc);
+    for (size_t index = 0; index < elements->size; index++) {
+        pm_node_t *element = elements->nodes[index];
+        pm_node_list_append(&node->elements, element);
     }
 
     return node;
@@ -11712,27 +11729,39 @@ parse_pattern_keyword_rest(pm_parser_t *parser) {
 // Parse a hash pattern.
 static pm_hash_pattern_node_t *
 parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
-    if (PM_NODE_TYPE_P(first_assoc, PM_ASSOC_NODE)) {
-        if (!match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-            // Here we have a value for the first assoc in the list, so we will parse it
-            // now and update the first assoc.
-            pm_node_t *value = parse_pattern(parser, false, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY);
-
-            pm_assoc_node_t *assoc = (pm_assoc_node_t *) first_assoc;
-            assoc->base.location.end = value->location.end;
-            assoc->value = value;
-        } else {
-            pm_node_t *key = ((pm_assoc_node_t *) first_assoc)->key;
-
-            if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
-                const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->value_loc;
-                pm_parser_local_add_location(parser, value_loc->start, value_loc->end);
-            }
-        }
-    }
-
     pm_node_list_t assocs = PM_EMPTY_NODE_LIST;
-    pm_node_list_append(&assocs, first_assoc);
+    pm_node_t *rest = NULL;
+
+    switch (PM_NODE_TYPE(first_assoc)) {
+        case PM_ASSOC_NODE: {
+            if (!match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
+                // Here we have a value for the first assoc in the list, so we will
+                // parse it now and update the first assoc.
+                pm_node_t *value = parse_pattern(parser, false, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY);
+
+                pm_assoc_node_t *assoc = (pm_assoc_node_t *) first_assoc;
+                assoc->base.location.end = value->location.end;
+                assoc->value = value;
+            } else {
+                pm_node_t *key = ((pm_assoc_node_t *) first_assoc)->key;
+
+                if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                    const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->value_loc;
+                    pm_parser_local_add_location(parser, value_loc->start, value_loc->end);
+                }
+            }
+
+            pm_node_list_append(&assocs, first_assoc);
+            break;
+        }
+        case PM_ASSOC_SPLAT_NODE:
+        case PM_NO_KEYWORDS_PARAMETER_NODE:
+            rest = first_assoc;
+            break;
+        default:
+            assert(false);
+            break;
+    }
 
     // If there are any other assocs, then we'll parse them now.
     while (accept1(parser, PM_TOKEN_COMMA)) {
@@ -11764,7 +11793,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
         pm_node_list_append(&assocs, assoc);
     }
 
-    pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs);
+    pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs, rest);
     free(assocs.nodes);
 
     return node;
@@ -11849,32 +11878,45 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
                 // pattern node.
                 node = pm_hash_pattern_node_empty_create(parser, &opening, &parser->previous);
             } else {
-                pm_node_t *key;
+                pm_node_t *first_assoc;
 
                 switch (parser->current.type) {
-                    case PM_TOKEN_LABEL:
+                    case PM_TOKEN_LABEL: {
                         parser_lex(parser);
-                        key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
+
+                        pm_symbol_node_t *key = pm_symbol_node_label_create(parser, &parser->previous);
+                        pm_token_t operator = not_provided(parser);
+
+                        first_assoc = (pm_node_t *) pm_assoc_node_create(parser, (pm_node_t *) key, &operator, NULL);
                         break;
+                    }
                     case PM_TOKEN_USTAR_STAR:
-                        key = parse_pattern_keyword_rest(parser);
+                        first_assoc = parse_pattern_keyword_rest(parser);
                         break;
-                    case PM_TOKEN_STRING_BEGIN:
-                        key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_ERR_PATTERN_HASH_KEY);
+                    case PM_TOKEN_STRING_BEGIN: {
+                        pm_node_t *key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_ERR_PATTERN_HASH_KEY);
+                        pm_token_t operator = not_provided(parser);
+
                         if (!pm_symbol_node_label_p(key)) {
                             pm_parser_err_node(parser, key, PM_ERR_PATTERN_HASH_KEY_LABEL);
                         }
 
+                        first_assoc = (pm_node_t *) pm_assoc_node_create(parser, key, &operator, NULL);
                         break;
-                    default:
+                    }
+                    default: {
                         parser_lex(parser);
                         pm_parser_err_previous(parser, PM_ERR_PATTERN_HASH_KEY);
-                        key = (pm_node_t *) pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
+
+                        pm_missing_node_t *key = pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
+                        pm_token_t operator = not_provided(parser);
+
+                        first_assoc = (pm_node_t *) pm_assoc_node_create(parser, (pm_node_t *) key, &operator, NULL);
                         break;
+                    }
                 }
 
-                pm_token_t operator = not_provided(parser);
-                node = parse_pattern_hash(parser, (pm_node_t *) pm_assoc_node_create(parser, key, &operator, NULL));
+                node = parse_pattern_hash(parser, first_assoc);
 
                 accept1(parser, PM_TOKEN_NEWLINE);
                 expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_PATTERN_TERM_BRACE);

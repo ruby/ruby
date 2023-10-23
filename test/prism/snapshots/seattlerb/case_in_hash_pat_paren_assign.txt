@@ -17,7 +17,7 @@
             │       │   ├── constant:
             │       │   │   @ ConstantReadNode (location: (2,3)-(2,4))
             │       │   │   └── name: :B
-            │       │   ├── assocs: (length: 1)
+            │       │   ├── elements: (length: 1)
             │       │   │   └── @ AssocNode (location: (2,5)-(2,10))
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,5)-(2,7))
@@ -29,7 +29,7 @@
             │       │   │       │   @ IntegerNode (location: (2,8)-(2,10))
             │       │   │       │   └── flags: decimal
             │       │   │       └── operator_loc: ∅
-            │       │   ├── kwrest: ∅
+            │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,4)-(2,5) = "("
             │       │   └── closing_loc: (2,10)-(2,11) = ")"
             │       ├── statements:
