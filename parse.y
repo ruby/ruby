@@ -2095,6 +2095,7 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var def_name
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
+%type <ctxt> p_assoc p_in
 %type <tbl>  p_lparen p_lbracket
 /* ripper */ %type <num>  max_numparam
 /* ripper */ %type <node> numparam
@@ -2648,12 +2649,11 @@ expr		: command_call
                     {
                         $$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
                     }
-                | arg tASSOC[ctxt]
+                | arg p_assoc[ctxt]
                     {
                         value_expr($arg);
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
-                        $<ctxt>ctxt = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         $<tbl>$ = push_pvtbl(p);
                     }[pvtbl]
@@ -2664,18 +2664,17 @@ expr		: command_call
                     {
                         pop_pktbl(p, $<tbl>pktbl);
                         pop_pvtbl(p, $<tbl>pvtbl);
-                        p->ctxt.in_kwarg = $<ctxt>ctxt.in_kwarg;
+                        p->ctxt.in_kwarg = $ctxt.in_kwarg;
                     /*%%%*/
                         $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body), &@$);
                     /*% %*/
                     /*% ripper: case!($arg, in!($body, Qnil, Qnil)) %*/
                     }
-                | arg keyword_in[ctxt]
+                | arg p_in[ctxt]
                     {
                         value_expr($arg);
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
-                        $<ctxt>ctxt = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         $<tbl>$ = push_pvtbl(p);
                     }[pvtbl]
@@ -2686,7 +2685,7 @@ expr		: command_call
                     {
                         pop_pktbl(p, $<tbl>pktbl);
                         pop_pvtbl(p, $<tbl>pvtbl);
-                        p->ctxt.in_kwarg = $<ctxt>ctxt.in_kwarg;
+                        p->ctxt.in_kwarg = $ctxt.in_kwarg;
                     /*%%%*/
                         $$ = NEW_CASE3($arg, NEW_IN($body, NEW_TRUE(&@body), NEW_FALSE(&@body), &@body), &@$);
                     /*% %*/
@@ -5057,11 +5056,13 @@ cases		: opt_else
                 | case_body
                 ;
 
-p_case_body	: keyword_in[ctxt]
+p_assoc 	: tASSOC lex_ctxt {$$ = $2;};
+p_in		: keyword_in lex_ctxt {$$ = $2;};
+
+p_case_body	: p_in[ctxt]
                     {
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
-                        $<ctxt>ctxt = p->ctxt;
                         p->ctxt.in_kwarg = 1;
                         $<tbl>$ = push_pvtbl(p);
                     }[pvtbl]
