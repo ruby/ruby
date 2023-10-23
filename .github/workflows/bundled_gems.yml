@@ -51,8 +51,9 @@ jobs:
           curl -O -R -z ./$data https://stdgems.org/$data
 
       - name: Update bundled gems list
+        id: bundled_gems
         run: |
-          ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems
+          ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems > $GITHUB_OUTPUT
 
       - name: Maintain updated gems list in NEWS
         run: |
@@ -99,14 +100,15 @@ jobs:
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          message="Update bundled gems list at "
+          message="Update bundled gems list"
           if [ -z "${gem}" ]; then
-            git commit --message="${message}${GITHUB_SHA:0:30} [ci skip]"
+            git commit --message="${message} at ${GITHUB_SHA:0:30} [ci skip]"
           else
-            git commit --message="${message}${TODAY}"
+            git commit --message="${message} as of ${TODAY}"
           fi
           git push origin ${GITHUB_REF#refs/heads/}
         env:
+          TODAY: ${{ steps.bundled_gems.outputs.latest_date || env.TODAY }}
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git

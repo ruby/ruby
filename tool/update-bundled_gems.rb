@@ -1,6 +1,11 @@
 #!ruby -pla
 BEGIN {
   require 'rubygems'
+  date = nil
+  stdout = $>
+}
+END {
+  stdout.print date.strftime("latest_date=%F") if date
 }
 unless /^[^#]/ !~ (gem = $F[0])
   (gem, src), = Gem::SpecFetcher.fetcher.detect(:latest) {|s|
@@ -13,6 +18,7 @@ unless /^[^#]/ !~ (gem = $F[0])
   else
     uri = $F[2]
   end
+  date = gem.date if !date or gem.date && gem.date > date
   if $F[3]
     if $F[3].include?($F[1])
       $F[3][$F[1]] = gem.version.to_s
