@@ -9509,10 +9509,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
                 splat->expression = parse_target(parser, splat->expression);
             }
 
-            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
-            pm_multi_target_node_targets_append(parser, multi_target, (pm_node_t *) splat);
-
-            return (pm_node_t *) multi_target;
+            return (pm_node_t *) splat;
         }
         case PM_CALL_NODE: {
             pm_call_node_t *call = (pm_call_node_t *) target;
@@ -9802,7 +9799,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             target = parse_target(parser, target);
 
             pm_multi_target_node_targets_append(parser, result, target);
-        } else {
+        } else if (!match1(parser, PM_TOKEN_EOF)) {
             // If we get here, then we have a trailing , in a multi target node.
             // We need to indicate this somehow in the tree, so we'll add an
             // anonymous splat.
@@ -12526,12 +12523,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 parser_lex(parser);
                 pm_accepts_block_stack_pop(parser);
 
-                // If we have a single statement and are ending on a right
-                // parenthesis, then we need to check if this is possibly a
-                // multiple target node.
-                if (PM_NODE_TYPE_P(statement, PM_MULTI_TARGET_NODE)) {
+                if (PM_NODE_TYPE_P(statement, PM_MULTI_TARGET_NODE) || PM_NODE_TYPE_P(statement, PM_SPLAT_NODE)) {
+                    // If we have a single statement and are ending on a right
+                    // parenthesis, then we need to check if this is possibly a
+                    // multiple target node.
                     pm_multi_target_node_t *multi_target;
-                    if (((pm_multi_target_node_t *) statement)->lparen_loc.start == NULL) {
+
+                    if (PM_NODE_TYPE_P(statement, PM_MULTI_TARGET_NODE) && ((pm_multi_target_node_t *) statement)->lparen_loc.start == NULL) {
                         multi_target = (pm_multi_target_node_t *) statement;
                     } else {
                         multi_target = pm_multi_target_node_create(parser);
@@ -14575,18 +14573,13 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return parse_write(parser, node, &token, value);
                 }
                 case PM_SPLAT_NODE: {
-                    pm_splat_node_t *splat_node = (pm_splat_node_t *) node;
+                    pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
+                    pm_multi_target_node_targets_append(parser, multi_target, node);
 
-                    switch (PM_NODE_TYPE(splat_node->expression)) {
-                        case PM_CASE_WRITABLE:
-                            parser_lex(parser);
-                            pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
-                            return parse_write(parser, (pm_node_t *) splat_node, &token, value);
-                        default:
-                            break;
-                    }
+                    parser_lex(parser);
+                    pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
+                    return parse_write(parser, (pm_node_t *) multi_target, &token, value);
                 }
-                /* fallthrough */
                 default:
                     parser_lex(parser);
 

@@ -1202,7 +1202,7 @@ module Prism
     def test_invalid_global_variable_write
       assert_errors expression("$',"), "$',", [
         ["Immutable variable as a write target", 0..2],
-        ["Unexpected write target", 0..3]
+        ["Unexpected write target", 0..2]
       ]
     end
 

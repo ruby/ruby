@@ -4,19 +4,15 @@
     @ StatementsNode (location: (1,0)-(1,15))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,15))
-            ├── requireds: (length: 4)
-            │   ├── @ MultiTargetNode (location: (1,0)-(1,2))
-            │   │   ├── requireds: (length: 0)
-            │   │   ├── rest:
-            │   │   │   @ SplatNode (location: (1,0)-(1,2))
-            │   │   │   ├── operator_loc: (1,0)-(1,1) = "*"
-            │   │   │   └── expression:
-            │   │   │       @ LocalVariableTargetNode (location: (1,1)-(1,2))
-            │   │   │       ├── name: :s
-            │   │   │       └── depth: 0
-            │   │   ├── posts: (length: 0)
-            │   │   ├── lparen_loc: ∅
-            │   │   └── rparen_loc: ∅
+            ├── requireds: (length: 0)
+            ├── rest:
+            │   @ SplatNode (location: (1,0)-(1,2))
+            │   ├── operator_loc: (1,0)-(1,1) = "*"
+            │   └── expression:
+            │       @ LocalVariableTargetNode (location: (1,1)-(1,2))
+            │       ├── name: :s
+            │       └── depth: 0
+            ├── posts: (length: 3)
             │   ├── @ LocalVariableTargetNode (location: (1,4)-(1,5))
             │   │   ├── name: :x
             │   │   └── depth: 0
@@ -26,8 +22,6 @@
             │   └── @ LocalVariableTargetNode (location: (1,10)-(1,11))
             │       ├── name: :z
             │       └── depth: 0
-            ├── rest: ∅
-            ├── posts: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (1,12)-(1,13) = "="

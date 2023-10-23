@@ -25,24 +25,18 @@
         │       ├── flags: variable_call
         │       └── name: :bar
         ├── @ MultiWriteNode (location: (3,0)-(3,13))
-        │   ├── requireds: (length: 3)
-        │   │   ├── @ MultiTargetNode (location: (3,0)-(3,1))
-        │   │   │   ├── requireds: (length: 0)
-        │   │   │   ├── rest:
-        │   │   │   │   @ SplatNode (location: (3,0)-(3,1))
-        │   │   │   │   ├── operator_loc: (3,0)-(3,1) = "*"
-        │   │   │   │   └── expression: ∅
-        │   │   │   ├── posts: (length: 0)
-        │   │   │   ├── lparen_loc: ∅
-        │   │   │   └── rparen_loc: ∅
+        │   ├── requireds: (length: 0)
+        │   ├── rest:
+        │   │   @ SplatNode (location: (3,0)-(3,1))
+        │   │   ├── operator_loc: (3,0)-(3,1) = "*"
+        │   │   └── expression: ∅
+        │   ├── posts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (3,3)-(3,4))
         │   │   │   ├── name: :c
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (3,6)-(3,7))
         │   │       ├── name: :d
         │   │       └── depth: 0
-        │   ├── rest: ∅
-        │   ├── posts: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (3,8)-(3,9) = "="
@@ -82,24 +76,18 @@
         │       ├── flags: variable_call
         │       └── name: :bar
         ├── @ MultiWriteNode (location: (7,0)-(7,11))
-        │   ├── requireds: (length: 2)
-        │   │   ├── @ MultiTargetNode (location: (7,0)-(7,2))
-        │   │   │   ├── requireds: (length: 0)
-        │   │   │   ├── rest:
-        │   │   │   │   @ SplatNode (location: (7,0)-(7,2))
-        │   │   │   │   ├── operator_loc: (7,0)-(7,1) = "*"
-        │   │   │   │   └── expression:
-        │   │   │   │       @ LocalVariableTargetNode (location: (7,1)-(7,2))
-        │   │   │   │       ├── name: :b
-        │   │   │   │       └── depth: 0
-        │   │   │   ├── posts: (length: 0)
-        │   │   │   ├── lparen_loc: ∅
-        │   │   │   └── rparen_loc: ∅
+        │   ├── requireds: (length: 0)
+        │   ├── rest:
+        │   │   @ SplatNode (location: (7,0)-(7,2))
+        │   │   ├── operator_loc: (7,0)-(7,1) = "*"
+        │   │   └── expression:
+        │   │       @ LocalVariableTargetNode (location: (7,1)-(7,2))
+        │   │       ├── name: :b
+        │   │       └── depth: 0
+        │   ├── posts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (7,4)-(7,5))
         │   │       ├── name: :c
         │   │       └── depth: 0
-        │   ├── rest: ∅
-        │   ├── posts: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (7,6)-(7,7) = "="
