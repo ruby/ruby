@@ -369,8 +369,9 @@ module Prism
     end
 
     def test_AssocSplatNode
-      # TODO:
-      # test_prism_eval("foo = { a: 1 }; { **foo }")
+      test_prism_eval("foo = { a: 1 }; { **foo }")
+      test_prism_eval("foo = { a: 1 }; bar = foo; { **foo, b: 2, **bar, c: 3 }")
+      test_prism_eval("foo = { a: 1 }; { b: 2, **foo, c: 3}")
     end
 
     def test_HashNode
