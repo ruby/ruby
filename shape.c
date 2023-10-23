@@ -432,7 +432,7 @@ rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
 rb_shape_t *
 rb_shape_transition_shape_capa(rb_shape_t* shape)
 {
-  return rb_shape_transition_shape_capa_create(shape, rb_malloc_grow_capa(shape->capacity, sizeof(VALUE)));
+    return rb_shape_transition_shape_capa_create(shape, rb_malloc_grow_capa(shape->capacity, sizeof(VALUE)));
 }
 
 bool
