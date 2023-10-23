@@ -380,6 +380,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
     return shape;
 }
 
+#ifdef HAVE_MMAP
 static redblack_node_t *
 redblack_cache_ancestors(rb_shape_t * shape)
 {
@@ -407,6 +408,13 @@ redblack_cache_ancestors(rb_shape_t * shape)
         }
     }
 }
+#else
+static redblack_node_t *
+redblack_cache_ancestors(rb_shape_t * shape)
+{
+    return LEAF;
+}
+#endif
 
 static rb_shape_t *
 rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
