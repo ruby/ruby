@@ -3647,6 +3647,20 @@ pm_multi_target_node_targets_append(pm_parser_t *parser, pm_multi_target_node_t 
     }
 }
 
+// Set the opening of a MultiTargetNode node.
+static void
+pm_multi_target_node_opening_set(pm_multi_target_node_t *node, const pm_token_t *lparen) {
+    node->base.location.start = lparen->start;
+    node->lparen_loc = PM_LOCATION_TOKEN_VALUE(lparen);
+}
+
+// Set the closing of a MultiTargetNode node.
+static void
+pm_multi_target_node_closing_set(pm_multi_target_node_t *node, const pm_token_t *rparen) {
+    node->base.location.end = rparen->end;
+    node->rparen_loc = PM_LOCATION_TOKEN_VALUE(rparen);
+}
+
 // Allocate a new MultiWriteNode node.
 static pm_multi_write_node_t *
 pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, const pm_token_t *operator, pm_node_t *value) {
@@ -4087,37 +4101,6 @@ pm_regular_expression_node_create_unescaped(pm_parser_t *parser, const pm_token_
 static inline pm_regular_expression_node_t *
 pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
     return pm_regular_expression_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
-}
-
-// Allocate a new RequiredDestructuredParameterNode node.
-static pm_required_destructured_parameter_node_t *
-pm_required_destructured_parameter_node_create(pm_parser_t *parser, const pm_token_t *opening) {
-    pm_required_destructured_parameter_node_t *node = PM_ALLOC_NODE(parser, pm_required_destructured_parameter_node_t);
-
-    *node = (pm_required_destructured_parameter_node_t) {
-        {
-            .type = PM_REQUIRED_DESTRUCTURED_PARAMETER_NODE,
-            .location = PM_LOCATION_TOKEN_VALUE(opening)
-        },
-        .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .parameters = PM_EMPTY_NODE_LIST
-    };
-
-    return node;
-}
-
-// Append a new parameter to the given RequiredDestructuredParameterNode node.
-static void
-pm_required_destructured_parameter_node_append_parameter(pm_required_destructured_parameter_node_t *node, pm_node_t *parameter) {
-    pm_node_list_append(&node->parameters, parameter);
-}
-
-// Set the closing token of the given RequiredDestructuredParameterNode node.
-static void
-pm_required_destructured_parameter_node_closing_set(pm_required_destructured_parameter_node_t *node, const pm_token_t *closing) {
-    node->closing_loc = PM_LOCATION_TOKEN_VALUE(closing);
-    node->base.location.end = closing->end;
 }
 
 // Allocate a new RequiredParameterNode node.
@@ -10194,34 +10177,27 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 //     end
 //
 // It can recurse infinitely down, and splats are allowed to group arguments.
-static pm_required_destructured_parameter_node_t *
+static pm_multi_target_node_t *
 parse_required_destructured_parameter(pm_parser_t *parser) {
     expect1(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_ERR_EXPECT_LPAREN_REQ_PARAMETER);
 
-    pm_token_t opening = parser->previous;
-    pm_required_destructured_parameter_node_t *node = pm_required_destructured_parameter_node_create(parser, &opening);
-    bool parsed_splat = false;
+    pm_multi_target_node_t *node = pm_multi_target_node_create(parser);
+    pm_multi_target_node_opening_set(node, &parser->previous);
 
     do {
         pm_node_t *param;
 
-        if (node->parameters.size > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-            if (parsed_splat) {
-                pm_parser_err_previous(parser, PM_ERR_ARGUMENT_SPLAT_AFTER_SPLAT);
-            }
-
+        // If we get here then we have a trailing comma. In this case we'll
+        // create an implicit splat node.
+        if (node->requireds.size > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             param = (pm_node_t *) pm_splat_node_create(parser, &parser->previous, NULL);
-            pm_required_destructured_parameter_node_append_parameter(node, param);
+            pm_multi_target_node_targets_append(parser, node, param);
             break;
         }
 
         if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
             param = (pm_node_t *) parse_required_destructured_parameter(parser);
         } else if (accept1(parser, PM_TOKEN_USTAR)) {
-            if (parsed_splat) {
-                pm_parser_err_previous(parser, PM_ERR_ARGUMENT_SPLAT_AFTER_SPLAT);
-            }
-
             pm_token_t star = parser->previous;
             pm_node_t *value = NULL;
 
@@ -10233,7 +10209,6 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             }
 
             param = (pm_node_t *) pm_splat_node_create(parser, &star, value);
-            parsed_splat = true;
         } else {
             expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_EXPECT_IDENT_REQ_PARAMETER);
             pm_token_t name = parser->previous;
@@ -10243,11 +10218,11 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             pm_parser_local_add_token(parser, &name);
         }
 
-        pm_required_destructured_parameter_node_append_parameter(node, param);
+        pm_multi_target_node_targets_append(parser, node, param);
     } while (accept1(parser, PM_TOKEN_COMMA));
 
     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN_REQ_PARAMETER);
-    pm_required_destructured_parameter_node_closing_set(node, &parser->previous);
+    pm_multi_target_node_closing_set(node, &parser->previous);
 
     return node;
 }

@@ -2184,20 +2184,6 @@ nodes:
 
           /foo/i
           ^^^^^^
-  - name: RequiredDestructuredParameterNode
-    fields:
-      - name: parameters
-        type: node[]
-      - name: opening_loc
-        type: location
-      - name: closing_loc
-        type: location
-    comment: |
-      Represents a destructured required parameter node.
-
-          def foo((bar, baz))
-                  ^^^^^^^^^^
-          end
   - name: RequiredParameterNode
     fields:
       - name: name

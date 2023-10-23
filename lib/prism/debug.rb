@@ -112,11 +112,13 @@ module Prism
 
             # Recurse down the parameter tree to find any destructured
             # parameters and add them after the other parameters.
-            param_stack = params.requireds.concat(params.posts).grep(RequiredDestructuredParameterNode).reverse
+            param_stack = params.requireds.concat(params.posts).grep(MultiTargetNode).reverse
             while (param = param_stack.pop)
               case param
-              when RequiredDestructuredParameterNode
-                param_stack.concat(param.parameters.reverse)
+              when MultiTargetNode
+                param_stack.concat(param.posts.reverse)
+                param_stack << param.rest
+                param_stack.concat(param.requireds.reverse)
               when RequiredParameterNode
                 sorted << param.name
               when SplatNode

@@ -579,6 +579,9 @@ module Prism
     def test_MultiTargetNode
       assert_location(MultiTargetNode, "for foo, bar in baz do end", 4...12, &:index)
       assert_location(MultiTargetNode, "foo, (bar, baz) = qux", 5...15) { |node| node.requireds.last }
+      assert_location(MultiTargetNode, "def foo((bar)); end", 8...13) do |node|
+        node.parameters.requireds.first
+      end
     end
 
     def test_MultiWriteNode
@@ -672,12 +675,6 @@ module Prism
 
     def test_RequiredParameterNode
       assert_location(RequiredParameterNode, "def foo(bar); end", 8...11) do |node|
-        node.parameters.requireds.first
-      end
-    end
-
-    def test_RequiredDestructuredParameterNode
-      assert_location(RequiredDestructuredParameterNode, "def foo((bar)); end", 8...13) do |node|
         node.parameters.requireds.first
       end
     end
