@@ -487,6 +487,12 @@ module Prism
     # Scopes/statements                                                        #
     ############################################################################
 
+    def test_BlockNode
+      test_prism_eval("[1, 2, 3].each { |num| num }")
+
+      test_prism_eval("[].tap { _1 }")
+    end
+
     def test_ClassNode
       test_prism_eval("class PrismClassA; end")
       test_prism_eval("class PrismClassA; end; class PrismClassB < PrismClassA; end")
@@ -550,6 +556,23 @@ module Prism
       test_prism_eval("1.then(&:to_s)")
     end
 
+    def test_BlockLocalVariableNode
+      test_prism_eval(<<-CODE
+        pm_var = "outer scope variable"
+
+        1.times { |;pm_var| pm_var = "inner scope variable"; pm_var }
+      CODE
+      )
+
+      test_prism_eval(<<-CODE
+        pm_var = "outer scope variable"
+
+        1.times { |;pm_var| pm_var = "inner scope variable"; pm_var }
+        pm_var
+      CODE
+      )
+    end
+
     def test_CallNode
       test_prism_eval("to_s")
     end
@@ -568,6 +591,12 @@ module Prism
 
     def test_AliasMethodNode
       test_prism_eval("alias :prism_a :to_s")
+    end
+
+    def test_BlockParametersNode
+      test_prism_eval("Object.tap { || }")
+      test_prism_eval("[1].map { |num| num }")
+      test_prism_eval("[1].map { |a; b| b = 2; a + b}")
     end
 
     def test_OptionalParameterNode
