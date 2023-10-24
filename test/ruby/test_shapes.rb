@@ -5,6 +5,8 @@ require 'json'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
+  MANY_IVS = 80
+
   class IVOrder
     def expected_ivs
       %w{ @a @b @c @d @e @f @g @h @i @j @k }
@@ -149,7 +151,7 @@ class TestShapes < Test::Unit::TestCase
   def test_too_many_ivs_on_class
     obj = Class.new
 
-    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 1).times do
+    (MANY_IVS + 1).times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
@@ -159,10 +161,10 @@ class TestShapes < Test::Unit::TestCase
   def test_removing_when_too_many_ivs_on_class
     obj = Class.new
 
-    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+    (MANY_IVS + 2).times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
-    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+    (MANY_IVS + 2).times do
       obj.remove_instance_variable(:"@a#{_1}")
     end
 
@@ -172,10 +174,10 @@ class TestShapes < Test::Unit::TestCase
   def test_removing_when_too_many_ivs_on_module
     obj = Module.new
 
-    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+    (MANY_IVS + 2).times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
-    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+    (MANY_IVS + 2).times do
       obj.remove_instance_variable(:"@a#{_1}")
     end
 

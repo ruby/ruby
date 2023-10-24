@@ -1182,7 +1182,6 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SPECIAL_CONST_SHAPE_ID", INT2NUM(SPECIAL_CONST_SHAPE_ID));
     rb_define_const(rb_cShape, "OBJ_TOO_COMPLEX_SHAPE_ID", INT2NUM(OBJ_TOO_COMPLEX_SHAPE_ID));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
-    rb_define_const(rb_cShape, "SHAPE_MAX_NUM_IVS", INT2NUM(SHAPE_MAX_NUM_IVS));
 
     rb_define_singleton_method(rb_cShape, "transition_tree", shape_transition_tree, 0);
     rb_define_singleton_method(rb_cShape, "find_by_id", rb_shape_find_by_id, 1);
