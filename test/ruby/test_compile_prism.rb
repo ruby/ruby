@@ -413,6 +413,18 @@ module Prism
       assert_prism_eval("false && 1")
     end
 
+    def test_CaseNode
+      assert_prism_eval("case :a; when :a; 1; else; 2; end")
+      assert_prism_eval("case :a; when :b; 1; else; 2; end")
+      assert_prism_eval("case :a; when :a; 1; else; 2; end")
+      assert_prism_eval("case :a; when :a; end")
+      assert_prism_eval("case :a; when :b, :c; end")
+      assert_prism_eval("case; when :a; end")
+      assert_prism_eval("case; when :a, :b; 1; else; 2 end")
+      assert_prism_eval("case :a; when :b; else; end")
+      assert_prism_eval("b = 1; case :a; when b; else; end")
+    end
+
     def test_ElseNode
       assert_prism_eval("if false; 0; else; 1; end")
       assert_prism_eval("if true; 0; else; 1; end")

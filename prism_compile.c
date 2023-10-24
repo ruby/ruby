@@ -1294,6 +1294,74 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_CASE_NODE: {
+        pm_case_node_t *case_node = (pm_case_node_t *)node;
+        bool has_predicate = case_node->predicate;
+        if (has_predicate) {
+            PM_COMPILE_NOT_POPPED(case_node->predicate);
+        }
+        LABEL *end_label = NEW_LABEL(lineno);
+
+        pm_node_list_t conditions = case_node->conditions;
+
+        LABEL **conditions_labels = (LABEL **)ALLOC_N(VALUE, conditions.size + 1);
+        LABEL *label;
+
+        for (size_t i = 0; i < conditions.size; i++) {
+            label = NEW_LABEL(lineno);
+            conditions_labels[i] = label;
+            if (has_predicate) {
+                pm_when_node_t *when_node = (pm_when_node_t *)conditions.nodes[i];
+
+                for (size_t i = 0; i < when_node->conditions.size; i++) {
+                    PM_COMPILE_NOT_POPPED(when_node->conditions.nodes[i]);
+                    ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+                    ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+                    ADD_INSNL(ret, &dummy_line_node, branchif, label);
+                }
+            }
+            else {
+                ADD_INSNL(ret, &dummy_line_node, jump, label);
+                ADD_INSN(ret, &dummy_line_node, putnil);
+            }
+        }
+
+        if (has_predicate) {
+            ADD_INSN(ret, &dummy_line_node, pop);
+
+            if (case_node->consequent) {
+                if (!popped || !PM_NODE_TYPE_P(((pm_node_t *)case_node->consequent), PM_ELSE_NODE)) {
+                    PM_COMPILE_NOT_POPPED((pm_node_t *)case_node->consequent);
+                }
+            }
+            else {
+                PM_PUTNIL_UNLESS_POPPED;
+            }
+        }
+
+        ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+
+        for (size_t i = 0; i < conditions.size; i++) {
+            label = conditions_labels[i];
+            ADD_LABEL(ret, label);
+            if (has_predicate) {
+                ADD_INSN(ret, &dummy_line_node, pop);
+            }
+
+            pm_while_node_t *condition_node = (pm_while_node_t *)conditions.nodes[i];
+            if (condition_node->statements) {
+                PM_COMPILE_NOT_POPPED((pm_node_t *)condition_node->statements);
+            }
+            else {
+                PM_PUTNIL_UNLESS_POPPED;
+            }
+
+            ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+        }
+
+        ADD_LABEL(ret, end_label);
+        return;
+      }
       case PM_CLASS_NODE: {
         pm_class_node_t *class_node = (pm_class_node_t *)node;
         pm_scope_node_t next_scope_node;
@@ -2797,6 +2865,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_node_flags_t flags = node->flags;
 
         pm_compile_while(iseq, lineno, flags, node->type, statements, predicate, ret, src, popped, scope_node);
+        return;
+      }
+      case PM_WHEN_NODE: {
+        rb_bug("Should not ever enter a when node directly");
+
         return;
       }
       case PM_WHILE_NODE: {
