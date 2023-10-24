@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
     "docs/encoding.md",
     "docs/fuzzing.md",
     "docs/heredocs.md",
+    "docs/javascript.md",
     "docs/mapping.md",
     "docs/prism.png",
     "docs/ripper.md",

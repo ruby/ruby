@@ -1,0 +1,48 @@
+name: JavaScript Bindings
+
+on:
+  push:
+    paths:
+      - ".github/workflows/javascript-bindings.yml"
+      - "include/"
+      - "src/"
+      - "*akefile*"
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: head
+          bundler-cache: true
+
+      - name: rake templates
+        run: bundle exec rake templates
+
+      - name: Set up WASI-SDK
+        run: |
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0-linux.tar.gz
+          tar xvf wasi-sdk-20.0-linux.tar.gz
+
+      - name: Build the project
+        run: make wasm WASI_SDK_PATH=$(pwd)/wasi-sdk-20.0
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+
+      - name: Run the tests
+        run: npm test
+        working-directory: javascript
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: prism.wasm
+          path: javascript/src/prism.wasm
