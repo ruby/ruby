@@ -6343,24 +6343,24 @@ escape_byte(uint8_t value, const uint8_t flags) {
 static inline void
 escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t *start, const uint8_t *end, uint32_t value) {
     if (value <= 0x7F) { // 0xxxxxxx
-        pm_buffer_append_u8(buffer, (uint8_t) value);
+        pm_buffer_append_byte(buffer, (uint8_t) value);
     } else if (value <= 0x7FF) { // 110xxxxx 10xxxxxx
-        pm_buffer_append_u8(buffer, (uint8_t) (0xC0 | (value >> 6)));
-        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | (value & 0x3F)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0xC0 | (value >> 6)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | (value & 0x3F)));
     } else if (value <= 0xFFFF) { // 1110xxxx 10xxxxxx 10xxxxxx
-        pm_buffer_append_u8(buffer, (uint8_t) (0xE0 | (value >> 12)));
-        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
-        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | (value & 0x3F)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0xE0 | (value >> 12)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | (value & 0x3F)));
     } else if (value <= 0x10FFFF) { // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        pm_buffer_append_u8(buffer, (uint8_t) (0xF0 | (value >> 18)));
-        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | ((value >> 12) & 0x3F)));
-        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
-        pm_buffer_append_u8(buffer, (uint8_t) (0x80 | (value & 0x3F)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0xF0 | (value >> 18)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | ((value >> 12) & 0x3F)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
+        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | (value & 0x3F)));
     } else {
         pm_parser_err(parser, start, end, PM_ERR_ESCAPE_INVALID_UNICODE);
-        pm_buffer_append_u8(buffer, 0xEF);
-        pm_buffer_append_u8(buffer, 0xBF);
-        pm_buffer_append_u8(buffer, 0xBD);
+        pm_buffer_append_byte(buffer, 0xEF);
+        pm_buffer_append_byte(buffer, 0xBF);
+        pm_buffer_append_byte(buffer, 0xBD);
     }
 }
 
@@ -6386,18 +6386,18 @@ escape_write_byte(pm_buffer_t *buffer, uint8_t flags, uint8_t byte) {
         uint8_t byte2 = (uint8_t) (byte & 0xF);
 
         if (byte1 >= 0xA) {
-            pm_buffer_append_u8(buffer, (uint8_t) ((byte1 - 0xA) + 'A'));
+            pm_buffer_append_byte(buffer, (uint8_t) ((byte1 - 0xA) + 'A'));
         } else {
-            pm_buffer_append_u8(buffer, (uint8_t) (byte1 + '0'));
+            pm_buffer_append_byte(buffer, (uint8_t) (byte1 + '0'));
         }
 
         if (byte2 >= 0xA) {
-            pm_buffer_append_u8(buffer, (uint8_t) (byte2 - 0xA + 'A'));
+            pm_buffer_append_byte(buffer, (uint8_t) (byte2 - 0xA + 'A'));
         } else {
-            pm_buffer_append_u8(buffer, (uint8_t) (byte2 + '0'));
+            pm_buffer_append_byte(buffer, (uint8_t) (byte2 + '0'));
         }
     } else {
-        pm_buffer_append_u8(buffer, byte);
+        pm_buffer_append_byte(buffer, byte);
     }
 }
 
@@ -6407,57 +6407,57 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
     switch (peek(parser)) {
         case '\\': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\\');
+            pm_buffer_append_byte(buffer, '\\');
             return;
         }
         case '\'': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\'');
+            pm_buffer_append_byte(buffer, '\'');
             return;
         }
         case 'a': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\a');
+            pm_buffer_append_byte(buffer, '\a');
             return;
         }
         case 'b': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\b');
+            pm_buffer_append_byte(buffer, '\b');
             return;
         }
         case 'e': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\033');
+            pm_buffer_append_byte(buffer, '\033');
             return;
         }
         case 'f': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\f');
+            pm_buffer_append_byte(buffer, '\f');
             return;
         }
         case 'n': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\n');
+            pm_buffer_append_byte(buffer, '\n');
             return;
         }
         case 'r': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\r');
+            pm_buffer_append_byte(buffer, '\r');
             return;
         }
         case 's': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, ' ');
+            pm_buffer_append_byte(buffer, ' ');
             return;
         }
         case 't': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\t');
+            pm_buffer_append_byte(buffer, '\t');
             return;
         }
         case 'v': {
             parser->current.end++;
-            pm_buffer_append_u8(buffer, '\v');
+            pm_buffer_append_byte(buffer, '\v');
             return;
         }
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
@@ -6474,7 +6474,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 }
             }
 
-            pm_buffer_append_u8(buffer, value);
+            pm_buffer_append_byte(buffer, value);
             return;
         }
         case 'x': {
@@ -6496,7 +6496,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
                     pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                 } else {
-                    pm_buffer_append_u8(buffer, value);
+                    pm_buffer_append_byte(buffer, value);
                 }
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
@@ -6690,14 +6690,14 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
                 parser->current.end += 2;
-                pm_buffer_append_u8(buffer, '\n');
+                pm_buffer_append_byte(buffer, '\n');
                 return;
             }
         }
         /* fallthrough */
         default: {
             if (parser->current.end < parser->end) {
-                pm_buffer_append_u8(buffer, *parser->current.end++);
+                pm_buffer_append_byte(buffer, *parser->current.end++);
             }
             return;
         }
@@ -6951,7 +6951,7 @@ typedef struct {
 // Push the given byte into the token buffer.
 static inline void
 pm_token_buffer_push(pm_token_buffer_t *token_buffer, uint8_t byte) {
-    pm_buffer_append_u8(&token_buffer->buffer, byte);
+    pm_buffer_append_byte(&token_buffer->buffer, byte);
 }
 
 // When we're about to return from lexing the current token and we know for sure
@@ -15592,14 +15592,14 @@ pm_parse(pm_parser_t *parser) {
 
 PRISM_EXPORTED_FUNCTION void
 pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
-    pm_buffer_append_str(buffer, "PRISM", 5);
-    pm_buffer_append_u8(buffer, PRISM_VERSION_MAJOR);
-    pm_buffer_append_u8(buffer, PRISM_VERSION_MINOR);
-    pm_buffer_append_u8(buffer, PRISM_VERSION_PATCH);
-    pm_buffer_append_u8(buffer, PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0);
+    pm_buffer_append_string(buffer, "PRISM", 5);
+    pm_buffer_append_byte(buffer, PRISM_VERSION_MAJOR);
+    pm_buffer_append_byte(buffer, PRISM_VERSION_MINOR);
+    pm_buffer_append_byte(buffer, PRISM_VERSION_PATCH);
+    pm_buffer_append_byte(buffer, PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0);
 
     pm_serialize_content(parser, node, buffer);
-    pm_buffer_append_str(buffer, "\0", 1);
+    pm_buffer_append_string(buffer, "\0", 1);
 }
 
 // Parse and serialize the AST represented by the given source to the given

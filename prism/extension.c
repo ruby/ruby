@@ -554,6 +554,27 @@ parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
     return result;
 }
 
+static VALUE
+rb_prism_debug_inspect_node(VALUE self, VALUE source) {
+    pm_string_t input;
+    input_load_string(&input, source);
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), NULL);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_buffer_t buffer = { 0 };
+
+    pm_prettyprint(&parser, node, &buffer);
+    VALUE string = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+
+    pm_buffer_free(&buffer);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+
+    return string;
+}
+
 /******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
@@ -606,6 +627,8 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);
+
+    rb_define_singleton_method(rb_cPrismDebug, "inspect_node", rb_prism_debug_inspect_node, 1);
 
     // Next, initialize the other APIs.
     Init_prism_api_node();
