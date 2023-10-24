@@ -5937,7 +5937,13 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
       }
       case NODE_ARGSPUSH: {
         if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
-        int argc = setup_args_core(iseq, args, RNODE_ARGSPUSH(argn)->nd_head, 1, NULL, NULL);
+        /* Do not dup_rest for f(*a, **kw) or f(*a, kw: 1)
+         * dup_rest for f(*a, arg) and f(*a, {kw: 1})
+         */
+        int argc = setup_args_core(iseq, args, RNODE_ARGSPUSH(argn)->nd_head,
+                                   !(nd_type(RNODE_ARGSPUSH(argn)->nd_body) == NODE_HASH &&
+                                        RNODE_HASH(RNODE_ARGSPUSH(argn)->nd_body)->nd_brace == 0),
+                                   NULL, NULL);
 
         if (nd_type_p(RNODE_ARGSPUSH(argn)->nd_body, NODE_LIST)) {
             int rest_len = compile_args(iseq, args, RNODE_ARGSPUSH(argn)->nd_body, &kwnode);
