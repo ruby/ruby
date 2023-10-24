@@ -896,6 +896,89 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
     return COMPILE_OK;
 }
 
+// Generate a scope node from the given node.
+void
+pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser)
+{
+    scope->base.type = PM_SCOPE_NODE;
+    scope->base.location.start = node->location.start;
+    scope->base.location.end = node->location.end;
+
+    scope->previous = previous;
+    scope->parser = parser;
+    scope->ast_node = (pm_node_t *)node;
+    scope->parameters = NULL;
+    scope->body = NULL;
+    scope->constants = NULL;
+    if (previous) {
+        scope->constants = previous->constants;
+    }
+    scope->index_lookup_table = NULL;
+
+    pm_constant_id_list_init(&scope->locals);
+
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BLOCK_NODE: {
+            pm_block_node_t *cast = (pm_block_node_t *) node;
+            if (cast->parameters) scope->parameters = cast->parameters->parameters;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case PM_CLASS_NODE: {
+            pm_class_node_t *cast = (pm_class_node_t *) node;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case PM_DEF_NODE: {
+            pm_def_node_t *cast = (pm_def_node_t *) node;
+            scope->parameters = cast->parameters;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case PM_FOR_NODE: {
+            pm_for_node_t *cast = (pm_for_node_t *)node;
+            scope->body = (pm_node_t *)cast->statements;
+            break;
+        }
+        case PM_LAMBDA_NODE: {
+            pm_lambda_node_t *cast = (pm_lambda_node_t *) node;
+            if (cast->parameters) scope->parameters = cast->parameters->parameters;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case PM_MODULE_NODE: {
+            pm_module_node_t *cast = (pm_module_node_t *) node;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case PM_POST_EXECUTION_NODE: {
+            pm_post_execution_node_t *cast = (pm_post_execution_node_t *) node;
+            scope->body = (pm_node_t *) cast->statements;
+            break;
+        }
+        case PM_PROGRAM_NODE: {
+            pm_program_node_t *cast = (pm_program_node_t *) node;
+            scope->body = (pm_node_t *) cast->statements;
+            scope->locals = cast->locals;
+            break;
+        }
+        case PM_SINGLETON_CLASS_NODE: {
+            pm_singleton_class_node_t *cast = (pm_singleton_class_node_t *) node;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        default:
+            assert(false && "unreachable");
+            break;
+    }
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *

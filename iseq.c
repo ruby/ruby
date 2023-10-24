@@ -1391,6 +1391,8 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
 }
 
+void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);
+
 static VALUE
 iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 {
