@@ -158,7 +158,7 @@ parse_imaginary(pm_imaginary_node_t *node)
 }
 
 static inline VALUE
-parse_string(pm_string_t *string, pm_parser_t *parser)
+parse_string(pm_string_t *string, const pm_parser_t *parser)
 {
     rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding.name));
     return rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), enc);
@@ -190,6 +190,8 @@ pm_optimizable_range_item_p(pm_node_t *node)
     return (!node || PM_NODE_TYPE_P(node, PM_INTEGER_NODE) || PM_NODE_TYPE_P(node, PM_NIL_NODE));
 }
 
+#define RE_OPTION_ENCODING_SHIFT 8
+
 /**
  * Check the prism flags of a regular expression-like node and return the flags
  * that are expected by the CRuby VM.
@@ -197,6 +199,29 @@ pm_optimizable_range_item_p(pm_node_t *node)
 static int
 pm_reg_flags(const pm_node_t *node) {
     int flags = 0;
+    int dummy = 0;
+
+    // Check "no encoding" first so that flags don't get clobbered
+    // We're calling `rb_char_to_option_kcode` in this case so that
+    // we don't need to have access to `ARG_ENCODING_NONE`
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        rb_char_to_option_kcode('n', &flags, &dummy);
+    }
+
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        rb_char_to_option_kcode('e', &flags, &dummy);
+        flags |= ('e' << RE_OPTION_ENCODING_SHIFT);
+    }
+
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        rb_char_to_option_kcode('s', &flags, &dummy);
+        flags |= ('s' << RE_OPTION_ENCODING_SHIFT);
+    }
+
+    if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        rb_char_to_option_kcode('u', &flags, &dummy);
+        flags |= ('u' << RE_OPTION_ENCODING_SHIFT);
+    }
 
     if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) {
         flags |= ONIG_OPTION_IGNORECASE;
@@ -213,6 +238,27 @@ pm_reg_flags(const pm_node_t *node) {
     return flags;
 }
 
+static rb_encoding *
+pm_reg_enc(const pm_regular_expression_node_t *node, const pm_parser_t *parser) {
+    if (node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        return rb_ascii8bit_encoding();
+    }
+
+    if (node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        return rb_enc_get_from_index(ENCINDEX_EUC_JP);
+    }
+
+    if (node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        return rb_enc_get_from_index(ENCINDEX_Windows_31J);
+    }
+
+    if (node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        return rb_utf8_encoding();
+    }
+
+    return rb_enc_from_index(rb_enc_find_index(parser->encoding.name));
+}
+
 /**
  * Certain nodes can be compiled literally, which can lead to further
  * optimizations. These nodes will all have the PM_NODE_FLAG_STATIC_LITERAL flag
@@ -222,6 +268,14 @@ static inline bool
 pm_static_literal_p(const pm_node_t *node)
 {
     return node->flags & PM_NODE_FLAG_STATIC_LITERAL;
+}
+
+static VALUE
+pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser) {
+    VALUE regex_str = parse_string(&cast->unescaped, parser);
+    rb_encoding * enc = pm_reg_enc(cast, parser);
+
+    return rb_enc_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), enc, pm_reg_flags((const pm_node_t *)cast));
 }
 
 /**
@@ -283,8 +337,7 @@ pm_static_literal_value(const pm_node_t *node, pm_scope_node_t *scope_node, pm_p
       case PM_REGULAR_EXPRESSION_NODE: {
         pm_regular_expression_node_t *cast = (pm_regular_expression_node_t *) node;
 
-        VALUE string = parse_string(&cast->unescaped, parser);
-        return rb_reg_new(RSTRING_PTR(string), RSTRING_LEN(string), pm_reg_flags(node));
+        return pm_new_regex(cast, parser);
       }
       case PM_SOURCE_ENCODING_NODE: {
         rb_encoding *encoding = rb_find_encoding(rb_str_new_cstr(scope_node->parser->encoding.name));
@@ -2797,8 +2850,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (!popped) {
             pm_regular_expression_node_t *cast = (pm_regular_expression_node_t *) node;
 
-            VALUE regex_str = parse_string(&cast->unescaped, parser);
-            VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), pm_reg_flags(node));
+            VALUE regex = pm_new_regex(cast, parser);
 
             ADD_INSN1(ret, &dummy_line_node, putobject, regex);
         }
