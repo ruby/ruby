@@ -390,6 +390,14 @@ module Prism
       assert_prism_eval('/pit/mx')
       assert_prism_eval('/pit/xi')
       assert_prism_eval('/pit/ixm')
+
+      assert_prism_eval('/pit/u')
+      assert_prism_eval('/pit/e')
+      assert_prism_eval('/pit/s')
+      assert_prism_eval('/pit/n')
+
+      assert_prism_eval('/pit/me')
+      assert_prism_eval('/pit/ne')
     end
 
     def test_StringConcatNode
