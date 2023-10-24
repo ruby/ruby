@@ -178,7 +178,7 @@ ROBJECT_IV_CAPACITY(VALUE obj)
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     // Asking for capacity doesn't make sense when the object is using
     // a hash table for storing instance variables
-    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) != OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->capacity;
 }
 
@@ -186,7 +186,7 @@ static inline st_table *
 ROBJECT_IV_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
     return (st_table *)ROBJECT(obj)->as.heap.ivptr;
 }
 
@@ -194,7 +194,7 @@ static inline void
 ROBJECT_SET_IV_HASH(VALUE obj, const st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
     ROBJECT(obj)->as.heap.ivptr = (VALUE *)tbl;
 }
 
@@ -203,12 +203,12 @@ size_t rb_id_table_size(const struct rb_id_table *tbl);
 static inline uint32_t
 ROBJECT_IV_COUNT(VALUE obj)
 {
-    if (ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID) {
+    if (rb_shape_obj_too_complex(obj)) {
         return (uint32_t)rb_st_table_size(ROBJECT_IV_HASH(obj));
     }
     else {
         RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-        RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) != OBJ_TOO_COMPLEX_SHAPE_ID);
+        RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
         return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->next_iv_index;
     }
 }

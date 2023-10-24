@@ -484,6 +484,9 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
                         rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
                         res = new_shape;
                     }
+                    else {
+                        res = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
+                    }
                 }
             }
             else {
@@ -495,6 +498,9 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
             }
         }
         RB_VM_LOCK_LEAVE();
+    }
+    else {
+        res = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
     }
     return res;
 }
@@ -611,9 +617,6 @@ rb_shape_transition_shape_frozen(VALUE obj)
     bool dont_care;
     next_shape = get_next_shape_internal(shape, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true);
 
-    if (!next_shape) {
-        next_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
-    }
     RUBY_ASSERT(next_shape);
     return next_shape;
 }
@@ -645,10 +648,6 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 
     bool variation_created = false;
     rb_shape_t * new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape);
-
-    if (!new_shape) {
-        new_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
-    }
 
     // Check if we should update max_iv_count on the object's class
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
@@ -683,6 +682,7 @@ rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
     ID edge_name = rb_make_temporary_id(new_capacity);
     bool dont_care;
     rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true);
+    RUBY_ASSERT(rb_shape_id(new_shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
     new_shape->capacity = (uint32_t)new_capacity;
     return new_shape;
 }

@@ -76,7 +76,7 @@ static inline st_table *
 RCLASS_IV_HASH(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(RCLASS_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
     return (st_table *)RCLASS_IVPTR(obj);
 }
 
@@ -84,7 +84,7 @@ static inline void
 RCLASS_SET_IV_HASH(VALUE obj, const st_table *tbl)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(RCLASS_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
     RCLASS_IVPTR(obj) = (VALUE *)tbl;
 }
 
