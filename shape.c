@@ -435,7 +435,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
 }
 
 static rb_shape_t*
-get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, bool * variation_created, bool new_shapes_allowed)
+get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, bool * variation_created, bool new_variations_allowed)
 {
     rb_shape_t *res = NULL;
 
@@ -444,7 +444,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
     *variation_created = false;
 
-    if ((new_shapes_allowed && (GET_SHAPE_TREE()->next_shape_id <= MAX_SHAPE_ID))) {
+    if (GET_SHAPE_TREE()->next_shape_id <= MAX_SHAPE_ID) {
         RB_VM_LOCK_ENTER();
         {
             // If the current shape has children
@@ -478,10 +478,12 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
                 // we know we need a new child shape, and that we must insert
                 // it in to the table.
                 if (!res) {
-                    *variation_created = true;
-                    rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
-                    rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
-                    res = new_shape;
+                    if (new_variations_allowed) {
+                        *variation_created = true;
+                        rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
+                        rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
+                        res = new_shape;
+                    }
                 }
             }
             else {
