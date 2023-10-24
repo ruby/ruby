@@ -179,8 +179,14 @@ module Prism
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when Prism::ConstantField, Prism::OptionalConstantField, Prism::StringField, Prism::UInt32Field -%>
+      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt32Field -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
+      <%- when Prism::OptionalConstantField -%>
+      if (<%= field.name %> = self.<%= field.name %>).nil?
+        inspector << "<%= pointer %><%= field.name %>: ∅\n"
+      else
+        inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
+      end
       <%- when Prism::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
       flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if #{value.name.downcase}?)" }.join(", ") %>].compact

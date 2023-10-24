@@ -2,16 +2,17 @@
 #define PRISM_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_buffer.h"
+#include "prism/util/pm_char.h"
+#include "prism/util/pm_memchr.h"
+#include "prism/util/pm_strpbrk.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
 #include "prism/node.h"
 #include "prism/pack.h"
 #include "prism/parser.h"
+#include "prism/prettyprint.h"
 #include "prism/regexp.h"
-#include "prism/util/pm_buffer.h"
-#include "prism/util/pm_char.h"
-#include "prism/util/pm_memchr.h"
-#include "prism/util/pm_strpbrk.h"
 #include "prism/version.h"
 
 #include <assert.h>
@@ -28,8 +29,6 @@
 #endif
 
 void pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
-
-void pm_print_node(pm_parser_t *parser, pm_node_t *node);
 
 void pm_parser_metadata(pm_parser_t *parser, const char *metadata);
 
@@ -55,9 +54,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 
 // Parse the Ruby source associated with the given parser and return the tree.
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
-
-// Pretty-prints the AST represented by the given node to the given buffer.
-PRISM_EXPORTED_FUNCTION void pm_prettyprint(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
 
 // Serialize the AST represented by the given node to the given buffer.
 PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);

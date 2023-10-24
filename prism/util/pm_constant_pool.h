@@ -76,7 +76,7 @@ typedef struct {
 bool pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity);
 
 // Return a pointer to the constant indicated by the given constant id.
-pm_constant_t * pm_constant_pool_id_to_constant(pm_constant_pool_t *pool, pm_constant_id_t constant_id);
+pm_constant_t * pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id);
 
 // Insert a constant into a constant pool that is a slice of a source string.
 // Returns the id of the constant, or 0 if any potential calls to resize fail.

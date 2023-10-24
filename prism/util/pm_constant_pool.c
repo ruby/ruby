@@ -156,7 +156,7 @@ pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity) {
 
 // Return a pointer to the constant indicated by the given constant id.
 pm_constant_t *
-pm_constant_pool_id_to_constant(pm_constant_pool_t *pool, pm_constant_id_t constant_id) {
+pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id) {
     assert(constant_id > 0 && constant_id <= pool->size);
     return &pool->constants[constant_id - 1];
 }

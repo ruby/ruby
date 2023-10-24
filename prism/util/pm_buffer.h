@@ -36,6 +36,9 @@ PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(pm_buffer_t *buffer);
 // Append the given amount of space as zeroes to the buffer.
 void pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length);
 
+// Append a formatted string to the buffer.
+void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...);
+
 // Append a string to the buffer.
 void pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length);
 

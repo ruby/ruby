@@ -16,16 +16,32 @@ module Prism
       source.byteslice(offset, length)
     end
 
+    # Binary search through the offsets to find the line number for the given
+    # offset.
     def line(value)
-      offsets.bsearch_index { |offset| offset > value } || offsets.length
+      left = 0
+      right = offsets.length - 1
+
+      while left <= right
+        mid = left + (right - left) / 2
+        return mid if offsets[mid] == value
+
+        if offsets[mid] < value
+          left = mid + 1
+        else
+          right = mid - 1
+        end
+      end
+
+      left - 1
     end
 
     def line_offset(value)
-      offsets[line(value) - 1]
+      offsets[line(value)]
     end
 
     def column(value)
-      value - offsets[line(value) - 1]
+      value - offsets[line(value)]
     end
 
     private
@@ -86,7 +102,7 @@ module Prism
 
     # The line number where this location starts.
     def start_line
-      source.line(start_offset)
+      source.line(start_offset) + 1
     end
 
     # The content of the line where this location starts before this location.
@@ -97,7 +113,7 @@ module Prism
 
     # The line number where this location ends.
     def end_line
-      source.line(end_offset - 1)
+      source.line(end_offset) + 1
     end
 
     # The column number in bytes where this location starts from the start of

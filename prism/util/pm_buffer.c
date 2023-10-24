@@ -70,6 +70,27 @@ pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
     memset(buffer->value + cursor, 0, length);
 }
 
+// Append a formatted string to the buffer.
+void
+pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
+    va_list arguments;
+    va_start(arguments, format);
+    int result = vsnprintf(NULL, 0, format, arguments);
+    va_end(arguments);
+
+    if (result < 0) return;
+    size_t length = (size_t) (result + 1);
+
+    size_t cursor = buffer->length;
+    pm_buffer_append_length(buffer, length);
+
+    va_start(arguments, format);
+    vsnprintf(buffer->value + cursor, length, format, arguments);
+    va_end(arguments);
+
+    buffer->length--;
+}
+
 // Append a string to the buffer.
 void
 pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length) {
