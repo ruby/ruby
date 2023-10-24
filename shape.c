@@ -435,7 +435,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
 }
 
 static rb_shape_t*
-get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, bool * variation_created, bool new_shapes_allowed, bool new_shape_necessary)
+get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, bool * variation_created, bool new_shapes_allowed)
 {
     rb_shape_t *res = NULL;
 
@@ -444,7 +444,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
     *variation_created = false;
 
-    if (new_shape_necessary || (new_shapes_allowed && (GET_SHAPE_TREE()->next_shape_id <= MAX_SHAPE_ID))) {
+    if ((new_shapes_allowed && (GET_SHAPE_TREE()->next_shape_id <= MAX_SHAPE_ID))) {
         RB_VM_LOCK_ENTER();
         {
             // If the current shape has children
@@ -563,9 +563,7 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
             // has the same attributes as this shape.
             if (new_parent) {
                 bool dont_care;
-                enum ruby_value_type type = BUILTIN_TYPE(obj);
-                bool new_shape_necessary = type != T_OBJECT;
-                rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true, new_shape_necessary);
+                rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
                 new_child->capacity = shape->capacity;
                 if (new_child->type == SHAPE_IVAR) {
                     move_iv(obj, id, shape->next_iv_index - 1, new_child->next_iv_index - 1);
@@ -609,7 +607,7 @@ rb_shape_transition_shape_frozen(VALUE obj)
     }
 
     bool dont_care;
-    next_shape = get_next_shape_internal(shape, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true, false);
+    next_shape = get_next_shape_internal(shape, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true);
 
     if (!next_shape) {
         next_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
@@ -627,7 +625,7 @@ rb_shape_get_next_iv_shape(rb_shape_t* shape, ID id)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
     bool dont_care;
-    return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true, false);
+    return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
 }
 
 rb_shape_t *
@@ -644,9 +642,7 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
     }
 
     bool variation_created = false;
-    // For non T_OBJECTS, force a new shape
-    bool new_shape_necessary = false;
-    rb_shape_t * new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape, new_shape_necessary);
+    rb_shape_t * new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape);
 
     if (!new_shape) {
         new_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
@@ -684,7 +680,7 @@ rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
 
     ID edge_name = rb_make_temporary_id(new_capacity);
     bool dont_care;
-    rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true, false);
+    rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true);
     new_shape->capacity = (uint32_t)new_capacity;
     return new_shape;
 }
@@ -1134,7 +1130,7 @@ Init_default_shapes(void)
         rb_shape_t * shape = rb_shape_get_shape_by_id(i);
         bool dont_care;
         rb_shape_t * t_object_shape =
-            get_next_shape_internal(shape, id_t_object, SHAPE_T_OBJECT, &dont_care, true, false);
+            get_next_shape_internal(shape, id_t_object, SHAPE_T_OBJECT, &dont_care, true);
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
         RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + SIZE_POOL_COUNT));
@@ -1145,7 +1141,7 @@ Init_default_shapes(void)
 #if RUBY_DEBUG
     rb_shape_t * special_const_shape =
 #endif
-        get_next_shape_internal(root, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true, false);
+        get_next_shape_internal(root, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true);
     RUBY_ASSERT(rb_shape_id(special_const_shape) == SPECIAL_CONST_SHAPE_ID);
     RUBY_ASSERT(SPECIAL_CONST_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
     RUBY_ASSERT(rb_shape_frozen_shape_p(special_const_shape));
