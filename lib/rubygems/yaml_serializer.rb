@@ -17,7 +17,11 @@ module Gem
         if v.is_a?(Hash)
           yaml << dump_hash(v).gsub(/^(?!$)/, "  ") # indent all non-empty lines
         elsif v.is_a?(Array) # Expected to be array of strings
-          yaml << "\n- " << v.map {|s| s.to_s.gsub(/\s+/, " ").inspect }.join("\n- ") << "\n"
+          if v.empty?
+            yaml << " []\n"
+          else
+            yaml << "\n- " << v.map {|s| s.to_s.gsub(/\s+/, " ").inspect }.join("\n- ") << "\n"
+          end
         else
           yaml << " " << v.to_s.gsub(/\s+/, " ").inspect << "\n"
         end
@@ -63,6 +67,7 @@ module Gem
             last_empty_key = key
             last_hash = stack[depth]
           else
+            val = [] if val == "[]" # empty array
             stack[depth][key] = val
           end
         elsif match = ARRAY_REGEX.match(line)
