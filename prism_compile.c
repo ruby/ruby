@@ -21,11 +21,14 @@
 #define PM_COMPILE_NOT_POPPED(node) \
     pm_compile_node(iseq, (node), ret, src, false, scope_node)
 
+#define PM_POP \
+    ADD_INSN(ret, &dummy_line_node, pop);
+
 #define PM_POP_IF_POPPED \
-    if (popped) ADD_INSN(ret, &dummy_line_node, pop);
+    if (popped) PM_POP;
 
 #define PM_POP_UNLESS_POPPED \
-    if (!popped) ADD_INSN(ret, &dummy_line_node, pop);
+    if (!popped) PM_POP;
 
 #define PM_DUP_UNLESS_POPPED \
     if (!popped) ADD_INSN(ret, &dummy_line_node, dup);
@@ -358,7 +361,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
         PM_COMPILE(flip_flop_node->left);
     }
     else {
-        ADD_INSN(ret, &dummy_line_node, putnil);
+        PM_PUTNIL;
     }
 
     ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
@@ -373,7 +376,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
         PM_COMPILE(flip_flop_node->right);
     }
     else {
-        ADD_INSN(ret, &dummy_line_node, putnil);
+        PM_PUTNIL;
     }
 
     ADD_INSNL(ret, &dummy_line_node, branchunless, then_label);
@@ -530,7 +533,7 @@ pm_compile_while(rb_iseq_t *iseq, int lineno, pm_node_flags_t flags, enum pm_nod
     ADD_LABEL(ret, adjust_label);
     PM_PUTNIL;
     ADD_LABEL(ret, next_catch_label);
-    ADD_INSN(ret, &dummy_line_node, pop);
+    PM_POP;
     ADD_INSNL(ret, &dummy_line_node, jump, next_label);
     if (tmp_label) ADD_LABEL(ret, tmp_label);
 
@@ -703,7 +706,7 @@ pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_
         if (cast->parent) {
             pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->parent, ret, scope_node, pushed, false);
         } else {
-            ADD_INSN(ret, &dummy_line_node, pop);
+            PM_POP;
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
         }
         pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->child, ret, scope_node, pushed, cast->parent);
@@ -821,7 +824,7 @@ pm_compile_pattern(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
         // should pop out the duplicate value that we preemptively added to
         // match against the right pattern and then jump to the match label.
         ADD_LABEL(ret, matched_left_label);
-        ADD_INSN(ret, &dummy_line_node, pop);
+        PM_POP;
         ADD_INSNL(ret, &dummy_line_node, jump, matched_label);
         PM_PUTNIL;
 
@@ -1397,7 +1400,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         rb_iseq_t *method_iseq = NEW_ISEQ(next_scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
 
         if (def_node->receiver) {
-            pm_compile_node(iseq, def_node->receiver, ret, src, false, scope_node);
+            PM_COMPILE_NOT_POPPED(def_node->receiver);
             ADD_INSN2(ret, &dummy_line_node, definesmethod, ID2SYM(method_name), method_iseq);
         }
         else {
@@ -1454,7 +1457,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
               PM_COMPILE((pm_node_t *)cast->statements);
           }
           else {
-              ADD_INSN(ret, &dummy_line_node, putnil);
+              PM_PUTNIL;
           }
           return;
       }
@@ -1834,7 +1837,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN(ret, &dummy_line_node, intern);
         }
         else {
-            ADD_INSN(ret, &dummy_line_node, pop);
+            PM_POP;
         }
 
         return;
@@ -2021,8 +2024,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // If the pattern did not match, then compile the necessary instructions
         // to handle pushing false onto the stack, then jump to the end.
         ADD_LABEL(ret, unmatched_label);
-        ADD_INSN(ret, &dummy_line_node, pop);
-        ADD_INSN(ret, &dummy_line_node, pop);
+        PM_POP;
+        PM_POP;
 
         if (!popped) ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         ADD_INSNL(ret, &dummy_line_node, jump, done_label);
@@ -2088,7 +2091,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
         ADD_LABEL(ret, fail_label);
-        ADD_INSN(ret, &dummy_line_node, pop);
+        PM_POP;
 
         for (size_t index = 0; index < capture_count; index++) {
             pm_constant_id_t constant = cast->locals.ids[index];
@@ -2170,7 +2173,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (pushed) {
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(pushed));
             for (uint8_t index = 0; index < pushed; index++) {
-                ADD_INSN(ret, &dummy_line_node, pop);
+                PM_POP;
             }
         }
 
@@ -2185,7 +2188,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_PUTNIL;
         }
 
-        ADD_INSN(ret, &dummy_line_node, pop);
+        PM_POP;
         ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
 
         return;
@@ -2392,7 +2395,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 opt_table[i] = label;
                 ADD_LABEL(ret, label);
                 pm_node_t *optional_node = optionals_list.nodes[i];
-                pm_compile_node(iseq, optional_node, ret, src, false, scope_node);
+                PM_COMPILE_NOT_POPPED(optional_node);
             }
 
             // Set the last label
@@ -2420,7 +2423,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_LABEL(ret, start);
 
             if (scope_node->body) {
-                pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
+                PM_COMPILE((pm_node_t *)scope_node->body);
             }
             else {
                 PM_PUTNIL;
@@ -2437,7 +2440,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         default:
             if (scope_node->body) {
-                pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
+                PM_COMPILE((pm_node_t *)scope_node->body);
             }
             else {
                 PM_PUTNIL;
@@ -2571,8 +2574,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_SEND(ret, &dummy_line_node, id_core_undef_method, INT2NUM(2));
 
-            if (index < undef_node->names.size - 1)
-                ADD_INSN(ret, &dummy_line_node, pop);
+            if (index < undef_node->names.size - 1) {
+                PM_POP;
+            }
         }
 
         PM_POP_IF_POPPED;
