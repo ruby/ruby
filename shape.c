@@ -384,29 +384,20 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
 static redblack_node_t *
 redblack_cache_ancestors(rb_shape_t * shape)
 {
-    if (shape->ancestor_index) {
-        return shape->ancestor_index;
-    }
-    else {
-        if (shape->parent_id == INVALID_SHAPE_ID) {
-            // We're at the root
-            return shape->ancestor_index;
+    if (!(shape->ancestor_index || shape->parent_id == INVALID_SHAPE_ID)) {
+        redblack_node_t * parent_index;
+
+        parent_index = redblack_cache_ancestors(rb_shape_get_parent(shape));
+
+        if (shape->type == SHAPE_IVAR) {
+            shape->ancestor_index = redblack_insert(parent_index, shape->edge_name, shape);
         }
         else {
-            redblack_node_t * parent_index;
-
-            parent_index = redblack_cache_ancestors(rb_shape_get_parent(shape));
-
-            if (shape->type == SHAPE_IVAR) {
-                shape->ancestor_index = redblack_insert(parent_index, shape->edge_name, shape);
-            }
-            else {
-                shape->ancestor_index = parent_index;
-            }
-
-            return shape->ancestor_index;
+            shape->ancestor_index = parent_index;
         }
     }
+
+    return shape->ancestor_index;
 }
 #else
 static redblack_node_t *
