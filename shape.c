@@ -63,7 +63,10 @@ redblack_right(redblack_node_t * node)
 static redblack_node_t *
 redblack_find(redblack_node_t * tree, ID key)
 {
-    if (tree != LEAF) {
+    if (tree == LEAF) {
+        return LEAF;
+    }
+    else {
         if (tree->key == key) {
             return tree;
         }
@@ -75,9 +78,6 @@ redblack_find(redblack_node_t * tree, ID key)
                 return redblack_find(redblack_right(tree), key);
             }
         }
-    }
-    else {
-        return 0;
     }
 }
 
