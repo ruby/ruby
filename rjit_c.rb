@@ -1483,6 +1483,7 @@ module RubyVM::RJIT # :nodoc: all
       type: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), type)")],
       size_pool_index: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), size_pool_index)")],
       parent_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), parent_id)")],
+      ancestor_index: [CType::Pointer.new { self.redblack_node_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), ancestor_index)")],
     )
   end
 
@@ -1639,6 +1640,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C._Bool
     CType::Bool.new
+  end
+
+  def C.redblack_node_t
+    CType::Stub.new(:redblack_node_t)
   end
 
   def C.ccan_list_node

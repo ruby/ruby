@@ -590,6 +590,8 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u32;
 pub type shape_id_t = u32;
+pub type redblack_id_t = u32;
+pub type redblack_node_t = redblack_node;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_shape {
@@ -600,8 +602,17 @@ pub struct rb_shape {
     pub type_: u8,
     pub size_pool_index: u8,
     pub parent_id: shape_id_t,
+    pub ancestor_index: *mut redblack_node_t,
 }
 pub type rb_shape_t = rb_shape;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct redblack_node {
+    pub key: ID,
+    pub value: *mut rb_shape_t,
+    pub l: redblack_id_t,
+    pub r: redblack_id_t,
+}
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,

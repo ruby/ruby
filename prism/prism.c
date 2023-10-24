@@ -711,6 +711,11 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             scope->locals = cast->locals;
             break;
         }
+        case PM_POST_EXECUTION_NODE: {
+            pm_post_execution_node_t *cast = (pm_post_execution_node_t *) node;
+            scope->body = (pm_node_t *) cast->statements;
+            break;
+        }
         case PM_PROGRAM_NODE: {
             pm_program_node_t *cast = (pm_program_node_t *) node;
             scope->body = (pm_node_t *) cast->statements;
