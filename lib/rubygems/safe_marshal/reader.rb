@@ -17,6 +17,9 @@ module Gem
       class NotImplementedError < Error
       end
 
+      class EOFError < Error
+      end
+
       def initialize(io)
         @io = io
       end
@@ -64,6 +67,8 @@ module Gem
           read_byte | (read_byte << 8) | -0x10000
         when 0xFF
           read_byte | -0x100
+        when nil
+          raise EOFError, "Unexpected EOF"
         else
           signed = (b ^ 128) - 128
           if b >= 128
@@ -102,6 +107,8 @@ module Gem
         when 47 then read_regexp # ?/
         when 83 then read_struct # ?S
         when 67 then read_user_class # ?C
+        when nil
+          raise EOFError, "Unexpected EOF"
         else
           raise Error, "Unknown marshal type discriminator #{type.chr.inspect} (#{type})"
         end
