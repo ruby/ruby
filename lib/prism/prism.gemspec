@@ -47,6 +47,7 @@ Gem::Specification.new do |spec|
     "include/prism/node.h",
     "include/prism/pack.h",
     "include/prism/parser.h",
+    "include/prism/prettyprint.h",
     "include/prism/regexp.h",
     "include/prism/util/pm_buffer.h",
     "include/prism/util/pm_char.h",

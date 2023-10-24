@@ -11,7 +11,7 @@
             │   @ StringNode (location: (1,4)-(1,9))
             │   ├── flags: ∅
             │   ├── opening_loc: (1,4)-(1,9) = "<<eos"
-            │   ├── content_loc: (2,0)-(2,0) = "a\\xE9b\n"
-            │   ├── closing_loc: (3,0)-(3,0) = "eos\n"
+            │   ├── content_loc: (2,0)-(3,0) = "a\\xE9b\n"
+            │   ├── closing_loc: (3,0)-(4,0) = "eos\n"
             │   └── unescaped: "a\xE9b\n"
             └── operator_loc: (1,2)-(1,3) = "="

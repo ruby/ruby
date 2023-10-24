@@ -106,19 +106,19 @@
         ├── @ StringNode (location: (46,0)-(46,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (46,0)-(46,9) = "<<-\"HERE\""
-        │   ├── content_loc: (47,0)-(48,0) = "a\\\nb\n"
-        │   ├── closing_loc: (49,0)-(49,0) = "HERE\n"
+        │   ├── content_loc: (47,0)-(49,0) = "a\\\nb\n"
+        │   ├── closing_loc: (49,0)-(50,0) = "HERE\n"
         │   └── unescaped: "ab\n"
         ├── @ StringNode (location: (51,0)-(51,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (51,0)-(51,9) = "<<-'HERE'"
-        │   ├── content_loc: (52,0)-(53,0) = "a\\\nb\n"
-        │   ├── closing_loc: (54,0)-(54,0) = "HERE\n"
+        │   ├── content_loc: (52,0)-(54,0) = "a\\\nb\n"
+        │   ├── closing_loc: (54,0)-(55,0) = "HERE\n"
         │   └── unescaped: "a\\\nb\n"
         ├── @ XStringNode (location: (56,0)-(56,9))
         │   ├── opening_loc: (56,0)-(56,9) = "<<-`HERE`"
-        │   ├── content_loc: (57,0)-(58,0) = "a\\\nb\n"
-        │   ├── closing_loc: (59,0)-(59,0) = "HERE\n"
+        │   ├── content_loc: (57,0)-(59,0) = "a\\\nb\n"
+        │   ├── closing_loc: (59,0)-(60,0) = "HERE\n"
         │   └── unescaped: "ab\n"
         └── @ XStringNode (location: (61,0)-(62,2))
             ├── opening_loc: (61,0)-(61,1) = "`"

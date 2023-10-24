@@ -6,9 +6,18 @@ module Prism
   class CommentsTest < TestCase
     def test_comment_inline
       source = "# comment"
-
-      assert_comment source, :inline, [0, 9, 1, 1, 0, 9]
       assert_equal [0], Debug.newlines(source)
+
+      assert_comment(
+        source,
+        :inline,
+        start_offset: 0,
+        end_offset: 9,
+        start_line: 1,
+        end_line: 1,
+        start_column: 0,
+        end_column: 9
+      )
     end
 
     def test_comment_inline_def
@@ -18,7 +27,16 @@ module Prism
       end
       RUBY
 
-      assert_comment source, :inline, [10, 21, 2, 2, 2, 13]
+      assert_comment(
+        source,
+        :inline,
+        start_offset: 10,
+        end_offset: 21,
+        start_line: 2,
+        end_line: 2,
+        start_column: 2,
+        end_column: 13
+      )
     end
 
     def test_comment___END__
@@ -27,13 +45,31 @@ module Prism
         comment
       RUBY
 
-      assert_comment source, :__END__, [0, 16, 1, 2, 0, 0]
+      assert_comment(
+        source,
+        :__END__,
+        start_offset: 0,
+        end_offset: 16,
+        start_line: 1,
+        end_line: 3,
+        start_column: 0,
+        end_column: 0
+      )
     end
 
     def test_comment___END__crlf
       source = "__END__\r\ncomment\r\n"
 
-      assert_comment source, :__END__, [0, 18, 1, 2, 0, 0]
+      assert_comment(
+        source,
+        :__END__,
+        start_offset: 0,
+        end_offset: 18,
+        start_line: 1,
+        end_line: 3,
+        start_column: 0,
+        end_column: 0
+      )
     end
 
     def test_comment_embedded_document
@@ -43,7 +79,16 @@ module Prism
         =end
       RUBY
 
-      assert_comment source, :embdoc, [0, 20, 1, 3, 0, 0]
+      assert_comment(
+        source,
+        :embdoc,
+        start_offset: 0,
+        end_offset: 20,
+        start_line: 1,
+        end_line: 4,
+        start_column: 0,
+        end_column: 0
+      )
     end
 
     def test_comment_embedded_document_with_content_on_same_line
@@ -52,7 +97,16 @@ module Prism
         =end
       RUBY
 
-      assert_comment source, :embdoc, [0, 24, 1, 2, 0, 0]
+      assert_comment(
+        source,
+        :embdoc,
+        start_offset: 0,
+        end_offset: 24,
+        start_line: 1,
+        end_line: 3,
+        start_column: 0,
+        end_column: 0
+      )
     end
 
     def test_attaching_comments
@@ -81,33 +135,18 @@ module Prism
 
     private
 
-    def assert_comment(source, type, locations)
-      start_offset, end_offset, start_line, end_line, start_column, end_column = locations
-      expected = {
-        start_offset: start_offset,
-        end_offset: end_offset,
-        start_line: start_line,
-        end_line: end_line,
-        start_column: start_column,
-        end_column: end_column
-      }
-
+    def assert_comment(source, type, start_offset:, end_offset:, start_line:, end_line:, start_column:, end_column:)
       result = Prism.parse(source)
       assert result.errors.empty?, result.errors.map(&:message).join("\n")
       assert_equal type, result.comments.first.type
 
-      first_comment_location = result.comments.first.location
-
-      actual = {
-        start_offset: first_comment_location.start_offset,
-        end_offset: first_comment_location.end_offset,
-        start_line: first_comment_location.start_line,
-        end_line: first_comment_location.end_line,
-        start_column: first_comment_location.start_column,
-        end_column: first_comment_location.end_column
-      }
-
-      assert_equal expected, actual
+      location = result.comments.first.location
+      assert_equal start_offset, location.start_offset, -> { "Expected start_offset to be #{start_offset}" }
+      assert_equal end_offset, location.end_offset, -> { "Expected end_offset to be #{end_offset}" }
+      assert_equal start_line, location.start_line, -> { "Expected start_line to be #{start_line}" }
+      assert_equal end_line, location.end_line, -> { "Expected end_line to be #{end_line}" }
+      assert_equal start_column, location.start_column, -> { "Expected start_column to be #{start_column}" }
+      assert_equal end_column, location.end_column, -> { "Expected end_column to be #{end_column}" }
     end
   end
 end

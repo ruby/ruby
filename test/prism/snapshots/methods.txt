@@ -343,7 +343,7 @@
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ KeywordRestParameterNode (location: (41,6)-(41,8))
-        │   │   │   ├── name: nil
+        │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (41,6)-(41,8) = "**"
         │   │   └── block: ∅
@@ -687,7 +687,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (82,6)-(82,7))
-        │   │   │   ├── name: nil
+        │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (82,6)-(82,7) = "*"
         │   │   ├── posts: (length: 0)
@@ -894,7 +894,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (110,6)-(110,7))
-        │   │   │   ├── name: nil
+        │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (110,6)-(110,7) = "*"
         │   │   ├── posts: (length: 0)
@@ -1079,7 +1079,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (122,6)-(122,7))
-        │   │       ├── name: nil
+        │   │       ├── name: ∅
         │   │       ├── name_loc: ∅
         │   │       └── operator_loc: (122,6)-(122,7) = "&"
         │   ├── body: ∅

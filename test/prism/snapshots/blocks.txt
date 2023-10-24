@@ -743,7 +743,7 @@
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest:
             │   │   │   │   @ RestParameterNode (location: (54,11)-(54,12))
-            │   │   │   │   ├── name: nil
+            │   │   │   │   ├── name: ∅
             │   │   │   │   ├── name_loc: ∅
             │   │   │   │   └── operator_loc: (54,11)-(54,12) = ","
             │   │   │   ├── posts: (length: 0)

@@ -81,14 +81,12 @@ debug_contexts(pm_parser_t *parser) {
 }
 
 PRISM_ATTRIBUTE_UNUSED static void
-debug_node(const char *message, pm_parser_t *parser, pm_node_t *node) {
-    pm_buffer_t buffer;
-    if (!pm_buffer_init(&buffer)) return;
+debug_node(const pm_parser_t *parser, const pm_node_t *node) {
+    pm_buffer_t output_buffer = { 0 };
+    pm_prettyprint(&output_buffer, parser, node);
 
-    pm_prettyprint(parser, node, &buffer);
-
-    fprintf(stderr, "%s\n%.*s\n", message, (int) buffer.length, buffer.value);
-    pm_buffer_free(&buffer);
+    fprintf(stderr, "%.*s", (int) output_buffer.length, output_buffer.value);
+    pm_buffer_free(&output_buffer);
 }
 
 PRISM_ATTRIBUTE_UNUSED static void

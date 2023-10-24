@@ -6,6 +6,6 @@
         └── @ StringNode (location: (1,0)-(1,6))
             ├── flags: ∅
             ├── opening_loc: (1,0)-(1,6) = "<<-END"
-            ├── content_loc: (2,0)-(1,0) = ""
+            ├── content_loc: (2,0)-(2,0) = ""
             ├── closing_loc: (2,0)-(2,3) = "END"
             └── unescaped: ""

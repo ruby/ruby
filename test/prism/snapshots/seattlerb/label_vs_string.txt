@@ -24,7 +24,7 @@
             │   │   └── @ StringNode (location: (1,8)-(2,1))
             │   │       ├── flags: ∅
             │   │       ├── opening_loc: (1,8)-(1,9) = "'"
-            │   │       ├── content_loc: (1,9)-(1,0) = ":\n"
+            │   │       ├── content_loc: (1,9)-(2,0) = ":\n"
             │   │       ├── closing_loc: (2,0)-(2,1) = "'"
             │   │       └── unescaped: ":\n"
             │   └── flags: ∅

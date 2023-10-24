@@ -22,7 +22,7 @@
             │   │           └── flags: decimal
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,12)-(1,14))
-            │   │   ├── name: nil
+            │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,12)-(1,14) = "**"
             │   └── block: ∅

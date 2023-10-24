@@ -21,7 +21,7 @@
             │   │           @ NilNode (location: (1,9)-(1,12))
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,14)-(1,16))
-            │   │   ├── name: nil
+            │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,14)-(1,16) = "**"
             │   └── block: ∅

@@ -11,7 +11,7 @@
             │   @ StringNode (location: (1,6)-(1,12))
             │   ├── flags: ∅
             │   ├── opening_loc: (1,6)-(1,12) = "<<-XXX"
-            │   ├── content_loc: (2,0)-(3,0) = "before\\\r\nafter\r\n"
-            │   ├── closing_loc: (4,0)-(4,0) = "XXX\r\n"
+            │   ├── content_loc: (2,0)-(4,0) = "before\\\r\nafter\r\n"
+            │   ├── closing_loc: (4,0)-(5,0) = "XXX\r\n"
             │   └── unescaped: "beforeafter\r\n"
             └── operator_loc: (1,4)-(1,5) = "="

@@ -61,7 +61,7 @@
         │   └── closing_loc: (29,0)-(29,1) = "]"
         ├── @ RegularExpressionNode (location: (31,0)-(34,1))
         │   ├── opening_loc: (31,0)-(31,3) = "%r["
-        │   ├── content_loc: (31,3)-(33,0) = "\n\n\n"
+        │   ├── content_loc: (31,3)-(34,0) = "\n\n\n"
         │   ├── closing_loc: (34,0)-(34,1) = "]"
         │   ├── unescaped: "\n\n\n"
         │   └── flags: ∅

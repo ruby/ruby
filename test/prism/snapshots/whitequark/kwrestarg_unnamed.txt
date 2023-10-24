@@ -16,7 +16,7 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,6)-(1,8))
-            │   │   ├── name: nil
+            │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,6)-(1,8) = "**"
             │   └── block: ∅

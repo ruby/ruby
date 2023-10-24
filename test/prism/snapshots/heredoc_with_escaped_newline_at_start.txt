@@ -8,8 +8,8 @@
         │   │   @ StringNode (location: (1,0)-(1,9))
         │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1,0)-(1,9) = "<<-TARGET"
-        │   │   ├── content_loc: (2,0)-(1,0) = ""
-        │   │   ├── closing_loc: (2,0)-(2,0) = "TARGET\n"
+        │   │   ├── content_loc: (2,0)-(2,0) = ""
+        │   │   ├── closing_loc: (2,0)-(3,0) = "TARGET\n"
         │   │   └── unescaped: ""
         │   ├── call_operator_loc: (1,9)-(1,10) = "."
         │   ├── message_loc: (1,10)-(1,14) = "gsub"
@@ -39,8 +39,8 @@
             │   @ StringNode (location: (5,0)-(5,9))
             │   ├── flags: ∅
             │   ├── opening_loc: (5,0)-(5,9) = "<<-TARGET"
-            │   ├── content_loc: (6,0)-(5,0) = ""
-            │   ├── closing_loc: (6,0)-(6,0) = "TARGET\r\n"
+            │   ├── content_loc: (6,0)-(6,0) = ""
+            │   ├── closing_loc: (6,0)-(7,0) = "TARGET\r\n"
             │   └── unescaped: ""
             ├── call_operator_loc: (5,9)-(5,10) = "."
             ├── message_loc: (5,10)-(5,14) = "gsub"

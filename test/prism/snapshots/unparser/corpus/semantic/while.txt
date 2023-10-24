@@ -188,8 +188,8 @@
         │   │   │   │   └── @ StringNode (location: (15,10)-(15,16))
         │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: (15,10)-(15,16) = "<<-FOO"
-        │   │   │   │       ├── content_loc: (16,0)-(15,0) = ""
-        │   │   │   │       ├── closing_loc: (16,0)-(16,0) = "FOO\n"
+        │   │   │   │       ├── content_loc: (16,0)-(16,0) = ""
+        │   │   │   │       ├── closing_loc: (16,0)-(17,0) = "FOO\n"
         │   │   │   │       └── unescaped: ""
         │   │   │   └── flags: ∅
         │   │   ├── closing_loc: (15,16)-(15,17) = ")"

@@ -897,13 +897,13 @@
         │   │   │   │   ├── opening_loc: (40,2)-(40,4) = "\#{"
         │   │   │   │   ├── statements: ∅
         │   │   │   │   └── closing_loc: (40,4)-(40,5) = "}"
-        │   │   │   └── @ StringNode (location: (40,5)-(40,0))
+        │   │   │   └── @ StringNode (location: (40,5)-(41,0))
         │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
-        │   │   │       ├── content_loc: (40,5)-(40,0) = "\n"
+        │   │   │       ├── content_loc: (40,5)-(41,0) = "\n"
         │   │   │       ├── closing_loc: ∅
         │   │   │       └── unescaped: "\n"
-        │   │   └── closing_loc: (41,0)-(41,0) = "HEREDOC\n"
+        │   │   └── closing_loc: (41,0)-(42,0) = "HEREDOC\n"
         │   └── operator_loc: (39,2)-(39,3) = "="
         ├── @ CallNode (location: (42,0)-(42,14))
         │   ├── receiver:
@@ -929,13 +929,13 @@
         │   │   │       │   │   ├── opening_loc: (43,2)-(43,4) = "\#{"
         │   │   │       │   │   ├── statements: ∅
         │   │   │       │   │   └── closing_loc: (43,4)-(43,5) = "}"
-        │   │   │       │   └── @ StringNode (location: (43,5)-(43,0))
+        │   │   │       │   └── @ StringNode (location: (43,5)-(44,0))
         │   │   │       │       ├── flags: ∅
         │   │   │       │       ├── opening_loc: ∅
-        │   │   │       │       ├── content_loc: (43,5)-(43,0) = "\n"
+        │   │   │       │       ├── content_loc: (43,5)-(44,0) = "\n"
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── unescaped: "\n"
-        │   │   │       └── closing_loc: (44,0)-(44,0) = "HEREDOC\n"
+        │   │   │       └── closing_loc: (44,0)-(45,0) = "HEREDOC\n"
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -965,13 +965,13 @@
         │   │   │       │   │   ├── opening_loc: (46,2)-(46,4) = "\#{"
         │   │   │       │   │   ├── statements: ∅
         │   │   │       │   │   └── closing_loc: (46,4)-(46,5) = "}"
-        │   │   │       │   └── @ StringNode (location: (46,5)-(46,0))
+        │   │   │       │   └── @ StringNode (location: (46,5)-(47,0))
         │   │   │       │       ├── flags: ∅
         │   │   │       │       ├── opening_loc: ∅
-        │   │   │       │       ├── content_loc: (46,5)-(46,0) = "\n"
+        │   │   │       │       ├── content_loc: (46,5)-(47,0) = "\n"
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── unescaped: "\n"
-        │   │   │       └── closing_loc: (47,0)-(47,0) = "HEREDOC\n"
+        │   │   │       └── closing_loc: (47,0)-(48,0) = "HEREDOC\n"
         │   │   └── flags: ∅
         │   ├── closing_loc: (45,2)-(45,3) = "]"
         │   ├── block: ∅
@@ -1000,13 +1000,13 @@
         │   │   │       │   │   ├── opening_loc: (49,2)-(49,4) = "\#{"
         │   │   │       │   │   ├── statements: ∅
         │   │   │       │   │   └── closing_loc: (49,4)-(49,5) = "}"
-        │   │   │       │   └── @ StringNode (location: (49,5)-(49,0))
+        │   │   │       │   └── @ StringNode (location: (49,5)-(50,0))
         │   │   │       │       ├── flags: ∅
         │   │   │       │       ├── opening_loc: ∅
-        │   │   │       │       ├── content_loc: (49,5)-(49,0) = "\n"
+        │   │   │       │       ├── content_loc: (49,5)-(50,0) = "\n"
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── unescaped: "\n"
-        │   │   │       └── closing_loc: (50,0)-(50,0) = "HEREDOC\n"
+        │   │   │       └── closing_loc: (50,0)-(51,0) = "HEREDOC\n"
         │   │   └── flags: ∅
         │   ├── closing_loc: (48,12)-(48,13) = "]"
         │   ├── block: ∅
@@ -1041,10 +1041,10 @@
                 │   │   ├── opening_loc: (52,2)-(52,4) = "\#{"
                 │   │   ├── statements: ∅
                 │   │   └── closing_loc: (52,4)-(52,5) = "}"
-                │   └── @ StringNode (location: (52,5)-(52,0))
+                │   └── @ StringNode (location: (52,5)-(53,0))
                 │       ├── flags: ∅
                 │       ├── opening_loc: ∅
-                │       ├── content_loc: (52,5)-(52,0) = "\n"
+                │       ├── content_loc: (52,5)-(53,0) = "\n"
                 │       ├── closing_loc: ∅
                 │       └── unescaped: "\n"
-                └── closing_loc: (53,0)-(53,0) = "HEREDOC\n"
+                └── closing_loc: (53,0)-(54,0) = "HEREDOC\n"

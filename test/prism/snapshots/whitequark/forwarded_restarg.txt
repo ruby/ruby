@@ -13,7 +13,7 @@
             │   ├── optionals: (length: 0)
             │   ├── rest:
             │   │   @ RestParameterNode (location: (1,8)-(1,9))
-            │   │   ├── name: nil
+            │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,8)-(1,9) = "*"
             │   ├── posts: (length: 0)

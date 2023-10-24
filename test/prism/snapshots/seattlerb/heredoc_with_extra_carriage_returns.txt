@@ -6,6 +6,6 @@
         └── @ StringNode (location: (1,0)-(1,5))
             ├── flags: ∅
             ├── opening_loc: (1,0)-(1,5) = "<<EOS"
-            ├── content_loc: (2,0)-(3,0) = "foo\rbar\r\nbaz\n"
-            ├── closing_loc: (4,0)-(4,0) = "EOS\n"
+            ├── content_loc: (2,0)-(4,0) = "foo\rbar\r\nbaz\n"
+            ├── closing_loc: (4,0)-(5,0) = "EOS\n"
             └── unescaped: "foo\rbar\r\nbaz\n"

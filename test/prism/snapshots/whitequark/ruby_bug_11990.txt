@@ -16,8 +16,8 @@
             │   │       │   @ StringNode (location: (1,2)-(1,6))
             │   │       │   ├── flags: ∅
             │   │       │   ├── opening_loc: (1,2)-(1,6) = "<<~E"
-            │   │       │   ├── content_loc: (2,0)-(2,0) = "  x\n"
-            │   │       │   ├── closing_loc: (3,0)-(3,0) = "E\n"
+            │   │       │   ├── content_loc: (2,0)-(3,0) = "  x\n"
+            │   │       │   ├── closing_loc: (3,0)-(4,0) = "E\n"
             │   │       │   └── unescaped: "x\n"
             │   │       └── right:
             │   │           @ StringNode (location: (1,7)-(1,12))

@@ -725,7 +725,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (83,8)-(83,9))
-        │   │   │   ├── name: nil
+        │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (83,8)-(83,9) = "*"
         │   │   ├── posts: (length: 0)
@@ -1137,13 +1137,13 @@
         │   │           │   │   ├── opening_loc: (128,4)-(128,6) = "\#{"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (128,6)-(128,7) = "}"
-        │   │           │   └── @ StringNode (location: (128,7)-(128,0))
+        │   │           │   └── @ StringNode (location: (128,7)-(129,0))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (128,7)-(128,0) = "\n"
+        │   │           │       ├── content_loc: (128,7)-(129,0) = "\n"
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
-        │   │           └── closing_loc: (129,0)-(129,0) = "  HEREDOC\n"
+        │   │           └── closing_loc: (129,0)-(130,0) = "  HEREDOC\n"
         │   ├── locals: []
         │   ├── def_keyword_loc: (126,0)-(126,3) = "def"
         │   ├── operator_loc: ∅

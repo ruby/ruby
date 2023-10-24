@@ -6,17 +6,17 @@
         ├── @ StringNode (location: (1,0)-(1,8))
         │   ├── flags: ∅
         │   ├── opening_loc: (1,0)-(1,8) = "<<'HERE'"
-        │   ├── content_loc: (2,0)-(3,0) = "foo\nbar\n"
-        │   ├── closing_loc: (4,0)-(4,0) = "HERE\n"
+        │   ├── content_loc: (2,0)-(4,0) = "foo\nbar\n"
+        │   ├── closing_loc: (4,0)-(5,0) = "HERE\n"
         │   └── unescaped: "foo\nbar\n"
         ├── @ StringNode (location: (6,0)-(6,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (6,0)-(6,6) = "<<HERE"
-        │   ├── content_loc: (7,0)-(8,0) = "foo\nbar\n"
-        │   ├── closing_loc: (9,0)-(9,0) = "HERE\n"
+        │   ├── content_loc: (7,0)-(9,0) = "foo\nbar\n"
+        │   ├── closing_loc: (9,0)-(10,0) = "HERE\n"
         │   └── unescaped: "foo\nbar\n"
         └── @ XStringNode (location: (11,0)-(11,8))
             ├── opening_loc: (11,0)-(11,8) = "<<`HERE`"
-            ├── content_loc: (12,0)-(13,0) = "foo\nbar\n"
-            ├── closing_loc: (14,0)-(14,0) = "HERE\n"
+            ├── content_loc: (12,0)-(14,0) = "foo\nbar\n"
+            ├── closing_loc: (14,0)-(15,0) = "HERE\n"
             └── unescaped: "foo\nbar\n"

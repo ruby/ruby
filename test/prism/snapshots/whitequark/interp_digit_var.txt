@@ -216,34 +216,34 @@
         ├── @ StringNode (location: (65,0)-(65,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (65,0)-(65,9) = "<<-\"HERE\""
-        │   ├── content_loc: (66,0)-(66,0) = "\#@1\n"
-        │   ├── closing_loc: (67,0)-(67,0) = "HERE\n"
+        │   ├── content_loc: (66,0)-(67,0) = "\#@1\n"
+        │   ├── closing_loc: (67,0)-(68,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         ├── @ StringNode (location: (69,0)-(69,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (69,0)-(69,9) = "<<-\"HERE\""
-        │   ├── content_loc: (70,0)-(70,0) = "\#@@1\n"
-        │   ├── closing_loc: (71,0)-(71,0) = "HERE\n"
+        │   ├── content_loc: (70,0)-(71,0) = "\#@@1\n"
+        │   ├── closing_loc: (71,0)-(72,0) = "HERE\n"
         │   └── unescaped: "\#@@1\n"
         ├── @ StringNode (location: (73,0)-(73,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (73,0)-(73,9) = "<<-'HERE'"
-        │   ├── content_loc: (74,0)-(74,0) = "\#@1\n"
-        │   ├── closing_loc: (75,0)-(75,0) = "HERE\n"
+        │   ├── content_loc: (74,0)-(75,0) = "\#@1\n"
+        │   ├── closing_loc: (75,0)-(76,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         ├── @ StringNode (location: (77,0)-(77,9))
         │   ├── flags: ∅
         │   ├── opening_loc: (77,0)-(77,9) = "<<-'HERE'"
-        │   ├── content_loc: (78,0)-(78,0) = "\#@@1\n"
-        │   ├── closing_loc: (79,0)-(79,0) = "HERE\n"
+        │   ├── content_loc: (78,0)-(79,0) = "\#@@1\n"
+        │   ├── closing_loc: (79,0)-(80,0) = "HERE\n"
         │   └── unescaped: "\#@@1\n"
         ├── @ XStringNode (location: (81,0)-(81,9))
         │   ├── opening_loc: (81,0)-(81,9) = "<<-`HERE`"
-        │   ├── content_loc: (82,0)-(82,0) = "\#@1\n"
-        │   ├── closing_loc: (83,0)-(83,0) = "HERE\n"
+        │   ├── content_loc: (82,0)-(83,0) = "\#@1\n"
+        │   ├── closing_loc: (83,0)-(84,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         └── @ XStringNode (location: (85,0)-(85,9))
             ├── opening_loc: (85,0)-(85,9) = "<<-`HERE`"
-            ├── content_loc: (86,0)-(86,0) = "\#@@1\n"
-            ├── closing_loc: (87,0)-(87,0) = "HERE\n"
+            ├── content_loc: (86,0)-(87,0) = "\#@@1\n"
+            ├── closing_loc: (87,0)-(88,0) = "HERE\n"
             └── unescaped: "\#@@1\n"

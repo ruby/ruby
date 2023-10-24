@@ -16,8 +16,8 @@
         │   │   │       │   @ StringNode (location: (4,3)-(4,7))
         │   │   │       │   ├── flags: ∅
         │   │   │       │   ├── opening_loc: (4,3)-(4,7) = "<<-A"
-        │   │   │       │   ├── content_loc: (5,0)-(5,0) = "a\n"
-        │   │   │       │   ├── closing_loc: (6,0)-(6,0) = "A\n"
+        │   │   │       │   ├── content_loc: (5,0)-(6,0) = "a\n"
+        │   │   │       │   ├── closing_loc: (6,0)-(7,0) = "A\n"
         │   │   │       │   └── unescaped: "a\n"
         │   │   │       ├── call_operator_loc: (4,7)-(4,8) = "."
         │   │   │       ├── message_loc: (4,8)-(4,12) = "gsub"
@@ -69,8 +69,8 @@
         │   │   │   ├── @ StringNode (location: (10,3)-(10,7))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (10,3)-(10,7) = "<<-A"
-        │   │   │   │   ├── content_loc: (11,0)-(11,0) = "c\n"
-        │   │   │   │   ├── closing_loc: (12,0)-(12,0) = "A\n"
+        │   │   │   │   ├── content_loc: (11,0)-(12,0) = "c\n"
+        │   │   │   │   ├── closing_loc: (12,0)-(13,0) = "A\n"
         │   │   │   │   └── unescaped: "c\n"
         │   │   │   └── @ InterpolatedStringNode (location: (10,9)-(13,2))
         │   │   │       ├── opening_loc: (10,9)-(10,10) = "\""
@@ -104,8 +104,8 @@
         │   │   │   ├── @ StringNode (location: (16,3)-(16,7))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (16,3)-(16,7) = "<<-A"
-        │   │   │   │   ├── content_loc: (17,0)-(17,0) = "e\n"
-        │   │   │   │   ├── closing_loc: (18,0)-(18,0) = "A\n"
+        │   │   │   │   ├── content_loc: (17,0)-(18,0) = "e\n"
+        │   │   │   │   ├── closing_loc: (18,0)-(19,0) = "A\n"
         │   │   │   │   └── unescaped: "e\n"
         │   │   │   └── @ InterpolatedStringNode (location: (16,9)-(19,2))
         │   │   │       ├── opening_loc: (16,9)-(16,12) = "%q["
@@ -139,8 +139,8 @@
         │   │   │   ├── @ StringNode (location: (22,3)-(22,7))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (22,3)-(22,7) = "<<-A"
-        │   │   │   │   ├── content_loc: (23,0)-(23,0) = "g\n"
-        │   │   │   │   ├── closing_loc: (24,0)-(24,0) = "A\n"
+        │   │   │   │   ├── content_loc: (23,0)-(24,0) = "g\n"
+        │   │   │   │   ├── closing_loc: (24,0)-(25,0) = "A\n"
         │   │   │   │   └── unescaped: "g\n"
         │   │   │   └── @ InterpolatedStringNode (location: (22,9)-(25,2))
         │   │   │       ├── opening_loc: (22,9)-(22,12) = "%Q["
@@ -174,8 +174,8 @@
         │   │   │   ├── @ StringNode (location: (28,3)-(28,7))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (28,3)-(28,7) = "<<-A"
-        │   │   │   │   ├── content_loc: (29,0)-(29,0) = "i\n"
-        │   │   │   │   ├── closing_loc: (30,0)-(30,0) = "A\n"
+        │   │   │   │   ├── content_loc: (29,0)-(30,0) = "i\n"
+        │   │   │   │   ├── closing_loc: (30,0)-(31,0) = "A\n"
         │   │   │   │   └── unescaped: "i\n"
         │   │   │   └── @ ArrayNode (location: (28,9)-(31,2))
         │   │   │       ├── elements: (length: 2)
@@ -209,8 +209,8 @@
         │   │   │   ├── @ StringNode (location: (35,3)-(35,7))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (35,3)-(35,7) = "<<-A"
-        │   │   │   │   ├── content_loc: (36,0)-(36,0) = "k\n"
-        │   │   │   │   ├── closing_loc: (37,0)-(37,0) = "A\n"
+        │   │   │   │   ├── content_loc: (36,0)-(37,0) = "k\n"
+        │   │   │   │   ├── closing_loc: (37,0)-(38,0) = "A\n"
         │   │   │   │   └── unescaped: "k\n"
         │   │   │   └── @ ArrayNode (location: (35,9)-(38,2))
         │   │   │       ├── elements: (length: 1)
@@ -248,8 +248,8 @@
         │   │   │   ├── @ StringNode (location: (41,3)-(41,7))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── opening_loc: (41,3)-(41,7) = "<<-A"
-        │   │   │   │   ├── content_loc: (42,0)-(42,0) = "m\n"
-        │   │   │   │   ├── closing_loc: (43,0)-(43,0) = "A\n"
+        │   │   │   │   ├── content_loc: (42,0)-(43,0) = "m\n"
+        │   │   │   │   ├── closing_loc: (43,0)-(44,0) = "A\n"
         │   │   │   │   └── unescaped: "m\n"
         │   │   │   └── @ ArrayNode (location: (41,9)-(44,2))
         │   │   │       ├── elements: (length: 2)
@@ -281,8 +281,8 @@
             │   │   ├── @ StringNode (location: (48,3)-(48,7))
             │   │   │   ├── flags: ∅
             │   │   │   ├── opening_loc: (48,3)-(48,7) = "<<-A"
-            │   │   │   ├── content_loc: (49,0)-(49,0) = "o\n"
-            │   │   │   ├── closing_loc: (50,0)-(50,0) = "A\n"
+            │   │   │   ├── content_loc: (49,0)-(50,0) = "o\n"
+            │   │   │   ├── closing_loc: (50,0)-(51,0) = "A\n"
             │   │   │   └── unescaped: "o\n"
             │   │   └── @ ArrayNode (location: (48,9)-(51,2))
             │   │       ├── elements: (length: 1)

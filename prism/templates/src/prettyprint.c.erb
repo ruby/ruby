@@ -1,10 +1,4 @@
-#include "prism/defines.h"
-
-#include <stdio.h>
-
-#include "prism/ast.h"
-#include "prism/parser.h"
-#include "prism/util/pm_buffer.h"
+#include "prism/prettyprint.h"
 
 static void
 prettyprint_source(pm_buffer_t *output_buffer, const uint8_t *source, size_t length) {
@@ -55,7 +49,7 @@ prettyprint_constant(pm_buffer_t *output_buffer, const pm_parser_t *parser, cons
 }
 
 static void
-prettyprint_node(pm_buffer_t *output_buffer, pm_parser_t *parser, const pm_node_t *node, pm_buffer_t *prefix_buffer) {
+prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_node_t *node, pm_buffer_t *prefix_buffer) {
     switch (PM_NODE_TYPE(node)) {
         case PM_SCOPE_NODE:
             // We do not need to print a ScopeNode as it's not part of the AST.
@@ -185,7 +179,7 @@ prettyprint_node(pm_buffer_t *output_buffer, pm_parser_t *parser, const pm_node_
 
 // Pretty-prints the AST represented by the given node to the given buffer.
 PRISM_EXPORTED_FUNCTION void
-pm_prettyprint(pm_buffer_t *output_buffer, pm_parser_t *parser, const pm_node_t *node) {
+pm_prettyprint(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_node_t *node) {
     pm_buffer_t prefix_buffer = { 0 };
     prettyprint_node(output_buffer, parser, node, &prefix_buffer);
     pm_buffer_free(&prefix_buffer);
