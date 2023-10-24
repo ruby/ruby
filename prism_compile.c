@@ -2193,8 +2193,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_NIL_NODE:
         PM_PUTNIL_UNLESS_POPPED
         return;
-      case PM_NO_KEYWORDS_PARAMETER_NODE:
+      case PM_NO_KEYWORDS_PARAMETER_NODE: {
+        ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg = TRUE;
         return;
+      }
       case PM_NUMBERED_REFERENCE_READ_NODE: {
         if (!popped) {
             uint32_t reference_number = ((pm_numbered_reference_read_node_t *)node)->number;
