@@ -33,7 +33,6 @@ typedef uint16_t redblack_id_t;
 # define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 # define SHAPE_MAX_VARIATIONS 8
-# define SHAPE_MAX_NUM_IVS 80
 
 # define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK
