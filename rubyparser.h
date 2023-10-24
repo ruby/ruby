@@ -949,7 +949,6 @@ typedef struct RNode_ERROR {
 #define RNODE_CVASGN(node) ((struct RNode_CVASGN *)(node))
 #define RNODE_OP_ASGN1(node) ((struct RNode_OP_ASGN1 *)(node))
 #define RNODE_OP_ASGN2(node) ((struct RNode_OP_ASGN2 *)(node))
-#define RNODE_OP_ASGN22(node) ((struct RNode_OP_ASGN22 *)(node))
 #define RNODE_OP_ASGN_AND(node) ((struct RNode_OP_ASGN_AND *)(node))
 #define RNODE_OP_ASGN_OR(node) ((struct RNode_OP_ASGN_OR *)(node))
 #define RNODE_OP_CDECL(node) ((struct RNode_OP_CDECL *)(node))
