@@ -155,6 +155,9 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     y = 1000
     begin
       s1.send_io(nil)
+    rescue Errno::ETOOMANYREFS => e
+      # for arm64-neoverse-n1
+      omit e.message
     rescue NotImplementedError
       assert_raise(NotImplementedError) { s2.recv_io }
     rescue TypeError
