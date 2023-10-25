@@ -350,11 +350,6 @@ class Gem::Installer
     run_post_install_hooks
 
     spec
-
-  # TODO: This rescue is in the wrong place. What is raising this exception?
-  # move this rescue to around the code that actually might raise it.
-  rescue Zlib::GzipFile::Error
-    raise Gem::InstallError, "gzip error installing #{gem}"
   end
 
   def run_pre_install_hooks # :nodoc:
