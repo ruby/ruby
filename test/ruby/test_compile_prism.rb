@@ -89,8 +89,52 @@ module Prism
     end
 
     def test_DefinedNode
-      # TODO:
-      # assert_prism_eval("defined? foo")
+      assert_prism_eval("defined? nil")
+      assert_prism_eval("defined? self")
+      assert_prism_eval("defined? true")
+      assert_prism_eval("defined? false")
+      assert_prism_eval("defined? 'str'")
+      assert_prism_eval("defined? a && b")
+      assert_prism_eval("defined? a || b")
+
+      assert_prism_eval("defined? @a")
+      assert_prism_eval("defined? $a")
+      assert_prism_eval("defined? @@a")
+      assert_prism_eval("defined? A")
+      assert_prism_eval("defined? yield")
+      assert_prism_eval("defined? super")
+
+      assert_prism_eval("defined? X = 1")
+      assert_prism_eval("defined? X *= 1")
+      assert_prism_eval("defined? X /= 1")
+      assert_prism_eval("defined? X &= 1")
+      assert_prism_eval("defined? X ||= 1")
+
+      assert_prism_eval("defined? $X = 1")
+      assert_prism_eval("defined? $X *= 1")
+      assert_prism_eval("defined? $X /= 1")
+      assert_prism_eval("defined? $X &= 1")
+      assert_prism_eval("defined? $X ||= 1")
+
+      assert_prism_eval("defined? @@X = 1")
+      assert_prism_eval("defined? @@X *= 1")
+      assert_prism_eval("defined? @@X /= 1")
+      assert_prism_eval("defined? @@X &= 1")
+      assert_prism_eval("defined? @@X ||= 1")
+
+      assert_prism_eval("defined? @X = 1")
+      assert_prism_eval("defined? @X *= 1")
+      assert_prism_eval("defined? @X /= 1")
+      assert_prism_eval("defined? @X &= 1")
+      assert_prism_eval("defined? @X ||= 1")
+
+      assert_prism_eval("x = 1; defined? x = 1")
+      assert_prism_eval("x = 1; defined? x *= 1")
+      assert_prism_eval("x = 1; defined? x /= 1")
+      assert_prism_eval("x = 1; defined? x &= 1")
+      assert_prism_eval("x = 1; defined? x ||= 1")
+
+      assert_prism_eval("if defined? A; end")
     end
 
     def test_GlobalVariableReadNode
