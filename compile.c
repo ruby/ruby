@@ -44,7 +44,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "prism/prism.h"
+#include "prism_compile.h"
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0

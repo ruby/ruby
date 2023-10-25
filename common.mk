@@ -3415,6 +3415,7 @@ compile.$(OBJEXT): {$(VPATH)}prism/ast.h
 compile.$(OBJEXT): {$(VPATH)}prism/prism.h
 compile.$(OBJEXT): {$(VPATH)}prism/version.h
 compile.$(OBJEXT): {$(VPATH)}prism_compile.c
+compile.$(OBJEXT): {$(VPATH)}prism_compile.h
 compile.$(OBJEXT): {$(VPATH)}re.h
 compile.$(OBJEXT): {$(VPATH)}regex.h
 compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -8461,6 +8462,7 @@ iseq.$(OBJEXT): {$(VPATH)}oniguruma.h
 iseq.$(OBJEXT): {$(VPATH)}prism/ast.h
 iseq.$(OBJEXT): {$(VPATH)}prism/prism.h
 iseq.$(OBJEXT): {$(VPATH)}prism/version.h
+iseq.$(OBJEXT): {$(VPATH)}prism_compile.h
 iseq.$(OBJEXT): {$(VPATH)}ractor.h
 iseq.$(OBJEXT): {$(VPATH)}rjit.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -15496,6 +15498,7 @@ ruby.$(OBJEXT): {$(VPATH)}onigmo.h
 ruby.$(OBJEXT): {$(VPATH)}oniguruma.h
 ruby.$(OBJEXT): {$(VPATH)}prism/ast.h
 ruby.$(OBJEXT): {$(VPATH)}prism/version.h
+ruby.$(OBJEXT): {$(VPATH)}prism_compile.h
 ruby.$(OBJEXT): {$(VPATH)}rjit.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c
 ruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
