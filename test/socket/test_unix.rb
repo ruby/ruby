@@ -155,9 +155,6 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     y = 1000
     begin
       s1.send_io(nil)
-    rescue Errno::ETOOMANYREFS => e
-      # for arm64-neoverse-n1
-      omit e.message
     rescue NotImplementedError
       assert_raise(NotImplementedError) { s2.recv_io }
     rescue TypeError
@@ -170,7 +167,12 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
           true
         end
       end
-      (x * y).times { s1.send_io r1 }
+      begin
+        (x * y).times { s1.send_io r1 }
+      rescue Errno::ETOOMANYREFS => e
+        # for arm64-neoverse-n1
+        omit e.message
+      end  
       assert_equal([true]*x, thrs.map { |t| t.value })
       assert_equal x * y, nr
     ensure
