@@ -2,10 +2,14 @@
 BEGIN {
   require 'rubygems'
   date = nil
-  stdout = $>
+  if ENV.key?('GITHUB_OUTPUT')
+    output = File.open(ENV['GITHUB_OUTPUT'], 'w')
+  else
+    output = STDERR
+  end
 }
 END {
-  stdout.print date.strftime("latest_date=%F") if date
+  output.print date.strftime("latest_date=%F") if date
 }
 unless /^[^#]/ !~ (gem = $F[0])
   (gem, src), = Gem::SpecFetcher.fetcher.detect(:latest) {|s|

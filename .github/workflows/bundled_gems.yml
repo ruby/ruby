@@ -53,7 +53,7 @@ jobs:
       - name: Update bundled gems list
         id: bundled_gems
         run: |
-          ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems > $GITHUB_OUTPUT
+          ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems
 
       - name: Maintain updated gems list in NEWS
         run: |
