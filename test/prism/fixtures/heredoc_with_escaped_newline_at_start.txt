@@ -1,0 +1,7 @@
+<<-TARGET.gsub /^\s{/, ''\
+TARGET
+
+
+<<-TARGET.gsub /^\s{/, ''\
+TARGET
+

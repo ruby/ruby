@@ -2,7 +2,7 @@
 
 module Bundler
   class Injector
-    INJECTED_GEMS = "injected gems".freeze
+    INJECTED_GEMS = "injected gems"
 
     def self.inject(new_deps, options = {})
       injector = new(new_deps, options)
@@ -70,11 +70,15 @@ module Bundler
 
         show_warning("No gems were removed from the gemfile.") if deps.empty?
 
-        deps.each {|dep| Bundler.ui.confirm "#{SharedHelpers.pretty_dependency(dep, false)} was removed." }
+        deps.each {|dep| Bundler.ui.confirm "#{SharedHelpers.pretty_dependency(dep)} was removed." }
       end
+
+      # Invalidate the cached Bundler.definition.
+      # This prevents e.g. `bundle remove ...` from using outdated information.
+      Bundler.reset_paths!
     end
 
-  private
+    private
 
     def conservative_version(spec)
       version = spec.version
@@ -82,7 +86,7 @@ module Bundler
       segments = version.segments
       seg_end_index = version >= Gem::Version.new("1.0") ? 1 : 2
 
-      prerelease_suffix = version.to_s.gsub(version.release.to_s, "") if version.prerelease?
+      prerelease_suffix = version.to_s.delete_prefix(version.release.to_s) if version.prerelease?
       "#{version_prefix}#{segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
     end
 
@@ -111,10 +115,14 @@ module Bundler
         end
 
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
+        path = ", :path => \"#{d.path}\"" unless d.path.nil?
         git = ", :git => \"#{d.git}\"" unless d.git.nil?
+        github = ", :github => \"#{d.github}\"" unless d.github.nil?
         branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
+        ref = ", :ref => \"#{d.ref}\"" unless d.ref.nil?
+        require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch})
+        %(gem #{name}#{requirement}#{group}#{source}#{path}#{git}#{github}#{branch}#{ref}#{require_path})
       end.join("\n")
     end
 
@@ -128,7 +136,7 @@ module Bundler
     # evaluates a gemfile to remove the specified gem
     # from it.
     def remove_deps(gemfile_path)
-      initial_gemfile = IO.readlines(gemfile_path)
+      initial_gemfile = File.readlines(gemfile_path)
 
       Bundler.ui.info "Removing gems from #{gemfile_path}"
 
@@ -179,11 +187,22 @@ module Bundler
     # @param [Pathname] gemfile_path The Gemfile from which to remove dependencies.
     def remove_gems_from_gemfile(gems, gemfile_path)
       patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
+      new_gemfile = []
+      multiline_removal = false
+      File.readlines(gemfile_path).each do |line|
+        match_data = line.match(patterns)
+        if match_data && is_not_within_comment?(line, match_data)
+          multiline_removal = line.rstrip.end_with?(",")
+          # skip lines which match the regex
+          next
+        end
 
-      # remove lines which match the regex
-      new_gemfile = IO.readlines(gemfile_path).reject {|line| line.match(patterns) }
+        # skip followup lines until line does not end with ','
+        new_gemfile << line unless multiline_removal
+        multiline_removal = line.rstrip.end_with?(",") if multiline_removal
+      end
 
-      # remove lone \n and append them with other strings
+      # remove line \n and append them with other strings
       new_gemfile.each_with_index do |_line, index|
         if new_gemfile[index + 1] == "\n"
           new_gemfile[index] += new_gemfile[index + 1]
@@ -194,6 +213,13 @@ module Bundler
       %w[group source env install_if].each {|block| remove_nested_blocks(new_gemfile, block) }
 
       new_gemfile.join.chomp
+    end
+
+    # @param [String] line          Individual line of gemfile content.
+    # @param [MatchData] match_data Data about Regex match.
+    def is_not_within_comment?(line, match_data)
+      match_start_index = match_data.offset(0).first
+      !line[0..match_start_index].include?("#")
     end
 
     # @param [Array] gemfile       Array of gemfile contents.
@@ -209,7 +235,7 @@ module Bundler
 
         gemfile.each_with_index do |line, index|
           next unless !line.nil? && line.strip.start_with?(block_name)
-          if gemfile[index + 1] =~ /^\s*end\s*$/
+          if /^\s*end\s*$/.match?(gemfile[index + 1])
             gemfile[index] = nil
             gemfile[index + 1] = nil
           end
@@ -250,6 +276,12 @@ module Bundler
 
     def show_warning(message)
       Bundler.ui.info Bundler.ui.add_color(message, :yellow)
+    end
+
+    def convert_autorequire(autorequire)
+      autorequire = autorequire.first
+      return autorequire if autorequire == "false"
+      autorequire.inspect
     end
   end
 end

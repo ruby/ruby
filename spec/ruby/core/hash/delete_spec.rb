@@ -37,8 +37,8 @@ describe "Hash#delete" do
     { key => 5 }.delete(key).should == 5
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.delete("foo")  }.should raise_error(frozen_error_class)
-    -> { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.delete("foo")  }.should raise_error(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(FrozenError)
   end
 end

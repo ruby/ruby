@@ -29,4 +29,3 @@ class RDoc::Markup::HardBreak
   end
 
 end
-

@@ -15,5 +15,24 @@ class Logger
     FATAL = 4
     # An unknown message that should always be logged.
     UNKNOWN = 5
+
+    LEVELS = {
+      "debug" => DEBUG,
+      "info" => INFO,
+      "warn" => WARN,
+      "error" => ERROR,
+      "fatal" => FATAL,
+      "unknown" => UNKNOWN,
+    }
+    private_constant :LEVELS
+
+    def self.coerce(severity)
+      if severity.is_a?(Integer)
+        severity
+      else
+        key = severity.to_s.downcase
+        LEVELS[key] || raise(ArgumentError, "invalid log level: #{severity}")
+      end
+    end
   end
 end

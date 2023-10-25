@@ -24,6 +24,7 @@ describe "OpenStruct.new when frozen" do
 
   it "creates a frozen clone" do
     f = @os.clone
+    f.frozen?.should == true
     f.age.should == 70
     ->{ f.age = 0 }.should raise_error( RuntimeError )
     ->{ f.state = :newer }.should raise_error( RuntimeError )
@@ -31,6 +32,7 @@ describe "OpenStruct.new when frozen" do
 
   it "creates an unfrozen dup" do
     d = @os.dup
+    d.frozen?.should == false
     d.age.should == 70
     d.age = 42
     d.age.should == 42

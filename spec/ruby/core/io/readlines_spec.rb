@@ -102,28 +102,33 @@ describe "IO#readlines" do
     end
   end
 
-  describe "when passed a string that starts with a |" do
-    it "gets data from the standard out of the subprocess" do
-      cmd = "|sh -c 'echo hello;echo line2'"
-      platform_is :windows do
-        cmd = "|cmd.exe /C echo hello&echo line2"
-      end
-      lines = IO.readlines(cmd)
-      lines.should == ["hello\n", "line2\n"]
+  describe "when passed limit" do
+    it "raises ArgumentError when passed 0 as a limit" do
+      -> { @io.readlines(0) }.should raise_error(ArgumentError)
     end
 
-    platform_is_not :windows do
-      it "gets data from a fork when passed -" do
-        lines = IO.readlines("|-")
+    it "does not accept Integers that don't fit in a C off_t" do
+      -> { @io.readlines(2**128) }.should raise_error(RangeError)
+    end
+  end
 
-        if lines # parent
-          lines.should == ["hello\n", "from a fork\n"]
-        else
-          puts "hello"
-          puts "from a fork"
-          exit!
-        end
-      end
+  describe "when passed chomp" do
+    it "returns the first line without a trailing newline character" do
+      @io.readlines(chomp: true).should == IOSpecs.lines_without_newline_characters
+    end
+
+    it "raises exception when options passed as Hash" do
+      -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
+
+      -> {
+        @io.readlines("\n", 1, { chomp: true })
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+    end
+  end
+
+  describe "when passed arbitrary keyword argument" do
+    it "tolerates it" do
+      @io.readlines(chomp: true, foo: :bar).should == IOSpecs.lines_without_newline_characters
     end
   end
 end
@@ -167,6 +172,48 @@ describe "IO.readlines" do
     $_ = "test"
     IO.readlines(@name)
     $_.should == "test"
+  end
+
+  describe "when passed a string that starts with a |" do
+    it "gets data from the standard out of the subprocess" do
+      cmd = "|sh -c 'echo hello;echo line2'"
+      platform_is :windows do
+        cmd = "|cmd.exe /C echo hello&echo line2"
+      end
+
+      lines = nil
+      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+        lines = IO.readlines(cmd)
+      end
+      lines.should == ["hello\n", "line2\n"]
+    end
+
+    platform_is_not :windows do
+      it "gets data from a fork when passed -" do
+        lines = nil
+        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+          lines = IO.readlines("|-")
+        end
+
+        if lines # parent
+          lines.should == ["hello\n", "from a fork\n"]
+        else
+          puts "hello"
+          puts "from a fork"
+          exit!
+        end
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation given a path with a pipe" do
+      cmd = "|echo ok"
+      -> {
+        IO.readlines(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
+    end
   end
 
   it_behaves_like :io_readlines, :readlines

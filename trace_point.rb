@@ -1,7 +1,5 @@
 # loaded from vm_trace.c
 
-# Document-class: TracePoint
-#
 # A class that provides the functionality of Kernel#set_trace_func in a
 # nice Object-Oriented API.
 #
@@ -31,7 +29,7 @@
 #
 # To filter what is traced, you can pass any of the following as +events+:
 #
-# +:line+:: execute code on a new line
+# +:line+:: execute an expression or statement on a new line
 # +:class+:: start a class or module definition
 # +:end+:: finish a class or module definition
 # +:call+:: call a Ruby method
@@ -41,6 +39,8 @@
 # +:raise+:: raise an exception
 # +:b_call+:: event hook at block entry
 # +:b_return+:: event hook at block ending
+# +:a_call+:: event hook at all calls (+call+, +b_call+, and +c_call+)
+# +:a_return+:: event hook at all returns (+return+, +b_return+, and +c_return+)
 # +:thread_begin+:: event hook at thread beginning
 # +:thread_end+:: event hook at thread ending
 # +:fiber_switch+:: event hook at fiber switch
@@ -93,7 +93,7 @@ class TracePoint
   # Access from other threads is also forbidden.
   #
   def self.new(*events)
-    __builtin_tracepoint_new_s(events)
+    Primitive.tracepoint_new_s(events)
   end
 
   #  call-seq:
@@ -102,7 +102,7 @@ class TracePoint
   #  Return a string containing a human-readable TracePoint
   #  status.
   def inspect
-    __builtin_tracepoint_inspect
+    Primitive.tracepoint_inspect
   end
 
   # call-seq:
@@ -115,16 +115,14 @@ class TracePoint
   #
   #  This method is only for debugging TracePoint itself.
   def self.stat
-    __builtin_tracepoint_stat_s
+    Primitive.tracepoint_stat_s
   end
 
-  # Document-method: trace
-  #
   # call-seq:
-  #	TracePoint.trace(*events) { |obj| block }	-> obj
+  #	   TracePoint.trace(*events) { |obj| block }	-> obj
   #
-  #  A convenience method for TracePoint.new, that activates the trace
-  #  automatically.
+  # A convenience method for TracePoint.new, that activates the trace
+  # automatically.
   #
   #	    trace = TracePoint.trace(:call) { |tp| [tp.lineno, tp.event] }
   #	    #=> #<TracePoint:enabled>
@@ -132,12 +130,77 @@ class TracePoint
   #	    trace.enabled? #=> true
   #
   def self.trace(*events)
-    __builtin_tracepoint_trace_s(events)
+    Primitive.tracepoint_trace_s(events)
+  end
+
+  # call-seq:
+  #   TracePoint.allow_reentry { block }
+  #
+  # In general, while a TracePoint callback is running,
+  # other registered callbacks are not called to avoid
+  # confusion by reentrance.
+  # This method allows the reentrance in a given block.
+  # This method should be used carefully, otherwise the callback
+  # can be easily called infinitely.
+  #
+  # If this method is called when the reentrance is already allowed,
+  # it raises a RuntimeError.
+  #
+  # <b>Example:</b>
+  #
+  #   # Without reentry
+  #   # ---------------
+  #
+  #   line_handler = TracePoint.new(:line) do |tp|
+  #     next if tp.path != __FILE__ # only work in this file
+  #     puts "Line handler"
+  #     binding.eval("class C; end")
+  #   end.enable
+  #
+  #   class_handler = TracePoint.new(:class) do |tp|
+  #     puts "Class handler"
+  #   end.enable
+  #
+  #   class B
+  #   end
+  #
+  #   # This script will print "Class handler" only once: when inside :line
+  #   # handler, all other handlers are ignored
+  #
+  #
+  #   # With reentry
+  #   # ------------
+  #
+  #   line_handler = TracePoint.new(:line) do |tp|
+  #     next if tp.path != __FILE__ # only work in this file
+  #     next if (__LINE__..__LINE__+3).cover?(tp.lineno) # don't be invoked from itself
+  #     puts "Line handler"
+  #     TracePoint.allow_reentry { binding.eval("class C; end") }
+  #   end.enable
+  #
+  #   class_handler = TracePoint.new(:class) do |tp|
+  #     puts "Class handler"
+  #   end.enable
+  #
+  #   class B
+  #   end
+  #
+  #   # This wil print "Class handler" twice: inside allow_reentry block in :line
+  #   # handler, other handlers are enabled.
+  #
+  # Note that the example shows the principal effect of the method, but its
+  # practical usage is for debugging libraries that sometimes require other libraries
+  # hooks to not be affected by debugger being inside trace point handling. Precautions
+  # should be taken against infinite recursion in this case (note that we needed to filter
+  # out calls by itself from :line handler, otherwise it will call itself infinitely).
+  #
+  def self.allow_reentry
+    Primitive.tracepoint_allow_reentry
   end
 
   # call-seq:
   #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
-  #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
+  #    trace.enable(target: nil, target_line: nil, target_thread: :default) { block }  -> obj
   #
   # Activates the trace.
   #
@@ -151,15 +214,16 @@ class TracePoint
   #   trace.enable    #=> true (previous state)
   #                   #   trace is still enabled
   #
-  # If a block is given, the trace will only be enabled within the scope of the
-  # block.
+  # If a block is given, the trace will only be enabled during the block call.
+  # If target and target_line are both nil, then target_thread will default
+  # to the current thread if a block is given.
   #
   #    trace.enabled?
   #    #=> false
   #
   #    trace.enable do
   #      trace.enabled?
-  #      # only enabled for this block
+  #      # only enabled for this block and thread
   #    end
   #
   #    trace.enabled?
@@ -183,7 +247,7 @@ class TracePoint
   #    t.enable(target: method(:m1))
   #
   #    m1
-  #    # prints #<TracePoint:line@test.rb:4 in `m1'>
+  #    # prints #<TracePoint:line test.rb:4 in `m1'>
   #    m2
   #    # prints nothing
   #
@@ -192,8 +256,8 @@ class TracePoint
   #    trace.enable { p tp.lineno }
   #    #=> RuntimeError: access from outside
   #
-  def enable(target: nil, target_line: nil, target_thread: nil)
-    __builtin_tracepoint_enable_m(target, target_line, target_thread)
+  def enable(target: nil, target_line: nil, target_thread: :default)
+    Primitive.tracepoint_enable_m(target, target_line, target_thread)
   end
 
   # call-seq:
@@ -229,7 +293,7 @@ class TracePoint
   #	trace.disable { p tp.lineno }
   #	#=> RuntimeError: access from outside
   def disable
-    __builtin_tracepoint_disable_m
+    Primitive.tracepoint_disable_m
   end
 
   # call-seq:
@@ -237,40 +301,40 @@ class TracePoint
   #
   # The current status of the trace
   def enabled?
-    __builtin_tracepoint_enabled_p
+    Primitive.tracepoint_enabled_p
   end
 
   # Type of event
   #
   # See TracePoint@Events for more information.
   def event
-    __builtin_tracepoint_attr_event
+    Primitive.tracepoint_attr_event
   end
 
   # Line number of the event
   def lineno
-    __builtin_tracepoint_attr_lineno
+    Primitive.tracepoint_attr_lineno
   end
 
   # Path of the file being run
   def path
-    __builtin_tracepoint_attr_path
+    Primitive.tracepoint_attr_path
   end
 
   # Return the parameters definition of the method or block that the
   # current hook belongs to. Format is the same as for Method#parameters
   def parameters
-    __builtin_tracepoint_attr_parameters
+    Primitive.tracepoint_attr_parameters
   end
 
   # Return the name at the definition of the method being called
   def method_id
-    __builtin_tracepoint_attr_method_id
+    Primitive.tracepoint_attr_method_id
   end
 
   # Return the called name of the method being called
   def callee_id
-    __builtin_tracepoint_attr_callee_id
+    Primitive.tracepoint_attr_callee_id
   end
 
   # Return class or module of the method being called.
@@ -306,36 +370,41 @@ class TracePoint
   # 	  C.foo
   # 	end
   def defined_class
-    __builtin_tracepoint_attr_defined_class
+    Primitive.tracepoint_attr_defined_class
   end
 
-  # Return the generated binding object from event
+  # Return the generated binding object from event.
+  #
+  # Note that for +c_call+ and +c_return+ events, the method will return
+  # +nil+, since C methods themselves do not have bindings.
   def binding
-    __builtin_tracepoint_attr_binding
+    Primitive.tracepoint_attr_binding
   end
 
   # Return the trace object during event
   #
-  # Same as TracePoint#binding:
-  #	trace.binding.eval('self')
+  # Same as the following, except it returns the correct object (the method
+  # receiver) for +c_call+ and +c_return+ events:
+  #
+  #   trace.binding.eval('self')
   def self
-    __builtin_tracepoint_attr_self
+    Primitive.tracepoint_attr_self
   end
 
   #  Return value from +:return+, +c_return+, and +b_return+ event
   def return_value
-    __builtin_tracepoint_attr_return_value
+    Primitive.tracepoint_attr_return_value
   end
 
   # Value from exception raised on the +:raise+ event
   def raised_exception
-    __builtin_tracepoint_attr_raised_exception
+    Primitive.tracepoint_attr_raised_exception
   end
 
   # Compiled source code (String) on *eval methods on the +:script_compiled+ event.
   # If loaded from a file, it will return nil.
   def eval_script
-    __builtin_tracepoint_attr_eval_script
+    Primitive.tracepoint_attr_eval_script
   end
 
   # Compiled instruction sequence represented by a RubyVM::InstructionSequence instance
@@ -343,6 +412,6 @@ class TracePoint
   #
   # Note that this method is MRI specific.
   def instruction_sequence
-    __builtin_tracepoint_attr_instruction_sequence
+    Primitive.tracepoint_attr_instruction_sequence
   end
 end

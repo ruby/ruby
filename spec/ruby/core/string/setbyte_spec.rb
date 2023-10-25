@@ -36,6 +36,12 @@ describe "String#setbyte" do
     str.valid_encoding?.should be_true
     str.setbyte(2,253)
     str.valid_encoding?.should be_false
+
+    str = "ABC"
+    str.setbyte(0, 0x20) # ' '
+    str.should.valid_encoding?
+    str.setbyte(0, 0xE3)
+    str.should_not.valid_encoding?
   end
 
   it "regards a negative index as counting from the end of the String" do
@@ -75,10 +81,10 @@ describe "String#setbyte" do
     str1.should_not == "ledgehog"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     str = "cold".freeze
     str.frozen?.should be_true
-    -> { str.setbyte(3,96) }.should raise_error(frozen_error_class)
+    -> { str.setbyte(3,96) }.should raise_error(FrozenError)
   end
 
   it "raises a TypeError unless the second argument is an Integer" do

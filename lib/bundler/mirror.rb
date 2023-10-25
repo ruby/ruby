@@ -43,7 +43,7 @@ module Bundler
         config.update_mirror(mirror)
       end
 
-    private
+      private
 
       def fetch_valid_mirror_for(uri)
         downcased = uri.to_s.downcase
@@ -148,17 +148,15 @@ module Bundler
     class TCPSocketProbe
       def replies?(mirror)
         MirrorSockets.new(mirror).any? do |socket, address, timeout|
-          begin
-            socket.connect_nonblock(address)
-          rescue Errno::EINPROGRESS
-            wait_for_writtable_socket(socket, address, timeout)
-          rescue RuntimeError # Connection failed somehow, again
-            false
-          end
+          socket.connect_nonblock(address)
+        rescue Errno::EINPROGRESS
+          wait_for_writtable_socket(socket, address, timeout)
+        rescue RuntimeError # Connection failed somehow, again
+          false
         end
       end
 
-    private
+      private
 
       def wait_for_writtable_socket(socket, address, timeout)
         if IO.select(nil, [socket], nil, timeout)

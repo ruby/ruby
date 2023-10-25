@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../support/streams"
-
 RSpec.describe Bundler::UI::Shell do
   subject { described_class.new }
 
@@ -43,10 +41,19 @@ RSpec.describe Bundler::UI::Shell do
 
     context "when stderr is closed" do
       it "doesn't report anything" do
-        output = capture(:stderr, :closed => true) do
-          subject.error("Something went wrong")
-        end
-        expect(output).to_not eq("Something went wrong\n")
+        output = begin
+                   result = StringIO.new
+                   result.close
+
+                   $stderr = result
+
+                   subject.error("Something went wrong")
+
+                   result.string
+                 ensure
+                   $stderr = STDERR
+                 end
+        expect(output).to_not eq("Something went wrong")
       end
     end
   end

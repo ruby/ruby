@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe 'TracePoint#binding' do
   def test
@@ -8,6 +9,7 @@ describe 'TracePoint#binding' do
   it 'return the generated binding object from event' do
     bindings = []
     TracePoint.new(:return) { |tp|
+      next unless TracePointSpec.target_thread?
       bindings << tp.binding
     }.enable {
       test

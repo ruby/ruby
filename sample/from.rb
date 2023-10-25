@@ -62,7 +62,7 @@ def from_main
   if File.exist?(file)
     atime = File.atime(file)
     mtime = File.mtime(file)
-    open(file, "r") do |f|
+    File.open(file, "r") do |f|
       until f.eof?
         header = {}
         f.each_line do |line|

@@ -15,11 +15,33 @@ describe "String#unpack with directive 'w'" do
     ].should be_computed_by(:unpack, "w")
   end
 
-  it "ignores NULL bytes between directives" do
-    "\x01\x02\x03".unpack("w\x00w").should == [1, 2]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        "\x01\x02\x03".unpack("w\x00w").should == [1, 2]
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "\x01\x02\x03".unpack("w\x00w")
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
     "\x01\x02\x03".unpack("w w").should == [1, 2]
   end
+end
+
+describe "String#unpack with directive 'w*'" do
+
+  it "decodes BER-compressed integers" do
+    "\x01\x02\x03\x04".unpack("w*").should == [1, 2, 3, 4]
+    "\x00\xCE\x0F\x84\x80\x80\x80\x80\x80\x80\x80\x80\x00\x01\x00".unpack("w*").should == [0, 9999, 2**65, 1, 0]
+    "\x81\x80\x80\x80\x80\x80\x80\x80\x80\x00\x90\x80\x80\x80\x80\x80\x80\x80\x03\x01\x02".unpack("w*").should == [2**63, (2**60 + 3), 1, 2]
+  end
+
 end

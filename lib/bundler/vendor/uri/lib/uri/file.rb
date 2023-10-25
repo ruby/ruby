@@ -33,6 +33,9 @@ module Bundler::URI
     # If an Array is used, the components must be passed in the
     # order <code>[host, path]</code>.
     #
+    # A path from e.g. the File class should be escaped before
+    # being passed.
+    #
     # Examples:
     #
     #     require 'bundler/vendor/uri/lib/uri'
@@ -43,6 +46,9 @@ module Bundler::URI
     #     uri2 = Bundler::URI::File.build({:host => 'host.example.com',
     #       :path => '/ruby/src'})
     #     uri2.to_s  # => "file://host.example.com/ruby/src"
+    #
+    #     uri3 = Bundler::URI::File.build({:path => Bundler::URI::escape('/path/my file.txt')})
+    #     uri3.to_s  # => "file:///path/my%20file.txt"
     #
     def self.build(args)
       tmp = Util::make_components_hash(self, args)
@@ -90,5 +96,5 @@ module Bundler::URI
     end
   end
 
-  @@schemes['FILE'] = File
+  register_scheme 'FILE', File
 end

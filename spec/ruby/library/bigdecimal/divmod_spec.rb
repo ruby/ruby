@@ -5,8 +5,8 @@ require 'bigdecimal'
 module DivmodSpecs
   def self.check_both_nan(array)
     array.length.should == 2
-    array[0].nan?.should == true
-    array[1].nan?.should == true
+    array[0].should.nan?
+    array[1].should.nan?
   end
   def self.check_both_bigdecimal(array)
     array.length.should == 2
@@ -150,7 +150,7 @@ describe "BigDecimal#divmod" do
       array = @infinity.divmod(val)
       array.length.should == 2
       array[0].infinite?.should == (val > 0 ? 1 : -1)
-      array[1].nan?.should == true
+      array[1].should.nan?
     end
   end
 

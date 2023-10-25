@@ -1,4 +1,5 @@
 require_relative 'spec_helper'
+require_relative 'fixtures/object'
 
 load_extension("object")
 
@@ -30,6 +31,7 @@ describe "CApiObject" do
   class ObjectTest
     def initialize
       @foo = 7
+      yield if block_given?
     end
 
     def foo
@@ -88,6 +90,15 @@ describe "CApiObject" do
       o.initialized.should be_true
       o.arguments.should == [:one, :two]
     end
+
+    it "passes the block to #initialize" do
+      v = nil
+      o = @o.rb_obj_alloc(ObjectTest)
+      @o.rb_obj_call_init(o, 0, []) do
+        v = :foo
+      end
+      v.should == :foo
+    end
   end
 
   describe "rb_is_instance_of" do
@@ -114,6 +125,11 @@ describe "CApiObject" do
     it "can be used with primitives" do
       @o.rb_respond_to(true, :object_id).should == true
       @o.rb_respond_to(14, :succ).should == true
+    end
+
+    it "returns 0 if the method has been defined as rb_f_notimplement" do
+      @o.respond_to?(:not_implemented_method).should == false
+      @o.rb_respond_to(@o, :not_implemented_method).should == false
     end
   end
 
@@ -156,6 +172,20 @@ describe "CApiObject" do
     end
   end
 
+  describe "rb_obj_method" do
+    it "returns the method object for a symbol" do
+      method = @o.rb_obj_method("test", :size)
+      method.owner.should == String
+      method.name.to_sym.should == :size
+    end
+
+    it "returns the method object for a string" do
+      method = @o.rb_obj_method("test", "size")
+      method.owner.should == String
+      method.name.to_sym.should == :size
+    end
+  end
+
   describe "rb_method_boundp" do
     it "returns true when the given method is bound" do
       @o.rb_method_boundp(Object, :class, true).should == true
@@ -189,7 +219,7 @@ describe "CApiObject" do
     end
 
     it "requires a ruby file" do
-      $:.unshift File.dirname(__FILE__)
+      $:.unshift __dir__
       @o.rb_require()
       $foo.should == 7
     end
@@ -318,8 +348,8 @@ describe "CApiObject" do
 
     it "does not rescue exceptions raised by #to_ary" do
       obj = mock("to_ary")
-      obj.should_receive(:to_ary).and_raise(frozen_error_class)
-      -> { @o.rb_check_array_type obj }.should raise_error(frozen_error_class)
+      obj.should_receive(:to_ary).and_raise(FrozenError)
+      -> { @o.rb_check_array_type obj }.should raise_error(FrozenError)
     end
   end
 
@@ -419,15 +449,6 @@ describe "CApiObject" do
   end
 
   describe "FL_TEST" do
-    ruby_version_is ''...'2.7' do
-      it "returns correct status for FL_TAINT" do
-        obj = Object.new
-        @o.FL_TEST(obj, "FL_TAINT").should == 0
-        obj.taint
-        @o.FL_TEST(obj, "FL_TAINT").should_not == 0
-      end
-    end
-
     it "returns correct status for FL_FREEZE" do
       obj = Object.new
       @o.FL_TEST(obj, "FL_FREEZE").should == 0
@@ -448,7 +469,7 @@ describe "CApiObject" do
   describe "rb_class_of" do
     it "returns the class of an object" do
       @o.rb_class_of(nil).should == NilClass
-      @o.rb_class_of(0).should == Fixnum
+      @o.rb_class_of(0).should == Integer
       @o.rb_class_of(0.1).should == Float
       @o.rb_class_of(ObjectTest.new).should == ObjectTest
     end
@@ -461,12 +482,31 @@ describe "CApiObject" do
     end
   end
 
+  describe "rb_obj_class" do
+    it "returns the class of an object" do
+      @o.rb_obj_class(nil).should == NilClass
+      @o.rb_obj_class(0).should == Integer
+      @o.rb_obj_class(0.1).should == Float
+      @o.rb_obj_class(ObjectTest.new).should == ObjectTest
+    end
+
+    it "does not return the singleton class if it exists" do
+      o = ObjectTest.new
+      o.singleton_class
+      @o.rb_obj_class(o).should equal ObjectTest
+    end
+  end
+
   describe "rb_obj_classname" do
     it "returns the class name of an object" do
       @o.rb_obj_classname(nil).should == 'NilClass'
-      @o.rb_obj_classname(0).should == Fixnum.to_s
+      @o.rb_obj_classname(0).should == 'Integer'
       @o.rb_obj_classname(0.1).should == 'Float'
       @o.rb_obj_classname(ObjectTest.new).should == 'ObjectTest'
+
+      o = ObjectTest.new
+      o.singleton_class
+      @o.rb_obj_classname(o).should == 'ObjectTest'
     end
   end
 
@@ -480,20 +520,58 @@ describe "CApiObject" do
       @o.rb_is_type_array([]).should == true
       @o.rb_is_type_array(DescArray.new).should == true
       @o.rb_is_type_module(ObjectTest).should == false
+      @o.rb_is_type_module(Module.new).should == true
       @o.rb_is_type_class(ObjectTest).should == true
       @o.rb_is_type_data(Time.now).should == true
+    end
+
+    it "returns T_FILE for instances of IO and subclasses" do
+      STDERR.class.should == IO
+      @o.rb_is_rb_type_p_file(STDERR).should == true
+
+      File.open(__FILE__) do |f|
+        f.class.should == File
+        @o.rb_is_rb_type_p_file(f).should == true
+      end
+
+      require 'socket'
+      TCPServer.open(0) do |s|
+        @o.rb_is_rb_type_p_file(s).should == true
+      end
+    end
+  end
+
+  describe "rb_check_type" do
+    it "checks if the object is of the given type" do
+      @o.rb_check_type(nil, nil).should == true
+      @o.rb_check_type(ObjectTest.new, Object.new).should == true
+      @o.rb_check_type([], []).should == true
+      @o.rb_check_type(Class.new(Array).new, []).should == true
+      @o.rb_check_type(ObjectTest, Object).should == true
+    end
+
+    it "raises an exception if the object is not of the expected type" do
+      -> {
+        @o.rb_check_type([], Object.new)
+      }.should raise_error(TypeError, 'wrong argument type Array (expected Object)')
+
+      -> {
+        @o.rb_check_type(ObjectTest, Module.new)
+      }.should raise_error(TypeError, 'wrong argument type Class (expected Module)')
+
+      -> {
+        @o.rb_check_type(nil, "string")
+      }.should raise_error(TypeError, 'wrong argument type nil (expected String)')
     end
   end
 
   describe "rb_type_p" do
     it "returns whether object is of the given type" do
-      class DescArray < Array
-      end
       @o.rb_is_rb_type_p_nil(nil).should == true
       @o.rb_is_rb_type_p_object([]).should == false
       @o.rb_is_rb_type_p_object(ObjectTest.new).should == true
       @o.rb_is_rb_type_p_array([]).should == true
-      @o.rb_is_rb_type_p_array(DescArray.new).should == true
+      @o.rb_is_rb_type_p_array(Class.new(Array).new).should == true
       @o.rb_is_rb_type_p_module(ObjectTest).should == false
       @o.rb_is_rb_type_p_class(ObjectTest).should == true
       @o.rb_is_rb_type_p_data(Time.now).should == true
@@ -502,12 +580,10 @@ describe "CApiObject" do
 
   describe "BUILTIN_TYPE" do
     it "returns the type constant for the object" do
-      class DescArray < Array
-      end
       @o.rb_is_builtin_type_object([]).should == false
       @o.rb_is_builtin_type_object(ObjectTest.new).should == true
       @o.rb_is_builtin_type_array([]).should == true
-      @o.rb_is_builtin_type_array(DescArray.new).should == true
+      @o.rb_is_builtin_type_array(Class.new(Array).new).should == true
       @o.rb_is_builtin_type_module(ObjectTest).should == false
       @o.rb_is_builtin_type_class(ObjectTest).should == true
       @o.rb_is_builtin_type_data(Time.now).should == true
@@ -577,68 +653,12 @@ describe "CApiObject" do
   end
 
   describe "OBJ_TAINT" do
-    ruby_version_is ''...'2.7' do
-      it "taints the object" do
-        obj = mock("tainted")
-        @o.OBJ_TAINT(obj)
-        obj.tainted?.should be_true
-      end
-    end
   end
 
   describe "OBJ_TAINTED" do
-    ruby_version_is ''...'2.7' do
-      it "returns C true if the object is tainted" do
-        obj = mock("tainted")
-        obj.taint
-        @o.OBJ_TAINTED(obj).should be_true
-      end
-
-      it "returns C false if the object is not tainted" do
-        obj = mock("untainted")
-        @o.OBJ_TAINTED(obj).should be_false
-      end
-    end
   end
 
   describe "OBJ_INFECT" do
-    ruby_version_is ''...'2.7' do
-      it "does not taint the first argument if the second argument is not tainted" do
-        host   = mock("host")
-        source = mock("source")
-        @o.OBJ_INFECT(host, source)
-        host.tainted?.should be_false
-      end
-
-      it "taints the first argument if the second argument is tainted" do
-        host   = mock("host")
-        source = mock("source").taint
-        @o.OBJ_INFECT(host, source)
-        host.tainted?.should be_true
-      end
-
-      it "does not untrust the first argument if the second argument is trusted" do
-        host   = mock("host")
-        source = mock("source")
-        @o.OBJ_INFECT(host, source)
-        host.untrusted?.should be_false
-      end
-
-      it "untrusts the first argument if the second argument is untrusted" do
-        host   = mock("host")
-        source = mock("source").untrust
-        @o.OBJ_INFECT(host, source)
-        host.untrusted?.should be_true
-      end
-
-      it "propagates both taint and distrust" do
-        host   = mock("host")
-        source = mock("source").taint.untrust
-        @o.OBJ_INFECT(host, source)
-        host.tainted?.should be_true
-        host.untrusted?.should be_true
-      end
-    end
   end
 
   describe "rb_obj_freeze" do
@@ -672,23 +692,11 @@ describe "CApiObject" do
   end
 
   describe "rb_obj_taint" do
-    ruby_version_is ''...'2.7' do
-      it "marks the object passed as tainted" do
-        obj = ""
-        obj.tainted?.should == false
-        @o.rb_obj_taint(obj)
-        obj.tainted?.should == true
-      end
-
-      it "raises a #{frozen_error_class} if the object passed is frozen" do
-        -> { @o.rb_obj_taint("".freeze) }.should raise_error(frozen_error_class)
-      end
-    end
   end
 
   describe "rb_check_frozen" do
-    it "raises a #{frozen_error_class} if the obj is frozen" do
-      -> { @o.rb_check_frozen("".freeze) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError if the obj is frozen" do
+      -> { @o.rb_check_frozen("".freeze) }.should raise_error(FrozenError)
     end
 
     it "does nothing when object isn't frozen" do
@@ -820,6 +828,15 @@ describe "CApiObject" do
       end
     end
 
+    describe "rb_ivar_count" do
+      it "returns the number of instance variables" do
+        obj = Object.new
+        @o.rb_ivar_count(obj).should == 0
+        obj.instance_variable_set(:@foo, 42)
+        @o.rb_ivar_count(obj).should == 1
+      end
+    end
+
     describe "rb_ivar_get" do
       it "returns the instance variable on an object" do
         @o.rb_ivar_get(@test, :@foo).should == @test.instance_eval { @foo }
@@ -831,6 +848,7 @@ describe "CApiObject" do
 
       it "returns nil if the instance variable has not been initialized and is not a valid Ruby name" do
         @o.rb_ivar_get(@test, :bar).should == nil
+        @o.rb_ivar_get(@test, :mesg).should == nil
       end
 
       it 'returns the instance variable when it is not a valid Ruby name' do
@@ -866,6 +884,7 @@ describe "CApiObject" do
 
       it "does not throw an error if the instance variable is not a valid Ruby name" do
         @o.rb_ivar_defined(@test, :bar).should == false
+        @o.rb_ivar_defined(@test, :mesg).should == false
       end
     end
 
@@ -964,6 +983,31 @@ describe "CApiObject" do
 
         @o.speced_allocator?(parent).should == true
       end
+    end
+
+    describe "rb_ivar_foreach" do
+      it "calls the callback function for each instance variable on an object" do
+        o = CApiObjectSpecs::IVars.new
+        ary = @o.rb_ivar_foreach(o)
+        ary.should == [:@a, 3, :@b, 7, :@c, 4]
+      end
+
+      it "calls the callback function for each cvar and ivar on a class" do
+        exp = [:@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+        exp.unshift(:__classpath__, 'CApiObjectSpecs::CVars') if RUBY_VERSION < "3.3"
+
+        ary = @o.rb_ivar_foreach(CApiObjectSpecs::CVars)
+        ary.should == exp
+      end
+
+      it "calls the callback function for each cvar and ivar on a module" do
+        exp = [:@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+        exp.unshift(:__classpath__, 'CApiObjectSpecs::MVars') if RUBY_VERSION < "3.3"
+
+        ary = @o.rb_ivar_foreach(CApiObjectSpecs::MVars)
+        ary.should == exp
+      end
+
     end
   end
 end

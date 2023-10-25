@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocContext < XrefTestCase
 
@@ -125,7 +125,7 @@ class TestRDocContext < XrefTestCase
 
     basic = @c1.find_module_named 'BasicObject'
 
-    assert_equal 'Object', basic.superclass
+    assert_equal @object, basic.superclass
   end
 
   def test_add_class_object

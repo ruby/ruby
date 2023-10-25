@@ -28,8 +28,16 @@
  * SUCH DAMAGE.
  */
 
+// Suppress some false-positive compiler warnings
+#if defined(__GNUC__) && __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wrestrict"
+#endif
+
 #include "regparse.h"
 #include <stdarg.h>
+#include "internal/sanitizers.h"
 
 #define WARN_BUFSIZE    256
 
@@ -134,7 +142,7 @@ static void
 bbuf_free(BBuf* bbuf)
 {
   if (IS_NOT_NULL(bbuf)) {
-    if (IS_NOT_NULL(bbuf->p)) xfree(bbuf->p);
+    xfree(bbuf->p);
     xfree(bbuf);
   }
 }
@@ -387,6 +395,8 @@ str_end_cmp(st_data_t xp, st_data_t yp)
   return 0;
 }
 
+NO_SANITIZE("unsigned-integer-overflow", static st_index_t str_end_hash(st_data_t xp));
+
 static st_index_t
 str_end_hash(st_data_t xp)
 {
@@ -504,7 +514,7 @@ static int
 i_free_name_entry(UChar* key, NameEntry* e, void* arg ARG_UNUSED)
 {
   xfree(e->name);
-  if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+  xfree(e->back_refs);
   xfree(key);
   xfree(e);
   return ST_DELETE;
@@ -689,7 +699,7 @@ names_clear(regex_t* reg)
 	e->name_len   = 0;
 	e->back_num   = 0;
 	e->back_alloc = 0;
-	if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+	xfree(e->back_refs);
 	e->back_refs = (int* )NULL;
       }
     }
@@ -712,7 +722,7 @@ onig_names_free(regex_t* reg)
   if (r) return r;
 
   t = (NameTable* )reg->name_table;
-  if (IS_NOT_NULL(t)) xfree(t);
+  xfree(t);
   reg->name_table = NULL;
   return 0;
 }
@@ -1088,29 +1098,24 @@ onig_node_free(Node* node)
     {
       CClassNode* cc = NCCLASS(node);
 
-      if (cc->mbuf)
-	bbuf_free(cc->mbuf);
+      bbuf_free(cc->mbuf);
     }
     break;
 
   case NT_QTFR:
-    if (NQTFR(node)->target)
-      onig_node_free(NQTFR(node)->target);
+    onig_node_free(NQTFR(node)->target);
     break;
 
   case NT_ENCLOSE:
-    if (NENCLOSE(node)->target)
-      onig_node_free(NENCLOSE(node)->target);
+    onig_node_free(NENCLOSE(node)->target);
     break;
 
   case NT_BREF:
-    if (IS_NOT_NULL(NBREF(node)->back_dynamic))
-      xfree(NBREF(node)->back_dynamic);
+    xfree(NBREF(node)->back_dynamic);
     break;
 
   case NT_ANCHOR:
-    if (NANCHOR(node)->target)
-      onig_node_free(NANCHOR(node)->target);
+    onig_node_free(NANCHOR(node)->target);
     break;
   }
 
@@ -2187,7 +2192,6 @@ enum ReduceType {
   RQ_AQ,       /* to '*?'   */
   RQ_QQ,       /* to '??'   */
   RQ_P_QQ,     /* to '+)??' */
-  RQ_PQ_Q      /* to '+?)?' */
 };
 
 static enum ReduceType const ReduceTypeTable[6][6] = {
@@ -2197,7 +2201,7 @@ static enum ReduceType const ReduceTypeTable[6][6] = {
   {RQ_A,    RQ_A,    RQ_DEL, RQ_ASIS, RQ_P_QQ, RQ_DEL},  /* '+'  */
   {RQ_DEL,  RQ_AQ,   RQ_AQ,  RQ_DEL,  RQ_AQ,   RQ_AQ},   /* '??' */
   {RQ_DEL,  RQ_DEL,  RQ_DEL, RQ_DEL,  RQ_DEL,  RQ_DEL},  /* '*?' */
-  {RQ_ASIS, RQ_PQ_Q, RQ_DEL, RQ_AQ,   RQ_AQ,   RQ_DEL}   /* '+?' */
+  {RQ_ASIS, RQ_ASIS, RQ_ASIS, RQ_AQ,  RQ_AQ,   RQ_DEL}   /* '+?' */
 };
 
 extern void
@@ -2232,12 +2236,6 @@ onig_reduce_nested_quantifier(Node* pnode, Node* cnode)
     p->target = cnode;
     p->lower  = 0;  p->upper = 1;  p->greedy = 0;
     c->lower  = 1;  c->upper = REPEAT_INFINITE;  c->greedy = 1;
-    return ;
-    break;
-  case RQ_PQ_Q:
-    p->target = cnode;
-    p->lower  = 0;  p->upper = 1;  p->greedy = 1;
-    c->lower  = 1;  c->upper = REPEAT_INFINITE;  c->greedy = 0;
     return ;
     break;
   case RQ_ASIS:
@@ -2840,6 +2838,10 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
 #endif /* USE_NAMED_GROUP */
 
 
+#ifdef PRINTF_ARGS
+PRINTF_ARGS(static void onig_syntax_warn(ScanEnv *env, const char *fmt, ...), 2, 3);
+#endif
+
 static void
 onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
 {
@@ -2848,7 +2850,7 @@ onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
     va_start(args, fmt);
     onig_vsnprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
 		env->pattern, env->pattern_end,
-		(const UChar *)fmt, args);
+		fmt, args);
     va_end(args);
 #ifdef RUBY
     if (env->sourcefile == NULL)
@@ -4348,7 +4350,7 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
   OnigEncoding enc = env->enc;
   UChar *prev, *start, *p = *src;
 
-  r = 0;
+  r = ONIGERR_INVALID_CHAR_PROPERTY_NAME;
   start = prev = p;
 
   while (!PEND) {
@@ -4362,7 +4364,6 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
       return r;
     }
     else if (c == '(' || c == ')' || c == '{' || c == '|') {
-      r = ONIGERR_INVALID_CHAR_PROPERTY_NAME;
       break;
     }
   }

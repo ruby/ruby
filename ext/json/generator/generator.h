@@ -49,8 +49,8 @@ static const UTF32 halfMask = 0x3FFUL;
 static unsigned char isLegalUTF8(const UTF8 *source, unsigned long length);
 static void unicode_escape(char *buf, UTF16 character);
 static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16 character);
-static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string);
-static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string);
+static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char escape_slash);
+static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char escape_slash);
 static char *fstrndup(const char *ptr, unsigned long len);
 
 /* ruby api and some helpers */
@@ -72,6 +72,7 @@ typedef struct JSON_Generator_StateStruct {
     long max_nesting;
     char allow_nan;
     char ascii_only;
+    char escape_slash;
     long depth;
     long buffer_initial_length;
 } JSON_Generator_State;
@@ -150,6 +151,8 @@ static VALUE cState_allow_nan_p(VALUE self);
 static VALUE cState_ascii_only_p(VALUE self);
 static VALUE cState_depth(VALUE self);
 static VALUE cState_depth_set(VALUE self, VALUE depth);
+static VALUE cState_escape_slash(VALUE self);
+static VALUE cState_escape_slash_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
 #ifndef ZALLOC
 #define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))

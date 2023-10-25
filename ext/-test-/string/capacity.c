@@ -4,10 +4,11 @@
 static VALUE
 bug_str_capacity(VALUE klass, VALUE str)
 {
-    return
-	STR_EMBED_P(str) ? INT2FIX(RSTRING_EMBED_LEN_MAX) : \
-	STR_SHARED_P(str) ? INT2FIX(0) : \
-	LONG2FIX(RSTRING(str)->as.heap.aux.capa);
+    if (!STR_EMBED_P(str) && STR_SHARED_P(str)) {
+        return INT2FIX(0);
+    }
+
+    return LONG2FIX(rb_str_capacity(str));
 }
 
 void

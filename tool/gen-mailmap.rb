@@ -3,7 +3,7 @@
 require "open-uri"
 require "yaml"
 
-EMAIL_YML_URL = "https://cdn.jsdelivr.net/gh/ruby/ruby-commit-hook/config/email.yml"
+EMAIL_YML_URL = "https://cdn.jsdelivr.net/gh/ruby/git.ruby-lang.org/config/email.yml"
 
 email_yml = URI(EMAIL_YML_URL).read.sub(/\A(?:#.*\n)+/, "").gsub(/^# +(.+)$/) { $1 + ": []" }
 
@@ -13,7 +13,7 @@ YAML.load(DATA.read).each do |name, mails|
   email[name] |= mails
 end
 
-open(File.join(__dir__, "../.mailmap"), "w") do |f|
+File.open(File.join(__dir__, "../.mailmap"), "w") do |f|
   email.each do |name, mails|
     canonical = "#{ name }@ruby-lang.org"
     mails.delete(canonical)

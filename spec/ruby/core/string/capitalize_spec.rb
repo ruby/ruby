@@ -10,13 +10,7 @@ describe "String#capitalize" do
     "hello".capitalize.should == "Hello"
     "HELLO".capitalize.should == "Hello"
     "123ABC".capitalize.should == "123abc"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints resulting string when self is tainted" do
-      "".taint.capitalize.tainted?.should == true
-      "hello".taint.capitalize.tainted?.should == true
-    end
+    "abcdef"[1...-1].capitalize.should == "Bcde"
   end
 
   describe "full Unicode case mapping" do
@@ -41,6 +35,10 @@ describe "String#capitalize" do
   describe "ASCII-only case mapping" do
     it "does not capitalize non-ASCII characters" do
       "ßet".capitalize(:ascii).should == "ßet"
+    end
+
+    it "handles non-ASCII substrings properly" do
+      "garçon"[1...-1].capitalize(:ascii).should == "Arço"
     end
   end
 
@@ -80,9 +78,13 @@ describe "String#capitalize" do
     -> { "abc".capitalize(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(String)
+    StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
+  end
+
+  it "returns a String in the same encoding as self" do
+    "h".encode("US-ASCII").capitalize.encoding.should == Encoding::US_ASCII
   end
 end
 
@@ -196,10 +198,10 @@ describe "String#capitalize!" do
     "H".capitalize!.should == nil
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     ["", "Hello", "hello"].each do |a|
       a.freeze
-      -> { a.capitalize! }.should raise_error(frozen_error_class)
+      -> { a.capitalize! }.should raise_error(FrozenError)
     end
   end
 end

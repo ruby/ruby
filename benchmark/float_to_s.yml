@@ -1,0 +1,7 @@
+prelude: |
+  floats = [*0.0.step(1.0, 0.0001)]
+
+benchmark:
+  to_s: floats.each {|f| f.to_s}
+
+loop_count: 1000

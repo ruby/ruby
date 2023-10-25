@@ -32,13 +32,13 @@ describe "Array#initialize" do
     end.should raise_error(ArgumentError)
   end
 
-  it "raises a #{frozen_error_class} on frozen arrays" do
+  it "raises a FrozenError on frozen arrays" do
     -> do
       ArraySpecs.frozen_array.send :initialize
-    end.should raise_error(frozen_error_class)
+    end.should raise_error(FrozenError)
     -> do
       ArraySpecs.frozen_array.send :initialize, ArraySpecs.frozen_array
-    end.should raise_error(frozen_error_class)
+    end.should raise_error(FrozenError)
   end
 
   it "calls #to_ary to convert the value to an array, even if it's private" do
@@ -53,7 +53,9 @@ describe "Array#initialize with no arguments" do
   end
 
   it "does not use the given block" do
-    ->{ [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
+    -> {
+      -> { [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
+    }.should complain(/#{__FILE__}:#{__LINE__-1}: warning: given block not used/, verbose: true)
   end
 end
 

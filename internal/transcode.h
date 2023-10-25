@@ -1,15 +1,14 @@
-#ifndef INTERNAL_TRANSCODE_H /* -*- C -*- */
+#ifndef INTERNAL_TRANSCODE_H                             /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_TRANSCODE_H
 /**
- * @file
- * @brief      Internal header for Encoding::Converter.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Encoding::Converter.
  */
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/encoding.h"      /* for rb_econv_t */

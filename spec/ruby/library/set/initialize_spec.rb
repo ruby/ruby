@@ -14,6 +14,31 @@ describe "Set#initialize" do
     s.should include(3)
   end
 
+  it "uses #each_entry on the provided Enumerable" do
+    enumerable = MockObject.new('mock-enumerable')
+    enumerable.should_receive(:each_entry).and_yield(1).and_yield(2).and_yield(3)
+    s = Set.new(enumerable)
+    s.size.should eql(3)
+    s.should include(1)
+    s.should include(2)
+    s.should include(3)
+  end
+
+  it "uses #each on the provided Enumerable if it does not respond to #each_entry" do
+    enumerable = MockObject.new('mock-enumerable')
+    enumerable.should_receive(:each).and_yield(1).and_yield(2).and_yield(3)
+    s = Set.new(enumerable)
+    s.size.should eql(3)
+    s.should include(1)
+    s.should include(2)
+    s.should include(3)
+  end
+
+  it "raises if the provided Enumerable does not respond to #each_entry or #each" do
+    enumerable = MockObject.new('mock-enumerable')
+    -> { Set.new(enumerable) }.should raise_error(ArgumentError, "value must be enumerable")
+  end
+
   it "should initialize with empty array and set" do
     s = Set.new([])
     s.size.should eql(0)

@@ -26,18 +26,18 @@ describe "BigDecimal#-" do
   end
 
   it "returns NaN if NaN is involved" do
-    (@one - @nan).nan?.should == true
-    (@nan - @one).nan?.should == true
-    (@nan - @nan).nan?.should == true
-    (@nan - @infinity).nan?.should == true
-    (@nan - @infinity_minus).nan?.should == true
-    (@infinity - @nan).nan?.should == true
-    (@infinity_minus - @nan).nan?.should == true
+    (@one - @nan).should.nan?
+    (@nan - @one).should.nan?
+    (@nan - @nan).should.nan?
+    (@nan - @infinity).should.nan?
+    (@nan - @infinity_minus).should.nan?
+    (@infinity - @nan).should.nan?
+    (@infinity_minus - @nan).should.nan?
   end
 
   it "returns NaN both operands are infinite with the same sign" do
-    (@infinity - @infinity).nan?.should == true
-    (@infinity_minus - @infinity_minus).nan?.should == true
+    (@infinity - @infinity).should.nan?
+    (@infinity_minus - @infinity_minus).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do

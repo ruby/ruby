@@ -1,6 +1,9 @@
-require 'mspec/utils/format'
-require 'mspec/helpers/io'
-require 'mspec/helpers/scratch'
+RSpec.configure do |config|
+  config.disable_monkey_patching!
+  config.raise_errors_for_deprecations!
+end
+
+require 'mspec'
 
 # Remove this when MRI has intelligent warnings
 $VERBOSE = nil unless $VERBOSE
@@ -37,7 +40,7 @@ class MSpecExampleError < Exception
 end
 
 def hide_deprecation_warnings
-  MSpec.stub(:deprecate)
+  allow(MSpec).to receive(:deprecate)
 end
 
 def run_mspec(command, args)
@@ -53,3 +56,13 @@ def run_mspec(command, args)
   out = out.gsub(cwd, "CWD")
   return out, ret
 end
+
+def ensure_mspec_method(method)
+  file, _line = method.source_location
+  expect(file).to start_with(File.expand_path('../../lib/mspec', __FILE__ ))
+end
+
+PublicMSpecMatchers = Class.new {
+  include MSpecMatchers
+  public :raise_error
+}.new

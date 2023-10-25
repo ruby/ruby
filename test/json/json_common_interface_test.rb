@@ -1,5 +1,5 @@
 #frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
 
@@ -122,5 +122,48 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   def test_JSON
     assert_equal @json, JSON(@hash)
     assert_equal @hash, JSON(@json)
+  end
+
+  def test_load_file
+    test_load_shared(:load_file)
+  end
+
+  def test_load_file!
+    test_load_shared(:load_file!)
+  end
+
+  def test_load_file_with_option
+    test_load_file_with_option_shared(:load_file)
+  end
+
+  def test_load_file_with_option!
+    test_load_file_with_option_shared(:load_file!)
+  end
+
+  private
+
+  def test_load_shared(method_name)
+    temp_file_containing(@json) do |filespec|
+      assert_equal JSON.public_send(method_name, filespec), @hash
+    end
+  end
+
+  def test_load_file_with_option_shared(method_name)
+    temp_file_containing(@json) do |filespec|
+      parsed_object = JSON.public_send(method_name, filespec, symbolize_names: true)
+      key_classes = parsed_object.keys.map(&:class)
+      assert_include(key_classes, Symbol)
+      assert_not_include(key_classes, String)
+    end
+  end
+
+  def temp_file_containing(text, file_prefix = '')
+    raise "This method must be called with a code block." unless block_given?
+
+    Tempfile.create(file_prefix) do |file|
+      file << text
+      file.close
+      yield file.path
+    end
   end
 end

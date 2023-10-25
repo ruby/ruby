@@ -1,0 +1,527 @@
+== Formats for Dates and Times
+
+Several Ruby time-related classes have instance method +strftime+,
+which returns a formatted string representing all or part of a date or time:
+
+- Date#strftime.
+- DateTime#strftime.
+- Time#strftime.
+
+Each of these methods takes optional argument +format+,
+which has zero or more embedded _format_ _specifications_ (see below).
+
+Each of these methods returns the string resulting from replacing each
+format specification embedded in +format+ with a string form
+of one or more parts of the date or time.
+
+A simple example:
+
+  Time.now.strftime('%H:%M:%S') # => "14:02:07"
+
+A format specification has the form:
+
+  %[flags][width]conversion
+
+It consists of:
+
+- A leading percent character.
+- Zero or more _flags_ (each is a character).
+- An optional _width_ _specifier_ (an integer).
+- A _conversion_ _specifier_ (a character).
+
+Except for the leading percent character,
+the only required part is the conversion specifier, so we begin with that.
+
+=== Conversion Specifiers
+
+==== \Date (Year, Month, Day)
+
+- <tt>%Y</tt> - Year including century, zero-padded:
+
+    Time.now.strftime('%Y')        # => "2022"
+    Time.new(-1000).strftime('%Y') # => "-1000" # Before common era.
+    Time.new(10000).strftime('%Y') # => "10000" # Far future.
+    Time.new(10).strftime('%Y')    # => "0010"  # Zero-padded by default.
+
+- <tt>%y</tt> - Year without century, in range (0.99), zero-padded:
+
+    Time.now.strftime('%y')    # => "22"
+    Time.new(1).strftime('%y') # => "01" # Zero-padded by default.
+
+- <tt>%C</tt> - Century, zero-padded:
+
+    Time.now.strftime('%C')        # => "20"
+    Time.new(-1000).strftime('%C') # => "-10" # Before common era.
+    Time.new(10000).strftime('%C') # => "100" # Far future.
+    Time.new(100).strftime('%C')   # => "01"  # Zero-padded by default.
+
+- <tt>%m</tt> - Month of the year, in range (1..12), zero-padded:
+
+    Time.new(2022, 1).strftime('%m')  # => "01" # Zero-padded by default.
+    Time.new(2022, 12).strftime('%m') # => "12"
+
+- <tt>%B</tt> - Full month name, capitalized:
+
+    Time.new(2022, 1).strftime('%B')  # => "January"
+    Time.new(2022, 12).strftime('%B') # => "December"
+
+- <tt>%b</tt> - Abbreviated month name, capitalized:
+
+    Time.new(2022, 1).strftime('%b')  # => "Jan"
+    Time.new(2022, 12).strftime('%h') # => "Dec"
+
+- <tt>%h</tt> - Same as <tt>%b</tt>.
+
+- <tt>%d</tt> - Day of the month, in range (1..31), zero-padded:
+
+    Time.new(2002, 1, 1).strftime('%d')  # => "01"
+    Time.new(2002, 1, 31).strftime('%d') # => "31"
+
+- <tt>%e</tt> - Day of the month, in range (1..31), blank-padded:
+
+    Time.new(2002, 1, 1).strftime('%e')  # => " 1"
+    Time.new(2002, 1, 31).strftime('%e') # => "31"
+
+- <tt>%j</tt> - Day of the year, in range (1..366), zero-padded:
+
+    Time.new(2002, 1, 1).strftime('%j')   # => "001"
+    Time.new(2002, 12, 31).strftime('%j') # => "365"
+
+==== \Time (Hour, Minute, Second, Subsecond)
+
+- <tt>%H</tt> - Hour of the day, in range (0..23), zero-padded:
+
+    Time.new(2022, 1, 1, 1).strftime('%H')  # => "01"
+    Time.new(2022, 1, 1, 13).strftime('%H') # => "13"
+
+- <tt>%k</tt> - Hour of the day, in range (0..23), blank-padded:
+
+    Time.new(2022, 1, 1, 1).strftime('%k')  # => " 1"
+    Time.new(2022, 1, 1, 13).strftime('%k') # => "13"
+
+- <tt>%I</tt> - Hour of the day, in range (1..12), zero-padded:
+
+    Time.new(2022, 1, 1, 1).strftime('%I')  # => "01"
+    Time.new(2022, 1, 1, 13).strftime('%I') # => "01"
+
+- <tt>%l</tt> - Hour of the day, in range (1..12), blank-padded:
+
+    Time.new(2022, 1, 1, 1).strftime('%l')  # => " 1"
+    Time.new(2022, 1, 1, 13).strftime('%l') # => " 1"
+
+- <tt>%P</tt> - Meridian indicator, lowercase:
+
+    Time.new(2022, 1, 1, 1).strftime('%P')  # => "am"
+    Time.new(2022, 1, 1, 13).strftime('%P') # => "pm"
+
+- <tt>%p</tt> - Meridian indicator, uppercase:
+
+    Time.new(2022, 1, 1, 1).strftime('%p')  # => "AM"
+    Time.new(2022, 1, 1, 13).strftime('%p') # => "PM"
+
+- <tt>%M</tt> - Minute of the hour, in range (0..59), zero-padded:
+
+    Time.new(2022, 1, 1, 1, 0, 0).strftime('%M') # => "00"
+
+- <tt>%S</tt> - Second of the minute in range (0..59), zero-padded:
+
+    Time.new(2022, 1, 1, 1, 0, 0, 0).strftime('%S') # => "00"
+
+- <tt>%L</tt> - Millisecond of the second, in range (0..999), zero-padded:
+
+    Time.new(2022, 1, 1, 1, 0, 0, 0).strftime('%L') # => "000"
+
+- <tt>%N</tt> - Fractional seconds, default width is 9 digits (nanoseconds):
+
+    t = Time.now       # => 2022-06-29 07:10:20.3230914 -0500
+    t.strftime('%N')   # => "323091400"                  # Default.
+
+  Use {width specifiers}[rdoc-ref:strftime_formatting.rdoc@Width+Specifiers]
+  to adjust units:
+
+      t.strftime('%3N')  # => "323"                      # Milliseconds.
+      t.strftime('%6N')  # => "323091"                   # Microseconds.
+      t.strftime('%9N')  # => "323091400"                # Nanoseconds.
+      t.strftime('%12N') # => "323091400000"             # Picoseconds.
+      t.strftime('%15N') # => "323091400000000"          # Femptoseconds.
+      t.strftime('%18N') # => "323091400000000000"       # Attoseconds.
+      t.strftime('%21N') # => "323091400000000000000"    # Zeptoseconds.
+      t.strftime('%24N') # => "323091400000000000000000" # Yoctoseconds.
+
+- <tt>%s</tt> - Number of seconds since the epoch:
+
+    Time.now.strftime('%s') # => "1656505136"
+
+==== Timezone
+
+- <tt>%z</tt> - Timezone as hour and minute offset from UTC:
+
+    Time.now.strftime('%z') # => "-0500"
+
+- <tt>%Z</tt> - Timezone name (platform-dependent):
+
+    Time.now.strftime('%Z') # => "Central Daylight Time"
+
+==== Weekday
+
+- <tt>%A</tt> - Full weekday name:
+
+    Time.now.strftime('%A') # => "Wednesday"
+
+- <tt>%a</tt> - Abbreviated weekday name:
+
+    Time.now.strftime('%a') # => "Wed"
+
+- <tt>%u</tt> - Day of the week, in range (1..7), Monday is 1:
+
+    t = Time.new(2022, 6, 26) # => 2022-06-26 00:00:00 -0500
+    t.strftime('%a')          # => "Sun"
+    t.strftime('%u')          # => "7"
+
+- <tt>%w</tt> - Day of the week, in range (0..6), Sunday is 0:
+
+    t = Time.new(2022, 6, 26) # => 2022-06-26 00:00:00 -0500
+    t.strftime('%a')          # => "Sun"
+    t.strftime('%w')          # => "0"
+
+==== Week Number
+
+- <tt>%U</tt> - Week number of the year, in range (0..53), zero-padded,
+  where each week begins on a Sunday:
+
+    t = Time.new(2022, 6, 26) # => 2022-06-26 00:00:00 -0500
+    t.strftime('%a')          # => "Sun"
+    t.strftime('%U')          # => "26"
+
+- <tt>%W</tt> - Week number of the year, in range (0..53), zero-padded,
+  where each week begins on a Monday:
+
+    t = Time.new(2022, 6, 26) # => 2022-06-26 00:00:00 -0500
+    t.strftime('%a')          # => "Sun"
+    t.strftime('%W')          # => "25"
+
+==== Week Dates
+
+See {ISO 8601 week dates}[https://en.wikipedia.org/wiki/ISO_8601#Week_dates].
+
+    t0 = Time.new(2023, 1, 1) # => 2023-01-01 00:00:00 -0600
+    t1 = Time.new(2024, 1, 1) # => 2024-01-01 00:00:00 -0600
+
+- <tt>%G</tt> - Week-based year:
+
+    t0.strftime('%G') # => "2022"
+    t1.strftime('%G') # => "2024"
+
+- <tt>%g</tt> - Week-based year without century, in range (0..99), zero-padded:
+
+    t0.strftime('%g') # => "22"
+    t1.strftime('%g') # => "24"
+
+- <tt>%V</tt> - Week number of the week-based year, in range (1..53),
+  zero-padded:
+
+    t0.strftime('%V') # => "52"
+    t1.strftime('%V') # => "01"
+
+==== Literals
+
+- <tt>%n</tt> - Newline character "\n":
+
+    Time.now.strftime('%n') # => "\n"
+
+- <tt>%t</tt> - Tab character "\t":
+
+    Time.now.strftime('%t') # => "\t"
+
+- <tt>%%</tt> - Percent character '%':
+
+    Time.now.strftime('%%') # => "%"
+
+==== Shorthand Conversion Specifiers
+
+Each shorthand specifier here is shown with its corresponding
+longhand specifier.
+
+- <tt>%c</tt> - \Date and time:
+
+    Time.now.strftime('%c')             # => "Wed Jun 29 08:01:41 2022"
+    Time.now.strftime('%a %b %e %T %Y') # => "Wed Jun 29 08:02:07 2022"
+
+- <tt>%D</tt> - \Date:
+
+    Time.now.strftime('%D')       # => "06/29/22"
+    Time.now.strftime('%m/%d/%y') # => "06/29/22"
+
+- <tt>%F</tt> - ISO 8601 date:
+
+    Time.now.strftime('%F')       # => "2022-06-29"
+    Time.now.strftime('%Y-%m-%d') # => "2022-06-29"
+
+- <tt>%v</tt> - VMS date:
+
+    Time.now.strftime('%v')         # => "29-JUN-2022"
+    Time.now.strftime('%e-%^b-%4Y') # => "29-JUN-2022"
+
+- <tt>%x</tt> - Same as <tt>%D</tt>.
+
+- <tt>%X</tt> - Same as <tt>%T</tt>.
+
+- <tt>%r</tt> - 12-hour time:
+
+    Time.new(2022, 1, 1, 1).strftime('%r')           # => "01:00:00 AM"
+    Time.new(2022, 1, 1, 1).strftime('%I:%M:%S %p')  # => "01:00:00 AM"
+    Time.new(2022, 1, 1, 13).strftime('%r')          # => "01:00:00 PM"
+    Time.new(2022, 1, 1, 13).strftime('%I:%M:%S %p') # => "01:00:00 PM"
+
+- <tt>%R</tt> - 24-hour time:
+
+    Time.new(2022, 1, 1, 1).strftime('%R')     # => "01:00"
+    Time.new(2022, 1, 1, 1).strftime('%H:%M')  # => "01:00"
+    Time.new(2022, 1, 1, 13).strftime('%R')    # => "13:00"
+    Time.new(2022, 1, 1, 13).strftime('%H:%M') # => "13:00"
+
+- <tt>%T</tt> - 24-hour time:
+
+    Time.new(2022, 1, 1, 1).strftime('%T')        # => "01:00:00"
+    Time.new(2022, 1, 1, 1).strftime('%H:%M:%S')  # => "01:00:00"
+    Time.new(2022, 1, 1, 13).strftime('%T')       # => "13:00:00"
+    Time.new(2022, 1, 1, 13).strftime('%H:%M:%S') # => "13:00:00"
+
+- <tt>%+</tt> (not supported in Time#strftime) - \Date and time:
+
+    DateTime.now.strftime('%+')
+    # => "Wed Jun 29 08:31:53 -05:00 2022"
+    DateTime.now.strftime('%a %b %e %H:%M:%S %Z %Y')
+    # => "Wed Jun 29 08:32:18 -05:00 2022"
+
+=== Flags
+
+Flags may affect certain formatting specifications.
+
+Multiple flags may be given with a single conversion specified;
+order does not matter.
+
+==== Padding Flags
+
+- <tt>0</tt> - Pad with zeroes:
+
+    Time.new(10).strftime('%0Y') # => "0010"
+
+- <tt>_</tt> - Pad with blanks:
+
+    Time.new(10).strftime('%_Y') # => "  10"
+
+- <tt>-</tt> - Don't pad:
+
+    Time.new(10).strftime('%-Y') # => "10"
+
+==== Casing Flags
+
+- <tt>^</tt> - Upcase result:
+
+    Time.new(2022, 1).strftime('%B')  # => "January" # No casing flag.
+    Time.new(2022, 1).strftime('%^B') # => "JANUARY"
+
+- <tt>#</tt> - Swapcase result:
+
+    Time.now.strftime('%p')  # => "AM"
+    Time.now.strftime('%^p') # => "AM"
+    Time.now.strftime('%#p') # => "am"
+
+==== Timezone Flags
+
+- <tt>:</tt> - Put timezone as colon-separated hours and minutes:
+
+    Time.now.strftime('%:z')  # => "-05:00"
+
+- <tt>::</tt> - Put timezone as colon-separated hours, minutes, and seconds:
+
+    Time.now.strftime('%::z') # => "-05:00:00"
+
+=== Width Specifiers
+
+The integer width specifier gives a minimum width for the returned string:
+
+  Time.new(2002).strftime('%Y')       # => "2002"     # No width specifier.
+  Time.new(2002).strftime('%10Y')     # => "0000002002"
+  Time.new(2002, 12).strftime('%B')   # => "December" # No width specifier.
+  Time.new(2002, 12).strftime('%10B') # => "  December"
+  Time.new(2002, 12).strftime('%3B')  # => "December" # Ignored if too small.
+
+== Specialized Format Strings
+
+Here are a few specialized format strings,
+each based on an external standard.
+
+=== HTTP Format
+
+The HTTP date format is based on
+{RFC 2616}[https://datatracker.ietf.org/doc/html/rfc2616],
+and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return HTTP-formatted string.
+  httpdate = d.httpdate    # => "Sat, 03 Feb 2001 00:00:00 GMT"
+  # Return new date parsed from HTTP-formatted string.
+  Date.httpdate(httpdate)  # => #<Date: 2001-02-03>
+  # Return hash parsed from HTTP-formatted string.
+  Date._httpdate(httpdate)
+  # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
+
+=== RFC 3339 Format
+
+The RFC 3339 date format is based on
+{RFC 3339}[https://datatracker.ietf.org/doc/html/rfc3339]:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return 3339-formatted string.
+  rfc3339 = d.rfc3339      # => "2001-02-03T00:00:00+00:00"
+  # Return new date parsed from 3339-formatted string.
+  Date.rfc3339(rfc3339)    # => #<Date: 2001-02-03>
+  # Return hash parsed from 3339-formatted string.
+  Date._rfc3339(rfc3339)
+  # => {:year=>2001, :mon=>2, :mday=>3, :hour=>0, :min=>0, :sec=>0, :zone=>"+00:00", :offset=>0}
+
+=== RFC 2822 Format
+
+The RFC 2822 date format is based on
+{RFC 2822}[https://datatracker.ietf.org/doc/html/rfc2822],
+and treats dates in the format <tt>'%a, %-d %b %Y %T %z'</tt>]:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return 2822-formatted string.
+  rfc2822 = d.rfc2822      # => "Sat, 3 Feb 2001 00:00:00 +0000"
+  # Return new date parsed from 2822-formatted string.
+  Date.rfc2822(rfc2822)    # => #<Date: 2001-02-03>
+  # Return hash parsed from 2822-formatted string.
+  Date._rfc2822(rfc2822)
+  # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"+0000", :offset=>0}
+
+=== JIS X 0301 Format
+
+The JIS X 0301 format includes the
+{Japanese era name}[https://en.wikipedia.org/wiki/Japanese_era_name],
+and treats dates in the format <tt>'%Y-%m-%d'</tt>
+with the first letter of the romanized era name prefixed:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return 0301-formatted string.
+  jisx0301 = d.jisx0301    # => "H13.02.03"
+  # Return new date parsed from 0301-formatted string.
+  Date.jisx0301(jisx0301)  # => #<Date: 2001-02-03>
+  # Return hash parsed from 0301-formatted string.
+  Date._jisx0301(jisx0301) # => {:year=>2001, :mon=>2, :mday=>3}
+
+=== ISO 8601 Format Specifications
+
+This section shows format specifications that are compatible with
+{ISO 8601}[https://en.wikipedia.org/wiki/ISO_8601].
+Details for various formats may be seen at the links.
+
+Examples in this section assume:
+
+  t = Time.now # => 2022-06-29 16:49:25.465246 -0500
+
+==== Dates
+
+See {ISO 8601 dates}[https://en.wikipedia.org/wiki/ISO_8601#Dates].
+
+- {Years}[https://en.wikipedia.org/wiki/ISO_8601#Years]:
+
+  - Basic year (+YYYY+):
+
+      t.strftime('%Y') # => "2022"
+
+  - Expanded year (<tt>±YYYYY</tt>):
+
+      t.strftime('+%5Y') # => "+02022"
+      t.strftime('-%5Y') # => "-02022"
+
+- {Calendar dates}[https://en.wikipedia.org/wiki/ISO_8601#Calendar_dates]:
+
+  - Basic date (+YYYYMMDD+):
+
+      t.strftime('%Y%m%d') # => "20220629"
+
+  - Extended date (<tt>YYYY-MM-DD</tt>):
+
+      t.strftime('%Y-%m-%d') # => "2022-06-29"
+
+  - Reduced extended date (<tt>YYYY-MM</tt>):
+
+      t.strftime('%Y-%m') # => "2022-06"
+
+- {Week dates}[https://en.wikipedia.org/wiki/ISO_8601#Week_dates]:
+
+  - Basic date (+YYYYWww+ or +YYYYWwwD+):
+
+      t.strftime('%Y%Ww')   # => "202226w"
+      t.strftime('%Y%Ww%u') # => "202226w3"
+
+  - Extended date (<tt>YYYY-Www</tt> or <tt>YYYY-Www-D<tt>):
+
+      t.strftime('%Y-%Ww')    # => "2022-26w"
+      t.strftime('%Y-%Ww-%u') # => "2022-26w-3"
+
+- {Ordinal dates}[https://en.wikipedia.org/wiki/ISO_8601#Ordinal_dates]:
+
+  - Basic date (+YYYYDDD+):
+
+      t.strftime('%Y%j') # => "2022180"
+
+  - Extended date (<tt>YYYY-DDD</tt>):
+
+      t.strftime('%Y-%j') # => "2022-180"
+
+==== Times
+
+See {ISO 8601 times}[https://en.wikipedia.org/wiki/ISO_8601#Times].
+
+- Times:
+
+  - Basic time (+Thhmmss.sss+, +Thhmmss+, +Thhmm+, or +Thh+):
+
+      t.strftime('T%H%M%S.%L') # => "T164925.465"
+      t.strftime('T%H%M%S')    # => "T164925"
+      t.strftime('T%H%M')      # => "T1649"
+      t.strftime('T%H')        # => "T16"
+
+  - Extended time (+Thh:mm:ss.sss+, +Thh:mm:ss+, or +Thh:mm+):
+
+      t.strftime('T%H:%M:%S.%L') # => "T16:49:25.465"
+      t.strftime('T%H:%M:%S')    # => "T16:49:25"
+      t.strftime('T%H:%M')       # => "T16:49"
+
+- {Time zone designators}[https://en.wikipedia.org/wiki/ISO_8601#Time_zone_designators]:
+
+  - Timezone (+time+ represents a valid time,
+    +hh+ represents a valid 2-digit hour,
+    and +mm+ represents a valid 2-digit minute):
+
+    - Basic timezone (<tt>time±hhmm</tt>, <tt>time±hh</tt>, or +timeZ+):
+
+        t.strftime('T%H%M%S%z')              # => "T164925-0500"
+        t.strftime('T%H%M%S%z').slice(0..-3) # => "T164925-05"
+        t.strftime('T%H%M%SZ')               # => "T164925Z"
+
+    - Extended timezone (<tt>time±hh:mm</tt>):
+
+        t.strftime('T%H:%M:%S%z') # => "T16:49:25-0500"
+
+  - See also:
+
+    - {Local time (unqualified)}[https://en.wikipedia.org/wiki/ISO_8601#Local_time_(unqualified)].
+    - {Coordinated Universal Time (UTC)}[https://en.wikipedia.org/wiki/ISO_8601#Coordinated_Universal_Time_(UTC)].
+    - {Time offsets from UTC}[https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC].
+
+==== Combined \Date and \Time
+
+See {ISO 8601 Combined date and time representations}[https://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations].
+
+An ISO 8601 combined date and time representation may be any
+ISO 8601 date and any ISO 8601 time,
+separated by the letter +T+.
+
+For the relevant +strftime+ formats, see
+{Dates}[rdoc-ref:strftime_formatting.rdoc@Dates]
+and {Times}[rdoc-ref:strftime_formatting.rdoc@Times] above.

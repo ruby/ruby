@@ -67,7 +67,24 @@ describe "Date#parse" do
 
   it "raises a TypeError trying to parse non-String-like object" do
     -> { Date.parse(1) }.should raise_error(TypeError)
-    -> { Date.parse(:invalid) }.should raise_error(TypeError)
+    -> { Date.parse([]) }.should raise_error(TypeError)
+  end
+
+  it "coerces using to_str" do
+    c = Class.new do
+      attr_accessor :string
+      def to_str
+        @string
+      end
+    end
+    o = c.new
+    o.string = "19101101"
+
+    d = Date.parse(o)
+    d.should == Date.civil(1910, 11, 1)
+
+    # parse should not modify string value
+    o.to_str.should == "19101101"
   end
 end
 
@@ -76,7 +93,7 @@ describe "Date#parse with '.' separator" do
     @sep = '.'
   end
 
-  it_should_behave_like "date_parse"
+  it_should_behave_like :date_parse
 end
 
 describe "Date#parse with '/' separator" do
@@ -84,7 +101,7 @@ describe "Date#parse with '/' separator" do
     @sep = '/'
   end
 
-  it_should_behave_like "date_parse"
+  it_should_behave_like :date_parse
 end
 
 describe "Date#parse with ' ' separator" do
@@ -92,7 +109,7 @@ describe "Date#parse with ' ' separator" do
     @sep = ' '
   end
 
-  it_should_behave_like "date_parse"
+  it_should_behave_like :date_parse
 end
 
 describe "Date#parse with '/' separator US-style" do
@@ -100,7 +117,7 @@ describe "Date#parse with '/' separator US-style" do
     @sep = '/'
   end
 
-  it_should_behave_like "date_parse_us"
+  it_should_behave_like :date_parse_us
 end
 
 describe "Date#parse with '-' separator EU-style" do
@@ -108,7 +125,7 @@ describe "Date#parse with '-' separator EU-style" do
     @sep = '-'
   end
 
-  it_should_behave_like "date_parse_eu"
+  it_should_behave_like :date_parse_eu
 end
 
 describe "Date#parse(.)" do

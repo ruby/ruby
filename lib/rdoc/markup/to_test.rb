@@ -67,4 +67,3 @@ class RDoc::Markup::ToTest < RDoc::Markup::Formatter
   # :startdoc:
 
 end
-

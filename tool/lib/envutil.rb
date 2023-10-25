@@ -15,23 +15,22 @@ end
 module EnvUtil
   def rubybin
     if ruby = ENV["RUBY"]
-      return ruby
-    end
-    ruby = "ruby"
-    exeext = RbConfig::CONFIG["EXEEXT"]
-    rubyexe = (ruby + exeext if exeext and !exeext.empty?)
-    3.times do
-      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
-        return File.expand_path(ruby)
-      end
-      if rubyexe and File.exist? rubyexe and File.executable? rubyexe
-        return File.expand_path(rubyexe)
-      end
-      ruby = File.join("..", ruby)
-    end
-    if defined?(RbConfig.ruby)
+      ruby
+    elsif defined?(RbConfig.ruby)
       RbConfig.ruby
     else
+      ruby = "ruby"
+      exeext = RbConfig::CONFIG["EXEEXT"]
+      rubyexe = (ruby + exeext if exeext and !exeext.empty?)
+      3.times do
+        if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+          return File.expand_path(ruby)
+        end
+        if rubyexe and File.exist? rubyexe and File.executable? rubyexe
+          return File.expand_path(rubyexe)
+        end
+        ruby = File.join("..", ruby)
+      end
       "ruby"
     end
   end
@@ -47,12 +46,13 @@ module EnvUtil
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
-                :original_verbose
+                :original_verbose, :original_warning
 
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
+      @original_warning = defined?(Warning.[]) ? %i[deprecated experimental].to_h {|i| [i, Warning[i]]} : nil
     end
   end
 
@@ -86,7 +86,20 @@ module EnvUtil
     when nil, false
       pgroup = pid
     end
+
+    lldb = true if /darwin/ =~ RUBY_PLATFORM
+
     while signal = signals.shift
+
+      if lldb and [:ABRT, :KILL].include?(signal)
+        lldb = false
+        # sudo -n: --non-interactive
+        # lldb -p: attach
+        #      -o: run command
+        system(*%W[sudo -n lldb -p #{pid} --batch -o bt\ all -o call\ rb_vmdebug_stack_dump_all_threads() -o quit])
+        true
+      end
+
       begin
         Process.kill signal, pgroup
       rescue Errno::EINVAL
@@ -100,6 +113,8 @@ module EnvUtil
         begin
           Timeout.timeout(reprieve) {Process.wait(pid)}
         rescue Timeout::Error
+        else
+          break
         end
       end
     end
@@ -109,7 +124,7 @@ module EnvUtil
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
-                  stdout_filter: nil, stderr_filter: nil,
+                  stdout_filter: nil, stderr_filter: nil, ios: nil,
                   signal: :TERM,
                   rubybin: EnvUtil.rubybin, precommand: nil,
                   **opt)
@@ -125,6 +140,8 @@ module EnvUtil
       out_p.set_encoding(encoding) if out_p
       err_p.set_encoding(encoding) if err_p
     end
+    ios.each {|i, o = i|opt[i] = o} if ios
+
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -134,11 +151,19 @@ module EnvUtil
     if RUBYLIB and lib = child_env["RUBYLIB"]
       child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
     end
+
+    # remain env
+    %w(ASAN_OPTIONS RUBY_ON_BUG).each{|name|
+      child_env[name] = ENV[name] if !child_env.key?(name) and ENV.key?(name)
+    }
+
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, *precommand, rubybin, *args, **opt)
+    pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
-    out_c.close if capture_stdout
-    err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
+    out_c&.close
+    out_c = nil
+    err_c&.close
+    err_c = nil
     if block_given?
       return yield in_p, out_p, err_p, pid
     else
@@ -180,11 +205,6 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
-  alias rubyexec invoke_ruby
-  class << self
-    alias rubyexec invoke_ruby
-  end
-
   def verbose_warning
     class << (stderr = "".dup)
       alias write concat
@@ -197,6 +217,7 @@ module EnvUtil
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
+    EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
   end
   module_function :verbose_warning
 
@@ -242,7 +263,11 @@ module EnvUtil
 
   def labeled_module(name, &block)
     Module.new do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      singleton_class.class_eval {
+        define_method(:to_s) {name}
+        alias inspect to_s
+        alias name to_s
+      }
       class_eval(&block) if block
     end
   end
@@ -250,7 +275,11 @@ module EnvUtil
 
   def labeled_class(name, superclass = Object, &block)
     Class.new(superclass) do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      singleton_class.class_eval {
+        define_method(:to_s) {name}
+        alias inspect to_s
+        alias name to_s
+      }
       class_eval(&block) if block
     end
   end
@@ -267,16 +296,24 @@ module EnvUtil
       cmd = @ruby_install_name if "ruby-runner#{RbConfig::CONFIG["EXEEXT"]}" == cmd
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
-      pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
+      pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.{crash,ips}"
       first = true
       30.times do
         first ? (first = false) : sleep(0.1)
         Dir.glob(pat) do |name|
           log = File.read(name) rescue next
-          if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
-            File.unlink(name)
-            File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
-            return log
+          case name
+          when /\.crash\z/
+            if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
+              File.unlink(name)
+              File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
+              return log
+            end
+          when /\.ips\z/
+            if /^ *"pid" *: *#{pid},/ =~ log
+              File.unlink(name)
+              return log
+            end
           end
         end
       end

@@ -42,12 +42,12 @@ class OutputMatcher
     expected_out = "\n"
     actual_out = "\n"
     unless @out.nil?
-      expected_out += "  $stdout: #{@out.inspect}\n"
-      actual_out += "  $stdout: #{@stdout.inspect}\n"
+      expected_out += "  $stdout: #{MSpec.format(@out)}\n"
+      actual_out += "  $stdout: #{MSpec.format(@stdout.to_s)}\n"
     end
     unless @err.nil?
-      expected_out += "  $stderr: #{@err.inspect}\n"
-      actual_out += "  $stderr: #{@stderr.inspect}\n"
+      expected_out += "  $stderr: #{MSpec.format(@err)}\n"
+      actual_out += "  $stderr: #{MSpec.format(@stderr.to_s)}\n"
     end
     ["Expected:#{expected_out}", "     got:#{actual_out}"]
   end

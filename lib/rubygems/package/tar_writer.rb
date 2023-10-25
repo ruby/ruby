@@ -1,24 +1,22 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: true
-#--
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#++
 
-require 'digest'
+# rubocop:enable Style/AsciiComments
 
 ##
 # Allows writing of tar files
 
 class Gem::Package::TarWriter
-
   class FileOverflow < StandardError; end
 
   ##
   # IO wrapper that allows writing a limited amount of data
 
   class BoundedStream
-
     ##
     # Maximum number of bytes that can be written
 
@@ -50,14 +48,12 @@ class Gem::Package::TarWriter
       @written += data.bytesize
       data.bytesize
     end
-
   end
 
   ##
   # IO wrapper that provides only #write
 
   class RestrictedStream
-
     ##
     # Creates a new RestrictedStream wrapping +io+
 
@@ -71,7 +67,6 @@ class Gem::Package::TarWriter
     def write(data)
       @io.write data
     end
-
   end
 
   ##
@@ -146,8 +141,7 @@ class Gem::Package::TarWriter
         if digest.respond_to? :name
           digest.name
         else
-          /::([^:]+)$/ =~ digest_algorithm.name
-          $1
+          digest_algorithm.class.name[/::([^:]+)\z/, 1]
         end
 
       [digest_name, digest]
@@ -175,7 +169,7 @@ class Gem::Package::TarWriter
   def add_file_signed(name, mode, signer)
     digest_algorithms = [
       signer.digest_algorithm,
-      Digest::SHA512,
+      Gem::Security.create_digest("SHA512"),
     ].compact.uniq
 
     digests = add_file_digest name, mode, digest_algorithms do |io|
@@ -198,7 +192,7 @@ class Gem::Package::TarWriter
     if signer.key
       signature = signer.sign signature_digest.digest
 
-      add_file_simple "#{name}.sig", 0444, signature.length do |io|
+      add_file_simple "#{name}.sig", 0o444, signature.length do |io|
         io.write signature
       end
     end
@@ -313,17 +307,17 @@ class Gem::Package::TarWriter
       raise Gem::Package::TooLongFileName.new("File \"#{name}\" has a too long path (should be 256 or less)")
     end
 
-    prefix = ''
+    prefix = ""
     if name.bytesize > 100
-      parts = name.split('/', -1) # parts are never empty here
+      parts = name.split("/", -1) # parts are never empty here
       name = parts.pop            # initially empty for names with a trailing slash ("foo/.../bar/")
-      prefix = parts.join('/')    # if empty, then it's impossible to split (parts is empty too)
+      prefix = parts.join("/")    # if empty, then it's impossible to split (parts is empty too)
       while !parts.empty? && (prefix.bytesize > 155 || name.empty?)
-        name = parts.pop + '/' + name
-        prefix = parts.join('/')
+        name = parts.pop + "/" + name
+        prefix = parts.join("/")
       end
 
-      if name.bytesize > 100 or prefix.empty?
+      if name.bytesize > 100 || prefix.empty?
         raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long name (should be 100 or less)")
       end
 
@@ -332,7 +326,6 @@ class Gem::Package::TarWriter
       end
     end
 
-    return name, prefix
+    [name, prefix]
   end
-
 end

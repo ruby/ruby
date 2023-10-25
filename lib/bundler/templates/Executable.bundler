@@ -41,13 +41,13 @@ m = Module.new do
     gemfile = ENV["BUNDLE_GEMFILE"]
     return gemfile if gemfile && !gemfile.empty?
 
-    File.expand_path("../<%= relative_gemfile_path %>", __FILE__)
+    File.expand_path("<%= relative_gemfile_path %>", __dir__)
   end
 
   def lockfile
     lockfile =
       case File.basename(gemfile)
-      when "gems.rb" then gemfile.sub(/\.rb$/, gemfile)
+      when "gems.rb" then gemfile.sub(/\.rb$/, ".locked")
       else "#{gemfile}.lock"
       end
     File.expand_path(lockfile)
@@ -60,24 +60,19 @@ m = Module.new do
     Regexp.last_match(1)
   end
 
-  def bundler_version
-    @bundler_version ||=
-      env_var_version || cli_arg_version ||
-        lockfile_version
+  def bundler_requirement
+    @bundler_requirement ||=
+      env_var_version ||
+      cli_arg_version ||
+      bundler_requirement_for(lockfile_version)
   end
 
-  def bundler_requirement
-    return "#{Gem::Requirement.default}.a" unless bundler_version
+  def bundler_requirement_for(version)
+    return "#{Gem::Requirement.default}.a" unless version
 
-    bundler_gem_version = Gem::Version.new(bundler_version)
+    bundler_gem_version = Gem::Version.new(version)
 
-    requirement = bundler_gem_version.approximate_recommendation
-
-    return requirement unless Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.7.0")
-
-    requirement += ".a" if bundler_gem_version.prerelease?
-
-    requirement
+    bundler_gem_version.approximate_recommendation
   end
 
   def load_bundler!

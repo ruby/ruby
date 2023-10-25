@@ -11,7 +11,7 @@ describe "Fiber#transfer" do
   it "transfers control from one Fiber to another when called from a Fiber" do
     fiber1 = Fiber.new { :fiber1 }
     fiber2 = Fiber.new { fiber1.transfer; :fiber2 }
-    fiber2.resume.should == :fiber1
+    fiber2.resume.should == :fiber2
   end
 
   it "returns to the root Fiber when finished" do
@@ -34,12 +34,12 @@ describe "Fiber#transfer" do
     states.should == [:start, :end]
   end
 
-  it "can transfer control to a Fiber that has transferred to another Fiber" do
+  it "can not transfer control to a Fiber that has suspended by Fiber.yield" do
     states = []
     fiber1 = Fiber.new { states << :fiber1 }
-    fiber2 = Fiber.new { states << :fiber2_start; fiber1.transfer; states << :fiber2_end}
+    fiber2 = Fiber.new { states << :fiber2_start; Fiber.yield fiber1.transfer; states << :fiber2_end}
     fiber2.resume.should == [:fiber2_start, :fiber1]
-    fiber2.transfer.should == [:fiber2_start, :fiber1, :fiber2_end]
+    -> { fiber2.transfer }.should raise_error(FiberError)
   end
 
   it "raises a FiberError when transferring to a Fiber which resumes itself" do

@@ -1,16 +1,16 @@
 # frozen_string_literal: true
+
 ##
 # The TrustDir manages the trusted certificates for gem signature
 # verification.
 
 class Gem::Security::TrustDir
-
   ##
   # Default permissions for the trust directory and its contents
 
   DEFAULT_PERMISSIONS = {
-    :trust_dir    => 0700,
-    :trusted_cert => 0600,
+    :trust_dir => 0o700,
+    :trusted_cert => 0o600,
   }.freeze
 
   ##
@@ -26,7 +26,7 @@ class Gem::Security::TrustDir
     @dir = dir
     @permissions = permissions
 
-    @digester = Gem::Security::DIGEST_ALGORITHM
+    @digester = Gem::Security.create_digest
   end
 
   ##
@@ -42,16 +42,14 @@ class Gem::Security::TrustDir
   def each_certificate
     return enum_for __method__ unless block_given?
 
-    glob = File.join @dir, '*.pem'
+    glob = File.join @dir, "*.pem"
 
     Dir[glob].each do |certificate_file|
-      begin
-        certificate = load_certificate certificate_file
+      certificate = load_certificate certificate_file
 
-        yield certificate, certificate_file
-      rescue OpenSSL::X509::CertificateError
-        next # HACK warn
-      end
+      yield certificate, certificate_file
+    rescue OpenSSL::X509::CertificateError
+      next # HACK: warn
     end
   end
 
@@ -93,7 +91,7 @@ class Gem::Security::TrustDir
 
     destination = cert_path certificate
 
-    File.open destination, 'wb', 0600 do |io|
+    File.open destination, "wb", 0o600 do |io|
       io.write certificate.to_pem
       io.chmod(@permissions[:trusted_cert])
     end
@@ -105,15 +103,15 @@ class Gem::Security::TrustDir
   # permissions.
 
   def verify
+    require "fileutils"
     if File.exist? @dir
       raise Gem::Security::Exception,
         "trust directory #{@dir} is not a directory" unless
           File.directory? @dir
 
-      FileUtils.chmod 0700, @dir
+      FileUtils.chmod 0o700, @dir
     else
       FileUtils.mkdir_p @dir, :mode => @permissions[:trust_dir]
     end
   end
-
 end

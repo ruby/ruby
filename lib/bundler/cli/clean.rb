@@ -13,7 +13,7 @@ module Bundler
       Bundler.load.clean(options[:"dry-run"])
     end
 
-  protected
+    protected
 
     def require_path_or_force
       return unless Bundler.use_system_gems? && !options[:force]

@@ -23,14 +23,15 @@ BEGIN {
   $files = []
 }
 list = ($_.chomp!('/') ? $dirs : $files)
-$_ = File.join($destdir, $_) if $destdir
 list << $_
 END {
   status = true
-  $\ = ors = (!$dryrun and $tty) ? "\e[K\r" : "\n"
+  $\ = nil
+  ors = (!$dryrun and $tty) ? "\e[K\r" : "\n"
   $files.each do |file|
-    print "rm #{file}"
+    print "rm #{file}#{ors}"
     unless $dryrun
+      file = File.join($destdir, file) if $destdir
       begin
         File.unlink(file)
       rescue Errno::ENOENT
@@ -45,15 +46,17 @@ END {
     unlink[dir] = true
   end
   while dir = $dirs.pop
-    print "rmdir #{dir}"
+    dir = File.dirname(dir) while File.basename(dir) == '.'
+    print "rmdir #{dir}#{ors}"
     unless $dryrun
+      realdir = $destdir ? File.join($destdir, dir) : dir
       begin
         begin
           unlink.delete(dir)
-          Dir.rmdir(dir)
+          Dir.rmdir(realdir)
         rescue Errno::ENOTDIR
-          raise unless File.symlink?(dir)
-          File.unlink(dir)
+          raise unless File.symlink?(realdir)
+          File.unlink(realdir)
         end
       rescue Errno::ENOENT, Errno::ENOTEMPTY
       rescue
@@ -65,7 +68,6 @@ END {
       end
     end
   end
-  $\ = nil
   print ors.chomp
   exit(status)
 }

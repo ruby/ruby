@@ -1,0 +1,37 @@
+@ ProgramNode (location: (1,0)-(3,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,3))
+    └── body: (length: 3)
+        ├── @ RangeNode (location: (1,0)-(1,4))
+        │   ├── left: ∅
+        │   ├── right:
+        │   │   @ IntegerNode (location: (1,2)-(1,4))
+        │   │   └── flags: decimal
+        │   ├── operator_loc: (1,0)-(1,2) = ".."
+        │   └── flags: ∅
+        ├── @ RangeNode (location: (2,2)-(2,5))
+        │   ├── left: ∅
+        │   ├── right:
+        │   │   @ CallNode (location: (2,4)-(2,5))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (2,4)-(2,5) = "a"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :a
+        │   ├── operator_loc: (2,2)-(2,4) = ".."
+        │   └── flags: ∅
+        └── @ CallNode (location: (3,2)-(3,3))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (3,2)-(3,3) = "c"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: variable_call
+            └── name: :c

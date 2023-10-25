@@ -362,4 +362,22 @@ describe "Executing break from within a block" do
     bt2.three
     ScratchPad.recorded.should == [:two_ensure, :three_post, :three_ensure]
   end
+
+  it "works when passing through a super call" do
+    cls1 = Class.new { def foo; yield; end }
+    cls2 = Class.new(cls1) { def foo; super { break 1 }; end }
+
+    -> do
+      cls2.new.foo.should == 1
+    end.should_not raise_error
+  end
+
+  it "raises LocalJumpError when converted into a proc during a a super call" do
+    cls1 = Class.new { def foo(&b); b; end }
+    cls2 = Class.new(cls1) { def foo; super { break 1 }.call; end }
+
+    -> do
+      cls2.new.foo
+    end.should raise_error(LocalJumpError)
+  end
 end

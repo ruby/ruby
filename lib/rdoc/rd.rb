@@ -92,9 +92,8 @@ class RDoc::RD
     document
   end
 
-  autoload :BlockParser,  'rdoc/rd/block_parser'
-  autoload :InlineParser, 'rdoc/rd/inline_parser'
-  autoload :Inline,       'rdoc/rd/inline'
+  autoload :BlockParser,  "#{__dir__}/rd/block_parser"
+  autoload :InlineParser, "#{__dir__}/rd/inline_parser"
+  autoload :Inline,       "#{__dir__}/rd/inline"
 
 end
-

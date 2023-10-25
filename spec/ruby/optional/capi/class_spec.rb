@@ -1,5 +1,6 @@
 require_relative 'spec_helper'
 require_relative 'fixtures/class'
+require_relative '../../core/module/fixtures/classes'
 
 load_extension("class")
 compile_extension("class_under_autoload")
@@ -11,6 +12,7 @@ autoload :ClassIdUnderAutoload, "#{object_path}/class_id_under_autoload_spec"
 describe :rb_path_to_class, shared: true do
   it "returns a class or module from a scoped String" do
     @s.send(@method, "CApiClassSpecs::A::B").should equal(CApiClassSpecs::A::B)
+    @s.send(@method, "CApiClassSpecs::A::M").should equal(CApiClassSpecs::A::M)
   end
 
   it "resolves autoload constants" do
@@ -26,7 +28,9 @@ describe :rb_path_to_class, shared: true do
   end
 
   it "raises a TypeError if the constant is not a class or module" do
-    -> { @s.send(@method, "CApiClassSpecs::A::C") }.should raise_error(TypeError)
+    -> {
+      @s.send(@method, "CApiClassSpecs::A::C")
+    }.should raise_error(TypeError, 'CApiClassSpecs::A::C does not refer to class/module')
   end
 
   it "raises an ArgumentError even if a constant in the path exists on toplevel" do
@@ -39,16 +43,97 @@ describe "C-API Class function" do
     @s = CApiClassSpecs.new
   end
 
+  describe "rb_class_instance_methods" do
+    it "returns the public and protected methods of self and its ancestors" do
+      methods = @s.rb_class_instance_methods(ModuleSpecs::Basic)
+      methods.should include(:protected_module, :public_module)
+
+      methods = @s.rb_class_instance_methods(ModuleSpecs::Basic, true)
+      methods.should include(:protected_module, :public_module)
+    end
+
+    it "when passed false as a parameter, returns the instance methods of the class" do
+      methods = @s.rb_class_instance_methods(ModuleSpecs::Child, false)
+      methods.should include(:protected_child, :public_child)
+    end
+  end
+
+  describe "rb_class_public_instance_methods" do
+    it "returns a list of public methods in module and its ancestors" do
+      methods = @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild)
+      methods.should include(:public_3)
+      methods.should include(:public_2)
+      methods.should include(:public_1)
+
+      methods = @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild, true)
+      methods.should include(:public_3)
+      methods.should include(:public_2)
+      methods.should include(:public_1)
+    end
+
+    it "when passed false as a parameter, should return only methods defined in that module" do
+      @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild, false).should == [:public_1]
+    end
+  end
+
+  describe "rb_class_protected_instance_methods" do
+    it "returns a list of protected methods in module and its ancestors" do
+      methods = @s.rb_class_protected_instance_methods(ModuleSpecs::CountsChild)
+      methods.should include(:protected_3)
+      methods.should include(:protected_2)
+      methods.should include(:protected_1)
+
+      methods = @s.rb_class_protected_instance_methods(ModuleSpecs::CountsChild, true)
+      methods.should include(:protected_3)
+      methods.should include(:protected_2)
+      methods.should include(:protected_1)
+    end
+
+    it "when passed false as a parameter, should return only methods defined in that module" do
+      @s.rb_class_public_instance_methods(ModuleSpecs::CountsChild, false).should == [:public_1]
+    end
+  end
+
+  describe "rb_class_private_instance_methods" do
+    it "returns a list of private methods in module and its ancestors" do
+      @s.rb_class_private_instance_methods(ModuleSpecs::CountsChild).should == ModuleSpecs::CountsChild.private_instance_methods
+      @s.rb_class_private_instance_methods(ModuleSpecs::CountsChild, true).should == ModuleSpecs::CountsChild.private_instance_methods
+    end
+
+    it "when passed false as a parameter, should return only methods defined in that module" do
+      methods = @s.rb_class_private_instance_methods(ModuleSpecs::CountsChild, false)
+      methods.should == [:private_1]
+    end
+  end
+
   describe "rb_class_new_instance" do
     it "allocates and initializes a new object" do
-      o = @s.rb_class_new_instance(0, nil, CApiClassSpecs::Alloc)
+      o = @s.rb_class_new_instance([], CApiClassSpecs::Alloc)
       o.class.should == CApiClassSpecs::Alloc
       o.initialized.should be_true
     end
 
     it "passes arguments to the #initialize method" do
-      o = @s.rb_class_new_instance(2, [:one, :two], CApiClassSpecs::Alloc)
+      o = @s.rb_class_new_instance([:one, :two], CApiClassSpecs::Alloc)
       o.arguments.should == [:one, :two]
+    end
+  end
+
+  describe "rb_class_new_instance_kw" do
+    it "passes arguments and keywords to the #initialize method" do
+      obj = @s.rb_class_new_instance_kw([{pos: 1}, {kw: 2}], CApiClassSpecs::KeywordAlloc)
+      obj.args.should == [{pos: 1}]
+      obj.kwargs.should == {kw: 2}
+
+      obj = @s.rb_class_new_instance_kw([{}], CApiClassSpecs::KeywordAlloc)
+      obj.args.should == []
+      obj.kwargs.should == {}
+    end
+
+    it "raises TypeError if the last argument is not a Hash" do
+      -> {
+        @s.rb_class_new_instance_kw([42], CApiClassSpecs::KeywordAlloc)
+      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
     end
   end
 
@@ -109,16 +194,6 @@ describe "C-API Class function" do
     end
   end
 
-  describe "rb_define_method" do
-    it "defines a method taking variable arguments as a C array if the argument count is -1" do
-      @s.rb_method_varargs_1(1, 3, 7, 4).should == [1, 3, 7, 4]
-    end
-
-    it "defines a method taking variable arguments as a Ruby array if the argument count is -2" do
-      @s.rb_method_varargs_2(1, 3, 7, 4).should == [1, 3, 7, 4]
-    end
-  end
-
   describe "rb_class2name" do
     it "returns the class name" do
       @s.rb_class2name(CApiClassSpecs).should == "CApiClassSpecs"
@@ -126,6 +201,10 @@ describe "C-API Class function" do
 
     it "returns a string for an anonymous class" do
       @s.rb_class2name(Class.new).should be_kind_of(String)
+    end
+
+    it "returns a string beginning with # for an anonymous class" do
+      @s.rb_class2name(Struct.new(:x, :y).new(1, 2).class).should.start_with?('#')
     end
   end
 
@@ -242,6 +321,15 @@ describe "C-API Class function" do
         @s.rb_define_class("ClassSpecDefineClass4", nil)
       }.should raise_error(ArgumentError)
     end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      cls = @s.rb_define_class("_INVALID_CLASS", CApiClassSpecs::Super)
+      cls.name.should == "_INVALID_CLASS"
+
+      -> {
+        Object.const_get(cls.name)
+      }.should raise_error(NameError, /wrong constant name/)
+    end
   end
 
   describe "rb_define_class_under" do
@@ -286,6 +374,15 @@ describe "C-API Class function" do
     it "raises a TypeError if class is defined and its superclass mismatches the given one" do
       -> { @s.rb_define_class_under(CApiClassSpecs, "Sub", Object) }.should raise_error(TypeError)
     end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      cls = @s.rb_define_class_under(CApiClassSpecs, "_INVALID_CLASS", CApiClassSpecs::Super)
+      cls.name.should == "CApiClassSpecs::_INVALID_CLASS"
+
+      -> {
+        CApiClassSpecs.const_get(cls.name)
+      }.should raise_error(NameError, /wrong constant name/)
+    end
   end
 
   describe "rb_define_class_id_under" do
@@ -313,6 +410,15 @@ describe "C-API Class function" do
     it "raises a TypeError if class is defined and its superclass mismatches the given one" do
       -> { @s.rb_define_class_id_under(CApiClassSpecs, :Sub, Object) }.should raise_error(TypeError)
     end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      cls = @s.rb_define_class_id_under(CApiClassSpecs, :_INVALID_CLASS2, CApiClassSpecs::Super)
+      cls.name.should == "CApiClassSpecs::_INVALID_CLASS2"
+
+      -> {
+        CApiClassSpecs.const_get(cls.name)
+      }.should raise_error(NameError, /wrong constant name/)
+    end
   end
 
   describe "rb_define_class_variable" do
@@ -338,7 +444,7 @@ describe "C-API Class function" do
   end
 
   describe "rb_class_new" do
-    it "returns an new subclass of the superclass" do
+    it "returns a new subclass of the superclass" do
       subclass = @s.rb_class_new(CApiClassSpecs::NewClass)
       CApiClassSpecs::NewClass.should be_ancestor_of(subclass)
     end

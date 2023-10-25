@@ -29,4 +29,13 @@ describe "Integer#digits" do
   it "raises Math::DomainError when calling digits on a negative number" do
     -> { -12345.digits(7) }.should raise_error(Math::DomainError)
   end
+
+  it "returns integer values > 9 when base is above 10" do
+    1234.digits(16).should == [2, 13, 4]
+  end
+
+  it "can be used with base > 37" do
+    1234.digits(100).should == [34, 12]
+    980099.digits(100).should == [99, 0, 98]
+  end
 end

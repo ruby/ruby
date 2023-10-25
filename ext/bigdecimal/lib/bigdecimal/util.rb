@@ -33,17 +33,21 @@ class Float < Numeric
   #
   # Returns the value of +float+ as a BigDecimal.
   # The +precision+ parameter is used to determine the number of
-  # significant digits for the result (the default is Float::DIG).
+  # significant digits for the result. When +precision+ is set to +0+,
+  # the number of digits to represent the float being converted is determined
+  # automatically.
+  # The default +precision+ is +0+.
   #
   #     require 'bigdecimal'
   #     require 'bigdecimal/util'
   #
   #     0.5.to_d         # => 0.5e0
+  #     1.234.to_d       # => 0.1234e1
   #     1.234.to_d(2)    # => 0.12e1
   #
   # See also BigDecimal::new.
   #
-  def to_d(precision=Float::DIG)
+  def to_d(precision=0)
     BigDecimal(self, precision)
   end
 end
@@ -127,6 +131,39 @@ class Rational < Numeric
   #
   def to_d(precision)
     BigDecimal(self, precision)
+  end
+end
+
+
+class Complex < Numeric
+  # call-seq:
+  #     cmp.to_d             -> bigdecimal
+  #     cmp.to_d(precision)  -> bigdecimal
+  #
+  # Returns the value as a BigDecimal.
+  #
+  # The +precision+ parameter is required for a rational complex number.
+  # This parameter is used to determine the number of significant digits
+  # for the result.
+  #
+  #     require 'bigdecimal'
+  #     require 'bigdecimal/util'
+  #
+  #     Complex(0.1234567, 0).to_d(4)   # => 0.1235e0
+  #     Complex(Rational(22, 7), 0).to_d(3)   # => 0.314e1
+  #
+  # See also BigDecimal::new.
+  #
+  def to_d(*args)
+    BigDecimal(self) unless self.imag.zero? # to raise eerror
+
+    if args.length == 0
+      case self.real
+      when Rational
+        BigDecimal(self.real) # to raise error
+      end
+    end
+    self.real.to_d(*args)
   end
 end
 

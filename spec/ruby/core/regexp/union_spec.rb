@@ -139,6 +139,16 @@ describe "Regexp.union" do
     Regexp.union(obj, "bar").should == /foo|bar/
   end
 
+  it "uses to_regexp to convert argument" do
+    obj = mock('pattern')
+    obj.should_receive(:to_regexp).and_return(/foo/)
+    Regexp.union(obj).should == /foo/
+  end
+
+  it "accepts a Symbol as argument" do
+    Regexp.union(:foo).should == /foo/
+  end
+
   it "accepts a single array of patterns as arguments" do
     Regexp.union(["skiing", "sledding"]).should == /skiing|sledding/
     not_supported_on :opal do

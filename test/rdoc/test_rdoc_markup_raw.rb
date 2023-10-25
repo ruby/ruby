@@ -20,4 +20,3 @@ class TestRDocMarkupRaw < RDoc::TestCase
   end
 
 end
-

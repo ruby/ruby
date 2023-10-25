@@ -49,7 +49,7 @@ describe "IO#close_read" do
 
     io.close_read
 
-    io.closed?.should == true
+    io.should.closed?
   end
 
   it "does nothing on closed stream" do

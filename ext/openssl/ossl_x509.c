@@ -115,11 +115,9 @@ Init_ossl_x509(void)
     DefX509Const(V_ERR_SUITE_B_LOS_NOT_ALLOWED);
     DefX509Const(V_ERR_SUITE_B_CANNOT_SIGN_P_384_WITH_P_256);
 #endif
-#if defined(X509_V_ERR_HOSTNAME_MISMATCH)
     DefX509Const(V_ERR_HOSTNAME_MISMATCH);
     DefX509Const(V_ERR_EMAIL_MISMATCH);
     DefX509Const(V_ERR_IP_ADDRESS_MISMATCH);
-#endif
 #if defined(X509_V_ERR_DANE_NO_MATCH)
     DefX509Const(V_ERR_DANE_NO_MATCH);
 #endif
@@ -187,12 +185,10 @@ Init_ossl_x509(void)
     /* Set by Store#flags= and StoreContext#flags=. Enables checking of the
      * signature of the root self-signed CA. */
     DefX509Const(V_FLAG_CHECK_SS_SIGNATURE);
-#if defined(X509_V_FLAG_TRUSTED_FIRST)
     /* Set by Store#flags= and StoreContext#flags=. When constructing a
      * certificate chain, search the Store first for the issuer certificate.
      * Enabled by default in OpenSSL >= 1.1.0. */
     DefX509Const(V_FLAG_TRUSTED_FIRST);
-#endif
 #if defined(X509_V_FLAG_SUITEB_128_LOS_ONLY)
     /* Set by Store#flags= and StoreContext#flags=.
      * Enables Suite B 128 bit only mode. */
@@ -208,11 +204,9 @@ Init_ossl_x509(void)
      * Enables Suite B 128 bit mode allowing 192 bit algorithms. */
     DefX509Const(V_FLAG_SUITEB_128_LOS);
 #endif
-#if defined(X509_V_FLAG_PARTIAL_CHAIN)
     /* Set by Store#flags= and StoreContext#flags=.
      * Allows partial chains if at least one certificate is in trusted store. */
     DefX509Const(V_FLAG_PARTIAL_CHAIN);
-#endif
 #if defined(X509_V_FLAG_NO_ALT_CHAINS)
     /* Set by Store#flags= and StoreContext#flags=. Suppresses searching for
      * a alternative chain. No effect in OpenSSL >= 1.1.0. */

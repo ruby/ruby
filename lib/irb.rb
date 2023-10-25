@@ -1,27 +1,25 @@
 # frozen_string_literal: false
 #
 #   irb.rb - irb main module
-#       $Release Version: 0.9.6 $
-#       $Revision$
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require "ripper"
+require "reline"
 
-require "irb/init"
-require "irb/context"
-require "irb/extend-command"
+require_relative "irb/init"
+require_relative "irb/context"
+require_relative "irb/extend-command"
 
-require "irb/ruby-lex"
-require "irb/input-method"
-require "irb/locale"
-require "irb/color"
+require_relative "irb/ruby-lex"
+require_relative "irb/statement"
+require_relative "irb/input-method"
+require_relative "irb/locale"
+require_relative "irb/color"
 
-require "irb/version"
-require "irb/easter-egg"
+require_relative "irb/version"
+require_relative "irb/easter-egg"
+require_relative "irb/debug"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
@@ -50,43 +48,63 @@ require "irb/easter-egg"
 #
 # == Command line options
 #
-#   Usage:  irb.rb [options] [programfile] [arguments]
-#     -f                Suppress read of ~/.irbrc
-#     -d                Set $DEBUG to true (same as `ruby -d')
-#     -r load-module    Same as `ruby -r'
-#     -I path           Specify $LOAD_PATH directory
-#     -U                Same as `ruby -U`
-#     -E enc            Same as `ruby -E`
-#     -w                Same as `ruby -w`
-#     -W[level=2]       Same as `ruby -W`
-#     --inspect         Use `inspect' for output (default except for bc mode)
-#     --noinspect       Don't use inspect for output
-#     --multiline       Use multiline editor module
-#     --nomultiline     Don't use multiline editor module
-#     --singleline      Use singleline editor module
-#     --nosingleline    Don't use singleline editor module
-#     --colorize        Use colorization
-#     --nocolorize      Don't use colorization
-#     --prompt prompt-mode
-#     --prompt-mode prompt-mode
-#                       Switch prompt mode. Pre-defined prompt modes are
-#                       `default', `simple', `xmp' and `inf-ruby'
-#     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
-#                       Suppresses --multiline and --singleline.
-#     --simple-prompt   Simple prompt mode
-#     --noprompt        No prompt mode
-#     --tracer          Display trace for each execution of commands.
-#     --back-trace-limit n
-#                       Display backtrace top n and tail n. The default
-#                       value is 16.
-#     -v, --version     Print the version of irb
+#   :include: ./irb/lc/help-message
+#
+# == Commands
+#
+# The following commands are available on IRB.
+#
+# * cwws
+#   * Show the current workspace.
+# * cb, cws, chws
+#   * Change the current workspace to an object.
+# * bindings, workspaces
+#   * Show workspaces.
+# * pushb, pushws
+#   * Push an object to the workspace stack.
+# * popb, popws
+#   * Pop a workspace from the workspace stack.
+# * load
+#   * Load a Ruby file.
+# * require
+#   * Require a Ruby file.
+# * source
+#   * Loads a given file in the current session.
+# * irb
+#   * Start a child IRB.
+# * jobs
+#   * List of current sessions.
+# * fg
+#   * Switches to the session of the given number.
+# * kill
+#   * Kills the session with the given number.
+# * help
+#   * Enter the mode to look up RI documents.
+# * irb_info
+#   * Show information about IRB.
+# * ls
+#   * Show methods, constants, and variables.
+#     -g [query] or -G [query] allows you to filter out the output.
+# * measure
+#   * measure enables the mode to measure processing time. measure :off disables it.
+# * $, show_source
+#   * Show the source code of a given method or constant.
+# * @, whereami
+#   * Show the source code around binding.irb again.
+# * debug
+#   * Start the debugger of debug.gem.
+# * break, delete, next, step, continue, finish, backtrace, info, catch
+#   * Start the debugger of debug.gem and run the command on it.
 #
 # == Configuration
 #
-# IRB reads from <code>~/.irbrc</code> when it's invoked.
+# IRB reads a personal initialization file when it's invoked.
+# IRB searches a file in the following order and loads the first one found.
 #
-# If <code>~/.irbrc</code> doesn't exist, +irb+ will try to read in the following order:
-#
+# * <tt>$IRBRC</tt> (if <tt>$IRBRC</tt> is set)
+# * <tt>$XDG_CONFIG_HOME/irb/irbrc</tt> (if <tt>$XDG_CONFIG_HOME</tt> is set)
+# * <tt>~/.irbrc</tt>
+# * +.config/irb/irbrc+
 # * +.irbrc+
 # * +irb.rc+
 # * +_irbrc+
@@ -104,6 +122,7 @@ require "irb/easter-egg"
 #     IRB.conf[:USE_SINGLELINE] = nil
 #     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
+#     IRB.conf[:USE_AUTOCOMPLETE] = true
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
 #     IRB.conf[:PROMPT_MODE] = :DEFAULT
@@ -117,9 +136,9 @@ require "irb/easter-egg"
 #
 # === Autocompletion
 #
-# To enable autocompletion for irb, add the following to your +.irbrc+:
+# To disable autocompletion for irb, add the following to your +.irbrc+:
 #
-#     require 'irb/completion'
+#     IRB.conf[:USE_AUTOCOMPLETE] = false
 #
 # === History
 #
@@ -137,7 +156,7 @@ require "irb/easter-egg"
 #
 #     IRB.conf[:EVAL_HISTORY] = <number>
 #
-# See IRB::Context#eval_history= and History class. The history of command
+# See IRB::Context#eval_history= and EvalHistory class. The history of command
 # results is not permanently saved in any file.
 #
 # == Customizing the IRB Prompt
@@ -177,10 +196,9 @@ require "irb/easter-egg"
 # For instance, the default prompt mode is defined as follows:
 #
 #     IRB.conf[:PROMPT_MODE][:DEFAULT] = {
-#       :PROMPT_I => "%N(%m):%03n:%i> ",
-#       :PROMPT_N => "%N(%m):%03n:%i> ",
-#       :PROMPT_S => "%N(%m):%03n:%i%l ",
-#       :PROMPT_C => "%N(%m):%03n:%i* ",
+#       :PROMPT_I => "%N(%m):%03n> ",
+#       :PROMPT_S => "%N(%m):%03n%l ",
+#       :PROMPT_C => "%N(%m):%03n* ",
 #       :RETURN => "%s\n" # used to printf
 #     }
 #
@@ -188,35 +206,30 @@ require "irb/easter-egg"
 #
 #   # :NULL:
 #   #   :PROMPT_I:
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |
 #   #     %s
 #   # :DEFAULT:
-#   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
-#   #   :PROMPT_N: ! '%N(%m):%03n:%i> '
-#   #   :PROMPT_S: ! '%N(%m):%03n:%i%l '
-#   #   :PROMPT_C: ! '%N(%m):%03n:%i* '
+#   #   :PROMPT_I: ! '%N(%m):%03n> '
+#   #   :PROMPT_S: ! '%N(%m):%03n%l '
+#   #   :PROMPT_C: ! '%N(%m):%03n* '
 #   #   :RETURN: |
 #   #     => %s
 #   # :CLASSIC:
 #   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
-#   #   :PROMPT_N: ! '%N(%m):%03n:%i> '
 #   #   :PROMPT_S: ! '%N(%m):%03n:%i%l '
 #   #   :PROMPT_C: ! '%N(%m):%03n:%i* '
 #   #   :RETURN: |
 #   #     %s
 #   # :SIMPLE:
 #   #   :PROMPT_I: ! '>> '
-#   #   :PROMPT_N: ! '>> '
 #   #   :PROMPT_S:
 #   #   :PROMPT_C: ! '?> '
 #   #   :RETURN: |
 #   #     => %s
 #   # :INF_RUBY:
-#   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
-#   #   :PROMPT_N:
+#   #   :PROMPT_I: ! '%N(%m):%03n> '
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |
@@ -224,7 +237,6 @@ require "irb/easter-egg"
 #   #   :AUTO_INDENT: true
 #   # :XMP:
 #   #   :PROMPT_I:
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |2
@@ -271,7 +283,7 @@ require "irb/easter-egg"
 # On the other hand, each conf in IRB@Command+line+options is used to
 # individually configure IRB.irb.
 #
-# If a proc is set for IRB.conf[:IRB_RC], its will be invoked after execution
+# If a proc is set for <code>IRB.conf[:IRB_RC]</code>, its will be invoked after execution
 # of that proc with the context of the current session as its argument. Each
 # session can be configured using this mechanism.
 #
@@ -355,26 +367,6 @@ module IRB
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end
 
-  @CONF = {}
-
-
-  # Displays current configuration.
-  #
-  # Modifying the configuration is achieved by sending a message to IRB.conf.
-  #
-  # See IRB@Configuration for more information.
-  def IRB.conf
-    @CONF
-  end
-
-  # Returns the current version of IRB, including release version and last
-  # updated date.
-  def IRB.version
-    if v = @CONF[:VERSION] then return v end
-
-    @CONF[:VERSION] = format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
-  end
-
   # The current IRB::Context of the session, see IRB.conf
   #
   #   irb
@@ -399,11 +391,6 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
-  def IRB.irb_at_exit
-    @CONF[:AT_EXIT].each{|hook| hook.call}
-  end
-
   # Quits irb
   def IRB.irb_exit(irb, ret)
     throw :IRB_EXIT, ret
@@ -413,56 +400,88 @@ module IRB
   #
   # Will raise an Abort exception, or the given +exception+.
   def IRB.irb_abort(irb, exception = Abort)
-    if defined? Thread
-      irb.context.thread.raise exception, "abort then interrupt!"
-    else
-      raise exception, "abort then interrupt!"
-    end
+    irb.context.thread.raise exception, "abort then interrupt!"
   end
 
   class Irb
-    ASSIGNMENT_NODE_TYPES = [
-      # Local, instance, global, class, constant, instance, and index assignment:
-      #   "foo = bar",
-      #   "@foo = bar",
-      #   "$foo = bar",
-      #   "@@foo = bar",
-      #   "::Foo = bar",
-      #   "a::Foo = bar",
-      #   "Foo = bar"
-      #   "foo.bar = 1"
-      #   "foo[1] = bar"
-      :assign,
-
-      # Operation assignment:
-      #   "foo += bar"
-      #   "foo -= bar"
-      #   "foo ||= bar"
-      #   "foo &&= bar"
-      :opassign,
-
-      # Multiple assignment:
-      #   "foo, bar = 1, 2
-      :massign,
-    ]
     # Note: instance and index assignment expressions could also be written like:
     # "foo.bar=(1)" and "foo.[]=(1, bar)", when expressed that way, the former
     # be parsed as :assign and echo will be suppressed, but the latter is
     # parsed as a :method_add_arg and the output won't be suppressed
 
+    PROMPT_MAIN_TRUNCATE_LENGTH = 32
+    PROMPT_MAIN_TRUNCATE_OMISSION = '...'.freeze
+    CONTROL_CHARACTERS_PATTERN = "\x00-\x1F".freeze
+
+    # Returns the current context of this irb session
+    attr_reader :context
+    # The lexer used by this irb session
+    attr_accessor :scanner
+
     # Creates a new irb session
     def initialize(workspace = nil, input_method = nil)
       @context = Context.new(self, workspace, input_method)
-      @context.main.extend ExtendCommandBundle
+      @context.workspace.load_commands_to_main
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
+      @line_no = 1
+    end
+
+    # A hook point for `debug` command's breakpoint after :IRB_EXIT as well as its clean-up
+    def debug_break
+      # it means the debug integration has been activated
+      if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:capture_frames_without_irb)
+        # after leaving this initial breakpoint, revert the capture_frames patch
+        DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :capture_frames_without_irb)
+        # and remove the redundant method
+        DEBUGGER__.singleton_class.send(:undef_method, :capture_frames_without_irb)
+      end
+    end
+
+    def debug_readline(binding)
+      workspace = IRB::WorkSpace.new(binding)
+      context.workspace = workspace
+      context.workspace.load_commands_to_main
+      @line_no += 1
+
+      # When users run:
+      # 1. Debugging commands, like `step 2`
+      # 2. Any input that's not irb-command, like `foo = 123`
+      #
+      # Irb#eval_input will simply return the input, and we need to pass it to the debugger.
+      input = if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
+        # Previous IRB session's history has been saved when `Irb#run` is exited
+        # We need to make sure the saved history is not saved again by reseting the counter
+        context.io.reset_history_counter
+
+        begin
+          eval_input
+        ensure
+          context.io.save_history
+        end
+      else
+        eval_input
+      end
+
+      if input&.include?("\n")
+        @line_no += input.count("\n") - 1
+      end
+
+      input
     end
 
     def run(conf = IRB.conf)
+      in_nested_session = !!conf[:MAIN_CONTEXT]
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
 
-      trap("SIGINT") do
+      save_history = !in_nested_session && conf[:SAVE_HISTORY] && context.io.support_history_saving?
+
+      if save_history
+        context.io.load_history
+      end
+
+      prev_trap = trap("SIGINT") do
         signal_handle
       end
 
@@ -471,85 +490,206 @@ module IRB
           eval_input
         end
       ensure
+        trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
+        context.io.save_history if save_history
       end
     end
 
-    # Returns the current context of this irb session
-    attr_reader :context
-    # The lexer used by this irb session
-    attr_accessor :scanner
-
     # Evaluates input for this session.
     def eval_input
-      exc = nil
+      configure_io
 
-      @scanner.set_prompt do
-        |ltype, indent, continue, line_no|
-        if ltype
-          f = @context.prompt_s
-        elsif continue
-          f = @context.prompt_c
-        elsif indent > 0
-          f = @context.prompt_n
-        else
-          f = @context.prompt_i
-        end
-        f = "" unless f
-        if @context.prompting?
-          @context.io.prompt = p = prompt(f, ltype, indent, line_no)
-        else
-          @context.io.prompt = p = ""
-        end
-        if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
-          unless ltype
-            prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
-            ind = prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
-              indent * 2 - p.size
-            ind += 2 if continue
-            @context.io.prompt = p + " " * ind if ind > 0
-          end
-        end
-        @context.io.prompt
-      end
-
-      @scanner.set_input(@context.io) do
-        signal_status(:IN_INPUT) do
-          if l = @context.io.gets
-            print l if @context.verbose?
-          else
-            if @context.ignore_eof? and @context.io.readable_after_eof?
-              l = "\n"
-              if @context.verbose?
-                printf "Use \"exit\" to leave %s\n", @context.ap_name
-              end
-            else
-              print "\n"
-            end
-          end
-          l
-        end
-      end
-
-      @scanner.set_auto_indent(@context) if @context.auto_indent_mode
-
-      @scanner.each_top_level_statement do |line, line_no|
+      each_top_level_statement do |statement, line_no|
         signal_status(:IN_EVAL) do
           begin
-            line.untaint if RUBY_VERSION < '2.7'
-            @context.evaluate(line, line_no, exception: exc)
-            output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
-          rescue Interrupt => exc
+            # If the integration with debugger is activated, we return certain input if it should be dealt with by debugger
+            if @context.with_debugger && statement.should_be_handled_by_debugger?
+              return statement.code
+            end
+
+            @context.evaluate(statement.evaluable_code, line_no)
+
+            if @context.echo? && !statement.suppresses_echo?
+              if statement.is_assignment?
+                if @context.echo_on_assignment?
+                  output_value(@context.echo_on_assignment? == :truncate)
+                end
+              else
+                output_value
+              end
+            end
           rescue SystemExit, SignalException
             raise
-          rescue Exception => exc
-          else
-            exc = nil
-            next
+          rescue Interrupt, Exception => exc
+            handle_exception(exc)
+            @context.workspace.local_variable_set(:_, exc)
           end
-          handle_exception(exc)
         end
       end
+    end
+
+    def read_input(prompt)
+      signal_status(:IN_INPUT) do
+        @context.io.prompt = prompt
+        if l = @context.io.gets
+          print l if @context.verbose?
+        else
+          if @context.ignore_eof? and @context.io.readable_after_eof?
+            l = "\n"
+            if @context.verbose?
+              printf "Use \"exit\" to leave %s\n", @context.ap_name
+            end
+          else
+            print "\n" if @context.prompting?
+          end
+        end
+        l
+      end
+    end
+
+    def readmultiline
+      prompt = generate_prompt([], false, 0)
+
+      # multiline
+      return read_input(prompt) if @context.io.respond_to?(:check_termination)
+
+      # nomultiline
+      code = ''
+      line_offset = 0
+      loop do
+        line = read_input(prompt)
+        unless line
+          return code.empty? ? nil : code
+        end
+
+        code << line
+
+        # Accept any single-line input for symbol aliases or commands that transform args
+        return code if single_line_command?(code)
+
+        tokens, opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
+        return code if terminated
+
+        line_offset += 1
+        continue = @scanner.should_continue?(tokens)
+        prompt = generate_prompt(opens, continue, line_offset)
+      end
+    end
+
+    def each_top_level_statement
+      loop do
+        code = readmultiline
+        break unless code
+
+        if code != "\n"
+          yield build_statement(code), @line_no
+        end
+        @line_no += code.count("\n")
+      rescue RubyLex::TerminateLineInput
+      end
+    end
+
+    def build_statement(code)
+      code.force_encoding(@context.io.encoding)
+      command_or_alias, arg = code.split(/\s/, 2)
+      # Transform a non-identifier alias (@, $) or keywords (next, break)
+      command_name = @context.command_aliases[command_or_alias.to_sym]
+      command = command_name || command_or_alias
+      command_class = ExtendCommandBundle.load_command(command)
+
+      if command_class
+        Statement::Command.new(code, command, arg, command_class)
+      else
+        is_assignment_expression = @scanner.assignment_expression?(code, local_variables: @context.local_variables)
+        Statement::Expression.new(code, is_assignment_expression)
+      end
+    end
+
+    def single_line_command?(code)
+      command = code.split(/\s/, 2).first
+      @context.symbol_alias?(command) || @context.transform_args?(command)
+    end
+
+    def configure_io
+      if @context.io.respond_to?(:check_termination)
+        @context.io.check_termination do |code|
+          if Reline::IOGate.in_pasting?
+            rest = @scanner.check_termination_in_prev_line(code, local_variables: @context.local_variables)
+            if rest
+              Reline.delete_text
+              rest.bytes.reverse_each do |c|
+                Reline.ungetc(c)
+              end
+              true
+            else
+              false
+            end
+          else
+            # Accept any single-line input for symbol aliases or commands that transform args
+            next true if single_line_command?(code)
+
+            _tokens, _opens, terminated = @scanner.check_code_state(code, local_variables: @context.local_variables)
+            terminated
+          end
+        end
+      end
+      if @context.io.respond_to?(:dynamic_prompt)
+        @context.io.dynamic_prompt do |lines|
+          lines << '' if lines.empty?
+          tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, local_variables: @context.local_variables)
+          line_results = IRB::NestingParser.parse_by_line(tokens)
+          tokens_until_line = []
+          line_results.map.with_index do |(line_tokens, _prev_opens, next_opens, _min_depth), line_num_offset|
+            line_tokens.each do |token, _s|
+              # Avoid appending duplicated token. Tokens that include "\n" like multiline tstring_content can exist in multiple lines.
+              tokens_until_line << token if token != tokens_until_line.last
+            end
+            continue = @scanner.should_continue?(tokens_until_line)
+            generate_prompt(next_opens, continue, line_num_offset)
+          end
+        end
+      end
+
+      if @context.io.respond_to?(:auto_indent) and @context.auto_indent_mode
+        @context.io.auto_indent do |lines, line_index, byte_pointer, is_newline|
+          next nil if lines == [nil] # Workaround for exit IRB with CTRL+d
+          next nil if !is_newline && lines[line_index]&.byteslice(0, byte_pointer)&.match?(/\A\s*\z/)
+
+          code = lines[0..line_index].map { |l| "#{l}\n" }.join
+          tokens = RubyLex.ripper_lex_without_warning(code, local_variables: @context.local_variables)
+          @scanner.process_indent_level(tokens, lines, line_index, is_newline)
+        end
+      end
+    end
+
+    def convert_invalid_byte_sequence(str, enc)
+      str.force_encoding(enc)
+      str.scrub { |c|
+        c.bytes.map{ |b| "\\x#{b.to_s(16).upcase}" }.join
+      }
+    end
+
+    def encode_with_invalid_byte_sequence(str, enc)
+      conv = Encoding::Converter.new(str.encoding, enc)
+      dst = String.new
+      begin
+        ret = conv.primitive_convert(str, dst)
+        case ret
+        when :invalid_byte_sequence
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
+          redo
+        when :undefined_conversion
+          c = conv.primitive_errinfo[3].dup.force_encoding(conv.primitive_errinfo[1])
+          conv.insert_output(c.dump[1..-2])
+          redo
+        when :incomplete_input
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
+        when :finished
+        end
+        break
+      end while nil
+      dst
     end
 
     def handle_exception(exc)
@@ -561,49 +701,43 @@ module IRB
         irb_bug = false
       end
 
-      if STDOUT.tty?
-        attr = ATTR_TTY
-        print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
-      else
-        attr = ATTR_PLAIN
-      end
-      messages = []
-      lasts = []
-      levels = 0
       if exc.backtrace
-        count = 0
-        exc.backtrace.each do |m|
-          m = @context.workspace.filter_backtrace(m) or next unless irb_bug
-          count += 1
-          if attr == ATTR_TTY
-            m = sprintf("%9d: from %s", count, m)
+        order = nil
+        if RUBY_VERSION < '3.0.0'
+          if STDOUT.tty?
+            message = exc.full_message(order: :bottom)
+            order = :bottom
           else
-            m = "\tfrom #{m}"
+            message = exc.full_message(order: :top)
+            order = :top
           end
-          if messages.size < @context.back_trace_limit
-            messages.push(m)
-          elsif lasts.size < @context.back_trace_limit
-            lasts.push(m).shift
-            levels += 1
+        else # '3.0.0' <= RUBY_VERSION
+          message = exc.full_message(order: :top)
+          order = :top
+        end
+        message = convert_invalid_byte_sequence(message, exc.message.encoding)
+        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
+        message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
+          case order
+          when :top
+            lines = m.split("\n")
+          when :bottom
+            lines = m.split("\n").reverse
           end
-        end
-      end
-      if attr == ATTR_TTY
-        unless lasts.empty?
-          puts lasts.reverse
-          printf "... %d levels...\n", levels if levels > 0
-        end
-        puts messages.reverse
-      end
-      m = exc.to_s.split(/\n/)
-      print "#{attr[1]}#{exc.class} (#{attr[4]}#{m.shift}#{attr[0, 1]})#{attr[]}\n"
-      puts m.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
-      if attr == ATTR_PLAIN
-        puts messages
-        unless lasts.empty?
-          puts lasts
-          printf "... %d levels...\n", levels if levels > 0
-        end
+          unless irb_bug
+            lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
+            if lines.size > @context.back_trace_limit
+              omit = lines.size - @context.back_trace_limit
+              lines = lines[0..(@context.back_trace_limit - 1)]
+              lines << "\t... %d levels..." % omit
+            end
+          end
+          lines = lines.reverse if order == :bottom
+          lines.map{ |l| l + "\n" }.join
+        }
+        # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
+        message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/)  { "(irb):#{$~[:num]}:in `<main>'" }
+        puts message
       end
       print "Maybe IRB bug!\n" if irb_bug
     end
@@ -653,16 +787,6 @@ module IRB
       end
     end
 
-    # Evaluates the given block using the given +context+ as the Context.
-    def suspend_context(context)
-      @context, back_context = context, @context
-      begin
-        yield back_context
-      ensure
-        @context = back_context
-      end
-    end
-
     # Handler for the signal SIGINT, see Kernel#trap for more information.
     def signal_handle
       unless @context.ignore_sigint?
@@ -698,16 +822,109 @@ module IRB
       end
     end
 
-    def prompt(prompt, ltype, indent, line_no) # :nodoc:
-      p = prompt.dup
-      p.gsub!(/%([0-9]+)?([a-zA-Z])/) do
+    def output_value(omit = false) # :nodoc:
+      str = @context.inspect_last_value
+      multiline_p = str.include?("\n")
+      if omit
+        winwidth = @context.io.winsize.last
+        if multiline_p
+          first_line = str.split("\n").first
+          result = @context.newline_before_multiline_output? ? (@context.return_format % first_line) : first_line
+          output_width = Reline::Unicode.calculate_width(result, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(first_line, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(first_line, winwidth - diff_size - 3)
+            str = "%s..." % lines.first
+            str += "\e[0m" if Color.colorable?
+            multiline_p = false
+          else
+            str = str.gsub(/(\A.*?\n).*/m, "\\1...")
+            str += "\e[0m" if Color.colorable?
+          end
+        else
+          output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(str, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(str, winwidth - diff_size - 3)
+            str = "%s..." % lines.first
+            str += "\e[0m" if Color.colorable?
+          end
+        end
+      end
+      if multiline_p && @context.newline_before_multiline_output?
+        printf @context.return_format, "\n#{str}"
+      else
+        printf @context.return_format, str
+      end
+    end
+
+    # Outputs the local variables to this current session, including
+    # #signal_status and #context, using IRB::Locale.
+    def inspect
+      ary = []
+      for iv in instance_variables
+        case (iv = iv.to_s)
+        when "@signal_status"
+          ary.push format("%s=:%s", iv, @signal_status.id2name)
+        when "@context"
+          ary.push format("%s=%s", iv, eval(iv).__to_s__)
+        else
+          ary.push format("%s=%s", iv, eval(iv))
+        end
+      end
+      format("#<%s: %s>", self.class, ary.join(", "))
+    end
+
+    private
+
+    def generate_prompt(opens, continue, line_offset)
+      ltype = @scanner.ltype_from_open_tokens(opens)
+      indent = @scanner.calc_indent_level(opens)
+      continue = opens.any? || continue
+      line_no = @line_no + line_offset
+
+      if ltype
+        f = @context.prompt_s
+      elsif continue
+        f = @context.prompt_c
+      else
+        f = @context.prompt_i
+      end
+      f = "" unless f
+      if @context.prompting?
+        p = format_prompt(f, ltype, indent, line_no)
+      else
+        p = ""
+      end
+      if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
+        unless ltype
+          prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
+          ind = format_prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
+            indent * 2 - p.size
+          p += " " * ind if ind > 0
+        end
+      end
+      p
+    end
+
+    def truncate_prompt_main(str) # :nodoc:
+      str = str.tr(CONTROL_CHARACTERS_PATTERN, ' ')
+      if str.size <= PROMPT_MAIN_TRUNCATE_LENGTH
+        str
+      else
+        str[0, PROMPT_MAIN_TRUNCATE_LENGTH - PROMPT_MAIN_TRUNCATE_OMISSION.size] + PROMPT_MAIN_TRUNCATE_OMISSION
+      end
+    end
+
+    def format_prompt(format, ltype, indent, line_no) # :nodoc:
+      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
         case $2
         when "N"
           @context.irb_name
         when "m"
-          @context.main.to_s
+          truncate_prompt_main(@context.main.to_s)
         when "M"
-          @context.main.inspect
+          truncate_prompt_main(@context.main.inspect)
         when "l"
           ltype
         when "i"
@@ -734,77 +951,7 @@ module IRB
           "%"
         end
       end
-      p
     end
-
-    def output_value # :nodoc:
-      str = @context.inspect_last_value
-      multiline_p = str.include?("\n")
-      if multiline_p && @context.newline_before_multiline_output?
-        printf @context.return_format, "\n#{str}"
-      else
-        printf @context.return_format, str
-      end
-    end
-
-    # Outputs the local variables to this current session, including
-    # #signal_status and #context, using IRB::Locale.
-    def inspect
-      ary = []
-      for iv in instance_variables
-        case (iv = iv.to_s)
-        when "@signal_status"
-          ary.push format("%s=:%s", iv, @signal_status.id2name)
-        when "@context"
-          ary.push format("%s=%s", iv, eval(iv).__to_s__)
-        else
-          ary.push format("%s=%s", iv, eval(iv))
-        end
-      end
-      format("#<%s: %s>", self.class, ary.join(", "))
-    end
-
-    def assignment_expression?(line)
-      # Try to parse the line and check if the last of possibly multiple
-      # expressions is an assignment type.
-
-      # If the expression is invalid, Ripper.sexp should return nil which will
-      # result in false being returned. Any valid expression should return an
-      # s-expression where the second selement of the top level array is an
-      # array of parsed expressions. The first element of each expression is the
-      # expression's type.
-      verbose, $VERBOSE = $VERBOSE, nil
-      result = ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
-      $VERBOSE = verbose
-      result
-    end
-
-    ATTR_TTY = "\e[%sm"
-    def ATTR_TTY.[](*a) self % a.join(";"); end
-    ATTR_PLAIN = ""
-    def ATTR_PLAIN.[](*) self; end
-  end
-
-  def @CONF.inspect
-    IRB.version unless self[:VERSION]
-
-    array = []
-    for k, v in sort{|a1, a2| a1[0].id2name <=> a2[0].id2name}
-      case k
-      when :MAIN_CONTEXT, :__TMP__EHV__
-        array.push format("CONF[:%s]=...myself...", k.id2name)
-      when :PROMPT
-        s = v.collect{
-          |kk, vv|
-          ss = vv.collect{|kkk, vvv| ":#{kkk.id2name}=>#{vvv.inspect}"}
-          format(":%s=>{%s}", kk.id2name, ss.join(", "))
-        }
-        array.push format("CONF[:%s]={%s}", k.id2name, s.join(", "))
-      else
-        array.push format("CONF[:%s]=%s", k.id2name, v.inspect)
-      end
-    end
-    array.join("\n")
   end
 end
 
@@ -865,13 +1012,34 @@ class Binding
   #     Cooked potato: true
   #
   #
-  # See IRB@IRB+Usage for more information.
-  def irb
+  # See IRB@Usage for more information.
+  def irb(show_code: true)
+    # Setup IRB with the current file's path and no command line arguments
     IRB.setup(source_location[0], argv: [])
+    # Create a new workspace using the current binding
     workspace = IRB::WorkSpace.new(self)
-    STDOUT.print(workspace.code_around_binding)
-    binding_irb = IRB::Irb.new(workspace)
-    binding_irb.context.irb_path = File.expand_path(source_location[0])
-    binding_irb.run(IRB.conf)
+    # Print the code around the binding if show_code is true
+    STDOUT.print(workspace.code_around_binding) if show_code
+    # Get the original IRB instance
+    debugger_irb = IRB.instance_variable_get(:@debugger_irb)
+
+    irb_path = File.expand_path(source_location[0])
+
+    if debugger_irb
+      # If we're already in a debugger session, set the workspace and irb_path for the original IRB instance
+      debugger_irb.context.workspace = workspace
+      debugger_irb.context.irb_path = irb_path
+      # If we've started a debugger session and hit another binding.irb, we don't want to start an IRB session
+      # instead, we want to resume the irb:rdbg session.
+      IRB::Debug.setup(debugger_irb)
+      IRB::Debug.insert_debug_break
+      debugger_irb.debug_break
+    else
+      # If we're not in a debugger session, create a new IRB instance with the current workspace
+      binding_irb = IRB::Irb.new(workspace)
+      binding_irb.context.irb_path = irb_path
+      binding_irb.run(IRB.conf)
+      binding_irb.debug_break
+    end
   end
 end

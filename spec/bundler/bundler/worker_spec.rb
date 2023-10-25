@@ -19,4 +19,51 @@ RSpec.describe Bundler::Worker do
       end
     end
   end
+
+  describe "handling interrupts" do
+    let(:status) do
+      pid = Process.fork do
+        $stderr.reopen File.new("/dev/null", "w")
+        Signal.trap "INT", previous_interrupt_handler
+        subject.enq "a"
+        subject.stop unless interrupt_before_stopping
+        Process.kill "INT", Process.pid
+      end
+
+      Process.wait2(pid).last
+    end
+
+    before do
+      skip "requires Process.fork" unless Process.respond_to?(:fork)
+    end
+
+    context "when interrupted before stopping" do
+      let(:interrupt_before_stopping) { true }
+      let(:previous_interrupt_handler) { ->(*) { exit 0 } }
+
+      it "aborts" do
+        expect(status.exitstatus).to eq(1)
+      end
+    end
+
+    context "when interrupted after stopping" do
+      let(:interrupt_before_stopping) { false }
+
+      context "when the previous interrupt handler was the default" do
+        let(:previous_interrupt_handler) { "DEFAULT" }
+
+        it "uses the default interrupt handler" do
+          expect(status).to be_signaled
+        end
+      end
+
+      context "when the previous interrupt handler was customized" do
+        let(:previous_interrupt_handler) { ->(*) { exit 42 } }
+
+        it "restores the custom interrupt handler after stopping" do
+          expect(status.exitstatus).to eq(42)
+        end
+      end
+    end
+  end
 end

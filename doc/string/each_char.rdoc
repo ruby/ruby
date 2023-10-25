@@ -1,0 +1,17 @@
+Calls the given block with each successive character from +self+;
+returns +self+:
+
+  'hello'.each_char {|char| print char, ' ' }
+  print "\n"
+  'тест'.each_char {|char| print char, ' ' }
+  print "\n"
+  'こんにちは'.each_char {|char| print char, ' ' }
+  print "\n"
+
+Output:
+
+  h e l l o
+  т е с т
+  こ ん に ち は
+
+Returns an enumerator if no block is given.

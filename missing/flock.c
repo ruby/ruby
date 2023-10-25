@@ -1,7 +1,16 @@
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #include "ruby/ruby.h"
 
 #if defined _WIN32
+#elif defined __wasi__
+#include <errno.h>
+
+int
+flock(int fd, int operation)
+{
+    errno = EINVAL;
+    return -1;
+}
 #elif defined HAVE_FCNTL && defined HAVE_FCNTL_H
 
 /* These are the flock() constants.  Since this systems doesn't have

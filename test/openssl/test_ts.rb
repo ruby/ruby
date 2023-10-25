@@ -77,7 +77,7 @@ _end_of_pem_
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       req.to_der
     end
-    req.message_imprint = OpenSSL::Digest::SHA1.new.digest("data")
+    req.message_imprint = OpenSSL::Digest.digest('SHA1', "data")
     req.to_der
   end
 
@@ -160,7 +160,7 @@ _end_of_pem_
   def test_request_encode_decode
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -181,6 +181,12 @@ _end_of_pem_
     assert_equal(42, qer2.nonce)
   end
 
+  def test_request_invalid_asn1
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
+      OpenSSL::Timestamp::Request.new("*" * 44)
+    end
+  end
+
   def test_response_constants
     assert_equal(0, OpenSSL::Timestamp::Response::GRANTED)
     assert_equal(1, OpenSSL::Timestamp::Response::GRANTED_WITH_MODS)
@@ -193,7 +199,7 @@ _end_of_pem_
   def test_response_creation
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
 
@@ -222,6 +228,11 @@ _end_of_pem_
     assert_equal(token.to_der, resp.token.to_der)
   end
 
+  def test_response_failure_info
+    resp = OpenSSL::Timestamp::Response.new("0\"0 \x02\x01\x020\x17\f\x15Invalid TimeStampReq.\x03\x02\x06\x80")
+    assert_equal(:BAD_ALG, resp.failure_info)
+  end
+
   def test_response_mandatory_fields
     fac = OpenSSL::Timestamp::Factory.new
     req = OpenSSL::Timestamp::Request.new
@@ -232,7 +243,7 @@ _end_of_pem_
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
-    req.message_imprint = OpenSSL::Digest::SHA1.new.digest("data")
+    req.message_imprint = OpenSSL::Digest.digest('SHA1', "data")
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
@@ -258,7 +269,7 @@ _end_of_pem_
   def test_response_allowed_digests
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    req.message_imprint = OpenSSL::Digest::SHA1.digest("test")
+    req.message_imprint = OpenSSL::Digest.digest('SHA1', "test")
 
     fac = OpenSSL::Timestamp::Factory.new
     fac.gen_time = Time.now
@@ -275,13 +286,13 @@ _end_of_pem_
     assert_equal OpenSSL::Timestamp::Response::GRANTED, resp.status
 
     # Explicitly allow SHA1 (object)
-    fac.allowed_digests = [OpenSSL::Digest::SHA1.new]
+    fac.allowed_digests = [OpenSSL::Digest.new('SHA1')]
     resp = fac.create_timestamp(ee_key, ts_cert_ee, req)
     assert_equal OpenSSL::Timestamp::Response::GRANTED, resp.status
 
     # Others not allowed
     req.algorithm = "SHA256"
-    req.message_imprint = OpenSSL::Digest::SHA256.digest("test")
+    req.message_imprint = OpenSSL::Digest.digest('SHA256', "test")
     resp = fac.create_timestamp(ee_key, ts_cert_ee, req)
     assert_equal OpenSSL::Timestamp::Response::REJECTION, resp.status
 
@@ -291,7 +302,7 @@ _end_of_pem_
     assert_equal OpenSSL::Timestamp::Response::REJECTION, resp.status
 
     # Non-String, non-Digest Array element
-    fac.allowed_digests = ["sha1", OpenSSL::Digest::SHA1.new, 123]
+    fac.allowed_digests = ["sha1", OpenSSL::Digest.new('SHA1'), 123]
     assert_raise(TypeError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
@@ -300,7 +311,7 @@ _end_of_pem_
   def test_response_default_policy
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
 
     fac = OpenSSL::Timestamp::Factory.new
@@ -317,7 +328,7 @@ _end_of_pem_
   def test_response_bad_purpose
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -333,10 +344,16 @@ _end_of_pem_
     end
   end
 
+  def test_response_invalid_asn1
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
+      OpenSSL::Timestamp::Response.new("*" * 44)
+    end
+  end
+
   def test_no_cert_requested
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.cert_requested = false
 
@@ -355,7 +372,7 @@ _end_of_pem_
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       req = OpenSSL::Timestamp::Request.new
       req.algorithm = "SHA1"
-      digest = OpenSSL::Digest::SHA1.new.digest("test")
+      digest = OpenSSL::Digest.digest('SHA1', "test")
       req.message_imprint = digest
 
       fac = OpenSSL::Timestamp::Factory.new
@@ -423,7 +440,7 @@ _end_of_pem_
   def test_verify_ee_def_policy
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.nonce = 42
 
@@ -481,7 +498,7 @@ _end_of_pem_
   def test_verify_ee_additional_certs_array
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -501,7 +518,7 @@ _end_of_pem_
   def test_verify_ee_additional_certs_with_root
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -518,7 +535,7 @@ _end_of_pem_
   def test_verify_ee_cert_inclusion_not_requested
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.nonce = 42
     req.cert_requested = false
@@ -539,7 +556,7 @@ _end_of_pem_
     #CTX_free methods don't mess up e.g. the certificates
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -560,7 +577,7 @@ _end_of_pem_
   def test_token_info_creation
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = OpenSSL::BN.new(123)
@@ -585,6 +602,12 @@ _end_of_pem_
     assert_equal(123, info.nonce)
   end
 
+  def test_token_info_invalid_asn1
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
+      OpenSSL::Timestamp::TokenInfo.new("*" * 44)
+    end
+  end
+
   private
 
   def assert_cert expected, actual
@@ -594,7 +617,7 @@ _end_of_pem_
   def timestamp_ee
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -609,7 +632,7 @@ _end_of_pem_
   def timestamp_ee_no_cert
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -625,7 +648,7 @@ _end_of_pem_
   def timestamp_direct
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42
@@ -640,7 +663,7 @@ _end_of_pem_
   def timestamp_direct_no_cert
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"
-    digest = OpenSSL::Digest::SHA1.new.digest("test")
+    digest = OpenSSL::Digest.digest('SHA1', "test")
     req.message_imprint = digest
     req.policy_id = "1.2.3.4.5"
     req.nonce = 42

@@ -1,16 +1,10 @@
 # frozen_string_literal: false
 #
 #   xmp.rb - irb version of gotoken xmp
-#   	$Release Version: 0.9$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
-# --
-#
-#
-#
 
-require "irb"
+require_relative "../irb"
 require_relative "frame"
 
 # An example printer for irb.

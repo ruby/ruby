@@ -32,6 +32,11 @@ describe "Ruby character strings" do
     "#@my_ip".should == 'xxx'
   end
 
+  it "does not interpolate invalid variable names" do
+    "#@".should == '#@'
+    "#$%".should == '#$%'
+  end
+
   it "has characters [.(=?!# end simple # interpolation" do
     "#@ip[".should == 'xxx['
     "#@ip.".should == 'xxx.'
@@ -49,28 +54,6 @@ describe "Ruby character strings" do
     "#@@ ".should == '#@@ '
     "#$ ".should == '#$ '
     "#\$".should == '#$'
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result of interpolation when an interpolated value is tainted" do
-      "#{"".taint}".tainted?.should be_true
-
-      @ip.taint
-      "#@ip".tainted?.should be_true
-
-      $ip.taint
-      "#$ip".tainted?.should be_true
-    end
-
-    it "untrusts the result of interpolation when an interpolated value is untrusted" do
-      "#{"".untrust}".untrusted?.should be_true
-
-      @ip.untrust
-      "#@ip".untrusted?.should be_true
-
-      $ip.untrust
-      "#$ip".untrusted?.should be_true
-    end
   end
 
   it "allows using non-alnum characters as string delimiters" do
@@ -260,24 +243,24 @@ describe "Ruby String literals" do
 end
 
 describe "Ruby String interpolation" do
-  it "creates a String having an Encoding compatible with all components" do
-    a = "\u3042"
-    b = "abc".encode("binary")
-
-    str = "#{a} x #{b}"
-
-    str.should == "\xe3\x81\x82\x20\x78\x20\x61\x62\x63".force_encoding("utf-8")
-    str.encoding.should == Encoding::UTF_8
+  it "permits an empty expression" do
+    s = "#{}" # rubocop:disable Lint/EmptyInterpolation
+    s.should.empty?
+    s.should_not.frozen?
   end
 
-  it "creates a String having the Encoding of the components when all are the same Encoding" do
-    a = "abc".force_encoding("euc-jp")
-    b = "def".force_encoding("euc-jp")
-    str = '"#{a} x #{b}"'.force_encoding("euc-jp")
+  it "returns a string with the source encoding by default" do
+    "a#{"b"}c".encoding.should == Encoding::BINARY
+    eval('"a#{"b"}c"'.force_encoding("us-ascii")).encoding.should == Encoding::US_ASCII
+    eval("# coding: US-ASCII \n 'a#{"b"}c'").encoding.should == Encoding::US_ASCII
+  end
 
-    result = eval(str)
-    result.should == "\x61\x62\x63\x20\x78\x20\x64\x65\x66".force_encoding("euc-jp")
-    result.encoding.should == Encoding::EUC_JP
+  it "returns a string with the source encoding, even if the components have another encoding" do
+    a = "abc".force_encoding("euc-jp")
+    "#{a}".encoding.should == Encoding::BINARY
+
+    b = "abc".encode("utf-8")
+    "#{b}".encoding.should == Encoding::BINARY
   end
 
   it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
@@ -285,5 +268,20 @@ describe "Ruby String interpolation" do
     b = "\xff".force_encoding "binary"
 
     -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+  end
+
+  it "creates a non-frozen String" do
+    code = <<~'RUBY'
+    "a#{6*7}c"
+    RUBY
+    eval(code).should_not.frozen?
+  end
+
+  it "creates a non-frozen String when # frozen-string-literal: true is used" do
+    code = <<~'RUBY'
+    # frozen-string-literal: true
+    "a#{6*7}c"
+    RUBY
+    eval(code).should_not.frozen?
   end
 end

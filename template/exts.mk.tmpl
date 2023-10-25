@@ -1,5 +1,6 @@
 # -*- makefile -*-
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@:)
@@ -12,18 +13,24 @@ notes = {}
 rubies = []
 exeext = RbConfig::CONFIG['EXEEXT']
 gnumake = false
+confexts = nil
 opt = OptionParser.new do |o|
   o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
+  o.on('--configure-exts=FILE') {|v| confexts = v}
   o.order!(ARGV)
 end
+confexts &&= File.read(confexts).scan(/^(?:ext|gem)s: (.*\.mk)/).flatten rescue nil
+confexts ||= []
+macros["old_extensions"] = []
+
 contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
-Dir.glob("{ext,gems}/*/exts.mk") do |e|
-  gem = /\Agems(?=\/)/ =~ e
+Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
+  gem = e.start_with?(".bundle/gems/")
   s = File.read(e)
-  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
+  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|MESSAGE_(?:BEGIN|END)|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
-    next if gem and n != "extensions"
+    n = "old_extensions" if n == "extensions" and !confexts.include?(e)
     v = v.split
     m = macros[n] ||= []
     case n
@@ -32,6 +39,7 @@ Dir.glob("{ext,gems}/*/exts.mk") do |e|
     else
       macros[n] = m | v
     end
+    break if n == "old_extensions"
   end
   if gem
     r = ""
@@ -124,11 +132,12 @@ distclean:
 % end
 
 libencs:
-	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) $@
+	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) MINIRUBY="$(MINIRUBY)" $@
 ext/extinit.<%=objext%>:
 	$(Q)$(MAKE)<%=mflags%> V=$(V) EXTINITS="$(EXTINITS)" $@
 
-% exts = macros["extensions"].map {|e|e.chomp("/.")}.sort
+% exts = (macros["extensions"] + macros["old_extensions"])
+% exts.map! {|e|e.chomp("/.")}.sort
 % targets.each do |tgt|
 %   exts.each do |d|
 %     t = "#{d}/#{tgt}"
@@ -145,6 +154,7 @@ ext/extinit.<%=objext%>:
 %     end
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
 %     if /^(dist|real)clean$/ =~ tgt
+	$(Q)$(RM) <%=t[%r[\A(?:\.[^/]+/)?(?:[^/]+/){2}]]%>exts.mk
 	$(Q)$(RMDIRS) $(@D)
 %     end
 %   end
@@ -157,3 +167,5 @@ extso:
 <%= k %>:<%= d.join(' ') %>
 <%= n.join("") %>
 % end
+
+remove-old-extensions: $(old_extensions:/.=/distclean)

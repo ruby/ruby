@@ -66,6 +66,26 @@ describe :thread_exit, shared: true do
     ScratchPad.recorded.should == nil
   end
 
+  it "does not reset $!" do
+    ScratchPad.record []
+
+    exc = RuntimeError.new("foo")
+    thread = Thread.new do
+      begin
+        raise exc
+      ensure
+        ScratchPad << $!
+        begin
+          Thread.current.send(@method)
+        ensure
+          ScratchPad << $!
+        end
+      end
+    end
+    thread.join
+    ScratchPad.recorded.should == [exc, exc]
+  end
+
   it "cannot be rescued" do
     thread = Thread.new do
       begin
@@ -73,7 +93,7 @@ describe :thread_exit, shared: true do
       rescue Exception
         ScratchPad.record :in_rescue
       end
-     ScratchPad.record :end_of_thread_block
+      ScratchPad.record :end_of_thread_block
     end
 
     thread.join
@@ -91,6 +111,25 @@ describe :thread_exit, shared: true do
     t.send(@method)
     t.join
     ScratchPad.recorded.should == nil
+  end
+
+  it "kills other fibers of that thread without running their ensure clauses" do
+    t = Thread.new do
+      f = Fiber.new do
+        ScratchPad.record :fiber_resumed
+        begin
+          Fiber.yield
+        ensure
+          ScratchPad.record :fiber_ensure
+        end
+      end
+      f.resume
+      sleep
+    end
+    Thread.pass until t.stop?
+    t.send(@method)
+    t.join
+    ScratchPad.recorded.should == :fiber_resumed
   end
 
   # This spec is a mess. It fails randomly, it hangs on MRI, it needs to be removed

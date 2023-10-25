@@ -1,13 +1,12 @@
-#ifndef INTERNAL_RANGE_H /* -*- C -*- */
+#ifndef INTERNAL_RANGE_H                                  /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RANGE_H
 /**
- * @file
- * @brief      Internal header for Range.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Range.
  */
 #include "internal/struct.h"    /* for RSTRUCT */
 
@@ -25,13 +24,17 @@ RANGE_BEG(VALUE r)
 static inline VALUE
 RANGE_END(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[1];
+    return RSTRUCT_GET(r, 1);
 }
 
 static inline VALUE
 RANGE_EXCL(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[2];
+    return RSTRUCT_GET(r, 2);
 }
+
+VALUE
+rb_range_component_beg_len(VALUE b, VALUE e, int excl,
+                           long *begp, long *lenp, long len, int err);
 
 #endif /* INTERNAL_RANGE_H */

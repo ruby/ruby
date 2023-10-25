@@ -22,7 +22,7 @@ module Psych
     def test_timezone_offset
       times = [Time.new(2017, 4, 13, 12, 0, 0, "+09:00"),
                Time.new(2017, 4, 13, 12, 0, 0, "-05:00")]
-      cycled = Psych::load(Psych.dump times)
+      cycled = Psych::unsafe_load(Psych.dump times)
       assert_match(/12:00:00 \+0900/, cycled.first.to_s)
       assert_match(/12:00:00 -0500/,  cycled.last.to_s)
     end
@@ -39,9 +39,29 @@ module Psych
     def test_datetime_timezone_offset
       times = [DateTime.new(2017, 4, 13, 12, 0, 0, "+09:00"),
                DateTime.new(2017, 4, 13, 12, 0, 0, "-05:00")]
-      cycled = Psych::load(Psych.dump times)
+      cycled = Psych::unsafe_load(Psych.dump times)
       assert_match(/12:00:00\+09:00/, cycled.first.to_s)
       assert_match(/12:00:00-05:00/,  cycled.last.to_s)
+    end
+
+    def test_julian_date
+      d = Date.new(1582, 10, 4, Date::GREGORIAN)
+      assert_cycle d
+    end
+
+    def test_proleptic_gregorian_date
+      d = Date.new(1582, 10, 14, Date::GREGORIAN)
+      assert_cycle d
+    end
+
+    def test_julian_datetime
+      dt = DateTime.new(1582, 10, 4, 23, 58, 59, 0, Date::GREGORIAN)
+      assert_cycle dt
+    end
+
+    def test_proleptic_gregorian_datetime
+      dt = DateTime.new(1582, 10, 14, 23, 58, 59, 0, Date::GREGORIAN)
+      assert_cycle dt
     end
 
     def test_invalid_date

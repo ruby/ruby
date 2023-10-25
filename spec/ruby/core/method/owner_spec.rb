@@ -23,4 +23,10 @@ describe "Method#owner" do
       @m.method(:handled_via_method_missing).owner.should == MethodSpecs::Methods
     end
   end
+
+  ruby_version_is "3.2" do
+    it "returns the class on which public was called for a private method in ancestor" do
+      MethodSpecs::InheritedMethods::C.new.method(:derp).owner.should == MethodSpecs::InheritedMethods::C
+    end
+  end
 end

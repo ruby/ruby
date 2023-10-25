@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   use-loader.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require_relative "../cmd/load"
@@ -47,7 +41,7 @@ module IRB
     alias use_loader? use_loader
 
     remove_method :use_loader= if method_defined?(:use_loader=)
-    # Sets IRB.conf[:USE_LOADER]
+    # Sets <code>IRB.conf[:USE_LOADER]</code>
     #
     # See #use_loader for more information.
     def use_loader=(opt)
@@ -73,5 +67,3 @@ module IRB
     end
   end
 end
-
-

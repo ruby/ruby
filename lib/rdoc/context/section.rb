@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require 'cgi/util'
+
 ##
 # A section of documentation like:
 #
@@ -229,4 +231,3 @@ class RDoc::Context::Section
   end
 
 end
-

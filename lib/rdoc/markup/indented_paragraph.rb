@@ -45,4 +45,3 @@ class RDoc::Markup::IndentedParagraph < RDoc::Markup::Raw
   end
 
 end
-

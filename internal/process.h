@@ -1,15 +1,14 @@
-#ifndef INTERNAL_PROCESS_H /* -*- C -*- */
+#ifndef INTERNAL_PROCESS_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_PROCESS_H
 /**
- * @file
- * @brief      Internal header for Process.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Process.
  */
-#include "ruby/config.h"        /* for rb_pid_t */
+#include "ruby/internal/config.h"      /* for rb_pid_t */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
@@ -21,11 +20,13 @@
 #endif
 
 #include "ruby/ruby.h"          /* for VALUE */
+#include "internal/compilers.h" /* for __has_warning */
 #include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
 
 #define RB_MAX_GROUPS (65536)
 
 struct waitpid_state;
+struct rb_process_status;
 struct rb_execarg {
     union {
         struct {
@@ -56,6 +57,7 @@ struct rb_execarg {
     unsigned gid_given : 1;
     unsigned exception : 1;
     unsigned exception_given : 1;
+    struct rb_process_status *status;
     struct waitpid_state *waitpid_state; /* for async process management */
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
@@ -73,10 +75,16 @@ struct rb_execarg {
 };
 
 /* process.c */
-rb_pid_t rb_fork_ruby(int *status);
+rb_pid_t rb_call_proc__fork(void);
 void rb_last_status_clear(void);
 static inline char **ARGVSTR2ARGV(VALUE argv_str);
 static inline size_t ARGVSTR2ARGC(VALUE argv_str);
+
+#ifdef HAVE_PWD_H
+VALUE rb_getlogin(void);
+VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* process.c (export) */

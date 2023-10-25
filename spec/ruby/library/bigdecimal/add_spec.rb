@@ -24,7 +24,7 @@ describe "BigDecimal#add" do
   end
 
   it "returns a + b with given precision" do
-    # documentation states, that precision ist optional, but it ain't,
+    # documentation states that precision is optional, but it ain't,
     @two.add(@one, 1).should == @three
     @one .add(@two, 1).should == @three
     @one.add(@one_minus, 1).should == @zero
@@ -60,7 +60,7 @@ describe "BigDecimal#add" do
   end
 
 #  TODO:
-#  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17374
+#  https://blade.ruby-lang.org/ruby-core/17374
 #
 #  This doesn't work on MRI and looks like a bug to me:
 #  one can use BigDecimal + Float, but not Bigdecimal.add(Float)
@@ -136,8 +136,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if NaN is involved" do
-    @one.add(@nan, 10000).nan?.should == true
-    @nan.add(@one, 1).nan?.should == true
+    @one.add(@nan, 10000).should.nan?
+    @nan.add(@one, 1).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do
@@ -166,8 +166,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if Infinity + (- Infinity)" do
-    @infinity.add(@infinity_minus, 10000).nan?.should == true
-    @infinity_minus.add(@infinity, 10000).nan?.should == true
+    @infinity.add(@infinity_minus, 10000).should.nan?
+    @infinity_minus.add(@infinity, 10000).should.nan?
   end
 
   it "raises TypeError when adds nil" do

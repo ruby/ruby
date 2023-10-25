@@ -121,6 +121,8 @@
 
 module Benchmark
 
+  VERSION = "0.2.1"
+
   BENCHMARK_VERSION = "2002-04-25" # :nodoc:
 
   # Invokes the block with a Benchmark::Report object, which
@@ -128,6 +130,9 @@ module Benchmark
   # benchmark tests. Reserves +label_width+ leading spaces for
   # labels on each line. Prints +caption+ at the top of the
   # report, and uses +format+ to format each line.
+  # (Note: +caption+ must contain a terminating newline character,
+  # see the default Benchmark::Tms::CAPTION for an example.)
+  #
   # Returns an array of Benchmark::Tms objects.
   #
   # If the block returns an array of
@@ -163,8 +168,8 @@ module Benchmark
   #
 
   def benchmark(caption = "", label_width = nil, format = nil, *labels) # :yield: report
-    sync = STDOUT.sync
-    STDOUT.sync = true
+    sync = $stdout.sync
+    $stdout.sync = true
     label_width ||= 0
     label_width += 1
     format ||= FORMAT
@@ -176,7 +181,7 @@ module Benchmark
     }
     report.list
   ensure
-    STDOUT.sync = sync unless sync.nil?
+    $stdout.sync = sync unless sync.nil?
   end
 
 
@@ -247,8 +252,8 @@ module Benchmark
     job = Job.new(width)
     yield(job)
     width = job.width + 1
-    sync = STDOUT.sync
-    STDOUT.sync = true
+    sync = $stdout.sync
+    $stdout.sync = true
 
     # rehearsal
     puts 'Rehearsal '.ljust(width+CAPTION.length,'-')
@@ -268,7 +273,7 @@ module Benchmark
       Benchmark.measure(label, &item).tap { |res| print res }
     }
   ensure
-    STDOUT.sync = sync unless sync.nil?
+    $stdout.sync = sync unless sync.nil?
   end
 
   #
@@ -525,6 +530,20 @@ module Benchmark
     #
     def to_a
       [@label, @utime, @stime, @cutime, @cstime, @real]
+    end
+
+    #
+    # Returns a hash containing the same data as `to_a`.
+    #
+    def to_h
+      {
+        label:  @label,
+        utime:  @utime,
+        stime:  @stime,
+        cutime: @cutime,
+        cstime: @cstime,
+        real:   @real
+      }
     end
 
     protected

@@ -16,6 +16,15 @@ describe "String#tr" do
     "hello ^-^".tr("---", "_").should == "hello ^_^"
   end
 
+  ruby_bug "#19769", ""..."3.3" do
+    it "accepts c1-c1 notation to denote range of one character" do
+      "hello".tr('e-e', 'x').should == "hxllo"
+      "123456789".tr("2-23","xy").should == "1xy456789"
+      "hello ^-^".tr("e-", "a-a_").should == "hallo ^_^"
+      "hello ^-^".tr("---o", "_a").should == "hella ^_^"
+    end
+  end
+
   it "pads to_str with its last char if it is shorter than from_string" do
     "this".tr("this", "x").should == "xxxx"
     "hello".tr("a-z", "A-H.").should == "HE..."
@@ -57,21 +66,8 @@ describe "String#tr" do
     "bla".tr(from_str, to_str).should == "BlA"
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      ["h", "hello"].each do |str|
-        tainted_str = str.dup.taint
-
-        tainted_str.tr("e", "a").tainted?.should == true
-
-        str.tr("e".taint, "a").tainted?.should == false
-        str.tr("e", "a".taint).tainted?.should == false
-      end
-    end
+  it "returns Stringinstances when called on a subclass" do
+    StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(String)
   end
 
   # http://redmine.ruby-lang.org/issues/show/1839
@@ -122,10 +118,10 @@ describe "String#tr!" do
     s.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     s = "abcdefghijklmnopqR".freeze
-    -> { s.tr!("cdefg", "12") }.should raise_error(frozen_error_class)
-    -> { s.tr!("R", "S")      }.should raise_error(frozen_error_class)
-    -> { s.tr!("", "")        }.should raise_error(frozen_error_class)
+    -> { s.tr!("cdefg", "12") }.should raise_error(FrozenError)
+    -> { s.tr!("R", "S")      }.should raise_error(FrozenError)
+    -> { s.tr!("", "")        }.should raise_error(FrozenError)
   end
 end

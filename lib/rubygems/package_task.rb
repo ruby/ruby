@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # Copyright (c) 2003, 2004 Jim Weirich, 2009 Eric Hodel
 #
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -20,14 +21,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubygems'
-require 'rubygems/package'
-begin
-  gem 'rake'
-rescue Gem::LoadError
-end
-
-require 'rake/packagetask'
+require_relative "../rubygems"
+require_relative "package"
+require "rake/packagetask"
 
 ##
 # Create a package based upon a Gem::Specification.  Gem packages, as well as
@@ -62,7 +58,6 @@ require 'rake/packagetask'
 #   end
 
 class Gem::PackageTask < Rake::PackageTask
-
   ##
   # Ruby Gem::Specification containing the metadata for this package.  The
   # name, version and package_files are automatically determined from the
@@ -88,6 +83,7 @@ class Gem::PackageTask < Rake::PackageTask
     super gem.full_name, :noversion
     @gem_spec = gem
     @package_files += gem_spec.files if gem_spec.files
+    @fileutils_output = $stdout
   end
 
   ##
@@ -118,11 +114,10 @@ class Gem::PackageTask < Rake::PackageTask
           Gem::Package.build gem_spec
 
           verbose trace do
-            mv gem_file, '..'
+            mv gem_file, ".."
           end
         end
       end
     end
   end
-
 end

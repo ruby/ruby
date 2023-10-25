@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require 'etc'
 
-describe "Struct::Passwd" do
+describe "Etc::Passwd" do
   platform_is_not :windows do
     before :all do
       @pw = Etc.getpwuid(`id -u`.strip.to_i)

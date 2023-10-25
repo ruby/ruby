@@ -6,16 +6,13 @@ class TestRDocRIDriver < RDoc::TestCase
   def setup
     super
 
-    @tmpdir = File.join Dir.tmpdir, "test_rdoc_ri_driver_#{$$}"
-    @home_ri = File.join @tmpdir, 'dot_ri'
+    @home_ri = File.join @test_home, 'dot_ri'
 
-    FileUtils.mkdir_p @tmpdir
     FileUtils.mkdir_p @home_ri
 
-    @orig_ri = ENV['RI']
-    @orig_home = ENV['HOME']
-    ENV['HOME'] = @tmpdir
-    ENV.delete 'RI'
+    @orig_ri = ENV.delete('RI')
+    @rdoc_home = File.join @test_home, ".rdoc"
+    FileUtils.mkdir_p @rdoc_home
 
     @options = RDoc::RI::Driver.default_options
     @options[:use_system] = false
@@ -23,7 +20,7 @@ class TestRDocRIDriver < RDoc::TestCase
     @options[:use_home]   = false
     @options[:use_gems]   = false
 
-    @options[:home]       = @tmpdir
+    @options[:home]       = @rdoc_home
     @options[:use_stdout] = true
     @options[:formatter]  = @RM::ToRdoc
 
@@ -31,14 +28,17 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def teardown
-    super
+    defined?(@orig_ri) and ENV['RI'] = @orig_ri
 
-    ENV['HOME'] = @orig_home
-    ENV['RI'] = @orig_ri
-    FileUtils.rm_rf @tmpdir
+    super
   end
 
-  DUMMY_PAGER = ":;\n"
+  case RUBY_PLATFORM
+  when /mswin|mingw/
+    DUMMY_PAGER = "type nul"
+  else
+    DUMMY_PAGER = "true"
+  end
 
   def with_dummy_pager
     pager_env, ENV['RI_PAGER'] = ENV['RI_PAGER'], DUMMY_PAGER
@@ -81,7 +81,7 @@ class TestRDocRIDriver < RDoc::TestCase
       @RM::Rule.new(1),
       @RM::Paragraph.new('Also found in:'),
       @RM::Verbatim.new("ruby core", "\n",
-                        "~/.rdoc", "\n"))
+                        @rdoc_home, "\n"))
 
     assert_equal expected, out
   end
@@ -231,7 +231,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo::Bar#blah'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         head(3, 'Implementation from Bar'),
         rule(1),
         verb("blah(5) => 5\n",
@@ -254,7 +254,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Qux#aliased'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         para('alias comment'),
@@ -280,7 +280,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo::Bar#attr'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         blank_line)
@@ -299,7 +299,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Bar#inherit'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         head(3, 'Implementation from Foo'),
         rule(1),
         blank_line,
@@ -343,13 +343,13 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo#inherit'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         blank_line,
         head(1, 'Foo#override'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         para('must not be displayed in Bar#override'),
@@ -419,6 +419,30 @@ class TestRDocRIDriver < RDoc::TestCase
     util_ancestors_store
 
     assert_equal %w[X Mixin Object Foo], @driver.ancestors_of('Foo::Bar')
+  end
+
+  def test_ancestors_of_chained_inclusion
+    # Store represents something like:
+    #
+    #   module X
+    #   end
+    #
+    #   module Y
+    #     include X
+    #   end
+    #
+    #   class Z
+    #     include Y
+    #   end
+    #
+    # Y is not chosen randomly, it has to be after Object in the alphabet
+    # to reproduce https://github.com/ruby/rdoc/issues/814.
+    store = RDoc::RI::Store.new @home_ri
+    store.cache[:ancestors] = { "Z" => ["Object", "Y"], "Y" => ["X"] }
+    store.cache[:modules] = %W[X Y Z]
+    @driver.stores = [store]
+
+    assert_equal %w[X Y Object], @driver.ancestors_of('Z')
   end
 
   def test_classes
@@ -574,7 +598,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 1, out.scan(/-\n/).length
+    assert_equal 1, out.scan(/^-{50,}$/).length, out
 
     refute_match %r%Foo::Bar#blah%, out
   end
@@ -598,7 +622,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 6, out.scan(/-\n/).length
+    assert_equal 6, out.scan(/^-{50,}$/).length, out
 
     assert_match %r%Foo::Bar#blah%, out
   end
@@ -802,7 +826,7 @@ Foo::Bar#bother
       @driver.display_page 'home:README'
     end
 
-    assert_match %r%= README pages in ~/\.rdoc%, out
+    assert_match %r%= README pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,               out
     assert_match %r%README\.md%,                 out
   end
@@ -856,7 +880,7 @@ Foo::Bar#bother
       @driver.display_page_list @store1
     end
 
-    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%= Pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,        out
   end
 
@@ -876,7 +900,7 @@ Foo::Bar#bother
       @driver.display_page_list @store1
     end
 
-    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%= Pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,        out
     assert_match %r%OTHER\.rdoc%,         out
   end
@@ -1067,23 +1091,6 @@ Foo::Bar#bother
     assert_instance_of @RM::ToBs, driver.formatter(StringIO.new)
   end
 
-  def test_in_path_eh
-    path = ENV['PATH']
-
-    test_path = File.expand_path '..', __FILE__
-
-    temp_dir do |dir|
-      nonexistent = File.join dir, 'nonexistent'
-      refute @driver.in_path?(nonexistent)
-
-      ENV['PATH'] = test_path
-
-      assert @driver.in_path?(File.basename(__FILE__))
-    end
-  ensure
-    ENV['PATH'] = path
-  end
-
   def test_method_type
     assert_equal :both,     @driver.method_type(nil)
     assert_equal :both,     @driver.method_type('.')
@@ -1222,7 +1229,7 @@ Foo::Bar#bother
     assert_equal '(unknown)#inherit', method.full_name
   end
 
-  def _test_page # this test doesn't do anything anymore :(
+  def test_page
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1236,9 +1243,7 @@ Foo::Bar#bother
     refute @driver.paging?
   end
 
-  # this test is too fragile. Perhaps using Process.spawn will make this
-  # reliable
-  def _test_page_in_presence_of_child_status
+  def test_page_in_presence_of_child_status
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1401,7 +1406,7 @@ Foo::Bar#bother
     end
   end
 
-  def _test_setup_pager # this test doesn't do anything anymore :(
+  def test_setup_pager # this test doesn't do anything anymore :(
     @driver.use_stdout = false
 
     pager = with_dummy_pager do @driver.setup_pager end

@@ -279,4 +279,44 @@ describe "IO.copy_stream" do
     end
 
   end
+
+
+  describe "with a destination that does partial reads" do
+    before do
+      @from_out, @from_in = IO.pipe
+      @to_out, @to_in = IO.pipe
+    end
+
+    after do
+      [@from_out, @from_in, @to_out, @to_in].each {|io| io.close rescue nil}
+    end
+
+    it "calls #write repeatedly on the destination Object" do
+      @from_in.write "1234"
+      @from_in.close
+
+      th = Thread.new do
+        IO.copy_stream(@from_out, @to_in)
+      end
+
+      copied = ""
+      4.times do
+        copied += @to_out.read(1)
+      end
+
+      th.join
+
+      copied.should == "1234"
+    end
+
+  end
+end
+
+describe "IO.copy_stream" do
+  it "does not use buffering when writing to STDOUT" do
+    IO.popen([*ruby_exe, fixture(__FILE__ , "copy_in_out.rb")], "r+") do |io|
+      io.write("bar")
+      io.read(3).should == "bar"
+    end
+  end
 end

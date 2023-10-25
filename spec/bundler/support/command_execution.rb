@@ -3,18 +3,7 @@
 module Spec
   CommandExecution = Struct.new(:command, :working_directory, :exitstatus, :stdout, :stderr) do
     def to_s
-      c = Shellwords.shellsplit(command.strip).map {|s| s.include?("\n") ? " \\\n  <<EOS\n#{s.gsub(/^/, "  ").chomp}\nEOS" : Shellwords.shellescape(s) }
-      c = c.reduce("") do |acc, elem|
-        concat = acc + " " + elem
-
-        last_line = concat.match(/.*\z/)[0]
-        if last_line.size >= 100
-          acc + " \\\n  " + elem
-        else
-          concat
-        end
-      end
-      "$ #{c.strip}"
+      "$ #{command}"
     end
     alias_method :inspect, :to_s
 

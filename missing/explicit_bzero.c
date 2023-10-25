@@ -1,12 +1,9 @@
 #ifndef __STDC_WANT_LIB_EXT1__
-#define __STDC_WANT_LIB_EXT1__ 1
+#define __STDC_WANT_LIB_EXT1__ 1 /* for memset_s() */
 #endif
 
 #include "ruby/missing.h"
 #include <string.h>
-#ifdef HAVE_MEMSET_S
-# include <string.h>
-#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -17,9 +14,9 @@
 
 /* OS support note:
  * BSDs have explicit_bzero().
- * OS-X has memset_s().
+ * macOS has memset_s().
  * Windows has SecureZeroMemory() since XP.
- * Linux has none. *Sigh*
+ * Linux has explicit_bzero() since glibc 2.25, musl libc 1.1.20.
  */
 
 /*

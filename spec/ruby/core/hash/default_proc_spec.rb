@@ -73,8 +73,8 @@ describe "Hash#default_proc=" do
     end.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    -> { {}.freeze.default_proc = Proc.new {} }.should raise_error(frozen_error_class)
-    -> { {}.freeze.default_proc = nil }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { {}.freeze.default_proc = Proc.new {} }.should raise_error(FrozenError)
+    -> { {}.freeze.default_proc = nil }.should raise_error(FrozenError)
   end
 end

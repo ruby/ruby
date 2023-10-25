@@ -5,7 +5,7 @@ require_relative "../helper"
 
 class TestCSVParseRowSeparator < Test::Unit::TestCase
   extend DifferentOFS
-  include Helper
+  include CSVHelper
 
   def test_multiple_characters
     with_chunk_size("1") do

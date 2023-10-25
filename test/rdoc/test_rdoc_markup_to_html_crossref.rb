@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
@@ -15,6 +15,12 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     result = @to.convert 'C1'
 
     assert_equal para("<a href=\"C1.html\"><code>C1</code></a>"), result
+  end
+
+  def test_convert_CROSSREF_method
+    result = @to.convert 'C1#m(foo, bar, baz)'
+
+    assert_equal para("<a href=\"C1.html#method-i-m\"><code>C1#m(foo, bar, baz)</code></a>"), result
   end
 
   def test_convert_CROSSREF_label
@@ -89,6 +95,20 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal para("<a href=\"C1.html#method-c-25\"><code>C1::%</code></a>"), result
   end
 
+  def test_convert_RDOCLINK_rdoc_ref_method_escape_html
+    m = @c1.add_method RDoc::AnyMethod.new nil, '<<'
+    m.singleton = false
+
+    result = @to.convert 'rdoc-ref:C1#<<'
+
+    assert_equal para("<a href=\"C1.html#method-i-3C-3C\"><code>C1#&lt;&lt;</code></a>"), result
+    m.singleton = true
+
+    result = @to.convert 'rdoc-ref:C1::<<'
+
+    assert_equal para("<a href=\"C1.html#method-c-3C-3C\"><code>C1::&lt;&lt;</code></a>"), result
+  end
+
   def test_convert_RDOCLINK_rdoc_ref_method_percent_label
     m = @c1.add_method RDoc::AnyMethod.new nil, '%'
     m.singleton = false
@@ -135,6 +155,13 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
     assert_equal "<a href=\"C1.html#method-i-m\"><code>m</code></a>",
                  REGEXP_HANDLING('#m')
+  end
+
+  def test_handle_regexp_CROSSREF_with_arg_looks_like_TIDYLINK
+    result = @to.convert 'C1.m[:sym]'
+
+    assert_equal para("<a href=\"C1.html#method-c-m\"><code>C1.m[:sym]</code></a>"), result,
+                 'C1.m[:sym]'
   end
 
   def test_handle_regexp_HYPERLINK_rdoc
@@ -239,4 +266,3 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
   end
 
 end
-

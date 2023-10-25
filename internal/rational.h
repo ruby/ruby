@@ -1,17 +1,15 @@
-#ifndef INTERNAL_RATIONAL_H /* -*- C -*- */
+#ifndef INTERNAL_RATIONAL_H                              /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RATIONAL_H
 /**
- * @file
- * @brief      Internal header for Rational.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Rational.
  */
-#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#include "ruby/internal/config.h"      /* for HAVE_LIBGMP */
 #include "ruby/ruby.h"          /* for struct RBasic */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/numeric.h"   /* for INT_POSITIVE_P */
 #include "ruby_assert.h"        /* for assert */
 
@@ -21,20 +19,25 @@ struct RRational {
     VALUE den;
 };
 
-#define RRATIONAL(obj) (R_CAST(RRational)(obj))
+#define RRATIONAL(obj) ((struct RRational *)(obj))
 
 /* rational.c */
 VALUE rb_rational_canonicalize(VALUE x);
 VALUE rb_rational_uminus(VALUE self);
 VALUE rb_rational_plus(VALUE self, VALUE other);
+VALUE rb_rational_minus(VALUE self, VALUE other);
 VALUE rb_rational_mul(VALUE self, VALUE other);
+VALUE rb_rational_div(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
+VALUE rb_rational_hash(VALUE self);
 VALUE rb_rational_abs(VALUE self);
 VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_rational_pow(VALUE self, VALUE other);
+VALUE rb_rational_floor(VALUE self, int ndigits);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
+VALUE rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num);
 VALUE rb_float_numerator(VALUE x);
 VALUE rb_float_denominator(VALUE x);
 

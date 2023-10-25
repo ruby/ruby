@@ -150,11 +150,11 @@ describe "IO#reopen with a String" do
 
     @io.close_on_exec = true
     @io.reopen @other_name
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
 
     @io.close_on_exec = false
     @io.reopen @other_name
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
   end
 
   it "creates the file if it doesn't exist if the IO is opened in write mode" do
@@ -293,12 +293,12 @@ describe "IO#reopen with an IO" do
     @other_io.close_on_exec = true
     @io.close_on_exec = true
     @io.reopen @other_io
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
 
     @other_io.close_on_exec = false
     @io.close_on_exec = false
     @io.reopen @other_io
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
   end
 
   it "may change the class of the instance" do

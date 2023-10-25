@@ -48,10 +48,10 @@ describe "Process.spawn" do
     -> { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
   end
 
-  it "returns the process ID of the new process as a Fixnum" do
+  it "returns the process ID of the new process as an Integer" do
     pid = Process.spawn(*ruby_exe, "-e", "exit")
     Process.wait pid
-    pid.should be_an_instance_of(Fixnum)
+    pid.should be_an_instance_of(Integer)
   end
 
   it "returns immediately" do
@@ -207,13 +207,29 @@ describe "Process.spawn" do
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
-    expected = "\n"
-    platform_is :windows do
-      # Windows does not expand the variable if it is unset
-      expected = "#{@var}\n"
+    -> do
+      Process.wait Process.spawn({"FOO" => nil}, ruby_cmd("p ENV['FOO']"))
+    end.should output_to_fd("nil\n")
+  end
+
+  platform_is_not :windows do
+    it "uses the passed env['PATH'] to search the executable" do
+      dir = tmp("spawn_path_dir")
+      mkdir_p dir
+      begin
+        exe = 'process-spawn-executable-in-path'
+        path = "#{dir}/#{exe}"
+        File.write(path, "#!/bin/sh\necho $1")
+        File.chmod(0755, path)
+
+        env = { "PATH" => "#{dir}#{File::PATH_SEPARATOR}#{ENV['PATH']}" }
+        Process.wait Process.spawn(env, exe, 'OK', out: @name)
+        $?.should.success?
+        File.read(@name).should == "OK\n"
+      ensure
+        rm_r dir
+      end
     end
-    File.read(@name).should == expected
   end
 
   it "calls #to_hash to convert the environment" do
@@ -333,7 +349,7 @@ describe "Process.spawn" do
       pgid = Process.getpgid(Process.pid)
       # The process group is not available on all platforms.
       # See "man proc" - /proc/[pid]/stat - (5) pgrp
-      # In Travis arm64 environment, the value is 0.
+      # In Travis aarch64 environment, the value is 0.
       #
       # $ cat /proc/[pid]/stat
       # 19179 (ruby) S 19160 0 0 ...
@@ -461,7 +477,17 @@ describe "Process.spawn" do
 
   # redirection
 
-  it "redirects STDOUT to the given file descriptor if out: Fixnum" do
+  it 'redirects to the wrapped IO using wrapped_io.to_io if out: wrapped_io' do
+    File.open(@name, 'w') do |file|
+      -> do
+        wrapped_io = mock('wrapped IO')
+        wrapped_io.should_receive(:to_io).and_return(file)
+        Process.wait Process.spawn('echo Hello World', out: wrapped_io)
+      end.should output_to_fd("Hello World\n", file)
+    end
+  end
+
+  it "redirects STDOUT to the given file descriptor if out: Integer" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark", out: file.fileno)
@@ -487,7 +513,7 @@ describe "Process.spawn" do
     File.read(@name).should == "glark\n"
   end
 
-  it "redirects STDERR to the given file descriptor if err: Fixnum" do
+  it "redirects STDERR to the given file descriptor if err: Integer" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark>&2", err: file.fileno)
@@ -540,31 +566,47 @@ describe "Process.spawn" do
     File.read(@name).should == "glarkbang"
   end
 
+  platform_is_not :windows, :android do
+    it "closes STDERR in the child if :err => :close" do
+      File.open(@name, 'w') do |file|
+        -> do
+          code = "begin; STDOUT.puts 'out'; STDERR.puts 'hello'; rescue => e; puts 'rescued'; end"
+          Process.wait Process.spawn(ruby_cmd(code), :out => file, :err => :close)
+        end.should output_to_fd("out\nrescued\n", file)
+      end
+    end
+  end
+
+  platform_is_not :windows do
+    it "redirects non-default file descriptor to itself" do
+      File.open(@name, 'w') do |file|
+        -> do
+          Process.wait Process.spawn(
+            ruby_cmd("f = IO.new(#{file.fileno}, 'w'); f.print(:bang); f.flush"), file.fileno => file.fileno)
+        end.should output_to_fd("bang", file)
+      end
+    end
+  end
+
+  it "redirects default file descriptor to itself" do
+    -> do
+      Process.wait Process.spawn(
+        ruby_cmd("f = IO.new(#{STDOUT.fileno}, 'w'); f.print(:bang); f.flush"), STDOUT.fileno => STDOUT.fileno)
+    end.should output_to_fd("bang", STDOUT)
+  end
+
   # :close_others
 
   platform_is_not :windows do
     context "defaults :close_others to" do
-      ruby_version_is ""..."2.6" do
-        it "true" do
-          IO.pipe do |r, w|
-            w.close_on_exec = false
-            code = "begin; IO.new(#{w.fileno}).close; rescue Errno::EBADF; puts 'not inherited'; end"
-            Process.wait Process.spawn(ruby_cmd(code), :out => @name)
-            File.read(@name).should == "not inherited\n"
-          end
-        end
-      end
-
-      ruby_version_is "2.6" do
-        it "false" do
-          IO.pipe do |r, w|
-            w.close_on_exec = false
-            code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
-            pid = Process.spawn(ruby_cmd(code))
-            w.close
-            Process.wait(pid)
-            r.read.should == "inherited\n"
-          end
+      it "false" do
+        IO.pipe do |r, w|
+          w.close_on_exec = false
+          code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
+          pid = Process.spawn(ruby_cmd(code))
+          w.close
+          Process.wait(pid)
+          r.read.should == "inherited\n"
         end
       end
     end
@@ -672,7 +714,7 @@ describe "Process.spawn" do
   end
 
   it "raises an Errno::EACCES or Errno::EISDIR when passed a directory" do
-    -> { Process.spawn File.dirname(__FILE__) }.should raise_error(SystemCallError) { |e|
+    -> { Process.spawn __dir__ }.should raise_error(SystemCallError) { |e|
       [Errno::EACCES, Errno::EISDIR].should include(e.class)
     }
   end
@@ -699,13 +741,15 @@ describe "Process.spawn" do
       end
 
       it "maps the key to a file descriptor in the child that inherits the file descriptor from the parent specified by the value" do
-        child_fd = find_unused_fd
-        args = ruby_cmd(fixture(__FILE__, "map_fd.rb"), args: [child_fd.to_s])
-        pid = Process.spawn(*args, { child_fd => @io })
-        Process.waitpid pid
-        @io.rewind
+        File.open(__FILE__, "r") do |f|
+          child_fd = f.fileno
+          args = ruby_cmd(fixture(__FILE__, "map_fd.rb"), args: [child_fd.to_s])
+          pid = Process.spawn(*args, { child_fd => @io })
+          Process.waitpid pid
+          @io.rewind
 
-        @io.read.should == "writing to fd: #{child_fd}"
+          @io.read.should == "writing to fd: #{child_fd}"
+        end
       end
     end
   end

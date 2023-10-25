@@ -40,42 +40,20 @@ describe :string_each_line, shared: true do
     b.should == ["foo\n", "🤡🤡🤡🤡🤡🤡🤡\n", "bar\n", "baz\n"]
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints substrings that are passed to the block if self is tainted" do
-      "one\ntwo\r\nthree".taint.send(@method) { |s| s.tainted?.should == true }
-
-      "x.y.".send(@method, ".".taint) { |s| s.tainted?.should == false }
-    end
-  end
-
   it "passes self as a whole to the block if the separator is nil" do
     a = []
     "one\ntwo\r\nthree".send(@method, nil) { |s| a << s }
     a.should == ["one\ntwo\r\nthree"]
   end
 
-  ruby_version_is ''...'2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed ''" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n"]
+  it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
 
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n", "dog"]
-    end
-  end
-
-  ruby_version_is '2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
-
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
-    end
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
   end
 
   describe "uses $/" do
@@ -107,10 +85,10 @@ describe :string_each_line, shared: true do
     end
   end
 
-  it "yields subclass instances for subclasses" do
+  it "yields String instances for subclasses" do
     a = []
     StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
-    a.should == [StringSpecs::MyString, StringSpecs::MyString]
+    a.should == [String, String]
   end
 
   it "returns self" do
@@ -132,6 +110,12 @@ describe :string_each_line, shared: true do
     out = []
     str.send(@method){|x| out << x; str[-1] = '!' }.should == "hello\nworld!"
     out.should == ["hello\n", "world."]
+  end
+
+  it "returns Strings in the same encoding as self" do
+    "one\ntwo\r\nthree".encode("US-ASCII").send(@method) do |s|
+      s.encoding.should == Encoding::US_ASCII
+    end
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do

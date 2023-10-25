@@ -6,6 +6,7 @@ module DidYouMean
 
     NAMES_TO_EXCLUDE = { NilClass => nil.methods }
     NAMES_TO_EXCLUDE.default = []
+    Ractor.make_shareable(NAMES_TO_EXCLUDE) if defined?(Ractor)
 
     # +MethodNameChecker::RB_RESERVED_WORDS+ is the list of reserved words in
     # Ruby that take an argument. Unlike
@@ -36,6 +37,8 @@ module DidYouMean
       yield
     )
 
+    Ractor.make_shareable(RB_RESERVED_WORDS) if defined?(Ractor)
+
     def initialize(exception)
       @method_name  = exception.name
       @receiver     = exception.receiver
@@ -43,7 +46,12 @@ module DidYouMean
     end
 
     def corrections
-      @corrections ||= SpellChecker.new(dictionary: RB_RESERVED_WORDS + method_names).correct(method_name) - names_to_exclude
+      @corrections ||= begin
+                         dictionary = method_names
+                         dictionary = RB_RESERVED_WORDS + dictionary if @private_call
+
+                         SpellChecker.new(dictionary: dictionary).correct(method_name) - names_to_exclude
+                       end
     end
 
     def method_names
@@ -51,6 +59,13 @@ module DidYouMean
         method_names = receiver.methods + receiver.singleton_methods
         method_names += receiver.private_methods if @private_call
         method_names.uniq!
+        # Assume that people trying to use a writer are not interested in a reader
+        # and vice versa
+        if method_name.match?(/=\Z/)
+          method_names.select! { |name| name.match?(/=\Z/) }
+        else
+          method_names.reject! { |name| name.match?(/=\Z/) }
+        end
         method_names
       else
         []

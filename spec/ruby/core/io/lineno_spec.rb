@@ -14,6 +14,24 @@ describe "IO#lineno" do
     -> { IOSpecs.closed_io.lineno }.should raise_error(IOError)
   end
 
+  it "raises an IOError on a write-only stream" do
+    name = tmp("io_lineno.txt")
+    begin
+      File.open(name, 'w') do |f|
+        -> { f.lineno }.should raise_error(IOError)
+      end
+    ensure
+      rm_r name
+    end
+  end
+
+  it "raises an IOError on a duplexed stream with the read side closed" do
+    IO.popen('cat', 'r+') do |p|
+      p.close_read
+      -> { p.lineno }.should raise_error(IOError)
+    end
+  end
+
   it "returns the current line number" do
     @io.lineno.should == 0
 
@@ -40,6 +58,24 @@ describe "IO#lineno=" do
     -> { IOSpecs.closed_io.lineno = 5 }.should raise_error(IOError)
   end
 
+  it "raises an IOError on a write-only stream" do
+    name = tmp("io_lineno.txt")
+    begin
+      File.open(name, 'w') do |f|
+        -> { f.lineno = 0 }.should raise_error(IOError)
+      end
+    ensure
+      rm_r name
+    end
+  end
+
+  it "raises an IOError on a duplexed stream with the read side closed" do
+    IO.popen('cat', 'r+') do |p|
+      p.close_read
+      -> { p.lineno = 0 }.should raise_error(IOError)
+    end
+  end
+
   it "calls #to_int on a non-numeric argument" do
     obj = mock('123')
     obj.should_receive(:to_int).and_return(123)
@@ -56,8 +92,13 @@ describe "IO#lineno=" do
     @io.lineno.should == 92233
   end
 
-  it "raises TypeError on nil argument" do
-    -> { @io.lineno = nil }.should raise_error(TypeError)
+  it "raises TypeError if cannot convert argument to Integer implicitly" do
+    -> { @io.lineno = "1" }.should raise_error(TypeError, 'no implicit conversion of String into Integer')
+    -> { @io.lineno = nil }.should raise_error(TypeError, 'no implicit conversion from nil to integer')
+  end
+
+  it "does not accept Integers that don't fit in a C int" do
+    -> { @io.lineno = 2**32 }.should raise_error(RangeError)
   end
 
   it "sets the current line number to the given value" do

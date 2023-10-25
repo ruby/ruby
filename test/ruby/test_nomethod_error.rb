@@ -55,35 +55,55 @@ class TestNoMethodError < Test::Unit::TestCase
     error = NoMethodError.new("Message", :foo)
     assert_raise(ArgumentError) {error.receiver}
 
-    msg = defined?(DidYouMean.formatter) ?
-      "Message\nDid you mean?  for" : "Message"
+    msg = "Message"
 
     error = NoMethodError.new("Message", :foo, receiver: receiver)
-    assert_equal([msg, :foo, receiver],
-                 [error.message, error.name, error.receiver])
+    assert_match msg, error.message
+    assert_equal :foo, error.name
+    assert_equal receiver, error.receiver
 
     error = NoMethodError.new("Message", :foo, [1, 2])
     assert_raise(ArgumentError) {error.receiver}
 
     error = NoMethodError.new("Message", :foo, [1, 2], receiver: receiver)
-    assert_equal([msg, :foo, [1, 2], receiver],
-                 [error.message, error.name, error.args, error.receiver])
+    assert_match msg, error.message
+    assert_equal :foo, error.name
+    assert_equal [1, 2], error.args
+    assert_equal receiver, error.receiver
 
     error = NoMethodError.new("Message", :foo, [1, 2], true)
     assert_raise(ArgumentError) {error.receiver}
 
     error = NoMethodError.new("Message", :foo, [1, 2], true, receiver: receiver)
-    assert_equal([:foo, [1, 2], true, receiver],
-                 [error.name, error.args, error.private_call?, error.receiver])
+    assert_equal :foo, error.name
+    assert_equal [1, 2], error.args
+    assert_equal receiver, error.receiver
+    assert error.private_call?, "private_call? was false."
   end
 
   def test_message_encoding
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    msg = "undefined method `#{id}' for \"#{str}\":String"
-    assert_raise_with_message(NoMethodError, msg, bug3237) do
+    msg = "undefined method `#{id}' for an instance of String"
+    assert_raise_with_message(NoMethodError, Regexp.compile(Regexp.quote(msg)), bug3237) do
       str.__send__(id)
     end
+  end
+
+  def test_to_s
+    pre = Module.new do
+      def name
+        BasicObject.new
+      end
+    end
+    mod = Module.new
+    mod.singleton_class.prepend(pre)
+
+    err = assert_raise(NoMethodError) do
+      mod.this_method_does_not_exist
+    end
+
+    assert_match(/undefined method.+this_method_does_not_exist.+for.+Module/, err.to_s)
   end
 end

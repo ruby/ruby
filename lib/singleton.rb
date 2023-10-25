@@ -13,7 +13,7 @@
 #
 # This ensures that only one instance of Klass can be created.
 #
-#      a,b  = Klass.instance, Klass.instance
+#      a,b = Klass.instance, Klass.instance
 #
 #      a == b
 #      # => true
@@ -92,6 +92,8 @@
 #    p a.strip #  => nil
 #
 module Singleton
+  VERSION = "0.1.1"
+
   # Raises a TypeError to prevent cloning.
   def clone
     raise TypeError, "can't clone instance of singleton #{self.class}"
@@ -119,12 +121,7 @@ module Singleton
     end
 
     def instance # :nodoc:
-      return @singleton__instance__ if @singleton__instance__
-      @singleton__mutex__.synchronize {
-        return @singleton__instance__ if @singleton__instance__
-        @singleton__instance__ = new()
-      }
-      @singleton__instance__
+      @singleton__instance__ || @singleton__mutex__.synchronize { @singleton__instance__ ||= new }
     end
 
     private

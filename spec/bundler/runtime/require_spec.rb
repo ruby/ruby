@@ -46,6 +46,7 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "one", :group => :bar, :require => %w[baz qux]
         gem "two"
@@ -112,6 +113,7 @@ RSpec.describe "Bundler.require" do
 
   it "raises an exception if a require is specified but the file does not exist" do
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "two", :require => 'fail'
       end
@@ -130,12 +132,13 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "faulty"
       end
     G
 
-    run "Bundler.require"
+    run "Bundler.require", :raise_on_error => false
     expect(err).to match("error while trying to load the gem 'faulty'")
     expect(err).to match("Gem Internal Error Message")
   end
@@ -146,6 +149,7 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "loadfuuu"
       end
@@ -155,7 +159,7 @@ RSpec.describe "Bundler.require" do
       begin
         Bundler.require
       rescue LoadError => e
-        $stderr.puts "ZOMG LOAD ERROR: \#{e.message}"
+        warn "ZOMG LOAD ERROR: \#{e.message}"
       end
     RUBY
     run(cmd)
@@ -172,6 +176,7 @@ RSpec.describe "Bundler.require" do
 
     it "requires gem names that are namespaced" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path '#{lib_path}' do
           gem 'jquery-rails'
         end
@@ -186,13 +191,15 @@ RSpec.describe "Bundler.require" do
         s.write "lib/brcrypt.rb", "BCrypt = '1.0.0'"
       end
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
         path "#{lib_path}" do
           gem "bcrypt-ruby"
         end
       G
 
       cmd = <<-RUBY
-        require '#{lib_dir}/bundler'
+        require '#{entrypoint}'
         Bundler.require
       RUBY
       ruby(cmd)
@@ -202,6 +209,7 @@ RSpec.describe "Bundler.require" do
 
     it "does not mangle explicitly given requires" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem 'jquery-rails', :require => 'jquery-rails'
         end
@@ -219,6 +227,7 @@ RSpec.describe "Bundler.require" do
       end
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "load-fuuu"
         end
@@ -228,7 +237,7 @@ RSpec.describe "Bundler.require" do
         begin
           Bundler.require
         rescue LoadError => e
-          $stderr.puts "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
+          warn "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
         end
       RUBY
       run(cmd)
@@ -242,6 +251,7 @@ RSpec.describe "Bundler.require" do
       end
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "load-fuuu"
         end
@@ -251,7 +261,7 @@ RSpec.describe "Bundler.require" do
         begin
           Bundler.require
         rescue LoadError => e
-          $stderr.puts "ZOMG LOAD ERROR: \#{e.message}"
+          warn "ZOMG LOAD ERROR: \#{e.message}"
         end
       RUBY
       run(cmd)
@@ -300,6 +310,7 @@ RSpec.describe "Bundler.require" do
 
     it "works when the gems are in the Gemfile in the correct order" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
           gem "one"
@@ -318,6 +329,7 @@ RSpec.describe "Bundler.require" do
         end
 
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           gem "multi_gem", :require => "one", :group => :one
           gem "multi_gem", :require => "two", :group => :two
         G
@@ -341,6 +353,7 @@ RSpec.describe "Bundler.require" do
 
     it "fails when the gems are in the Gemfile in the wrong order" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "one"
           gem "two"
@@ -358,6 +371,7 @@ RSpec.describe "Bundler.require" do
         end
 
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           gem "busted_require"
         G
 
@@ -370,12 +384,12 @@ RSpec.describe "Bundler.require" do
   end
 
   it "does not load rubygems gemspecs that are used" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
-    run! <<-R
+    run <<-R
       path = File.join(Gem.dir, "specifications", "rack-1.0.0.gemspec")
       contents = File.read(path)
       contents = contents.lines.to_a.insert(-2, "\n  raise 'broken gemspec'\n").join
@@ -384,7 +398,7 @@ RSpec.describe "Bundler.require" do
       end
     R
 
-    run! <<-R
+    run <<-R
       Bundler.require
       puts "WIN"
     R
@@ -395,11 +409,12 @@ RSpec.describe "Bundler.require" do
   it "does not load git gemspecs that are used" do
     build_git "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    run! <<-R
+    run <<-R
       path = Gem.loaded_specs["foo"].loaded_from
       contents = File.read(path)
       contents = contents.lines.to_a.insert(-2, "\n  raise 'broken gemspec'\n").join
@@ -408,7 +423,7 @@ RSpec.describe "Bundler.require" do
       end
     R
 
-    run! <<-R
+    run <<-R
       Bundler.require
       puts "WIN"
     R
@@ -423,7 +438,7 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
       source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag} do
-        gem "fail", :require => "omgomg"
+        gem "platform_specific", :require => "omgomg"
       end
 
       gem "rack", "1.0.0"

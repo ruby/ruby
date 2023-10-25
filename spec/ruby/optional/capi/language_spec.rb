@@ -28,4 +28,10 @@ describe "C language construct" do
       @s.switch(Object.new).should == :default
     end
   end
+
+  describe "local variable assignment with the same name as a global" do
+    it "works for rb_mProcess" do
+      @s.global_local_var.should.equal?(Process)
+    end
+  end
 end

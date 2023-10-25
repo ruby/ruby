@@ -6,9 +6,31 @@ describe "Fiber#resume" do
 end
 
 describe "Fiber#resume" do
+  it "runs until Fiber.yield" do
+    obj = mock('obj')
+    obj.should_not_receive(:do)
+    fiber = Fiber.new { 1 + 2; Fiber.yield; obj.do }
+    fiber.resume
+  end
+
+  it "resumes from the last call to Fiber.yield on subsequent invocations" do
+    fiber = Fiber.new { Fiber.yield :first; :second }
+    fiber.resume.should == :first
+    fiber.resume.should == :second
+  end
+
+  it "sets the block parameters to its arguments on the first invocation" do
+    first = mock('first')
+    first.should_receive(:arg).with(:first).twice
+
+    fiber = Fiber.new { |arg| first.arg arg; Fiber.yield; first.arg arg; }
+    fiber.resume :first
+    fiber.resume :second
+  end
+
   it "raises a FiberError if the Fiber tries to resume itself" do
     fiber = Fiber.new { fiber.resume }
-    -> { fiber.resume }.should raise_error(FiberError, /double resume/)
+    -> { fiber.resume }.should raise_error(FiberError, /current fiber/)
   end
 
   it "returns control to the calling Fiber if called from one" do

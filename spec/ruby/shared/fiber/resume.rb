@@ -35,30 +35,9 @@ describe :fiber_resume, shared: true do
     fiber.send(@method)
   end
 
-  it "runs until Fiber.yield" do
-    obj = mock('obj')
-    obj.should_not_receive(:do)
-    fiber = Fiber.new { 1 + 2; Fiber.yield; obj.do }
-    fiber.send(@method)
-  end
-
-  it "resumes from the last call to Fiber.yield on subsequent invocations" do
-    fiber = Fiber.new { Fiber.yield :first; :second }
-    fiber.send(@method).should == :first
-    fiber.send(@method).should == :second
-  end
-
   it "accepts any number of arguments" do
     fiber = Fiber.new { |a| }
     -> { fiber.send(@method, *(1..10).to_a) }.should_not raise_error
-  end
-
-  it "sets the block parameters to its arguments on the first invocation" do
-    first = mock('first')
-    first.should_receive(:arg).with(:first).twice
-    fiber = Fiber.new { |arg| first.arg arg; Fiber.yield; first.arg arg; }
-    fiber.send(@method, :first)
-    fiber.send(@method, :second)
   end
 
   it "raises a FiberError if the Fiber is dead" do

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint"
-
-Artifice.deactivate
+require_relative "helpers/endpoint"
 
 class EndpointCredsDiffHost < Endpoint
   helpers do
@@ -31,9 +29,11 @@ class EndpointCredsDiffHost < Endpoint
 
   get "/no/creds/:id" do
     if request.host.include?("diffhost") && !auth.provided?
-      File.read("#{gem_repo1}/gems/#{params[:id]}")
+      File.binread("#{gem_repo1}/gems/#{params[:id]}")
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointCredsDiffHost)

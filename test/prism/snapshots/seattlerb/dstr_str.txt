@@ -1,0 +1,27 @@
+@ ProgramNode (location: (1,0)-(1,10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,10))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (1,0)-(1,10))
+            ├── opening_loc: (1,0)-(1,1) = "\""
+            ├── parts: (length: 2)
+            │   ├── @ EmbeddedStatementsNode (location: (1,1)-(1,7))
+            │   │   ├── opening_loc: (1,1)-(1,3) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (1,3)-(1,6))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ StringNode (location: (1,3)-(1,6))
+            │   │   │           ├── flags: ∅
+            │   │   │           ├── opening_loc: (1,3)-(1,4) = "'"
+            │   │   │           ├── content_loc: (1,4)-(1,5) = "a"
+            │   │   │           ├── closing_loc: (1,5)-(1,6) = "'"
+            │   │   │           └── unescaped: "a"
+            │   │   └── closing_loc: (1,6)-(1,7) = "}"
+            │   └── @ StringNode (location: (1,7)-(1,9))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (1,7)-(1,9) = " b"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: " b"
+            └── closing_loc: (1,9)-(1,10) = "\""

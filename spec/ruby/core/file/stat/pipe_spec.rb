@@ -12,7 +12,7 @@ describe "File::Stat#pipe?" do
     touch(filename)
 
     st = File.stat(filename)
-    st.pipe?.should == false
+    st.should_not.pipe?
 
     rm_r filename
   end
@@ -23,7 +23,7 @@ describe "File::Stat#pipe?" do
       File.mkfifo(filename)
 
       st = File.stat(filename)
-      st.pipe?.should == true
+      st.should.pipe?
 
       rm_r filename
     end

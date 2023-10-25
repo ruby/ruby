@@ -5,7 +5,6 @@ require 'test/unit'
 class TestObject < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -360,6 +359,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_s; 1; end
     assert_raise(TypeError) { String(o) }
+    o.singleton_class.remove_method(:to_s)
     def o.to_s; "o"; end
     assert_equal("o", String(o))
     def o.to_str; "O"; end
@@ -372,6 +372,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_a; 1; end
     assert_raise(TypeError) { Array(o) }
+    o.singleton_class.remove_method(:to_a)
     def o.to_a; [1]; end
     assert_equal([1], Array(o))
     def o.to_ary; [2]; end
@@ -389,6 +390,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_hash; {a: 1, b: 2}; end
     assert_equal({a: 1, b: 2}, Hash(o))
+    o.singleton_class.remove_method(:to_hash)
     def o.to_hash; 9; end
     assert_raise(TypeError) { Hash(o) }
   end
@@ -397,6 +399,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_i; nil; end
     assert_raise(TypeError) { Integer(o) }
+    o.singleton_class.remove_method(:to_i)
     def o.to_i; 42; end
     assert_equal(42, Integer(o))
     def o.respond_to?(*) false; end
@@ -417,6 +420,18 @@ class TestObject < Test::Unit::TestCase
     n = 0
     Range.new(o1, o9).step(2) {|x| n += x.to_int }
     assert_equal(1+3+5+7+9, n)
+  end
+
+  def test_max_shape_variation_with_performance_warnings
+    assert_in_out_err([], <<-INPUT, %w(), /Maximum shapes variations \(8\) reached by Foo, instance variables accesses will be slower\.$/)
+      $VERBOSE = false
+      Warning[:performance] = true
+
+      class Foo; end
+      10.times do |i|
+        Foo.new.instance_variable_set(:"@a\#{i}", nil)
+      end
+    INPUT
   end
 
   def test_redefine_method_under_verbose
@@ -631,7 +646,7 @@ class TestObject < Test::Unit::TestCase
 
     called = []
     p.singleton_class.class_eval do
-      define_method(:respond_to?) do |a|
+      define_method(:respond_to?) do |a, priv = false|
         called << [:respond_to?, a]
         false
       end
@@ -774,7 +789,7 @@ class TestObject < Test::Unit::TestCase
     e = assert_raise(NoMethodError) {
       o.never_defined_test_no_superclass_method
     }
-    assert_equal(m1, e.message, bug2312)
+    assert_equal(m1.lines.first, e.message.lines.first, bug2312)
   end
 
   def test_superclass_method
@@ -850,6 +865,15 @@ class TestObject < Test::Unit::TestCase
     x.instance_variable_set(:@bar, 42)
     assert_match(/\A#<Object:0x\h+ (?:@foo="value", @bar=42|@bar=42, @foo="value")>\z/, x.inspect)
 
+    # Bug: [ruby-core:19167]
+    x = Object.new
+    x.instance_variable_set(:@foo, NilClass)
+    assert_match(/\A#<Object:0x\h+ @foo=NilClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, TrueClass)
+    assert_match(/\A#<Object:0x\h+ @foo=TrueClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, FalseClass)
+    assert_match(/\A#<Object:0x\h+ @foo=FalseClass>\z/, x.inspect)
+
     # #inspect does not call #to_s anymore
     feature6130 = '[ruby-core:43238]'
     x = Object.new
@@ -922,6 +946,19 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_singleton_class_freeze
+    x = Object.new
+    xs = x.singleton_class
+    x.freeze
+    assert_predicate(xs, :frozen?)
+
+    y = Object.new
+    ys = y.singleton_class
+    ys.prepend(Module.new)
+    y.freeze
+    assert_predicate(ys, :frozen?, '[Bug #19169]')
+  end
+
   def test_redef_method_missing
     bug5473 = '[ruby-core:40287]'
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
@@ -991,12 +1028,12 @@ class TestObject < Test::Unit::TestCase
     EOS
   end
 
-  def test_matcher
-    assert_warning(/deprecated Object#=~ is called on Object/) do
-      assert_equal(Object.new =~ 42, nil)
-    end
-    assert_warning(/deprecated Object#=~ is called on Array/) do
-      assert_equal([] =~ 42, nil)
-    end
+  def test_frozen_inspect
+    obj = Object.new
+    obj.instance_variable_set(:@a, "a")
+    ins = obj.inspect
+    obj.freeze
+
+    assert_equal(ins, obj.inspect)
   end
 end

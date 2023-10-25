@@ -134,7 +134,7 @@ else
 end
 mkin = File.read(File.join($srcdir, "Makefile.in"))
 mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
-open(ARGV[0], 'wb') {|f|
+File.open(ARGV[0], 'wb') {|f|
   f.puts mkin, dep
 }
 if MODULE_TYPE == :static

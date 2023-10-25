@@ -1,0 +1,11 @@
+prelude: |
+  class C
+    def method_missing mid
+    end
+  end
+
+  obj = C.new
+benchmark:
+  vm_method_missing: |
+    obj.m; obj.m; obj.m; obj.m; obj.m; obj.m; obj.m; obj.m;
+loop_count: 6000000

@@ -51,8 +51,8 @@ describe :bigdecimal_mult, shared: true do
     values = @regular_vals + @zeroes
 
     values.each do |val|
-      @nan.send(@method, val, *@object).nan?.should == true
-      val.send(@method, @nan, *@object).nan?.should == true
+      @nan.send(@method, val, *@object).should.nan?
+      val.send(@method, @nan, *@object).should.nan?
     end
   end
 
@@ -62,9 +62,9 @@ describe :bigdecimal_mult, shared: true do
     values.each do |val|
       @zeroes.each do |zero|
         zero.send(@method, val, *@object).should == 0
-        zero.send(@method, val, *@object).zero?.should == true
+        zero.send(@method, val, *@object).should.zero?
         val.send(@method, zero, *@object).should == 0
-        val.send(@method, zero, *@object).zero?.should == true
+        val.send(@method, zero, *@object).should.zero?
       end
     end
   end
@@ -75,8 +75,8 @@ describe :bigdecimal_mult, shared: true do
 
     values.each do |val|
       infs.each do |inf|
-        inf.send(@method, val, *@object).finite?.should == false
-        val.send(@method, inf, *@object).finite?.should == false
+        inf.send(@method, val, *@object).should_not.finite?
+        val.send(@method, inf, *@object).should_not.finite?
       end
     end
 
@@ -89,9 +89,9 @@ describe :bigdecimal_mult, shared: true do
   end
 
   it "returns NaN if the result is undefined" do
-    @zero.send(@method, @infinity, *@object).nan?.should == true
-    @zero.send(@method, @infinity_minus, *@object).nan?.should == true
-    @infinity.send(@method, @zero, *@object).nan?.should == true
-    @infinity_minus.send(@method, @zero, *@object).nan?.should == true
+    @zero.send(@method, @infinity, *@object).should.nan?
+    @zero.send(@method, @infinity_minus, *@object).should.nan?
+    @infinity.send(@method, @zero, *@object).should.nan?
+    @infinity_minus.send(@method, @zero, *@object).should.nan?
   end
 end

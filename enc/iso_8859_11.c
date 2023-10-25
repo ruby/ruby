@@ -102,7 +102,7 @@ ENC_ALIAS("ISO8859-11", "ISO-8859-11")
 /*
  * Name: TIS-620
  * MIBenum: 2259
- * Link: http://en.wikipedia.org/wiki/Thai_Industrial_Standard_620-2533
+ * Link: https://en.wikipedia.org/wiki/Thai_Industrial_Standard_620-2533
  */
 ENC_REPLICATE("TIS-620", "ISO-8859-11")
 

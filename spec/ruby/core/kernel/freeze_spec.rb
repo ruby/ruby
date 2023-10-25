@@ -51,21 +51,19 @@ describe "Kernel#freeze" do
     end
   end
 
-  ruby_version_is "2.5" do
-    describe "on a Complex" do
-      it "has no effect since it is already frozen" do
-        c = Complex(1.3, 3.1)
-        c.frozen?.should be_true
-        c.freeze
-      end
+  describe "on a Complex" do
+    it "has no effect since it is already frozen" do
+      c = Complex(1.3, 3.1)
+      c.frozen?.should be_true
+      c.freeze
     end
+  end
 
-    describe "on a Rational" do
-      it "has no effect since it is already frozen" do
-        r = Rational(1, 3)
-        r.frozen?.should be_true
-        r.freeze
-      end
+  describe "on a Rational" do
+    it "has no effect since it is already frozen" do
+      r = Rational(1, 3)
+      r.frozen?.should be_true
+      r.freeze
     end
   end
 
@@ -81,5 +79,13 @@ describe "Kernel#freeze" do
     o = Object.new
     o.freeze
     -> {o.instance_variable_set(:@foo, 1)}.should raise_error(RuntimeError)
+  end
+
+  it "freezes an object's singleton class" do
+    o = Object.new
+    c = o.singleton_class
+    c.frozen?.should == false
+    o.freeze
+    c.frozen?.should == true
   end
 end

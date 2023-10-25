@@ -4,10 +4,10 @@ describe "Hash#any?" do
   describe 'with no block given' do
     it "checks if there are any members of a Hash" do
       empty_hash = {}
-      empty_hash.any?.should == false
+      empty_hash.should_not.any?
 
       hash_with_members = { 'key' => 'value' }
-      hash_with_members.any?.should == true
+      hash_with_members.should.any?
     end
   end
 

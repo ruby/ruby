@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A GitSet represents gems that are sourced from git repositories.
 #
@@ -10,7 +11,6 @@
 #   set.add_git_gem 'rake', 'git://example/rake.git', tag: 'rake-10.1.0'
 
 class Gem::Resolver::GitSet < Gem::Resolver::Set
-
   ##
   # The root directory for git gems in this set.  This is usually Gem.dir, the
   # installation directory for regular gems.
@@ -36,7 +36,7 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   def initialize # :nodoc:
     super()
 
-    @git             = ENV['git'] || 'git'
+    @git             = ENV["git"] || "git"
     @need_submodules = {}
     @repositories    = {}
     @root_dir        = Gem.dir
@@ -105,7 +105,7 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[GitSet', ']' do
+    q.group 2, "[GitSet", "]" do
       next if @repositories.empty?
       q.breakable
 
@@ -118,5 +118,4 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
       end
     end
   end
-
 end

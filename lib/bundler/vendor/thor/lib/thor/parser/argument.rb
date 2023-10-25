@@ -24,6 +24,17 @@ class Bundler::Thor
       validate! # Trigger specific validations
     end
 
+    def print_default
+      if @type == :array and @default.is_a?(Array)
+        @default.map { |x|
+          p = x.gsub('"','\\"')
+          "\"#{p}\""
+        }.join(" ")
+      else
+        @default
+      end
+    end
+
     def usage
       required? ? banner : "[#{banner}]"
     end
@@ -41,11 +52,19 @@ class Bundler::Thor
       end
     end
 
+    def enum_to_s
+      if enum.respond_to? :join
+        enum.join(", ")
+      else
+        "#{enum.first}..#{enum.last}"
+      end
+    end
+
   protected
 
     def validate!
       raise ArgumentError, "An argument cannot be required and have default value." if required? && !default.nil?
-      raise ArgumentError, "An argument cannot have an enum other than an array." if @enum && !@enum.is_a?(Array)
+      raise ArgumentError, "An argument cannot have an enum other than an enumerable." if @enum && !@enum.is_a?(Enumerable)
     end
 
     def valid_type?(type)

@@ -25,21 +25,6 @@ describe "String#crypt" do
       "mypassword".crypt(obj).should == "$2a$04$0WVaz0pV3jzfZ5G5tpmHWuBQGbkjzgtSc3gJbmdy0GAGMa45MFM2."
     end
 
-    ruby_version_is ''...'2.7' do
-      it "taints the result if either salt or self is tainted" do
-        tainted_salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWu"
-        tainted_str = "mypassword"
-
-        tainted_salt.taint
-        tainted_str.taint
-
-        "mypassword".crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").tainted?.should == false
-        tainted_str.crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").tainted?.should == true
-        "mypassword".crypt(tainted_salt).tainted?.should == true
-        tainted_str.crypt(tainted_salt).tainted?.should == true
-      end
-    end
-
     it "doesn't return subclass instances" do
       StringSpecs::MyString.new("mypassword").crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").should be_an_instance_of(String)
       "mypassword".crypt(StringSpecs::MyString.new("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu")).should be_an_instance_of(String)
@@ -83,21 +68,6 @@ describe "String#crypt" do
       obj.should_receive(:to_str).and_return("aa")
 
       "".crypt(obj).should == "aaQSqAReePlq6"
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "taints the result if either salt or self is tainted" do
-        tainted_salt = "aa"
-        tainted_str = "hello"
-
-        tainted_salt.taint
-        tainted_str.taint
-
-        "hello".crypt("aa").tainted?.should == false
-        tainted_str.crypt("aa").tainted?.should == true
-        "hello".crypt(tainted_salt).tainted?.should == true
-        tainted_str.crypt(tainted_salt).tainted?.should == true
-      end
     end
 
     it "doesn't return subclass instances" do

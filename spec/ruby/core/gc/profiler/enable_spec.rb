@@ -12,6 +12,6 @@ describe "GC::Profiler.enable" do
 
   it "enables the profiler" do
     GC::Profiler.enable
-    GC::Profiler.enabled?.should == true
+    GC::Profiler.should.enabled?
   end
 end

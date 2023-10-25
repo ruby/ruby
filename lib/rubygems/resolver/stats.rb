@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-class Gem::Resolver::Stats
 
+class Gem::Resolver::Stats
   def initialize
     @max_depth = 0
     @max_requirements = 0
@@ -33,7 +33,7 @@ class Gem::Resolver::Stats
     @iterations += 1
   end
 
-  PATTERN = "%20s: %d\n".freeze
+  PATTERN = "%20s: %d\n"
 
   def display
     $stdout.puts "=== Resolver Statistics ==="
@@ -43,5 +43,4 @@ class Gem::Resolver::Stats
     $stdout.printf PATTERN, "Backtracking #", @backtracking
     $stdout.printf PATTERN, "Iteration #", @iterations
   end
-
 end

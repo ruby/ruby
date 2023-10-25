@@ -1,9 +1,9 @@
 # frozen_string_literal: true
+
 ##
 # A set of gems from a gem dependencies lockfile.
 
 class Gem::Resolver::LockSet < Gem::Resolver::Set
-
   attr_reader :specs # :nodoc:
 
   ##
@@ -29,7 +29,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   def add(name, version, platform) # :nodoc:
     version = Gem::Version.new version
     specs = [
-      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform)
+      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform),
     ]
 
     @specs.concat specs
@@ -55,7 +55,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
     dep = Gem::Dependency.new name, version
 
     found = @specs.find do |spec|
-      dep.matches_spec? spec and spec.platform == platform
+      dep.matches_spec?(spec) && spec.platform == platform
     end
 
     tuple = Gem::NameTuple.new found.name, found.version, found.platform
@@ -64,19 +64,18 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[LockSet', ']' do
+    q.group 2, "[LockSet", "]" do
       q.breakable
-      q.text 'source:'
+      q.text "source:"
 
       q.breakable
       q.pp @source
 
       q.breakable
-      q.text 'specs:'
+      q.text "specs:"
 
       q.breakable
-      q.pp @specs.map { |spec| spec.full_name }
+      q.pp @specs.map(&:full_name)
     end
   end
-
 end

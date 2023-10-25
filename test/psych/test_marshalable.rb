@@ -6,7 +6,7 @@ module Psych
   class TestMarshalable < TestCase
     def test_objects_defining_marshal_dump_and_marshal_load_can_be_dumped
       sd = SimpleDelegator.new(1)
-      loaded = Psych.load(Psych.dump(sd))
+      loaded = Psych.unsafe_load(Psych.dump(sd))
 
       assert_instance_of(SimpleDelegator, loaded)
       assert_equal(sd, loaded)
@@ -46,7 +46,15 @@ module Psych
 
     def test_init_with_takes_priority_over_marshal_methods
       obj = PsychCustomMarshalable.new(1)
-      loaded = Psych.load(Psych.dump(obj))
+      loaded = Psych.unsafe_load(Psych.dump(obj))
+
+      assert(PsychCustomMarshalable === loaded)
+      assert_equal(2, loaded.foo)
+    end
+
+    def test_init_symbolize_names
+      obj = PsychCustomMarshalable.new(1)
+      loaded = Psych.unsafe_load(Psych.dump(obj), symbolize_names: true)
 
       assert(PsychCustomMarshalable === loaded)
       assert_equal(2, loaded.foo)

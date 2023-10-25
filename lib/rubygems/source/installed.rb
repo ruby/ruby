@@ -1,9 +1,9 @@
 # frozen_string_literal: true
+
 ##
 # Represents an installed gem.  This is used for dependency resolution.
 
 class Gem::Source::Installed < Gem::Source
-
   def initialize # :nodoc:
     @uri = nil
   end
@@ -21,8 +21,6 @@ class Gem::Source::Installed < Gem::Source
       0
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 
@@ -34,7 +32,6 @@ class Gem::Source::Installed < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.text '[Installed]'
+    q.text "[Installed]"
   end
-
 end

@@ -1,0 +1,20 @@
+prelude: |
+  class A
+    def set_ivars
+      @a = nil
+      @b = nil
+      @c = nil
+      @d = nil
+      @e = nil
+    end
+  end
+  class B < A; end
+  class C < A; end
+
+  b = B.new
+  c = C.new
+benchmark:
+  vm_ivar_init_subclass: |
+    b.set_ivars
+    c.set_ivars
+loop_count: 3000000

@@ -4,7 +4,7 @@ require_relative 'helper'
 module Psych
   class TestOmap < TestCase
     def test_parse_as_map
-      o = Psych.load "--- !!omap\na: 1\nb: 2"
+      o = Psych.unsafe_load "--- !!omap\na: 1\nb: 2"
       assert_kind_of Psych::Omap, o
       assert_equal 1, o['a']
       assert_equal 2, o['b']
@@ -14,7 +14,7 @@ module Psych
       map = Psych::Omap.new
       map['foo'] = 'bar'
       map['self'] = map
-      assert_equal(map, Psych.load(Psych.dump(map)))
+      assert_equal(map, Psych.unsafe_load(Psych.dump(map)))
     end
 
     def test_keys

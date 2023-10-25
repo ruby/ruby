@@ -29,14 +29,14 @@ def compile_extension(name)
 
   ext = "#{name}_spec"
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
-  ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
+  rubyhdrdir = RbConfig::CONFIG['rubyhdrdir']
+  ruby_header = "#{rubyhdrdir}/ruby.h"
+  abi_header = "#{rubyhdrdir}/ruby/internal/abi.h"
 
   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
-    if PlatformGuard.windows?
-      libruby_so = "#{RbConfig::CONFIG['bindir']}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
-    else
-      libruby_so = "#{RbConfig::CONFIG['libdir']}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
-    end
+    # below is defined since 2.1, except for mswin, and maybe other platforms
+    libdirname = RbConfig::CONFIG.fetch 'libdirname', 'libdir'
+    libruby = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY']}"
   end
 
   begin
@@ -48,7 +48,8 @@ def compile_extension(name)
     when mtime <= File.mtime("#{core_ext_dir}/rubyspec.h")
     when mtime <= File.mtime("#{spec_ext_dir}/#{ext}.c")
     when mtime <= File.mtime(ruby_header)
-    when libruby_so && mtime <= File.mtime(libruby_so)
+    when (mtime <= File.mtime(abi_header) rescue nil)
+    when libruby && mtime <= File.mtime(libruby)
     else
       return lib # up-to-date
     end
@@ -78,6 +79,7 @@ def compile_extension(name)
           $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
           $extout = nil
+          append_cflags '-Wno-declaration-after-statement'
           create_makefile(#{ext.inspect})
         RUBY
         output = ruby_exe("extconf.rb")
@@ -127,7 +129,9 @@ def setup_make
 end
 
 def load_extension(name)
-  require compile_extension(name)
+  ext_path = compile_extension(name)
+  require ext_path
+  ext_path
 rescue LoadError => e
   if %r{/usr/sbin/execerror ruby "\(ld 3 1 main ([/a-zA-Z0-9_\-.]+_spec\.so)"} =~ e.message
     system('/usr/sbin/execerror', "#{RbConfig::CONFIG["bindir"]}/ruby", "(ld 3 1 main #{$1}")

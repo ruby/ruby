@@ -74,6 +74,18 @@ describe "String#upto" do
     a.should == ["a", "b", "c"]
   end
 
+  it "works with non-ASCII ranges" do
+    a = []
+    'Σ'.upto('Ω') { |s| a << s }
+    a.should == ["Σ", "Τ", "Υ", "Φ", "Χ", "Ψ", "Ω"]
+  end
+
+  it "raises Encoding::CompatibilityError when incompatible characters are given" do
+    char1 = 'a'.force_encoding("EUC-JP")
+    char2 = 'b'.force_encoding("ISO-2022-JP")
+    -> { char1.upto(char2) {} }.should raise_error(Encoding::CompatibilityError, "incompatible character encodings: EUC-JP and ISO-2022-JP")
+  end
+
   describe "on sequence of numbers" do
     it "calls the block as Integer#upto"  do
       "8".upto("11").to_a.should == 8.upto(11).map(&:to_s)

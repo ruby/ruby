@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 class LeakChecker
+  @@try_lsof = nil # not-tried-yet
+
   def initialize
     @fd_info = find_fds
+    @@skip = false
     @tempfile_info = find_tempfiles
     @thread_info = find_threads
     @env_info = find_env
@@ -35,19 +38,19 @@ class LeakChecker
     if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
       m[:close]
     end
-    fd_dir = "/proc/self/fd"
-    if File.directory?(fd_dir)
-      fds = Dir.open(fd_dir) {|d|
-        a = d.grep(/\A\d+\z/, &:to_i)
-        if d.respond_to? :fileno
-          a -= [d.fileno]
-        end
-        a
-      }
-      fds.sort
-    else
-      []
+    %w"/proc/self/fd /dev/fd".each do |fd_dir|
+      if File.directory?(fd_dir)
+        fds = Dir.open(fd_dir) {|d|
+          a = d.grep(/\A\d+\z/, &:to_i)
+          if d.respond_to? :fileno
+            a -= [d.fileno]
+          end
+          a
+        }
+        return fds.sort
+      end
     end
+    []
   end
 
   def check_fd_leak(test_name)
@@ -61,7 +64,7 @@ class LeakChecker
       }
     end
     fd_leaked = live2 - live1
-    if !fd_leaked.empty?
+    if !@@skip && !fd_leaked.empty?
       leaked = true
       h = {}
       ObjectSpace.each_object(IO) {|io|
@@ -74,7 +77,7 @@ class LeakChecker
         end
         (h[fd] ||= []) << [io, autoclose, inspect]
       }
-      fd_leaked.each {|fd|
+      fd_leaked.select! {|fd|
         str = ''.dup
         pos = nil
         if h[fd]
@@ -89,20 +92,39 @@ class LeakChecker
           }.sort.each {|s|
             str << s
           }
+        else
+          begin
+            io = IO.for_fd(fd, autoclose: false)
+            s = io.stat
+          rescue Errno::EBADF
+            # something un-stat-able
+            next
+          else
+            next if /darwin/ =~ RUBY_PLATFORM and [0, -1].include?(s.dev)
+            str << ' ' << s.inspect
+          ensure
+            io&.close
+          end
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
         puts "  The IO was created at #{pos}" if pos
+        true
       }
-      #system("lsof -p #$$") if !fd_leaked.empty?
+      unless fd_leaked.empty?
+        unless @@try_lsof == false
+          @@try_lsof |= system(*%W[lsof -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: Test::Unit::Runner.output)
+        end
+      end
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
           str = list.map {|io, autoclose, inspect| " #{inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
-          puts "Multiple autoclose IO object for a file descriptor:#{str}"
+          puts "Multiple autoclose IO objects for a file descriptor in: #{test_name}: #{str}"
         end
       }
     end
     @fd_info = live2
+    @@skip = false
     return leaked
   end
 
@@ -160,7 +182,8 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && t.alive?
+      t != Thread.current && t.alive? &&
+        !(t.thread_variable?(:"\0__detached_thread__") && t.thread_variable_get(:"\0__detached_thread__"))
     }
   end
 
@@ -187,15 +210,36 @@ class LeakChecker
     return leaked
   end
 
-  def find_env
-    ENV.to_h
+  e = ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"]
+  begin
+    ENV["_Ruby_Env_Ignorecase_"] = ENV["_RUBY_ENV_IGNORECASE_"] = nil
+    ENV["_RUBY_ENV_IGNORECASE_"] = "ENV_CASE_TEST"
+    ENV_IGNORECASE = ENV["_Ruby_Env_Ignorecase_"] == "ENV_CASE_TEST"
+  ensure
+    ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"] = e
+  end
+
+  if ENV_IGNORECASE
+    def find_env
+      ENV.to_h {|k, v| [k.upcase, v]}
+    end
+  else
+    def find_env
+      ENV.to_h
+    end
   end
 
   def check_env(test_name)
     old_env = @env_info
-    new_env = ENV.to_h
+    new_env = find_env
     return false if old_env == new_env
+    if defined?(Bundler::EnvironmentPreserver)
+      bundler_prefix = Bundler::EnvironmentPreserver::BUNDLER_PREFIX
+    end
     (old_env.keys | new_env.keys).sort.each {|k|
+      # Don't report changed environment variables caused by Bundler's backups
+      next if bundler_prefix and k.start_with?(bundler_prefix)
+
       if old_env.has_key?(k)
         if new_env.has_key?(k)
           if old_env[k] != new_env[k]
@@ -217,26 +261,33 @@ class LeakChecker
   end
 
   def find_encodings
-    [Encoding.default_internal, Encoding.default_external]
+    {
+      'Encoding.default_internal' => Encoding.default_internal,
+      'Encoding.default_external' => Encoding.default_external,
+      'STDIN.internal_encoding' => STDIN.internal_encoding,
+      'STDIN.external_encoding' => STDIN.external_encoding,
+      'STDOUT.internal_encoding' => STDOUT.internal_encoding,
+      'STDOUT.external_encoding' => STDOUT.external_encoding,
+      'STDERR.internal_encoding' => STDERR.internal_encoding,
+      'STDERR.external_encoding' => STDERR.external_encoding,
+    }
   end
 
   def check_encodings(test_name)
-    old_internal, old_external = @encoding_info
-    new_internal, new_external = find_encodings
+    old_encoding_info = @encoding_info
+    @encoding_info = find_encodings
     leaked = false
-    if new_internal != old_internal
-      leaked = true
-      puts "Encoding.default_internal changed: #{test_name} : #{old_internal.inspect} to #{new_internal.inspect}"
+    @encoding_info.each do |key, new_encoding|
+      old_encoding = old_encoding_info[key]
+      if new_encoding != old_encoding
+        leaked = true
+        puts "#{key} changed: #{test_name} : #{old_encoding.inspect} to #{new_encoding.inspect}"
+      end
     end
-    if new_external != old_external
-      leaked = true
-      puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
-    end
-    @encoding_info = [new_internal, new_external]
-    return leaked
+    leaked
   end
 
-  WARNING_CATEGORIES = %i[deprecated experimental].freeze
+  WARNING_CATEGORIES = (Warning.respond_to?(:[]) ? %i[deprecated experimental] : []).freeze
 
   def find_warning_flags
     WARNING_CATEGORIES.to_h do |category|
@@ -257,10 +308,14 @@ class LeakChecker
   end
 
   def puts(*a)
-    output = MiniTest::Unit.output
+    output = Test::Unit::Runner.output
     if defined?(output.set_encoding)
       output.set_encoding(nil, nil)
     end
     output.puts(*a)
+  end
+
+  def self.skip
+    @@skip = true
   end
 end

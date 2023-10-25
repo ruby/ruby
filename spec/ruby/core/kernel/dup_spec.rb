@@ -32,7 +32,7 @@ describe "Kernel#dup" do
     @obj.freeze
     dup = @obj.dup
 
-    dup.frozen?.should == false
+    dup.should_not.frozen?
   end
 
   it "copies instance variables" do

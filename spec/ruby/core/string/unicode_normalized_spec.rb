@@ -24,16 +24,16 @@ describe "String#unicode_normalized?" do
   end
 
   it "defaults to the nfc normalization form if no forms are specified" do
-    @nfc_normalized_str.unicode_normalized?.should == true
-    @nfd_normalized_str.unicode_normalized?.should == false
+    @nfc_normalized_str.should.unicode_normalized?
+    @nfd_normalized_str.should_not.unicode_normalized?
   end
 
   it "returns true if string is empty" do
-    "".unicode_normalized?.should == true
+    "".should.unicode_normalized?
   end
 
   it "returns true if string does not contain any unicode codepoints" do
-    "abc".unicode_normalized?.should == true
+    "abc".should.unicode_normalized?
   end
 
   it "raises an Encoding::CompatibilityError if the string is not in an unicode encoding" do

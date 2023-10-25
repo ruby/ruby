@@ -13,27 +13,43 @@ module Bundler
         string
       end
 
-      def info(message, newline = nil)
+      def info(message = nil, newline = nil)
       end
 
-      def confirm(message, newline = nil)
+      def confirm(message = nil, newline = nil)
       end
 
-      def warn(message, newline = nil)
+      def warn(message = nil, newline = nil)
         @warnings |= [message]
       end
 
-      def error(message, newline = nil)
+      def error(message = nil, newline = nil)
       end
 
-      def debug(message, newline = nil)
+      def debug(message = nil, newline = nil)
+      end
+
+      def confirm?
+        false
+      end
+
+      def error?
+        false
       end
 
       def debug?
         false
       end
 
+      def info?
+        false
+      end
+
       def quiet?
+        false
+      end
+
+      def warn?
         false
       end
 

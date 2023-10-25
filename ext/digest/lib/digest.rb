@@ -1,5 +1,19 @@
 # frozen_string_literal: false
-require 'digest.so'
+
+if defined?(Digest) &&
+    /\A(?:2\.|3\.0\.[0-2]\z)/.match?(RUBY_VERSION) &&
+    caller_locations.any? { |l|
+      %r{/(rubygems/gem_runner|bundler/cli)\.rb}.match?(l.path)
+    }
+  # Before Ruby 3.0.3/3.1.0, the gem and bundle commands used to load
+  # the digest library before loading additionally installed gems, so
+  # you will get constant redefinition warnings and unexpected
+  # implementation overwriting if we proceed here.  Avoid that.
+  return
+end
+
+require 'digest/version'
+require 'digest/loader'
 
 module Digest
   # A mutex for Digest().
@@ -8,7 +22,7 @@ module Digest
   def self.const_missing(name) # :nodoc:
     case name
     when :SHA256, :SHA384, :SHA512
-      lib = 'digest/sha2.so'
+      lib = 'digest/sha2'
     else
       lib = File.join('digest', name.to_s.downcase)
     end

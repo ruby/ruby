@@ -358,6 +358,8 @@ SOCK_RAW	nil	A raw socket provides low-level access for direct access or impleme
 SOCK_RDM	nil	A reliable datagram socket provides reliable delivery of messages
 SOCK_SEQPACKET	nil	A sequential packet socket provides sequenced, reliable two-way connection for datagrams
 SOCK_PACKET	nil	Device-level packet access
+SOCK_NONBLOCK	nil	Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor.
+SOCK_CLOEXEC	nil	Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor.
 
 AF_UNSPEC	nil	Unspecified protocol, any supported address family
 PF_UNSPEC	nil	Unspecified protocol, any supported address family
@@ -397,6 +399,8 @@ AF_SNA	nil	IBM SNA protocol
 PF_SNA	nil	IBM SNA protocol
 AF_DEC	nil	DECnet protocol
 PF_DEC	nil	DECnet protocol
+AF_DECnet	nil	DECnet protocol
+PF_DECnet	nil	DECnet protocol
 AF_DLI	nil	DEC Direct Data Link Interface protocol
 PF_DLI	nil	DEC Direct Data Link Interface protocol
 AF_LAT	nil	Local Area Transport protocol
@@ -438,7 +442,34 @@ AF_E164	nil	CCITT (ITU-T) E.164 recommendation
 PF_XTP	nil	eXpress Transfer Protocol
 PF_RTIP
 PF_PIP
-PF_KEY
+AF_KEY	nil	Key management protocol, originally developed for usage with IPsec
+PF_KEY	nil	Key management protocol, originally developed for usage with IPsec
+AF_NETLINK	nil	Kernel user interface device
+PF_NETLINK	nil	Kernel user interface device
+AF_RDS	nil	Reliable Datagram Sockets (RDS) protocol
+PF_RDS	nil	Reliable Datagram Sockets (RDS) protocol
+AF_PPPOX	nil	Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE)
+PF_PPPOX	nil	Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE)
+AF_LLC	nil	Logical  link control (IEEE 802.2 LLC) protocol
+PF_LLC	nil	Logical  link control (IEEE 802.2 LLC) protocol
+AF_IB	nil	InfiniBand native addressing
+PF_IB	nil	InfiniBand native addressing
+AF_MPLS	nil	Multiprotocol Label Switching
+PF_MPLS	nil	Multiprotocol Label Switching
+AF_CAN	nil	Controller Area Network automotive bus protocol
+PF_CAN	nil	Controller Area Network automotive bus protocol
+AF_TIPC	nil	TIPC, "cluster domain sockets" protocol
+PF_TIPC	nil	TIPC, "cluster domain sockets" protocol
+AF_BLUETOOTH	nil	Bluetooth low-level socket protocol
+PF_BLUETOOTH	nil	Bluetooth low-level socket protocol
+AF_ALG	nil	Interface to kernel crypto API
+PF_ALG	nil	Interface to kernel crypto API
+AF_VSOCK	nil	VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication
+PF_VSOCK	nil	VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication
+AF_KCM	nil	KCM (kernel connection multiplexor) interface
+PF_KCM	nil	KCM (kernel connection multiplexor) interface
+AF_XDP	nil	XDP (express data path) interface
+PF_XDP	nil	XDP (express data path) interface
 
 MSG_OOB	nil	Process out-of-band data
 MSG_PEEK	nil	Peek at incoming message
@@ -595,6 +626,7 @@ SO_SNDTIMEO	nil	Send timeout
 SO_ACCEPTCONN	nil	Socket has had listen() called on it
 SO_USELOOPBACK	nil	Bypass hardware when possible
 SO_ACCEPTFILTER	nil	There is an accept filter
+SO_USER_COOKIE	nil	Setting an identifier for ipfw purpose mainly
 SO_DONTTRUNC	nil	Retain unread data
 SO_WANTMORE	nil	Give a hint when more data is ready
 SO_WANTOOBFLAG	nil	OOB data is wanted in MSG_FLAG on receive
@@ -630,6 +662,10 @@ SO_SELECT_ERR_QUEUE     nil     Make select() detect socket error queue with err
 SO_BUSY_POLL    nil     Set the threshold in microseconds for low latency polling (Linux 3.11)
 SO_MAX_PACING_RATE      nil     Cap the rate computed by transport layer. [bytes per second] (Linux 3.13)
 SO_BPF_EXTENSIONS       nil     Query supported BPF extensions (Linux 3.14)
+SO_SETFIB       nil     Set the associated routing table for the socket (FreeBSD)
+SO_RTABLE               nil     Set the routing table for this socket (OpenBSD)
+SO_INCOMING_CPU         nil     Receive the cpu attached to the socket (Linux 3.19)
+SO_INCOMING_NAPI_ID     nil     Receive the napi ID attached to a RX queue (Linux 4.12)
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
 SOPRI_NORMAL	nil	Normal socket priority
@@ -639,9 +675,11 @@ IPX_TYPE
 
 TCP_NODELAY	nil	Don't delay sending to coalesce packets
 TCP_MAXSEG	nil	Set maximum segment size
+TCP_CONNECTION_INFO     nil     Retrieve information about this socket (macOS)
 TCP_CORK	nil	Don't send partial frames (Linux 2.2, glibc 2.2)
 TCP_DEFER_ACCEPT	nil	Don't notify a listening socket until data is ready (Linux 2.4, glibc 2.2)
 TCP_INFO	nil	Retrieve information about this socket (Linux 2.4, glibc 2.2)
+TCP_KEEPALIVE	nil	Idle time before keepalive probes are sent (macOS)
 TCP_KEEPCNT	nil	Maximum number of keepalive probes allowed before dropping a connection (Linux 2.4, glibc 2.2)
 TCP_KEEPIDLE	nil	Idle time before keepalive probes are sent (Linux 2.4, glibc 2.2)
 TCP_KEEPINTVL	nil	Time between keepalive probes (Linux 2.4, glibc 2.2)

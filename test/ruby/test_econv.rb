@@ -803,7 +803,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal('', ec.finish)
 
     ec = Encoding::Converter.new("", "xml_attr_content_escape")
-    assert_equal('&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
+    assert_equal('&amp;&lt;&gt;&quot;&apos;', ec.convert("&<>\"'"))
     assert_equal('', ec.finish)
   end
 
@@ -844,7 +844,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_xml_hasharg
     assert_equal("&amp;\e$B$&\e(B&#x2665;&amp;\"'".force_encoding("iso-2022-jp"),
         "&\u3046\u2665&\"'".encode("iso-2022-jp", xml: :text))
-    assert_equal("\"&amp;\e$B$&\e(B&#x2661;&amp;&quot;'\"".force_encoding("iso-2022-jp"),
+    assert_equal("\"&amp;\e$B$&\e(B&#x2661;&amp;&quot;&apos;\"".force_encoding("iso-2022-jp"),
       "&\u3046\u2661&\"'".encode("iso-2022-jp", xml: :attr))
 
     assert_equal("&amp;\u3046\u2661&amp;\"'".force_encoding("utf-8"),
@@ -922,7 +922,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     end
     newlines.each do |nl|
       opts = {newline: :universal, nl => true}
-      ec2 = assert_warning(/:newline option preceds/, opts.inspect) do
+      ec2 = assert_warning(/:newline option precedes/, opts.inspect) do
         Encoding::Converter.new("", "", **opts)
       end
       assert_equal(ec1, ec2)
@@ -931,7 +931,7 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_default_external
     Encoding.list.grep(->(enc) {/\AISO-8859-\d+\z/i =~ enc.name}) do |enc|
-      assert_separately(%W[--disable=gems -d - #{enc.name}], <<-EOS, ignore_stderr: true)
+      assert_separately(%W[-d - #{enc.name}], <<-EOS, ignore_stderr: true)
     Encoding.default_external = ext = ARGV[0]
     Encoding.default_internal = int ='utf-8'
     assert_nothing_raised do

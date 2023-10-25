@@ -29,10 +29,20 @@ describe "Enumerable#chunk" do
     result.should == [[1, [1, 2]], [0, [3]], [1, [2]], [0, [3]], [1, [2, 1]]]
   end
 
+  it "returns a partitioned Array of values" do
+    e = EnumerableSpecs::Numerous.new(1,2,3)
+    e.chunk { |x| x > 2 }.map(&:last).should == [[1, 2], [3]]
+  end
+
   it "returns elements for which the block returns :_alone in separate Arrays" do
     e = EnumerableSpecs::Numerous.new(1, 2, 3, 2, 1)
     result = e.chunk { |x| x < 2 && :_alone }.to_a
     result.should == [[:_alone, [1]], [false, [2, 3, 2]], [:_alone, [1]]]
+  end
+
+  it "yields Arrays as a single argument to a rest argument" do
+    e = EnumerableSpecs::Numerous.new([1, 2])
+    result = e.chunk { |*x| x.should == [[1,2]] }.to_a
   end
 
   it "does not return elements for which the block returns :_separator" do

@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 
 describe "Array#uniq" do
   it "returns an array with no duplicates" do
@@ -39,76 +40,32 @@ describe "Array#uniq" do
     [x, y].uniq.should == [x, y]
   end
 
-  ruby_version_is '2.7' do
-    it "compares elements with matching hash codes with #eql?" do
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
+  it "compares elements with matching hash codes with #eql?" do
+    a = Array.new(2) do
+      obj = mock('0')
+      obj.should_receive(:hash).at_least(1).and_return(0)
 
-        def obj.eql?(o)
-          false
-        end
-
-        obj
+      def obj.eql?(o)
+        false
       end
 
-      a.uniq.should == a
-
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
-
-        def obj.eql?(o)
-          true
-        end
-
-        obj
-      end
-
-      a.uniq.size.should == 1
+      obj
     end
-  end
 
-  ruby_version_is ''...'2.7' do
-    it "compares elements with matching hash codes with #eql?" do
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
+    a.uniq.should == a
 
-        def obj.eql?(o)
-          # It's undefined whether the impl does a[0].eql?(a[1]) or
-          # a[1].eql?(a[0]) so we taint both.
-          taint
-          o.taint
-          false
-        end
+    a = Array.new(2) do
+      obj = mock('0')
+      obj.should_receive(:hash).at_least(1).and_return(0)
 
-        obj
+      def obj.eql?(o)
+        true
       end
 
-      a.uniq.should == a
-      a[0].tainted?.should == true
-      a[1].tainted?.should == true
-
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
-
-        def obj.eql?(o)
-          # It's undefined whether the impl does a[0].eql?(a[1]) or
-          # a[1].eql?(a[0]) so we taint both.
-          taint
-          o.taint
-          true
-        end
-
-        obj
-      end
-
-      a.uniq.size.should == 1
-      a[0].tainted?.should == true
-      a[1].tainted?.should == true
+      obj
     end
+
+    a.uniq.size.should == 1
   end
 
   it "compares elements based on the value returned from the block" do
@@ -128,8 +85,8 @@ describe "Array#uniq" do
     [false, nil, 42].uniq { :bar }.should == [false]
   end
 
-  it "returns subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(ArraySpecs::MyArray)
+  it "returns Array instance on Array subclasses" do
+    ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(Array)
   end
 
   it "properly handles an identical item even when its #eql? isn't reflexive" do
@@ -165,6 +122,11 @@ describe "Array#uniq" do
       a.uniq.should == [basic.new(3), basic.new(2), basic.new(1), basic.new(4)]
     end
   end
+end
+
+describe "Array#uniq" do
+  @value_to_return = -> e { e }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :uniq
 end
 
 describe "Array#uniq!" do
@@ -220,20 +182,20 @@ describe "Array#uniq!" do
     [ "a", "b", "c" ].uniq!.should == nil
   end
 
-  it "raises a #{frozen_error_class} on a frozen array when the array is modified" do
+  it "raises a FrozenError on a frozen array when the array is modified" do
     dup_ary = [1, 1, 2]
     dup_ary.freeze
-    -> { dup_ary.uniq! }.should raise_error(frozen_error_class)
+    -> { dup_ary.uniq! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen array when the array would not be modified" do
-    -> { ArraySpecs.frozen_array.uniq!}.should raise_error(frozen_error_class)
-    -> { ArraySpecs.empty_frozen_array.uniq!}.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array when the array would not be modified" do
+    -> { ArraySpecs.frozen_array.uniq!}.should raise_error(FrozenError)
+    -> { ArraySpecs.empty_frozen_array.uniq!}.should raise_error(FrozenError)
   end
 
   it "doesn't yield to the block on a frozen array" do
-    -> { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should raise_error(FrozenError)
   end
 
   it "compares elements based on the value returned from the block" do
@@ -250,4 +212,32 @@ describe "Array#uniq!" do
     a.uniq!
     a.should == [x]
   end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.send(@method) { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "doesn't change array if error is raised" do
+    a = [1, 1, 2, 2, 3, 3, 4, 4]
+    begin
+      a.send(@method) do |e|
+        raise StandardError, 'Oops' if e == 3
+        e
+      end
+    rescue StandardError
+    end
+
+    a.should == [1, 1, 2, 2, 3, 3, 4, 4]
+  end
+end
+
+describe "Array#uniq!" do
+  @value_to_return = -> e { e }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :uniq!
 end

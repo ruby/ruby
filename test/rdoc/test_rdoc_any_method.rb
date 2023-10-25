@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocAnyMethod < XrefTestCase
 
@@ -51,8 +51,36 @@ method(a, b) { |c, d| ... }
     assert_equal 'foo', m.call_seq
   end
 
+  def test_call_seq_alias_for
+    a = RDoc::AnyMethod.new nil, "each"
+    m = RDoc::AnyMethod.new nil, "each_line"
+
+    a.call_seq = <<-CALLSEQ
+each(foo)
+each_line(foo)
+    CALLSEQ
+
+    m.is_alias_for = a
+
+    assert_equal "each_line(foo)", m.call_seq
+  end
+
   def test_full_name
     assert_equal 'C1::m', @c1.method_list.first.full_name
+  end
+
+  def test_has_call_seq?
+    m = RDoc::AnyMethod.new nil, "each_line"
+    m2 = RDoc::AnyMethod.new nil, "each"
+    assert_equal false, m.has_call_seq?
+    m.call_seq = "each_line()"
+    assert_equal true, m.has_call_seq?
+
+    m = RDoc::AnyMethod.new nil, "each_line"
+    m.is_alias_for = m2
+    assert_equal false, m.has_call_seq?
+    m2.call_seq = "each_line()"
+    assert_equal true, m.has_call_seq?
   end
 
   def test_is_alias_for
@@ -70,6 +98,54 @@ method(a, b) { |c, d| ... }
     m1.instance_variable_set :@is_alias_for, ['Missing', false, 'method']
 
     assert_nil m1.is_alias_for, 'missing alias'
+  end
+
+  def test_call_seq_handles_aliases
+    # see 0ead786
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
+
+    method_with_call_seq = RDoc::AnyMethod.new(nil, "method_with_call_seq")
+    method_with_call_seq.call_seq = <<~SEQ
+      method_with_call_seq(a)
+      method_with_call_seq(a, b)
+      alias_to_method(a)
+      alias_to_method(a, b)
+    SEQ
+    cm.add_method(method_with_call_seq)
+
+    alias_to_method = method_with_call_seq.add_alias(
+      RDoc::Alias.new(nil, "method_with_call_seq", "alias_to_method", "comment"),
+      cm
+    )
+
+    assert_equal("method_with_call_seq(a)\nmethod_with_call_seq(a, b)",
+                 method_with_call_seq.call_seq)
+    assert_equal("alias_to_method(a)\nalias_to_method(a, b)",
+                 alias_to_method.call_seq)
+  end
+
+  def test_call_seq_returns_nil_if_alias_is_missing_from_call_seq
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
+
+    method_with_call_seq = RDoc::AnyMethod.new(nil, "method_with_call_seq")
+    method_with_call_seq.call_seq = <<~SEQ
+      method_with_call_seq(a)
+      method_with_call_seq(a, b)
+    SEQ
+    cm.add_method(method_with_call_seq)
+
+    alias_to_method = method_with_call_seq.add_alias(
+      RDoc::Alias.new(nil, "method_with_call_seq", "alias_to_method", "comment"),
+      cm
+    )
+
+    assert_equal("method_with_call_seq(a)\nmethod_with_call_seq(a, b)",
+                 method_with_call_seq.call_seq)
+    assert_nil(alias_to_method.call_seq)
   end
 
   def test_markup_code
@@ -451,6 +527,30 @@ method(a, b) { |c, d| ... }
   def test_parent_name
     assert_equal 'C1', @c1.method_list.first.parent_name
     assert_equal 'C1', @c1.method_list.last.parent_name
+  end
+
+  def test_skip_description?
+    m = RDoc::AnyMethod.new nil, "each_line"
+    m2 = RDoc::AnyMethod.new nil, "each"
+    assert_equal false, m.skip_description?
+    assert_equal false, m2.skip_description?
+
+    m.is_alias_for = m2
+    m2.aliases << m
+    assert_equal false, m.skip_description?
+    assert_equal false, m2.skip_description?
+
+    m2.call_seq = "each()"
+    assert_equal true, m.skip_description?
+    assert_equal false, m2.skip_description?
+
+    m2.call_seq = "each_line()"
+    assert_equal false, m.skip_description?
+    assert_equal true, m2.skip_description?
+
+    m2.call_seq = "each()\neach_line()"
+    assert_equal false, m.skip_description?
+    assert_equal false, m2.skip_description?
   end
 
   def test_store_equals

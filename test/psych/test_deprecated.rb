@@ -41,7 +41,7 @@ module Psych
     def test_recursive_quick_emit_encode_with
       qeew = QuickEmitterEncodeWith.new
       hash  = { :qe => qeew }
-      hash2 = Psych.load Psych.dump hash
+      hash2 = Psych.unsafe_load Psych.dump hash
       qe    = hash2[:qe]
 
       assert_equal qeew.name, qe.name
@@ -72,7 +72,7 @@ module Psych
     # receive the yaml_initialize call.
     def test_yaml_initialize_and_init_with
       hash  = { :yi => YamlInitAndInitWith.new }
-      hash2 = Psych.load Psych.dump hash
+      hash2 = Psych.unsafe_load Psych.dump hash
       yi    = hash2[:yi]
 
       assert_equal 'TGIF!', yi.name

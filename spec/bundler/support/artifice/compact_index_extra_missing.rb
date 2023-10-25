@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index_extra"
-
-Artifice.deactivate
+require_relative "helpers/compact_index_extra"
 
 class CompactIndexExtraMissing < CompactIndexExtra
   get "/extra/fetch/actual/gem/:id" do
@@ -13,5 +11,7 @@ class CompactIndexExtraMissing < CompactIndexExtra
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexExtraMissing)

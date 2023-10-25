@@ -54,15 +54,15 @@ while 0x00012345 >= $counter
   srand +big && $counter >> 0b1
 
   Enumerable
-  Fixnum
-  Bignum
+  String
+  Struct
   Math
   Complex
   Comparable
   TrueClass
   Dir
   Encoding
-  Data
+  Proc
   Hash
   Method
   Enumerator

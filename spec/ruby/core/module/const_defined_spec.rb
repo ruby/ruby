@@ -17,9 +17,14 @@ describe "Module#const_defined?" do
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4).should be_true
   end
 
-  it "returns true if the constant is defined in a mixed-in module of the receiver" do
+  it "returns true if the constant is defined in a mixed-in module of the receiver's parent" do
     # CS_CONST10 is defined in a module included by ChildA
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST10).should be_true
+  end
+
+  it "returns true if the constant is defined in a mixed-in module (with prepends) of the receiver" do
+    # CS_CONST11 is defined in the module included by ContainerPrepend
+    ConstantSpecs::ContainerPrepend.const_defined?(:CS_CONST11).should be_true
   end
 
   it "returns true if the constant is defined in Object and the receiver is a module" do
@@ -38,6 +43,11 @@ describe "Module#const_defined?" do
 
   it "returns true if the constant is defined in the receiver's superclass and the inherit flag is true" do
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, true).should be_true
+  end
+
+  it "coerces the inherit flag to a boolean" do
+    ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, nil).should be_false
+    ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, :true).should be_true
   end
 
   it "returns true if the given String names a constant defined in the receiver" do
@@ -70,10 +80,23 @@ describe "Module#const_defined?" do
     ConstantSpecs::ClassA.const_defined?(:CS_CONSTX).should == false
   end
 
-  it "calls #to_str to convert the given name to a String" do
-    name = mock("ClassA")
-    name.should_receive(:to_str).and_return("ClassA")
-    ConstantSpecs.const_defined?(name).should == true
+  describe "converts the given name to a String using #to_str" do
+    it "calls #to_str to convert the given name to a String" do
+      name = mock("ClassA")
+      name.should_receive(:to_str).and_return("ClassA")
+      ConstantSpecs.const_defined?(name).should == true
+    end
+
+    it "raises a TypeError if the given name can't be converted to a String" do
+      -> { ConstantSpecs.const_defined?(nil) }.should raise_error(TypeError)
+      -> { ConstantSpecs.const_defined?([])  }.should raise_error(TypeError)
+    end
+
+    it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to a String" do
+      name = mock("classA")
+      name.should_receive(:to_str).and_raise(NoMethodError)
+      -> { ConstantSpecs.const_defined?(name) }.should raise_error(NoMethodError)
+    end
   end
 
   it "special cases Object and checks it's included Modules" do

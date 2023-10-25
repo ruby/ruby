@@ -162,4 +162,3 @@ class RDoc::Markup::Document
   end
 
 end
-

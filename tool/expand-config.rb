@@ -7,7 +7,17 @@ config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)$/, '\1true\2')
 rbconfig = Module.new {module_eval(config, conffile)}::RbConfig
 config = $expand ? rbconfig::CONFIG : rbconfig::MAKEFILE_CONFIG
 config["RUBY_RELEASE_DATE"] ||=
-  File.read(File.expand_path("../../version.h", __FILE__))[/^\s*#\s*define\s+RUBY_RELEASE_DATE\s+"(.*)"/, 1]
+  [
+    ["revision.h"],
+    ["../../revision.h", __FILE__],
+    ["../../version.h", __FILE__],
+  ].find do |hdr, dir|
+  hdr = File.expand_path(hdr, dir) if dir
+  if date = File.read(hdr)[/^\s*#\s*define\s+RUBY_RELEASE_DATE(?:TIME)?\s+"([0-9-]*)/, 1]
+    break date
+  end
+rescue
+end
 
 while /\A(\w+)=(.*)/ =~ ARGV[0]
   config[$1] = $2
@@ -16,7 +26,7 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 
 if $output
-  output = open($output, "wb", $mode &&= $mode.oct)
+  output = File.open($output, "wb", $mode &&= $mode.oct)
   output.chmod($mode) if $mode
 else
   output = STDOUT

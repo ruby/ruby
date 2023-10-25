@@ -1,10 +1,10 @@
 # frozen_string_literal: true
+
 ##
 # The global rubygems pool represented via the traditional
 # source index.
 
 class Gem::Resolver::IndexSet < Gem::Resolver::Set
-
   def initialize(source = nil) # :nodoc:
     super()
 
@@ -17,7 +17,7 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
         Gem::SpecFetcher.fetcher
       end
 
-    @all = Hash.new { |h,k| h[k] = [] }
+    @all = Hash.new {|h,k| h[k] = [] }
 
     list, errors = @f.available_specs :complete
 
@@ -44,24 +44,24 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     name = req.dependency.name
 
     @all[name].each do |uri, n|
-      if req.match? n, @prerelease
-        res << Gem::Resolver::IndexSpecification.new(
-          self, n.name, n.version, uri, n.platform)
-      end
+      next unless req.match? n, @prerelease
+      res << Gem::Resolver::IndexSpecification.new(
+        self, n.name, n.version, uri, n.platform
+      )
     end
 
     res
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[IndexSet', ']' do
+    q.group 2, "[IndexSet", "]" do
       q.breakable
-      q.text 'sources:'
+      q.text "sources:"
       q.breakable
       q.pp @f.sources
 
       q.breakable
-      q.text 'specs:'
+      q.text "specs:"
 
       q.breakable
 
@@ -76,5 +76,4 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
       end
     end
   end
-
 end

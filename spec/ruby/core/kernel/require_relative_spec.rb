@@ -5,9 +5,9 @@ describe "Kernel#require_relative with a relative path" do
   before :each do
     CodeLoadingSpecs.spec_setup
     @dir = "../../fixtures/code"
-    @abs_dir = File.realpath(@dir, File.dirname(__FILE__))
+    @abs_dir = File.realpath(@dir, __dir__)
     @path = "#{@dir}/load_fixture.rb"
-    @abs_path = File.realpath(@path, File.dirname(__FILE__))
+    @abs_path = File.realpath(@path, __dir__)
   end
 
   after :each do
@@ -87,6 +87,16 @@ describe "Kernel#require_relative with a relative path" do
 
   it "raises a LoadError if the file does not exist" do
     -> { require_relative("#{@dir}/nonexistent.rb") }.should raise_error(LoadError)
+    ScratchPad.recorded.should == []
+  end
+
+  it "raises a LoadError that includes the missing path" do
+    missing_path = "#{@dir}/nonexistent.rb"
+    expanded_missing_path = File.expand_path(missing_path, __dir__)
+    -> { require_relative(missing_path) }.should raise_error(LoadError) { |e|
+      e.message.should include(expanded_missing_path)
+      e.path.should == expanded_missing_path
+    }
     ScratchPad.recorded.should == []
   end
 
@@ -197,7 +207,7 @@ describe "Kernel#require_relative with a relative path" do
       $LOADED_FEATURES.should include(@abs_path)
     end
 
-    platform_is_not :windows do
+    platform_is_not :windows, :wasi do
       describe "with symlinks" do
         before :each do
           @symlink_to_code_dir = tmp("codesymlink")
@@ -267,7 +277,7 @@ end
 describe "Kernel#require_relative with an absolute path" do
   before :each do
     CodeLoadingSpecs.spec_setup
-    @dir = File.expand_path "../../fixtures/code", File.dirname(__FILE__)
+    @dir = File.expand_path "../../fixtures/code", __dir__
     @abs_dir = @dir
     @path = File.join @dir, "load_fixture.rb"
     @abs_path = @path

@@ -44,6 +44,10 @@ RSpec.describe "Bundler::GemHelpers#generic" do
     expect(generic(pl("x64-mingw32"))).to eq(pl("x64-mingw32"))
     expect(generic(pl("x86_64-mingw32"))).to eq(pl("x64-mingw32"))
   end
+
+  it "converts 64-bit mingw UCRT platform variants into x64-mingw-ucrt" do
+    expect(generic(pl("x64-mingw-ucrt"))).to eq(pl("x64-mingw-ucrt"))
+  end
 end
 
 RSpec.describe "Gem::SourceIndex#refresh!" do
@@ -55,7 +59,7 @@ RSpec.describe "Gem::SourceIndex#refresh!" do
   end
 
   it "does not explode when called" do
-    run "Gem.source_index.refresh!"
-    run "Gem::SourceIndex.new([]).refresh!"
+    run "Gem.source_index.refresh!", :raise_on_error => false
+    run "Gem::SourceIndex.new([]).refresh!", :raise_on_error => false
   end
 end

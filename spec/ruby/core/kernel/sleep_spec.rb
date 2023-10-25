@@ -14,7 +14,7 @@ describe "Kernel#sleep" do
     sleep(0.001).should >= 0
   end
 
-  it "accepts a Fixnum" do
+  it "accepts an Integer" do
     sleep(0).should >= 0
   end
 
@@ -22,13 +22,15 @@ describe "Kernel#sleep" do
     sleep(Rational(1, 999)).should >= 0
   end
 
+  it "accepts any Object that reponds to divmod" do
+    o = Object.new
+    def o.divmod(*); [0, 0.001]; end
+    sleep(o).should >= 0
+  end
+
   it "raises an ArgumentError when passed a negative duration" do
     -> { sleep(-0.1) }.should raise_error(ArgumentError)
     -> { sleep(-1) }.should raise_error(ArgumentError)
-  end
-
-  it "raises a TypeError when passed nil" do
-    -> { sleep(nil)   }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
@@ -48,6 +50,29 @@ describe "Kernel#sleep" do
 
     t.wakeup
     t.value.should == 5
+  end
+
+  ruby_version_is ""..."3.3" do
+    it "raises a TypeError when passed nil" do
+      -> { sleep(nil)   }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "accepts a nil duration" do
+      running = false
+      t = Thread.new do
+        running = true
+        sleep(nil)
+        5
+      end
+
+      Thread.pass until running
+      Thread.pass while t.status and t.status != "sleep"
+
+      t.wakeup
+      t.value.should == 5
+    end
   end
 end
 

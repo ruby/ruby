@@ -1,7 +1,15 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.srand" do
+describe "Kernel#srand" do
+  before :each do
+    @seed = srand
+  end
+
+  after :each do
+    srand(@seed)
+  end
+
   it "is a private method" do
     Kernel.should have_private_instance_method(:srand)
   end
@@ -9,6 +17,10 @@ describe "Kernel.srand" do
   it "returns the previous seed value" do
     srand(10)
     srand(20).should == 10
+  end
+
+  it "returns the system-initialized seed value on the first call" do
+    ruby_exe('print srand(10)', options: '--disable-gems').should =~ /\A\d+\z/
   end
 
   it "seeds the RNG correctly and repeatably" do
@@ -33,7 +45,7 @@ describe "Kernel.srand" do
     srand.should == -17
   end
 
-  it "accepts a Bignum as a seed" do
+  it "accepts an Integer as a seed" do
     srand(0x12345678901234567890)
     srand.should == 0x12345678901234567890
   end
@@ -56,6 +68,6 @@ describe "Kernel.srand" do
   end
 end
 
-describe "Kernel#srand" do
+describe "Kernel.srand" do
   it "needs to be reviewed for spec completeness"
 end

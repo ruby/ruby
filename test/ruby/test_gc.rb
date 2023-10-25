@@ -54,9 +54,9 @@ class TestGc < Test::Unit::TestCase
 
   def test_start_full_mark
     return unless use_rgengc?
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
-    GC.start # full mark and next time it should be minor mark
+    3.times { GC.start } # full mark and next time it should be minor mark
     GC.start(full_mark: false)
     assert_nil GC.latest_gc_info(:major_by)
 
@@ -65,7 +65,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_start_immediate_sweep
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     GC.start(immediate_sweep: false)
     assert_equal false, GC.latest_gc_info(:immediate_sweep)
@@ -92,19 +92,23 @@ class TestGc < Test::Unit::TestCase
     assert_kind_of(Integer, res[:count])
 
     stat, count = {}, {}
-    GC.start
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
-    # repeat same methods invocation for cache object creation.
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    2.times{ # to ignore const cache imemo creation
+      GC.start
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+      # repeat same methods invocation for cache object creation.
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    }
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
     assert_equal(count[:FREE], stat[:heap_free_slots])
 
     # measure again without GC.start
-    1000.times{ "a" + "b" }
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    2.times{ # to ignore const cache imemo creation
+      1000.times{ "a" + "b" }
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    }
     assert_equal(count[:FREE], stat[:heap_free_slots])
   end
 
@@ -113,7 +117,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_single
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
     assert_equal stat[:count], GC.stat(:count)
@@ -121,9 +125,11 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_constraints
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
+    # marking_time + sweeping_time could differ from time by 1 because they're stored in nanoseconds
+    assert_in_delta stat[:time], stat[:marking_time] + stat[:sweeping_time], 1
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_operator stat[:heap_sorted_length], :>=, stat[:heap_eden_pages] + stat[:heap_allocatable_pages], "stat is: " + stat.inspect
     assert_equal stat[:heap_available_slots], stat[:heap_live_slots] + stat[:heap_free_slots] + stat[:heap_final_slots]
@@ -135,21 +141,110 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_stat_heap
+    omit 'stress' if GC.stress
+
+    stat_heap = {}
+    stat = {}
+    # Initialize to prevent GC in future calls
+    GC.stat_heap(0, stat_heap)
+    GC.stat(stat)
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(i, stat_heap)
+      GC.stat(stat)
+
+      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
+      assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
+      assert_operator stat_heap[:heap_eden_slots], :>=, 0
+      assert_operator stat_heap[:heap_tomb_pages], :<=, stat[:heap_tomb_pages]
+      assert_operator stat_heap[:heap_tomb_slots], :>=, 0
+      assert_operator stat_heap[:total_allocated_pages], :>=, 0
+      assert_operator stat_heap[:total_freed_pages], :>=, 0
+      assert_operator stat_heap[:force_major_gc_count], :>=, 0
+      assert_operator stat_heap[:force_incremental_marking_finish_count], :>=, 0
+      assert_operator stat_heap[:total_allocated_objects], :>=, 0
+      assert_operator stat_heap[:total_freed_objects], :>=, 0
+      assert_operator stat_heap[:total_freed_objects], :<=, stat_heap[:total_allocated_objects]
+    end
+
+    GC.stat_heap(0, stat_heap)
+    assert_equal stat_heap[:slot_size], GC.stat_heap(0, :slot_size)
+    assert_equal stat_heap[:slot_size], GC.stat_heap(0)[:slot_size]
+
+    assert_raise(ArgumentError) { GC.stat_heap(-1) }
+    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT]) }
+  end
+
+  def test_stat_heap_all
+    stat_heap_all = {}
+    stat_heap = {}
+
+    2.times do
+      GC.stat_heap(0, stat_heap)
+      GC.stat_heap(nil, stat_heap_all)
+    end
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(i, stat_heap)
+
+      # Remove keys that can vary between invocations
+      %i(total_allocated_objects).each do |sym|
+        stat_heap[sym] = stat_heap_all[i][sym] = 0
+      end
+
+      assert_equal stat_heap, stat_heap_all[i]
+    end
+
+    assert_raise(TypeError) { GC.stat_heap(nil, :slot_size) }
+  end
+
+  def test_stat_heap_constraints
+    omit 'stress' if GC.stress
+
+    stat = GC.stat
+    stat_heap = GC.stat_heap
+    2.times do
+      GC.stat(stat)
+      GC.stat_heap(nil, stat_heap)
+    end
+
+    stat_heap_sum = Hash.new(0)
+    stat_heap.values.each do |hash|
+      hash.each { |k, v| stat_heap_sum[k] += v }
+    end
+
+    assert_equal stat[:heap_allocatable_pages], stat_heap_sum[:heap_allocatable_pages]
+    assert_equal stat[:heap_eden_pages], stat_heap_sum[:heap_eden_pages]
+    assert_equal stat[:heap_tomb_pages], stat_heap_sum[:heap_tomb_pages]
+    assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots] + stat_heap_sum[:heap_tomb_slots]
+    assert_equal stat[:total_allocated_pages], stat_heap_sum[:total_allocated_pages]
+    assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
+    assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
+    assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
+  end
+
   def test_latest_gc_info
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
-    GC.start
-    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
-    count.times{ "a" + "b" }
-    assert_equal :newobj, GC.latest_gc_info[:gc_by]
-    eom
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      GC.start
+      count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
+      count.times{ "a" + "b" }
+      assert_equal :newobj, GC.latest_gc_info[:gc_by]
+    RUBY
 
+    GC.latest_gc_info(h = {}) # allocate hash and rehearsal
     GC.start
     GC.start
-    assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
-    assert_equal :method, GC.latest_gc_info[:gc_by]
-    assert_equal true, GC.latest_gc_info[:immediate_sweep]
+    GC.start
+    GC.latest_gc_info(h)
+
+    assert_equal :force,  h[:major_by] if use_rgengc?
+    assert_equal :method, h[:gc_by]
+    assert_equal true,    h[:immediate_sweep]
+    assert_equal true,    h.key?(:need_major_by)
 
     GC.stress = true
     assert_equal :force, GC.latest_gc_info[:major_by]
@@ -167,8 +262,92 @@ class TestGc < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
   end
 
+  def test_latest_gc_info_need_major_by
+    return unless use_rgengc?
+    omit 'stress' if GC.stress
+
+    3.times { GC.start }
+    assert_nil GC.latest_gc_info(:need_major_by)
+
+    # allocate objects until need_major_by is set or major GC happens
+    objects = []
+    while GC.latest_gc_info(:need_major_by).nil?
+      objects.append(100.times.map { '*' })
+    end
+
+    # We need to ensure that no GC gets ran before the call to GC.start since
+    # it would trigger a major GC. Assertions could allocate objects and
+    # trigger a GC so we don't run assertions until we perform the major GC.
+    need_major_by = GC.latest_gc_info(:need_major_by)
+    GC.start(full_mark: false) # should be upgraded to major
+    major_by = GC.latest_gc_info(:major_by)
+
+    assert_not_nil(need_major_by)
+    assert_not_nil(major_by)
+  end
+
+  def test_latest_gc_info_weak_references_count
+    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+      count = 10_000
+      # Some weak references may be created, so allow some margin of error
+      error_tolerance = 100
+
+      # Run full GC to clear out weak references
+      GC.start
+      # Run full GC again to collect stats about weak references
+      GC.start
+
+      before_weak_references_count = GC.latest_gc_info(:weak_references_count)
+      before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
+
+      # Create some objects and place it in a WeakMap
+      wmap = ObjectSpace::WeakMap.new
+      ary = Array.new(count)
+      enum = count.times
+      enum.each.with_index do |i|
+        obj = Object.new
+        ary[i] = obj
+        wmap[obj] = nil
+      end
+
+      # Run full GC to collect stats about weak references
+      GC.start
+
+      assert_operator(GC.latest_gc_info(:weak_references_count), :>=, before_weak_references_count + count - error_tolerance)
+      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :>=, before_retained_weak_references_count + count - error_tolerance)
+      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, GC.latest_gc_info(:weak_references_count))
+
+      before_weak_references_count = GC.latest_gc_info(:weak_references_count)
+      before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
+
+      ary = nil
+
+      # Free ary, which should empty out the wmap
+      GC.start
+      # Run full GC again to collect stats about weak references
+      GC.start
+
+      # Sometimes the WeakMap has one element, which might be held on by registers.
+      assert_operator(wmap.size, :<=, 1)
+
+      assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
+      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
+      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, GC.latest_gc_info(:weak_references_count))
+    RUBY
+  end
+
+  def test_stress_compile_send
+    assert_in_out_err([], <<-EOS, [], [], "")
+      GC.stress = true
+      begin
+        eval("A::B.c(1, 1, d: 234)")
+      rescue
+      end
+    EOS
+  end
+
   def test_singleton_method
-    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:42832]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:42832]")
       GC.stress = true
       10.times do
         obj = Object.new
@@ -180,7 +359,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method_added
-    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:44436]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]")
       class BasicObject
         undef singleton_method_added
         def singleton_method_added(mid)
@@ -196,19 +375,23 @@ class TestGc < Test::Unit::TestCase
 
   def test_gc_parameter
     env = {
-      "RUBY_GC_MALLOC_LIMIT" => "60000000",
-      "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
+      "RUBY_GC_HEAP_INIT_SLOTS" => "100"
     }
-    assert_normal_exit("exit", "[ruby-core:39777]", :child_env => env)
+    assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [])
+    assert_in_out_err([env, "-W:deprecated", "-e", "exit"], "", [],
+                       /The environment variable RUBY_GC_HEAP_INIT_SLOTS is deprecated; use environment variables RUBY_GC_HEAP_%d_INIT_SLOTS instead/)
 
-    env = {
-      "RUBYOPT" => "",
-      "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
-    }
-    assert_in_out_err([env, "-e", "exit"], "", [], [], "[ruby-core:39795]")
-    assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [], "[ruby-core:39795]")
-    assert_in_out_err([env, "-W1", "-e", "exit"], "", [], [], "[ruby-core:39795]")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_INIT_SLOTS=100000/, "[ruby-core:39795]")
+    env = {}
+    GC.stat_heap.keys.each do |heap|
+      env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = "200000"
+    end
+    assert_normal_exit("exit", "", :child_env => env)
+
+    env = {}
+    GC.stat_heap.keys.each do |heap|
+      env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = "0"
+    end
+    assert_normal_exit("exit", "", :child_env => env)
 
     env = {
       "RUBY_GC_HEAP_GROWTH_FACTOR" => "2.0",
@@ -218,22 +401,13 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_FACTOR=2.0/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_MAX_SLOTS=10000/, "[ruby-core:57928]")
 
-    env = {
-      "RUBY_GC_HEAP_INIT_SLOTS" => "100000",
-      "RUBY_GC_HEAP_FREE_SLOTS" => "10000",
-      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.9",
-    }
-    assert_normal_exit("exit", "", :child_env => env)
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.9/, "")
-
-    # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
-    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "") if use_rgengc?
-
-    # check obsolete
-    assert_in_out_err([{'RUBY_FREE_MIN' => '100'}, '-w', '-eexit'], '', [],
-      /RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead/)
-    assert_in_out_err([{'RUBY_HEAP_MIN_SLOTS' => '100'}, '-w', '-eexit'], '', [],
-      /RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead/)
+    if use_rgengc?
+      env = {
+        "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.4",
+      }
+      # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
+      assert_in_out_err([env, "-e", "GC.start; 1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "")
+    end
 
     env = {
       "RUBY_GC_MALLOC_LIMIT"               => "60000000",
@@ -256,6 +430,127 @@ class TestGc < Test::Unit::TestCase
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_MAX=16000000/, "")
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
     end
+
+    ["0.01", "0.1", "1.0"].each do |i|
+      env = {"RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0", "RUBY_GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO" => i}
+      assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+        GC.disable
+        GC.start
+        assert_equal((GC.stat[:old_objects] * #{i}).to_i, GC.stat[:remembered_wb_unprotected_objects_limit])
+      RUBY
+    end
+  end
+
+  def test_gc_parameter_init_slots
+    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+      # Constant from gc.c.
+      GC_HEAP_INIT_SLOTS = 10_000
+      GC.stat_heap.each do |_, s|
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+        assert_operator(total_slots, :>=, GC_HEAP_INIT_SLOTS, s)
+      end
+    RUBY
+
+    env = {}
+    # Make the heap big enough to ensure the heap never needs to grow.
+    sizes = GC.stat_heap.keys.reverse.map { |i| (i + 1) * 100_000 }
+    GC.stat_heap.keys.each do |heap|
+      env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = sizes[heap].to_s
+    end
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+      SIZES = #{sizes}
+      GC.stat_heap.each do |i, s|
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+
+        # The delta is calculated as follows:
+        #  - For allocated pages, each page can vary by 1 slot due to alignment.
+        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
+        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
+      end
+    RUBY
+
+    # Check that the configured sizes are "remembered" across GC invocations.
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+      SIZES = #{sizes}
+
+      # Fill size pool 0 with transient objects.
+      ary = []
+      while GC.stat_heap(0, :heap_allocatable_pages) != 0
+        ary << Object.new
+      end
+      ary.clear
+      ary = nil
+
+      # Clear all the objects that were allocated.
+      GC.start
+
+      # Check that we still have the same number of slots as initially configured.
+      GC.stat_heap.each do |i, s|
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+
+        # The delta is calculated as follows:
+        #  - For allocated pages, each page can vary by 1 slot due to alignment.
+        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
+        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
+      end
+    RUBY
+
+    # Check that we don't grow the heap in minor GC if we have alloctable pages.
+    env["RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO"] = "0.3"
+    env["RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO"] = "0.99"
+    env["RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO"] = "1.0"
+    env["RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR"] = "100" # Large value to disable major GC
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+      SIZES = #{sizes}
+
+      # Run a major GC to clear out dead objects.
+      GC.start
+
+      # Disable GC so we can control when GC is ran.
+      GC.disable
+
+      # Run minor GC enough times so that we don't grow the heap because we
+      # haven't yet ran RVALUE_OLD_AGE minor GC cycles.
+      GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE].times { GC.start(full_mark: false) }
+
+      # Fill size pool 0 to over 50% full so that the number of allocatable
+      # pages that will be created will be over the number in heap_allocatable_pages
+      # (calculated using RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO).
+      # 70% was chosen here to guarantee that.
+      ary = []
+      while GC.stat_heap(0, :heap_allocatable_pages) >
+          (GC.stat_heap(0, :heap_allocatable_pages) + GC.stat_heap(0, :heap_eden_pages)) * 0.3
+        ary << Object.new
+      end
+
+      GC.start(full_mark: false)
+
+      # Check that we still have the same number of slots as initially configured.
+      GC.stat_heap.each do |i, s|
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+
+        # The delta is calculated as follows:
+        #  - For allocated pages, each page can vary by 1 slot due to alignment.
+        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
+        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
+      end
+    RUBY
   end
 
   def test_profiler_enabled
@@ -268,20 +563,20 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
-    skip "for now"
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
-    GC::Profiler.enable
+    omit "for now"
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY', timeout: 30)
+      GC::Profiler.enable
 
-    GC.start
-    assert_equal(1, GC::Profiler.raw_data.size)
-    GC::Profiler.clear
-    assert_equal(0, GC::Profiler.raw_data.size)
+      GC.start
+      assert_equal(1, GC::Profiler.raw_data.size)
+      GC::Profiler.clear
+      assert_equal(0, GC::Profiler.raw_data.size)
 
-    200.times{ GC.start }
-    assert_equal(200, GC::Profiler.raw_data.size)
-    GC::Profiler.clear
-    assert_equal(0, GC::Profiler.raw_data.size)
-    eom
+      200.times{ GC.start }
+      assert_equal(200, GC::Profiler.raw_data.size)
+      GC::Profiler.clear
+      assert_equal(0, GC::Profiler.raw_data.size)
+    RUBY
   end
 
   def test_profiler_total_time
@@ -295,28 +590,62 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_finalizing_main_thread
-    assert_in_out_err(%w[--disable-gems], <<-EOS, ["\"finalize\""], [], "[ruby-dev:46647]")
+    assert_in_out_err([], <<-EOS, ["\"finalize\""], [], "[ruby-dev:46647]")
       ObjectSpace.define_finalizer(Thread.main) { p 'finalize' }
     EOS
   end
 
   def test_expand_heap
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
-    GC.start
-    base_length = GC.stat[:heap_eden_pages]
-    (base_length * 500).times{ 'a' }
-    GC.start
-    base_length = GC.stat[:heap_eden_pages]
-    (base_length * 500).times{ 'a' }
-    GC.start
-    assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
-           "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY')
+      GC.start
+      base_length = GC.stat[:heap_eden_pages]
+      (base_length * 500).times{ 'a' }
+      GC.start
+      base_length = GC.stat[:heap_eden_pages]
+      (base_length * 500).times{ 'a' }
+      GC.start
+      assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
+            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
 
-    a = []
-    (base_length * 500).times{ a << 'a'; nil }
-    GC.start
-    assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
-    eom
+      a = []
+      (base_length * 500).times{ a << 'a'; nil }
+      GC.start
+      assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
+    RUBY
+  end
+
+  def test_thrashing_for_young_objects
+    # This test prevents bugs like [Bug #18929]
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      # Grow the heap
+      @ary = 100_000.times.map { Object.new }
+
+      # Warmup to make sure heap stabilizes
+      1_000_000.times { Object.new }
+
+      before_stats = GC.stat
+      before_stat_heap = GC.stat_heap
+
+      1_000_000.times { Object.new }
+
+      # Previous loop may have caused GC to be in an intermediate state,
+      # running a minor GC here will guarantee that GC will be complete
+      GC.start(full_mark: false)
+
+      after_stats = GC.stat
+      after_stat_heap = GC.stat_heap
+
+      # Debugging output to for failures in trunk-repeat50@phosphorus-docker
+      debug_msg = "before_stats: #{before_stats}\nbefore_stat_heap: #{before_stat_heap}\nafter_stats: #{after_stats}\nafter_stat_heap: #{after_stat_heap}"
+
+      # Should not be thrashing in page creation
+      assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
+      assert_equal 0, after_stats[:heap_tomb_pages], debug_msg
+      assert_equal 0, after_stats[:total_freed_pages], debug_msg
+      # Only young objects, so should not trigger major GC
+      assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count], debug_msg
+    RUBY
   end
 
   def test_gc_internals
@@ -378,11 +707,11 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_finalizer_passed_object_id
-    assert_in_out_err(%w[--disable-gems], <<-EOS, ["true"], [])
+    assert_in_out_err([], <<~RUBY, ["true"], [])
       o = Object.new
       obj_id = o.object_id
       ObjectSpace.define_finalizer(o, ->(id){ p id == obj_id })
-    EOS
+    RUBY
   end
 
   def test_verify_internal_consistency
@@ -430,49 +759,43 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_exception_in_finalizer_procs
-    result = []
+    assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     c1 = proc do
-      result << :c1
+      puts "c1"
       raise
     end
     c2 = proc do
-      result << :c2
+      puts "c2"
       raise
     end
-    tap {
-      tap {
+    begin;
+      tap do
         obj = Object.new
         ObjectSpace.define_finalizer(obj, c1)
         ObjectSpace.define_finalizer(obj, c2)
         obj = nil
-      }
-    }
-    GC.start
-    skip "finalizers did not get run" if result.empty?
-    assert_equal([:c1, :c2], result)
+      end
+    end;
   end
 
   def test_exception_in_finalizer_method
-    @result = []
+    assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     def self.c1(x)
-      @result << :c1
+      puts "c1"
       raise
     end
     def self.c2(x)
-      @result << :c2
+      puts "c2"
       raise
     end
-    tap {
-      tap {
+    begin;
+      tap do
         obj = Object.new
         ObjectSpace.define_finalizer(obj, method(:c1))
         ObjectSpace.define_finalizer(obj, method(:c2))
         obj = nil
-      }
-    }
-    GC.start
-    skip "finalizers did not get run" if @result.empty?
-    assert_equal([:c1, :c2], @result)
+      end
+    end;
   end
 
   def test_object_ids_never_repeat
@@ -481,5 +804,37 @@ class TestGc < Test::Unit::TestCase
     GC.start
     b = 1000.times.map { Object.new.object_id }
     assert_empty(a & b)
+  end
+
+  def test_ast_node_buffer
+    # https://github.com/ruby/ruby/pull/4416
+    Module.new.class_eval( (["# shareable_constant_value: literal"] +
+                            (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
+  end
+
+  def test_old_to_young_reference
+    original_gc_disabled = GC.disable
+
+    require "objspace"
+
+    old_obj = Object.new
+    4.times { GC.start }
+
+    assert_include ObjectSpace.dump(old_obj), '"old":true'
+
+    young_obj = Object.new
+    old_obj.instance_variable_set(:@test, young_obj)
+
+    # Not immediately promoted to old generation
+    3.times do
+      assert_not_include ObjectSpace.dump(young_obj), '"old":true'
+      GC.start
+    end
+
+    # Takes 4 GC to promote to old generation
+    GC.start
+    assert_include ObjectSpace.dump(young_obj), '"old":true'
+  ensure
+    GC.enable if !original_gc_disabled
   end
 end

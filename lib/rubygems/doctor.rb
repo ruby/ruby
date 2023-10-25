@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/user_interaction'
+
+require_relative "../rubygems"
+require_relative "user_interaction"
 
 ##
 # Cleans up after a partially-failed uninstall or for an invalid
@@ -12,7 +13,6 @@ require 'rubygems/user_interaction'
 # removing the bogus specification.
 
 class Gem::Doctor
-
   include Gem::UserInteraction
 
   ##
@@ -20,20 +20,20 @@ class Gem::Doctor
   # subdirectory.
 
   REPOSITORY_EXTENSION_MAP = [ # :nodoc:
-    ['specifications', '.gemspec'],
-    ['build_info',     '.info'],
-    ['cache',          '.gem'],
-    ['doc',            ''],
-    ['extensions',     ''],
-    ['gems',           ''],
-    ['plugins',        ''],
+    ["specifications", ".gemspec"],
+    ["build_info",     ".info"],
+    ["cache",          ".gem"],
+    ["doc",            ""],
+    ["extensions",     ""],
+    ["gems",           ""],
+    ["plugins",        ""],
   ].freeze
 
   missing =
     Gem::REPOSITORY_SUBDIRECTORIES.sort -
-      REPOSITORY_EXTENSION_MAP.map { |(k,_)| k }.sort
+    REPOSITORY_EXTENSION_MAP.map {|(k,_)| k }.sort
 
-  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ', '}" unless
+  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ", "}" unless
     missing.empty?
 
   ##
@@ -53,14 +53,14 @@ class Gem::Doctor
   # Specs installed in this gem repository
 
   def installed_specs # :nodoc:
-    @installed_specs ||= Gem::Specification.map { |s| s.full_name }
+    @installed_specs ||= Gem::Specification.map(&:full_name)
   end
 
   ##
   # Are we doctoring a gem repository?
 
   def gem_repository?
-    not installed_specs.empty?
+    !installed_specs.empty?
   end
 
   ##
@@ -75,8 +75,8 @@ class Gem::Doctor
     Gem.use_paths @gem_repository.to_s
 
     unless gem_repository?
-      say 'This directory does not appear to be a RubyGems repository, ' +
-          'skipping'
+      say "This directory does not appear to be a RubyGems repository, " \
+          "skipping"
       say
       return
     end
@@ -104,30 +104,29 @@ class Gem::Doctor
     directory = File.join(@gem_repository, sub_directory)
 
     Dir.entries(directory).sort.each do |ent|
-      next if ent == "." || ent == ".."
+      next if [".", ".."].include?(ent)
 
       child = File.join(directory, ent)
       next unless File.exist?(child)
 
       basename = File.basename(child, extension)
       next if installed_specs.include? basename
-      next if /^rubygems-\d/ =~ basename
-      next if 'specifications' == sub_directory and 'default' == basename
-      next if 'plugins' == sub_directory and Gem.plugin_suffix_regexp =~ basename
+      next if /^rubygems-\d/.match?(basename)
+      next if sub_directory == "specifications" && basename == "default"
+      next if sub_directory == "plugins" && Gem.plugin_suffix_regexp =~ (basename)
 
-      type = File.directory?(child) ? 'directory' : 'file'
+      type = File.directory?(child) ? "directory" : "file"
 
       action = if @dry_run
-                 'Extra'
-               else
-                 FileUtils.rm_r(child)
-                 'Removed'
-               end
+        "Extra"
+      else
+        FileUtils.rm_r(child)
+        "Removed"
+      end
 
       say "#{action} #{type} #{sub_directory}/#{File.basename(child)}"
     end
   rescue Errno::ENOENT
     # ignore
   end
-
 end

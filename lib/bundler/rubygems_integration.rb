@@ -12,32 +12,30 @@ module Bundler
       EXT_LOCK = Monitor.new
     end
 
-    def self.version
-      @version ||= Gem::Version.new(Gem::VERSION)
-    end
-
-    def self.provides?(req_str)
-      Gem::Requirement.new(req_str).satisfied_by?(version)
-    end
-
     def initialize
       @replaced_methods = {}
       backport_ext_builder_monitor
     end
 
     def version
-      self.class.version
+      @version ||= Gem.rubygems_version
     end
 
     def provides?(req_str)
-      self.class.provides?(req_str)
+      Gem::Requirement.new(req_str).satisfied_by?(version)
+    end
+
+    def supports_bundler_trampolining?
+      provides?(">= 3.3.0.a")
     end
 
     def build_args
+      require "rubygems/command"
       Gem::Command.build_args
     end
 
     def build_args=(args)
+      require "rubygems/command"
       Gem::Command.build_args = args
     end
 
@@ -84,27 +82,18 @@ module Bundler
     def spec_missing_extensions?(spec, default = true)
       return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
 
-      return false if spec_default_gem?(spec)
+      return false if spec.default_gem?
       return false if spec.extensions.empty?
 
       default
     end
 
-    def spec_default_gem?(spec)
-      spec.respond_to?(:default_gem?) && spec.default_gem?
-    end
-
     def spec_matches_for_glob(spec, glob)
       return spec.matches_for_glob(glob) if spec.respond_to?(:matches_for_glob)
 
-      spec.load_paths.map do |lp|
+      spec.load_paths.flat_map do |lp|
         Dir["#{lp}/#{glob}#{suffix_pattern}"]
-      end.flatten(1)
-    end
-
-    def spec_extension_dir(spec)
-      return unless spec.respond_to?(:extension_dir)
-      spec.extension_dir
+      end
     end
 
     def stub_set_spec(stub, spec)
@@ -113,23 +102,6 @@ module Bundler
 
     def path(obj)
       obj.to_s
-    end
-
-    def platforms
-      return [Gem::Platform::RUBY] if Bundler.settings[:force_ruby_platform]
-      Gem.platforms
-    end
-
-    def configuration
-      require_relative "psyched_yaml"
-      Gem.configuration
-    rescue Gem::SystemExitException, LoadError => e
-      Bundler.ui.error "#{e.class}: #{e.message}"
-      Bundler.ui.trace e
-      raise
-    rescue YamlLibrarySyntaxError => e
-      raise YamlSyntaxError.new(e, "Your RubyGems configuration, which is " \
-        "usually located in ~/.gemrc, contains invalid YAML syntax.")
     end
 
     def ruby_engine
@@ -141,14 +113,10 @@ module Bundler
     end
 
     def inflate(obj)
-      require "rubygems/util"
-
       Gem::Util.inflate(obj)
     end
 
     def correct_for_windows_path(path)
-      require "rubygems/util"
-
       if Gem::Util.respond_to?(:correct_for_windows_path)
         Gem::Util.correct_for_windows_path(path)
       elsif path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
@@ -156,19 +124,6 @@ module Bundler
       else
         path
       end
-    end
-
-    def sources=(val)
-      # Gem.configuration creates a new Gem::ConfigFile, which by default will read ~/.gemrc
-      # If that file exists, its settings (including sources) will overwrite the values we
-      # are about to set here. In order to avoid that, we force memoizing the config file now.
-      configuration
-
-      Gem.sources = val
-    end
-
-    def sources
-      Gem.sources
     end
 
     def gem_dir
@@ -223,11 +178,6 @@ module Bundler
       Gem.bin_path(gem, bin, ver)
     end
 
-    def preserve_paths
-      # this is a no-op outside of RubyGems 1.8
-      yield
-    end
-
     def loaded_gem_paths
       loaded_gem_paths = Gem.loaded_specs.map {|_, s| s.full_require_paths }
       loaded_gem_paths.flatten
@@ -241,6 +191,10 @@ module Bundler
       Gem.load_plugin_files(files) if Gem.respond_to?(:load_plugin_files)
     end
 
+    def load_env_plugins
+      Gem.load_env_plugins if Gem.respond_to?(:load_env_plugins)
+    end
+
     def ui=(obj)
       Gem::DefaultUserInteraction.ui = obj
     end
@@ -249,34 +203,9 @@ module Bundler
       EXT_LOCK
     end
 
-    def with_build_args(args)
-      ext_lock.synchronize do
-        old_args = build_args
-        begin
-          self.build_args = args
-          yield
-        ensure
-          self.build_args = old_args
-        end
-      end
-    end
-
-    def spec_from_gem(path, policy = nil)
-      require "rubygems/security"
-      require_relative "psyched_yaml"
-      gem_from_path(path, security_policies[policy]).spec
-    rescue Gem::Package::FormatError
-      raise GemspecError, "Could not read gem at #{path}. It may be corrupted."
-    rescue Exception, Gem::Exception, Gem::Security::Exception => e # rubocop:disable Lint/RescueException
-      if e.is_a?(Gem::Security::Exception) ||
-          e.message =~ /unknown trust policy|unsigned gem/i ||
-          e.message =~ /couldn't verify (meta)?data signature/i
-        raise SecurityError,
-          "The gem #{File.basename(path, ".gem")} can't be installed because " \
-          "the security policy didn't allow it, with the message: #{e.message}"
-      else
-        raise e
-      end
+    def spec_from_gem(path)
+      require "rubygems/package"
+      Gem::Package.new(path).spec
     end
 
     def build_gem(gem_dir, spec)
@@ -298,23 +227,42 @@ module Bundler
 
     def reverse_rubygems_kernel_mixin
       # Disable rubygems' gem activation system
-      kernel = (class << ::Kernel; self; end)
-      [kernel, ::Kernel].each do |k|
-        if k.private_method_defined?(:gem_original_require)
-          redefine_method(k, :require, k.instance_method(:gem_original_require))
+      if Gem.respond_to?(:discover_gems_on_require=)
+        Gem.discover_gems_on_require = false
+      else
+        [::Kernel.singleton_class, ::Kernel].each do |k|
+          if k.private_method_defined?(:gem_original_require)
+            redefine_method(k, :require, k.instance_method(:gem_original_require))
+          end
+        end
+      end
+    end
+
+    def replace_require(specs)
+      return if [::Kernel.singleton_class, ::Kernel].any? {|klass| klass.respond_to?(:no_warning_require) }
+
+      [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
+        kernel_class.send(:alias_method, :no_warning_require, :require)
+        kernel_class.send(:define_method, :require) do |name|
+          if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: specs) # rubocop:disable Style/HashSyntax
+            warn message, :uplevel => 1
+          end
+          kernel_class.send(:no_warning_require, name)
+        end
+        if kernel_class == ::Kernel
+          kernel_class.send(:private, :require)
+        else
+          kernel_class.send(:public, :require)
         end
       end
     end
 
     def replace_gem(specs, specs_by_name)
-      reverse_rubygems_kernel_mixin
-
       executables = nil
 
-      kernel = (class << ::Kernel; self; end)
-      [kernel, ::Kernel].each do |kernel_class|
+      [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         redefine_method(kernel_class, :gem) do |dep, *reqs|
-          if executables && executables.include?(File.basename(caller.first.split(":").first))
+          if executables&.include?(File.basename(caller.first.split(":").first))
             break
           end
 
@@ -329,8 +277,13 @@ module Bundler
           end
 
           message = if spec.nil?
+            target_file = begin
+                            Bundler.default_gemfile.basename
+                          rescue GemfileNotFound
+                            "inline Gemfile"
+                          end
             "#{dep.name} is not part of the bundle." \
-            " Add it to your #{Bundler.default_gemfile.basename}."
+            " Add it to your #{target_file}."
           else
             "can't activate #{dep}, already activated #{spec.full_name}. " \
             "Make sure all dependencies are added to Gemfile."
@@ -338,15 +291,11 @@ module Bundler
 
           e = Gem::LoadError.new(message)
           e.name = dep.name
-          if e.respond_to?(:requirement=)
-            e.requirement = dep.requirement
-          elsif e.respond_to?(:version_requirement=)
-            e.version_requirement = dep.requirement
-          end
+          e.requirement = dep.requirement
           raise e
         end
 
-        # backwards compatibility shim, see https://github.com/bundler/bundler/issues/5102
+        # backwards compatibility shim, see https://github.com/rubygems/bundler/issues/5102
         kernel_class.send(:public, :gem) if Bundler.feature_flag.setup_makes_kernel_gem_public?
       end
     end
@@ -422,6 +371,22 @@ module Bundler
     # Replace or hook into RubyGems to provide a bundlerized view
     # of the world.
     def replace_entrypoints(specs)
+      specs_by_name = add_default_gems_to(specs)
+
+      if defined?(::Gem::BUNDLED_GEMS)
+        replace_require(specs)
+      else
+        reverse_rubygems_kernel_mixin
+      end
+      replace_gem(specs, specs_by_name)
+      stub_rubygems(specs)
+      replace_bin_path(specs_by_name)
+
+      Gem.clear_paths
+    end
+
+    # Add default gems not already present in specs, and return them as a hash.
+    def add_default_gems_to(specs)
       specs_by_name = specs.reduce({}) do |h, s|
         h[s.name] = s
         h
@@ -436,40 +401,7 @@ module Bundler
         specs_by_name[default_spec_name] = default_spec
       end
 
-      replace_gem(specs, specs_by_name)
-      stub_rubygems(specs)
-      replace_bin_path(specs_by_name)
-
-      Gem.clear_paths
-    end
-
-    # This backports base_dir which replaces installation path
-    # RubyGems 1.8+
-    def backport_base_dir
-      redefine_method(Gem::Specification, :base_dir) do
-        return Gem.dir unless loaded_from
-        File.dirname File.dirname loaded_from
-      end
-    end
-
-    def backport_cache_file
-      redefine_method(Gem::Specification, :cache_dir) do
-        @cache_dir ||= File.join base_dir, "cache"
-      end
-
-      redefine_method(Gem::Specification, :cache_file) do
-        @cache_file ||= File.join cache_dir, "#{full_name}.gem"
-      end
-    end
-
-    def backport_spec_file
-      redefine_method(Gem::Specification, :spec_dir) do
-        @spec_dir ||= File.join base_dir, "specifications"
-      end
-
-      redefine_method(Gem::Specification, :spec_file) do
-        @spec_file ||= File.join spec_dir, "#{full_name}.gemspec"
-      end
+      specs_by_name
     end
 
     def undo_replacements
@@ -536,14 +468,17 @@ module Bundler
     end
 
     def fetch_specs(remote, name)
+      require "rubygems/remote_fetcher"
       path = remote.uri.to_s + "#{name}.#{Gem.marshal_version}.gz"
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
       string = fetcher.fetch_path(path)
-      Bundler.load_marshal(string)
-    rescue Gem::RemoteFetcher::FetchError => e
+      specs = Bundler.safe_load_marshal(string)
+      raise MarshalError, "Specs #{name} from #{remote} is expected to be an Array but was unexpected class #{specs.class}" unless specs.is_a?(Array)
+      specs
+    rescue Gem::RemoteFetcher::FetchError
       # it's okay for prerelease to fail
-      raise e unless name == "prerelease_specs"
+      raise unless name == "prerelease_specs"
     end
 
     def fetch_all_remote_specs(remote)
@@ -553,27 +488,40 @@ module Bundler
       specs.concat(pres)
     end
 
-    def download_gem(spec, uri, path)
+    def download_gem(spec, uri, cache_dir)
+      require "rubygems/remote_fetcher"
       uri = Bundler.settings.mirror_for(uri)
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => spec.remote.original_uri.to_s } if spec.remote.original_uri
       Bundler::Retry.new("download gem from #{uri}").attempts do
-        fetcher.download(spec, uri, path)
+        gem_file_name = spec.file_name
+        local_gem_path = File.join cache_dir, gem_file_name
+        return if File.exist? local_gem_path
+
+        begin
+          remote_gem_path = uri + "gems/#{gem_file_name}"
+          remote_gem_path = remote_gem_path.to_s if provides?("< 3.2.0.rc.1")
+
+          SharedHelpers.filesystem_access(local_gem_path) do
+            fetcher.cache_update_path remote_gem_path, local_gem_path
+          end
+        rescue Gem::RemoteFetcher::FetchError
+          raise if spec.original_platform == spec.platform
+
+          original_gem_file_name = "#{spec.original_name}.gem"
+          raise if gem_file_name == original_gem_file_name
+
+          gem_file_name = original_gem_file_name
+          retry
+        end
       end
+    rescue Gem::RemoteFetcher::FetchError => e
+      raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
     end
 
     def gem_remote_fetcher
-      require "resolv"
-      proxy = configuration[:http_proxy]
-      dns = Resolv::DNS.new
-      Gem::RemoteFetcher.new(proxy, dns)
-    end
-
-    def gem_from_path(path, policy = nil)
-      require "rubygems/package"
-      p = Gem::Package.new(path)
-      p.security_policy = policy if policy
-      p
+      require "rubygems/remote_fetcher"
+      Gem::RemoteFetcher.fetcher
     end
 
     def build(spec, skip_validation = false)
@@ -581,20 +529,11 @@ module Bundler
       Gem::Package.build(spec, skip_validation)
     end
 
-    def repository_subdirectories
-      Gem::REPOSITORY_SUBDIRECTORIES
-    end
-
-    def install_with_build_args(args)
-      yield
-    end
-
     def path_separator
       Gem.path_separator
     end
 
     def all_specs
-      require_relative "remote_specification"
       Gem::Specification.stubs.map do |stub|
         StubSpecification.from_stub(stub)
       end
@@ -602,10 +541,10 @@ module Bundler
 
     def backport_ext_builder_monitor
       # So we can avoid requiring "rubygems/ext" in its entirety
-      Gem.module_eval <<-RB, __FILE__, __LINE__ + 1
+      Gem.module_eval <<-RUBY, __FILE__, __LINE__ + 1
         module Ext
         end
-      RB
+      RUBY
 
       require "rubygems/ext/builder"
 
@@ -617,6 +556,10 @@ module Bundler
         remove_const(:CHDIR_MUTEX) if const_defined?(:CHDIR_MUTEX)
         const_set(:CHDIR_MUTEX, const_get(:CHDIR_MONITOR))
       end
+    end
+
+    def find_bundler(version)
+      find_name("bundler").find {|s| s.version.to_s == version }
     end
 
     def find_name(name)
@@ -631,14 +574,6 @@ module Bundler
       def default_stubs
         Gem::Specification.send(:default_stubs, "*.gemspec")
       end
-    end
-
-    def use_gemdeps(gemfile)
-      ENV["BUNDLE_GEMFILE"] ||= File.expand_path(gemfile)
-      require_relative "gemdeps"
-      runtime = Bundler.setup
-      activated_spec_names = runtime.requested_specs.map(&:to_spec).sort_by(&:name)
-      [Gemdeps.new(runtime), activated_spec_names]
     end
   end
 

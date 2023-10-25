@@ -21,12 +21,12 @@ module Bundler
     # @param func [Proc] job to run in inside the worker pool
     def initialize(size, name, func)
       @name = name
-      @request_queue = Queue.new
-      @response_queue = Queue.new
+      @request_queue = Thread::Queue.new
+      @response_queue = Thread::Queue.new
       @func = func
       @size = size
       @threads = nil
-      SharedHelpers.trap("INT") { abort_threads }
+      @previous_interrupt_handler = nil
     end
 
     # Enqueue a request to be executed in the worker pool
@@ -48,7 +48,7 @@ module Bundler
       stop_threads
     end
 
-  private
+    private
 
     def process_queue(i)
       loop do
@@ -68,13 +68,16 @@ module Bundler
     # so as worker threads after retrieving it, shut themselves down
     def stop_threads
       return unless @threads
+
       @threads.each { @request_queue.enq POISON }
       @threads.each(&:join)
+
+      remove_interrupt_handler
+
       @threads = nil
     end
 
     def abort_threads
-      return unless @threads
       Bundler.ui.debug("\n#{caller.join("\n")}")
       @threads.each(&:exit)
       exit 1
@@ -84,21 +87,31 @@ module Bundler
       creation_errors = []
 
       @threads = Array.new(@size) do |i|
-        begin
-          Thread.start { process_queue(i) }.tap do |thread|
-            thread.name = "#{name} Worker ##{i}" if thread.respond_to?(:name=)
-          end
-        rescue ThreadError => e
-          creation_errors << e
-          nil
+        Thread.start { process_queue(i) }.tap do |thread|
+          thread.name = "#{name} Worker ##{i}" if thread.respond_to?(:name=)
         end
+      rescue ThreadError => e
+        creation_errors << e
+        nil
       end.compact
+
+      add_interrupt_handler unless @threads.empty?
 
       return if creation_errors.empty?
 
       message = "Failed to create threads for the #{name} worker: #{creation_errors.map(&:to_s).uniq.join(", ")}"
       raise ThreadCreationError, message if @threads.empty?
       Bundler.ui.info message
+    end
+
+    def add_interrupt_handler
+      @previous_interrupt_handler = trap("INT") { abort_threads }
+    end
+
+    def remove_interrupt_handler
+      return unless @previous_interrupt_handler
+
+      trap "INT", @previous_interrupt_handler
     end
   end
 end

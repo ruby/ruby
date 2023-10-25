@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
+# NOTE: most specs are in sprintf_spec.rb, this is just an alias
 describe "Kernel#format" do
   it "is a private method" do
     Kernel.should have_private_instance_method(:format)

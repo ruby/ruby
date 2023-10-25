@@ -49,20 +49,12 @@ describe "String#chop" do
     s.chop.should_not equal(s)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "hello".taint.chop.tainted?.should == true
-      "".taint.chop.tainted?.should == true
-    end
-
-    it "untrusts result when self is untrusted" do
-      "hello".untrust.chop.untrusted?.should == true
-      "".untrust.chop.untrusted?.should == true
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(String)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(StringSpecs::MyString)
+  it "returns a String in the same encoding as self" do
+    "abc\n\n".encode("US-ASCII").chop.encoding.should == Encoding::US_ASCII
   end
 end
 
@@ -113,14 +105,14 @@ describe "String#chop!" do
     "".chop!.should be_nil
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "string\n\r".freeze.chop! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "string\n\r".freeze.chop! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
+  it "raises a FrozenError on a frozen instance that would not be modified" do
     a = ""
     a.freeze
-    -> { a.chop! }.should raise_error(frozen_error_class)
+    -> { a.chop! }.should raise_error(FrozenError)
   end
 end

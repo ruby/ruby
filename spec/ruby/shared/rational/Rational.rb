@@ -65,79 +65,86 @@ describe :kernel_Rational, shared: true do
       r_s.should == r
       r_s.should_not == f_r
     end
+  end
 
-    describe "when passed a Numeric" do
-      it "calls #to_r to convert the first argument to a Rational" do
-        num = RationalSpecs::SubNumeric.new(2)
+  describe "when passed a Numeric" do
+    it "calls #to_r to convert the first argument to a Rational" do
+      num = RationalSpecs::SubNumeric.new(2)
 
-        Rational(num).should == Rational(2)
-      end
-    end
-
-    describe "when passed a Complex" do
-      it "returns a Rational from the real part if the imaginary part is 0" do
-        Rational(Complex(1, 0)).should == Rational(1)
-      end
-
-      it "raises a RangeError if the imaginary part is not 0" do
-        -> { Rational(Complex(1, 2)) }.should raise_error(RangeError)
-      end
-    end
-
-    it "raises a TypeError if the first argument is nil" do
-      -> { Rational(nil) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError if the second argument is nil" do
-      -> { Rational(1, nil) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError if the first argument is a Symbol" do
-      -> { Rational(:sym) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError if the second argument is a Symbol" do
-      -> { Rational(1, :sym) }.should raise_error(TypeError)
+      Rational(num).should == Rational(2)
     end
   end
 
-  ruby_version_is "2.6" do
-    describe "when passed exception: false" do
-      describe "and [non-Numeric]" do
-        it "swallows an error" do
-          Rational(:sym, exception: false).should == nil
-          Rational("abc", exception: false).should == nil
-        end
-      end
+  describe "when passed a Complex" do
+    it "returns a Rational from the real part if the imaginary part is 0" do
+      Rational(Complex(1, 0)).should == Rational(1)
+    end
 
-      describe "and [non-Numeric, Numeric]" do
-        it "swallows an error" do
-          Rational(:sym, 1, exception: false).should == nil
-          Rational("abc", 1, exception: false).should == nil
-        end
-      end
+    it "raises a RangeError if the imaginary part is not 0" do
+      -> { Rational(Complex(1, 2)) }.should raise_error(RangeError)
+    end
+  end
 
-      describe "and [anything, non-Numeric]" do
-        it "swallows an error" do
-          Rational(:sym, :sym, exception: false).should == nil
-          Rational("abc", :sym, exception: false).should == nil
-        end
-      end
+  it "raises a ZeroDivisionError if the second argument is 0" do
+    -> { Rational(1, 0) }.should raise_error(ZeroDivisionError, "divided by 0")
+    -> { Rational(1, 0.0) }.should raise_error(ZeroDivisionError, "divided by 0")
+  end
 
-      describe "and non-Numeric String arguments" do
-        it "swallows an error" do
-          Rational("a", "b", exception: false).should == nil
-          Rational("a", 0, exception: false).should == nil
-          Rational(0, "b", exception: false).should == nil
-        end
-      end
+  it "raises a TypeError if the first argument is nil" do
+    -> { Rational(nil) }.should raise_error(TypeError)
+  end
 
-      describe "and nil arguments" do
-        it "swallows an error" do
-          Rational(nil, exception: false).should == nil
-          Rational(nil, nil, exception: false).should == nil
-        end
+  it "raises a TypeError if the second argument is nil" do
+    -> { Rational(1, nil) }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError if the first argument is a Symbol" do
+    -> { Rational(:sym) }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError if the second argument is a Symbol" do
+    -> { Rational(1, :sym) }.should raise_error(TypeError)
+  end
+
+  describe "when passed exception: false" do
+    describe "and [non-Numeric]" do
+      it "swallows an error" do
+        Rational(:sym, exception: false).should == nil
+        Rational("abc", exception: false).should == nil
       end
     end
+
+    describe "and [non-Numeric, Numeric]" do
+      it "swallows an error" do
+        Rational(:sym, 1, exception: false).should == nil
+        Rational("abc", 1, exception: false).should == nil
+      end
+    end
+
+    describe "and [anything, non-Numeric]" do
+      it "swallows an error" do
+        Rational(:sym, :sym, exception: false).should == nil
+        Rational("abc", :sym, exception: false).should == nil
+      end
+    end
+
+    describe "and non-Numeric String arguments" do
+      it "swallows an error" do
+        Rational("a", "b", exception: false).should == nil
+        Rational("a", 0, exception: false).should == nil
+        Rational(0, "b", exception: false).should == nil
+      end
+    end
+
+    describe "and nil arguments" do
+      it "swallows an error" do
+        Rational(nil, exception: false).should == nil
+        Rational(nil, nil, exception: false).should == nil
+      end
+    end
+  end
+
+  it "freezes its result" do
+    Rational(1).frozen?.should == true
   end
 end

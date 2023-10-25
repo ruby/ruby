@@ -2,26 +2,27 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Kernel#untaint" do
-  ruby_version_is ''...'2.7' do
-    it "returns self" do
-      o = Object.new
-      o.untaint.should equal(o)
+  ruby_version_is ""..."3.2" do
+    it "is a no-op" do
+      suppress_warning do
+        o = Object.new.taint
+        o.should_not.tainted?
+        o.untaint
+        o.should_not.tainted?
+      end
     end
 
-    it "clears the tainted bit" do
-      o = Object.new.taint
-      o.untaint
-      o.tainted?.should == false
+    it "warns in verbose mode" do
+      -> {
+        o = Object.new.taint
+        o.untaint
+      }.should complain(/Object#untaint is deprecated and will be removed in Ruby 3.2/, verbose: true)
     end
+  end
 
-    it "raises #{frozen_error_class} on a tainted, frozen object" do
-      o = Object.new.taint.freeze
-      -> { o.untaint }.should raise_error(frozen_error_class)
-    end
-
-    it "does not raise an error on an untainted, frozen object" do
-      o = Object.new.freeze
-      o.untaint.should equal(o)
+  ruby_version_is "3.2" do
+    it "has been removed" do
+      Object.new.should_not.respond_to?(:untaint)
     end
   end
 end

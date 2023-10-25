@@ -6,6 +6,10 @@ class Reline::History::Test < Reline::TestCase
     Reline.send(:test_mode)
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def test_ancestors
     assert_equal(Reline::History.ancestors.include?(Array), true)
   end
@@ -242,6 +246,26 @@ class Reline::History::Test < Reline::TestCase
     end
   end
 
+  def test_history_size_zero
+    history = history_new(history_size: 0)
+    assert_equal 0, history.size
+    history << 'aa'
+    history << 'bb'
+    assert_equal 0, history.size
+    history.push(*%w{aa bb cc})
+    assert_equal 0, history.size
+  end
+
+  def test_history_size_negative_unlimited
+    history = history_new(history_size: -1)
+    assert_equal 0, history.size
+    history << 'aa'
+    history << 'bb'
+    assert_equal 2, history.size
+    history.push(*%w{aa bb cc})
+    assert_equal 5, history.size
+  end
+
   private
 
   def history_new(history_size: 10)
@@ -268,11 +292,14 @@ class Reline::History::Test < Reline::TestCase
 
   def assert_external_string_equal(expected, actual)
     assert_equal(expected, actual)
-    assert_equal(get_default_internal_encoding, actual.encoding)
+    mes = "Encoding of #{actual.inspect} is expected #{get_default_internal_encoding.inspect} but #{actual.encoding}"
+    assert_equal(get_default_internal_encoding, actual.encoding, mes)
   end
 
   def get_default_internal_encoding
-    if RUBY_PLATFORM =~ /mswin|mingw/
+    if encoding = Reline.core.encoding
+      encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
       Encoding.default_internal || Encoding::UTF_8
     else
       Encoding.default_internal || Encoding.find("locale")

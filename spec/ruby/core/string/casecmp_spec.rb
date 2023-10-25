@@ -25,16 +25,8 @@ describe "String#casecmp independent of case" do
     "abc".casecmp(other).should == 0
   end
 
-  ruby_version_is ""..."2.5" do
-    it "raises a TypeError if other can't be converted to a string" do
-      -> { "abc".casecmp(mock('abc')) }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "returns nil if other can't be converted to a string" do
-      "abc".casecmp(mock('abc')).should be_nil
-    end
+  it "returns nil if other can't be converted to a string" do
+    "abc".casecmp(mock('abc')).should be_nil
   end
 
   it "returns nil if incompatible encodings" do
@@ -125,6 +117,11 @@ describe "String#casecmp independent of case" do
       "B".casecmp(a).should == 1
     end
   end
+
+  it "returns 0 for empty strings in different encodings" do
+    ''.b.casecmp('').should == 0
+    ''.b.casecmp(''.encode("UTF-32LE")).should == 0
+  end
 end
 
 describe 'String#casecmp? independent of case' do
@@ -196,15 +193,12 @@ describe 'String#casecmp? independent of case' do
     "ß".casecmp?("ss").should be_true
   end
 
-  ruby_version_is "2.4"..."2.5" do
-    it "raises a TypeError if other can't be converted to a string" do
-      -> { "abc".casecmp?(mock('abc')) }.should raise_error(TypeError)
-    end
+  it "returns nil if other can't be converted to a string" do
+    "abc".casecmp?(mock('abc')).should be_nil
   end
 
-  ruby_version_is "2.5" do
-    it "returns nil if other can't be converted to a string" do
-      "abc".casecmp?(mock('abc')).should be_nil
-    end
+  it "returns true for empty strings in different encodings" do
+    ''.b.should.casecmp?('')
+    ''.b.should.casecmp?(''.encode("UTF-32LE"))
   end
 end

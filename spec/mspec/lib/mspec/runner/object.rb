@@ -7,8 +7,8 @@ class Object
     MSpec.current.after at, &block
   end
 
-  private def describe(mod, msg = nil, options = nil, &block)
-    MSpec.describe mod, msg, &block
+  private def describe(description, options = nil, &block)
+    MSpec.describe description, options, &block
   end
 
   private def it(desc, &block)

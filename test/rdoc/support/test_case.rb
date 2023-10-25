@@ -1,16 +1,3 @@
-##
-# RDoc::TestCase is an abstract TestCase to provide common setup and teardown
-# across all RDoc tests.  The test case uses minitest, so all the assertions
-# of minitest may be used.
-#
-# The testcase provides the following:
-#
-# * A reset code-object tree
-# * A reset markup preprocessor (RDoc::Markup::PreProcess)
-# * The <code>@RM</code> alias of RDoc::Markup (for less typing)
-# * <code>@pwd</code> containing the current working directory
-# * FileUtils, pp, Tempfile, Dir.tmpdir and StringIO
-
 require 'bundler/errors'
 begin
   gem 'test-unit'
@@ -26,12 +13,12 @@ require 'tempfile'
 require 'tmpdir'
 require 'stringio'
 
-require 'rdoc'
+require_relative '../../../lib/rdoc'
 
 ##
 # RDoc::TestCase is an abstract TestCase to provide common setup and teardown
-# across all RDoc tests.  The test case uses minitest, so all the assertions
-# of minitest may be used.
+# across all RDoc tests.  The test case uses test-unit, so all the assertions
+# of test-unit may be used.
 #
 # The testcase provides the following:
 #
@@ -48,6 +35,10 @@ class RDoc::TestCase < Test::Unit::TestCase
 
   def setup
     super
+
+    @orig_home = ENV["HOME"]
+    FileUtils.mkdir_p(@test_home = Dir.mktmpdir("test_rdoc_"))
+    ENV["HOME"] = @test_home
 
     @top_level = nil
 
@@ -67,6 +58,16 @@ class RDoc::TestCase < Test::Unit::TestCase
     @rdoc.generator = g
 
     RDoc::Markup::PreProcess.reset
+  end
+
+  ##
+  # Abstract test-case teardown
+
+  def teardown
+    ENV["HOME"] = @orig_home if defined?(@orig_home)
+    defined?(@test_home) and FileUtils.rm_rf @test_home
+
+    super
   end
 
   ##

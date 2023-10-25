@@ -1,0 +1,25 @@
+prelude: |
+  module AR; end
+  class AR::Base
+    def create_or_update
+      nil
+    end
+    def save
+      create_or_update
+    end
+  end
+  class Foo < AR::Base; end
+  class Bar < AR::Base; end
+  o1 = Foo.new
+  o2 = Bar.new
+benchmark:
+  vm_poly_same_method: |
+    o1.save; o2.save;
+    o1.save; o2.save;
+    o1.save; o2.save;
+    o1.save; o2.save;
+    o1.save; o2.save;
+    o1.save; o2.save;
+    o1.save; o2.save;
+    o1.save; o2.save;
+loop_count: 6000000

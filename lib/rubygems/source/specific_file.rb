@@ -1,10 +1,10 @@
 # frozen_string_literal: true
+
 ##
 # A source representing a single .gem file.  This is used for installation of
 # local gems.
 
 class Gem::Source::SpecificFile < Gem::Source
-
   ##
   # The path to the gem for this specific file.
 
@@ -34,7 +34,6 @@ class Gem::Source::SpecificFile < Gem::Source
   def fetch_spec(name) # :nodoc:
     return @spec if name == @name
     raise Gem::Exception, "Unable to find '#{name}'"
-    @spec
   end
 
   def download(spec, dir = nil) # :nodoc:
@@ -43,7 +42,7 @@ class Gem::Source::SpecificFile < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[SpecificFile:', ']' do
+    q.group 2, "[SpecificFile:", "]" do
       q.breakable
       q.text @path
     end
@@ -69,5 +68,4 @@ class Gem::Source::SpecificFile < Gem::Source
       super
     end
   end
-
 end

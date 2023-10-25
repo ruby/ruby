@@ -163,6 +163,8 @@ class RDoc::Markup::PreProcess
       if RDoc::Context === code_object then
         section = code_object.add_section param
         code_object.temporary_section = section
+      elsif RDoc::AnyMethod === code_object then
+        code_object.section_title = param
       end
 
       blankline # ignore category if we're not on an RDoc::Context

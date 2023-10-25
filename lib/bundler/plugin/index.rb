@@ -71,6 +71,18 @@ module Bundler
         raise
       end
 
+      def unregister_plugin(name)
+        @commands.delete_if {|_, v| v == name }
+        @sources.delete_if {|_, v| v == name }
+        @hooks.each do |hook, names|
+          names.delete(name)
+          @hooks.delete(hook) if names.empty?
+        end
+        @plugin_paths.delete(name)
+        @load_paths.delete(name)
+        save_index
+      end
+
       # Path of default index file
       def index_file
         Plugin.root.join("index")
@@ -124,7 +136,7 @@ module Bundler
         @hooks[event] || []
       end
 
-    private
+      private
 
       # Reads the index file from the directory and initializes the instance
       # variables.
@@ -134,7 +146,7 @@ module Bundler
       # @param [Boolean] is the index file global index
       def load_index(index_file, global = false)
         SharedHelpers.filesystem_access(index_file, :read) do |index_f|
-          valid_file = index_f && index_f.exist? && !index_f.size.zero?
+          valid_file = index_f&.exist? && !index_f.size.zero?
           break unless valid_file
 
           data = index_f.read
@@ -155,11 +167,11 @@ module Bundler
       # to be only String key value pairs)
       def save_index
         index = {
-          "commands"     => @commands,
-          "hooks"        => @hooks,
-          "load_paths"   => @load_paths,
+          "commands" => @commands,
+          "hooks" => @hooks,
+          "load_paths" => @load_paths,
           "plugin_paths" => @plugin_paths,
-          "sources"      => @sources,
+          "sources" => @sources,
         }
 
         require_relative "../yaml_serializer"

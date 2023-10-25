@@ -3,9 +3,17 @@
 begin
   require 'psych'
 rescue LoadError
-  warn "It seems your ruby installation is missing psych (for YAML output).\n" \
-    "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
-    uplevel: 1
+  case RUBY_ENGINE
+  when 'jruby'
+    warn "The Psych YAML extension failed to load.\n" \
+      "Check your env for conflicting versions of SnakeYAML\n" \
+      "See https://github.com/jruby/jruby/wiki/FAQs#why-does-the-psych-yaml-extension-fail-to-load-in-my-environment",
+         uplevel: 1
+  else
+    warn "It seems your ruby installation is missing psych (for YAML output).\n" \
+      "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
+         uplevel: 1
+  end
   raise
 end
 
@@ -40,7 +48,7 @@ YAML = Psych # :nodoc:
 #
 # == History
 #
-# Syck was the original for YAML implementation in Ruby's standard library
+# Syck was the original YAML implementation in Ruby's standard library
 # developed by why the lucky stiff.
 #
 # You can still use Syck, if you prefer, for parsing and emitting YAML, but you
@@ -58,4 +66,5 @@ YAML = Psych # :nodoc:
 #
 # Syck can also be found on github: https://github.com/ruby/syck
 module YAML
+  LOADER_VERSION = "0.2.1"
 end

@@ -1,25 +1,24 @@
-#ifndef INTERNAL_FIXNUM_H /* -*- C -*- */
+#ifndef INTERNAL_FIXNUM_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_FIXNUM_H
 /**
- * @file
- * @brief      Internal header for Fixnums.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Fixnums.
  */
-#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#include "ruby/internal/config.h"      /* for HAVE_LONG_LONG */
 #include <limits.h>             /* for CHAR_BIT */
 #include "internal/compilers.h" /* for __has_builtin */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_big_mul */
 #include "ruby/ruby.h"          /* for RB_FIXABLE */
 
 #if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
 # define DLONG LONG_LONG
 # define DL2NUM(x) LL2NUM(x)
-#elif defined(HAVE_INT128_T)
+#elif defined(HAVE_INT128_T) && !(defined(__OpenBSD__) && defined(__mips64__))
 # define DLONG int128_t
 # define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
 VALUE rb_int128t2big(int128_t n); /* in bignum.c */
@@ -61,7 +60,7 @@ rb_fix_plus_fix(VALUE x, VALUE y)
      * (3) Of course `z = x + (y-1)` may overflow.
      *     At that time true value is
      *     * positive: 0b0 1xxx...1, and z = 0b1xxx...1
-     *     * nevative: 0b1 0xxx...1, and z = 0b0xxx...1
+     *     * negative: 0b1 0xxx...1, and z = 0b0xxx...1
      *     To convert this true value to long,
      *     (a) Use arithmetic shift
      *         * positive: 0b11xxx...

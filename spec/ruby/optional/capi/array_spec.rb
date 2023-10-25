@@ -83,8 +83,8 @@ describe "C-API Array function" do
       @s.rb_ary_cat([1, 2], 3, 4).should == [1, 2, 3, 4]
     end
 
-    it "raises a #{frozen_error_class} if the array is frozen" do
-      -> { @s.rb_ary_cat([].freeze, 1) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError if the array is frozen" do
+      -> { @s.rb_ary_cat([].freeze, 1) }.should raise_error(FrozenError)
     end
   end
 
@@ -130,8 +130,8 @@ describe "C-API Array function" do
       @s.rb_ary_rotate([1, 2, 3, 4], -3).should == [2, 3, 4, 1]
     end
 
-    it "raises a #{frozen_error_class} if the array is frozen" do
-      -> { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError if the array is frozen" do
+      -> { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(FrozenError)
     end
   end
 
@@ -190,6 +190,22 @@ describe "C-API Array function" do
     end
   end
 
+  describe "rb_ary_sort" do
+    it "returns a new sorted array" do
+      a = [2, 1, 3]
+      @s.rb_ary_sort(a).should == [1, 2, 3]
+      a.should == [2, 1, 3]
+    end
+  end
+
+  describe "rb_ary_sort_bang" do
+    it "sorts the given array" do
+      a = [2, 1, 3]
+      @s.rb_ary_sort_bang(a).should == [1, 2, 3]
+      a.should == [1, 2, 3]
+    end
+  end
+
   describe "rb_ary_store" do
     it "overwrites the element at the given position" do
       a = [1, 2, 3]
@@ -214,9 +230,9 @@ describe "C-API Array function" do
       a.should == [nil, nil, 7]
     end
 
-    it "raises a #{frozen_error_class} if the array is frozen" do
+    it "raises a FrozenError if the array is frozen" do
       a = [1, 2, 3].freeze
-      -> { @s.rb_ary_store(a, 1, 5) }.should raise_error(frozen_error_class)
+      -> { @s.rb_ary_store(a, 1, 5) }.should raise_error(FrozenError)
     end
   end
 
@@ -327,10 +343,10 @@ describe "C-API Array function" do
     end
   end
 
-  describe "rb_iterate" do
+  describe "rb_block_call" do
     it "calls an callback function as a block passed to an method" do
       s = [1,2,3,4]
-      s2 = @s.rb_iterate(s)
+      s2 = @s.rb_block_call(s)
 
       s2.should == s
 
@@ -341,7 +357,7 @@ describe "C-API Array function" do
     it "calls a function with the other function available as a block" do
       h = {a: 1, b: 2}
 
-      @s.rb_iterate_each_pair(h).sort.should == [1,2]
+      @s.rb_block_call_each_pair(h).sort.should == [1,2]
     end
 
     it "calls a function which can yield into the original block" do
@@ -355,7 +371,7 @@ describe "C-API Array function" do
         yield 4
       end
 
-      @s.rb_iterate_then_yield(o) { |x| s2 << x }
+      @s.rb_block_call_then_yield(o) { |x| s2 << x }
 
       s2.should == [1,2,3,4]
     end

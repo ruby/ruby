@@ -2,16 +2,9 @@
 require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
-  BDSIZE = 0x4000000000000000.coerce(0)[0].size
-  def self.bdsize(x)
-    ((x + 1) / 8 + BDSIZE) / BDSIZE * BDSIZE
-  end
-  def bdsize(x)
-    self.class.bdsize(x)
-  end
-
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
+  LONG_MAX = RbConfig::LIMITS['LONG_MAX']
 
   def test_aref
 
@@ -96,11 +89,16 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(0, 1 << -0x40000001)
     assert_equal(0, 1 << -0x80000000)
     assert_equal(0, 1 << -0x80000001)
-    # assert_equal(bdsize(0x80000000), (1 << 0x80000000).size)
+
+    char_bit = RbConfig::LIMITS["UCHAR_MAX"].bit_length
+    size_max = RbConfig::LIMITS["SIZE_MAX"]
+    size_bit_max = size_max * char_bit
+    assert_raise_with_message(RangeError, /shift width/) {
+      1 << size_bit_max
+    }
   end
 
   def test_rshift
-    # assert_equal(bdsize(0x40000001), (1 >> -0x40000001).size)
     assert_predicate((1 >> 0x80000000), :zero?)
     assert_predicate((1 >> 0xffffffff), :zero?)
     assert_predicate((1 >> 0x100000000), :zero?)
@@ -139,20 +137,6 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(ArgumentError, "[ruby-core:14139]") {Integer("0__3_7_7")}
     assert_equal(1234, Integer(1234))
     assert_equal(1, Integer(1.234))
-
-    # base argument
-    assert_equal(1234, Integer("1234", 10))
-    assert_equal(668, Integer("1234", 8))
-    assert_equal(4660, Integer("1234", 16))
-    assert_equal(49360, Integer("1234", 36))
-    # decimal, not octal
-    assert_equal(1234, Integer("01234", 10))
-    assert_raise(ArgumentError) { Integer("0x123", 10) }
-    assert_raise(ArgumentError) { Integer(1234, 10) }
-    assert_raise(ArgumentError) { Integer(12.34, 10) }
-    assert_raise(ArgumentError) { Integer(Object.new, 1) }
-
-    assert_raise(ArgumentError) { Integer(1, 1, 1) }
 
     assert_equal(2 ** 50, Integer(2.0 ** 50))
     assert_raise(TypeError) { Integer(nil) }
@@ -247,6 +231,39 @@ class TestInteger < Test::Unit::TestCase
     end;
   end
 
+  def test_Integer_when_to_str
+    def (obj = Object.new).to_str
+      "0x10"
+    end
+    assert_equal(16, Integer(obj))
+  end
+
+  def test_Integer_with_base
+    assert_equal(1234, Integer("1234", 10))
+    assert_equal(668, Integer("1234", 8))
+    assert_equal(4660, Integer("1234", 16))
+    assert_equal(49360, Integer("1234", 36))
+    # decimal, not octal
+    assert_equal(1234, Integer("01234", 10))
+    assert_raise(ArgumentError) { Integer("0x123", 10) }
+    assert_raise(ArgumentError) { Integer(1234, 10) }
+    assert_raise(ArgumentError) { Integer(12.34, 10) }
+    assert_raise(ArgumentError) { Integer(Object.new, 1) }
+
+    assert_raise(ArgumentError) { Integer(1, 1, 1) }
+
+    def (base = Object.new).to_int
+      8
+    end
+    assert_equal(8, Integer("10", base))
+
+    assert_raise(TypeError) { Integer("10", "8") }
+    def (base = Object.new).to_int
+      "8"
+    end
+    assert_raise(TypeError) { Integer("10", base) }
+  end
+
   def test_int_p
     assert_not_predicate(1.0, :integer?)
     assert_predicate(1, :integer?)
@@ -260,6 +277,7 @@ class TestInteger < Test::Unit::TestCase
     assert_equal("a", "a".ord.chr)
     assert_raise(RangeError) { (-1).chr }
     assert_raise(RangeError) { 0x100.chr }
+    assert_raise_with_message(RangeError, "3000000000 out of char range") { 3_000_000_000.chr }
   end
 
   def test_upto
@@ -296,6 +314,42 @@ class TestInteger < Test::Unit::TestCase
     (2**32).times do |i|
       break if i == 2
     end
+  end
+
+  def test_times_bignum_redefine_plus_lt
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      called = false
+      Integer.class_eval do
+        alias old_succ succ
+        undef succ
+        define_method(:succ){|x| called = true; x+1}
+        alias old_lt <
+        undef <
+        define_method(:<){|x| called = true}
+      end
+
+      fix = 1
+      fix.times{break 0}
+      fix_called = called
+
+      called = false
+
+      big = 2**65
+      big.times{break 0}
+      big_called = called
+
+      Integer.class_eval do
+        undef succ
+        alias succ old_succ
+        undef <
+        alias < old_lt
+      end
+
+      # Asssert that Fixnum and Bignum behave consistently
+      bug18377 = "[ruby-core:106361]"
+      assert_equal(fix_called, big_called, bug18377)
+    end;
   end
 
   def assert_int_equal(expected, result, mesg = nil)
@@ -575,6 +629,8 @@ class TestInteger < Test::Unit::TestCase
     assert_equal([0, 9, 8, 7, 6, 5, 4, 3, 2, 1], 1234567890.digits)
     assert_equal([90, 78, 56, 34, 12], 1234567890.digits(100))
     assert_equal([10, 5, 6, 8, 0, 10, 8, 6, 1], 1234567890.digits(13))
+    assert_equal((2 ** 1024).to_s(7).chars.map(&:to_i).reverse, (2 ** 1024).digits(7))
+    assert_equal([0] * 100 + [1], (2 ** (128 * 100)).digits(2 ** 128))
   end
 
   def test_digits_for_negative_numbers
@@ -658,5 +714,43 @@ class TestInteger < Test::Unit::TestCase
     def o.coerce(x); [self, x]; end
     def o.fdiv(x); 1; end
     assert_equal(1.0, 1.fdiv(o))
+  end
+
+  def test_try_convert
+    assert_equal(1, Integer.try_convert(1))
+    assert_equal(1, Integer.try_convert(1.0))
+    assert_nil Integer.try_convert("1")
+    o = Object.new
+    assert_nil Integer.try_convert(o)
+    def o.to_i; 1; end
+    assert_nil Integer.try_convert(o)
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Integer.try_convert(o))
+
+    o = Object.new
+    def o.to_int; Object.new; end
+    assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
+  end
+
+  def test_ceildiv
+    assert_equal(0, 0.ceildiv(3))
+    assert_equal(1, 1.ceildiv(3))
+    assert_equal(1, 3.ceildiv(3))
+    assert_equal(2, 4.ceildiv(3))
+
+    assert_equal(-1, 4.ceildiv(-3))
+    assert_equal(-1, -4.ceildiv(3))
+    assert_equal(2, -4.ceildiv(-3))
+
+    assert_equal(3, 3.ceildiv(1.2))
+    assert_equal(3, 3.ceildiv(6/5r))
+
+    assert_equal(10, (10**100-11).ceildiv(10**99-1))
+    assert_equal(11, (10**100-9).ceildiv(10**99-1))
+
+    o = Object.new
+    def o.coerce(other); [other, 10]; end
+    assert_equal(124, 1234.ceildiv(o))
   end
 end

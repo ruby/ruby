@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 platform_is :windows do
   require 'win32ole'
 
@@ -13,7 +14,7 @@ platform_is :windows do
     end
 
     it "returns true for 3rd parameter of FileSystemObject's 'CopyFile' method" do
-      @param_overwritefiles.input?.should == true
+      @param_overwritefiles.should.input?
     end
 
   end

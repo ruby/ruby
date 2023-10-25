@@ -1,22 +1,22 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/test_case'
-require 'rubygems/rdoc'
+
+require "rubygems"
+require_relative "helper"
+require "rubygems/rdoc"
 
 class TestGemRDoc < Gem::TestCase
-
   Gem::RDoc.load_rdoc
 
   def setup
     super
 
-    @a = util_spec 'a' do |s|
+    @a = util_spec "a" do |s|
       s.rdoc_options = %w[--main MyTitle]
       s.extra_rdoc_files = %w[README]
     end
 
-    write_file File.join(@tempdir, 'lib', 'a.rb')
-    write_file File.join(@tempdir, 'README')
+    write_file File.join(@tempdir, "lib", "a.rb")
+    write_file File.join(@tempdir, "README")
 
     install_gem @a
 
@@ -25,7 +25,7 @@ class TestGemRDoc < Gem::TestCase
     begin
       Gem::RDoc.load_rdoc
     rescue Gem::DocumentError => e
-      skip e.message
+      pend e.message
     end
 
     Gem.configuration[:rdoc] = nil
@@ -71,42 +71,42 @@ class TestGemRDoc < Gem::TestCase
   def test_rdoc_installed?
     refute @hook.rdoc_installed?
 
-    FileUtils.mkdir_p @a.doc_dir 'rdoc'
+    FileUtils.mkdir_p @a.doc_dir "rdoc"
 
     assert @hook.rdoc_installed?
   end
 
   def test_remove
-    FileUtils.mkdir_p @a.doc_dir 'rdoc'
-    FileUtils.mkdir_p @a.doc_dir 'ri'
+    FileUtils.mkdir_p @a.doc_dir "rdoc"
+    FileUtils.mkdir_p @a.doc_dir "ri"
 
     @hook.remove
 
     refute @hook.rdoc_installed?
     refute @hook.ri_installed?
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_remove_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend "chmod not supported" if Gem.win_platform?
+    pend "skipped in root privilege" if Process.uid.zero?
     FileUtils.mkdir_p @a.base_dir
     FileUtils.chmod 0, @a.base_dir
 
-    e = assert_raises Gem::FilePermissionError do
+    e = assert_raise Gem::FilePermissionError do
       @hook.remove
     end
 
     assert_equal @a.base_dir, e.directory
   ensure
-    FileUtils.chmod(0755, @a.base_dir) if File.directory?(@a.base_dir)
+    FileUtils.chmod(0o755, @a.base_dir) if File.directory?(@a.base_dir)
   end
 
   def test_ri_installed?
     refute @hook.ri_installed?
 
-    FileUtils.mkdir_p @a.doc_dir 'ri'
+    FileUtils.mkdir_p @a.doc_dir "ri"
 
     assert @hook.ri_installed?
   end
@@ -114,25 +114,24 @@ class TestGemRDoc < Gem::TestCase
   def test_setup
     @hook.setup
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_setup_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend "chmod not supported" if Gem.win_platform?
+    pend "skipped in root privilege" if Process.uid.zero?
     FileUtils.mkdir_p @a.doc_dir
     FileUtils.chmod 0, @a.doc_dir
 
-    e = assert_raises Gem::FilePermissionError do
+    e = assert_raise Gem::FilePermissionError do
       @hook.setup
     end
 
     assert_equal @a.doc_dir, e.directory
   ensure
     if File.exist? @a.doc_dir
-      FileUtils.chmod 0755, @a.doc_dir
+      FileUtils.chmod 0o755, @a.doc_dir
       FileUtils.rm_r @a.doc_dir
     end
   end
-
 end

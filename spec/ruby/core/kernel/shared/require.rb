@@ -60,7 +60,7 @@ describe :kernel_require_basic, shared: true do
       -> { @object.send(@method, nil) }.should raise_error(TypeError)
     end
 
-    it "raises a TypeError if passed a Fixnum" do
+    it "raises a TypeError if passed an Integer" do
       -> { @object.send(@method, 42) }.should raise_error(TypeError)
     end
 
@@ -160,6 +160,14 @@ describe :kernel_require_basic, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
+    it "accepts an Object with #to_path in $LOAD_PATH" do
+      obj = mock("to_path")
+      obj.should_receive(:to_path).at_least(:once).and_return(CODE_LOADING_DIR)
+      $LOAD_PATH << obj
+      @object.send(@method, "load_fixture.rb").should be_true
+      ScratchPad.recorded.should == [:loaded]
+    end
+
     it "does not require file twice after $LOAD_PATH change" do
       $LOAD_PATH << CODE_LOADING_DIR
       @object.require("load_fixture.rb").should be_true
@@ -229,6 +237,17 @@ describe :kernel_require, shared: true do
       }.should complain(/circular require considered harmful/, verbose: true)
       ScratchPad.recorded.should == [:loaded]
     end
+
+    ruby_bug "#17340", ''...'3.3' do
+      it "loads a file concurrently" do
+        path = File.expand_path "concurrent_require_fixture.rb", CODE_LOADING_DIR
+        ScratchPad.record(@object)
+        -> {
+          @object.require(path)
+        }.should_not complain(/circular require considered harmful/, verbose: true)
+        ScratchPad.recorded.join
+      end
+    end
   end
 
   describe "(non-extensioned path)" do
@@ -241,6 +260,13 @@ describe :kernel_require, shared: true do
     it "loads a .rb extensioned file when a C-extension file exists on an earlier load path" do
       @object.require("load_fixture").should be_true
       ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "does not load a feature twice when $LOAD_PATH has been modified" do
+      $LOAD_PATH.replace [CODE_LOADING_DIR]
+      @object.require("load_fixture").should be_true
+      $LOAD_PATH.replace [File.expand_path("b", CODE_LOADING_DIR), CODE_LOADING_DIR]
+      @object.require("load_fixture").should be_false
     end
   end
 
@@ -335,6 +361,21 @@ describe :kernel_require, shared: true do
           loaded_feature = $LOADED_FEATURES.last
           ScratchPad.recorded.should == [loaded_feature]
         end
+
+        it "requires only once when a new matching file added to path" do
+          @object.require('load_fixture').should be_true
+          ScratchPad.recorded.should == [:loaded]
+
+          symlink_to_code_dir_two = tmp("codesymlinktwo")
+          File.symlink("#{CODE_LOADING_DIR}/b", symlink_to_code_dir_two)
+          begin
+            $LOAD_PATH.unshift(symlink_to_code_dir_two)
+
+            @object.require('load_fixture').should be_false
+          ensure
+            rm_r symlink_to_code_dir_two
+          end
+        end
       end
 
       describe "with symlinks in the required feature and $LOAD_PATH" do
@@ -354,26 +395,13 @@ describe :kernel_require, shared: true do
           rm_r @dir, @symlink_to_dir
         end
 
-        ruby_version_is ""..."2.4.4" do
-          it "canonicalizes neither the entry in $LOAD_PATH nor the filename passed to #require" do
-            $LOAD_PATH.unshift(@symlink_to_dir)
-            @object.require("symfile").should be_true
-            loaded_feature = "#{@symlink_to_dir}/symfile.rb"
-            ScratchPad.recorded.should == [loaded_feature]
-            $".last.should == loaded_feature
-            $LOAD_PATH[0].should == @symlink_to_dir
-          end
-        end
-
-        ruby_version_is "2.4.4" do
-          it "canonicalizes the entry in $LOAD_PATH but not the filename passed to #require" do
-            $LOAD_PATH.unshift(@symlink_to_dir)
-            @object.require("symfile").should be_true
-            loaded_feature = "#{@dir}/symfile.rb"
-            ScratchPad.recorded.should == [loaded_feature]
-            $".last.should == loaded_feature
-            $LOAD_PATH[0].should == @symlink_to_dir
-          end
+        it "canonicalizes the entry in $LOAD_PATH but not the filename passed to #require" do
+          $LOAD_PATH.unshift(@symlink_to_dir)
+          @object.require("symfile").should be_true
+          loaded_feature = "#{@dir}/symfile.rb"
+          ScratchPad.recorded.should == [loaded_feature]
+          $".last.should == loaded_feature
+          $LOAD_PATH[0].should == @symlink_to_dir
         end
       end
     end
@@ -527,41 +555,30 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    ruby_version_is ""..."2.5" do
-      it "complex, enumerator, rational, thread and unicode_normalize are already required" do
-        provided = %w[complex enumerator rational thread unicode_normalize]
-        features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-        provided.each { |feature|
-          features.should =~ /\b#{feature}\.(rb|so|jar)$/
-        }
+    it "unicode_normalize is part of core and not $LOADED_FEATURES" do
+      features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
+      features.lines.each { |feature|
+        feature.should_not include("unicode_normalize")
+      }
 
-        code = provided.map { |f| "puts require #{f.inspect}\n" }.join
-        required = ruby_exe(code, options: '--disable-gems')
-        required.should == "false\n" * provided.size
-      end
+      -> { @object.require("unicode_normalize") }.should raise_error(LoadError)
     end
 
-    ruby_version_is "2.5" do
-      it "complex, enumerator, rational and thread are already required" do
-        provided = %w[complex enumerator rational thread]
-        features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-        provided.each { |feature|
-          features.should =~ /\b#{feature}\.(rb|so|jar)$/
-        }
-
-        code = provided.map { |f| "puts require #{f.inspect}\n" }.join
-        required = ruby_exe(code, options: '--disable-gems')
-        required.should == "false\n" * provided.size
+    it "does not load a file earlier on the $LOAD_PATH when other similar features were already loaded" do
+      Dir.chdir CODE_LOADING_DIR do
+        @object.send(@method, "../code/load_fixture").should be_true
       end
+      ScratchPad.recorded.should == [:loaded]
 
-      it "unicode_normalize is part of core and not $LOADED_FEATURES" do
-        features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-        features.lines.each { |feature|
-          feature.should_not include("unicode_normalize")
-        }
+      $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/b"
+      # This loads because the above load was not on the $LOAD_PATH
+      @object.send(@method, "load_fixture").should be_true
+      ScratchPad.recorded.should == [:loaded, :loaded]
 
-        -> { @object.require("unicode_normalize") }.should raise_error(LoadError)
-      end
+      $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/c"
+      # This does not load because the above load was on the $LOAD_PATH
+      @object.send(@method, "load_fixture").should be_false
+      ScratchPad.recorded.should == [:loaded, :loaded]
     end
   end
 

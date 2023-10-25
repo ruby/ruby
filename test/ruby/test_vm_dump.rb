@@ -3,7 +3,7 @@ require 'test/unit'
 
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args)
-    skip if RUBY_PLATFORM !~ /darwin/
+    omit if RUBY_PLATFORM !~ /darwin/
     assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
   end
 
@@ -16,6 +16,6 @@ class TestVMDump < Test::Unit::TestCase
   end
 
   def test_darwin_invalid_access
-    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle.dlunwrap(100).class'])
+    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle.dlunwrap(100).inspect'])
   end
 end

@@ -17,5 +17,6 @@ module Bundler::URI
     # A Default port of 636 for Bundler::URI::LDAPS
     DEFAULT_PORT = 636
   end
-  @@schemes['LDAPS'] = LDAPS
+
+  register_scheme 'LDAPS', LDAPS
 end

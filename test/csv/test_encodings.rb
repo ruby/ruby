@@ -5,6 +5,7 @@ require_relative "helper"
 
 class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
+  include CSVHelper
 
   def setup
     super
@@ -241,12 +242,33 @@ class TestCSVEncodings < Test::Unit::TestCase
     assert_equal("UTF-8",      data.to_csv.encoding.name)
   end
 
+  def test_encoding_is_not_upgraded_for_non_ascii_content_during_writing_as_needed
+    data = ["\u00c0".encode("ISO-8859-1"), "\u3042"]
+    assert_equal([
+                   "ISO-8859-1",
+                   "UTF-8",
+                 ],
+                 data.collect {|field| field.encoding.name})
+    assert_raise(Encoding::CompatibilityError) do
+      data.to_csv
+    end
+  end
+
   def test_explicit_encoding
     bug9766 = '[ruby-core:62113] [Bug #9766]'
     s = CSV.generate(encoding: "Windows-31J") do |csv|
       csv << ["foo".force_encoding("ISO-8859-1"), "\u3042"]
     end
     assert_equal(["foo,\u3042\n".encode(Encoding::Windows_31J), Encoding::Windows_31J], [s, s.encoding], bug9766)
+  end
+
+  def test_encoding_with_default_internal
+    with_default_internal(Encoding::UTF_8) do
+      s = CSV.generate(String.new(encoding: Encoding::Big5), encoding: Encoding::Big5) do |csv|
+        csv << ["漢字"]
+      end
+      assert_equal(["漢字\n".encode(Encoding::Big5), Encoding::Big5], [s, s.encoding])
+    end
   end
 
   def test_row_separator_detection_with_invalid_encoding
@@ -258,12 +280,43 @@ class TestCSVEncodings < Test::Unit::TestCase
   def test_invalid_encoding_row_error
     csv = CSV.new("valid,x\rinvalid,\xF8\r".force_encoding("UTF-8"),
                   encoding: "UTF-8", row_sep: "\r")
-    error = assert_raise(CSV::MalformedCSVError) do
+    error = assert_raise(CSV::InvalidEncodingError) do
       csv.shift
       csv.shift
     end
-    assert_equal("Invalid byte sequence in UTF-8 in line 2.",
-                 error.message)
+    assert_equal([Encoding::UTF_8, "Invalid byte sequence in UTF-8 in line 2."],
+                 [error.encoding, error.message])
+  end
+
+  def test_string_input_transcode
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046"
+    csv = CSV.new(value, encoding: "UTF-8:EUC-JP")
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
+  def test_string_input_set_encoding_string
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046".encode("EUC-JP")
+    csv = CSV.new(value.dup.force_encoding("UTF-8"), encoding: "EUC-JP")
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
+  def test_string_input_set_encoding_encoding
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046".encode("EUC-JP")
+    csv = CSV.new(value.dup.force_encoding("UTF-8"),
+                  encoding: Encoding.find("EUC-JP"))
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
   end
 
   private

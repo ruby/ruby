@@ -163,11 +163,19 @@ class TestSocket < Test::Unit::TestCase
   def random_port
     # IANA suggests dynamic port for 49152 to 65535
     # http://www.iana.org/assignments/port-numbers
-    49152 + rand(65535-49152+1)
+    case RUBY_PLATFORM
+    when /mingw|mswin/
+      rand(50000..65535)
+    else
+      rand(49152..65535)
+    end
   end
 
   def errors_addrinuse
-    [Errno::EADDRINUSE]
+    errs = [Errno::EADDRINUSE]
+    # MinGW fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
+    errs << Errno::EACCES if /mingw/ =~ RUBY_PLATFORM
+    errs
   end
 
   def test_tcp_server_sockets
@@ -332,10 +340,14 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_udp_server
+    # http://rubyci.s3.amazonaws.com/rhel_zlinux/ruby-master/log/20230312T023302Z.fail.html.gz
+    # Errno::EHOSTUNREACH: No route to host - recvmsg(2)
+    omit if 'rhel_zlinux' == ENV['RUBYCI_NICKNAME']
+
     begin
       ifaddrs = Socket.getifaddrs
     rescue NotImplementedError
-      skip "Socket.getifaddrs not implemented"
+      omit "Socket.getifaddrs not implemented"
     end
 
     ifconfig = nil
@@ -429,16 +441,18 @@ class TestSocket < Test::Unit::TestCase
         }
       rescue NotImplementedError, Errno::ENOSYS
         skipped = true
-        skip "need sendmsg and recvmsg: #{$!}"
+        omit "need sendmsg and recvmsg: #{$!}"
+      rescue RuntimeError
+        skipped = true
+        omit "UDP server is no response: #{$!}"
       ensure
         if th
-          if skipped
-            Thread.kill th unless th.join(10)
-          else
+          unless skipped
             Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
-            unless th.join(10)
-              Thread.kill th
-              th.join(10)
+          end
+          unless th.join(10)
+            th.kill.join(10)
+            unless skipped
               raise "thread killed"
             end
           end
@@ -475,13 +489,14 @@ class TestSocket < Test::Unit::TestCase
         end while IO.select([r], nil, nil, 0.1).nil?
         n
       end
-      timeout = (RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
+      timeout = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 120 : 30) # for --jit-wait
       assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)
       assert(stamp.cmsg_is?(:SOCKET, type))
       w.close # stop th
       n = th.value
+      th = nil
       n > 1 and
         warn "UDP packet loss for #{type} over loopback, #{n} tries needed"
       t2 = Time.now.strftime("%Y-%m-%d")
@@ -490,6 +505,10 @@ class TestSocket < Test::Unit::TestCase
       t = stamp.timestamp
       assert_match(pat, t.strftime("%Y-%m-%d"))
       stamp
+    ensure
+      if th and !th.join(10)
+        th.kill.join(10)
+      end
     end
   end
 
@@ -572,7 +591,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end
+  end unless RUBY_PLATFORM.include?("freebsd")
 
   def test_connect_timeout
     host = "127.0.0.1"

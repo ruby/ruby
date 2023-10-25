@@ -12,7 +12,7 @@
 **********************************************************************/
 <%
 defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
-ids = eval(File.read(defs), binding, defs)
+ids = eval(File.read(defs), nil, defs)
 ops = ids[:token_op].uniq {|id, op, token| token && op}
 %>
 % ops.each do |_id, _op, token|
@@ -33,8 +33,6 @@ static const struct {
 static void
 Init_id(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
     rb_encoding *enc = rb_usascii_encoding();
 
 % ids[:predefined].each do |token, name|

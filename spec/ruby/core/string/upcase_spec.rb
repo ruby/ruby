@@ -8,6 +8,10 @@ describe "String#upcase" do
     "hello".upcase.should == "HELLO"
   end
 
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").upcase.encoding.should == Encoding::US_ASCII
+  end
+
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äöü".upcase.should == "ÄÖÜ"
@@ -26,6 +30,10 @@ describe "String#upcase" do
   describe "ASCII-only case mapping" do
     it "does not upcase non-ASCII characters" do
       "aßet".upcase(:ascii).should == "AßET"
+    end
+
+    it "works with substrings" do
+      "prefix té"[-2..-1].upcase(:ascii).should == "Té"
     end
   end
 
@@ -65,16 +73,8 @@ describe "String#upcase" do
     -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "".taint.upcase.tainted?.should == true
-      "X".taint.upcase.tainted?.should == true
-      "x".taint.upcase.tainted?.should == true
-    end
-  end
-
-  it "returns a subclass instance for subclasses" do
-    StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(StringSpecs::MyString)
+  it "returns a String instance for subclasses" do
+    StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
   end
 end
 
@@ -179,8 +179,8 @@ describe "String#upcase!" do
     a.should == "HELLO"
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
-    -> { "HeLlo".freeze.upcase! }.should raise_error(frozen_error_class)
-    -> { "HELLO".freeze.upcase! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError when self is frozen" do
+    -> { "HeLlo".freeze.upcase! }.should raise_error(FrozenError)
+    -> { "HELLO".freeze.upcase! }.should raise_error(FrozenError)
   end
 end

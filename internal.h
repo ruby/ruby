@@ -1,18 +1,15 @@
-/**********************************************************************
-
-  internal.h -
-
-  $Author$
-  created at: Tue May 17 11:42:20 JST 2011
-
-  Copyright (C) 2011 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_INTERNAL_H
+#ifndef RUBY_INTERNAL_H                                  /*-*-C-*-vi:se ft=c:*/
 #define RUBY_INTERNAL_H 1
-
-#include "ruby/config.h"
+/**
+ * @author     $Author$
+ * @date       Tue May 17 11:42:20 JST 2011
+ * @copyright  Copyright (C) 2011 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+#include "ruby/internal/config.h"
 
 #ifdef __cplusplus
 # error not for C++
@@ -28,13 +25,16 @@
 /* Prevent compiler from reordering access */
 #define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
 
+#define UNDEF_P         RB_UNDEF_P
+#define NIL_OR_UNDEF_P  RB_NIL_OR_UNDEF_P
+
 #include "ruby/ruby.h"
 
 /* Following macros were formerly defined in this header but moved to somewhere
  * else.  In order to detect them we undef here. */
 
-/* internal/error.h */
-#undef Check_Type
+/* internal/array.h */
+#undef RARRAY_AREF
 
 /* internal/class.h */
 #undef RClass
@@ -43,11 +43,12 @@
 /* internal/gc.h */
 #undef NEWOBJ_OF
 #undef RB_NEWOBJ_OF
-#undef RB_OBJ_WRITE
 
 /* internal/hash.h */
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
+#undef RHASH_TBL
+#undef RHASH_EMPTY_P
 
 /* internal/struct.h */
 #undef RSTRUCT_LEN
@@ -82,20 +83,30 @@ void rb_obj_info_dump(VALUE obj);
 void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
 
 /* debug.c */
+
+RUBY_SYMBOL_EXPORT_BEGIN
 void ruby_debug_breakpoint(void);
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
+RUBY_SYMBOL_EXPORT_END
 
 // show obj data structure without any side-effect
 #define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING)
 
 // same as rp, but add message header
 #define rp_m(msg, obj) do { \
-    fprintf(stderr, "%s", (msg)); \
-    rb_obj_info_dump((VALUE)obj); \
+    fputs((msg), stderr); \
+    rb_obj_info_dump((VALUE)(obj)); \
 } while (0)
 
 // `ruby_debug_breakpoint()` does nothing,
 // but breakpoint is set in run.gdb, so `make gdb` can stop here.
 #define bp() ruby_debug_breakpoint()
 
+#define RBOOL(v) ((v) ? Qtrue : Qfalse)
+#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
+
+#ifndef __MINGW32__
+#undef memcpy
+#define memcpy ruby_nonempty_memcpy
+#endif
 #endif /* RUBY_INTERNAL_H */

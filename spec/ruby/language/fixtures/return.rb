@@ -101,18 +101,14 @@ module ReturnSpecs
       # return value will go into val before we run the ensure.
       #
       # If lamb's return keeps unwinding incorrectly, val will still
-      # have it's old value.
+      # have its old value.
       #
       # We can therefore use val to figure out what happened.
       begin
         val = foo()
       ensure
-        if val != :good
-          return :bad
-        end
+        return val
       end
-
-      return val
     end
   end
 

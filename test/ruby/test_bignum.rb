@@ -19,23 +19,22 @@ class TestBignum < Test::Unit::TestCase
   end
   BIGNUM_MIN_BITS = n
 
-  T_ZERO = 0.to_bignum
-  T_ONE  = 1.to_bignum
-  T_MONE = (-1).to_bignum
-  T31  = (2**31).to_bignum   # 2147483648
-  T31P = (T31 - 1).to_bignum # 2147483647
-  T32  = (2**32).to_bignum   # 4294967296
-  T32P = (T32 - 1).to_bignum # 4294967295
-  T64  = (2**64).to_bignum   # 18446744073709551616
-  T64P = (T64 - 1).to_bignum # 18446744073709551615
-  T128  = (2**128).to_bignum
-  T128P = (T128 - 1).to_bignum
-  T1024  = (2**1024).to_bignum
-  T1024P = (T1024 - 1).to_bignum
+  T_ZERO = Bug::Integer.to_bignum(0)
+  T_ONE  = Bug::Integer.to_bignum(1)
+  T_MONE = Bug::Integer.to_bignum(-1)
+  T31  = Bug::Integer.to_bignum(2**31)   # 2147483648
+  T31P = Bug::Integer.to_bignum(T31 - 1) # 2147483647
+  T32  = Bug::Integer.to_bignum(2**32)   # 4294967296
+  T32P = Bug::Integer.to_bignum(T32 - 1) # 4294967295
+  T64  = Bug::Integer.to_bignum(2**64)   # 18446744073709551616
+  T64P = Bug::Integer.to_bignum(T64 - 1) # 18446744073709551615
+  T128  = Bug::Integer.to_bignum(2**128)
+  T128P = Bug::Integer.to_bignum(T128 - 1)
+  T1024  = Bug::Integer.to_bignum(2**1024)
+  T1024P = Bug::Integer.to_bignum(T1024 - 1)
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @fmax = Float::MAX.to_i
     @fmax2 = @fmax * 2
     @big = (1 << BIGNUM_MIN_BITS) - 1
@@ -204,6 +203,15 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(00_02, '00_02'.to_i)
   end
 
+  def test_very_big_str_to_inum
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      digits = [["3", 700], ["0", 2700], ["1", 1], ["0", 26599]]
+      num = digits.inject("") {|s,(c,n)|s << c*n}.to_i
+      assert_equal digits.sum {|c,n|n}, num.to_s.size
+    end;
+  end
+
   def test_to_s2
     assert_raise(ArgumentError) { T31P.to_s(37) }
     assert_equal("9" * 32768, (10**32768-1).to_s)
@@ -214,9 +222,11 @@ class TestBignum < Test::Unit::TestCase
 
   def test_to_f
     assert_nothing_raised { T31P.to_f.to_i }
-    assert_raise(FloatDomainError) { (1024**1024).to_f.to_i }
-    assert_equal(1, (2**50000).to_f.infinite?)
-    assert_equal(-1, (-(2**50000)).to_f.infinite?)
+    assert_raise(FloatDomainError) {
+      assert_warning(/out of Float range/) {(1024**1024).to_f}.to_i
+    }
+    assert_equal(1, assert_warning(/out of Float range/) {(2**50000).to_f}.infinite?)
+    assert_equal(-1, assert_warning(/out of Float range/) {(-(2**50000)).to_f}.infinite?)
   end
 
   def test_cmp
@@ -415,7 +425,7 @@ class TestBignum < Test::Unit::TestCase
   def test_divide
     bug5490 = '[ruby-core:40429]'
     assert_raise(ZeroDivisionError, bug5490) {T1024./(0)}
-    assert_equal(Float::INFINITY, T1024./(0.0), bug5490)
+    assert_equal(Float::INFINITY, assert_warning(/out of Float range/) {T1024./(0.0)}, bug5490)
   end
 
   def test_div
@@ -466,8 +476,8 @@ class TestBignum < Test::Unit::TestCase
   def test_pow
     assert_equal(1.0, T32 ** 0.0)
     assert_equal(1.0 / T32, T32 ** -1)
-    assert_equal(1, (T32 ** T32).infinite?)
-    assert_equal(1, (T32 ** (2**30-1)).infinite?)
+    assert_equal(1, assert_warning(/may be too big/) {T32 ** T32}.infinite?)
+    assert_equal(1, assert_warning(/may be too big/) {T32 ** (2**30-1)}.infinite?)
 
     ### rational changes the behavior of Bignum#**
     #assert_raise(TypeError) { T32**"foo" }
@@ -505,39 +515,57 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_and_with_float
-    assert_raise(TypeError) { T1024 & 1.5 }
+    assert_raise(TypeError) {
+      assert_warning(/out of Float range/) {T1024 & 1.5}
+    }
   end
 
   def test_and_with_rational
-    assert_raise(TypeError, "#1792") { T1024 & Rational(3, 2) }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 & Rational(3, 2)}
+    }
   end
 
   def test_and_with_nonintegral_numeric
-    assert_raise(TypeError, "#1792") { T1024 & DummyNumeric.new }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 & DummyNumeric.new}
+    }
   end
 
   def test_or_with_float
-    assert_raise(TypeError) { T1024 | 1.5 }
+    assert_raise(TypeError) {
+      assert_warn(/out of Float range/) {T1024 | 1.5}
+    }
   end
 
   def test_or_with_rational
-    assert_raise(TypeError, "#1792") { T1024 | Rational(3, 2) }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 | Rational(3, 2)}
+    }
   end
 
   def test_or_with_nonintegral_numeric
-    assert_raise(TypeError, "#1792") { T1024 | DummyNumeric.new }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 | DummyNumeric.new}
+    }
   end
 
   def test_xor_with_float
-    assert_raise(TypeError) { T1024 ^ 1.5 }
+    assert_raise(TypeError) {
+      assert_warn(/out of Float range/) {T1024 ^ 1.5}
+    }
   end
 
   def test_xor_with_rational
-    assert_raise(TypeError, "#1792") { T1024 ^ Rational(3, 2) }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 ^ Rational(3, 2)}
+    }
   end
 
   def test_xor_with_nonintegral_numeric
-    assert_raise(TypeError, "#1792") { T1024 ^ DummyNumeric.new }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 ^ DummyNumeric.new}
+    }
   end
 
   def test_shift2
@@ -613,7 +641,7 @@ class TestBignum < Test::Unit::TestCase
     time = Time.now
     end_flag = false
     num = (65536 ** 65536)
-    q = Queue.new
+    q = Thread::Queue.new
     thread = Thread.new do
       assert_raise(RuntimeError) {
         q << true
@@ -625,7 +653,7 @@ class TestBignum < Test::Unit::TestCase
     thread.raise
     thread.join
     time = Time.now - time
-    skip "too fast cpu" if end_flag
+    omit "too fast cpu" if end_flag
     assert_operator(time, :<, 10)
   end
 
@@ -656,14 +684,14 @@ class TestBignum < Test::Unit::TestCase
           return
         end
       end
-      skip "cannot create suitable test case"
+      omit "cannot create suitable test case"
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
   end
 
   def test_too_big_to_s
-    if (big = 2**31-1).fixnum?
+    if Bug::Integer.fixnum?(big = 2**31-1)
       return
     end
     assert_raise_with_message(RangeError, /too big to convert/) {(1 << big).to_s}
@@ -746,7 +774,7 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_digits
-    assert_equal([90, 78, 56, 34, 12], 1234567890.to_bignum.digits(100))
+    assert_equal([90, 78, 56, 34, 12], Bug::Integer.to_bignum(1234567890).digits(100))
     assert_equal([7215, 2413, 6242], T1024P.digits(10_000).first(3))
     assert_equal([11], 11.digits(T1024P))
     assert_equal([T1024P - 1, 1], (T1024P + T1024P - 1).digits(T1024P))
@@ -759,13 +787,13 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_digits_for_invalid_base_numbers
-    assert_raise(ArgumentError) { T1024P.to_bignum.digits(0) }
-    assert_raise(ArgumentError) { T1024P.to_bignum.digits(-1) }
-    assert_raise(ArgumentError) { T1024P.to_bignum.digits(0.to_bignum) }
-    assert_raise(ArgumentError) { T1024P.to_bignum.digits(1.to_bignum) }
-    assert_raise(ArgumentError) { T1024P.to_bignum.digits(-T1024P) }
-    assert_raise(ArgumentError) { 10.digits(0.to_bignum) }
-    assert_raise(ArgumentError) { 10.digits(1.to_bignum) }
+    assert_raise(ArgumentError) { Bug::Integer.to_bignum(T1024P).digits(0) }
+    assert_raise(ArgumentError) { Bug::Integer.to_bignum(T1024P).digits(-1) }
+    assert_raise(ArgumentError) { Bug::Integer.to_bignum(T1024P).digits(Bug::Integer.to_bignum(0)) }
+    assert_raise(ArgumentError) { Bug::Integer.to_bignum(T1024P).digits(Bug::Integer.to_bignum(1)) }
+    assert_raise(ArgumentError) { Bug::Integer.to_bignum(T1024P).digits(-T1024P) }
+    assert_raise(ArgumentError) { 10.digits(Bug::Integer.to_bignum(0)) }
+    assert_raise(ArgumentError) { 10.digits(Bug::Integer.to_bignum(1)) }
   end
 
   def test_digits_for_non_integral_base_numbers

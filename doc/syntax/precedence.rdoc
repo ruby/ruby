@@ -55,7 +55,7 @@ keywords.  For example, this is a modifier-unless statement:
 
 Note that <code>(a if b rescue c)</code> is parsed as <code>((a if b) rescue
 c)</code> due to reasons not related to precedence. See {modifier
-statements}[control_expressions_rdoc.html#label-Modifier+Statements].
+statements}[control_expressions.rdoc#label-Modifier+Statements].
 
 <code>{ ... }</code> blocks have priority below all listed operations, but
 <code>do ... end</code> blocks have lower priority.

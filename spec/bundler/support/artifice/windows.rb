@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 
 require_relative "../path"
-include Spec::Path
 
-$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gems.join("gems/{artifice,mustermann,rack,tilt,sinatra,ruby2_keywords}-*/lib")].map(&:to_s))
+$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gem_path.join("gems/{mustermann,rack,tilt,sinatra,ruby2_keywords}-*/lib")].map(&:to_s))
 
-require "artifice"
 require "sinatra/base"
-
-Artifice.deactivate
 
 class Windows < Sinatra::Base
   set :raise_errors, true
   set :show_exceptions, false
 
   helpers do
-    def gem_repo
+    def default_gem_repo
       Pathname.new(ENV["BUNDLER_SPEC_GEM_REPO"] || Spec::Path.gem_repo1)
     end
   end
@@ -27,7 +23,7 @@ class Windows < Sinatra::Base
 
   files.each do |file|
     get "/#{file}" do
-      File.binread gem_repo.join(file)
+      File.binread default_gem_repo.join(file)
     end
   end
 
@@ -43,5 +39,7 @@ class Windows < Sinatra::Base
     halt 500
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(Windows)

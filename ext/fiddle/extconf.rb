@@ -3,56 +3,96 @@ require 'mkmf'
 
 # :stopdoc:
 
-bundle = enable_config('bundled-libffi')
-if ! bundle
+def gcc?
+  RbConfig::CONFIG["GCC"] == "yes"
+end
+
+def disable_optimization_build_flag(flags)
+  if gcc?
+    expanded_flags = RbConfig.expand(flags.dup)
+    optimization_option_pattern = /(^|\s)?-O\d(\s|$)?/
+    if optimization_option_pattern.match?(expanded_flags)
+      expanded_flags.gsub(optimization_option_pattern, '\\1-Og\\2')
+    else
+      flags + " -Og"
+    end
+  else
+    flags
+  end
+end
+
+def enable_debug_build_flag(flags)
+  if gcc?
+    expanded_flags = RbConfig.expand(flags.dup)
+    debug_option_pattern = /(^|\s)-g(?:gdb)?\d?(\s|$)/
+    if debug_option_pattern.match?(expanded_flags)
+      expanded_flags.gsub(debug_option_pattern, '\\1-ggdb3\\2')
+    else
+      flags + " -ggdb3"
+    end
+  else
+    flags
+  end
+end
+
+checking_for(checking_message("--enable-debug-build option")) do
+  enable_debug_build = enable_config("debug-build", false)
+  if enable_debug_build
+    $CFLAGS = disable_optimization_build_flag($CFLAGS)
+    $CFLAGS = enable_debug_build_flag($CFLAGS)
+  end
+  enable_debug_build
+end
+
+libffi_version = nil
+have_libffi = false
+bundle = with_config("libffi-source-dir")
+unless bundle
   dir_config 'libffi'
 
-  pkg_config("libffi") and
-    ver = pkg_config("libffi", "modversion")
+  if pkg_config("libffi")
+    libffi_version = pkg_config("libffi", "modversion")
+  end
 
+  have_ffi_header = false
   if have_header(ffi_header = 'ffi.h')
-    true
+    have_ffi_header = true
   elsif have_header(ffi_header = 'ffi/ffi.h')
     $defs.push('-DUSE_HEADER_HACKS')
-    true
-  end and (have_library('ffi') || have_library('libffi'))
-end or
-begin
-  # for https://github.com/ruby/fiddle
-  if bundle && File.exist?("../../bin/extlibs.rb")
-    require "fileutils"
-    require_relative "../../bin/extlibs"
-    extlibs = ExtLibs.new
-    cache_dir = File.expand_path("../../tmp/.download_cache", $srcdir)
-    ext_dir = File.expand_path("../../ext", $srcdir)
-    Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
-    extlibs.run(["--cache=#{cache_dir}", ext_dir])
+    have_ffi_header = true
   end
-  ver = bundle != false &&
-        Dir.glob("#{$srcdir}/libffi-*/")
-        .map {|n| File.basename(n)}
-        .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  unless ver
-    raise "missing libffi. Please install libffi."
+  if have_ffi_header && (have_library('ffi') || have_library('libffi'))
+    have_libffi = true
+    checking_for("undefined FFI_GO_CLOSURES is used") do
+      if egrep_cpp(/warning: 'FFI_GO_CLOSURES' is not defined/, cpp_include(ffi_header), "2>&1")
+        $defs.push('-DFFI_GO_CLOSURES=0')
+      end
+    end
   end
+end
 
-  srcdir = "#{$srcdir}/#{ver}"
+unless have_libffi
+  if bundle
+    libffi_srcdir = libffi_package_name = bundle
+  else
+    raise "missing libffi. Please install libffi or use --with-libffi-source-dir with libffi source location."
+  end
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
-  libffi.dir = ver
+  libffi.dir = libffi_package_name
   if $srcdir == "."
-    libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
+    libffi.builddir = libffi_package_name
     libffi.srcdir = "."
   else
     libffi.builddir = libffi.dir
-    libffi.srcdir = relative_from(srcdir, "..")
+    libffi.srcdir = relative_from(libffi_srcdir, "..")
   end
   libffi.include = "#{libffi.builddir}/include"
   libffi.lib = "#{libffi.builddir}/.libs"
   libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
   libffi.cflags = RbConfig.expand("$(CFLAGS)".dup, nowarn)
-  ver = ver[/libffi-(.*)/, 1]
+  libffi_version = libffi_package_name[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
@@ -81,7 +121,6 @@ begin
   args.concat %W[
     --srcdir=#{libffi.srcdir}
     --host=#{libffi.arch}
-    --enable-builddir=#{RUBY_PLATFORM}
   ]
   args << ($enable_shared || !$static ? '--enable-shared' : '--enable-static')
   args << libffi.opt if libffi.opt
@@ -98,7 +137,7 @@ begin
       begin
         IO.copy_stream(libffi.dir + "/config.log", Logging.instance_variable_get(:@logfile))
       rescue SystemCallError => e
-        Logfile.message("%s\n", e.message)
+        Logging.message("%s\n", e.message)
       end
       raise "failed to configure libffi. Please install libffi."
     end
@@ -107,24 +146,37 @@ begin
     FileUtils.rm_f("#{libffi.include}/ffitarget.h")
   end
   unless File.file?("#{libffi.include}/ffitarget.h")
-    FileUtils.cp("#{srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
+    FileUtils.cp("#{libffi_srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
   end
   $INCFLAGS << " -I" << libffi.include
 end
 
-if ver
-  ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
-  ver = (ver.split('.').map(&:to_i) + [0,0])[0,3]
-  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
-  warn "libffi_version: #{ver.join('.')}"
+if libffi_version
+  # If libffi_version contains rc version, just ignored.
+  libffi_version = libffi_version.gsub(/-rc\d+/, '')
+  libffi_version = (libffi_version.split('.').map(&:to_i) + [0,0])[0,3]
+  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % libffi_version }})
+  warn "libffi_version: #{libffi_version.join('.')}"
 end
 
 case
-when $mswin, $mingw, (ver && (ver <=> [3, 2]) >= 0)
+when $mswin, $mingw, (libffi_version && (libffi_version <=> [3, 2]) >= 0)
   $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
+when (libffi_version && (libffi_version <=> [3, 2]) < 0)
+else
+  have_func('ffi_closure_alloc', ffi_header)
+end
+
+if libffi_version
+  if (libffi_version <=> [3, 0, 11]) >= 0
+    $defs << "-DHAVE_FFI_PREP_CIF_VAR"
+  end
+else
+  have_func('ffi_prep_cif_var', ffi_header)
 end
 
 have_header 'sys/mman.h'
+have_header 'link.h'
 
 if have_header "dlfcn.h"
   have_library "dl"
@@ -134,10 +186,14 @@ if have_header "dlfcn.h"
   end
 
   have_func "dlerror"
+  have_func "dlinfo"
+  have_const("RTLD_DI_LINKMAP", "dlfcn.h")
 elsif have_header "windows.h"
-  %w{ LoadLibrary FreeLibrary GetProcAddress }.each do |func|
+  %w{ LoadLibrary FreeLibrary GetProcAddress GetModuleFileName }.each do |func|
     abort "missing function #{func}" unless have_func(func)
   end
+
+  have_library "ws2_32"
 end
 
 have_const('FFI_STDCALL', ffi_header)
@@ -153,14 +209,15 @@ types.each do |type, signed|
     if signed
       check_signedness(type.downcase, "stddef.h")
     end
+  else
+    check_signedness(type.downcase, "stddef.h")
   end
 end
 
 if libffi
-  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
+  $LOCAL_LIBS.prepend("#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
-$INCFLAGS << " -I$(top_srcdir)"
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"

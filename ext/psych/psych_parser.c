@@ -27,7 +27,7 @@ static ID id_event_location;
 static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
 {
     VALUE io = (VALUE)data;
-    VALUE string = rb_funcall(io, id_read, 1, INT2NUM(size));
+    VALUE string = rb_funcall(io, id_read, 1, SIZET2NUM(size));
 
     *read = 0;
 
@@ -79,21 +79,25 @@ static VALUE allocate(VALUE klass)
 
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
-    size_t line, column;
-    VALUE ePsychSyntaxError;
+    if (parser->error == YAML_MEMORY_ERROR) {
+	return rb_eNoMemError;
+    } else {
+	size_t line, column;
+	VALUE ePsychSyntaxError;
 
-    line = parser->context_mark.line + 1;
-    column = parser->context_mark.column + 1;
+	line = parser->context_mark.line + 1;
+	column = parser->context_mark.column + 1;
 
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+	ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
-    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
-	    path,
-	    INT2NUM(line),
-	    INT2NUM(column),
-	    INT2NUM(parser->problem_offset),
-	    parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
-	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+	return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
+		path,
+		SIZET2NUM(line),
+		SIZET2NUM(column),
+		SIZET2NUM(parser->problem_offset),
+		parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
+		parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+    }
 }
 
 static VALUE transcode_string(VALUE src, int * parser_encoding)
@@ -241,18 +245,8 @@ static VALUE protected_event_location(VALUE pointer)
     return rb_funcall3(args[0], id_event_location, 4, args + 1);
 }
 
-/*
- * call-seq:
- *    parser.parse(yaml)
- *
- * Parse the YAML document contained in +yaml+.  Events will be called on
- * the handler set on the parser instance.
- *
- * See Psych::Parser and Psych::Parser#handler
- */
-static VALUE parse(int argc, VALUE *argv, VALUE self)
+static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
 {
-    VALUE yaml, path;
     yaml_parser_t * parser;
     yaml_event_t event;
     int done = 0;
@@ -260,14 +254,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-    VALUE handler = rb_iv_get(self, "@handler");
-
-    if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
-	if(rb_respond_to(yaml, id_path))
-	    path = rb_funcall(yaml, id_path, 0);
-	else
-	    path = rb_str_new2("<unknown>");
-    }
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
 
@@ -293,7 +279,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 	VALUE event_args[5];
 	VALUE start_line, start_column, end_line, end_column;
 
-	if(!yaml_parser_parse(parser, &event)) {
+	if(parser->error || !yaml_parser_parse(parser, &event)) {
 	    VALUE exception;
 
 	    exception = make_exception(parser, path);
@@ -303,10 +289,10 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 	    rb_exc_raise(exception);
 	}
 
-	start_line = INT2NUM((long)event.start_mark.line);
-	start_column = INT2NUM((long)event.start_mark.column);
-	end_line = INT2NUM((long)event.end_mark.line);
-	end_column = INT2NUM((long)event.end_mark.column);
+	start_line = SIZET2NUM(event.start_mark.line);
+	start_column = SIZET2NUM(event.start_mark.column);
+	end_line = SIZET2NUM(event.end_mark.line);
+	end_column = SIZET2NUM(event.end_mark.column);
 
 	event_args[0] = handler;
 	event_args[1] = start_line;
@@ -321,7 +307,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		  VALUE args[2];
 
 		  args[0] = handler;
-		  args[1] = INT2NUM((long)event.data.stream_start.encoding);
+		  args[1] = INT2NUM(event.data.stream_start.encoding);
 		  rb_protect(protected_start_stream, (VALUE)args, &state);
 	      }
 	      break;
@@ -334,8 +320,8 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		VALUE version = event.data.document_start.version_directive ?
 		    rb_ary_new3(
 			(long)2,
-			INT2NUM((long)event.data.document_start.version_directive->major),
-			INT2NUM((long)event.data.document_start.version_directive->minor)
+			INT2NUM(event.data.document_start.version_directive->major),
+			INT2NUM(event.data.document_start.version_directive->minor)
 			) : rb_ary_new();
 
 		if(event.data.document_start.tag_directives.start) {
@@ -418,7 +404,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		quoted_implicit =
 		    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM((long)event.data.scalar.style);
+		style = INT2NUM(event.data.scalar.style);
 
 		args[0] = handler;
 		args[1] = val;
@@ -450,7 +436,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		implicit =
 		    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM((long)event.data.sequence_start.style);
+		style = INT2NUM(event.data.sequence_start.style);
 
 		args[0] = handler;
 		args[1] = anchor;
@@ -483,7 +469,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		implicit =
 		    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM((long)event.data.mapping_start.style);
+		style = INT2NUM(event.data.mapping_start.style);
 
 		args[0] = handler;
 		args[1] = anchor;
@@ -527,9 +513,9 @@ static VALUE mark(VALUE self)
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
     mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
-    args[0] = INT2NUM(parser->mark.index);
-    args[1] = INT2NUM(parser->mark.line);
-    args[2] = INT2NUM(parser->mark.column);
+    args[0] = SIZET2NUM(parser->mark.index);
+    args[1] = SIZET2NUM(parser->mark.line);
+    args[2] = SIZET2NUM(parser->mark.column);
 
     return rb_class_new_instance(3, args, mark_klass);
 }
@@ -558,7 +544,7 @@ void Init_psych_parser(void)
 
     rb_require("psych/syntax_error");
 
-    rb_define_method(cPsychParser, "parse", parse, -1);
+    rb_define_private_method(cPsychParser, "_native_parse", parse, 3);
     rb_define_method(cPsychParser, "mark", mark, 0);
 
     id_read            = rb_intern("read");

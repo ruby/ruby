@@ -1,10 +1,14 @@
 # frozen-string-literal: true
 
 class Colorize
+  # call-seq:
+  #   Colorize.new(colorize = nil)
+  #   Colorize.new(color: color, colors_file: colors_file)
   def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
     @colors = @reset = nil
-    if color or (color == nil && STDOUT.tty?)
-      if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", :err => IO::NULL, &:read) rescue nil)
+    @color = opts && opts[:color] || color
+    if color or (color == nil && STDOUT.tty? && (ENV["NO_COLOR"] || "").empty?)
+      if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
         @beg = "\e["
         colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
         if opts and colors_file = opts[:colors_file]
@@ -29,8 +33,11 @@ class Colorize
     "bold"=>"1", "underline"=>"4", "reverse"=>"7",
   }
 
-  def decorate(str, name)
-    if @colors and color = (@colors[name] || DEFAULTS[name])
+  NO_COLOR = (nc = ENV['NO_COLOR']) && !nc.empty?
+
+  # colorize.decorate(str, name = color_name)
+  def decorate(str, name = @color)
+    if !NO_COLOR and @colors and color = (@colors[name] || DEFAULTS[name])
       "#{@beg}#{color}m#{str}#{@reset}"
     else
       str
@@ -45,7 +52,6 @@ class Colorize
 end
 
 if $0 == __FILE__
-  colorize = Colorize.new
-  col = ARGV.shift
-  ARGV.each {|str| puts colorize.decorate(str, col)}
+  colorize = Colorize.new(ARGV.shift)
+  ARGV.each {|str| puts colorize.decorate(str)}
 end

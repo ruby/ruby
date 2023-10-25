@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with git sources" do
-  describe "when floating on master" do
+  describe "when floating on main" do
     before :each do
       build_git "foo" do |s|
         s.executables = "foobar"
@@ -30,11 +30,22 @@ RSpec.describe "bundle install with git sources" do
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes :size => 1
     end
 
-    it "caches the git repo globally" do
+    it "does not write to cache on bundler/setup" do
+      cache_path = default_bundle_path.join("cache")
+      FileUtils.rm_rf(cache_path)
+      ruby "require 'bundler/setup'"
+      expect(cache_path).not_to exist
+    end
+
+    it "caches the git repo globally and properly uses the cached repo on the next invocation" do
       simulate_new_machine
-      bundle! "config set global_gem_cache true"
-      bundle! :install
+      bundle "config set global_gem_cache true"
+      bundle :install
       expect(Dir["#{home}/.bundle/cache/git/foo-1.0-*"]).to have_attributes :size => 1
+
+      bundle "install --verbose"
+      expect(err).to be_empty
+      expect(out).to include("Using foo 1.0 from #{lib_path("foo")}")
     end
 
     it "caches the evaluated gemspec" do
@@ -47,9 +58,10 @@ RSpec.describe "bundle install with git sources" do
 
       bundle "update foo"
 
-      sha = git.ref_for("master", 11)
-      spec_file = default_bundle_path.join("bundler/gems/foo-1.0-#{sha}/foo.gemspec").to_s
-      ruby_code = Gem::Specification.load(spec_file).to_ruby
+      sha = git.ref_for("main", 11)
+      spec_file = default_bundle_path.join("bundler/gems/foo-1.0-#{sha}/foo.gemspec")
+      expect(spec_file).to exist
+      ruby_code = Gem::Specification.load(spec_file.to_s).to_ruby
       file_code = File.read(spec_file)
       expect(file_code).to eq(ruby_code)
     end
@@ -57,22 +69,19 @@ RSpec.describe "bundle install with git sources" do
     it "does not update the git source implicitly" do
       update_git "foo"
 
-      in_app_root2 do
-        install_gemfile bundled_app2("Gemfile"), <<-G
-          git "#{lib_path("foo-1.0")}" do
-            gem 'foo'
-          end
-        G
-      end
+      install_gemfile bundled_app2("Gemfile"), <<-G, :dir => bundled_app2
+        source "#{file_uri_for(gem_repo1)}"
+        git "#{lib_path("foo-1.0")}" do
+          gem 'foo'
+        end
+      G
 
-      in_app_root do
-        run <<-RUBY
-          require 'foo'
-          puts "fail" if defined?(FOO_PREV_REF)
-        RUBY
+      run <<-RUBY
+        require 'foo'
+        puts "fail" if defined?(FOO_PREV_REF)
+      RUBY
 
-        expect(out).to be_empty
-      end
+      expect(out).to be_empty
     end
 
     it "sets up git gem executables on the path" do
@@ -83,32 +92,30 @@ RSpec.describe "bundle install with git sources" do
     it "complains if pinned specs don't exist in the git repo" do
       build_git "foo"
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.1", :git => "#{lib_path("foo-1.0")}"
       G
 
-      expect(err).to include("The source contains 'foo' at: 1.0")
+      expect(err).to include("The source contains the following gems matching 'foo':\n  * foo-1.0")
     end
 
-    it "complains with version and platform if pinned specs don't exist in the git repo" do
-      simulate_platform "java"
-
+    it "complains with version and platform if pinned specs don't exist in the git repo", :jruby_only do
       build_git "only_java" do |s|
         s.platform = "java"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         platforms :jruby do
           gem "only_java", "1.2", :git => "#{lib_path("only_java-1.0-java")}"
         end
       G
 
-      expect(err).to include("The source contains 'only_java' at: 1.0 java")
+      expect(err).to include("The source contains the following gems matching 'only_java':\n  * only_java-1.0-java")
     end
 
-    it "complains with multiple versions and platforms if pinned specs don't exist in the git repo" do
-      simulate_platform "java"
-
+    it "complains with multiple versions and platforms if pinned specs don't exist in the git repo", :jruby_only do
       build_git "only_java", "1.0" do |s|
         s.platform = "java"
       end
@@ -118,30 +125,33 @@ RSpec.describe "bundle install with git sources" do
         s.write "only_java1-0.gemspec", File.read("#{lib_path("only_java-1.0-java")}/only_java.gemspec")
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         platforms :jruby do
           gem "only_java", "1.2", :git => "#{lib_path("only_java-1.1-java")}"
         end
       G
 
-      expect(err).to include("The source contains 'only_java' at: 1.0 java, 1.1 java")
+      expect(err).to include("The source contains the following gems matching 'only_java':\n  * only_java-1.0-java\n  * only_java-1.1-java")
     end
 
     it "still works after moving the application directory" do
-      bundle "install --path vendor/bundle"
+      bundle "config set --local path vendor/bundle"
+      bundle "install"
+
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
-      Dir.chdir tmp("bundled_app.bck")
-      expect(the_bundle).to include_gems "foo 1.0"
+      expect(the_bundle).to include_gems "foo 1.0", :dir => tmp("bundled_app.bck")
     end
 
     it "can still install after moving the application directory" do
-      bundle "install --path vendor/bundle"
+      bundle "config set --local path vendor/bundle"
+      bundle "install"
+
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
       update_git "foo", "1.1", :path => lib_path("foo-1.0")
 
-      Dir.chdir tmp("bundled_app.bck")
       gemfile tmp("bundled_app.bck/Gemfile"), <<-G
         source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
@@ -151,9 +161,9 @@ RSpec.describe "bundle install with git sources" do
         gem "rack", "1.0"
       G
 
-      bundle "update foo"
+      bundle "update foo", :dir => tmp("bundled_app.bck")
 
-      expect(the_bundle).to include_gems "foo 1.1", "rack 1.0"
+      expect(the_bundle).to include_gems "foo 1.1", "rack 1.0", :dir => tmp("bundled_app.bck")
     end
   end
 
@@ -185,10 +195,12 @@ RSpec.describe "bundle install with git sources" do
 
     it "works" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => "#{@revision}" do
           gem "foo"
         end
       G
+      expect(err).to be_empty
 
       run <<-RUBY
         require 'foo'
@@ -200,6 +212,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "works when the revision is a symbol" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => #{@revision.to_sym.inspect} do
           gem "foo"
         end
@@ -214,29 +227,67 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq("WIN")
     end
 
+    it "works when an abbreviated revision is added after an initial, potentially shallow clone" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        git "#{lib_path("foo-1.0")}" do
+          gem "foo"
+        end
+      G
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        git "#{lib_path("foo-1.0")}", :ref => #{@revision[0..7].inspect} do
+          gem "foo"
+        end
+      G
+    end
+
+    it "works when a tag that does not look like a commit hash is used as the value of :ref" do
+      build_git "foo"
+      @remote = build_git("bar", :bare => true)
+      update_git "foo", :remote => file_uri_for(@remote.path)
+      update_git "foo", :push => "main"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'foo', :git => "#{@remote.path}"
+      G
+
+      # Create a new tag on the remote that needs fetching
+      update_git "foo", :tag => "v1.0.0"
+      update_git "foo", :push => "v1.0.0"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'foo', :git => "#{@remote.path}", :ref => "v1.0.0"
+      G
+
+      expect(err).to be_empty
+    end
+
     it "works when the revision is a non-head ref" do
-      # want to ensure we don't fallback to master
+      # want to ensure we don't fallback to main
       update_git "foo", :path => lib_path("foo-1.0") do |s|
         s.write("lib/foo.rb", "raise 'FAIL'")
       end
 
-      Dir.chdir(lib_path("foo-1.0")) do
-        `git update-ref -m "Bundler Spec!" refs/bundler/1 master~1`
-      end
+      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", :dir => lib_path("foo-1.0"))
 
       # want to ensure we don't fallback to HEAD
       update_git "foo", :path => lib_path("foo-1.0"), :branch => "rando" do |s|
-        s.write("lib/foo.rb", "raise 'FAIL'")
+        s.write("lib/foo.rb", "raise 'FAIL_FROM_RANDO'")
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => "refs/bundler/1" do
           gem "foo"
         end
       G
       expect(err).to be_empty
 
-      run! <<-RUBY
+      run <<-RUBY
         require 'foo'
         puts "WIN" if defined?(FOO)
       RUBY
@@ -245,34 +296,34 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "works when the revision is a non-head ref and it was previously downloaded" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem "foo"
         end
       G
 
-      # want to ensure we don't fallback to master
+      # want to ensure we don't fallback to main
       update_git "foo", :path => lib_path("foo-1.0") do |s|
         s.write("lib/foo.rb", "raise 'FAIL'")
       end
 
-      Dir.chdir(lib_path("foo-1.0")) do
-        `git update-ref -m "Bundler Spec!" refs/bundler/1 master~1`
-      end
+      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", :dir => lib_path("foo-1.0"))
 
       # want to ensure we don't fallback to HEAD
       update_git "foo", :path => lib_path("foo-1.0"), :branch => "rando" do |s|
-        s.write("lib/foo.rb", "raise 'FAIL'")
+        s.write("lib/foo.rb", "raise 'FAIL_FROM_RANDO'")
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => "refs/bundler/1" do
           gem "foo"
         end
       G
       expect(err).to be_empty
 
-      run! <<-RUBY
+      run <<-RUBY
         require 'foo'
         puts "WIN" if defined?(FOO)
       RUBY
@@ -281,24 +332,21 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "does not download random non-head refs" do
-      Dir.chdir(lib_path("foo-1.0")) do
-        sys_exec!('git update-ref -m "Bundler Spec!" refs/bundler/1 master~1')
-      end
+      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", :dir => lib_path("foo-1.0"))
 
-      bundle! "config set global_gem_cache true"
+      bundle "config set global_gem_cache true"
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem "foo"
         end
       G
 
       # ensure we also git fetch after cloning
-      bundle! :update, :all => true
+      bundle :update, :all => true
 
-      Dir.chdir(Dir[home(".bundle/cache/git/foo-*")].first) do
-        sys_exec("git ls-remote .")
-      end
+      sys_exec("git ls-remote .", :dir => Dir[home(".bundle/cache/git/foo-*")].first)
 
       expect(out).not_to include("refs/bundler/1")
     end
@@ -307,12 +355,12 @@ RSpec.describe "bundle install with git sources" do
   describe "when specifying a branch" do
     let(:branch) { "branch" }
     let(:repo) { build_git("foo").path }
-    before(:each) do
-      update_git("foo", :path => repo, :branch => branch)
-    end
 
     it "works" do
+      update_git("foo", :path => repo, :branch => branch)
+
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{repo}", :branch => #{branch.dump} do
           gem "foo"
         end
@@ -324,7 +372,12 @@ RSpec.describe "bundle install with git sources" do
     context "when the branch starts with a `#`" do
       let(:branch) { "#149/redirect-url-fragment" }
       it "works" do
+        skip "git does not accept this" if Gem.win_platform?
+
+        update_git("foo", :path => repo, :branch => branch)
+
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :branch => #{branch.dump} do
             gem "foo"
           end
@@ -337,7 +390,12 @@ RSpec.describe "bundle install with git sources" do
     context "when the branch includes quotes" do
       let(:branch) { %('") }
       it "works" do
+        skip "git does not accept this" if Gem.win_platform?
+
+        update_git("foo", :path => repo, :branch => branch)
+
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :branch => #{branch.dump} do
             gem "foo"
           end
@@ -351,12 +409,12 @@ RSpec.describe "bundle install with git sources" do
   describe "when specifying a tag" do
     let(:tag) { "tag" }
     let(:repo) { build_git("foo").path }
-    before(:each) do
-      update_git("foo", :path => repo, :tag => tag)
-    end
 
     it "works" do
+      update_git("foo", :path => repo, :tag => tag)
+
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{repo}", :tag => #{tag.dump} do
           gem "foo"
         end
@@ -368,7 +426,12 @@ RSpec.describe "bundle install with git sources" do
     context "when the tag starts with a `#`" do
       let(:tag) { "#149/redirect-url-fragment" }
       it "works" do
+        skip "git does not accept this" if Gem.win_platform?
+
+        update_git("foo", :path => repo, :tag => tag)
+
         install_gemfile <<-G
+         source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :tag => #{tag.dump} do
             gem "foo"
           end
@@ -381,7 +444,12 @@ RSpec.describe "bundle install with git sources" do
     context "when the tag includes quotes" do
       let(:tag) { %('") }
       it "works" do
+        skip "git does not accept this" if Gem.win_platform?
+
+        update_git("foo", :path => repo, :tag => tag)
+
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :tag => #{tag.dump} do
             gem "foo"
           end
@@ -394,20 +462,17 @@ RSpec.describe "bundle install with git sources" do
 
   describe "when specifying local override" do
     it "uses the local repository instead of checking a new one out" do
-      # We don't generate it because we actually don't need it
-      # build_git "rack", "0.8"
-
       build_git "rack", "0.8", :path => lib_path("local-rack") do |s|
         s.write "lib/rack.rb", "puts :LOCAL"
       end
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
-      bundle! %(config set local.rack #{lib_path("local-rack")})
-      bundle! :install
+      bundle %(config set local.rack #{lib_path("local-rack")})
+      bundle :install
 
       run "require 'rack'"
       expect(out).to eq("LOCAL")
@@ -424,7 +489,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -442,14 +507,14 @@ RSpec.describe "bundle install with git sources" do
         s.write "lib/rack.rb", "puts :LOCAL"
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
-      bundle! %(config set local.rack #{lib_path("local-rack")})
-      bundle! :install
-      run! "require 'rack'"
+      bundle %(config set local.rack #{lib_path("local-rack")})
+      bundle :install
+      run "require 'rack'"
       expect(out).to eq("LOCAL")
     end
 
@@ -460,10 +525,10 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
-      lockfile0 = File.read(bundled_app("Gemfile.lock"))
+      lockfile0 = File.read(bundled_app_lock)
 
       FileUtils.cp_r("#{lib_path("rack-0.8")}/.", lib_path("local-rack"))
       update_git "rack", "0.8", :path => lib_path("local-rack") do |s|
@@ -473,7 +538,7 @@ RSpec.describe "bundle install with git sources" do
       bundle %(config set local.rack #{lib_path("local-rack")})
       run "require 'rack'"
 
-      lockfile1 = File.read(bundled_app("Gemfile.lock"))
+      lockfile1 = File.read(bundled_app_lock)
       expect(lockfile1).not_to eq(lockfile0)
     end
 
@@ -482,10 +547,10 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
-      lockfile0 = File.read(bundled_app("Gemfile.lock"))
+      lockfile0 = File.read(bundled_app_lock)
 
       FileUtils.cp_r("#{lib_path("rack-0.8")}/.", lib_path("local-rack"))
       update_git "rack", "0.8", :path => lib_path("local-rack")
@@ -493,7 +558,7 @@ RSpec.describe "bundle install with git sources" do
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install
 
-      lockfile1 = File.read(bundled_app("Gemfile.lock"))
+      lockfile1 = File.read(bundled_app_lock)
       expect(lockfile1).not_to eq(lockfile0)
     end
 
@@ -502,12 +567,12 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle :install
-      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
+      bundle :install, :raise_on_error => false
+      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path("local-rack").to_s)} does not exist/)
 
       solution = "config unset local.rack"
       expect(err).to match(/Run `bundle #{solution}` to remove the local override/)
@@ -528,8 +593,8 @@ RSpec.describe "bundle install with git sources" do
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle :install
-      expect(err).to match(/Cannot use local override for rack-0.8 at #{Regexp.escape(lib_path('local-rack').to_s)} because :branch is not specified in Gemfile/)
+      bundle :install, :raise_on_error => false
+      expect(err).to match(/Cannot use local override for rack-0.8 at #{Regexp.escape(lib_path("local-rack").to_s)} because :branch is not specified in Gemfile/)
 
       solution = "config unset local.rack"
       expect(err).to match(/Specify a branch or run `bundle #{solution}` to remove the local override/)
@@ -566,12 +631,12 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle :install
-      expect(err).to match(/is using branch another but Gemfile specifies master/)
+      bundle :install, :raise_on_error => false
+      expect(err).to match(/is using branch another but Gemfile specifies main/)
     end
 
     it "explodes on invalid revision on install" do
@@ -583,12 +648,30 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to match(/The Gemfile lock is pointing to revision \w+/)
+    end
+
+    it "does not explode on invalid revision on install" do
+      build_git "rack", "0.8"
+
+      build_git "rack", "0.8", :path => lib_path("local-rack") do |s|
+        s.write "lib/rack.rb", "puts :LOCAL"
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
+      G
+
+      bundle %(config set local.rack #{lib_path("local-rack")})
+      bundle %(config set disable_local_revision_check true)
+      bundle :install
+      expect(out).to match(/Bundle complete!/)
     end
   end
 
@@ -679,6 +762,7 @@ RSpec.describe "bundle install with git sources" do
       build_lib "hi2u", :path => lib_path("hi2u")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path("hi2u")}" do
           gem "omg"
           gem "hi2u"
@@ -695,6 +779,7 @@ RSpec.describe "bundle install with git sources" do
     update_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{@revision}"
     G
 
@@ -759,6 +844,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo", "1.0"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -780,10 +866,11 @@ RSpec.describe "bundle install with git sources" do
 
   it "catches git errors and spits out useful output" do
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :git => "omgomg"
     G
 
-    bundle :install
+    bundle :install, :raise_on_error => false
 
     expect(err).to include("Git error:")
     expect(err).to include("fatal")
@@ -794,6 +881,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo", :path => lib_path("foo space-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo space-1.0")}"
     G
 
@@ -804,6 +892,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "forced", "1.0"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("forced-1.0")}" do
         gem 'forced'
       end
@@ -817,45 +906,47 @@ RSpec.describe "bundle install with git sources" do
     bundle "update", :all => true
     expect(the_bundle).to include_gems "forced 1.1"
 
-    Dir.chdir(lib_path("forced-1.0")) do
-      `git reset --hard HEAD^`
-    end
+    sys_exec("git reset --hard HEAD^", :dir => lib_path("forced-1.0"))
 
     bundle "update", :all => true
     expect(the_bundle).to include_gems "forced 1.0"
   end
 
   it "ignores submodules if :submodule is not passed" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0" do |s|
       s.add_dependency "submodule"
     end
-    Dir.chdir(lib_path("has_submodule-1.0")) do
-      sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0"
-      `git commit -m "submodulator"`
-    end
+    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", :dir => lib_path("has_submodule-1.0")
+    sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("has_submodule-1.0")}" do
         gem "has_submodule"
       end
     G
-    expect(err).to match(/could not find gem 'submodule/i)
+    expect(err).to match(%r{submodule >= 0 could not be found in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally})
 
     expect(the_bundle).not_to include_gems "has_submodule 1.0"
   end
 
   it "handles repos with submodules" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0" do |s|
       s.add_dependency "submodule"
     end
-    Dir.chdir(lib_path("has_submodule-1.0")) do
-      sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0"
-      `git commit -m "submodulator"`
-    end
+    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", :dir => lib_path("has_submodule-1.0")
+    sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("has_submodule-1.0")}", :submodules => true do
         gem "has_submodule"
       end
@@ -864,10 +955,33 @@ RSpec.describe "bundle install with git sources" do
     expect(the_bundle).to include_gems "has_submodule 1.0"
   end
 
+  it "does not warn when deiniting submodules" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
+    build_git "submodule", "1.0"
+    build_git "has_submodule", "1.0"
+
+    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", :dir => lib_path("has_submodule-1.0")
+    sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      git "#{lib_path("has_submodule-1.0")}" do
+        gem "has_submodule"
+      end
+    G
+    expect(err).to be_empty
+
+    expect(the_bundle).to include_gems "has_submodule 1.0"
+    expect(the_bundle).to_not include_gems "submodule 1.0"
+  end
+
   it "handles implicit updates when modifying the source info" do
     git = build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("foo-1.0")}" do
         gem "foo"
       end
@@ -877,6 +991,7 @@ RSpec.describe "bundle install with git sources" do
     update_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("foo-1.0")}", :ref => "#{git.ref_for("HEAD^")}" do
         gem "foo"
       end
@@ -894,6 +1009,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -907,12 +1023,12 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo"
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
     bundle "install"
     bundle "install"
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "prints a friendly error if a file blocks the git repo" do
@@ -921,11 +1037,12 @@ RSpec.describe "bundle install with git sources" do
     FileUtils.mkdir_p(default_bundle_path)
     FileUtils.touch(default_bundle_path("bundler"))
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    expect(exitstatus).to_not eq(0) if exitstatus
+    expect(exitstatus).to_not eq(0)
     expect(err).to include("Bundler could not install a gem because it " \
                            "needs to create a directory, but a file exists " \
                            "- #{default_bundle_path("bundler")}")
@@ -939,11 +1056,12 @@ RSpec.describe "bundle install with git sources" do
     build_git "bar", :path => lib_path("nested")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("nested")}"
       gem "bar", :git => "#{lib_path("nested")}"
     G
 
-    expect(File.read(bundled_app("Gemfile.lock")).scan("GIT").size).to eq(1)
+    expect(File.read(bundled_app_lock).scan("GIT").size).to eq(1)
   end
 
   describe "switching sources" do
@@ -996,6 +1114,7 @@ RSpec.describe "bundle install with git sources" do
       build_git "valim"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "valim", :git => "#{file_uri_for(lib_path("valim-1.0"))}"
       G
 
@@ -1003,8 +1122,8 @@ RSpec.describe "bundle install with git sources" do
       update_git "valim"
       new_revision = revision_for(lib_path("valim-1.0"))
 
-      old_lockfile = File.read(bundled_app("Gemfile.lock"))
-      lockfile(bundled_app("Gemfile.lock"), old_lockfile.gsub(/revision: #{old_revision}/, "revision: #{new_revision}"))
+      old_lockfile = File.read(bundled_app_lock)
+      lockfile(bundled_app_lock, old_lockfile.gsub(/revision: #{old_revision}/, "revision: #{new_revision}"))
 
       bundle "install"
 
@@ -1021,18 +1140,31 @@ RSpec.describe "bundle install with git sources" do
       revision = revision_for(lib_path("foo-1.0"))
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :ref => "#{revision}"
       G
       expect(out).to_not match(/Revision.*does not exist/)
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :ref => "deadbeef"
       G
       expect(err).to include("Revision deadbeef does not exist in the repository")
     end
+
+    it "gives a helpful error message when the remote branch no longer exists" do
+      build_git "foo"
+
+      install_gemfile <<-G, :env => { "LANG" => "en" }, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :branch => "deadbeef"
+      G
+
+      expect(err).to include("Revision deadbeef does not exist in the repository")
+    end
   end
 
-  describe "bundle install --deployment with git sources" do
+  describe "bundle install with deployment mode configured and git sources" do
     it "works" do
       build_git "valim", :path => lib_path("valim")
 
@@ -1043,7 +1175,8 @@ RSpec.describe "bundle install with git sources" do
 
       simulate_new_machine
 
-      bundle! :install, forgotten_command_line_options(:deployment => true)
+      bundle "config set --local deployment true"
+      bundle :install
     end
   end
 
@@ -1051,6 +1184,7 @@ RSpec.describe "bundle install with git sources" do
     it "runs pre-install hooks" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -1070,6 +1204,7 @@ RSpec.describe "bundle install with git sources" do
     it "runs post-install hooks" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -1089,6 +1224,7 @@ RSpec.describe "bundle install with git sources" do
     it "complains if the install hook fails" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -1100,8 +1236,7 @@ RSpec.describe "bundle install with git sources" do
         H
       end
 
-      bundle :install,
-        :requires => [lib_path("install_hooks.rb")]
+      bundle :install, :requires => [lib_path("install_hooks.rb")], :raise_on_error => false
       expect(err).to include("failed for foo-1.0")
     end
   end
@@ -1113,7 +1248,7 @@ RSpec.describe "bundle install with git sources" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/foo.rb", "w") do |f|
               f.puts "FOO = 'YES'"
@@ -1133,33 +1268,33 @@ RSpec.describe "bundle install with git sources" do
       R
       expect(out).to eq("YES")
 
-      run! <<-R
+      run <<-R
         puts $:.grep(/ext/)
       R
       expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     end
 
-    it "does not use old extension after ref changes", :ruby_repo do
+    it "does not use old extension after ref changes" do
       git_reader = build_git "foo", :no_default => true do |s|
         s.extensions = ["ext/extconf.rb"]
         s.write "ext/extconf.rb", <<-RUBY
           require "mkmf"
+          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
           create_makefile("foo")
         RUBY
         s.write "ext/foo.c", "void Init_foo() {}"
       end
 
       2.times do |i|
-        Dir.chdir(git_reader.path) do
-          File.open("ext/foo.c", "w") do |file|
-            file.write <<-C
-              #include "ruby.h"
-              VALUE foo() { return INT2FIX(#{i}); }
-              void Init_foo() { rb_define_global_function("foo", &foo, 0); }
-            C
-          end
-          `git commit -m "commit for iteration #{i}" ext/foo.c`
+        File.open(git_reader.path.join("ext/foo.c"), "w") do |file|
+          file.write <<-C
+            #include "ruby.h"
+            VALUE foo() { return INT2FIX(#{i}); }
+            void Init_foo() { rb_define_global_function("foo", &foo, 0); }
+          C
         end
+        sys_exec("git commit -m \"commit for iteration #{i}\" ext/foo.c", :dir => git_reader.path)
+
         git_commit_sha = git_reader.ref_for("HEAD")
 
         install_gemfile <<-G
@@ -1187,7 +1322,7 @@ RSpec.describe "bundle install with git sources" do
         RUBY
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
@@ -1207,7 +1342,7 @@ In Gemfile:
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             cur_time = Time.now.to_f.to_s
             File.open("\#{path}/foo.rb", "w") do |f|
@@ -1222,7 +1357,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1235,7 +1370,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1248,7 +1383,7 @@ In Gemfile:
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             cur_time = Time.now.to_f.to_s
             File.open("\#{path}/foo.rb", "w") do |f|
@@ -1264,7 +1399,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1278,7 +1413,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1291,7 +1426,7 @@ In Gemfile:
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             cur_time = Time.now.to_f.to_s
             File.open("\#{path}/foo.rb", "w") do |f|
@@ -1306,14 +1441,15 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
 
+      installed_time = out
+
       update_git("foo", :branch => "branch2")
 
-      installed_time = out
       expect(installed_time).to match(/\A\d+\.\d+\z/)
 
       install_gemfile <<-G
@@ -1321,7 +1457,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "branch2"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1330,9 +1466,9 @@ In Gemfile:
       installed_time = out
 
       update_git("foo")
-      bundle! "update foo"
+      bundle "update foo"
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1356,24 +1492,59 @@ In Gemfile:
         end
       G
 
-      expect(exitstatus).to eq(0) if exitstatus
       expect(ENV["GIT_DIR"]).to eq("bar")
       expect(ENV["GIT_WORK_TREE"]).to eq("bar")
     end
   end
 
   describe "without git installed" do
-    it "prints a better error message" do
+    it "prints a better error message when installing" do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rake", git: "https://github.com/ruby/rake"
+      G
+
+      lockfile <<-L
+        GIT
+          remote: https://github.com/ruby/rake
+          revision: 5c60da8644a9e4f655e819252e3b6ca77f42b7af
+          specs:
+            rake (13.0.6)
+
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          rake!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      with_path_as("") do
+        bundle "install", :raise_on_error => false
+      end
+      expect(err).
+        to include("You need to install git to be able to use gems from git repositories. For help installing git, please refer to GitHub's tutorial at https://help.github.com/articles/set-up-git")
+    end
+
+    it "prints a better error message when updating" do
       build_git "foo"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
       G
 
       with_path_as("") do
-        bundle "update", :all => true
+        bundle "update", :all => true, :raise_on_error => false
       end
       expect(err).
         to include("You need to install git to be able to use gems from git repositories. For help installing git, please refer to GitHub's tutorial at https://help.github.com/articles/set-up-git")
@@ -1383,6 +1554,7 @@ In Gemfile:
       build_git "foo"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
@@ -1391,14 +1563,14 @@ In Gemfile:
       bundle :cache
       simulate_new_machine
 
-      bundle! "install", :env => { "PATH" => "" }
+      bundle "install", :env => { "PATH" => "" }
       expect(out).to_not include("You need to install git to be able to use gems from git repositories.")
     end
   end
 
   describe "when the git source is overridden with a local git repo" do
     before do
-      bundle! "config set --global local.foo #{lib_path("foo")}"
+      bundle "config set --global local.foo #{lib_path("foo")}"
     end
 
     describe "and git output is colorized" do
@@ -1412,7 +1584,8 @@ In Gemfile:
         build_git "foo", "1.0", :path => lib_path("foo")
 
         gemfile <<-G
-          gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
+          source "#{file_uri_for(gem_repo1)}"
+          gem "foo", :git => "#{lib_path("foo")}", :branch => "main"
         G
 
         bundle :install
@@ -1426,7 +1599,8 @@ In Gemfile:
       let(:credentials) { "user1:password1" }
 
       it "does not display the password" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo1)}"
           git "https://#{credentials}@github.com/company/private-repo" do
             gem "foo"
           end
@@ -1441,7 +1615,8 @@ In Gemfile:
       let(:credentials) { "oauth_token" }
 
       it "displays the oauth scheme but not the oauth token" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo1)}"
           git "https://#{credentials}:x-oauth-basic@github.com/company/private-repo" do
             gem "foo"
           end

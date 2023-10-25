@@ -25,6 +25,17 @@ describe "IO.pipe" do
     @r.should be_an_instance_of(IOSpecs::SubIO)
     @w.should be_an_instance_of(IOSpecs::SubIO)
   end
+
+  it "does not use IO.new method to create pipes and allows its overriding" do
+    ScratchPad.record []
+
+    # so redefined .new is not called, but original #initialize is
+    @r, @w = IOSpecs::SubIOWithRedefinedNew.pipe
+    ScratchPad.recorded.should == [:call_original_initialize, :call_original_initialize] # called 2 times - for each pipe (r and w)
+
+    @r.should be_an_instance_of(IOSpecs::SubIOWithRedefinedNew)
+    @w.should be_an_instance_of(IOSpecs::SubIOWithRedefinedNew)
+  end
 end
 
 describe "IO.pipe" do
@@ -44,8 +55,8 @@ describe "IO.pipe" do
       r, w = IO.pipe do |_r, _w|
         [_r, _w]
       end
-      r.closed?.should == true
-      w.closed?.should == true
+      r.should.closed?
+      w.should.closed?
     end
 
     it "closes both IO objects when the block raises" do
@@ -57,8 +68,8 @@ describe "IO.pipe" do
           raise RuntimeError
         end
       end.should raise_error(RuntimeError)
-      r.closed?.should == true
-      w.closed?.should == true
+      r.should.closed?
+      w.should.closed?
     end
 
     it "allows IO objects to be closed within the block" do
@@ -67,8 +78,8 @@ describe "IO.pipe" do
         _w.close
         [_r, _w]
       end
-      r.closed?.should == true
-      w.closed?.should == true
+      r.should.closed?
+      w.should.closed?
     end
   end
 end

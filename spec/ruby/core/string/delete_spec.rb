@@ -68,15 +68,6 @@ describe "String#delete" do
     -> { "hello".delete("^h-e") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "hello".taint.delete("e").tainted?.should == true
-      "hello".taint.delete("a-z").tainted?.should == true
-
-      "hello".delete("e".taint).tainted?.should == false
-    end
-  end
-
   it "tries to convert each set arg to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")
@@ -93,8 +84,12 @@ describe "String#delete" do
     -> { "hello world".delete(mock('x')) }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("oh no!!!").delete("!").should be_an_instance_of(StringSpecs::MyString)
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("oh no!!!").delete("!").should be_an_instance_of(String)
+  end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").delete("lo").encoding.should == Encoding::US_ASCII
   end
 end
 
@@ -111,11 +106,11 @@ describe "String#delete!" do
     a.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a.delete!("")            }.should raise_error(frozen_error_class)
-    -> { a.delete!("aeiou", "^e") }.should raise_error(frozen_error_class)
+    -> { a.delete!("")            }.should raise_error(FrozenError)
+    -> { a.delete!("aeiou", "^e") }.should raise_error(FrozenError)
   end
 end

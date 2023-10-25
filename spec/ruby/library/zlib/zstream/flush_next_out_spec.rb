@@ -8,7 +8,7 @@ describe "Zlib::ZStream#flush_next_out" do
     zs << [120, 156, 75, 203, 207, 7, 0, 2, 130, 1, 69].pack('C*')
 
     zs.flush_next_out.should == 'foo'
-    zs.finished?.should == true
+    zs.should.finished?
     zs.flush_next_out.should == ''
   end
 end

@@ -61,6 +61,10 @@ describe "C-API Symbol function" do
     it "converts a symbol to a C char array" do
       @s.rb_id2name(:test_symbol).should == "test_symbol"
     end
+
+    it "returns (char*) NULL for (ID) 0" do
+      @s.rb_id2name_id_zero.should == nil
+    end
   end
 
   describe "rb_id2str" do
@@ -71,6 +75,10 @@ describe "C-API Symbol function" do
     it "creates a string with the same encoding as the symbol" do
       str = "test_symbol".encode(Encoding::UTF_16LE)
       @s.rb_id2str(str.to_sym).encoding.should == Encoding::UTF_16LE
+    end
+
+    it "returns (VALUE) 0 = Qfalse for (ID) 0" do
+      @s.rb_id2str_id_zero.should == false
     end
   end
 
@@ -151,6 +159,22 @@ describe "C-API Symbol function" do
   describe "rb_sym2str" do
     it "converts a Symbol to a String" do
       @s.rb_sym2str(:bacon).should == "bacon"
+    end
+  end
+
+  describe "rb_to_symbol" do
+    it "returns a Symbol for a Symbol" do
+      @s.rb_to_symbol(:foo).should == :foo
+    end
+
+    it "returns a Symbol for a String" do
+      @s.rb_to_symbol("foo").should == :foo
+    end
+
+    it "coerces to Symbol using to_str" do
+      o = mock('o')
+      o.should_receive(:to_str).and_return("foo")
+      @s.rb_to_symbol(o).should == :foo
     end
   end
 end

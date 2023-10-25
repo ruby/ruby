@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/dependency'
-require 'rubygems/exceptions'
-require 'rubygems/util'
-require 'rubygems/util/list'
+
+require_relative "dependency"
+require_relative "exceptions"
+require_relative "util/list"
 
 ##
 # Given a set of Gem::Dependency objects as +needed+ and a way to query the
@@ -11,15 +11,14 @@ require 'rubygems/util/list'
 # all the requirements.
 
 class Gem::Resolver
-
-  require 'rubygems/resolver/molinillo'
+  require_relative "resolver/molinillo"
 
   ##
   # If the DEBUG_RESOLVER environment variable is set then debugging mode is
   # enabled for the resolver.  This will display information about the state
   # of the resolver while a set of dependencies is being resolved.
 
-  DEBUG_RESOLVER = !ENV['DEBUG_RESOLVER'].nil?
+  DEBUG_RESOLVER = !ENV["DEBUG_RESOLVER"].nil?
 
   ##
   # Set to true if all development dependencies should be considered.
@@ -39,8 +38,6 @@ class Gem::Resolver
   ##
   # List of dependencies that could not be found in the configured sources.
 
-  attr_reader :missing
-
   attr_reader :stats
 
   ##
@@ -50,8 +47,7 @@ class Gem::Resolver
   attr_accessor :skip_gems
 
   ##
-  # When a missing dependency, don't stop. Just go on and record what was
-  # missing.
+  #
 
   attr_accessor :soft_missing
 
@@ -76,7 +72,7 @@ class Gem::Resolver
 
     case sets.length
     when 0 then
-      raise ArgumentError, 'one set in the composition must be non-nil'
+      raise ArgumentError, "one set in the composition must be non-nil"
     when 1 then
       sets.first
     else
@@ -107,7 +103,6 @@ class Gem::Resolver
     @development         = false
     @development_shallow = false
     @ignore_dependencies = false
-    @missing             = []
     @skip_gems           = {}
     @soft_missing        = false
     @stats               = Gem::Resolver::Stats.new
@@ -116,7 +111,7 @@ class Gem::Resolver
   def explain(stage, *data) # :nodoc:
     return unless DEBUG_RESOLVER
 
-    d = data.map { |x| x.pretty_inspect }.join(", ")
+    d = data.map(&:pretty_inspect).join(", ")
     $stderr.printf "%10s %s\n", stage.to_s.upcase, d
   end
 
@@ -126,7 +121,7 @@ class Gem::Resolver
     data = yield
     $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
     unless data.empty?
-      require 'pp'
+      require "pp"
       PP.pp data, $stderr
     end
   end
@@ -146,7 +141,7 @@ class Gem::Resolver
     activation_request =
       Gem::Resolver::ActivationRequest.new spec, dep, possible
 
-    return spec, activation_request
+    [spec, activation_request]
   end
 
   def requests(s, act, reqs=[]) # :nodoc:
@@ -155,10 +150,10 @@ class Gem::Resolver
     s.fetch_development_dependencies if @development
 
     s.dependencies.reverse_each do |d|
-      next if d.type == :development and not @development
-      next if d.type == :development and @development_shallow and
+      next if d.type == :development && !@development
+      next if d.type == :development && @development_shallow &&
               act.development?
-      next if d.type == :development and @development_shallow and
+      next if d.type == :development && @development_shallow &&
               act.parent
 
       reqs << Gem::Resolver::DependencyRequest.new(d, act)
@@ -175,7 +170,7 @@ class Gem::Resolver
   include Molinillo::UI
 
   def output
-    @output ||= debug? ? $stdout : File.open(IO::NULL, 'w')
+    @output ||= debug? ? $stdout : File.open(IO::NULL, "w")
   end
 
   def debug?
@@ -188,13 +183,12 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    locking_dg = Molinillo::DependencyGraph.new
-    Molinillo::Resolver.new(self, self).resolve(@needed.map { |d| DependencyRequest.new d, nil }, locking_dg).tsort.map(&:payload).compact
+    Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.map(&:payload).compact
   rescue Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
   ensure
-    @output.close if defined?(@output) and !debug?
+    @output.close if defined?(@output) && !debug?
   end
 
   ##
@@ -206,7 +200,7 @@ class Gem::Resolver
 
     if (skip_dep_gems = skip_gems[dependency.name]) && !skip_dep_gems.empty?
       matching = all.select do |api_spec|
-        skip_dep_gems.any? { |s| api_spec.version == s.version }
+        skip_dep_gems.any? {|s| api_spec.version == s.version }
       end
 
       all = matching unless matching.empty?
@@ -214,7 +208,7 @@ class Gem::Resolver
 
     matching_platform = select_local_platforms all
 
-    return matching_platform, all
+    [matching_platform, all]
   end
 
   ##
@@ -229,13 +223,12 @@ class Gem::Resolver
   def search_for(dependency)
     possibles, all = find_possible(dependency)
     if !@soft_missing && possibles.empty?
-      @missing << dependency
       exc = Gem::UnsatisfiableDependencyError.new dependency, all
       exc.errors = @set.errors
       raise exc
     end
 
-    groups = Hash.new { |hash, key| hash[key] = [] }
+    groups = Hash.new {|hash, key| hash[key] = [] }
 
     # create groups & sources in the same loop
     sources = possibles.map do |spec|
@@ -248,9 +241,9 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by { |spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
-        map { |spec| ActivationRequest.new spec, dependency }.
-        each { |activation_request| activation_requests << activation_request }
+        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }. # rubocop:disable Performance/RegexpMatch
+        map {|spec| ActivationRequest.new spec, dependency }.
+        each {|activation_request| activation_requests << activation_request }
     end
 
     activation_requests
@@ -263,7 +256,12 @@ class Gem::Resolver
   end
 
   def requirement_satisfied_by?(requirement, activated, spec)
-    requirement.matches_spec? spec
+    matches_spec = requirement.matches_spec? spec
+    return matches_spec if @soft_missing
+
+    matches_spec &&
+      spec.spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+      spec.spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
   end
 
   def name_for(dependency)
@@ -271,7 +269,6 @@ class Gem::Resolver
   end
 
   def allow_missing?(dependency)
-    @missing << dependency
     @soft_missing
   end
 
@@ -283,7 +280,7 @@ class Gem::Resolver
         amount_constrained(dependency),
         conflicts[name] ? 0 : 1,
         activated.vertex_named(name).payload ? 0 : search_for(dependency).count,
-        i # for stable sort
+        i, # for stable sort
       ]
     end
   end
@@ -313,33 +310,32 @@ class Gem::Resolver
     end
   end
   private :amount_constrained
-
 end
 
-require 'rubygems/resolver/activation_request'
-require 'rubygems/resolver/conflict'
-require 'rubygems/resolver/dependency_request'
-require 'rubygems/resolver/requirement_list'
-require 'rubygems/resolver/stats'
+require_relative "resolver/activation_request"
+require_relative "resolver/conflict"
+require_relative "resolver/dependency_request"
+require_relative "resolver/requirement_list"
+require_relative "resolver/stats"
 
-require 'rubygems/resolver/set'
-require 'rubygems/resolver/api_set'
-require 'rubygems/resolver/composed_set'
-require 'rubygems/resolver/best_set'
-require 'rubygems/resolver/current_set'
-require 'rubygems/resolver/git_set'
-require 'rubygems/resolver/index_set'
-require 'rubygems/resolver/installer_set'
-require 'rubygems/resolver/lock_set'
-require 'rubygems/resolver/vendor_set'
-require 'rubygems/resolver/source_set'
+require_relative "resolver/set"
+require_relative "resolver/api_set"
+require_relative "resolver/composed_set"
+require_relative "resolver/best_set"
+require_relative "resolver/current_set"
+require_relative "resolver/git_set"
+require_relative "resolver/index_set"
+require_relative "resolver/installer_set"
+require_relative "resolver/lock_set"
+require_relative "resolver/vendor_set"
+require_relative "resolver/source_set"
 
-require 'rubygems/resolver/specification'
-require 'rubygems/resolver/spec_specification'
-require 'rubygems/resolver/api_specification'
-require 'rubygems/resolver/git_specification'
-require 'rubygems/resolver/index_specification'
-require 'rubygems/resolver/installed_specification'
-require 'rubygems/resolver/local_specification'
-require 'rubygems/resolver/lock_specification'
-require 'rubygems/resolver/vendor_specification'
+require_relative "resolver/specification"
+require_relative "resolver/spec_specification"
+require_relative "resolver/api_specification"
+require_relative "resolver/git_specification"
+require_relative "resolver/index_specification"
+require_relative "resolver/installed_specification"
+require_relative "resolver/local_specification"
+require_relative "resolver/lock_specification"
+require_relative "resolver/vendor_specification"

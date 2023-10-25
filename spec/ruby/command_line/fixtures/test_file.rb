@@ -1,1 +1,1 @@
-"test file"
+puts "REQUIRED"

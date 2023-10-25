@@ -1,0 +1,11 @@
+prelude: |
+  class C
+    @a = 1
+    def self.a o
+      @a = o; @a = o; @a = o; @a = o; @a = o; @a = o;
+    end
+  end
+benchmark:
+  vm_ivar_of_class_set: |
+    a = C.a(nil)
+loop_count: 30000000

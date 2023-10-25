@@ -16,12 +16,7 @@ describe "Net::HTTPResponse#error_type" do
     res.error_type.should == Net::HTTPRetriableError
 
     res = Net::HTTPClientError.new("1.0", "4xx", "test response")
-    ruby_version_is ""..."2.6" do
-      res.error_type.should == Net::HTTPServerException
-    end
-    ruby_version_is "2.6" do
-      res.error_type.should == Net::HTTPClientException
-    end
+    res.error_type.should == Net::HTTPClientException
 
     res = Net::HTTPServerError.new("1.0", "5xx", "test response")
     res.error_type.should == Net::HTTPFatalError

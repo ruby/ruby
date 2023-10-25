@@ -1,10 +1,13 @@
 # encoding: utf-8
 # frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
 require 'ostruct'
-require 'bigdecimal'
+begin
+  require 'bigdecimal'
+rescue LoadError
+end
 
 class JSONParserTest < Test::Unit::TestCase
   include JSON
@@ -21,6 +24,9 @@ class JSONParserTest < Test::Unit::TestCase
   end if defined?(Encoding::UTF_16)
 
   def test_error_message_encoding
+    # https://github.com/flori/json/actions/runs/6478148162/job/17589572890
+    pend if RUBY_ENGINE == 'truffleruby'
+
     bug10705 = '[ruby-core:67386] [Bug #10705]'
     json = ".\"\xE2\x88\x9A\"".force_encoding(Encoding::UTF_8)
     e = assert_raise(JSON::ParserError) {
@@ -84,6 +90,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal({ "a" => 23 }, parse('  { "a"  : 23  } '))
     assert_equal({ "a" => 0.23 }, parse(' { "a"  :  0.23 }  '))
     assert_equal({ "a" => 0.23 }, parse('  {  "a"  :  0.23  }  '))
+    assert_equal({ "" => 123 }, parse('{"":123}'))
   end
 
   def test_parse_numbers
@@ -112,6 +119,10 @@ class JSONParserTest < Test::Unit::TestCase
   def test_parse_bigdecimals
     assert_equal(BigDecimal,                             JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"].class)
     assert_equal(BigDecimal("0.901234567890123456789E1"),JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"]      )
+  end if defined?(::BigDecimal)
+
+  def test_parse_string_mixed_unicode
+    assert_equal(["éé"], JSON.parse("[\"\\u00e9é\"]"))
   end
 
   if Array.method_defined?(:permutation)
@@ -218,6 +229,17 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_freeze
+    assert_predicate parse('{}', :freeze => true), :frozen?
+    assert_predicate parse('[]', :freeze => true), :frozen?
+    assert_predicate parse('"foo"', :freeze => true), :frozen?
+
+    if string_deduplication_available?
+      assert_same(-'foo', parse('"foo"', :freeze => true))
+      assert_same(-'foo', parse('{"foo": 1}', :freeze => true).keys.first)
+    end
+  end
+
   def test_parse_comments
     json = <<EOT
 {
@@ -292,6 +314,10 @@ EOT
     #
     json = '["\\\'"]'
     data = ["'"]
+    assert_equal data, parse(json)
+
+    json = '["\/"]'
+    data = [ '/' ]
     assert_equal data, parse(json)
   end
 
@@ -463,6 +489,16 @@ EOT
   end
 
   private
+
+  def string_deduplication_available?
+    r1 = rand.to_s
+    r2 = r1.dup
+    begin
+      (-r1).equal?(-r2)
+    rescue NoMethodError
+      false # No String#-@
+    end
+  end
 
   def assert_equal_float(expected, actual, delta = 1e-2)
     Array === expected and expected = expected.first

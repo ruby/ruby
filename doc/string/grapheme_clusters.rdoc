@@ -1,0 +1,6 @@
+Returns an array of the grapheme clusters in +self+
+(see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]):
+
+  s = "\u0061\u0308-pqr-\u0062\u0308-xyz-\u0063\u0308" # => "ä-pqr-b̈-xyz-c̈"
+  s.grapheme_clusters
+  # => ["ä", "-", "p", "q", "r", "-", "b̈", "-", "x", "y", "z", "-", "c̈"]

@@ -18,7 +18,7 @@ module DRb
       @name = name
       ro = DRbObject.new(nil, there)
       synchronize do
-        @invoker = ro.regist(name, DRbObject.new(self, @server.uri))
+        @invoker = ro.register(name, DRbObject.new(self, @server.uri))
       end
     end
     attr_reader :server
@@ -29,7 +29,7 @@ module DRb
 
     def stop_service
       synchronize do
-        @invoker.unregist(@name)
+        @invoker.unregister(@name)
         server = @server
         @server = nil
         server.stop_service

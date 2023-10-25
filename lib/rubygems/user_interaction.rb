@@ -1,20 +1,19 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/util'
-require 'rubygems/deprecate'
-require 'rubygems/text'
+require_relative "deprecate"
+require_relative "text"
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
-
   include Gem::Text
 
   ##
@@ -69,7 +68,6 @@ module Gem::DefaultUserInteraction
   def use_ui(new_ui, &block)
     Gem::DefaultUserInteraction.use_ui(new_ui, &block)
   end
-
 end
 
 ##
@@ -92,7 +90,6 @@ end
 #   end
 
 module Gem::UserInteraction
-
   include Gem::DefaultUserInteraction
 
   ##
@@ -149,7 +146,7 @@ module Gem::UserInteraction
   ##
   # Displays the given +statement+ on the standard output (or equivalent).
 
-  def say(statement = '')
+  def say(statement = "")
     ui.say statement
   end
 
@@ -173,7 +170,6 @@ end
 # Gem::StreamUI implements a simple stream based user interface.
 
 class Gem::StreamUI
-
   extend Gem::Deprecate
 
   ##
@@ -241,7 +237,8 @@ class Gem::StreamUI
     return nil, nil unless result
 
     result = result.strip.to_i - 1
-    return list[result], result
+    return nil, nil unless (0...list.size) === result
+    [list[result], result]
   end
 
   ##
@@ -261,12 +258,12 @@ class Gem::StreamUI
 
     default_answer = case default
                      when nil
-                       'yn'
+                       "yn"
                      when true
-                       'Yn'
+                       "Yn"
                      else
-                       'yN'
-                     end
+                       "yN"
+    end
 
     result = nil
 
@@ -275,24 +272,23 @@ class Gem::StreamUI
                when /^y/i then true
                when /^n/i then false
                when /^$/  then default
-               else            nil
-               end
+      end
     end
 
-    return result
+    result
   end
 
   ##
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if not tty?
+    return nil unless tty?
 
     @outs.print(question + "  ")
     @outs.flush
 
     result = @ins.gets
-    result.chomp! if result
+    result&.chomp!
     result
   end
 
@@ -300,21 +296,21 @@ class Gem::StreamUI
   # Ask for a password. Does not echo response to terminal.
 
   def ask_for_password(question)
-    return nil if not tty?
+    return nil unless tty?
 
     @outs.print(question, "  ")
     @outs.flush
 
     password = _gets_noecho
     @outs.puts
-    password.chomp! if password
+    password&.chomp!
     password
   end
 
   def require_io_console
     @require_io_console ||= begin
       begin
-        require 'io/console'
+        require "io/console"
       rescue LoadError
       end
       true
@@ -323,7 +319,7 @@ class Gem::StreamUI
 
   def _gets_noecho
     require_io_console
-    @ins.noecho {@ins.gets}
+    @ins.noecho { @ins.gets }
   end
 
   ##
@@ -388,7 +384,6 @@ class Gem::StreamUI
   # An absolutely silent progress reporter.
 
   class SilentProgressReporter
-
     ##
     # The count of items is never updated for the silent progress reporter.
 
@@ -413,14 +408,12 @@ class Gem::StreamUI
 
     def done
     end
-
   end
 
   ##
   # A basic dotted progress reporter.
 
   class SimpleProgressReporter
-
     include Gem::DefaultUserInteraction
 
     ##
@@ -433,8 +426,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -458,14 +450,12 @@ class Gem::StreamUI
     def done
       @out.puts "\n#{@terminal_message}"
     end
-
   end
 
   ##
   # A progress reporter that prints out messages about the current progress.
 
   class VerboseProgressReporter
-
     include Gem::DefaultUserInteraction
 
     ##
@@ -478,8 +468,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = 'complete')
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -502,7 +491,6 @@ class Gem::StreamUI
     def done
       @out.puts @terminal_message
     end
-
   end
 
   ##
@@ -520,7 +508,6 @@ class Gem::StreamUI
   # An absolutely silent download reporter.
 
   class SilentDownloadReporter
-
     ##
     # The silent download reporter ignores all arguments
 
@@ -546,15 +533,13 @@ class Gem::StreamUI
 
     def done
     end
-
   end
 
   ##
   # A progress reporter that behaves nicely with threaded downloading.
 
   class ThreadedDownloadReporter
-
-    MUTEX = Mutex.new
+    MUTEX = Thread::Mutex.new
 
     ##
     # The current file name being displayed
@@ -602,9 +587,7 @@ class Gem::StreamUI
         @out.puts message
       end
     end
-
   end
-
 end
 
 ##
@@ -612,7 +595,6 @@ end
 # STDOUT, and STDERR.
 
 class Gem::ConsoleUI < Gem::StreamUI
-
   ##
   # The Console UI has no arguments as it defaults to reading input from
   # stdin, output to stdout and warnings or errors to stderr.
@@ -620,30 +602,21 @@ class Gem::ConsoleUI < Gem::StreamUI
   def initialize
     super STDIN, STDOUT, STDERR, true
   end
-
 end
 
 ##
 # SilentUI is a UI choice that is absolutely silent.
 
 class Gem::SilentUI < Gem::StreamUI
-
   ##
   # The SilentUI has no arguments as it does not use any stream.
 
   def initialize
-    reader, writer = nil, nil
-
-    reader = File.open(IO::NULL, 'r')
-    writer = File.open(IO::NULL, 'w')
-
-    super reader, writer, writer, false
+    io = NullIO.new
+    super io, io, io, false
   end
 
   def close
-    super
-    @ins.close
-    @outs.close
   end
 
   def download_reporter(*args) # :nodoc:
@@ -654,4 +627,24 @@ class Gem::SilentUI < Gem::StreamUI
     SilentProgressReporter.new(@outs, *args)
   end
 
+  ##
+  # An absolutely silent IO.
+
+  class NullIO
+    def puts(*args)
+    end
+
+    def print(*args)
+    end
+
+    def flush
+    end
+
+    def gets(*args)
+    end
+
+    def tty?
+      false
+    end
+  end
 end

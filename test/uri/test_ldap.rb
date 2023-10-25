@@ -2,10 +2,7 @@
 require 'test/unit'
 require 'uri/ldap'
 
-module URI
-
-
-class TestLDAP < Test::Unit::TestCase
+class URI::TestLDAP < Test::Unit::TestCase
   def setup
   end
 
@@ -39,7 +36,7 @@ class TestLDAP < Test::Unit::TestCase
     # from RFC2255, section 6.
     {
       'ldap:///o=University%20of%20Michigan,c=US' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+      ['ldap', '', URI::LDAP::DEFAULT_PORT,
 	'o=University%20of%20Michigan,c=US',
 	nil, nil, nil, nil],
 
@@ -74,12 +71,12 @@ class TestLDAP < Test::Unit::TestCase
 	nil, '(int=%5c00%5c00%5c00%5c04)', nil, nil],
 
       'ldap:///??sub??bindname=cn=Manager%2co=Foo' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+      ['ldap', '', URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, 'bindname=cn=Manager%2co=Foo'],
 
       'ldap:///??sub??!bindname=cn=Manager%2co=Foo' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+      ['ldap', '', URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, '!bindname=cn=Manager%2co=Foo'],
     }.each do |url2, ary|
@@ -95,7 +92,8 @@ class TestLDAP < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
-end
 
-
+  def test_parse_invalid_uri
+    assert_raise(URI::InvalidURIError) {URI.parse("ldap:https://example.com")}
+  end
 end

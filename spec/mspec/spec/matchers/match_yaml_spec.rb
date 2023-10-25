@@ -2,38 +2,38 @@ require 'spec_helper'
 require 'mspec/expectations/expectations'
 require 'mspec/matchers'
 
-describe MatchYAMLMatcher do
+RSpec.describe MatchYAMLMatcher do
   before :each do
     @matcher = MatchYAMLMatcher.new("--- \nfoo: bar\n")
   end
 
   it "compares YAML documents and matches if they're equivalent" do
-      @matcher.matches?("--- \nfoo: bar\n").should == true
+      expect(@matcher.matches?("--- \nfoo: bar\n")).to eq(true)
   end
 
   it "compares YAML documents and does not match if they're not equivalent" do
-      @matcher.matches?("--- \nbar: foo\n").should == false
-      @matcher.matches?("--- \nfoo: \nbar\n").should == false
+      expect(@matcher.matches?("--- \nbar: foo\n")).to eq(false)
+      expect(@matcher.matches?("--- \nfoo: \nbar\n")).to eq(false)
   end
 
   it "also receives objects that respond_to to_yaml" do
     matcher = MatchYAMLMatcher.new("some string")
-    matcher.matches?("some string").should == true
+    expect(matcher.matches?("some string")).to eq(true)
 
     matcher = MatchYAMLMatcher.new(['a', 'b'])
-    matcher.matches?("--- \n- a\n- b\n").should == true
+    expect(matcher.matches?("--- \n- a\n- b\n")).to eq(true)
 
     matcher = MatchYAMLMatcher.new("foo" => "bar")
-    matcher.matches?("--- \nfoo: bar\n").should == true
+    expect(matcher.matches?("--- \nfoo: bar\n")).to eq(true)
   end
 
   it "matches documents with trailing whitespace" do
-    @matcher.matches?("--- \nfoo: bar   \n").should == true
-    @matcher.matches?("---       \nfoo: bar   \n").should == true
+    expect(@matcher.matches?("--- \nfoo: bar   \n")).to eq(true)
+    expect(@matcher.matches?("---       \nfoo: bar   \n")).to eq(true)
   end
 
   it "fails with a descriptive error message" do
-    @matcher.matches?("foo").should == false
-    @matcher.failure_message.should == ["Expected \"foo\"", " to match \"--- \\nfoo: bar\\n\""]
+    expect(@matcher.matches?("foo")).to eq(false)
+    expect(@matcher.failure_message).to eq(["Expected \"foo\"", " to match \"--- \\nfoo: bar\\n\""])
   end
 end

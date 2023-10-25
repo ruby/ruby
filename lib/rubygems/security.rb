@@ -1,19 +1,13 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/exceptions'
-require 'fileutils'
-
-begin
-  require 'openssl'
-rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
-end
+require_relative "exceptions"
+require_relative "openssl"
 
 ##
 # = Signing gems
@@ -159,6 +153,7 @@ end
 #                                      certificate for EMAIL_ADDR
 #     -C, --certificate CERT           Signing certificate for --sign
 #     -K, --private-key KEY            Key for --sign or --build
+#     -A, --key-algorithm ALGORITHM    Select key algorithm for --build from RSA, DSA, or EC. Defaults to RSA.
 #     -s, --sign CERT                  Signs CERT with the key from -K
 #                                      and the certificate from -C
 #     -d, --days NUMBER_OF_DAYS        Days before the certificate expires
@@ -267,7 +262,7 @@ end
 # 2. Grab the public key from the gemspec
 #
 #      gem spec some_signed_gem-1.0.gem cert_chain | \
-#        ruby -ryaml -e 'puts YAML.load($stdin)' > public_key.crt
+#        ruby -rpsych -e 'puts Psych.load($stdin)' > public_key.crt
 #
 # 3. Generate a SHA1 hash of the data.tar.gz
 #
@@ -324,7 +319,6 @@ end
 # * Honor extension restrictions
 # * Might be better to store the certificate chain as a PKCS#7 or PKCS#12
 #   file, instead of an array embedded in the metadata.
-# * Flexible signature and key algorithms, not hard-coded to RSA and SHA1.
 #
 # == Original author
 #
@@ -332,58 +326,41 @@ end
 # http://pablotron.org/
 
 module Gem::Security
-
   ##
   # Gem::Security default exception type
 
   class Exception < Gem::Exception; end
 
   ##
-  # Digest algorithm used to sign gems
-
-  DIGEST_ALGORITHM =
-    if defined?(OpenSSL::Digest::SHA256)
-      OpenSSL::Digest::SHA256
-    elsif defined?(OpenSSL::Digest::SHA1)
-      OpenSSL::Digest::SHA1
-    else
-      require 'digest'
-      Digest::SHA512
-    end
-
-  ##
   # Used internally to select the signing digest from all computed digests
 
-  DIGEST_NAME = # :nodoc:
-    if DIGEST_ALGORITHM.method_defined? :name
-      DIGEST_ALGORITHM.new.name
-    else
-      DIGEST_ALGORITHM.name[/::([^:]+)\z/, 1]
-    end
+  DIGEST_NAME = "SHA256" # :nodoc:
 
   ##
-  # Algorithm for creating the key pair used to sign gems
+  # Length of keys created by RSA and DSA keys
 
-  KEY_ALGORITHM =
-    if defined?(OpenSSL::PKey::RSA)
-      OpenSSL::PKey::RSA
-    end
+  RSA_DSA_KEY_LENGTH = 3072
 
   ##
-  # Length of keys created by KEY_ALGORITHM
+  # Default algorithm to use when building a key pair
 
-  KEY_LENGTH = 3072
+  DEFAULT_KEY_ALGORITHM = "RSA"
+
+  ##
+  # Named curve used for Elliptic Curve
+
+  EC_NAME = "secp384r1"
 
   ##
   # Cipher used to encrypt the key pair used to sign gems.
   # Must be in the list returned by OpenSSL::Cipher.ciphers
 
-  KEY_CIPHER = OpenSSL::Cipher.new('AES-256-CBC') if defined?(OpenSSL::Cipher)
+  KEY_CIPHER = OpenSSL::Cipher.new("AES-256-CBC") if defined?(OpenSSL::Cipher)
 
   ##
   # One day in seconds
 
-  ONE_DAY = 86400
+  ONE_DAY = 86_400
 
   ##
   # One year in seconds
@@ -399,10 +376,10 @@ module Gem::Security
   # * The certificate contains a subject key identifier
 
   EXTENSIONS = {
-    'basicConstraints'     => 'CA:FALSE',
-    'keyUsage'             =>
-      'keyEncipherment,dataEncipherment,digitalSignature',
-    'subjectKeyIdentifier' => 'hash',
+    "basicConstraints" => "CA:FALSE",
+    "keyUsage" =>
+      "keyEncipherment,dataEncipherment,digitalSignature",
+    "subjectKeyIdentifier" => "hash",
   }.freeze
 
   def self.alt_name_or_x509_entry(certificate, x509_entry)
@@ -421,11 +398,10 @@ module Gem::Security
   #
   # The +extensions+ restrict the key to the indicated uses.
 
-  def self.create_cert(subject, key, age = ONE_YEAR, extensions = EXTENSIONS,
-                       serial = 1)
+  def self.create_cert(subject, key, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     cert = OpenSSL::X509::Certificate.new
 
-    cert.public_key = key.public_key
+    cert.public_key = get_public_key(key)
     cert.version    = 2
     cert.serial     = serial
 
@@ -441,6 +417,19 @@ module Gem::Security
     end
 
     cert
+  end
+
+  ##
+  # Gets the right public key from a PKey instance
+
+  def self.get_public_key(key)
+    # Ruby 3.0 (Ruby/OpenSSL 2.2) or later
+    return OpenSSL::PKey.read(key.public_to_der) if key.respond_to?(:public_to_der)
+    return key.public_key unless key.is_a?(OpenSSL::PKey::EC)
+
+    ec_key = OpenSSL::PKey::EC.new(key.group.curve_name)
+    ec_key.public_key = key.public_key
+    ec_key
   end
 
   ##
@@ -460,34 +449,54 @@ module Gem::Security
   # Creates a self-signed certificate with an issuer and subject of +subject+
   # and the given +extensions+ for the +key+.
 
-  def self.create_cert_self_signed(subject, key, age = ONE_YEAR,
-                                   extensions = EXTENSIONS, serial = 1)
+  def self.create_cert_self_signed(subject, key, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     certificate = create_cert subject, key, age, extensions
 
     sign certificate, key, certificate, age, extensions, serial
   end
 
   ##
-  # Creates a new key pair of the specified +length+ and +algorithm+.  The
-  # default is a 3072 bit RSA key.
+  # Creates a new digest instance using the specified +algorithm+. The default
+  # is SHA256.
 
-  def self.create_key(length = KEY_LENGTH, algorithm = KEY_ALGORITHM)
-    algorithm.new length
+  def self.create_digest(algorithm = DIGEST_NAME)
+    OpenSSL::Digest.new(algorithm)
+  end
+
+  ##
+  # Creates a new key pair of the specified +algorithm+. RSA, DSA, and EC
+  # are supported.
+
+  def self.create_key(algorithm)
+    if defined?(OpenSSL::PKey)
+      case algorithm.downcase
+      when "dsa"
+        OpenSSL::PKey::DSA.new(RSA_DSA_KEY_LENGTH)
+      when "rsa"
+        OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
+      when "ec"
+        OpenSSL::PKey::EC.generate(EC_NAME)
+      else
+        raise Gem::Security::Exception,
+        "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."
+      end
+    end
   end
 
   ##
   # Turns +email_address+ into an OpenSSL::X509::Name
 
   def self.email_to_name(email_address)
-    email_address = email_address.gsub(/[^\w@.-]+/i, '_')
+    email_address = email_address.gsub(/[^\w@.-]+/i, "_")
 
-    cn, dcs = email_address.split '@'
+    cn, dcs = email_address.split "@"
 
-    dcs = dcs.split '.'
+    dcs = dcs.split "."
 
-    name = "CN=#{cn}/#{dcs.map { |dc| "DC=#{dc}" }.join '/'}"
-
-    OpenSSL::X509::Name.parse name
+    OpenSSL::X509::Name.new([
+      ["CN", cn],
+      *dcs.map {|dc| ["DC", dc] },
+    ])
   end
 
   ##
@@ -496,12 +505,11 @@ module Gem::Security
   #--
   # TODO increment serial
 
-  def self.re_sign(expired_certificate, private_key, age = ONE_YEAR,
-                   extensions = EXTENSIONS)
+  def self.re_sign(expired_certificate, private_key, age = ONE_YEAR, extensions = EXTENSIONS)
     raise Gem::Security::Exception,
           "incorrect signing key for re-signing " +
-          "#{expired_certificate.subject}" unless
-      expired_certificate.public_key.to_pem == private_key.public_key.to_pem
+          expired_certificate.subject.to_s unless
+      expired_certificate.check_private_key(private_key)
 
     unless expired_certificate.subject.to_s ==
            expired_certificate.issuer.to_s
@@ -509,7 +517,7 @@ module Gem::Security
       issuer  = alt_name_or_x509_entry expired_certificate, :issuer
 
       raise Gem::Security::Exception,
-            "#{subject} is not self-signed, contact #{issuer} " +
+            "#{subject} is not self-signed, contact #{issuer} " \
             "to obtain a valid certificate"
     end
 
@@ -528,34 +536,33 @@ module Gem::Security
 
   ##
   # Sign the public key from +certificate+ with the +signing_key+ and
-  # +signing_cert+, using the Gem::Security::DIGEST_ALGORITHM.  Uses the
+  # +signing_cert+, using the Gem::Security::DIGEST_NAME.  Uses the
   # default certificate validity range and extensions.
   #
   # Returns the newly signed certificate.
 
-  def self.sign(certificate, signing_key, signing_cert,
-                age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
+  def self.sign(certificate, signing_key, signing_cert, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     signee_subject = certificate.subject
     signee_key     = certificate.public_key
 
     alt_name = certificate.extensions.find do |extension|
-      extension.oid == 'subjectAltName'
+      extension.oid == "subjectAltName"
     end
 
-    extensions = extensions.merge 'subjectAltName' => alt_name.value if
+    extensions = extensions.merge "subjectAltName" => alt_name.value if
       alt_name
 
     issuer_alt_name = signing_cert.extensions.find do |extension|
-      extension.oid == 'subjectAltName'
+      extension.oid == "subjectAltName"
     end
 
-    extensions = extensions.merge 'issuerAltName' => issuer_alt_name.value if
+    extensions = extensions.merge "issuerAltName" => issuer_alt_name.value if
       issuer_alt_name
 
     signed = create_cert signee_subject, signee_key, age, extensions, serial
     signed.issuer = signing_cert.subject
 
-    signed.sign signing_key, Gem::Security::DIGEST_ALGORITHM.new
+    signed.sign signing_key, Gem::Security::DIGEST_NAME
   end
 
   ##
@@ -565,7 +572,7 @@ module Gem::Security
   def self.trust_dir
     return @trust_dir if @trust_dir
 
-    dir = File.join Gem.user_home, '.gem', 'trust'
+    dir = File.join Gem.user_home, ".gem", "trust"
 
     @trust_dir ||= Gem::Security::TrustDir.new dir
   end
@@ -582,11 +589,11 @@ module Gem::Security
   # +permissions+. If passed +cipher+ and +passphrase+ those arguments will be
   # passed to +to_pem+.
 
-  def self.write(pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER)
+  def self.write(pemmable, path, permissions = 0o600, passphrase = nil, cipher = KEY_CIPHER)
     path = File.expand_path path
 
-    File.open path, 'wb', permissions do |io|
-      if passphrase and cipher
+    File.open path, "wb", permissions do |io|
+      if passphrase && cipher
         io.write pemmable.to_pem cipher, passphrase
       else
         io.write pemmable.to_pem
@@ -597,13 +604,12 @@ module Gem::Security
   end
 
   reset
-
 end
 
-if defined?(OpenSSL::SSL)
-  require 'rubygems/security/policy'
-  require 'rubygems/security/policies'
-  require 'rubygems/security/trust_dir'
+if Gem::HAVE_OPENSSL
+  require_relative "security/policy"
+  require_relative "security/policies"
+  require_relative "security/trust_dir"
 end
 
-require 'rubygems/security/signer'
+require_relative "security/signer"

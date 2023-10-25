@@ -11,6 +11,8 @@ when ENV['RUNRUBY_USE_GDB'] == 'true'
   debugger = :gdb
 when ENV['RUNRUBY_USE_LLDB'] == 'true'
   debugger = :lldb
+when ENV['RUNRUBY_YJIT_STATS']
+  use_yjit_stat = true
 end
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
@@ -85,7 +87,8 @@ config = File.read(conffile)
 config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)\n.*\n/, '')
 config = Module.new {module_eval(config, conffile)}::RbConfig::CONFIG
 
-ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
+install_name = config["RUBY_INSTALL_NAME"]+config['EXEEXT']
+ruby = File.join(archdir, install_name)
 unless File.exist?(ruby)
   abort "#{ruby} is not found.\nTry `make' first, then `make test', please.\n"
 end
@@ -106,7 +109,7 @@ env = {
   'RUBY_FIBER_MACHINE_STACK_SIZE' => '1',
 }
 
-runner = File.join(abs_archdir, "exe/ruby#{config['EXEEXT']}")
+runner = File.join(abs_archdir, "exe/#{install_name}")
 runner = nil unless File.exist?(runner)
 abs_ruby = runner || File.expand_path(ruby)
 env["RUBY"] = abs_ruby
@@ -119,21 +122,21 @@ if e = ENV["RUBYLIB"]
 end
 env["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
 
+gem_path = [abs_archdir, srcdir].map {|d| File.realdirpath(".bundle", d)}
+if e = ENV["GEM_PATH"]
+ gem_path |= e.split(File::PATH_SEPARATOR)
+end
+env["GEM_PATH"] = gem_path.join(File::PATH_SEPARATOR)
+
 libruby_so = File.join(abs_archdir, config['LIBRUBY_SO'])
 if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  unless runner
-    if e = config['PRELOADENV']
-      e = nil if e.empty?
-      e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
-    end
-    if e
-      env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
-    end
-  end
 end
+# Work around a bug in FreeBSD 13.2 which can cause fork(2) to hang
+# See: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=271490
+env['LD_BIND_NOW'] = 'yes' if /freebsd/ =~ RUBY_PLATFORM
 
 ENV.update env
 
@@ -163,6 +166,9 @@ if debugger
 end
 
 cmd = [runner || ruby]
+if use_yjit_stat
+  cmd << '--yjit-stats'
+end
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
 

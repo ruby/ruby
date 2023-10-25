@@ -2,13 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'shared/arithmetic_coerce'
 
 describe "Integer#*" do
-  ruby_version_is "2.4"..."2.5" do
-    it_behaves_like :integer_arithmetic_coerce_rescue, :*
-  end
-
-  ruby_version_is "2.5" do
-    it_behaves_like :integer_arithmetic_coerce_not_rescue, :*
-  end
+  it_behaves_like :integer_arithmetic_coerce_not_rescue, :*
 
   context "fixnum" do
     it "returns self multiplied by the given Integer" do
@@ -16,7 +10,7 @@ describe "Integer#*" do
       (1342177 * 800).should == 1073741600
       (65536 * 65536).should == 4294967296
 
-      (256 * bignum_value).should == 2361183241434822606848
+      (256 * bignum_value).should == 4722366482869645213696
       (6712 * 0.25).should == 1678.0
     end
 
@@ -38,8 +32,8 @@ describe "Integer#*" do
     it "returns self multiplied by the given Integer" do
       (@bignum * (1/bignum_value(0xffff).to_f)).should be_close(1.0, TOLERANCE)
       (@bignum * (1/bignum_value(0xffff).to_f)).should be_close(1.0, TOLERANCE)
-      (@bignum * 10).should == 92233720368547765800
-      (@bignum * (@bignum - 40)).should == 85070591730234629737795195287525433200
+      (@bignum * 10).should == 184467440737095523880
+      (@bignum * (@bignum - 40)).should == 340282366920938491207277694290934407024
     end
 
     it "raises a TypeError when given a non-Integer" do

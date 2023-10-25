@@ -80,25 +80,25 @@ describe :bigdecimal_modulo, shared: true do
   end
 
   it "returns NaN if NaN is involved" do
-    @nan.send(@method, @nan).nan?.should == true
-    @nan.send(@method, @one).nan?.should == true
-    @one.send(@method, @nan).nan?.should == true
-    @infinity.send(@method, @nan).nan?.should == true
-    @nan.send(@method, @infinity).nan?.should == true
+    @nan.send(@method, @nan).should.nan?
+    @nan.send(@method, @one).should.nan?
+    @one.send(@method, @nan).should.nan?
+    @infinity.send(@method, @nan).should.nan?
+    @nan.send(@method, @infinity).should.nan?
   end
 
   it "returns NaN if the dividend is Infinity" do
-    @infinity.send(@method, @infinity).nan?.should == true
-    @infinity.send(@method, @one).nan?.should == true
-    @infinity.send(@method, @mixed).nan?.should == true
-    @infinity.send(@method, @one_minus).nan?.should == true
-    @infinity.send(@method, @frac_1).nan?.should == true
+    @infinity.send(@method, @infinity).should.nan?
+    @infinity.send(@method, @one).should.nan?
+    @infinity.send(@method, @mixed).should.nan?
+    @infinity.send(@method, @one_minus).should.nan?
+    @infinity.send(@method, @frac_1).should.nan?
 
-    @infinity_minus.send(@method, @infinity_minus).nan?.should == true
-    @infinity_minus.send(@method, @one).nan?.should == true
+    @infinity_minus.send(@method, @infinity_minus).should.nan?
+    @infinity_minus.send(@method, @one).should.nan?
 
-    @infinity.send(@method, @infinity_minus).nan?.should == true
-    @infinity_minus.send(@method, @infinity).nan?.should == true
+    @infinity.send(@method, @infinity_minus).should.nan?
+    @infinity_minus.send(@method, @infinity).should.nan?
   end
 
   it "returns the dividend if the divisor is Infinity" do

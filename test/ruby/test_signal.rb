@@ -291,7 +291,8 @@ class TestSignal < Test::Unit::TestCase
 
     if trap = Signal.list['TRAP']
       bug9820 = '[ruby-dev:48592] [Bug #9820]'
-      status = assert_in_out_err(['-e', 'Process.kill(:TRAP, $$)'])
+      no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
+      status = assert_in_out_err(['-e', "#{no_core}Process.kill(:TRAP, $$)"])
       assert_predicate(status, :signaled?, bug9820)
       assert_equal(trap, status.termsig, bug9820)
     end
@@ -320,49 +321,6 @@ class TestSignal < Test::Unit::TestCase
         # ok
       end
     end;
-  end
-
-  def test_sigchld_ignore
-    skip 'no SIGCHLD' unless Signal.list['CHLD']
-    old = trap(:CHLD, 'IGNORE')
-    cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
-    assert(system(*cmd, 'exit!(0)'), 'no ECHILD')
-    IO.pipe do |r, w|
-      pid = spawn(*cmd, "STDIN.read", in: r)
-      nb = Process.wait(pid, Process::WNOHANG)
-      th = Thread.new(Thread.current) do |parent|
-        Thread.pass until parent.stop? # wait for parent to Process.wait
-        w.close
-      end
-      assert_raise(Errno::ECHILD) { Process.wait(pid) }
-      th.join
-      assert_nil nb
-    end
-
-    IO.pipe do |r, w|
-      pids = 3.times.map { spawn(*cmd, 'exit!', out: w) }
-      w.close
-      zombies = pids.dup
-      assert_nil r.read(1), 'children dead'
-
-      Timeout.timeout(10) do
-        zombies.delete_if do |pid|
-          begin
-            Process.kill(0, pid)
-            false
-          rescue Errno::ESRCH
-            true
-          end
-        end while zombies[0]
-      end
-      assert_predicate zombies, :empty?, 'zombies leftover'
-
-      pids.each do |pid|
-        assert_raise(Errno::ECHILD) { Process.waitpid(pid) }
-      end
-    end
-  ensure
-    trap(:CHLD, old) if Signal.list['CHLD']
   end
 
   def test_sigwait_fd_unused

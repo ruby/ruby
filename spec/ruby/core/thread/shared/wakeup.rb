@@ -36,7 +36,7 @@ describe :thread_wakeup, shared: true do
 
   it "does not result in a deadlock" do
     t = Thread.new do
-      100.times { Thread.stop }
+      10.times { Thread.stop }
     end
 
     while t.status
@@ -47,6 +47,7 @@ describe :thread_wakeup, shared: true do
         t.status.should == false
       end
       Thread.pass
+      sleep 0.001
     end
 
     t.status.should == false

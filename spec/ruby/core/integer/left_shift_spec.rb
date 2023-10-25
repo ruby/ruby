@@ -56,23 +56,26 @@ describe "Integer#<< (with n << m)" do
       (3 << -bignum_value).should == 0
     end
 
-    it "returns an Bignum == fixnum_max * 2 when fixnum_max << 1 and n > 0" do
+    it "returns a Bignum == fixnum_max * 2 when fixnum_max << 1 and n > 0" do
       result = fixnum_max << 1
-      result.should be_an_instance_of(Bignum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_max * 2
     end
 
-    it "returns an Bignum == fixnum_min * 2 when fixnum_min << 1 and n < 0" do
+    it "returns a Bignum == fixnum_min * 2 when fixnum_min << 1 and n < 0" do
       result = fixnum_min << 1
-      result.should be_an_instance_of(Bignum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_min * 2
     end
 
     it "calls #to_int to convert the argument to an Integer" do
       obj = mock("4")
       obj.should_receive(:to_int).and_return(4)
-
       (3 << obj).should == 48
+
+      obj = mock("to_int_neg_bignum")
+      obj.should_receive(:to_int).and_return(-bignum_value)
+      (3 << obj).should == 0
     end
 
     it "raises a TypeError when #to_int does not return an Integer" do
@@ -93,7 +96,7 @@ describe "Integer#<< (with n << m)" do
 
   context "bignum" do
     before :each do
-      @bignum = bignum_value * 16
+      @bignum = bignum_value * 8 # 2 ** 67
     end
 
     it "returns n shifted left m bits when n > 0, m > 0" do
@@ -124,19 +127,15 @@ describe "Integer#<< (with n << m)" do
       (@bignum << -68).should == 0
     end
 
-    it "returns 0 when m < 0 and m is a Bignum" do
-      (@bignum << -bignum_value).should == 0
-    end
-
     it "returns a Fixnum == fixnum_max when (fixnum_max * 2) << -1 and n > 0" do
       result = (fixnum_max * 2) << -1
-      result.should be_an_instance_of(Fixnum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_max
     end
 
     it "returns a Fixnum == fixnum_min when (fixnum_min * 2) << -1 and n < 0" do
       result = (fixnum_min * 2) << -1
-      result.should be_an_instance_of(Fixnum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_min
     end
 
@@ -160,6 +159,55 @@ describe "Integer#<< (with n << m)" do
 
     it "raises a TypeError when passed a String" do
       -> { @bignum << "4" }.should raise_error(TypeError)
+    end
+  end
+
+  context "when m is a bignum or larger than int" do
+    it "returns -1 when m < 0 and n < 0" do
+      (-1 << -bignum_value).should == -1
+      (-1 << -(2**40)).should == -1
+
+      (-bignum_value << -bignum_value).should == -1
+      (-bignum_value << -(2**40)).should == -1
+    end
+
+    it "returns 0 when m < 0 and n >= 0" do
+      (0 << -bignum_value).should == 0
+      (1 << -bignum_value).should == 0
+      (bignum_value << -bignum_value).should == 0
+
+      (0 << -(2**40)).should == 0
+      (1 << -(2**40)).should == 0
+      (bignum_value << -(2**40)).should == 0
+    end
+
+    ruby_bug "#18517", ""..."3.2" do
+      it "returns 0 when m > 0 long and n == 0" do
+        (0 << (2**40)).should == 0
+      end
+    end
+
+    it "returns 0 when m > 0 bignum and n == 0" do
+      (0 << bignum_value).should == 0
+    end
+
+    it "raises RangeError when m > 0 and n != 0" do
+      # https://bugs.ruby-lang.org/issues/18518#note-9
+      limit = RUBY_ENGINE == 'ruby' ? 2**67 : 2**32
+
+      coerce_long = mock("long")
+      coerce_long.stub!(:to_int).and_return(limit)
+      coerce_bignum = mock("bignum")
+      coerce_bignum.stub!(:to_int).and_return(bignum_value)
+      exps = [limit, coerce_long]
+      exps << bignum_value << coerce_bignum if bignum_value >= limit
+
+      exps.each { |exp|
+        -> { (1 << exp) }.should raise_error(RangeError, 'shift width too big')
+        -> { (-1 << exp) }.should raise_error(RangeError, 'shift width too big')
+        -> { (bignum_value << exp) }.should raise_error(RangeError, 'shift width too big')
+        -> { (-bignum_value << exp) }.should raise_error(RangeError, 'shift width too big')
+      }
     end
   end
 end

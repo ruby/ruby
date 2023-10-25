@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 require_relative 'helper'
+begin
+  require 'webrick'
+rescue LoadError
+end
 
 class TestRDocServlet < RDoc::TestCase
 
@@ -45,7 +49,8 @@ class TestRDocServlet < RDoc::TestCase
     @orig_base = RDoc::RI::Paths::BASE
     RDoc::RI::Paths::BASE.replace @base
     @orig_ri_path_homedir = RDoc::RI::Paths::HOMEDIR
-    RDoc::RI::Paths::HOMEDIR.replace @home_dir
+    RDoc::RI::Paths.send :remove_const, :HOMEDIR
+    RDoc::RI::Paths.const_set :HOMEDIR, @home_dir
 
     RDoc::RI::Paths.instance_variable_set \
       :@gemdirs, %w[/nonexistent/gems/example-1.0/ri]
@@ -60,7 +65,8 @@ class TestRDocServlet < RDoc::TestCase
     FileUtils.rm_rf @tempdir
 
     RDoc::RI::Paths::BASE.replace @orig_base
-    RDoc::RI::Paths::HOMEDIR.replace @orig_ri_path_homedir
+    RDoc::RI::Paths.send :remove_const, :HOMEDIR
+    RDoc::RI::Paths.const_set :HOMEDIR, @orig_ri_path_homedir
     RDoc::RI::Paths.instance_variable_set :@gemdirs, nil
   end
 
@@ -546,4 +552,4 @@ class TestRDocServlet < RDoc::TestCase
     store.save
   end
 
-end
+end if defined?(WEBrick)

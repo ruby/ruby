@@ -33,42 +33,36 @@ module Psych
 
     def test_backtrace
       err     = make_ex
-      new_err = Psych.load(Psych.dump(err))
+      new_err = Psych.unsafe_load(Psych.dump(err))
       assert_equal err.backtrace, new_err.backtrace
     end
 
     def test_naming_exception
       err     = String.xxx rescue $!
-      new_err = Psych.load(Psych.dump(err))
+      new_err = Psych.unsafe_load(Psych.dump(err))
       assert_equal err.message, new_err.message
     end
 
     def test_load_takes_file
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.load '--- `'
       end
       assert_nil ex.file
 
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.load '--- `', filename: 'meow'
       end
       assert_equal 'meow', ex.file
-
-      # deprecated interface
-      ex = assert_raises(Psych::SyntaxError) do
-        Psych.load '--- `', 'deprecated'
-      end
-      assert_equal 'deprecated', ex.file
     end
 
     def test_psych_parse_stream_takes_file
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.parse_stream '--- `'
       end
       assert_nil ex.file
       assert_match '(<unknown>)', ex.message
 
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.parse_stream '--- `', filename: 'omg!'
       end
       assert_equal 'omg!', ex.file
@@ -76,22 +70,16 @@ module Psych
     end
 
     def test_load_stream_takes_file
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.load_stream '--- `'
       end
       assert_nil ex.file
       assert_match '(<unknown>)', ex.message
 
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.load_stream '--- `', filename: 'omg!'
       end
       assert_equal 'omg!', ex.file
-
-      # deprecated interface
-      ex = assert_raises(Psych::SyntaxError) do
-        Psych.load_stream '--- `', 'deprecated'
-      end
-      assert_equal 'deprecated', ex.file
     end
 
     def test_parse_file_exception
@@ -99,7 +87,7 @@ module Psych
         t.binmode
         t.write '--- `'
         t.close
-        ex = assert_raises(Psych::SyntaxError) do
+        ex = assert_raise(Psych::SyntaxError) do
           Psych.parse_file t.path
         end
         assert_equal t.path, ex.file
@@ -111,34 +99,40 @@ module Psych
         t.binmode
         t.write '--- `'
         t.close
-        ex = assert_raises(Psych::SyntaxError) do
+        ex = assert_raise(Psych::SyntaxError) do
           Psych.load_file t.path
         end
         assert_equal t.path, ex.file
       }
     end
 
+    def test_safe_load_file_exception
+      Tempfile.create(['loadfile', 'yml']) {|t|
+        t.binmode
+        t.write '--- `'
+        t.close
+        ex = assert_raise(Psych::SyntaxError) do
+          Psych.safe_load_file t.path
+        end
+        assert_equal t.path, ex.file
+      }
+    end
+
     def test_psych_parse_takes_file
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.parse '--- `'
       end
       assert_match '(<unknown>)', ex.message
       assert_nil ex.file
 
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         Psych.parse '--- `', filename: 'omg!'
       end
       assert_match 'omg!', ex.message
-
-      # deprecated interface
-      ex = assert_raises(Psych::SyntaxError) do
-        Psych.parse '--- `', 'deprecated'
-      end
-      assert_match 'deprecated', ex.message
     end
 
     def test_attributes
-      e = assert_raises(Psych::SyntaxError) {
+      e = assert_raise(Psych::SyntaxError) {
         Psych.load '--- `foo'
       }
 
@@ -153,8 +147,9 @@ module Psych
     end
 
     def test_convert
-      w = Psych.load(Psych.dump(@wups))
-      assert_equal @wups, w
+      w = Psych.unsafe_load(Psych.dump(@wups))
+      assert_equal @wups.message, w.message
+      assert_equal @wups.backtrace, w.backtrace
       assert_equal 1, w.foo
       assert_equal 2, w.bar
     end

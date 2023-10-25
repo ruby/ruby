@@ -20,28 +20,22 @@ describe :string_times, shared: true do
   it "raises an ArgumentError when given integer is negative" do
     -> { @object.call("cool", -3)    }.should raise_error(ArgumentError)
     -> { @object.call("cool", -3.14) }.should raise_error(ArgumentError)
+    -> { @object.call("cool", min_long) }.should raise_error(ArgumentError)
   end
 
   it "raises a RangeError when given integer is a Bignum" do
     -> { @object.call("cool", 999999999999999999999) }.should raise_error(RangeError)
+    -> { @object.call("", 999999999999999999999) }.should raise_error(RangeError)
   end
 
-  it "returns subclass instances" do
-    @object.call(MyString.new("cool"), 0).should be_an_instance_of(MyString)
-    @object.call(MyString.new("cool"), 1).should be_an_instance_of(MyString)
-    @object.call(MyString.new("cool"), 2).should be_an_instance_of(MyString)
+  it "works with huge long values when string is empty" do
+    @object.call("", max_long).should == ""
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints the result when self is tainted" do
-      ["", "OK", MyString.new(""), MyString.new("OK")].each do |str|
-        str.taint
-
-        [0, 1, 2].each do |arg|
-          @object.call(str, arg).tainted?.should == true
-        end
-      end
-    end
+  it "returns String instances" do
+    @object.call(MyString.new("cool"), 0).should be_an_instance_of(String)
+    @object.call(MyString.new("cool"), 1).should be_an_instance_of(String)
+    @object.call(MyString.new("cool"), 2).should be_an_instance_of(String)
   end
 
   it "returns a String in the same encoding as self" do

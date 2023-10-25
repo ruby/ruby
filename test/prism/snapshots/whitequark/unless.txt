@@ -1,0 +1,61 @@
+@ ProgramNode (location: (1,0)-(3,20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,20))
+    └── body: (length: 2)
+        ├── @ UnlessNode (location: (1,0)-(1,24))
+        │   ├── keyword_loc: (1,0)-(1,6) = "unless"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (1,7)-(1,10))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (1,7)-(1,10) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :foo
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (1,16)-(1,19))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (1,16)-(1,19))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (1,16)-(1,19) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: :bar
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (1,21)-(1,24) = "end"
+        └── @ UnlessNode (location: (3,0)-(3,20))
+            ├── keyword_loc: (3,0)-(3,6) = "unless"
+            ├── predicate:
+            │   @ CallNode (location: (3,7)-(3,10))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (3,7)-(3,10) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: :foo
+            ├── statements:
+            │   @ StatementsNode (location: (3,12)-(3,15))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (3,12)-(3,15))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (3,12)-(3,15) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: :bar
+            ├── consequent: ∅
+            └── end_keyword_loc: (3,17)-(3,20) = "end"

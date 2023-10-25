@@ -26,11 +26,21 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def warning(str)
-    parse(str, :warning) {|e, *args| return args}
+    tree = parse(str, :warning) {|e, *args| return args}
+    if block_given?
+      yield tree
+    else
+      assert(false, "warning expected")
+    end
   end
 
   def warn(str)
-    parse(str, :warn) {|e, *args| return args}
+    tree = parse(str, :warn) {|e, *args| return args}
+    if block_given?
+      yield tree
+    else
+      assert(false, "warning expected")
+    end
   end
 
   def test_program
@@ -86,7 +96,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_alias_error
-    assert_equal '[aliaserr(valias($a,$1))]', parse('alias $a $1')
+    assert_equal '[aliaserr($1)]', parse('alias $a $1')
   end
 
   def test_arglist
@@ -132,9 +142,56 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_args_forward
-    thru_args_forward = false
-    parse('def m(...) n(...) end', :on_args_forward) {thru_args_forward = true}
-    assert_equal true, thru_args_forward
+    [
+      'def m(...) n(...) end',
+      'def m(...) end',
+      'def m(a, ...) n(1, ...) end',
+      'def m(...) n(1, ...) end',
+      'def m(a, ...) n(...) end'
+    ].each do |code|
+      thru_args_forward = false
+      parse(code, :on_args_forward) {thru_args_forward = true}
+      assert_equal true, thru_args_forward, "no args_forward for: #{code}"
+      parse(code, :on_params) {|*, block| assert_nil(block)}
+    end
+  end
+
+  def test_anonymous_block_forwarding
+    thru_args_add_block = false
+    parse('def b(&); c(&); end', :on_args_add_block) {thru_args_add_block = true}
+    assert_equal true, thru_args_add_block
+    assert_match "no anonymous block parameter", compile_error('def b; c(&); end')
+  end
+
+  def test_anonymous_rest_forwarding
+    [
+      'c(*)',
+      'c(*, *)',
+    ].each do |code|
+      thru_args_add_star = false
+      src = "def b(*); #{code} end"
+      parse(src, :on_args_add_star) {thru_args_add_star = true}
+      assert_equal true, thru_args_add_star, src
+
+      src = "def b; #{code} end"
+      assert_match "no anonymous rest parameter", compile_error(src), src
+    end
+  end
+
+  def test_anonymous_keyword_rest_forwarding
+    [
+      'c(**)',
+      'c(k: 1, **)',
+      'c(**, k: 1)',
+    ].each do |code|
+      thru_assoc_splat = false
+      src = "def b(**); #{code} end"
+      parse(src, :on_assoc_splat) {thru_assoc_splat = true}
+      assert_equal true, thru_assoc_splat, src
+
+      src = "def b; #{code} end"
+      assert_match "no anonymous keyword rest parameter", compile_error(src), src
+    end
   end
 
   def test_arg_paren
@@ -443,6 +500,23 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[call(ref(self),&.,foo,[])]", tree
   end
 
+  def test_call_colon2
+    hook = Module.new do
+      def on_op(op)
+        super("(op: #{op.inspect})")
+      end
+      def on_call(recv, name, *args)
+        super(recv, "(method: #{name})", *args)
+      end
+      def on_ident(name)
+        super("(ident: #{name.inspect})")
+      end
+    end
+
+    parser = DummyParser.new("a::b").extend(hook)
+    assert_equal '[call(vcall((ident: "a")),(method: (op: "::")),(ident: "b"))]', parser.parse.to_s
+  end
+
   def test_excessed_comma
     thru_excessed_comma = false
     parse("proc{|x,|}", :on_excessed_comma) {thru_excessed_comma = true}
@@ -642,6 +716,42 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_def
     assert_equal '[def(foo,[],bodystmt([void()]))]', parse('def foo ;end')
+    assert_equal '[def(foo,[],bodystmt([void()],rescue(,,[void()])))]', parse('def foo ;rescue; end')
+    assert_equal '[def(foo,[],bodystmt([void()],,,ensure([void()])))]', parse('def foo ;ensure; end')
+  end
+
+  def test_endless_def
+    events = %i[on_def on_parse_error]
+    thru = nil
+    hook = ->(name, *) {thru[name] = true}
+
+    thru = {}
+    tree = parse('def foo() = 42', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(42))]', tree
+
+    thru = {}
+    tree = parse('def foo() = 42 rescue 0', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(rescue_mod(42,0)))]', tree
+
+    thru = {}
+    tree = parse('def foo=() = 42', events, &hook)
+    assert_equal({on_def: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo=() = 42 rescue 0', events, &hook)
+    assert_equal({on_def: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo() = p 42', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(command(p,[42])))]', tree
+
+    thru = {}
+    tree = parse('def foo() = p 42 rescue 0', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(rescue_mod(command(p,[42]),0)))]', tree
   end
 
   def test_defined
@@ -659,6 +769,40 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_parse_error = false
     tree = parse('def foo&.bar; end', :on_parse_error) {thru_parse_error = true}
     assert_equal(true, thru_parse_error)
+  end
+
+  def test_endless_defs
+    events = %i[on_defs on_parse_error]
+    thru = nil
+    hook = ->(name, *) {thru[name] = true}
+
+    thru = {}
+    tree = parse('def foo.bar() = 42', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(42))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar() = 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(rescue_mod(42,0)))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar=() = 42', events, &hook)
+    assert_equal({on_defs: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo.bar=() = 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo.bar() = p 42', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(command(p,[42])))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar() = p 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(rescue_mod(command(p,[42]),0)))]', tree
   end
 
   def test_do_block
@@ -1490,16 +1634,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_block_variables
-    assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
-    if defined?(Process::RLIMIT_AS)
-      dir = File.dirname(__FILE__)
-      as = 100 * 1024 * 1024 # 100MB
-      as *= 2 if RubyVM::MJIT.enabled? # space for compiler
-      assert_in_out_err(%W(-I#{dir} -rdummyparser),
-                        "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
-                        "puts DummyParser.new('proc{|;y|!y}').parse",
-                        ["[fcall(proc,[],&block([],[unary(!,ref(y))]))]"], [], '[ruby-dev:39423]')
-    end
+    bug4159 = '[ruby-dev:39423]'
+    assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"), bug4159)
+    assert_equal("[fcall(proc,[],&block([],[unary(!,ref(y))]))]", parse("proc{|;y|!y}"), bug4159)
   end
 
   def test_unterminated_regexp
@@ -1529,10 +1666,26 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("frozen_string_literal", args[0])
   end
 
+  def test_warning_invalid_magic_comment
+    fmt, *args = warning("#-*- frozen-string-literal: nottrue -*-")
+    assert_match(/invalid value/, fmt)
+    assert_equal(%w"frozen_string_literal nottrue", args)
+  end
+
   def test_warn_cr_in_middle
     fmt = nil
     assert_warn("") {fmt, = warn("\r;")}
     assert_match(/encountered/, fmt)
+  end
+
+  def test_warn_mismatched_indentations
+    fmt, tokend, tokbeg, line = assert_warning("") {break warn("if true\n  end\n")}
+    assert_match(/mismatched indentations/, fmt)
+    assert_equal(["if", "end", 1], [tokbeg, tokend, line])
+    result = assert_warning("") {
+      warn("begin\n" "  def f() = nil\n" "end\n") {break :ok}
+    }
+    assert_equal(:ok, result)
   end
 
   def test_in
@@ -1545,6 +1698,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_aryptn = false
     parse('case 0; in [0]; end', :on_aryptn) {thru_aryptn = true}
     assert_equal true, thru_aryptn
+  end
+
+  def test_fndptn
+    thru_fndptn = false
+    parse('case 0; in [*,0,*]; end', :on_fndptn) {thru_fndptn = true}
+    assert_equal true, thru_fndptn
   end
 
   def test_hshptn

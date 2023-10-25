@@ -24,4 +24,15 @@ describe "Enumerator#next" do
     @enum.rewind
     @enum.next.should == 1
   end
+
+  it "restarts the enumerator if an exception terminated a previous iteration" do
+    exception = StandardError.new
+    enum = Enumerator.new do
+      raise exception
+    end
+
+    result = 2.times.map { enum.next rescue $! }
+
+    result.should == [exception, exception]
+  end
 end

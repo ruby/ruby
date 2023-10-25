@@ -122,6 +122,10 @@ module ClassSpecs
       end
     end
   end
+
+  DEFINE_CLASS = -> do
+    class ::A; end
+  end
 end
 
 class Class

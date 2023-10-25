@@ -1,10 +1,10 @@
 # frozen_string_literal: true
+
 ##
 # A set of gems for installation sourced from remote sources and local .gem
 # files
 
 class Gem::Resolver::InstallerSet < Gem::Resolver::Set
-
   ##
   # List of Gem::Specification objects that must always be installed.
 
@@ -27,13 +27,18 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   attr_reader :remote_set # :nodoc:
 
   ##
+  # Ignore ruby & rubygems specification constraints.
+  #
+
+  attr_accessor :force # :nodoc:
+
+  ##
   # Creates a new InstallerSet that will look for gems in +domain+.
 
   def initialize(domain)
     super()
 
     @domain = domain
-    @remote = consider_remote?
 
     @f = Gem::SpecFetcher.fetcher
 
@@ -43,6 +48,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     @local               = {}
     @local_source        = Gem::Source::Local.new
     @remote_set          = Gem::Resolver::BestSet.new
+    @force               = false
     @specs               = {}
   end
 
@@ -56,24 +62,38 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     found = find_all request
 
     found.delete_if do |s|
-      s.version.prerelease? and not s.local?
+      s.version.prerelease? && !s.local?
     end unless dependency.prerelease?
 
     found = found.select do |s|
-      Gem::Source::SpecificFile === s.source or
-        Gem::Platform::RUBY == s.platform or
-        Gem::Platform.local === s.platform
+      Gem::Source::SpecificFile === s.source ||
+        Gem::Platform.match_spec?(s)
     end
 
-    if found.empty?
+    found = found.sort_by do |s|
+      [s.version, Gem::Platform.sort_priority(s.platform)]
+    end
+
+    newest = found.last
+
+    unless newest
       exc = Gem::UnsatisfiableDependencyError.new request
       exc.errors = errors
 
       raise exc
     end
 
-    newest = found.max_by do |s|
-      [s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
+    unless @force
+      found_matching_metadata = found.reverse.find do |spec|
+        metadata_satisfied?(spec)
+      end
+
+      if found_matching_metadata.nil?
+        ensure_required_ruby_version_met(newest.spec)
+        ensure_required_rubygems_version_met(newest.spec)
+      else
+        newest = found_matching_metadata
+      end
     end
 
     @always_install << newest.spec
@@ -91,14 +111,14 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Should local gems should be considered?
 
   def consider_local? # :nodoc:
-    @domain == :both or @domain == :local
+    @domain == :both || @domain == :local
   end
 
   ##
   # Should remote gems should be considered?
 
   def consider_remote? # :nodoc:
-    @domain == :both or @domain == :remote
+    @domain == :both || @domain == :remote
   end
 
   ##
@@ -117,16 +137,18 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
     dep = req.dependency
 
-    return res if @ignore_dependencies and
-              @always_install.none? { |spec| dep.match? spec }
+    return res if @ignore_dependencies &&
+                  @always_install.none? {|spec| dep.match? spec }
 
     name = dep.name
 
     dep.matching_specs.each do |gemspec|
-      next if @always_install.any? { |spec| spec.name == gemspec.name }
+      next if @always_install.any? {|spec| spec.name == gemspec.name }
 
       res << Gem::Resolver::InstalledSpecification.new(self, gemspec)
     end unless @ignore_installed
+
+    matching_local = []
 
     if consider_local?
       matching_local = @local.values.select do |spec, _|
@@ -141,18 +163,15 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
         if local_spec = @local_source.find_gem(name, dep.requirement)
           res << Gem::Resolver::IndexSpecification.new(
             self, local_spec.name, local_spec.version,
-            @local_source, local_spec.platform)
+            @local_source, local_spec.platform
+          )
         end
       rescue Gem::Package::FormatError
         # ignore
       end
     end
 
-    res.delete_if do |spec|
-      spec.version.prerelease? and not dep.prerelease?
-    end
-
-    res.concat @remote_set.find_all req if consider_remote?
+    res.concat @remote_set.find_all req if consider_remote? && matching_local.empty?
 
     res
   end
@@ -168,11 +187,9 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def inspect # :nodoc:
-    always_install = @always_install.map { |s| s.full_name }
+    always_install = @always_install.map(&:full_name)
 
-    '#<%s domain: %s specs: %p always install: %p>' % [
-      self.class, @domain, @specs.keys, always_install,
-    ]
+    format("#<%s domain: %s specs: %p always install: %p>", self.class, @domain, @specs.keys, always_install)
   end
 
   ##
@@ -199,16 +216,16 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[InstallerSet', ']' do
+    q.group 2, "[InstallerSet", "]" do
       q.breakable
       q.text "domain: #{@domain}"
 
       q.breakable
-      q.text 'specs: '
+      q.text "specs: "
       q.pp @specs.keys
 
       q.breakable
-      q.text 'always install: '
+      q.text "always install: "
       q.pp @always_install
     end
   end
@@ -224,4 +241,31 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     end
   end
 
+  private
+
+  def metadata_satisfied?(spec)
+    spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+      spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+  end
+
+  def ensure_required_ruby_version_met(spec) # :nodoc:
+    if rrv = spec.required_ruby_version
+      ruby_version = Gem.ruby_version
+      unless rrv.satisfied_by? ruby_version
+        raise Gem::RuntimeRequirementNotMetError,
+          "#{spec.full_name} requires Ruby version #{rrv}. The current ruby version is #{ruby_version}."
+      end
+    end
+  end
+
+  def ensure_required_rubygems_version_met(spec) # :nodoc:
+    if rrgv = spec.required_rubygems_version
+      unless rrgv.satisfied_by? Gem.rubygems_version
+        rg_version = Gem::VERSION
+        raise Gem::RuntimeRequirementNotMetError,
+          "#{spec.full_name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " \
+          "Try 'gem update --system' to update RubyGems itself."
+      end
+    end
+  end
 end

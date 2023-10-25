@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+
+require_relative "helper"
 
 class TestGemImpossibleDependenciesError < Gem::TestCase
-
   def test_message_conflict
-    request = dependency_request dep('net-ssh', '>= 2.0.13'), 'rye', '0.9.8'
+    request = dependency_request dep("net-ssh", ">= 2.0.13"), "rye", "0.9.8"
 
     conflicts = []
 
@@ -12,9 +12,9 @@ class TestGemImpossibleDependenciesError < Gem::TestCase
     # requested-by entries, but they are suitable for testing the message.
     # See #485 to construct a correct conflict.
     net_ssh_2_2_2 =
-      dependency_request dep('net-ssh', '>= 2.6.5'), 'net-ssh', '2.2.2', request
+      dependency_request dep("net-ssh", ">= 2.6.5"), "net-ssh", "2.2.2", request
     net_ssh_2_6_5 =
-      dependency_request dep('net-ssh', '~> 2.2.2'), 'net-ssh', '2.6.5', request
+      dependency_request dep("net-ssh", "~> 2.2.2"), "net-ssh", "2.6.5", request
 
     conflict1 = Gem::Resolver::Conflict.new \
       net_ssh_2_6_5, net_ssh_2_6_5.requester
@@ -57,5 +57,4 @@ rye-0.9.8 requires net-ssh (>= 2.0.13) but it conflicted:
 
     assert_equal expected, error.message
   end
-
 end

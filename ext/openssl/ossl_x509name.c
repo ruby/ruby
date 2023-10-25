@@ -46,7 +46,7 @@ static const rb_data_type_t ossl_x509name_type = {
     {
 	0, ossl_x509name_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -291,7 +291,14 @@ x509name_print(VALUE self, unsigned long iflag)
  * * OpenSSL::X509::Name::MULTILINE
  *
  * If _format_ is omitted, the largely broken and traditional OpenSSL format
- * is used.
+ * (<tt>X509_NAME_oneline()</tt> format) is chosen.
+ *
+ * <b>Use of this method is discouraged.</b> None of the formats other than
+ * OpenSSL::X509::Name::RFC2253 is standardized and may show an inconsistent
+ * behavior through \OpenSSL versions.
+ *
+ * It is recommended to use #to_utf8 instead, which is equivalent to calling
+ * <tt>name.to_s(OpenSSL::X509::Name::RFC2253).force_encoding("UTF-8")</tt>.
  */
 static VALUE
 ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
@@ -498,7 +505,7 @@ ossl_x509name_to_der(VALUE self)
  * You can create a Name by parsing a distinguished name String or by
  * supplying the distinguished name as an Array.
  *
- *   name = OpenSSL::X509::Name.parse '/CN=nobody/DC=example'
+ *   name = OpenSSL::X509::Name.parse_rfc2253 'DC=example,CN=nobody'
  *
  *   name = OpenSSL::X509::Name.new [['CN', 'nobody'], ['DC', 'example']]
  */

@@ -776,10 +776,10 @@ EOT
            assert_equal(eucjp, r.read)
          end)
 
-    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+    assert_raise_with_message(ArgumentError, /invalid encoding name/) do
       with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}
     end
-    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+    assert_raise_with_message(ArgumentError, /invalid encoding name/) do
       with_pipe("UTF-8".encode("UTF-32BE")) {}
     end
 
@@ -1142,9 +1142,91 @@ EOT
     IO.pipe do |r, w|
       assert_nothing_raised(bug5567) do
         assert_warning(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx")}
+        w.puts("foo")
+        assert_equal("foo\n", r.gets)
         assert_warning(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx", "us-ascii")}
+        w.puts("bar")
+        assert_equal("bar\n", r.gets)
         assert_warning(/Unsupported/, bug5567) {r.set_encoding("us-ascii", "fffffffffffxx")}
+        w.puts("zot")
+        begin
+          assert_equal("zot\n", r.gets)
+        rescue Encoding::ConverterNotFoundError => e
+          assert_match(/\((\S+) to \1\)/, e.message)
+        end
       end
+    end
+  end
+
+  def test_set_encoding_argument_parsing
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary')
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('binary'))
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary:utf-8')
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary', 'utf-8')
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('binary'), Encoding.find('utf-8'))
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary', Encoding.find('utf-8'))
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('binary'), 'utf-8')
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('iso-8859-1:utf-8')
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('iso-8859-1', 'utf-8')
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('iso-8859-1'), Encoding.find('utf-8'))
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('iso-8859-1', Encoding.find('utf-8'))
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('iso-8859-1'), 'utf-8')
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
     end
   end
 
@@ -1314,23 +1396,27 @@ EOT
   end
 
   def test_open_pipe_r_enc
-    open("|#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
-      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
-      assert_equal(nil, f.internal_encoding)
-      s = f.read
-      assert_equal(Encoding::ASCII_8BIT, s.encoding)
-      assert_equal("\xff".force_encoding("ascii-8bit"), s)
-    }
+    EnvUtil.suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+      open("|#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
+        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+        s = f.read
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    end
   end
 
   def test_open_pipe_r_enc2
-    open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
-      assert_equal(Encoding::UTF_8, f.external_encoding)
-      assert_equal(nil, f.internal_encoding)
-      s = f.read
-      assert_equal(Encoding::UTF_8, s.encoding)
-      assert_equal("\u3042", s)
-    }
+    EnvUtil.suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+      open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
+        assert_equal(Encoding::UTF_8, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+        s = f.read
+        assert_equal(Encoding::UTF_8, s.encoding)
+        assert_equal("\u3042", s)
+      }
+    end
   end
 
   def test_s_foreach_enc
@@ -2047,19 +2133,19 @@ EOT
     with_tmpdir {
       open("raw.txt", "wb", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
       content = File.read("raw.txt", :mode=>"rb:ascii-8bit")
-      assert_equal("\"&amp;&lt;&gt;&quot;'\u4E02\u3042\n\"".force_encoding("ascii-8bit"), content)
+      assert_equal("\"&amp;&lt;&gt;&quot;&apos;\u4E02\u3042\n\"".force_encoding("ascii-8bit"), content)
 
       open("ascii.txt", "wb:us-ascii", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
       content = File.read("ascii.txt", :mode=>"rb:ascii-8bit")
-      assert_equal("\"&amp;&lt;&gt;&quot;'&#x4E02;&#x3042;\n\"".force_encoding("ascii-8bit"), content)
+      assert_equal("\"&amp;&lt;&gt;&quot;&apos;&#x4E02;&#x3042;\n\"".force_encoding("ascii-8bit"), content)
 
       open("iso-2022-jp.txt", "wb:iso-2022-jp", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
       content = File.read("iso-2022-jp.txt", :mode=>"rb:ascii-8bit")
-      assert_equal("\"&amp;&lt;&gt;&quot;'&#x4E02;\e$B$\"\e(B\n\"".force_encoding("ascii-8bit"), content)
+      assert_equal("\"&amp;&lt;&gt;&quot;&apos;&#x4E02;\e$B$\"\e(B\n\"".force_encoding("ascii-8bit"), content)
 
       open("utf-16be.txt", "wb:utf-16be", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
       content = File.read("utf-16be.txt", :mode=>"rb:ascii-8bit")
-      assert_equal("\0\"\0&\0a\0m\0p\0;\0&\0l\0t\0;\0&\0g\0t\0;\0&\0q\0u\0o\0t\0;\0'\x4E\x02\x30\x42\0\n\0\"".force_encoding("ascii-8bit"), content)
+      assert_equal("\0\"\0&\0a\0m\0p\0;\0&\0l\0t\0;\0&\0g\0t\0;\0&\0q\0u\0o\0t\0;\0&\0a\0p\0o\0s\0;\x4E\x02\x30\x42\0\n\0\"".force_encoding("ascii-8bit"), content)
 
       open("eucjp.txt", "w:euc-jp:utf-8", xml: :attr) {|f|
         f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212

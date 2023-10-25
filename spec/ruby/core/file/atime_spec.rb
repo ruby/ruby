@@ -15,16 +15,18 @@ describe "File.atime" do
     File.atime(@file).should be_kind_of(Time)
   end
 
-  guard -> { platform_is :linux or (platform_is :windows and ruby_version_is '2.5') } do
-    ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
-    it "returns the last access time for the named file with microseconds" do
-      supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d+)/, 1], 10)
-      if supports_subseconds != 0
-        expected_time = Time.at(Time.now.to_i + 0.123456)
-        File.utime expected_time, 0, @file
-        File.atime(@file).usec.should == expected_time.usec
-      else
-        File.atime(__FILE__).usec.should == 0
+  platform_is :linux, :windows do
+    unless ENV.key?('TRAVIS') # https://bugs.ruby-lang.org/issues/17926
+      ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
+      it "returns the last access time for the named file with microseconds" do
+        supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
+        if supports_subseconds != 0
+          expected_time = Time.at(Time.now.to_i + 0.123456)
+          File.utime expected_time, 0, @file
+          File.atime(@file).usec.should == expected_time.usec
+        else
+          File.atime(__FILE__).usec.should == 0
+        end
       end
     end
   end

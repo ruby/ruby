@@ -12,17 +12,15 @@ module Bundler
         method = instance_method(method_name)
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
-          begin
-            method.bind(self).call(*args, &blk)
-          rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
-            raise HTTPError, e.message
-          rescue AuthenticationRequiredError
-            # Fail since we got a 401 from the server.
-            raise
-          rescue HTTPError => e
-            Bundler.ui.trace(e)
-            nil
-          end
+          method.bind(self).call(*args, &blk)
+        rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
+          raise HTTPError, e.message
+        rescue AuthenticationRequiredError, BadAuthenticationError
+          # Fail since we got a 401 from the server.
+          raise
+        rescue HTTPError => e
+          Bundler.ui.trace(e)
+          nil
         end
       end
 
@@ -37,42 +35,33 @@ module Bundler
         remaining_gems = gem_names.dup
 
         until remaining_gems.empty?
-          log_specs "Looking up gems #{remaining_gems.inspect}"
+          log_specs { "Looking up gems #{remaining_gems.inspect}" }
 
           deps = begin
                    parallel_compact_index_client.dependencies(remaining_gems)
                  rescue TooManyRequestsError
-                   @bundle_worker.stop if @bundle_worker
+                   @bundle_worker&.stop
                    @bundle_worker = nil # reset it.  Not sure if necessary
                    serial_compact_index_client.dependencies(remaining_gems)
                  end
-          next_gems = deps.map {|d| d[3].map(&:first).flatten(1) }.flatten(1).uniq
+          next_gems = deps.flat_map {|d| d[3].flat_map(&:first) }.uniq
           deps.each {|dep| gem_info << dep }
           complete_gems.concat(deps.map(&:first)).uniq!
           remaining_gems = next_gems - complete_gems
         end
-        @bundle_worker.stop if @bundle_worker
+        @bundle_worker&.stop
         @bundle_worker = nil # reset it.  Not sure if necessary
 
         gem_info
       end
 
-      def fetch_spec(spec)
-        spec -= [nil, "ruby", ""]
-        contents = compact_index_client.spec(*spec)
-        return nil if contents.nil?
-        contents.unshift(spec.first)
-        contents[3].map! {|d| Gem::Dependency.new(*d) }
-        EndpointSpecification.new(*contents)
-      end
-      compact_index_request :fetch_spec
-
       def available?
-        return nil unless SharedHelpers.md5_available?
-        user_home = Bundler.user_home
-        return nil unless user_home.directory? && user_home.writable?
+        unless SharedHelpers.md5_available?
+          Bundler.ui.debug("FIPS mode is enabled, bundler can't use the CompactIndex API")
+          return nil
+        end
         # Read info file checksums out of /versions, so we can know if gems are up to date
-        fetch_uri.scheme != "file" && compact_index_client.update_and_parse_checksums!
+        compact_index_client.update_and_parse_checksums!
       rescue CompactIndexClient::Updater::MisMatchedChecksumError => e
         Bundler.ui.debug(e.message)
         nil
@@ -83,7 +72,7 @@ module Bundler
         true
       end
 
-    private
+      private
 
       def compact_index_client
         @compact_index_client ||=
@@ -111,7 +100,7 @@ module Bundler
       def bundle_worker(func = nil)
         @bundle_worker ||= begin
           worker_name = "Compact Index (#{display_uri.host})"
-          Bundler::Worker.new(Bundler.current_ruby.rbx? ? 1 : 25, worker_name, func)
+          Bundler::Worker.new(Bundler.settings.processor_count, worker_name, func)
         end
         @bundle_worker.tap do |worker|
           worker.instance_variable_set(:@func, func) if func

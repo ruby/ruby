@@ -73,6 +73,14 @@ module DRb
       # :SSLTmpDhCallback ::
       #   A DH callback. See OpenSSL::SSL::SSLContext.tmp_dh_callback
       #
+      # :SSLMinVersion ::
+      #   This is the minimum SSL version to allow.  See
+      #   OpenSSL::SSL::SSLContext#min_version=.
+      #
+      # :SSLMaxVersion ::
+      #   This is the maximum SSL version to allow.  See
+      #   OpenSSL::SSL::SSLContext#max_version=.
+      #
       # :SSLVerifyMode ::
       #   This is the SSL verification mode.  See OpenSSL::SSL::VERIFY_* for
       #   available modes.  The default is OpenSSL::SSL::VERIFY_NONE
@@ -196,7 +204,7 @@ module DRb
         if comment = self[:SSLCertComment]
           cert.add_extension(ef.create_extension("nsComment", comment))
         end
-        cert.sign(rsa, OpenSSL::Digest::SHA256.new)
+        cert.sign(rsa, "SHA256")
 
         @cert = cert
         @pkey = rsa
@@ -208,6 +216,8 @@ module DRb
         ctx = ::OpenSSL::SSL::SSLContext.new
         ctx.cert            = @cert
         ctx.key             = @pkey
+        ctx.min_version     = self[:SSLMinVersion]
+        ctx.max_version     = self[:SSLMaxVersion]
         ctx.client_ca       = self[:SSLClientCA]
         ctx.ca_path         = self[:SSLCACertificatePath]
         ctx.ca_file         = self[:SSLCACertificateFile]

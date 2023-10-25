@@ -5,12 +5,12 @@ require "rbconfig"
 module Bundler
   class CLI::Issue
     def run
-      Bundler.ui.info <<-EOS.gsub(/^ {8}/, "")
+      Bundler.ui.info <<~EOS
         Did you find an issue with Bundler? Before filing a new issue,
         be sure to check out these resources:
 
         1. Check out our troubleshooting guide for quick fixes to common issues:
-        https://github.com/bundler/bundler/blob/master/doc/TROUBLESHOOTING.md
+        https://github.com/rubygems/rubygems/blob/master/bundler/doc/TROUBLESHOOTING.md
 
         2. Instructions for common Bundler uses can be found on the documentation
         site: https://bundler.io/
@@ -20,9 +20,10 @@ module Bundler
 
         Hopefully the troubleshooting steps above resolved your problem!  If things
         still aren't working the way you expect them to, please let us know so
-        that we can diagnose and help fix the problem you're having. Please
-        view the Filing Issues guide for more information:
-        https://github.com/bundler/bundler/blob/master/doc/contributing/ISSUES.md
+        that we can diagnose and help fix the problem you're having, by filling
+        in the new issue form located at
+        https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md,
+        and copy and pasting the information below.
 
       EOS
 

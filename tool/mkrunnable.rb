@@ -45,9 +45,22 @@ end
 
 def ln_safe(src, dest)
   ln_sf(src, dest)
+rescue Errno::ENOENT
+  # Windows disallows to create broken symboic links, probably because
+  # it is a kind of reparse points.
+  raise if File.exist?(src)
 end
 
 alias ln_dir_safe ln_safe
+
+case RUBY_PLATFORM
+when /linux|darwin|solaris/
+  def ln_exe(src, dest)
+    ln(src, dest, force: true)
+  end
+else
+  alias ln_exe ln_safe
+end
 
 if !File.respond_to?(:symlink) && /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   extend Mswin
@@ -64,8 +77,8 @@ def relative_path_from(path, base)
   base = clean_path(base)
   path, base = [path, base].map{|s|s.split("/")}
   until path.empty? or base.empty? or path[0] != base[0]
-      path.shift
-      base.shift
+    path.shift
+    base.shift
   end
   path, base = [path, base].map{|s|s.join("/")}
   if /(\A|\/)\.\.\// =~ base
@@ -76,10 +89,13 @@ def relative_path_from(path, base)
   end
 end
 
-def ln_relative(src, dest)
+def ln_relative(src, dest, executable = false)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
+  if executable
+    return (ln_exe(src, dest) if File.exist?(src))
+  end
   clean_link(relative_path_from(src, parent), dest) {|s, d| ln_safe(s, d)}
 end
 
@@ -112,9 +128,9 @@ ruby_install_name = config["ruby_install_name"]
 rubyw_install_name = config["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
 [ruby_install_name, rubyw_install_name, goruby_install_name].map do |ruby|
-  ruby += exeext
-  if ruby and !ruby.empty? and !File.file?(target = "#{bindir}/#{ruby}")
-    ln_relative(ruby, target)
+  if ruby and !ruby.empty?
+    ruby += exeext
+    ln_relative(ruby, "#{bindir}/#{ruby}", true)
   end
 end
 so = config["LIBRUBY_SO"]

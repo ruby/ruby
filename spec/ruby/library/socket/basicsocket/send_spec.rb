@@ -22,7 +22,7 @@ describe "BasicSocket#send" do
        client = @server.accept
        loop do
          got = client.recv(5)
-         break if got.empty?
+         break if got.nil? || got.empty?
          data << got
        end
        client.close
@@ -67,7 +67,7 @@ describe "BasicSocket#send" do
        client = @server.accept
        loop do
          got = client.recv(5)
-         break if got.empty?
+         break if got.nil? || got.empty?
          data << got
        end
        client.close
@@ -97,6 +97,14 @@ describe 'BasicSocket#send' do
       after do
         @client.close
         @server.close
+      end
+
+      describe 'with an object implementing #to_str' do
+        it 'returns the amount of sent bytes' do
+          data = mock('message')
+          data.should_receive(:to_str).and_return('hello')
+          @client.send(data, 0, @server.getsockname).should == 5
+        end
       end
 
       describe 'without a destination address' do

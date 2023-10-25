@@ -26,7 +26,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal '5', 0b101.inspect
     assert_instance_of Integer, 0b101
     assert_raise(SyntaxError) { eval("0b") }
-    assert_equal '123456789012345678901234567890', 123456789012345678901234567890.inspect
+    assert_equal '123456789012345678901234567890', 123456789012345678901234567890.to_s
     assert_instance_of Integer, 123456789012345678901234567890
     assert_instance_of Float, 1.3
     assert_equal '2', eval("0x00+2").inspect
@@ -187,14 +187,14 @@ class TestRubyLiteral < Test::Unit::TestCase
   if defined?(RubyVM::InstructionSequence.compile_option) and
     RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
     def test_debug_frozen_string
-      src = 'n = 1; _="foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
+      src = '_="foo-1"'; f = "test.rb"; n = 1
       opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
       str = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
       assert_equal("foo-1", str)
       assert_predicate(str, :frozen?)
       assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
         str << "x"
-      }
+      } unless ENV['RUBY_ISEQ_DUMP_DEBUG']
     end
 
     def test_debug_frozen_string_in_array_literal
@@ -461,17 +461,46 @@ class TestRubyLiteral < Test::Unit::TestCase
 
   def test_hash_duplicated_key
     h = EnvUtil.suppress_warning do
-      eval <<~end
+      eval "#{<<-"begin;"}\n#{<<-'end;'}"
+      begin;
         # This is a syntax that renders warning at very early stage.
         # eval used to delay warning, to be suppressible by EnvUtil.
         {"a" => 100, "b" => 200, "a" => 300, "a" => 400}
-      end
+      end;
     end
     assert_equal(2, h.size)
     assert_equal(400, h['a'])
     assert_equal(200, h['b'])
     assert_nil(h['c'])
     assert_equal(nil, h.key('300'))
+
+    a = []
+    h = EnvUtil.suppress_warning do
+      eval <<~end
+        # This is a syntax that renders warning at very early stage.
+        # eval used to delay warning, to be suppressible by EnvUtil.
+        {"a" => a.push(100).last, "b" => a.push(200).last, "a" => a.push(300).last, "a" => a.push(400).last}
+      end
+    end
+    assert_equal({'a' => 400, 'b' => 200}, h)
+    assert_equal([100, 200, 300, 400], a)
+
+    assert_all_assertions_foreach(
+      "duplicated literal key",
+      ':foo',
+      '"a"',
+      '1000',
+      '1.0',
+      '1_000_000_000_000_000_000_000',
+      '1.0r',
+      '1.0i',
+      '1.72723e-77',
+      '//',
+    ) do |key|
+      assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) do
+        eval("{#{key} => :bar, #{key} => :foo}")
+      end
+    end
   end
 
   def test_hash_frozen_key_id
@@ -486,6 +515,30 @@ class TestRubyLiteral < Test::Unit::TestCase
     h = {key => 100}
     key.upcase!
     assert_equal(100, h['a'])
+  end
+
+  FOO = "foo"
+
+  def test_hash_value_omission
+    x = 1
+    y = 2
+    assert_equal({x: 1, y: 2}, {x:, y:})
+    assert_equal({x: 1, y: 2, z: 3}, {x:, y:, z: 3})
+    assert_equal({one: 1, two: 2}, {one:, two:})
+    b = binding
+    b.local_variable_set(:if, "if")
+    b.local_variable_set(:self, "self")
+    assert_equal({FOO: "foo", if: "if", self: "self"},
+                 eval('{FOO:, if:, self:}', b))
+    assert_syntax_error('{"#{x}":}', /'\}'/)
+  end
+
+  private def one
+    1
+  end
+
+  private def two
+    2
   end
 
   def test_range

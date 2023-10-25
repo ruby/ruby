@@ -9,6 +9,11 @@ describe "Array#product" do
     ar.called.should == :to_ary
   end
 
+  it "returns converted arguments using :method_missing" do
+    ar = ArraySpecs::ArrayMethodMissing.new(2,3)
+    [1].product(ar).should == [[1,2],[1,3]]
+  end
+
   it "returns the expected result" do
     [1,2].product([3,4,5],[6,8]).should == [[1, 3, 6], [1, 3, 8], [1, 4, 6], [1, 4, 8], [1, 5, 6], [1, 5, 8],
                                             [2, 3, 6], [2, 3, 8], [2, 4, 6], [2, 4, 8], [2, 5, 6], [2, 5, 8]]

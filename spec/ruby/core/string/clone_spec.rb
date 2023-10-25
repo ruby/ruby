@@ -54,4 +54,8 @@ describe "String#clone" do
     orig.should == "xtring"
     clone.should == "string"
   end
+
+  it "returns a String in the same encoding as self" do
+    "a".encode("US-ASCII").clone.encoding.should == Encoding::US_ASCII
+  end
 end

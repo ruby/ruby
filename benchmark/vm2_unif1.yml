@@ -1,7 +1,0 @@
-prelude: |
-  def m a, b
-  end
-benchmark:
-  vm2_unif1: |
-    m 100, 200
-loop_count: 6000000

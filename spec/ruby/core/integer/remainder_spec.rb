@@ -33,7 +33,7 @@ describe "Integer#remainder" do
     it "returns the remainder of dividing self by other" do
       a = bignum_value(79)
       a.remainder(2).should == 1
-      a.remainder(97.345).should be_close(46.5674996147722, TOLERANCE)
+      a.remainder(97.345).should be_close(93.1349992295444, TOLERANCE)
       a.remainder(bignum_value).should == 79
     end
 

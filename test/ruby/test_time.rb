@@ -7,7 +7,6 @@ require 'delegate'
 class TestTime < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -38,8 +37,11 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_new
+    assert_equal(Time.new(2000,1,1,0,0,0), Time.new(2000))
+    assert_equal(Time.new(2000,2,1,0,0,0), Time.new("2000", "Feb"))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
+    assert_equal(Time.utc(2000,2,29,23,0,0), Time.new(2000, 3, 1, 0, 0, 0, 3600))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, "+11:00"))
     assert_equal(Rational(1,2), Time.new(2000,2,10, 11,0,5.5, "+11:00").subsec)
     bug4090 = '[ruby-dev:42631]'
@@ -47,6 +49,108 @@ class TestTime < Test::Unit::TestCase
     t = Time.new(*tm, "-12:00")
     assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
     assert_raise(ArgumentError) { Time.new(2000,1,1, 0,0,0, "+01:60") }
+    msg = /invalid value for Integer/
+    assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, 1, "+09:99") }
+    assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, "+09:99") }
+    assert_raise_with_message(ArgumentError, msg) { Time.new(2021, "+09:99") }
+
+    assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], Time.new(2000, 1, 1, 0, 0, 0, "-00:00").to_a)
+    assert_equal([0, 0, 0, 2, 1, 2000, 0, 2, false, "UTC"], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a)
+  end
+
+  def test_new_from_string
+    assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
+
+    t = Time.utc(2020, 12, 24, 15, 56, 17)
+    assert_equal(t, Time.new("2020-12-24T15:56:17Z"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +09:00"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +09:01:30"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +0900"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +090130"))
+    assert_equal(t, Time.new("2020-12-25T00:56:17+09:00"))
+    assert_raise_with_message(ArgumentError, /missing sec part/) {
+      Time.new("2020-12-25 00:56 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, /missing min part/) {
+      Time.new("2020-12-25 00 +09:00")
+    }
+
+    assert_equal(Time.new(2021), Time.new("2021"))
+    assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
+
+    assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
+    assert_equal(0.123456789r, Time.new("2021-12-25 00:00:00.123456789876 +09:00").subsec)
+    assert_equal(0.123r, Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: 3).subsec)
+    assert_equal(0.123456789876r, Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: nil).subsec)
+    assert_raise_with_message(ArgumentError, "subsecond expected after dot: 00:56:17. ") {
+      Time.new("2020-12-25 00:56:17. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /year must be 4 or more/) {
+      Time.new("021-12-25 00:00:00.123456 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, /fraction min is.*56\./) {
+      Time.new("2020-12-25 00:56. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /fraction hour is.*00\./) {
+      Time.new("2020-12-25 00. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits sec.*:017\b/) {
+      Time.new("2020-12-25 00:56:017 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits sec.*:9\b/) {
+      Time.new("2020-12-25 00:56:9 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /sec out of range/) {
+      Time.new("2020-12-25 00:56:64 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits min.*:056\b/) {
+      Time.new("2020-12-25 00:056:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits min.*:5\b/) {
+      Time.new("2020-12-25 00:5:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /min out of range/) {
+      Time.new("2020-12-25 00:64:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits hour.*\b000\b/) {
+      Time.new("2020-12-25 000:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits hour.*\b0\b/) {
+      Time.new("2020-12-25 0:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /hour out of range/) {
+      Time.new("2020-12-25 33:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b025\b/) {
+      Time.new("2020-12-025 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b5\b/) {
+      Time.new("2020-12-5 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /mday out of range/) {
+      Time.new("2020-12-33 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mon.*\b012\b/) {
+      Time.new("2020-012-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mon.*\b1\b/) {
+      Time.new("2020-1-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /mon out of range/) {
+      Time.new("2020-17-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12-02")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(" 2020-12-02 00:00:00")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new("2020-12-02 00:00:00 ")
+    }
   end
 
   def test_time_add()
@@ -110,7 +214,7 @@ class TestTime < Test::Unit::TestCase
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
 
       # Giveup to try 2nd test because some state is changed.
-      skip if Minitest::Unit.current_repeat_count > 0
+      omit if Test::Unit::Runner.current_repeat_count > 0
 
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -240,6 +344,10 @@ class TestTime < Test::Unit::TestCase
     assert_equal(1, Time.at(0, 0.001).nsec)
   end
 
+  def test_at_splat
+    assert_equal(Time.at(1, 2), Time.at(*[1, 2]))
+  end
+
   def test_at_with_unit
     assert_equal(123456789, Time.at(0, 123456789, :nanosecond).nsec)
     assert_equal(123456789, Time.at(0, 123456789, :nsec).nsec)
@@ -330,7 +438,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone_gc
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       ENV["TZ"] = "JST-9"
       s = Marshal.dump(Time.now)
       t = Marshal.load(s)
@@ -379,6 +487,11 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_broken_month
+    data = "\x04\x08u:\tTime\r\x20\x7c\x1e\xc0\x00\x00\x00\x00"
+    assert_equal(Time.utc(2022, 4, 1), Marshal.load(data))
+  end
+
   def test_marshal_distant_past
     assert_marshal_roundtrip(Time.utc(1890, 1, 1))
     assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
@@ -421,8 +534,10 @@ class TestTime < Test::Unit::TestCase
     def o.to_int; 0; end
     def o.to_r; nil; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    class << o; remove_method(:to_r); end
     def o.to_r; ""; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    class << o; remove_method(:to_r); end
     def o.to_r; Rational(11); end
     assert_equal(11, Time.gm(2000, 1, 1, 0, 0, o).sec)
     o = Object.new
@@ -583,6 +698,10 @@ class TestTime < Test::Unit::TestCase
 
     t2000 = get_t2000.localtime(9*3600) + 1/10r
     assert_equal("2000-01-01 09:00:00.1 +0900", t2000.inspect)
+
+    t2000 = get_t2000
+    assert_equal("2000-01-01 09:12:00 +0912", t2000.localtime(9*3600+12*60).inspect)
+    assert_equal("2000-01-01 09:12:34 +091234", t2000.localtime(9*3600+12*60+34).inspect)
   end
 
   def assert_zone_encoding(time)
@@ -604,13 +723,12 @@ class TestTime < Test::Unit::TestCase
     assert_nil(t.getlocal("+02:00").zone)
   end
 
-  def test_plus_minus_succ
+  def test_plus_minus
     t2000 = get_t2000
     # assert_raise(RangeError) { t2000 + 10000000000 }
     # assert_raise(RangeError)  t2000 - 3094168449 }
     # assert_raise(RangeError) { t2000 + 1200798848 }
     assert_raise(TypeError) { t2000 + Time.now }
-    assert_equal(t2000 + 1, t2000.succ)
   end
 
   def test_plus_type
@@ -713,7 +831,9 @@ class TestTime < Test::Unit::TestCase
     assert_equal("12:00:00 AM", t2000.strftime("%r"))
     assert_equal("Sat 2000-01-01T00:00:00", t2000.strftime("%3a %FT%T"))
 
-    assert_equal("", t2000.strftime(""))
+    assert_warning(/strftime called with empty format string/) do
+      assert_equal("", t2000.strftime(""))
+    end
     assert_equal("foo\0bar\x0000\x0000\x0000", t2000.strftime("foo\0bar\0%H\0%M\0%S"))
     assert_equal("foo" * 1000, t2000.strftime("foo" * 1000))
 
@@ -893,6 +1013,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal(8192, Time.now.strftime('%8192z').size)
   end
 
+  def test_strftime_wide_precision
+    t2000 = get_t2000
+    s = t2000.strftime("%28c")
+    assert_equal(28, s.size)
+    assert_equal(t2000.strftime("%c"), s.strip)
+  end
+
   def test_strfimte_zoneoffset
     t2000 = get_t2000
     t = t2000.getlocal("+09:00:00")
@@ -906,6 +1033,17 @@ class TestTime < Test::Unit::TestCase
     assert_equal("+09:00", t.strftime("%:z"))
     assert_equal("+09:00:01", t.strftime("%::z"))
     assert_equal("+09:00:01", t.strftime("%:::z"))
+
+    assert_equal("+0000", t2000.strftime("%z"))
+    assert_equal("-0000", t2000.strftime("%-z"))
+    assert_equal("-00:00", t2000.strftime("%-:z"))
+    assert_equal("-00:00:00", t2000.strftime("%-::z"))
+
+    t = t2000.getlocal("+00:00")
+    assert_equal("+0000", t.strftime("%z"))
+    assert_equal("+0000", t.strftime("%-z"))
+    assert_equal("+00:00", t.strftime("%-:z"))
+    assert_equal("+00:00:00", t.strftime("%-::z"))
   end
 
   def test_strftime_padding
@@ -1062,6 +1200,11 @@ class TestTime < Test::Unit::TestCase
     t2 = (t+0.123456789).ceil(4)
     assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
     assert_equal(Rational(1235,10000), t2.subsec)
+
+    time = Time.utc(2016, 4, 23, 0, 0, 0.123456789r)
+    assert_equal(time, time.ceil(9))
+    assert_equal(time, time.ceil(10))
+    assert_equal(time, time.ceil(11))
   end
 
   def test_getlocal_dont_share_eigenclass
@@ -1138,7 +1281,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_2038
     # Giveup to try 2nd test because some state is changed.
-    skip if Minitest::Unit.current_repeat_count > 0
+    omit if Test::Unit::Runner.current_repeat_count > 0
 
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -1198,6 +1341,30 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_getlocal_utc
+    t = Time.gm(2000)
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("UTC")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("-0000")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("+0000")).to_a[0, 6]
+    assert_not_predicate t1, :utc?
+  end
+
+  def test_getlocal_utc_offset
+    t = Time.gm(2000)
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-02:30").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+09:00").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-02:30:40").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+09:10:35").to_a[0, 6]
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-0230").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+0900").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-023040").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+091035").to_a[0, 6]
+    assert_raise(ArgumentError) {t.getlocal("-02:3040")}
+    assert_raise(ArgumentError) {t.getlocal("+0910:35")}
+  end
+
   def test_getlocal_nil
     now = Time.now
     now2 = nil
@@ -1227,22 +1394,6 @@ class TestTime < Test::Unit::TestCase
     assert_equal("366", t.strftime("%j"))
   end
 
-  def test_strftime_no_hidden_garbage
-    skip unless Thread.list.size == 1
-
-    fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
-    t = Time.at(0).getutc
-    ObjectSpace.count_objects(res = {}) # creates strings on first call
-    GC.disable
-    before = ObjectSpace.count_objects(res)[:T_STRING]
-    val = t.strftime(fmt)
-    after = ObjectSpace.count_objects(res)[:T_STRING]
-    assert_equal before + 1, after, 'only new string is the created one'
-    assert_equal '1970-01-01', val
-  ensure
-    GC.enable
-  end
-
   def test_num_exact_error
     bad = EnvUtil.labeled_class("BadValue").new
     x = EnvUtil.labeled_class("Inexact") do
@@ -1255,21 +1406,38 @@ class TestTime < Test::Unit::TestCase
 
   def test_memsize
     # Time objects are common in some code, try to keep them small
-    skip "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
-    skip "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
+    omit "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
+    omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
     require 'objspace'
     t = Time.at(0)
-    size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
-    case size
-    when 20 then expect = 50
-    when 24 then expect = 54
-    when 40 then expect = 86
-    when 48 then expect = 94
-    else
-      flunk "Unsupported RVALUE_SIZE=#{size}, update test_memsize"
-    end
+    sizeof_timew =
+      if RbConfig::SIZEOF.key?("uint64_t") && RbConfig::SIZEOF["long"] * 2 <= RbConfig::SIZEOF["uint64_t"]
+        RbConfig::SIZEOF["uint64_t"]
+      else
+        RbConfig::SIZEOF["void*"] # Same size as VALUE
+      end
+    sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
+    expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
     assert_equal expect, ObjectSpace.memsize_of(t)
   rescue LoadError => e
-    skip "failed to load objspace: #{e.message}"
+    omit "failed to load objspace: #{e.message}"
+  end
+
+  def test_deconstruct_keys
+    t = in_timezone('JST-9') { Time.local(2022, 10, 16, 14, 1, 30, 500) }
+    assert_equal(
+      {year: 2022, month: 10, day: 16, wday: 0, yday: 289,
+        hour: 14, min: 1, sec: 30, subsec: 1/2000r, dst: false, zone: 'JST'},
+      t.deconstruct_keys(nil)
+    )
+
+    assert_equal(
+      {year: 2022, month: 10, sec: 30},
+      t.deconstruct_keys(%i[year month sec nonexistent])
+    )
+  end
+
+  def test_parse_zero_bigint
+    assert_equal 0, Time.new("2020-10-28T16:48:07.000Z").nsec, '[Bug #19390]'
   end
 end

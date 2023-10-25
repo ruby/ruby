@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
 AC_DEFUN([RUBY_CHECK_SIZEOF],
 [dnl

@@ -1,0 +1,22 @@
+prelude: |
+  a = (1..3).lazy
+  b = a.map {|x| x}
+
+benchmark:
+  first_ary: a.zip(["a", "b", "c"]).first
+  first_nonary: a.zip("a".."c").first
+  first_noarg: a.zip.first
+
+  take3_ary: a.zip(["a", "b", "c"]).take(3).force
+  take3_nonary: a.zip("a".."c").take(3).force
+  take3_noarg: a.zip.take(3).force
+
+  chain-first_ary: b.zip(["a", "b", "c"]).first
+  chain-first_nonary: b.zip("a".."c").first
+  chain-first_noarg: b.zip.first
+
+  chain-take3_ary: b.zip(["a", "b", "c"]).take(3).force
+  chain-take3_nonary: b.zip("a".."c").take(3).force
+  chain-take3_noarg: b.zip.take(3).force
+
+  block: a.zip("a".."c") {|x, y| [x, y]}

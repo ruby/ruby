@@ -61,10 +61,16 @@ pack up your own arguments to pass as args for locking functions, etc.
  *   f.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK|m)
  *
  */
+
+#define FCNTL_VERSION "1.0.2"
+
 void
 Init_fcntl(void)
 {
     VALUE mFcntl = rb_define_module("Fcntl");
+
+    rb_define_const(mFcntl, "VERSION", rb_str_new_cstr(FCNTL_VERSION));
+
 #ifdef F_DUPFD
     /* Document-const: F_DUPFD
      *
@@ -159,6 +165,20 @@ Init_fcntl(void)
      */
     rb_define_const(mFcntl, "F_WRLCK", INT2NUM(F_WRLCK));
 #endif
+#ifdef F_SETPIPE_SZ
+    /* Document-const: F_SETPIPE_SZ
+     *
+     * Change the capacity of the pipe referred to by fd to be at least arg bytes.
+     */
+    rb_define_const(mFcntl, "F_SETPIPE_SZ", INT2NUM(F_SETPIPE_SZ));
+#endif
+#ifdef F_GETPIPE_SZ
+    /* Document-const: F_GETPIPE_SZ
+     *
+     * Return (as the function result) the capacity of the pipe referred to by fd.
+     */
+    rb_define_const(mFcntl, "F_GETPIPE_SZ", INT2NUM(F_GETPIPE_SZ));
+#endif
 #ifdef O_CREAT
     /* Document-const: O_CREAT
      *
@@ -241,5 +261,22 @@ Init_fcntl(void)
      * Mask to extract the read/write flags
      */
     rb_define_const(mFcntl, "O_ACCMODE", INT2FIX(O_RDONLY | O_WRONLY | O_RDWR));
+#endif
+#ifdef F_DUP2FD
+    /* Document-const: F_DUP2FD
+     *
+     * It is a FreeBSD specific constant and equivalent
+     * to dup2 call.
+     */
+    rb_define_const(mFcntl, "F_DUP2FD", INT2NUM(F_DUP2FD));
+#endif
+#ifdef F_DUP2FD_CLOEXEC
+    /* Document-const: F_DUP2FD_CLOEXEC
+     *
+     * It is a FreeBSD specific constant and acts
+     * similarly as F_DUP2FD but set the FD_CLOEXEC
+     * flag in addition.
+     */
+    rb_define_const(mFcntl, "F_DUP2FD_CLOEXEC", INT2NUM(F_DUP2FD_CLOEXEC));
 #endif
 }

@@ -3,7 +3,7 @@
 module Bundler
   # A stub yaml serializer that can handle only hashes and strings (as of now).
   module YAMLSerializer
-  module_function
+    module_function
 
     def dump(hash)
       yaml = String.new("---")
@@ -17,7 +17,11 @@ module Bundler
         if v.is_a?(Hash)
           yaml << dump_hash(v).gsub(/^(?!$)/, "  ") # indent all non-empty lines
         elsif v.is_a?(Array) # Expected to be array of strings
-          yaml << "\n- " << v.map {|s| s.to_s.gsub(/\s+/, " ").inspect }.join("\n- ") << "\n"
+          if v.empty?
+            yaml << " []\n"
+          else
+            yaml << "\n- " << v.map {|s| s.to_s.gsub(/\s+/, " ").inspect }.join("\n- ") << "\n"
+          end
         else
           yaml << " " << v.to_s.gsub(/\s+/, " ").inspect << "\n"
         end
@@ -54,8 +58,8 @@ module Bundler
       str.split(/\r?\n/).each do |line|
         if match = HASH_REGEX.match(line)
           indent, key, quote, val = match.captures
-          key = convert_to_backward_compatible_key(key)
-          depth = indent.scan(/  /).length
+          convert_to_backward_compatible_key!(key)
+          depth = indent.size / 2
           if quote.empty? && val.empty?
             new_hash = {}
             stack[depth][key] = new_hash
@@ -63,6 +67,7 @@ module Bundler
             last_empty_key = key
             last_hash = stack[depth]
           else
+            val = [] if val == "[]" # empty array
             stack[depth][key] = val
           end
         elsif match = ARRAY_REGEX.match(line)
@@ -76,14 +81,13 @@ module Bundler
     end
 
     # for settings' keys
-    def convert_to_backward_compatible_key(key)
-      key = "#{key}/" if key =~ /https?:/i && key !~ %r{/\Z}
-      key = key.gsub(".", "__") if key.include?(".")
-      key
+    def convert_to_backward_compatible_key!(key)
+      key << "/" if /https?:/i.match?(key) && !%r{/\Z}.match?(key)
+      key.gsub!(".", "__")
     end
 
     class << self
-      private :dump_hash, :convert_to_backward_compatible_key
+      private :dump_hash, :convert_to_backward_compatible_key!
     end
   end
 end

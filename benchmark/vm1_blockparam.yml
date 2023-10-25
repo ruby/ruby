@@ -1,7 +1,0 @@
-prelude: |
-  def m &b
-  end
-benchmark:
-  vm1_blockparam: |
-    m{}
-loop_count: 30000000

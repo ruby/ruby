@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "The interpreter passed with -t" do
+RSpec.describe "The interpreter passed with -t" do
   it "is used in subprocess" do
     fixtures = "spec/fixtures"
     interpreter = "#{fixtures}/my_ruby"
@@ -8,11 +8,11 @@ describe "The interpreter passed with -t" do
     out = out.lines.map(&:chomp).reject { |line|
       line == 'RUBY_DESCRIPTION'
     }.take(3)
-    out.should == [
+    expect(out).to eq([
       interpreter,
       interpreter,
       "CWD/#{interpreter}"
-    ]
-    ret.success?.should == true
+    ])
+    expect(ret.success?).to eq(true)
   end
 end

@@ -7,35 +7,34 @@ module Bundler
     autoload :Validator, File.expand_path("settings/validator", __dir__)
 
     BOOL_KEYS = %w[
-      allow_bundler_dependency_conflicts
       allow_deployment_source_credential_changes
       allow_offline_install
       auto_clean_without_path
       auto_install
-      auto_config_jobs
       cache_all
       cache_all_platforms
+      clean
       default_install_uses_path
       deployment
-      deployment_means_frozen
       disable_checksum_validation
       disable_exec_load
       disable_local_branch_check
-      disable_multisource
-      disable_platform_warnings
+      disable_local_revision_check
       disable_shared_gems
       disable_version_check
       force_ruby_platform
       forget_cli_options
       frozen
+      gem.changelog
       gem.coc
       gem.mit
+      git.allow_insecure
       global_gem_cache
       ignore_messages
       init_gems_rb
+      inline
       no_install
       no_prune
-      only_update_to_newer_versions
       path_relative_to_cwd
       path.system
       plugins
@@ -44,12 +43,7 @@ module Bundler
       setup_makes_kernel_gem_public
       silence_deprecations
       silence_root_warning
-      skip_default_git_sources
-      specific_platform
-      suppress_install_using_messages
-      unlock_source_unlocks_spec
       update_requires_all_flag
-      use_gem_version_promoter_for_major_updates
     ].freeze
 
     NUMBER_KEYS = %w[
@@ -61,35 +55,61 @@ module Bundler
     ].freeze
 
     ARRAY_KEYS = %w[
+      only
       with
       without
     ].freeze
 
+    STRING_KEYS = %w[
+      bin
+      cache_path
+      console
+      gem.ci
+      gem.github_username
+      gem.linter
+      gem.rubocop
+      gem.test
+      gemfile
+      path
+      shebang
+      system_bindir
+      trust-policy
+      version
+    ].freeze
+
     DEFAULT_CONFIG = {
-      :silence_deprecations => false,
-      :disable_version_check => true,
-      :prefer_patch => false,
-      :redirect => 5,
-      :retry => 3,
-      :timeout => 10,
+      "BUNDLE_SILENCE_DEPRECATIONS" => false,
+      "BUNDLE_DISABLE_VERSION_CHECK" => true,
+      "BUNDLE_PREFER_PATCH" => false,
+      "BUNDLE_REDIRECT" => 5,
+      "BUNDLE_RETRY" => 3,
+      "BUNDLE_TIMEOUT" => 10,
+      "BUNDLE_VERSION" => "lockfile",
     }.freeze
 
     def initialize(root = nil)
       @root            = root
       @local_config    = load_config(local_config_file)
+
+      @env_config      = ENV.to_h
+      @env_config.select! {|key, _value| key.start_with?("BUNDLE_") }
+      @env_config.delete("BUNDLE_")
+
       @global_config   = load_config(global_config_file)
       @temporary       = {}
+
+      @key_cache = {}
     end
 
     def [](name)
       key = key_for(name)
-      value = @temporary.fetch(key) do
-              @local_config.fetch(key) do
-              ENV.fetch(key) do
-              @global_config.fetch(key) do
-              DEFAULT_CONFIG.fetch(name) do
-                nil
-              end end end end end
+
+      value = nil
+      configs.each do |_, config|
+        value = config[key]
+        next if value.nil?
+        break
+      end
 
       converted_value(value, name)
     end
@@ -132,19 +152,22 @@ module Bundler
     end
 
     def all
-      env_keys = ENV.keys.grep(/\ABUNDLE_.+/)
+      keys = @temporary.keys.union(@global_config.keys, @local_config.keys, @env_config.keys)
 
-      keys = @temporary.keys | @global_config.keys | @local_config.keys | env_keys
-
-      keys.map do |key|
-        key.sub(/^BUNDLE_/, "").gsub(/__/, ".").downcase
-      end
+      keys.map! do |key|
+        key = key.delete_prefix("BUNDLE_")
+        key.gsub!("___", "-")
+        key.gsub!("__", ".")
+        key.downcase!
+        key
+      end.sort!
+      keys
     end
 
     def local_overrides
       repos = {}
       all.each do |k|
-        repos[$'] = self[k] if k =~ /^local\./
+        repos[k.delete_prefix("local.")] = self[k] if k.start_with?("local.")
       end
       repos
     end
@@ -171,13 +194,11 @@ module Bundler
 
     def locations(key)
       key = key_for(key)
-      locations = {}
-      locations[:temporary] = @temporary[key] if @temporary.key?(key)
-      locations[:local]  = @local_config[key] if @local_config.key?(key)
-      locations[:env]    = ENV[key] if ENV[key]
-      locations[:global] = @global_config[key] if @global_config.key?(key)
-      locations[:default] = DEFAULT_CONFIG[key] if DEFAULT_CONFIG.key?(key)
-      locations
+      configs.keys.inject({}) do |partial_locations, level|
+        value_on_level = configs[level][key]
+        partial_locations[level] = value_on_level unless value_on_level.nil?
+        partial_locations
+      end
     end
 
     def pretty_values_for(exposed_key)
@@ -185,39 +206,50 @@ module Bundler
 
       locations = []
 
-      if @temporary.key?(key)
-        locations << "Set for the current command: #{converted_value(@temporary[key], exposed_key).inspect}"
+      if value = @temporary[key]
+        locations << "Set for the current command: #{printable_value(value, exposed_key).inspect}"
       end
 
-      if @local_config.key?(key)
-        locations << "Set for your local app (#{local_config_file}): #{converted_value(@local_config[key], exposed_key).inspect}"
+      if value = @local_config[key]
+        locations << "Set for your local app (#{local_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
-      if value = ENV[key]
-        locations << "Set via #{key}: #{converted_value(value, exposed_key).inspect}"
+      if value = @env_config[key]
+        locations << "Set via #{key}: #{printable_value(value, exposed_key).inspect}"
       end
 
-      if @global_config.key?(key)
-        locations << "Set for the current user (#{global_config_file}): #{converted_value(@global_config[key], exposed_key).inspect}"
+      if value = @global_config[key]
+        locations << "Set for the current user (#{global_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
       locations
     end
 
-    # for legacy reasons, in Bundler 2, we do not respect :disable_shared_gems
-    def path
-      key  = key_for(:path)
-      path = ENV[key] || @global_config[key]
-      if path && !@temporary.key?(key) && !@local_config.key?(key)
-        return Path.new(path, false, false)
-      end
-
-      system_path = self["path.system"] || (self[:disable_shared_gems] == false)
-      Path.new(self[:path], system_path, Bundler.feature_flag.default_install_uses_path?)
+    def processor_count
+      require "etc"
+      Etc.nprocessors
+    rescue StandardError
+      1
     end
 
-    Path = Struct.new(:explicit_path, :system_path, :default_install_uses_path) do
+    # for legacy reasons, in Bundler 2, we do not respect :disable_shared_gems
+    def path
+      configs.each do |_level, settings|
+        path = value_for("path", settings)
+        path_system = value_for("path.system", settings)
+        disabled_shared_gems = value_for("disable_shared_gems", settings)
+        next if path.nil? && path_system.nil? && disabled_shared_gems.nil?
+        system_path = path_system || (disabled_shared_gems == false)
+        return Path.new(path, system_path)
+      end
+
+      path = "vendor/bundle" if self[:deployment]
+
+      Path.new(path, false)
+    end
+
+    Path = Struct.new(:explicit_path, :system_path) do
       def path
         path = base_path
         path = File.join(path, Bundler.ruby_scope) unless use_system_gems?
@@ -227,7 +259,7 @@ module Bundler
       def use_system_gems?
         return true if system_path
         return false if explicit_path
-        !default_install_uses_path
+        !Bundler.feature_flag.default_install_uses_path?
       end
 
       def base_path
@@ -264,12 +296,6 @@ module Bundler
       end
     end
 
-    def allow_sudo?
-      key = key_for(:path)
-      path_configured = @temporary.key?(key) || @local_config.key?(key)
-      !path_configured
-    end
-
     def ignore_config?
       ENV["BUNDLE_IGNORE_CONFIG"]
     end
@@ -280,20 +306,32 @@ module Bundler
 
     def validate!
       all.each do |raw_key|
-        [@local_config, ENV, @global_config].each do |settings|
-          value = converted_value(settings[key_for(raw_key)], raw_key)
-          Validator.validate!(raw_key, value, settings.to_hash.dup)
+        [@local_config, @env_config, @global_config].each do |settings|
+          value = value_for(raw_key, settings)
+          Validator.validate!(raw_key, value, settings.dup)
         end
       end
     end
 
     def key_for(key)
-      key = Settings.normalize_uri(key).to_s if key.is_a?(String) && /https?:/ =~ key
-      key = key.to_s.gsub(".", "__").upcase
-      "BUNDLE_#{key}"
+      @key_cache[key] ||= self.class.key_for(key)
     end
 
-  private
+    private
+
+    def configs
+      @configs ||= {
+        :temporary => @temporary,
+        :local => @local_config,
+        :env => @env_config,
+        :global => @global_config,
+        :default => DEFAULT_CONFIG,
+      }
+    end
+
+    def value_for(name, config)
+      converted_value(config[key_for(name)], name)
+    end
 
     def parent_setting_for(name)
       split_specific_setting_for(name)[0]
@@ -308,12 +346,20 @@ module Bundler
     end
 
     def is_bool(name)
-      BOOL_KEYS.include?(name.to_s) || BOOL_KEYS.include?(parent_setting_for(name.to_s))
+      name = self.class.key_to_s(name)
+      BOOL_KEYS.include?(name) || BOOL_KEYS.include?(parent_setting_for(name))
+    end
+
+    def is_string(name)
+      name = self.class.key_to_s(name)
+      STRING_KEYS.include?(name) || name.start_with?("local.") || name.start_with?("mirror.") || name.start_with?("build.")
     end
 
     def to_bool(value)
       case value
-      when nil, /\A(false|f|no|n|0|)\z/i, false
+      when String
+        value.match?(/\A(false|f|no|n|0|)\z/i) ? false : true
+      when nil, false
         false
       else
         true
@@ -321,16 +367,24 @@ module Bundler
     end
 
     def is_num(key)
-      NUMBER_KEYS.include?(key.to_s)
+      NUMBER_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_array(key)
-      ARRAY_KEYS.include?(key.to_s)
+      ARRAY_KEYS.include?(self.class.key_to_s(key))
+    end
+
+    def is_credential(key)
+      key == "gem.push_key"
+    end
+
+    def is_userinfo(value)
+      value.include?(":")
     end
 
     def to_array(value)
       return [] unless value
-      value.split(":").map(&:to_sym)
+      value.tr(" ", ":").split(":").map(&:to_sym)
     end
 
     def array_to_s(array)
@@ -340,7 +394,7 @@ module Bundler
     end
 
     def set_key(raw_key, value, hash, file)
-      raw_key = raw_key.to_s
+      raw_key = self.class.key_to_s(raw_key)
       value = array_to_s(value) if is_array(raw_key)
 
       key = key_for(raw_key)
@@ -355,12 +409,13 @@ module Bundler
       return unless file
       SharedHelpers.filesystem_access(file) do |p|
         FileUtils.mkdir_p(p.dirname)
-        require_relative "yaml_serializer"
-        p.open("w") {|f| f.write(YAMLSerializer.dump(hash)) }
+        p.open("w") {|f| f.write(serializer_class.dump(hash)) }
       end
     end
 
     def converted_value(value, key)
+      key = self.class.key_to_s(key)
+
       if is_array(key)
         to_array(value)
       elsif value.nil?
@@ -374,15 +429,38 @@ module Bundler
       end
     end
 
+    def printable_value(value, key)
+      converted = converted_value(value, key)
+      return converted unless converted.is_a?(String)
+
+      if is_string(key)
+        converted
+      elsif is_credential(key)
+        "[REDACTED]"
+      elsif is_userinfo(converted)
+        username, pass = converted.split(":", 2)
+
+        if pass == "x-oauth-basic"
+          username = "[REDACTED]"
+        else
+          pass = "[REDACTED]"
+        end
+
+        [username, pass].join(":")
+      else
+        converted
+      end
+    end
+
     def global_config_file
       if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
         Pathname.new(ENV["BUNDLE_CONFIG"])
-      else
-        begin
-          Bundler.user_bundle_path("config")
-        rescue PermissionError, GenericSystemCallError
-          nil
-        end
+      elsif ENV["BUNDLE_USER_CONFIG"] && !ENV["BUNDLE_USER_CONFIG"].empty?
+        Pathname.new(ENV["BUNDLE_USER_CONFIG"])
+      elsif ENV["BUNDLE_USER_HOME"] && !ENV["BUNDLE_USER_HOME"].empty?
+        Pathname.new(ENV["BUNDLE_USER_HOME"]).join("config")
+      elsif Bundler.rubygems.user_home && !Bundler.rubygems.user_home.empty?
+        Pathname.new(Bundler.rubygems.user_home).join(".bundle/config")
       end
     end
 
@@ -395,9 +473,29 @@ module Bundler
       SharedHelpers.filesystem_access(config_file, :read) do |file|
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
-        require_relative "yaml_serializer"
-        YAMLSerializer.load file.read
+        serializer_class.load(file.read).inject({}) do |config, (k, v)|
+          if k.include?("-")
+            Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
+              "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
+              "Please edit #{file} and replace any dashes in configuration keys with a triple underscore (`___`)."
+
+            # string hash keys are frozen
+            k = k.gsub("-", "___")
+          end
+
+          config[k] = v
+          config
+        end
       end
+    end
+
+    def serializer_class
+      require "rubygems/yaml_serializer"
+      Gem::YAMLSerializer
+    rescue LoadError
+      # TODO: Remove this when RubyGems 3.4 is EOL
+      require_relative "yaml_serializer"
+      YAMLSerializer
     end
 
     PER_URI_OPTIONS = %w[
@@ -413,6 +511,15 @@ module Bundler
         \z
       /ix.freeze
 
+    def self.key_for(key)
+      key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")
+      key = key_to_s(key).gsub(".", "__")
+      key.gsub!("-", "___")
+      key.upcase!
+
+      key.prepend("BUNDLE_")
+    end
+
     # TODO: duplicates Rubygems#normalize_uri
     # TODO: is this the correct place to validate mirror URIs?
     def self.normalize_uri(uri)
@@ -422,13 +529,42 @@ module Bundler
         uri = $2
         suffix = $3
       end
-      uri = "#{uri}/" unless uri.end_with?("/")
+      uri = URINormalizer.normalize_suffix(uri)
       require_relative "vendored_uri"
       uri = Bundler::URI(uri)
       unless uri.absolute?
         raise ArgumentError, format("Gem sources must be absolute. You provided '%s'.", uri)
       end
       "#{prefix}#{uri}#{suffix}"
+    end
+
+    # This is a hot method, so avoid respond_to? checks on every invocation
+    if :read.respond_to?(:name)
+      def self.key_to_s(key)
+        case key
+        when String
+          key
+        when Symbol
+          key.name
+        when Bundler::URI::HTTP
+          key.to_s
+        else
+          raise ArgumentError, "Invalid key: #{key.inspect}"
+        end
+      end
+    else
+      def self.key_to_s(key)
+        case key
+        when String
+          key
+        when Symbol
+          key.to_s
+        when Bundler::URI::HTTP
+          key.to_s
+        else
+          raise ArgumentError, "Invalid key: #{key.inspect}"
+        end
+      end
     end
   end
 end

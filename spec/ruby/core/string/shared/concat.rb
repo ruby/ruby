@@ -5,24 +5,12 @@ describe :string_concat, shared: true do
     str.should == "hello world"
   end
 
-  it "converts the given argument to a String using to_str" do
-    obj = mock('world!')
-    obj.should_receive(:to_str).and_return("world!")
-    a = 'hello '.send(@method, obj)
-    a.should == 'hello world!'
-  end
-
-  it "raises a TypeError if the given argument can't be converted to a String" do
-    -> { 'hello '.send(@method, [])        }.should raise_error(TypeError)
-    -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
-  end
-
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a.send(@method, "")     }.should raise_error(frozen_error_class)
-    -> { a.send(@method, "test") }.should raise_error(frozen_error_class)
+    -> { a.send(@method, "")     }.should raise_error(FrozenError)
+    -> { a.send(@method, "test") }.should raise_error(FrozenError)
   end
 
   it "returns a String when given a subclass instance" do
@@ -37,18 +25,6 @@ describe :string_concat, shared: true do
     str.send(@method, " world")
     str.should == "hello world"
     str.should be_an_instance_of(StringSpecs::MyString)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other is tainted" do
-      "x".send(@method, "".taint).tainted?.should == true
-      "x".send(@method, "y".taint).tainted?.should == true
-    end
-
-    it "untrusts self if other is untrusted" do
-      "x".send(@method, "".untrust).untrusted?.should == true
-      "x".send(@method, "y".untrust).untrusted?.should == true
-    end
   end
 
   describe "with Integer" do
@@ -89,12 +65,12 @@ describe :string_concat, shared: true do
       -> { "".send(@method, x) }.should raise_error(TypeError)
     end
 
-    it "raises a #{frozen_error_class} when self is frozen" do
+    it "raises a FrozenError when self is frozen" do
       a = "hello"
       a.freeze
 
-      -> { a.send(@method, 0)  }.should raise_error(frozen_error_class)
-      -> { a.send(@method, 33) }.should raise_error(frozen_error_class)
+      -> { a.send(@method, 0)  }.should raise_error(FrozenError)
+      -> { a.send(@method, 33) }.should raise_error(FrozenError)
     end
   end
 end
@@ -158,5 +134,25 @@ describe :string_concat_encoding, shared: true do
     it "uses BINARY encoding" do
       "abc".encode("BINARY").send(@method, "123".encode("US-ASCII")).encoding.should == Encoding::BINARY
     end
+  end
+end
+
+describe :string_concat_type_coercion, shared: true do
+  it "converts the given argument to a String using to_str" do
+    obj = mock('world!')
+    obj.should_receive(:to_str).and_return("world!")
+    a = 'hello '.send(@method, obj)
+    a.should == 'hello world!'
+  end
+
+  it "raises a TypeError if the given argument can't be converted to a String" do
+    -> { 'hello '.send(@method, [])        }.should raise_error(TypeError)
+    -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
+  end
+
+  it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to a String" do
+    obj = mock('world!')
+    obj.should_receive(:to_str).and_raise(NoMethodError)
+    -> { 'hello '.send(@method, obj) }.should raise_error(NoMethodError)
   end
 end

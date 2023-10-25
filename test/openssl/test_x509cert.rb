@@ -173,13 +173,14 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_sign_and_verify_rsa_sha1
-    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: "sha1")
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: "SHA1")
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true,  cert.verify(@rsa2048))
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
     cert.serial = 2
     assert_equal(false, cert.verify(@rsa2048))
+  rescue OpenSSL::X509::CertificateError # RHEL 9 disables SHA1
   end
 
   def test_sign_and_verify_rsa_md5
@@ -205,7 +206,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_sign_and_verify_rsa_dss1
-    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest::DSS1.new)
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest.new('DSS1'))
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true, cert.verify(@rsa2048))
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
@@ -229,6 +230,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     # SHA1 is allowed from OpenSSL 1.0.0 (0.9.8 requires DSS1)
     cert = issue_cert(@ca, @dsa256, 1, [], nil, nil, digest: "sha1")
     assert_equal("dsaWithSHA1", cert.signature_algorithm)
+  rescue OpenSSL::X509::CertificateError # RHEL 9 disables SHA1
   end
 
   def test_check_private_key
@@ -243,6 +245,18 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       f.rewind
       assert_equal cert.to_der, OpenSSL::X509::Certificate.new(f).to_der
     }
+  end
+
+  def test_read_der_then_pem
+    cert1 = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+    exts = [
+      # A new line before PEM block
+      ["nsComment", "Another certificate:\n" + cert1.to_pem],
+    ]
+    cert2 = issue_cert(@ca, @rsa2048, 2, exts, nil, nil)
+
+    assert_equal cert2, OpenSSL::X509::Certificate.new(cert2.to_der)
+    assert_equal cert2, OpenSSL::X509::Certificate.new(cert2.to_pem)
   end
 
   def test_eq
@@ -274,6 +288,38 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     deserialized = Marshal.load(Marshal.dump(cert))
 
     assert_equal cert.to_der, deserialized.to_der
+  end
+
+  def test_load_file_empty_pem
+    empty_path = Fixtures.file_path("pkey", "empty.pem")
+    assert_raise(OpenSSL::X509::CertificateError) do
+      OpenSSL::X509::Certificate.load_file(empty_path)
+    end
+  end
+
+  def test_load_file_fullchain_pem
+    fullchain_path = Fixtures.file_path("pkey", "fullchain.pem")
+    certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
+    assert_equal 2, certificates.size
+    assert_equal "/CN=www.codeotaku.com", certificates[0].subject.to_s
+    assert_equal "/C=US/O=Let's Encrypt/CN=R3", certificates[1].subject.to_s
+  end
+
+  def test_load_file_certificate_der
+    fullchain_path = Fixtures.file_path("pkey", "certificate.der")
+    certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
+
+    # DER encoding can only contain one certificate:
+    assert_equal 1, certificates.size
+    assert_equal "/CN=www.codeotaku.com", certificates[0].subject.to_s
+  end
+
+  def test_load_file_fullchain_garbage
+    fullchain_path = Fixtures.file_path("pkey", "garbage.txt")
+
+    assert_raise(OpenSSL::X509::CertificateError) do
+      OpenSSL::X509::Certificate.load_file(fullchain_path)
+    end
   end
 
   private

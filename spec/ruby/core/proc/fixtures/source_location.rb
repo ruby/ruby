@@ -44,7 +44,7 @@ module ProcSpecs
 
     def self.my_detached_lambda
       body = -> { true }
-      lambda(&body)
+      suppress_warning {lambda(&body)}
     end
 
     def self.my_detached_proc_new

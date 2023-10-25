@@ -1,19 +1,14 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-require 'rubygems/command_manager'
-require 'rubygems/config_file'
-require 'rubygems/deprecate'
-
-##
-# Load additional plugins from $LOAD_PATH
-
-Gem.load_env_plugins rescue nil
+require_relative "../rubygems"
+require_relative "command_manager"
+require_relative "deprecate"
 
 ##
 # Run an instance of the gem program.
@@ -25,7 +20,6 @@ Gem.load_env_plugins rescue nil
 # classes they call directly.
 
 class Gem::GemRunner
-
   def initialize
     @command_manager_class = Gem::CommandManager
     @config_file_class = Gem::ConfigFile
@@ -39,16 +33,23 @@ class Gem::GemRunner
 
     do_configuration args
 
+    begin
+      Gem.load_env_plugins
+    rescue StandardError
+      nil
+    end
+    Gem.load_plugins
+
     cmd = @command_manager_class.instance
 
     cmd.command_names.each do |command_name|
       config_args = Gem.configuration[command_name]
       config_args = case config_args
                     when String
-                      config_args.split ' '
+                      config_args.split " "
                     else
                       Array(config_args)
-                    end
+      end
       Gem::Command.add_specific_extra_args command_name, config_args
     end
 
@@ -60,7 +61,7 @@ class Gem::GemRunner
   # other arguments in the list.
 
   def extract_build_args(args) # :nodoc:
-    return [] unless offset = args.index('--')
+    return [] unless offset = args.index("--")
 
     build_args = args.slice!(offset...args.length)
 
@@ -76,7 +77,4 @@ class Gem::GemRunner
     Gem.use_paths Gem.configuration[:gemhome], Gem.configuration[:gempath]
     Gem::Command.extra_args = Gem.configuration[:gem]
   end
-
 end
-
-Gem.load_plugins

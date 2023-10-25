@@ -56,7 +56,7 @@ static const rb_data_type_t oletype_datatype = {
 /*
  * Document-class: WIN32OLE_TYPE
  *
- *   <code>WIN32OLE_TYPE</code> objects represent OLE type libarary information.
+ *   <code>WIN32OLE_TYPE</code> objects represent OLE type library information.
  */
 
 static void
@@ -883,9 +883,12 @@ foletype_inspect(VALUE self)
     return default_inspect(self, "WIN32OLE_TYPE");
 }
 
+VALUE cWIN32OLE_TYPE;
+
 void Init_win32ole_type(void)
 {
-    cWIN32OLE_TYPE = rb_define_class("WIN32OLE_TYPE", rb_cObject);
+    cWIN32OLE_TYPE = rb_define_class_under(cWIN32OLE, "Type", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_TYPE", cWIN32OLE_TYPE);
     rb_define_singleton_method(cWIN32OLE_TYPE, "ole_classes", foletype_s_ole_classes, 1);
     rb_define_singleton_method(cWIN32OLE_TYPE, "typelibs", foletype_s_typelibs, 0);
     rb_define_singleton_method(cWIN32OLE_TYPE, "progids", foletype_s_progids, 0);

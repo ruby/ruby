@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with win32-generated lockfile" do
   it "should read lockfile" do
-    File.open(bundled_app("Gemfile.lock"), "wb") do |f|
+    File.open(bundled_app_lock, "wb") do |f|
       f << "GEM\r\n"
       f << "  remote: #{file_uri_for(gem_repo1)}/\r\n"
       f << "  specs:\r\n"
@@ -21,6 +21,5 @@ RSpec.describe "bundle install with win32-generated lockfile" do
 
       gem "rack"
     G
-    expect(exitstatus).to eq(0) if exitstatus
   end
 end

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
-require 'rubygems/command'
-require 'rubygems/version_option'
+
+require_relative "helper"
+require "rubygems/command"
+require "rubygems/version_option"
 
 class TestGemVersionOption < Gem::TestCase
-
   def setup
     super
 
-    @cmd = Gem::Command.new 'dummy', 'dummy'
+    @cmd = Gem::Command.new "dummy", "dummy"
     @cmd.extend Gem::VersionOption
   end
 
@@ -44,8 +44,8 @@ class TestGemVersionOption < Gem::TestCase
 
     expected = [
       Gem::Platform::RUBY,
-      Gem::Platform.new('x86-freebsd6'),
-      Gem::Platform.new('x86-freebsd7'),
+      Gem::Platform.new("x86-freebsd6"),
+      Gem::Platform.new("x86-freebsd7"),
     ]
 
     assert_equal expected, Gem.platforms
@@ -57,7 +57,7 @@ class TestGemVersionOption < Gem::TestCase
     @cmd.handle_options %w[--platform ruby]
 
     expected = [
-      Gem::Platform::RUBY
+      Gem::Platform::RUBY,
     ]
 
     assert_equal expected, Gem.platforms
@@ -70,7 +70,7 @@ class TestGemVersionOption < Gem::TestCase
 
     expected = [
       Gem::Platform::RUBY,
-      Gem::Platform.new('x86-freebsd6'),
+      Gem::Platform.new("x86-freebsd6"),
     ]
 
     assert_equal expected, Gem.platforms
@@ -85,7 +85,7 @@ class TestGemVersionOption < Gem::TestCase
       :args => [],
       :explicit_prerelease => false,
       :prerelease => false,
-      :version => Gem::Requirement.new('> 1'),
+      :version => Gem::Requirement.new("> 1"),
     }
 
     assert_equal expected, @cmd.options
@@ -94,13 +94,13 @@ class TestGemVersionOption < Gem::TestCase
   def test_version_option_compound
     @cmd.add_version_option
 
-    @cmd.handle_options ['--version', '< 1, > 0.9']
+    @cmd.handle_options ["--version", "< 1, > 0.9"]
 
     expected = {
       :args => [],
       :explicit_prerelease => false,
       :prerelease => false,
-      :version => Gem::Requirement.new('< 1', '> 0.9'),
+      :version => Gem::Requirement.new("< 1", "> 0.9"),
     }
 
     assert_equal expected, @cmd.options
@@ -109,13 +109,13 @@ class TestGemVersionOption < Gem::TestCase
   def test_multiple_version_operator_option_compound
     @cmd.add_version_option
 
-    @cmd.handle_options ['--version', '< 1', '--version', '> 0.9']
+    @cmd.handle_options ["--version", "< 1", "--version", "> 0.9"]
 
     expected = {
       :args => [],
       :explicit_prerelease => false,
       :prerelease => false,
-      :version => Gem::Requirement.new('< 1', '> 0.9'),
+      :version => Gem::Requirement.new("< 1", "> 0.9"),
     }
 
     assert_equal expected, @cmd.options
@@ -131,7 +131,7 @@ class TestGemVersionOption < Gem::TestCase
       :args => [],
       :explicit_prerelease => true,
       :prerelease => true,
-      :version => Gem::Requirement.new('> 1'),
+      :version => Gem::Requirement.new("> 1"),
     }
 
     assert_equal expected, @cmd.options
@@ -146,7 +146,7 @@ class TestGemVersionOption < Gem::TestCase
       :args => [],
       :explicit_prerelease => false,
       :prerelease => true,
-      :version => Gem::Requirement.new('> 1.a'),
+      :version => Gem::Requirement.new("> 1.a"),
     }
 
     assert_equal expected, @cmd.options
@@ -157,10 +157,9 @@ class TestGemVersionOption < Gem::TestCase
       :args => [],
       :explicit_prerelease => false,
       :prerelease => false,
-      :version => Gem::Requirement.new('> 1'),
+      :version => Gem::Requirement.new("> 1"),
     }
 
     assert_equal expected, @cmd.options
   end
-
 end

@@ -44,20 +44,8 @@ class CGI
       # This session's PStore file will be created if it does
       # not exist, or opened if it does.
       def initialize(session, option={})
-        dir = option['tmpdir'] || Dir::tmpdir
-        prefix = option['prefix'] || ''
-        id = session.session_id
-        require 'digest/md5'
-        md5 = Digest::MD5.hexdigest(id)[0,16]
-        path = dir+"/"+prefix+md5
-        if File::exist?(path)
-          @hash = nil
-        else
-          unless session.new_session
-            raise CGI::Session::NoSession, "uninitialized session"
-          end
-          @hash = {}
-        end
+        option = {'suffix'=>''}.update(option)
+        path, @hash = session.new_store_file(option)
         @p = ::PStore.new(path)
         @p.transaction do |p|
           File.chmod(0600, p.path)

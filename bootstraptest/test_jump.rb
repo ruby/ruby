@@ -147,7 +147,7 @@ assert_equal %q{131}, %q{
   }
 }
 assert_match %r{Invalid retry}, %q{
-STDERR.reopen(STDOUT)
+$stderr = STDOUT
 begin
   eval %q{
     1.times{
@@ -297,7 +297,7 @@ assert_equal "true", %q{
 }, '[ruby-core:21379]'
 
 assert_match %r{Invalid yield}, %q{
-STDERR.reopen(STDOUT)
+$stderr = STDOUT
 begin
   eval %q{
     class Object

@@ -36,7 +36,7 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
     VALUE hostname, port;
 
     rb_scan_args(argc, argv, "011", &hostname, &port);
-    return rsock_init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER);
+    return rsock_init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER, Qnil, Qnil);
 }
 
 /*
@@ -53,15 +53,12 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
  *
  */
 static VALUE
-tcp_accept(VALUE sock)
+tcp_accept(VALUE server)
 {
-    rb_io_t *fptr;
-    union_sockaddr from;
-    socklen_t fromlen;
+    union_sockaddr buffer;
+    socklen_t length = sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(rb_cTCPSocket, fptr->fd, &from.addr, &fromlen);
+    return rsock_s_accept(rb_cTCPSocket, server, &buffer.addr, &length);
 }
 
 /* :nodoc: */
@@ -91,15 +88,12 @@ tcp_accept_nonblock(VALUE sock, VALUE ex)
  *
  */
 static VALUE
-tcp_sysaccept(VALUE sock)
+tcp_sysaccept(VALUE server)
 {
-    rb_io_t *fptr;
-    union_sockaddr from;
-    socklen_t fromlen;
+    union_sockaddr buffer;
+    socklen_t length = sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(0, fptr->fd, &from.addr, &fromlen);
+    return rsock_s_accept(0, server, &buffer.addr, &length);
 }
 
 void
@@ -139,7 +133,7 @@ rsock_init_tcpserver(void)
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
     rb_define_private_method(rb_cTCPServer,
-			     "__accept_nonblock", tcp_accept_nonblock, 1);
+                             "__accept_nonblock", tcp_accept_nonblock, 1);
     rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
     rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
     rb_define_method(rb_cTCPServer, "listen", rsock_sock_listen, 1); /* in socket.c */

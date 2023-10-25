@@ -1,10 +1,10 @@
 # frozen_string_literal: true
+
 ##
 # Specifies a Specification object that should be activated.  Also contains a
 # dependency that was used to introduce this activation.
 
 class Gem::Resolver::ActivationRequest
-
   ##
   # The parent request for this activation request.
 
@@ -29,10 +29,18 @@ class Gem::Resolver::ActivationRequest
     when Gem::Specification
       @spec == other
     when Gem::Resolver::ActivationRequest
-      @spec == other.spec && @request == other.request
+      @spec == other.spec
     else
       false
     end
+  end
+
+  def eql?(other)
+    self == other
+  end
+
+  def hash
+    @spec.hash
   end
 
   ##
@@ -51,10 +59,8 @@ class Gem::Resolver::ActivationRequest
     if @spec.respond_to? :sources
       exception = nil
       path = @spec.sources.find do |source|
-        begin
-          source.download full_spec, path
-        rescue exception
-        end
+        source.download full_spec, path
+      rescue exception
       end
       return path      if path
       raise  exception if exception
@@ -86,9 +92,7 @@ class Gem::Resolver::ActivationRequest
   end
 
   def inspect # :nodoc:
-    '#<%s for %p from %s>' % [
-      self.class, @spec, @request
-    ]
+    format("#<%s for %p from %s>", self.class, @spec, @request)
   end
 
   ##
@@ -123,12 +127,12 @@ class Gem::Resolver::ActivationRequest
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Activation request', ']' do
+    q.group 2, "[Activation request", "]" do
       q.breakable
       q.pp @spec
 
       q.breakable
-      q.text ' for '
+      q.text " for "
       q.pp @request
     end
   end
@@ -152,5 +156,4 @@ class Gem::Resolver::ActivationRequest
   def name_tuple
     @name_tuple ||= Gem::NameTuple.new(name, version, platform)
   end
-
 end

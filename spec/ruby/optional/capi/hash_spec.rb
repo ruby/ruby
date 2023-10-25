@@ -21,7 +21,7 @@ describe "C-API Hash function" do
 
       # The actual conversion is an implementation detail.
       # We only care that ultimately we get a Fixnum instance.
-      @s.rb_hash(obj).should be_an_instance_of(Fixnum)
+      @s.rb_hash(obj).should.between?(fixnum_min, fixnum_max)
     end
 
     it "calls #to_int to converts a value returned by #hash to a Fixnum" do
@@ -47,6 +47,30 @@ describe "C-API Hash function" do
 
     it "creates a hash with no default proc" do
       @s.rb_hash_new {}.default_proc.should be_nil
+    end
+  end
+
+  ruby_version_is '3.2' do
+    describe "rb_hash_new_capa" do
+      it "returns a new hash" do
+        @s.rb_hash_new_capa(3).should == {}
+      end
+
+      it "creates a hash with no default proc" do
+        @s.rb_hash_new_capa(3) {}.default_proc.should be_nil
+      end
+
+      it "raises RuntimeError when negative index is provided" do
+        -> { @s.rb_hash_new_capa(-1) }.should raise_error(RuntimeError, "st_table too big")
+      end
+    end
+  end
+
+  describe "rb_ident_hash_new" do
+    it "returns a new compare by identity hash" do
+      result = @s.rb_ident_hash_new
+      result.should == {}
+      result.compare_by_identity?.should == true
     end
   end
 

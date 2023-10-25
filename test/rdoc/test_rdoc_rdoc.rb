@@ -73,6 +73,11 @@ class TestRDocRDoc < RDoc::TestCase
     b = File.expand_path '../test_rdoc_text.rb', __FILE__
 
     assert_equal [a, b], @rdoc.gather_files([b, a, b])
+
+    assert_empty @rdoc.gather_files([b, a, b])
+
+    @rdoc.last_modified[a] -= 10
+    assert_equal [a, b], @rdoc.gather_files([b, a, b])
   end
 
   def test_handle_pipe
@@ -101,41 +106,6 @@ class TestRDocRDoc < RDoc::TestCase
     $stdin = STDIN
   end
 
-  def test_load_options
-    temp_dir do
-      options = RDoc::Options.new
-      options.markup = 'tomdoc'
-      options.write_options
-
-      options = @rdoc.load_options
-
-      assert_equal 'tomdoc', options.markup
-    end
-  end
-
-  def test_load_options_invalid
-    temp_dir do
-      File.open '.rdoc_options', 'w' do |io|
-        io.write "a: !ruby.yaml.org,2002:str |\nfoo"
-      end
-
-      e = assert_raise RDoc::Error do
-        @rdoc.load_options
-      end
-
-      options_file = File.expand_path '.rdoc_options'
-      assert_equal "#{options_file} is not a valid rdoc options file", e.message
-    end
-  end
-
-  def load_options_no_file
-    temp_dir do
-      options = @rdoc.load_options
-
-      assert_kind_of RDoc::Options, options
-    end
-  end
-
   def test_normalized_file_list
     test_path = File.expand_path(__FILE__)
     files = temp_dir do |dir|
@@ -146,7 +116,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.normalized_file_list [test_path, flag_file]
     end
 
-    files = files.map { |file| File.expand_path file }
+    files = files.map { |file, *| File.expand_path file }
 
     assert_equal [test_path], files
   end
@@ -156,7 +126,9 @@ class TestRDocRDoc < RDoc::TestCase
 
     files = @rdoc.normalized_file_list [__FILE__]
 
-    assert_empty files
+    files = files.collect {|file, mtime| file if mtime}.compact
+
+    assert_empty(files)
   end
 
   def test_normalized_file_list_non_file_directory
@@ -205,7 +177,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.normalized_file_list [File.realpath(dir)]
     end
 
-    files = files.map { |file| File.expand_path file }
+    files = files.map { |file, *| File.expand_path file }
 
     assert_equal expected_files, files
   end
@@ -236,9 +208,51 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.normalized_file_list [File.realpath(dir)]
     end
 
-    files = files.map { |file| File.expand_path file }
+    files = files.map { |file, *| File.expand_path file }
 
     assert_equal expected_files, files
+  end
+
+  def test_normalized_file_list_with_skipping_tests_enabled
+    files = temp_dir do |dir|
+      @a = File.expand_path('a.rb')
+      spec_dir = File.expand_path('spec')
+      spec_file = File.expand_path(File.join('spec', 'my_spec.rb'))
+      test_dir = File.expand_path('test')
+      test_file = File.expand_path(File.join('test', 'my_test.rb'))
+      FileUtils.touch @a
+      FileUtils.mkdir_p spec_dir
+      FileUtils.touch spec_file
+      FileUtils.mkdir_p test_dir
+      FileUtils.touch test_file
+
+      @rdoc.options.skip_tests = true
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file, *| File.expand_path file }
+    assert_equal [@a], files
+  end
+
+  def test_normalized_file_list_with_skipping_tests_disabled
+    files = temp_dir do |dir|
+      @a = File.expand_path('a.rb')
+      spec_dir = File.expand_path('spec')
+      @spec_file = File.expand_path(File.join('spec', 'my_spec.rb'))
+      test_dir = File.expand_path('test')
+      @test_file = File.expand_path(File.join('test', 'my_test.rb'))
+      FileUtils.touch @a
+      FileUtils.mkdir_p spec_dir
+      FileUtils.touch @spec_file
+      FileUtils.mkdir_p test_dir
+      FileUtils.touch @test_file
+
+      @rdoc.options.skip_tests = false
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file, *| File.expand_path file }
+    assert_equal [@a, @spec_file, @test_file], files.sort
   end
 
   def test_parse_file
@@ -282,6 +296,7 @@ class TestRDocRDoc < RDoc::TestCase
     top_level = nil
     temp_dir do |dir|
       @rdoc.options.parse %W[--root #{test_path}]
+      @rdoc.options.finish
 
       File.open 'include.txt', 'w' do |io|
         io.puts ':include: test.txt'
@@ -423,6 +438,19 @@ class TestRDocRDoc < RDoc::TestCase
       ]
 
       assert_empty @rdoc.remove_unparseable file_list
+    end
+  end
+
+  def test_remove_unparseable_CVE_2021_31799
+    omit 'for Un*x platforms' if Gem.win_platform?
+    temp_dir do
+      file_list = ['| touch evil.txt && echo tags']
+      file_list.each do |f|
+        FileUtils.touch f rescue omit
+      end
+
+      assert_equal file_list, @rdoc.remove_unparseable(file_list)
+      assert_equal file_list, Dir.children('.')
     end
   end
 

@@ -27,7 +27,7 @@ In the piano roll, `#` represents a pin that hits a note, and `|` represents a s
 The leftmost column corresponds 110Hz (low A).
 Every column corresponds a semitone higher than the left one.
 
-This program uses [the frequency modulation synthesis](http://en.wikipedia.org/wiki/Frequency_modulation_synthesis) to play the sound like a music-box.
+This program uses [the frequency modulation synthesis](https://en.wikipedia.org/wiki/Frequency_modulation_synthesis) to play the sound like a music-box.
 You can create a different-sounding tone by changing the parameter.
 For example, the following will play the sound like a harpsichord.
 

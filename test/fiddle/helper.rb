@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+
+require 'rbconfig/sizeof'
 require 'test/unit'
 require 'fiddle'
 
@@ -31,8 +33,8 @@ when /linux/
       # In the ARM 32-bit libc package such as libc6:armhf libc6:armel,
       # libc.so and libm.so are installed to /lib/arm-linux-gnu*.
       # It's not installed to /lib32.
-      dirs = Dir.glob('/lib/arm-linux-gnu*')
-      libdir = dirs[0] if dirs && File.directory?(dirs[0])
+      dir, = Dir.glob('/lib/arm-linux-gnu*')
+      libdir = dir if dir && File.directory?(dir)
     else
       libdir = '/lib32' if File.directory? '/lib32'
     end
@@ -40,15 +42,30 @@ when /linux/
     # 64-bit ruby
     libdir = '/lib64' if File.directory? '/lib64'
   end
-  libc_so = File.join(libdir, "libc.so.6")
-  libm_so = File.join(libdir, "libm.so.6")
+
+  # Handle musl libc
+  libc_so, = Dir.glob(File.join(libdir, "libc.musl*.so*"))
+  if libc_so
+    libm_so = libc_so
+  else
+    # glibc
+    case RUBY_PLATFORM
+    when /alpha-linux/, /ia64-linux/
+      libc_so = "libc.so.6.1"
+      libm_so = "libm.so.6.1"
+    else
+      libc_so = "libc.so.6"
+      libm_so = "libm.so.6"
+    end
+  end
 when /mingw/, /mswin/
   require "rbconfig"
   crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
   libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
-  libc_so = "/usr/lib/libc.dylib"
-  libm_so = "/usr/lib/libm.dylib"
+  libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
+  # macOS 11.0+ removed libSystem.B.dylib from /usr/lib. But It works with dlopen.
+  rigid_path = true
 when /kfreebsd/
   libc_so = "/lib/libc.so.0.1"
   libm_so = "/lib/libm.so.1"
@@ -85,9 +102,9 @@ when /aix/
     funcs=%w!sin sinf strcpy strncpy!
     expfile='dltest.exp'
     require 'tmpdir'
-    Dir.mktmpdir do |dir|
+    Dir.mktmpdir do |_dir|
       begin
-        Dir.chdir dir
+        Dir.chdir _dir
         %x!/usr/bin/ar x /usr/lib/libc.a #{cobjs.join(' ')}!
         %x!/usr/bin/ar x /usr/lib/libm.a #{mobjs.join(' ')}!
         %x!echo "#{funcs.join("\n")}\n" > #{expfile}!
@@ -104,6 +121,18 @@ when /aix/
       end
     end
   end
+when /haiku/
+  libdir = '/system/lib'
+  case [0].pack('L!').size
+  when 4
+    # 32-bit ruby
+    libdir = '/system/lib/x86' if File.directory? '/system/lib/x86'
+  when 8
+    # 64-bit ruby
+    libdir = '/system/lib/' if File.directory? '/system/lib/'
+  end
+  libc_so = File.join(libdir, "libroot.so")
+  libm_so = File.join(libdir, "libroot.so")
 else
   libc_so = ARGV[0] if ARGV[0] && ARGV[0][0] == ?/
   libm_so = ARGV[1] if ARGV[1] && ARGV[1][0] == ?/
@@ -112,8 +141,10 @@ else
   end
 end
 
-libc_so = nil if !libc_so || (libc_so[0] == ?/ && !File.file?(libc_so))
-libm_so = nil if !libm_so || (libm_so[0] == ?/ && !File.file?(libm_so))
+unless rigid_path
+  libc_so = nil if libc_so && libc_so[0] == ?/ && !File.file?(libc_so)
+  libm_so = nil if libm_so && libm_so[0] == ?/ && !File.file?(libm_so)
+end
 
 if !libc_so || !libm_so
   ruby = EnvUtil.rubybin
@@ -141,6 +172,13 @@ module Fiddle
       if /linux/ =~ RUBY_PLATFORM
         GC.start
       end
+    end
+
+    def under_gc_stress
+      stress, GC.stress = GC.stress, true
+      yield
+    ensure
+      GC.stress = stress
     end
   end
 end

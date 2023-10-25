@@ -8,6 +8,10 @@ RSpec.describe Bundler::ParallelInstaller::SpecInstallation do
     def a_spec.name
       "I like tests"
     end
+
+    def a_spec.full_name
+      "I really like tests"
+    end
     a_spec
   end
 

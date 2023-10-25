@@ -11,9 +11,10 @@ module Bundler
 
       protected :original_path
 
-      DEFAULT_GLOB = "{,*,*/*}.gemspec".freeze
+      DEFAULT_GLOB = "{,*,*/*}.gemspec"
 
       def initialize(options)
+        @checksum_store = Checksum::Store.new
         @options = options.dup
         @glob = options["glob"] || DEFAULT_GLOB
 
@@ -82,7 +83,9 @@ module Bundler
       end
 
       def install(spec, options = {})
-        print_using_message "Using #{version_message(spec)} from #{self}"
+        using_message = "Using #{version_message(spec, options[:previous_spec])} from #{self}"
+        using_message += " and installing its executables" unless spec.executables.empty?
+        print_using_message using_message
         generate_bin(spec, :disable_extensions => true)
         nil # no post-install message
       end
@@ -125,14 +128,18 @@ module Bundler
         @expanded_original_path ||= expand(original_path)
       end
 
-    private
+      private
 
       def expanded_path
         @expanded_path ||= expand(path)
       end
 
       def expand(somepath)
-        somepath.expand_path(root_path)
+        if Bundler.current_ruby.jruby? # TODO: Unify when https://github.com/rubygems/bundler/issues/7598 fixed upstream and all supported jrubies include the fix
+          somepath.expand_path(root_path).expand_path
+        else
+          somepath.expand_path(root_path)
+        end
       rescue ArgumentError => e
         Bundler.ui.debug(e)
         raise PathError, "There was an error while trying to use the path " \
@@ -167,7 +174,7 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Dir["#{expanded_path}/#{@glob}"].sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
 
@@ -218,13 +225,13 @@ module Bundler
 
         # Some gem authors put absolute paths in their gemspec
         # and we have to save them from themselves
-        spec.files = spec.files.map do |p|
-          next p unless p =~ /\A#{Pathname::SEPARATOR_PAT}/
-          next if File.directory?(p)
+        spec.files = spec.files.map do |path|
+          next path unless /\A#{Pathname::SEPARATOR_PAT}/.match?(path)
+          next if File.directory?(path)
           begin
-            Pathname.new(p).relative_path_from(gem_dir).to_s
+            Pathname.new(path).relative_path_from(gem_dir).to_s
           rescue ArgumentError
-            p
+            path
           end
         end.compact
 

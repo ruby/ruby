@@ -17,7 +17,7 @@ module Bundler
       perform_bundle_install unless options["skip-install"]
     end
 
-  private
+    private
 
     def perform_bundle_install
       Installer.install(Bundler.root, Bundler.definition)
@@ -40,7 +40,7 @@ module Bundler
       raise InvalidOption, "Please specify gems to add." if gems.empty?
 
       version.to_a.each do |v|
-        raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN =~ v.to_s
+        raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN.match?(v.to_s)
       end
     end
   end

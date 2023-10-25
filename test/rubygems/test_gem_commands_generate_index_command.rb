@@ -1,14 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
-require 'rubygems/indexer'
-require 'rubygems/commands/generate_index_command'
 
-unless defined?(Builder::XChar)
-  warn "generate_index tests are being skipped.  Install builder gem."
-end
+require_relative "helper"
+require "rubygems/indexer"
+require "rubygems/commands/generate_index_command"
 
 class TestGemCommandsGenerateIndexCommand < Gem::TestCase
-
   def setup
     super
 
@@ -39,22 +35,22 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
   end
 
   def test_handle_options_directory
-    return if win_platform?
-    refute_equal '/nonexistent', @cmd.options[:directory]
+    return if Gem.win_platform?
+    refute_equal "/nonexistent", @cmd.options[:directory]
 
     @cmd.handle_options %w[--directory /nonexistent]
 
-    assert_equal '/nonexistent', @cmd.options[:directory]
+    assert_equal "/nonexistent", @cmd.options[:directory]
   end
 
   def test_handle_options_directory_windows
-    return unless win_platform?
+    return unless Gem.win_platform?
 
-    refute_equal '/nonexistent', @cmd.options[:directory]
+    refute_equal "/nonexistent", @cmd.options[:directory]
 
     @cmd.handle_options %w[--directory C:/nonexistent]
 
-    assert_equal 'C:/nonexistent', @cmd.options[:directory]
+    assert_equal "C:/nonexistent", @cmd.options[:directory]
   end
 
   def test_handle_options_update
@@ -82,5 +78,4 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
       "WARNING:  The \"--no-modern\" option has been deprecated and will be removed in Rubygems 4.0. The `--no-modern` option is currently ignored. Modern indexes (specs, latest_specs, and prerelease_specs) are always generated.\n",
       @ui.error
   end
-
-end if defined?(Builder::XChar)
+end

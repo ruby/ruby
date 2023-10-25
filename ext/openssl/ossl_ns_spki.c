@@ -50,7 +50,7 @@ static const rb_data_type_t ossl_netscape_spki_type = {
     {
 	0, ossl_netscape_spki_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -350,7 +350,7 @@ ossl_spki_verify(VALUE self, VALUE key)
  *   spki = OpenSSL::Netscape::SPKI.new
  *   spki.challenge = "RandomChallenge"
  *   spki.public_key = key.public_key
- *   spki.sign(key, OpenSSL::Digest::SHA256.new)
+ *   spki.sign(key, OpenSSL::Digest.new('SHA256'))
  *   #send a request containing this to a server generating a certificate
  * === Verifying an SPKI request
  *   request = #...

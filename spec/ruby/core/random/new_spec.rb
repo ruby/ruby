@@ -1,10 +1,11 @@
+require_relative "../../spec_helper"
 describe "Random.new" do
   it "returns a new instance of Random" do
     Random.new.should be_an_instance_of(Random)
   end
 
   it "uses a random seed value if none is supplied" do
-    Random.new.seed.should be_an_instance_of(Bignum)
+    Random.new.seed.should be_an_instance_of(Integer)
   end
 
   it "returns Random instances initialized with different seeds" do
