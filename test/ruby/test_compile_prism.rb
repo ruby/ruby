@@ -597,6 +597,42 @@ module Prism
       assert_prism_eval("to_s")
     end
 
+    def test_CallAndWriteNode
+      test_prism_eval(<<-CODE
+        def Object.test_call_and_write_node; end;
+        Object.test_call_and_write_node &&= 1
+      CODE
+      )
+
+      test_prism_eval(<<-CODE
+        def Object.test_call_and_write_node
+          "str"
+        end
+        def Object.test_call_and_write_node=(val)
+          val
+        end
+        Object.test_call_and_write_node &&= 1
+      CODE
+      )
+
+      test_prism_eval(<<-CODE
+        def self.test_call_and_write_node; end;
+        self.test_call_and_write_node &&= 1
+      CODE
+      )
+
+      test_prism_eval(<<-CODE
+        def self.test_call_and_write_node
+          "str"
+        end
+        def self.test_call_and_write_node=(val)
+          val
+        end
+        self.test_call_and_write_node &&= 1
+      CODE
+      )
+    end
+
     def test_KeywordHashNode
       assert_prism_eval("[a: [:b, :c]]")
     end
