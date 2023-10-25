@@ -3,6 +3,8 @@
 # This file is organized to match itemization in https://github.com/ruby/prism/issues/1335
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
+    # Subclass is used for tests which need it
+    class Subclass; end
     ############################################################################
     # Literals                                                                 #
     ############################################################################
@@ -599,19 +601,19 @@ module Prism
 
     def test_CallAndWriteNode
       test_prism_eval(<<-CODE
-        def Object.test_call_and_write_node; end;
-        Object.test_call_and_write_node &&= 1
+        def Subclass.test_call_and_write_node; end;
+        Subclass.test_call_and_write_node &&= 1
       CODE
       )
 
       test_prism_eval(<<-CODE
-        def Object.test_call_and_write_node
+        def Subclass.test_call_and_write_node
           "str"
         end
-        def Object.test_call_and_write_node=(val)
+        def Subclass.test_call_and_write_node=(val)
           val
         end
-        Object.test_call_and_write_node &&= 1
+        Subclass.test_call_and_write_node &&= 1
       CODE
       )
 
@@ -635,19 +637,19 @@ module Prism
 
     def test_CallOrWriteNode
       test_prism_eval(<<-CODE
-        def Object.test_call_or_write_node; end;
-        def Object.test_call_or_write_node=(val)
+        def Subclass.test_call_or_write_node; end;
+        def Subclass.test_call_or_write_node=(val)
           val
         end
-        Object.test_call_or_write_node ||= 1
+        Subclass.test_call_or_write_node ||= 1
       CODE
       )
 
       test_prism_eval(<<-CODE
-        def Object.test_call_or_write_node
+        def Subclass.test_call_or_write_node
           "str"
         end
-        Object.test_call_or_write_node ||= 1
+        Subclass.test_call_or_write_node ||= 1
       CODE
       )
 
@@ -671,13 +673,13 @@ module Prism
 
     def test_CallOperatorWriteNode
       test_prism_eval(<<-CODE
-        def Object.test_call_operator_write_node
+        def Subclass.test_call_operator_write_node
           2
         end
-        def Object.test_call_operator_write_node=(val)
+        def Subclass.test_call_operator_write_node=(val)
           val
         end
-        Object.test_call_operator_write_node += 1
+        Subclass.test_call_operator_write_node += 1
       CODE
       )
     end
