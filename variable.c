@@ -63,22 +63,6 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
 static st_table *generic_iv_tbl_;
 
-static inline st_table *
-RCLASS_IV_HASH(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-    return (st_table *)RCLASS_IVPTR(obj);
-}
-
-static inline void
-RCLASS_SET_IV_HASH(VALUE obj, const st_table *tbl)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-    RCLASS_IVPTR(obj) = (VALUE *)tbl;
-}
-
 void
 Init_var_tables(void)
 {
