@@ -620,8 +620,8 @@ module Prism
     end
 
     def test_NoKeywordsParameterNode
-      test_prism_eval("def prism_test_no_keywords(**nil); end")
-      test_prism_eval("def prism_test_no_keywords(a, b = 2, **nil); end")
+      assert_prism_eval("def prism_test_no_keywords(**nil); end")
+      assert_prism_eval("def prism_test_no_keywords(a, b = 2, **nil); end")
     end
 
     def test_OptionalParameterNode
@@ -629,8 +629,8 @@ module Prism
     end
 
     def test_ParametersNode
-      test_prism_eval("def prism_test_parameters_node(bar, baz); end")
-      test_prism_eval("def prism_test_parameters_node(a, b = 2); end")
+      assert_prism_eval("def prism_test_parameters_node(bar, baz); end")
+      assert_prism_eval("def prism_test_parameters_node(a, b = 2); end")
     end
 
     def test_UndefNode
