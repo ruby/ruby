@@ -10631,8 +10631,10 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         update_cvc_tbl(objspace, obj);
         update_superclasses(objspace, obj);
 
-        for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
-            UPDATE_IF_MOVED(objspace, RCLASS_IVPTR(obj)[i]);
+        if (!rb_shape_obj_too_complex(obj)) {
+            for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
+                UPDATE_IF_MOVED(objspace, RCLASS_IVPTR(obj)[i]);
+            }
         }
 
         update_class_ext(objspace, RCLASS_EXT(obj));
