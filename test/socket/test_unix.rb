@@ -172,7 +172,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       rescue Errno::ETOOMANYREFS => e
         # for arm64-neoverse-n1
         omit e.message
-      end  
+      end
       assert_equal([true]*x, thrs.map { |t| t.value })
       assert_equal x * y, nr
     ensure
