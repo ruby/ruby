@@ -669,6 +669,19 @@ module Prism
       )
     end
 
+    def test_CallOperatorWriteNode
+      test_prism_eval(<<-CODE
+        def Object.test_call_operator_write_node
+          2
+        end
+        def Object.test_call_operator_write_node=(val)
+          val
+        end
+        Object.test_call_operator_write_node += 1
+      CODE
+      )
+    end
+
     def test_KeywordHashNode
       assert_prism_eval("[a: [:b, :c]]")
     end
