@@ -677,7 +677,7 @@ pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *
 }
 
 static void
-pm_compile_call_and_or_node(bool and_node, pm_node_t *receiver, pm_node_t *value, pm_constant_id_t write_name, pm_constant_id_t read_name, LINK_ANCHOR *const ret, rb_iseq_t *iseq, int lineno, const uint8_t * src, bool popped, pm_scope_node_t *scope_node)
+pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t *value, pm_constant_id_t write_name, pm_constant_id_t read_name, LINK_ANCHOR *const ret, rb_iseq_t *iseq, int lineno, const uint8_t * src, bool popped, pm_scope_node_t *scope_node)
 {
     LABEL *call_end_label = NEW_LABEL(lineno);
     LABEL *end_label = NEW_LABEL(lineno);
@@ -1167,7 +1167,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_CALL_AND_WRITE_NODE: {
         pm_call_and_write_node_t *call_and_write_node = (pm_call_and_write_node_t*) node;
 
-        pm_compile_call_and_or_node(true, call_and_write_node->receiver, call_and_write_node->value, call_and_write_node->write_name, call_and_write_node->read_name, ret, iseq, lineno, src, popped, scope_node);
+        pm_compile_call_and_or_write_node(true, call_and_write_node->receiver, call_and_write_node->value, call_and_write_node->write_name, call_and_write_node->read_name, ret, iseq, lineno, src, popped, scope_node);
+
+        return;
+      }
+      case PM_CALL_OR_WRITE_NODE: {
+        pm_call_or_write_node_t *call_or_write_node = (pm_call_or_write_node_t*) node;
+
+        pm_compile_call_and_or_write_node(false, call_or_write_node->receiver, call_or_write_node->value, call_or_write_node->write_name, call_or_write_node->read_name, ret, iseq, lineno, src, popped, scope_node);
+
         return;
       }
       case PM_CLASS_NODE: {
