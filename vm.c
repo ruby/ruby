@@ -2087,14 +2087,7 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
         return FALSE;
     }
 
-    const rb_method_definition_t *def = me->def;
-    switch (def->type) {
-      case VM_METHOD_TYPE_CFUNC:
-      case VM_METHOD_TYPE_OPTIMIZED:
-        return TRUE;
-      default:
-        return FALSE;
-    }
+    return METHOD_ENTRY_BASIC(me);
 }
 
 static void
@@ -2155,9 +2148,6 @@ vm_init_redefined_flag(void)
 {
     ID mid;
     VALUE bop;
-
-    vm_opt_method_def_table = st_init_numtable();
-    vm_opt_mid_table = st_init_numtable();
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
@@ -4066,7 +4056,9 @@ Init_VM(void)
 
         rb_objspace_gc_enable(vm->objspace);
     }
-    vm_init_redefined_flag();
+
+    vm_opt_method_def_table = st_init_numtable();
+    vm_opt_mid_table = st_init_numtable();
 
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
     rb_add_method_optimized(rb_singleton_class(rb_block_param_proxy), idCall,
@@ -4076,6 +4068,12 @@ Init_VM(void)
 
     /* vm_backtrace.c */
     Init_vm_backtrace();
+}
+
+void
+Init_vm_redefined(void)
+{
+    vm_init_redefined_flag();
 }
 
 void

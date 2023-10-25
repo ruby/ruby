@@ -107,6 +107,7 @@ rb_call_builtin_inits(void)
     BUILTIN(rjit_c);
     BUILTIN(rjit);
 #endif
+    CALL(vm_redefined);
     Init_builtin_prelude();
 }
 #undef CALL

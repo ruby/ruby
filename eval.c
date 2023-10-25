@@ -88,7 +88,6 @@ ruby_setup(void)
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_call_inits();
         ruby_prog_init();
-        GET_VM()->running = 1;
     }
     EC_POP_TAG();
 
@@ -119,6 +118,7 @@ ruby_options(int argc, char **argv)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
+        GET_VM()->running = 1;
     }
     else {
         rb_ec_clear_current_thread_trace_func(ec);
