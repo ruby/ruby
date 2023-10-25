@@ -482,7 +482,10 @@ start:
     }
 
     pthread_detach(th);
-#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
+#if defined(__s390__) || defined(__s390x__) || defined(__zarch__) || defined(__SYSC_ZARCH__)
+# define S390X
+#endif
+#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU) && !defined(S390X)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
     CPU_SET(sched_getcpu(), &tmp_cpu_set);
@@ -701,7 +704,7 @@ start:
     }
 
     pthread_detach(th);
-#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
+#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU) && !defined(S390X)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
     CPU_SET(sched_getcpu(), &tmp_cpu_set);
