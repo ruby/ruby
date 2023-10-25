@@ -308,39 +308,45 @@ module Lrama
       @nterms ||= @symbols.select(&:nterm?)
     end
 
+    def scan_reference(scanner)
+      start = scanner.pos
+      case
+      # $ references
+      # It need to wrap an identifier with brackets to use ".-" for identifiers
+      when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
+        tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
+        return [:dollar, "$", tag, start, scanner.pos - 1]
+      when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
+        tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
+        return [:dollar, Integer(scanner[2]), tag, start, scanner.pos - 1]
+      when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
+        tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
+        return [:dollar, scanner[2], tag, start, scanner.pos - 1]
+      when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
+        tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
+        return [:dollar, scanner[2], tag, start, scanner.pos - 1]
+
+      # @ references
+      # It need to wrap an identifier with brackets to use ".-" for identifiers
+      when scanner.scan(/@\$/) # @$
+        return [:at, "$", nil, start, scanner.pos - 1]
+      when scanner.scan(/@(\d+)/) # @1
+        return [:at, Integer(scanner[1]), nil, start, scanner.pos - 1]
+      when scanner.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
+        return [:at, scanner[1], nil, start, scanner.pos - 1]
+      when scanner.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
+        return [:at, scanner[1], nil, start, scanner.pos - 1]
+      end
+    end
+
     def extract_references
       unless initial_action.nil?
         scanner = StringScanner.new(initial_action.s_value)
         references = []
 
         while !scanner.eos? do
-          start = scanner.pos
-          case
-          # $ references
-          # It need to wrap an identifier with brackets to use ".-" for identifiers
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, "$", tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, Integer(scanner[2]), tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-
-          # @ references
-          # It need to wrap an identifier with brackets to use ".-" for identifiers
-          when scanner.scan(/@\$/) # @$
-            references << [:at, "$", nil, start, scanner.pos - 1]
-          when scanner.scan(/@(\d+)/) # @1
-            references << [:at, Integer(scanner[1]), nil, start, scanner.pos - 1]
-          when scanner.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
-            references << [:at, scanner[1], nil, start, scanner.pos - 1]
-          when scanner.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
-            references << [:at, scanner[1], nil, start, scanner.pos - 1]
+          if reference = scan_reference(scanner)
+            references << reference
           else
             scanner.getch
           end
@@ -355,33 +361,8 @@ module Lrama
         references = []
 
         while !scanner.eos? do
-          start = scanner.pos
-          case
-          # $ references
-          # It need to wrap an identifier with brackets to use ".-" for identifiers
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, "$", tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, Integer(scanner[2]), tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-
-          # @ references
-          # It need to wrap an identifier with brackets to use ".-" for identifiers
-          when scanner.scan(/@\$/) # @$
-            references << [:at, "$", nil, start, scanner.pos - 1]
-          when scanner.scan(/@(\d+)/) # @1
-            references << [:at, Integer(scanner[1]), nil, start, scanner.pos - 1]
-          when scanner.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
-            references << [:at, scanner[1], nil, start, scanner.pos - 1]
-          when scanner.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
-            references << [:at, scanner[1], nil, start, scanner.pos - 1]
+          if reference = scan_reference(scanner)
+            references << reference
           else
             scanner.getch
           end
@@ -396,33 +377,8 @@ module Lrama
         references = []
 
         while !scanner.eos? do
-          start = scanner.pos
-          case
-          # $ references
-          # It need to wrap an identifier with brackets to use ".-" for identifiers
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, "$", tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, Integer(scanner[2]), tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-          when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
-            tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-            references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-
-          # @ references
-          # It need to wrap an identifier with brackets to use ".-" for identifiers
-          when scanner.scan(/@\$/) # @$
-            references << [:at, "$", nil, start, scanner.pos - 1]
-          when scanner.scan(/@(\d+)/) # @1
-            references << [:at, Integer(scanner[1]), nil, start, scanner.pos - 1]
-          when scanner.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
-            references << [:at, scanner[1], nil, start, scanner.pos - 1]
-          when scanner.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
-            references << [:at, scanner[1], nil, start, scanner.pos - 1]
+          if reference = scan_reference(scanner)
+            references << reference
           else
             scanner.getch
           end
@@ -440,34 +396,9 @@ module Lrama
           references = []
 
           while !scanner.eos? do
-            start = scanner.pos
             case
-            # $ references
-            # It need to wrap an identifier with brackets to use ".-" for identifiers
-            when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\$/) # $$, $<long>$
-              tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-              references << [:dollar, "$", tag, start, scanner.pos - 1]
-            when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
-              tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-              references << [:dollar, Integer(scanner[2]), tag, start, scanner.pos - 1]
-            when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_][a-zA-Z0-9_]*)/) # $foo, $expr, $<long>program (named reference without brackets)
-              tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-              references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-            when scanner.scan(/\$(<[a-zA-Z0-9_]+>)?\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # $expr.right, $expr-right, $<long>program (named reference with brackets)
-              tag = scanner[1] ? Lrama::Lexer::Token.new(type: Lrama::Lexer::Token::Tag, s_value: scanner[1]) : nil
-              references << [:dollar, scanner[2], tag, start, scanner.pos - 1]
-
-            # @ references
-            # It need to wrap an identifier with brackets to use ".-" for identifiers
-            when scanner.scan(/@\$/) # @$
-              references << [:at, "$", nil, start, scanner.pos - 1]
-            when scanner.scan(/@(\d+)/) # @1
-              references << [:at, Integer(scanner[1]), nil, start, scanner.pos - 1]
-            when scanner.scan(/@([a-zA-Z][a-zA-Z0-9_]*)/) # @foo, @expr (named reference without brackets)
-              references << [:at, scanner[1], nil, start, scanner.pos - 1]
-            when scanner.scan(/@\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/) # @expr.right, @expr-right  (named reference with brackets)
-              references << [:at, scanner[1], nil, start, scanner.pos - 1]
-
+            when reference = scan_reference(scanner)
+              references << reference
             when scanner.scan(/\/\*/)
               scanner.scan_until(/\*\//)
             else
@@ -480,14 +411,6 @@ module Lrama
           build_references(token)
         end
       end
-    end
-
-    def create_token(type, s_value, line, column)
-      t = Token.new(type: type, s_value: s_value)
-      t.line = line
-      t.column = column
-
-      return t
     end
 
     private
