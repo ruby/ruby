@@ -2,21 +2,19 @@
 
 require 'benchmark'
 
-i, o = IO.pipe
-o.sync = true
+SIZE = 128
+ARGUMENTS = 100
+REPEATS = 10000
 
-DOT = ".".freeze
+output = File.open(File::NULL, "w")
+output.sync = true
 
-chunks = 100_000.times.collect{DOT}
+DOT = ("." * SIZE).freeze
+chunks = ARGUMENTS.times.collect{DOT}
 
-thread = Thread.new do
-  while i.read(1024)
-  end
+REPEATS.times do
+  # output.write(*chunks)
+  output.puts(*chunks)
 end
 
-100.times do
-  o.write(*chunks)
-end
-
-o.close
-thread.join
+output.close
