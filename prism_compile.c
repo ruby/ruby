@@ -735,7 +735,7 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
  * receiver in the case of a call, the parent constant in the case of a constant
  * path).
  */
-    static uint8_t
+static uint8_t
 pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, uint8_t pushed, bool nested)
 {
     switch (PM_NODE_TYPE(node)) {
@@ -1175,6 +1175,39 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_call_or_write_node_t *call_or_write_node = (pm_call_or_write_node_t*) node;
 
         pm_compile_call_and_or_write_node(false, call_or_write_node->receiver, call_or_write_node->value, call_or_write_node->write_name, call_or_write_node->read_name, ret, iseq, lineno, src, popped, scope_node);
+
+        return;
+      }
+      case PM_CALL_OPERATOR_WRITE_NODE: {
+        pm_call_operator_write_node_t *call_operator_write_node = (pm_call_operator_write_node_t*) node;
+
+        NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+        int flag = 0;
+
+        if (PM_NODE_TYPE_P(call_operator_write_node->receiver, PM_SELF_NODE)) {
+            flag = VM_CALL_FCALL;
+        }
+
+        PM_COMPILE(call_operator_write_node->receiver);
+
+        ID write_name_id = pm_constant_id_lookup(scope_node, call_operator_write_node->write_name);
+        ID read_name_id = pm_constant_id_lookup(scope_node, call_operator_write_node->read_name);
+        ID operator_id = pm_constant_id_lookup(scope_node, call_operator_write_node->operator);
+        ADD_INSN(ret, &dummy_line_node, dup);
+
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, read_name_id, INT2FIX(0), INT2FIX(flag));
+
+        PM_COMPILE(call_operator_write_node->value);
+        ADD_SEND(ret, &dummy_line_node, operator_id, INT2FIX(1));
+
+        if (!popped) {
+            PM_SWAP;
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+        }
+
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, write_name_id, INT2FIX(1), INT2FIX(flag));
+        ADD_INSN(ret, &dummy_line_node, pop);
 
         return;
       }
