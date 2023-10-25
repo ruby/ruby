@@ -56,7 +56,7 @@
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
-#include "prism/prism.h"
+#include "prism_compile.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
