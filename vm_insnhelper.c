@@ -1809,7 +1809,16 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
                             }
                         }
                         break;
-                      case ISEQ_TYPE_EVAL:
+                      case ISEQ_TYPE_EVAL: {
+                        const rb_iseq_t *is = escape_cfp->iseq;
+                        enum rb_iseq_type t = ISEQ_BODY(is)->type;
+                        while (t == ISEQ_TYPE_RESCUE || t == ISEQ_TYPE_ENSURE || t == ISEQ_TYPE_EVAL) {
+                            if (!(is = ISEQ_BODY(is)->parent_iseq)) break;
+                            t = ISEQ_BODY(is)->type;
+                        }
+                        toplevel = t == ISEQ_TYPE_TOP || t == ISEQ_TYPE_MAIN;
+                        break;
+                      }
                       case ISEQ_TYPE_CLASS:
                         toplevel = 0;
                         break;
