@@ -61,7 +61,6 @@ module Lrama
         o.separator ''
         o.separator 'Output:'
         o.on('-H', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
-        o.on('-h=[FILE]', 'also produce a header file named FILE (deprecated)') {|v| @options.header = true; @options.header_file = v }
         o.on('-d', 'also produce a header file') { @options.header = true }
         o.on('-r', '--report=THINGS', Array, 'also produce details on the automaton') {|v| @report = v }
         o.on('--report-file=FILE', 'also produce details on the automaton output to a file named FILE') {|v| @options.report_file = v }
@@ -74,7 +73,7 @@ module Lrama
         o.separator ''
         o.separator 'Other options:'
         o.on('-V', '--version', "output version information and exit") {|v| puts "lrama #{Lrama::VERSION}"; exit 0 }
-        o.on('--help', "display this help and exit") {|v| puts o; exit 0 }
+        o.on('-h', '--help', "display this help and exit") {|v| puts o; exit 0 }
         o.separator ''
         o.parse!(argv)
       end

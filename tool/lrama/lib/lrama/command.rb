@@ -8,7 +8,7 @@ module Lrama
       warning = Lrama::Warning.new
       text = options.y.read
       options.y.close if options.y != STDIN
-      grammar = Lrama::Parser.new(text).parse
+      grammar = Lrama::Parser.new(text, options.grammar_file).parse
       states = Lrama::States.new(grammar, warning, trace_state: (options.trace_opts[:automaton] || options.trace_opts[:closure]))
       states.compute
       context = Lrama::Context.new(states)
