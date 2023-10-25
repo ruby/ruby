@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe :io_external_encoding_write, shared: true do
   describe "when Encoding.default_internal is nil" do
@@ -91,6 +92,14 @@ describe "IO#external_encoding" do
 
     @io.close if @io
     rm_r @name
+  end
+
+  ruby_version_is '3.1' do
+    it "can be retrieved from a closed stream" do
+      io = IOSpecs.io_fixture("lines.txt", "r")
+      io.close
+      io.external_encoding.should equal(Encoding.default_external)
+    end
   end
 
   describe "with 'r' mode" do

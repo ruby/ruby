@@ -2,7 +2,6 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 
 describe :hash_to_s, shared: true do
-
   it "returns a string representation with same order as each()" do
     h = { a: [1, 2], b: -2, d: -6, nil => nil }
 
@@ -77,22 +76,14 @@ describe :hash_to_s, shared: true do
     y.send(@method).should == "{1=>{0=>{...}}}"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted string if self is tainted and not empty" do
-      {}.taint.send(@method).tainted?.should be_false
-      { nil => nil }.taint.send(@method).tainted?.should be_true
-    end
-
-    it "returns an untrusted string if self is untrusted and not empty" do
-      {}.untrust.send(@method).untrusted?.should be_false
-      { nil => nil }.untrust.send(@method).untrusted?.should be_true
-    end
-  end
-
   it "does not raise if inspected result is not default external encoding" do
     utf_16be = mock("utf_16be")
     utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
 
     {a: utf_16be}.send(@method).should == '{:a=>"utf_16be \u3042"}'
+  end
+
+  it "works for keys and values whose #inspect return a frozen String" do
+    { true => false }.to_s.should == "{true=>false}"
   end
 end

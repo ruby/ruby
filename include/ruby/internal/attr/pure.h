@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_PURE.
  */
 #include "ruby/internal/compiler_since.h"
@@ -33,7 +33,7 @@
 # define RBIMPL_ATTR_PURE() /* void */
 #endif
 
-/** Enables #RBIMPL_ATTR_PURE iff. ! #RUBY_DEBUG. */
+/** Enables #RBIMPL_ATTR_PURE if and only if. ! #RUBY_DEBUG. */
 #if !RUBY_DEBUG
 # define RBIMPL_ATTR_PURE_UNLESS_DEBUG() RBIMPL_ATTR_PURE()
 #else

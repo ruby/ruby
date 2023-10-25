@@ -6,17 +6,17 @@ module Fiddle
     def unsigned_value(val, ty)
       case ty.abs
       when TYPE_CHAR
-        [val].pack("c").unpack("C")[0]
+        [val].pack("c").unpack1("C")
       when TYPE_SHORT
-        [val].pack("s!").unpack("S!")[0]
+        [val].pack("s!").unpack1("S!")
       when TYPE_INT
-        [val].pack("i!").unpack("I!")[0]
+        [val].pack("i!").unpack1("I!")
       when TYPE_LONG
-        [val].pack("l!").unpack("L!")[0]
+        [val].pack("l!").unpack1("L!")
       else
         if defined?(TYPE_LONG_LONG) and
           ty.abs == TYPE_LONG_LONG
-          [val].pack("q").unpack("Q")[0]
+          [val].pack("q").unpack1("Q")
         else
           val
         end
@@ -26,17 +26,17 @@ module Fiddle
     def signed_value(val, ty)
       case ty.abs
       when TYPE_CHAR
-        [val].pack("C").unpack("c")[0]
+        [val].pack("C").unpack1("c")
       when TYPE_SHORT
-        [val].pack("S!").unpack("s!")[0]
+        [val].pack("S!").unpack1("s!")
       when TYPE_INT
-        [val].pack("I!").unpack("i!")[0]
+        [val].pack("I!").unpack1("i!")
       when TYPE_LONG
-        [val].pack("L!").unpack("l!")[0]
+        [val].pack("L!").unpack1("l!")
       else
         if defined?(TYPE_LONG_LONG) and
           ty.abs == TYPE_LONG_LONG
-          [val].pack("Q").unpack("q")[0]
+          [val].pack("Q").unpack1("q")
         else
           val
         end
@@ -80,11 +80,11 @@ module Fiddle
         else
           case SIZEOF_VOIDP
           when SIZEOF_LONG
-            return [arg].pack("p").unpack("l!")[0]
+            return [arg].pack("p").unpack1("l!")
           else
             if defined?(SIZEOF_LONG_LONG) and
               SIZEOF_VOIDP == SIZEOF_LONG_LONG
-              return [arg].pack("p").unpack("q")[0]
+              return [arg].pack("p").unpack1("q")
             else
               raise(RuntimeError, "sizeof(void*)?")
             end
@@ -102,10 +102,8 @@ module Fiddle
               return val.unpack('C*')
             end
           end
-          return arg
-        else
-          return arg
         end
+        return arg
       else
         if( arg.respond_to?(:to_ptr) )
           return arg.to_ptr.to_i

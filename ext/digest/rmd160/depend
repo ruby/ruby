@@ -10,7 +10,6 @@ rmd160.o: $(hdrdir)/ruby/backward.h
 rmd160.o: $(hdrdir)/ruby/backward/2/assume.h
 rmd160.o: $(hdrdir)/ruby/backward/2/attributes.h
 rmd160.o: $(hdrdir)/ruby/backward/2/bool.h
-rmd160.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rmd160.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rmd160.o: $(hdrdir)/ruby/backward/2/limits.h
 rmd160.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -18,6 +17,7 @@ rmd160.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rmd160.o: $(hdrdir)/ruby/defines.h
 rmd160.o: $(hdrdir)/ruby/intern.h
+rmd160.o: $(hdrdir)/ruby/internal/abi.h
 rmd160.o: $(hdrdir)/ruby/internal/anyargs.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -55,6 +55,7 @@ rmd160.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/noinline.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+rmd160.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/pure.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/restrict.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -114,7 +115,6 @@ rmd160.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/error.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/eval.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/file.h
-rmd160.o: $(hdrdir)/ruby/internal/intern/gc.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/hash.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/io.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -145,14 +145,12 @@ rmd160.o: $(hdrdir)/ruby/internal/memory.h
 rmd160.o: $(hdrdir)/ruby/internal/method.h
 rmd160.o: $(hdrdir)/ruby/internal/module.h
 rmd160.o: $(hdrdir)/ruby/internal/newobj.h
-rmd160.o: $(hdrdir)/ruby/internal/rgengc.h
 rmd160.o: $(hdrdir)/ruby/internal/scan_args.h
 rmd160.o: $(hdrdir)/ruby/internal/special_consts.h
 rmd160.o: $(hdrdir)/ruby/internal/static_assert.h
 rmd160.o: $(hdrdir)/ruby/internal/stdalign.h
 rmd160.o: $(hdrdir)/ruby/internal/stdbool.h
 rmd160.o: $(hdrdir)/ruby/internal/symbol.h
-rmd160.o: $(hdrdir)/ruby/internal/token_paste.h
 rmd160.o: $(hdrdir)/ruby/internal/value.h
 rmd160.o: $(hdrdir)/ruby/internal/value_type.h
 rmd160.o: $(hdrdir)/ruby/internal/variable.h
@@ -173,7 +171,6 @@ rmd160init.o: $(hdrdir)/ruby/backward.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/assume.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/attributes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/bool.h
-rmd160init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/limits.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -181,6 +178,7 @@ rmd160init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rmd160init.o: $(hdrdir)/ruby/defines.h
 rmd160init.o: $(hdrdir)/ruby/intern.h
+rmd160init.o: $(hdrdir)/ruby/internal/abi.h
 rmd160init.o: $(hdrdir)/ruby/internal/anyargs.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -218,6 +216,7 @@ rmd160init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+rmd160init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/pure.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -277,7 +276,6 @@ rmd160init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/error.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/eval.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/file.h
-rmd160init.o: $(hdrdir)/ruby/internal/intern/gc.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/hash.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/io.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -308,14 +306,12 @@ rmd160init.o: $(hdrdir)/ruby/internal/memory.h
 rmd160init.o: $(hdrdir)/ruby/internal/method.h
 rmd160init.o: $(hdrdir)/ruby/internal/module.h
 rmd160init.o: $(hdrdir)/ruby/internal/newobj.h
-rmd160init.o: $(hdrdir)/ruby/internal/rgengc.h
 rmd160init.o: $(hdrdir)/ruby/internal/scan_args.h
 rmd160init.o: $(hdrdir)/ruby/internal/special_consts.h
 rmd160init.o: $(hdrdir)/ruby/internal/static_assert.h
 rmd160init.o: $(hdrdir)/ruby/internal/stdalign.h
 rmd160init.o: $(hdrdir)/ruby/internal/stdbool.h
 rmd160init.o: $(hdrdir)/ruby/internal/symbol.h
-rmd160init.o: $(hdrdir)/ruby/internal/token_paste.h
 rmd160init.o: $(hdrdir)/ruby/internal/value.h
 rmd160init.o: $(hdrdir)/ruby/internal/value_type.h
 rmd160init.o: $(hdrdir)/ruby/internal/variable.h
@@ -329,5 +325,4 @@ rmd160init.o: $(srcdir)/../defs.h
 rmd160init.o: $(srcdir)/../digest.h
 rmd160init.o: rmd160.h
 rmd160init.o: rmd160init.c
-rmd160init.o: rmd160ossl.h
 # AUTOGENERATED DEPENDENCIES END

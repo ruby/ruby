@@ -41,15 +41,13 @@ describe "Mutex#owned?" do
     end
   end
 
-  ruby_version_is "3.0" do
-    it "is held per Fiber" do
-      m = Mutex.new
-      m.lock
+  it "is held per Fiber" do
+    m = Mutex.new
+    m.lock
 
-      Fiber.new do
-        m.locked?.should == true
-        m.owned?.should == false
-      end.resume
-    end
+    Fiber.new do
+      m.locked?.should == true
+      m.owned?.should == false
+    end.resume
   end
 end

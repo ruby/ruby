@@ -1,39 +1,66 @@
 name: Rubyspec Version Guards Check
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'spec/**'
+      - '!spec/*.md'
+  pull_request:
+    paths-ignore:
+      - 'spec/**'
+      - '!spec/*.md'
+  merge_group:
+    paths-ignore:
+      - 'spec/**'
+      - '!spec/*.md'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
 
 jobs:
   rubyspec:
     name: Rubyspec
+
     runs-on: ubuntu-20.04
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     strategy:
       matrix:
         # Specs from ruby/spec should still run on all supported Ruby versions.
         # This also ensures the needed ruby_version_is guards are there, see spec/README.md.
         ruby:
-          - ruby-2.5
-          - ruby-2.6
-          - ruby-2.7
+          - ruby-3.0
+          - ruby-3.1
+          - ruby-3.2
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - uses: ruby/setup-ruby@a05e47355e80e57b9a67566a813648fa67d92011 # v1.157.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
+
+      - run: gem install webrick
+
       - run: ruby ../mspec/bin/mspec
         working-directory: spec/ruby
-      - uses: k0kubun/action-slack@v2.0.0
-        with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / rubyspec @ ${{ matrix.ruby }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
-            }
         env:
+          CHECK_LEAKS: true
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ matrix.ruby }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() }}

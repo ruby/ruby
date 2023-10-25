@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+
+require_relative "helper"
 
 class TestGemResolverComposedSet < Gem::TestCase
   def test_errors

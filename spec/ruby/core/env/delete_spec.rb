@@ -30,16 +30,22 @@ describe "ENV.delete" do
     ScratchPad.recorded.should == "foo"
   end
 
-  ruby_version_is "3.0" do
-    it "returns the result of given block if the named environment variable does not exist" do
-      ENV.delete("foo")
-      ENV.delete("foo") { |name| "bar" }.should == "bar"
-    end
+  it "returns the result of given block if the named environment variable does not exist" do
+    ENV.delete("foo")
+    ENV.delete("foo") { |name| "bar" }.should == "bar"
   end
 
   it "does not evaluate the block if the environment variable exists" do
     ENV["foo"] = "bar"
     ENV.delete("foo") { |name| fail "Should not happen" }
+    ENV["foo"].should == nil
+  end
+
+  it "removes the variable coerced with #to_str" do
+    ENV["foo"] = "bar"
+    k = mock('key')
+    k.should_receive(:to_str).and_return("foo")
+    ENV.delete(k)
     ENV["foo"].should == nil
   end
 

@@ -40,10 +40,10 @@ describe :rational_exponent, shared: true do
       (Rational(-3, 4) ** -4).should == Rational(256, 81)
       (Rational(3, -4) ** -4).should == Rational(256, 81)
 
-      (Rational(bignum_value, 4) ** 4).should == Rational(28269553036454149273332760011886696253239742350009903329945699220681916416, 1)
-      (Rational(3, bignum_value) ** -4).should == Rational(7237005577332262213973186563042994240829374041602535252466099000494570602496, 81)
-      (Rational(-bignum_value, 4) ** -4).should == Rational(1, 28269553036454149273332760011886696253239742350009903329945699220681916416)
-      (Rational(3, -bignum_value) ** -4).should == Rational(7237005577332262213973186563042994240829374041602535252466099000494570602496, 81)
+      (Rational(bignum_value, 4) ** 4).should == Rational(452312848583266388373324160190187140051835877600158453279131187530910662656, 1)
+      (Rational(3, bignum_value) ** -4).should == Rational(115792089237316195423570985008687907853269984665640564039457584007913129639936, 81)
+      (Rational(-bignum_value, 4) ** -4).should == Rational(1, 452312848583266388373324160190187140051835877600158453279131187530910662656)
+      (Rational(3, -bignum_value) ** -4).should == Rational(115792089237316195423570985008687907853269984665640564039457584007913129639936, 81)
     end
 
     # Guard against the Mathn library
@@ -85,26 +85,44 @@ describe :rational_exponent, shared: true do
     end
 
     it "returns positive Infinity when self is > 1" do
-      (Rational(2) ** bignum_value).infinite?.should == 1
-      (Rational(fixnum_max) ** bignum_value).infinite?.should == 1
+      -> {
+        (Rational(2) ** bignum_value).infinite?.should == 1
+      }.should complain(/warning: in a\*\*b, b may be too big/)
+      -> {
+        (Rational(fixnum_max) ** bignum_value).infinite?.should == 1
+      }.should complain(/warning: in a\*\*b, b may be too big/)
     end
 
     it "returns 0.0 when self is > 1 and the exponent is negative" do
-      (Rational(2) ** -bignum_value).should eql(0.0)
-      (Rational(fixnum_max) ** -bignum_value).should eql(0.0)
+      -> {
+        (Rational(2) ** -bignum_value).should eql(0.0)
+      }.should complain(/warning: in a\*\*b, b may be too big/)
+      -> {
+        (Rational(fixnum_max) ** -bignum_value).should eql(0.0)
+      }.should complain(/warning: in a\*\*b, b may be too big/)
     end
 
     # Fails on linux due to pow() bugs in glibc: http://sources.redhat.com/bugzilla/show_bug.cgi?id=3866
     platform_is_not :linux do
       it "returns positive Infinity when self < -1" do
-        (Rational(-2) ** bignum_value).infinite?.should == 1
-        (Rational(-2) ** (bignum_value + 1)).infinite?.should == 1
-        (Rational(fixnum_min) ** bignum_value).infinite?.should == 1
+        -> {
+          (Rational(-2) ** bignum_value).infinite?.should == 1
+        }.should complain(/warning: in a\*\*b, b may be too big/)
+        -> {
+          (Rational(-2) ** (bignum_value + 1)).infinite?.should == 1
+        }.should complain(/warning: in a\*\*b, b may be too big/)
+        -> {
+          (Rational(fixnum_min) ** bignum_value).infinite?.should == 1
+        }.should complain(/warning: in a\*\*b, b may be too big/)
       end
 
       it "returns 0.0 when self is < -1 and the exponent is negative" do
-        (Rational(-2) ** -bignum_value).should eql(0.0)
-        (Rational(fixnum_min) ** -bignum_value).should eql(0.0)
+        -> {
+          (Rational(-2) ** -bignum_value).should eql(0.0)
+        }.should complain(/warning: in a\*\*b, b may be too big/)
+        -> {
+          (Rational(fixnum_min) ** -bignum_value).should eql(0.0)
+        }.should complain(/warning: in a\*\*b, b may be too big/)
       end
     end
   end

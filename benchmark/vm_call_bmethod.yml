@@ -1,0 +1,37 @@
+prelude: |
+  define_method(:a0){}
+  define_method(:a1){|a| a}
+  define_method(:s){|*a| a}
+  define_method(:b){|kw: 1| kw}
+
+  t0 = 0.times.to_a
+  t1 = 1.times.to_a
+  t10 = 10.times.to_a
+  t100 = 100.times.to_a
+  kw = {kw: 2}
+benchmark:
+  bmethod_simple_0: |
+    a0
+  bmethod_simple_1: |
+    a1(1)
+  bmethod_simple_0_splat: |
+    a0(*t0)
+  bmethod_simple_1_splat: |
+    a1(*t1)
+  bmethod_no_splat: |
+    s
+  bmethod_0_splat: |
+    s(*t0)
+  bmethod_1_splat: |
+    s(*t1)
+  bmethod_10_splat: |
+    s(*t10)
+  bmethod_100_splat: |
+    s(*t100)
+  bmethod_kw: |
+    b(kw: 1)
+  bmethod_no_kw: |
+    b
+  bmethod_kw_splat: |
+    b(**kw)
+loop_count: 6000000

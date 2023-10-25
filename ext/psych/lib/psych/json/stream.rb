@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'psych/json/ruby_events'
-require 'psych/json/yaml_events'
+require_relative 'ruby_events'
+require_relative 'yaml_events'
 
 module Psych
   module JSON

@@ -6,5 +6,6 @@ def auto_ext(feat = $0[%r[/ext/(-test-/.*)/extconf.rb\z], 1], inc: false)
   inits.delete("init")
   inits.map! {|s|"X(#{s})"}
   $defs << "-DTEST_INIT_FUNCS(X)=\"#{inits.join(' ')}\""
+  create_header
   create_makefile(feat)
 end

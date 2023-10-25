@@ -314,7 +314,7 @@ describe "File.open" do
     end
   end
 
-  it "raises an IOError when read in a block opened with File::RDONLY|File::APPEND mode" do
+  it "raises an IOError when write in a block opened with File::RDONLY|File::APPEND mode" do
     -> {
       File.open(@file, File::RDONLY|File::APPEND ) do |f|
         f.puts("writing")
@@ -494,6 +494,14 @@ describe "File.open" do
     File.open(@file, "w") { |f| f.puts "testing" }
     File.size(@file).should > 0
     File.open(@file, "rb+") do |f|
+      f.binmode?.should == true
+      f.external_encoding.should == Encoding::ASCII_8BIT
+      f.pos.should == 0
+      f.should_not.eof?
+    end
+    File.open(@file, "r+b") do |f|
+      f.binmode?.should == true
+      f.external_encoding.should == Encoding::ASCII_8BIT
       f.pos.should == 0
       f.should_not.eof?
     end
@@ -555,6 +563,15 @@ describe "File.open" do
   it "defaults external_encoding to BINARY for binary modes" do
     File.open(@file, 'rb') {|f| f.external_encoding.should == Encoding::BINARY}
     File.open(@file, 'wb+') {|f| f.external_encoding.should == Encoding::BINARY}
+  end
+
+  it "accepts options as a keyword argument" do
+    @fh = File.open(@file, 'w', 0755, flags: File::CREAT)
+    @fh.should be_an_instance_of(File)
+
+    -> {
+      File.open(@file, 'w', 0755, {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   it "uses the second argument as an options Hash" do
@@ -629,31 +646,29 @@ describe "File.open" do
     }.should raise_error(ArgumentError, "newline decorator with binary mode")
   end
 
-  ruby_version_is "2.6" do
-    context "'x' flag" do
-      before :each do
-        @xfile = tmp("x-flag")
-        rm_r @xfile
-      end
+  context "'x' flag" do
+    before :each do
+      @xfile = tmp("x-flag")
+      rm_r @xfile
+    end
 
-      after :each do
-        rm_r @xfile
-      end
+    after :each do
+      rm_r @xfile
+    end
 
-      it "does nothing if the file doesn't exist" do
-        File.open(@xfile, "wx") { |f| f.write("content") }
-        File.read(@xfile).should == "content"
-      end
+    it "does nothing if the file doesn't exist" do
+      File.open(@xfile, "wx") { |f| f.write("content") }
+      File.read(@xfile).should == "content"
+    end
 
-      it "throws a Errno::EEXIST error if the file exists" do
-        touch @xfile
-        -> { File.open(@xfile, "wx") }.should raise_error(Errno::EEXIST)
-      end
+    it "throws a Errno::EEXIST error if the file exists" do
+      touch @xfile
+      -> { File.open(@xfile, "wx") }.should raise_error(Errno::EEXIST)
+    end
 
-      it "can't be used with 'r' and 'a' flags" do
-        -> { File.open(@xfile, "rx") }.should raise_error(ArgumentError, 'invalid access mode rx')
-        -> { File.open(@xfile, "ax") }.should raise_error(ArgumentError, 'invalid access mode ax')
-      end
+    it "can't be used with 'r' and 'a' flags" do
+      -> { File.open(@xfile, "rx") }.should raise_error(ArgumentError, 'invalid access mode rx')
+      -> { File.open(@xfile, "ax") }.should raise_error(ArgumentError, 'invalid access mode ax')
     end
   end
 end

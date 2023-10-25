@@ -12,8 +12,8 @@ describe "File.umask" do
     File.umask(@orig_umask)
   end
 
-  it "returns a Fixnum" do
-    File.umask.should be_kind_of(Fixnum)
+  it "returns an Integer" do
+    File.umask.should be_kind_of(Integer)
   end
 
   platform_is_not :windows do

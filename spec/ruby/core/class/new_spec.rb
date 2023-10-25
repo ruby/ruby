@@ -95,7 +95,7 @@ describe "Class.new" do
   end
 
   it "raises a TypeError when given a non-Class" do
-    error_msg = /superclass must be a Class/
+    error_msg = /superclass must be a.*Class/
     -> { Class.new("")              }.should raise_error(TypeError, error_msg)
     -> { Class.new(1)               }.should raise_error(TypeError, error_msg)
     -> { Class.new(:symbol)         }.should raise_error(TypeError, error_msg)

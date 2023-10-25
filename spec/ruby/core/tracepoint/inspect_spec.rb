@@ -3,19 +3,20 @@ require_relative 'fixtures/classes'
 
 describe 'TracePoint#inspect' do
   before do
-    ruby_version_is ""..."3.0" do
-      # Old behavior for Ruby < 2.8
-      @path_prefix = '@'
-    end
-
-    ruby_version_is "3.0" do
-      # New behavior for Ruby >= 2.8
-      @path_prefix = ' '
-    end
+    @path_prefix = ' '
   end
 
   it 'returns a string containing a human-readable TracePoint status' do
     TracePoint.new(:line) {}.inspect.should == '#<TracePoint:disabled>'
+  end
+
+  it "shows only whether it's enabled when outside the TracePoint handler" do
+    trace = TracePoint.new(:line) {}
+    trace.enable
+
+    trace.inspect.should == '#<TracePoint:enabled>'
+
+    trace.disable
   end
 
   it 'returns a String showing the event, path and line' do
@@ -66,12 +67,12 @@ describe 'TracePoint#inspect' do
 
   it 'returns a String showing the event, method, path and line for a :c_call event' do
     inspect = nil
-    line = nil
-    TracePoint.new(:c_call) { |tp|
+    tracepoint = TracePoint.new(:c_call) { |tp|
       next unless TracePointSpec.target_thread?
       inspect ||= tp.inspect
-    }.enable do
-      line = __LINE__ + 1
+    }
+    line = __LINE__ + 2
+    tracepoint.enable do
       [0, 1].max
     end
 
@@ -100,7 +101,7 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:thread_begin) { |tp|
       next unless Thread.current == thread
       inspect ||= tp.inspect
-    }.enable do
+    }.enable(target_thread: nil) do
       thread = Thread.new {}
       thread_inspection = thread.inspect
       thread.join
@@ -116,7 +117,7 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:thread_end) { |tp|
       next unless Thread.current == thread
       inspect ||= tp.inspect
-    }.enable do
+    }.enable(target_thread: nil) do
       thread = Thread.new {}
       thread_inspection = thread.inspect
       thread.join

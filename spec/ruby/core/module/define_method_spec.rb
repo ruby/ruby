@@ -88,6 +88,23 @@ describe "Module#define_method when given an UnboundMethod" do
   end
 end
 
+describe "Module#define_method" do
+  describe "when the default definee is not the same as the module" do
+    it "sets the visibility of the method to public" do
+      klass = Class.new
+      class << klass
+        private
+        define_method(:meta) do
+          define_method(:foo) { :foo }
+        end
+      end
+
+      klass.send :meta
+      klass.new.foo.should == :foo
+    end
+  end
+end
+
 describe "Module#define_method when name is not a special private name" do
   describe "given an UnboundMethod" do
     describe "and called from the target module" do
@@ -115,6 +132,17 @@ describe "Module#define_method when name is not a special private name" do
         klass.should have_public_instance_method(:bar)
         klass.should have_public_instance_method(:baz)
       end
+    end
+
+    it "sets the method owner for a dynamically added method with a different original owner" do
+      mixin_module = Module.new do
+        def bar; end
+      end
+
+      foo = Object.new
+      foo.singleton_class.define_method(:bar, mixin_module.instance_method(:bar))
+
+      foo.method(:bar).owner.should == foo.singleton_class
     end
   end
 
@@ -202,18 +230,55 @@ describe "Module#define_method" do
     o.block_test2.should == o
   end
 
+  it "raises TypeError if name cannot converted to String" do
+    -> {
+      Class.new { define_method(1001, -> {}) }
+    }.should raise_error(TypeError, /is not a symbol nor a string/)
+
+    -> {
+      Class.new { define_method([], -> {}) }
+    }.should raise_error(TypeError, /is not a symbol nor a string/)
+  end
+
+  it "converts non-String name to String with #to_str" do
+    obj = Object.new
+    def obj.to_str() "foo" end
+
+    new_class = Class.new { define_method(obj, -> { :called }) }
+    new_class.new.foo.should == :called
+  end
+
+  it "raises TypeError when #to_str called on non-String name returns non-String value" do
+    obj = Object.new
+    def obj.to_str() [] end
+
+    -> {
+      Class.new { define_method(obj, -> {}) }
+    }.should raise_error(TypeError, /can't convert Object to String/)
+  end
+
   it "raises a TypeError when the given method is no Method/Proc" do
     -> {
       Class.new { define_method(:test, "self") }
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, "wrong argument type String (expected Proc/Method/UnboundMethod)")
 
     -> {
       Class.new { define_method(:test, 1234) }
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, "wrong argument type Integer (expected Proc/Method/UnboundMethod)")
 
     -> {
       Class.new { define_method(:test, nil) }
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, "wrong argument type NilClass (expected Proc/Method/UnboundMethod)")
+  end
+
+  it "uses provided Method/Proc even if block is specified" do
+    new_class = Class.new do
+      define_method(:test, -> { :method_is_called }) do
+        :block_is_called
+      end
+    end
+
+    new_class.new.test.should == :method_is_called
   end
 
   it "raises an ArgumentError when no block is given" do
@@ -333,6 +398,14 @@ describe "Module#define_method" do
     object2.other_cool_method.should == "data is foo"
   end
 
+  it "accepts a proc from a Symbol" do
+    symbol_proc = :+.to_proc
+    klass = Class.new do
+      define_method :foo, &symbol_proc
+    end
+    klass.new.foo(1, 2).should == 3
+  end
+
   it "maintains the Proc's scope" do
     class DefineMethodByProcClass
       in_scope = true
@@ -426,6 +499,33 @@ describe "Module#define_method" do
       Class.new { define_method :bar, m }
     }.should raise_error(TypeError, /can't bind singleton method to a different class/)
   end
+
+  it "defines a new method with public visibility when a Method passed and the class/module of the context isn't equal to the receiver of #define_method" do
+    c = Class.new do
+      private def foo
+        "public"
+      end
+    end
+
+    object = c.new
+    object.singleton_class.define_method(:bar, object.method(:foo))
+
+    object.bar.should == "public"
+  end
+
+  it "defines the new method according to the scope visibility when a Method passed and the class/module of the context is equal to the receiver of #define_method" do
+    c = Class.new do
+      def foo; end
+    end
+
+    object = c.new
+    object.singleton_class.class_eval do
+      private
+      define_method(:bar, c.new.method(:foo))
+    end
+
+    -> { object.bar }.should raise_error(NoMethodError)
+  end
 end
 
 describe "Module#define_method" do
@@ -491,7 +591,36 @@ describe "Module#define_method" do
     it "receives the value passed as the argument when passed one argument" do
       @klass.new.m(1).should == 1
     end
+  end
 
+  describe "passed { |a,|  } creates a method that" do
+    before :each do
+      @klass = Class.new do
+        define_method(:m) { |a,| a }
+      end
+    end
+
+    it "raises an ArgumentError when passed zero arguments" do
+      -> { @klass.new.m }.should raise_error(ArgumentError)
+    end
+
+    it "raises an ArgumentError when passed zero arguments and a block" do
+      -> { @klass.new.m { :computed } }.should raise_error(ArgumentError)
+    end
+
+    it "raises an ArgumentError when passed two arguments" do
+      -> { @klass.new.m 1, 2 }.should raise_error(ArgumentError)
+    end
+
+    it "receives the value passed as the argument when passed one argument" do
+      @klass.new.m(1).should == 1
+    end
+
+    it "does not destructure the passed argument" do
+      @klass.new.m([1, 2]).should == [1, 2]
+      # for comparison:
+      proc { |a,| a }.call([1, 2]).should == 1
+    end
   end
 
   describe "passed { |*a|  } creates a method that" do
@@ -666,6 +795,49 @@ describe "Method#define_method when passed a Proc object" do
       o.should_not have_method :nested_method_in_proc_for_define_method
 
       t.new.nested_method_in_proc_for_define_method.should == 42
+    end
+  end
+end
+
+describe "Method#define_method when passed a block" do
+  describe "behaves exactly like a lambda" do
+    it "for return" do
+      Class.new do
+        define_method(:foo) do
+          return 42
+        end
+      end.new.foo.should == 42
+    end
+
+    it "for break" do
+      Class.new do
+        define_method(:foo) do
+          break 42
+        end
+      end.new.foo.should == 42
+    end
+
+    it "for next" do
+      Class.new do
+        define_method(:foo) do
+          next 42
+        end
+      end.new.foo.should == 42
+    end
+
+    it "for redo" do
+      Class.new do
+        result = []
+        define_method(:foo) do
+          if result.empty?
+            result << :first
+            redo
+          else
+            result << :second
+            result
+          end
+        end
+      end.new.foo.should == [:first, :second]
     end
   end
 end

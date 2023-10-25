@@ -31,6 +31,16 @@ platform_is_not :windows do
       end
     end
 
+    it "does not modify the passed argument" do
+      File.open(@filename, "w") do |f|
+        f.set_encoding(Encoding::IBM437)
+        # A character whose codepoint differs between UTF-8 and IBM437
+        f.write_nonblock("ƒ".freeze)
+      end
+
+      File.binread(@filename).bytes.should == [198, 146]
+    end
+
     it "checks if the file is writable if writing zero bytes" do
       -> {
          @readonly_file.write_nonblock("")
@@ -40,6 +50,7 @@ platform_is_not :windows do
 
   describe "IO#write_nonblock" do
     it_behaves_like :io_write, :write_nonblock
+    it_behaves_like :io_write_no_transcode, :write_nonblock
   end
 end
 

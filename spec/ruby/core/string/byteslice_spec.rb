@@ -24,4 +24,10 @@ describe "String#byteslice on on non ASCII strings" do
     "\u3042".byteslice(1..2).should == "\x81\x82".force_encoding("UTF-8")
     "\u3042".byteslice(-1).should == "\x82".force_encoding("UTF-8")
   end
+
+  it "returns a String in the same encoding as self" do
+    "ruby".encode("UTF-8").slice(0).encoding.should == Encoding::UTF_8
+    "ruby".encode("US-ASCII").slice(0).encoding.should == Encoding::US_ASCII
+    "ruby".encode("Windows-1251").slice(0).encoding.should == Encoding::Windows_1251
+  end
 end

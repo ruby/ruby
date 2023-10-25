@@ -122,7 +122,7 @@ module DTrace
     def trap_probe d_program, ruby_program
       if Hash === d_program
         d_program = d_program[IMPL] or
-          skip "#{d_program} not implemented for #{IMPL}"
+          omit "#{d_program} not implemented for #{IMPL}"
       elsif String === d_program && IMPL == :stap
         d_program = dtrace2systemtap(d_program)
       end

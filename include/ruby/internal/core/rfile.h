@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RFile.
  */
 #include "ruby/internal/core/rbasic.h"
@@ -25,12 +25,27 @@
 
 /* rb_io_t is in ruby/io.h.  The header file has historically not been included
  * into ruby/ruby.h.  We follow that tradition. */
-struct rb_io_t;
+struct rb_io;
 
+/**
+ * Ruby's File  and IO.  Ruby's  IO are not  just file descriptors.   They have
+ * buffers.   They also  have  encodings.  Various  information are  controlled
+ * using this struct.
+ */
 struct RFile {
+
+    /** Basic part, including flags and class. */
     struct RBasic basic;
-    struct rb_io_t *fptr;
+
+    /** IO's specific fields. */
+    struct rb_io *fptr;
 };
 
+/**
+ * Convenient casting macro.
+ *
+ * @param   obj  An object, which is in fact an ::RFile.
+ * @return  The passed object casted to ::RFile.
+ */
 #define RFILE(obj) RBIMPL_CAST((struct RFile *)(obj))
 #endif /* RBIMPL_RFILE_H */

@@ -83,6 +83,11 @@ RSpec.describe Bundler::Fetcher::Downloader do
           /Authentication is required for www.uri-to-fetch.com/)
       end
 
+      it "should raise a Bundler::Fetcher::AuthenticationRequiredError with advices" do
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
+          /`bundle config set --global www\.uri-to-fetch\.com username:password`.*`BUNDLE_WWW__URI___TO___FETCH__COM`/m)
+      end
+
       context "when the there are credentials provided in the request" do
         let(:uri) { Bundler::URI("http://user:password@www.uri-to-fetch.com") }
 
@@ -90,6 +95,16 @@ RSpec.describe Bundler::Fetcher::Downloader do
           expect { subject.fetch(uri, options, counter) }.
             to raise_error(Bundler::Fetcher::BadAuthenticationError, /Bad username or password for www.uri-to-fetch.com/)
         end
+      end
+    end
+
+    context "when the request response is a Net::HTTPForbidden" do
+      let(:http_response) { Net::HTTPForbidden.new("1.1", 403, "Forbidden") }
+      let(:uri) { Bundler::URI("http://user:password@www.uri-to-fetch.com") }
+
+      it "should raise a Bundler::Fetcher::AuthenticationForbiddenError with the uri host" do
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationForbiddenError,
+          /Access token could not be authenticated for www.uri-to-fetch.com/)
       end
     end
 
@@ -173,26 +188,6 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response causes a NoMethodError" do
-      before { allow(connection).to receive(:request).with(uri, net_http_get) { raise NoMethodError.new(message) } }
-
-      context "and the error message is about use_ssl=" do
-        let(:message) { "undefined method 'use_ssl='" }
-
-        it "should raise a LoadError about openssl" do
-          expect { subject.request(uri, options) }.to raise_error(LoadError, "cannot load such file -- openssl")
-        end
-      end
-
-      context "and the error message is not about use_ssl=" do
-        let(:message) { "undefined method 'undefined_method_call'" }
-
-        it "should raise the original NoMethodError" do
-          expect { subject.request(uri, options) }.to raise_error(NoMethodError, "undefined method 'undefined_method_call'")
-        end
-      end
-    end
-
     context "when the request response causes a OpenSSL::SSL::SSLError" do
       before { allow(connection).to receive(:request).with(uri, net_http_get) { raise OpenSSL::SSL::SSLError.new } }
 
@@ -226,16 +221,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
       end
 
-      context "when error message is about getaddrinfo issues" do
-        let(:message) { "getaddrinfo: nodename nor servname provided for http://www.uri-to-fetch.com" }
-
-        it "should raise a Bundler::Fetcher::NetworkDownError" do
-          expect { subject.request(uri, options) }.to raise_error(Bundler::Fetcher::NetworkDownError,
-            /Could not reach host www.uri-to-fetch.com/)
-        end
-      end
-
-      context "when error message is about neither host down or getaddrinfo" do
+      context "when error message is not about host down" do
         let(:message) { "other error about network" }
 
         it "should raise a Bundler::HTTPError" do

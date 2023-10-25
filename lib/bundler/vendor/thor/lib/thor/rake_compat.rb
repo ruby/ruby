@@ -41,7 +41,7 @@ instance_eval do
   def task(*)
     task = super
 
-    if klass = Bundler::Thor::RakeCompat.rake_classes.last # rubocop:disable AssignmentInCondition
+    if klass = Bundler::Thor::RakeCompat.rake_classes.last # rubocop:disable Lint/AssignmentInCondition
       non_namespaced_name = task.name.split(":").last
 
       description = non_namespaced_name
@@ -59,7 +59,7 @@ instance_eval do
   end
 
   def namespace(name)
-    if klass = Bundler::Thor::RakeCompat.rake_classes.last # rubocop:disable AssignmentInCondition
+    if klass = Bundler::Thor::RakeCompat.rake_classes.last # rubocop:disable Lint/AssignmentInCondition
       const_name = Bundler::Thor::Util.camel_case(name.to_s).to_sym
       klass.const_set(const_name, Class.new(Bundler::Thor))
       new_klass = klass.const_get(const_name)

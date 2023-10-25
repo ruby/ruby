@@ -28,18 +28,9 @@ describe "Fiber#resume" do
     fiber.resume :second
   end
 
-  ruby_version_is '3.0' do
-    it "raises a FiberError if the Fiber tries to resume itself" do
-      fiber = Fiber.new { fiber.resume }
-      -> { fiber.resume }.should raise_error(FiberError, /current fiber/)
-    end
-  end
-
-  ruby_version_is '' ... '3.0' do
-    it "raises a FiberError if the Fiber tries to resume itself" do
-      fiber = Fiber.new { fiber.resume }
-      -> { fiber.resume }.should raise_error(FiberError, /double resume/)
-    end
+  it "raises a FiberError if the Fiber tries to resume itself" do
+    fiber = Fiber.new { fiber.resume }
+    -> { fiber.resume }.should raise_error(FiberError, /current fiber/)
   end
 
   it "returns control to the calling Fiber if called from one" do

@@ -1,0 +1,48 @@
+# NOTE: please avoid adding dependencies to external crates as these can
+# make building and packaging YJIT more challenging.
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package]
+name = "yjit"
+version = "0.1.0"       # YJIT version
+edition = "2021"        # Rust 2021 edition to compile with
+rust-version = "1.58.0" # Minimally supported rust version
+publish = false         # Don't publish to crates.io
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+# No required dependencies to simplify build process. TODO: Link to yet to be
+# written rationale. Optional For development and testing purposes
+capstone = { version = "0.10.0", optional = true }
+
+[features]
+# NOTE: Development builds select a set of these via configure.ac
+# For debugging, `make V=1` shows exact cargo invocation.
+disasm = ["capstone"]
+stats = []
+
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev_nodebug]
+inherits = "dev"
+
+[profile.stats]
+inherits = "release"
+
+[profile.release]
+# NOTE: --enable-yjit builds use `rustc` without going through Cargo. You
+# might want to update the `rustc` invocation if you change this profile.
+opt-level = 3
+# The extra robustness that comes from checking for arithmetic overflow is
+# worth the performance cost for the compiler.
+overflow-checks = true
+# Generate debug info
+debug = true
+# Use ThinLTO. Much smaller output for a small amount of build time increase.
+lto = "thin"

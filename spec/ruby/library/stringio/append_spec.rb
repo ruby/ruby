@@ -29,20 +29,6 @@ describe "StringIO#<< when passed [Object]" do
     @io.string.should == "example\000\000\000\000\000\000\000\000just testing"
   end
 
-  ruby_version_is ""..."2.7" do
-    it "taints self's String when the passed argument is tainted" do
-      (@io << "test".taint)
-      @io.string.tainted?.should be_true
-    end
-  end
-
-  ruby_version_is ""..."3.0" do
-    it "does not taint self when the passed argument is tainted" do
-      (@io << "test".taint)
-      @io.tainted?.should be_false
-    end
-  end
-
   it "updates self's position" do
     @io << "test"
     @io.pos.should eql(4)

@@ -1,29 +1,50 @@
-require 'timeout'
+require 'io/wait'
 
 class Reline::GeneralIO
+  def self.reset(encoding: nil)
+    @@pasting = false
+    if encoding
+      @@encoding = encoding
+    elsif defined?(@@encoding)
+      remove_class_variable(:@@encoding)
+    end
+  end
+
   def self.encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    if defined?(@@encoding)
+      @@encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding::UTF_8
+    else
+      Encoding::default_external
+    end
   end
 
   def self.win?
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {}
+  def self.set_default_key_bindings(_)
+  end
 
   @@buf = []
+  @@input = STDIN
 
   def self.input=(val)
     @@input = val
   end
 
-  def self.getc
+  def self.with_raw_input
+    yield
+  end
+
+  def self.getc(_timeout_second)
     unless @@buf.empty?
       return @@buf.shift
     end
     c = nil
     loop do
-      result = select([@@input], [], [], 0.1)
+      result = @@input.wait_readable(0.1)
       next if result.nil?
       c = @@input.read(1)
       break
@@ -41,6 +62,12 @@ class Reline::GeneralIO
 
   def self.cursor_pos
     Reline::CursorPos.new(1, 1)
+  end
+
+  def self.hide_cursor
+  end
+
+  def self.show_cursor
   end
 
   def self.move_cursor_column(val)
@@ -65,6 +92,20 @@ class Reline::GeneralIO
   end
 
   def self.set_winch_handler(&handler)
+  end
+
+  @@pasting = false
+
+  def self.in_pasting?
+    @@pasting
+  end
+
+  def self.start_pasting
+    @@pasting = true
+  end
+
+  def self.finish_pasting
+    @@pasting = false
   end
 
   def self.prep

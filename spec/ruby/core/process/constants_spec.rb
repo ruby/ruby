@@ -1,3 +1,4 @@
+require_relative '../../spec_helper'
 
 describe "Process::Constants" do
   platform_is :darwin, :netbsd, :freebsd do
@@ -58,6 +59,28 @@ describe "Process::Constants" do
     it "Process::RLIMIT_SBSIZE" do
       Process::RLIMIT_SBSIZE.should == 9 # FIXME: what's it equal?
       Process::RLIMIT_AS.should == 10
+    end
+  end
+
+  platform_is :windows do
+    it "does not define RLIMIT constants" do
+      %i[
+          RLIMIT_CPU
+          RLIMIT_FSIZE
+          RLIMIT_DATA
+          RLIMIT_STACK
+          RLIMIT_CORE
+          RLIMIT_RSS
+          RLIMIT_NPROC
+          RLIMIT_NOFILE
+          RLIMIT_MEMLOCK
+          RLIMIT_AS
+          RLIM_INFINITY
+          RLIM_SAVED_MAX
+          RLIM_SAVED_CUR
+      ].each do |const|
+        Process.const_defined?(const).should be_false
+      end
     end
   end
 end

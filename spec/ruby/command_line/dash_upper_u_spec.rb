@@ -6,6 +6,13 @@ describe "ruby -U" do
               options: '-U').should == 'UTF-8'
   end
 
+  it "sets Encoding.default_internal to UTF-8 when RUBYOPT is empty or only spaces" do
+    ruby_exe('p Encoding.default_internal',
+             options: '-U', env: { 'RUBYOPT' => '' }).should == "#<Encoding:UTF-8>\n"
+    ruby_exe('p Encoding.default_internal',
+             options: '-U', env: { 'RUBYOPT' => '  ' }).should == "#<Encoding:UTF-8>\n"
+  end
+
   it "does nothing different if specified multiple times" do
      ruby_exe('print Encoding.default_internal.name',
               options: '-U -U').should == 'UTF-8'
@@ -32,12 +39,14 @@ describe "ruby -U" do
   it "raises a RuntimeError if used with -Eext:int" do
     ruby_exe("p 1",
              options: '-U -Eascii:ascii',
-             args: '2>&1').should =~ /RuntimeError/
+             args: '2>&1',
+             exit_status: 1).should =~ /RuntimeError/
   end
 
   it "raises a RuntimeError if used with -E:int" do
     ruby_exe("p 1",
              options: '-U -E:ascii',
-             args: '2>&1').should =~ /RuntimeError/
+             args: '2>&1',
+             exit_status: 1).should =~ /RuntimeError/
   end
 end

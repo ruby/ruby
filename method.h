@@ -44,7 +44,7 @@ typedef struct rb_scope_visi_struct {
 typedef struct rb_cref_struct {
     VALUE flags;
     VALUE refinements;
-    VALUE klass;
+    VALUE klass_or_self;
     struct rb_cref_struct * next;
     const rb_scope_visibility_t scope_visi;
 } rb_cref_t;
@@ -75,7 +75,6 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
 #define METHOD_ENTRY_CACHED_SET(me)          ((me)->flags |= IMEMO_FL_USER4)
 #define METHOD_ENTRY_INVALIDATED(me)         ((me)->flags & IMEMO_FL_USER5)
 #define METHOD_ENTRY_INVALIDATED_SET(me)     ((me)->flags |= IMEMO_FL_USER5)
-#define METHOD_ENTRY_CACHEABLE(me)           !(METHOD_ENTRY_VISI(me) == METHOD_VISI_PROTECTED)
 
 static inline void
 METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
@@ -102,8 +101,9 @@ static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     dst->flags =
-      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-        (src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
+      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2
+      |IMEMO_FL_USER3)) |
+        (src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3));
 }
 
 typedef enum {
@@ -132,7 +132,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    rb_iseq_t * iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    const rb_iseq_t * iseqptr; /*!< iseq pointer, should be separated from iseqval */
     rb_cref_t * cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
@@ -166,13 +166,22 @@ enum method_optimized_type {
     OPTIMIZED_METHOD_TYPE_SEND,
     OPTIMIZED_METHOD_TYPE_CALL,
     OPTIMIZED_METHOD_TYPE_BLOCK_CALL,
+    OPTIMIZED_METHOD_TYPE_STRUCT_AREF,
+    OPTIMIZED_METHOD_TYPE_STRUCT_ASET,
     OPTIMIZED_METHOD_TYPE__MAX
 };
 
+typedef struct rb_method_optimized {
+    enum method_optimized_type type;
+    unsigned int index;
+} rb_method_optimized_t;
+
 struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
-    int alias_count : 28;
-    int complemented_count : 28;
+    unsigned int iseq_overload: 1;
+    unsigned int no_redef_warning: 1;
+    unsigned int aliased : 1;
+    int reference_count : 28;
 
     union {
         rb_method_iseq_t iseq;
@@ -181,8 +190,7 @@ struct rb_method_definition_struct {
         rb_method_alias_t alias;
         rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
-
-        enum method_optimized_type optimize_type;
+        rb_method_optimized_t optimized;
     } body;
 
     ID original_id;
@@ -192,20 +200,21 @@ struct rb_method_definition_struct {
 struct rb_id_table;
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
-STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
+STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body) <= 8);
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
     ((def)->type == VM_METHOD_TYPE_REFINED && \
      UNDEFINED_METHOD_ENTRY_P((def)->body.refined.orig_me))
 
+void rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
 void rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi);
+void rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type, unsigned int index, rb_method_visibility_t visi);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
-void rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
-rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, rb_method_definition_t *def);
 
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 
@@ -218,6 +227,7 @@ const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE
 RUBY_SYMBOL_EXPORT_END
 
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
+const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 
@@ -240,6 +250,6 @@ void rb_scope_visibility_set(rb_method_visibility_t);
 VALUE rb_unnamed_parameters(int arity);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
-void rb_clear_method_cache_all(void);
+void rb_clear_all_refinement_method_cache(void);
 
 #endif /* RUBY_METHOD_H */

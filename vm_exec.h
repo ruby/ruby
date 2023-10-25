@@ -21,11 +21,7 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_ENTER_INSN(insn) \
     rb_vmdebug_debug_print_pre(ec, GET_CFP(), GET_PC());
 
-#if OPT_STACK_CACHING
-#define SC_REGS() , reg_a, reg_b
-#else
 #define SC_REGS()
-#endif
 
 #define DEBUG_END_INSN() \
   rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
@@ -37,12 +33,8 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_END_INSN()
 #endif
 
-#define throwdebug if(0)printf
-/* #define throwdebug printf */
-
-#ifndef USE_INSNS_COUNTER
-#define USE_INSNS_COUNTER 0
-#endif
+#define throwdebug if(0)ruby_debug_printf
+/* #define throwdebug ruby_debug_printf */
 
 /************************************************/
 #if defined(DISPATCH_XXX)
@@ -74,12 +66,13 @@ error !
 #define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
-  if (0) fprintf(stderr, "exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
-                 (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
-                 (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
-                 RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
-                 rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)); \
-  if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
+  if (0) { \
+      ruby_debug_printf("exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
+                        (reg_pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded), \
+                        (reg_cfp->pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded), \
+                        RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
+                        rb_iseq_line_no(reg_cfp->iseq, reg_pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded)); \
+  }
 
 #define INSN_DISPATCH_SIG(insn)
 
@@ -130,9 +123,6 @@ error !
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
-
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -157,19 +147,15 @@ default:                        \
 
 #define NEXT_INSN() goto first
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+#endif
 
+#ifndef START_OF_ORIGINAL_INSN
+#define START_OF_ORIGINAL_INSN(x) if (0) goto start_of_##x; start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
-#ifdef MJIT_HEADER
-#define THROW_EXCEPTION(exc) do { \
-    ec->errinfo = (VALUE)(exc); \
-    EC_JUMP_TAG(ec, ec->tag->state); \
-} while (0)
-#else
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
@@ -178,7 +164,24 @@ default:                        \
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
-#endif
+
+// Run the interpreter from the JIT
+#define VM_EXEC(ec, val) do { \
+    if (val == Qundef) { \
+        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
+        val = vm_exec(ec); \
+    } \
+} while (0)
+
+// Run the JIT from the interpreter
+#define JIT_EXEC(ec, val) do { \
+    rb_jit_func_t func; \
+    if (val == Qundef && (func = jit_compile(ec))) { \
+        val = func(ec, ec->cfp); \
+        RESTORE_REGS(); /* fix cfp for tailcall */ \
+        if (ec->tag->state) THROW_EXCEPTION(val); \
+    } \
+} while (0)
 
 #define SCREG(r) (reg_##r)
 

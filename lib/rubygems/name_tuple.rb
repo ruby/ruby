@@ -1,18 +1,17 @@
 # frozen_string_literal: true
+
 ##
 #
 # Represents a gem of name +name+ at +version+ of +platform+. These
 # wrap the data returned from the indexes.
 
 class Gem::NameTuple
-  def initialize(name, version, platform="ruby")
+  def initialize(name, version, platform=Gem::Platform::RUBY)
     @name = name
     @version = version
 
-    unless platform.kind_of? Gem::Platform
-      platform = "ruby" if !platform or platform.empty?
-    end
-
+    platform &&= platform.to_s
+    platform = Gem::Platform::RUBY if !platform || platform.empty?
     @platform = platform
   end
 
@@ -31,7 +30,7 @@ class Gem::NameTuple
   # [name, version, platform] tuples.
 
   def self.to_basic(list)
-    list.map {|t| t.to_a }
+    list.map(&:to_a)
   end
 
   ##
@@ -48,7 +47,7 @@ class Gem::NameTuple
 
   def full_name
     case @platform
-    when nil, 'ruby', ''
+    when nil, "", Gem::Platform::RUBY
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@platform}"
@@ -59,7 +58,7 @@ class Gem::NameTuple
   # Indicate if this NameTuple matches the current platform.
 
   def match_platform?
-    Gem::Platform.match @platform
+    Gem::Platform.match_gem? @platform, @name
   end
 
   ##
@@ -86,12 +85,11 @@ class Gem::NameTuple
     "#<Gem::NameTuple #{@name}, #{@version}, #{@platform}>"
   end
 
-  alias to_s inspect # :nodoc:
+  alias_method :to_s, :inspect # :nodoc:
 
   def <=>(other)
-    [@name, @version, @platform == Gem::Platform::RUBY ? -1 : 1] <=>
-      [other.name, other.version,
-       other.platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@platform)] <=>
+      [other.name, other.version, Gem::Platform.sort_priority(other.platform)]
   end
 
   include Comparable
@@ -103,8 +101,8 @@ class Gem::NameTuple
   def ==(other)
     case other
     when self.class
-      @name == other.name and
-        @version == other.version and
+      @name == other.name &&
+        @version == other.version &&
         @platform == other.platform
     when Array
       to_a == other

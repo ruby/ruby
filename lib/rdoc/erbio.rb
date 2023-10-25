@@ -20,12 +20,8 @@ class RDoc::ERBIO < ERB
   ##
   # Defaults +eoutvar+ to 'io', otherwise is identical to ERB's initialize
 
-  def initialize str, safe_level = nil, legacy_trim_mode = nil, legacy_eoutvar = 'io', trim_mode: nil, eoutvar: 'io'
-    if RUBY_VERSION >= '2.6'
-      super(str, trim_mode: trim_mode, eoutvar: eoutvar)
-    else
-      super(str, safe_level, legacy_trim_mode, legacy_eoutvar)
-    end
+  def initialize str, trim_mode: nil, eoutvar: 'io'
+    super(str, trim_mode: trim_mode, eoutvar: eoutvar)
   end
 
   ##
@@ -39,4 +35,3 @@ class RDoc::ERBIO < ERB
   end
 
 end
-

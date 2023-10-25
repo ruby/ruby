@@ -1,6 +1,31 @@
 # frozen_string_literal: true
 module Fiddle
   class Closure
+    class << self
+      # Create a new closure. If a block is given, the created closure
+      # is automatically freed after the given block is executed.
+      #
+      # The all given arguments are passed to Fiddle::Closure.new. So
+      # using this method without block equals to Fiddle::Closure.new.
+      #
+      # == Example
+      #
+      #   Fiddle::Closure.create(TYPE_INT, [TYPE_INT]) do |closure|
+      #     # closure is freed automatically when this block is finished.
+      #   end
+      def create(*args)
+        if block_given?
+          closure = new(*args)
+          begin
+            yield(closure)
+          ensure
+            closure.free
+          end
+        else
+          new(*args)
+        end
+      end
+    end
 
     # the C type of the return of the FFI closure
     attr_reader :ctype

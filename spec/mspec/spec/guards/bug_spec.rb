@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'mspec/guards'
 
-describe BugGuard, "#match? when #implementation? is 'ruby'" do
+RSpec.describe BugGuard, "#match? when #implementation? is 'ruby'" do
   before :all do
     @verbose = $VERBOSE
     $VERBOSE = nil
@@ -23,47 +23,47 @@ describe BugGuard, "#match? when #implementation? is 'ruby'" do
   end
 
   it "returns false when version argument is less than RUBY_VERSION" do
-    BugGuard.new("#1", "1.8.5").match?.should == false
+    expect(BugGuard.new("#1", "1.8.5").match?).to eq(false)
   end
 
   it "returns true when version argument is equal to RUBY_VERSION" do
-    BugGuard.new("#1", "1.8.6").match?.should == true
+    expect(BugGuard.new("#1", "1.8.6").match?).to eq(true)
   end
 
   it "returns true when version argument is greater than RUBY_VERSION" do
-    BugGuard.new("#1", "1.8.7").match?.should == true
+    expect(BugGuard.new("#1", "1.8.7").match?).to eq(true)
   end
 
   it "returns true when version argument implicitly includes RUBY_VERSION" do
-    BugGuard.new("#1", "1.8").match?.should == true
-    BugGuard.new("#1", "1.8.6").match?.should == true
+    expect(BugGuard.new("#1", "1.8").match?).to eq(true)
+    expect(BugGuard.new("#1", "1.8.6").match?).to eq(true)
   end
 
   it "returns true when the argument range includes RUBY_VERSION" do
-    BugGuard.new("#1", '1.8.5'..'1.8.7').match?.should == true
-    BugGuard.new("#1", '1.8'..'1.9').match?.should == true
-    BugGuard.new("#1", '1.8'...'1.9').match?.should == true
-    BugGuard.new("#1", '1.8'..'1.8.6').match?.should == true
-    BugGuard.new("#1", '1.8.5'..'1.8.6').match?.should == true
-    BugGuard.new("#1", ''...'1.8.7').match?.should == true
+    expect(BugGuard.new("#1", '1.8.5'..'1.8.7').match?).to eq(true)
+    expect(BugGuard.new("#1", '1.8'..'1.9').match?).to eq(true)
+    expect(BugGuard.new("#1", '1.8'...'1.9').match?).to eq(true)
+    expect(BugGuard.new("#1", '1.8'..'1.8.6').match?).to eq(true)
+    expect(BugGuard.new("#1", '1.8.5'..'1.8.6').match?).to eq(true)
+    expect(BugGuard.new("#1", ''...'1.8.7').match?).to eq(true)
   end
 
   it "returns false when the argument range does not include RUBY_VERSION" do
-    BugGuard.new("#1", '1.8.7'..'1.8.9').match?.should == false
-    BugGuard.new("#1", '1.8.4'..'1.8.5').match?.should == false
-    BugGuard.new("#1", '1.8.4'...'1.8.6').match?.should == false
-    BugGuard.new("#1", '1.8.5'...'1.8.6').match?.should == false
-    BugGuard.new("#1", ''...'1.8.6').match?.should == false
+    expect(BugGuard.new("#1", '1.8.7'..'1.8.9').match?).to eq(false)
+    expect(BugGuard.new("#1", '1.8.4'..'1.8.5').match?).to eq(false)
+    expect(BugGuard.new("#1", '1.8.4'...'1.8.6').match?).to eq(false)
+    expect(BugGuard.new("#1", '1.8.5'...'1.8.6').match?).to eq(false)
+    expect(BugGuard.new("#1", ''...'1.8.6').match?).to eq(false)
   end
 
   it "returns false when MSpec.mode?(:no_ruby_bug) is true" do
-    MSpec.should_receive(:mode?).with(:no_ruby_bug).twice.and_return(:true)
-    BugGuard.new("#1", "1.8.5").match?.should == false
-    BugGuard.new("#1", "1.8").match?.should == false
+    expect(MSpec).to receive(:mode?).with(:no_ruby_bug).twice.and_return(:true)
+    expect(BugGuard.new("#1", "1.8.5").match?).to eq(false)
+    expect(BugGuard.new("#1", "1.8").match?).to eq(false)
   end
 end
 
-describe BugGuard, "#match? when #implementation? is not 'ruby'" do
+RSpec.describe BugGuard, "#match? when #implementation? is not 'ruby'" do
   before :all do
     @verbose = $VERBOSE
     $VERBOSE = nil
@@ -88,64 +88,64 @@ describe BugGuard, "#match? when #implementation? is not 'ruby'" do
   end
 
   it "returns false when version argument is less than RUBY_VERSION" do
-    BugGuard.new("#1", "1.8").match?.should == false
-    BugGuard.new("#1", "1.8.6").match?.should == false
+    expect(BugGuard.new("#1", "1.8").match?).to eq(false)
+    expect(BugGuard.new("#1", "1.8.6").match?).to eq(false)
   end
 
   it "returns false when version argument is equal to RUBY_VERSION" do
-    BugGuard.new("#1", "1.8.6").match?.should == false
+    expect(BugGuard.new("#1", "1.8.6").match?).to eq(false)
   end
 
   it "returns false when version argument is greater than RUBY_VERSION" do
-    BugGuard.new("#1", "1.8.7").match?.should == false
+    expect(BugGuard.new("#1", "1.8.7").match?).to eq(false)
   end
 
   it "returns false no matter if the argument range includes RUBY_VERSION" do
-    BugGuard.new("#1", '1.8'...'1.9').match?.should == false
-    BugGuard.new("#1", '1.8.5'...'1.8.7').match?.should == false
-    BugGuard.new("#1", '1.8.4'...'1.8.6').match?.should == false
+    expect(BugGuard.new("#1", '1.8'...'1.9').match?).to eq(false)
+    expect(BugGuard.new("#1", '1.8.5'...'1.8.7').match?).to eq(false)
+    expect(BugGuard.new("#1", '1.8.4'...'1.8.6').match?).to eq(false)
   end
 
   it "returns false when MSpec.mode?(:no_ruby_bug) is true" do
-    MSpec.stub(:mode?).and_return(:true)
-    BugGuard.new("#1", "1.8.6").match?.should == false
+    allow(MSpec).to receive(:mode?).and_return(:true)
+    expect(BugGuard.new("#1", "1.8.6").match?).to eq(false)
   end
 end
 
-describe Object, "#ruby_bug" do
+RSpec.describe Object, "#ruby_bug" do
   before :each do
     hide_deprecation_warnings
     @guard = BugGuard.new "#1234", "x.x.x"
-    BugGuard.stub(:new).and_return(@guard)
+    allow(BugGuard).to receive(:new).and_return(@guard)
     ScratchPad.clear
   end
 
   it "yields when #match? returns false" do
-    @guard.stub(:match?).and_return(false)
+    allow(@guard).to receive(:match?).and_return(false)
     ruby_bug("#1234", "1.8.6") { ScratchPad.record :yield }
-    ScratchPad.recorded.should == :yield
+    expect(ScratchPad.recorded).to eq(:yield)
   end
 
   it "does not yield when #match? returns true" do
-    @guard.stub(:match?).and_return(true)
+    allow(@guard).to receive(:match?).and_return(true)
     ruby_bug("#1234", "1.8.6") { ScratchPad.record :yield }
-    ScratchPad.recorded.should_not == :yield
+    expect(ScratchPad.recorded).not_to eq(:yield)
   end
 
   it "requires a bug tracker number and a version number" do
-    lambda { ruby_bug { }          }.should raise_error(ArgumentError)
-    lambda { ruby_bug("#1234") { } }.should raise_error(ArgumentError)
+    expect { ruby_bug { }          }.to raise_error(ArgumentError)
+    expect { ruby_bug("#1234") { } }.to raise_error(ArgumentError)
   end
 
   it "sets the name of the guard to :ruby_bug" do
     ruby_bug("#1234", "1.8.6") { }
-    @guard.name.should == :ruby_bug
+    expect(@guard.name).to eq(:ruby_bug)
   end
 
   it "calls #unregister even when an exception is raised in the guard block" do
-    @guard.should_receive(:unregister)
-    lambda do
+    expect(@guard).to receive(:unregister)
+    expect do
       ruby_bug("", "") { raise Exception }
-    end.should raise_error(Exception)
+    end.to raise_error(Exception)
   end
 end

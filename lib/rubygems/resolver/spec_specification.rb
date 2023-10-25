@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The Resolver::SpecSpecification contains common functionality for
 # Resolver specifications that are backed by a Gem::Specification.
@@ -20,6 +21,20 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
 
   def dependencies
     spec.dependencies
+  end
+
+  ##
+  # The required_ruby_version constraint for this specification
+
+  def required_ruby_version
+    spec.required_ruby_version
+  end
+
+  ##
+  # The required_rubygems_version constraint for this specification
+
+  def required_rubygems_version
+    spec.required_rubygems_version
   end
 
   ##

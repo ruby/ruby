@@ -36,15 +36,15 @@
 # Hash keys with spaces or characters that could normally not be used for
 # method calls (e.g. <code>()[]*</code>) will not be immediately available
 # on the OpenStruct object as a method for retrieval or assignment, but can
-# still be reached through the Object#__send__ method or using [].
+# still be reached through the Object#send method or using [].
 #
 #   measurements = OpenStruct.new("length (in inches)" => 24)
 #   measurements[:"length (in inches)"]       # => 24
-#   measurements.__send__("length (in inches)")   # => 24
+#   measurements.send("length (in inches)")   # => 24
 #
 #   message = OpenStruct.new(:queued? => true)
 #   message.queued?                           # => true
-#   message.__send__("queued?=", false)
+#   message.send("queued?=", false)
 #   message.queued?                           # => false
 #
 # Removing the presence of an attribute requires the execution of the
@@ -93,21 +93,29 @@
 #   o.methods = [:foo, :bar]
 #   o.methods # => [:foo, :bar]
 #
-# To help remedy clashes, OpenStruct uses only protected/private methods ending with `!`
-# and defines aliases for builtin public methods by adding a `!`:
+# To help remedy clashes, OpenStruct uses only protected/private methods ending with <code>!</code>
+# and defines aliases for builtin public methods by adding a <code>!</code>:
 #
 #   o = OpenStruct.new(make: 'Bentley', class: :luxury)
 #   o.class # => :luxury
 #   o.class! # => OpenStruct
 #
-# It is recommended (but not enforced) to not use fields ending in `!`;
+# It is recommended (but not enforced) to not use fields ending in <code>!</code>;
 # Note that a subclass' methods may not be overwritten, nor can OpenStruct's own methods
-# ending with `!`.
+# ending with <code>!</code>.
 #
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.2.0"
+  VERSION = "0.5.5"
+
+  HAS_PERFORMANCE_WARNINGS = begin
+    Warning[:performance]
+    true
+  rescue NoMethodError, ArgumentError
+    false
+  end
+  private_constant :HAS_PERFORMANCE_WARNINGS
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -124,6 +132,10 @@ class OpenStruct
   #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
   def initialize(hash=nil)
+    if HAS_PERFORMANCE_WARNINGS && Warning[:performance]
+       warn "OpenStruct use is discouraged for performance reasons", uplevel: 1, category: :performance
+    end
+
     if hash
       update_to_values!(hash)
     else
@@ -166,11 +178,21 @@ class OpenStruct
   #   data.to_h {|name, value| [name.to_s, value.upcase] }
   #               # => {"country" => "AUSTRALIA", "capital" => "CANBERRA" }
   #
-  def to_h(&block)
-    if block
-      @table.to_h(&block)
-    else
-      @table.dup
+  if {test: :to_h}.to_h{ [:works, true] }[:works] # RUBY_VERSION < 2.6 compatibility
+    def to_h(&block)
+      if block
+        @table.to_h(&block)
+      else
+        @table.dup
+      end
+    end
+  else
+    def to_h(&block)
+      if block
+        @table.map(&block).to_h
+      else
+        @table.dup
+      end
     end
   end
 
@@ -187,7 +209,7 @@ class OpenStruct
   #   data.each_pair.to_a   # => [[:country, "Australia"], [:capital, "Canberra"]]
   #
   def each_pair
-    return to_enum(__method__) { @table.size } unless block_given?
+    return to_enum(__method__) { @table.size } unless defined?(yield)
     @table.each_pair{|p| yield p}
     self
   end
@@ -203,7 +225,6 @@ class OpenStruct
   # Provides marshalling support for use by the Marshal library.
   #
   alias_method :marshal_load, :update_to_values! # :nodoc:
-  public :marshal_load
 
   #
   # Used internally to defined properties on the
@@ -212,8 +233,17 @@ class OpenStruct
   #
   def new_ostruct_member!(name) # :nodoc:
     unless @table.key?(name) || is_method_protected!(name)
-      define_singleton_method!(name) { @table[name] }
-      define_singleton_method!("#{name}=") {|x| @table[name] = x}
+      if defined?(::Ractor)
+        getter_proc = nil.instance_eval{ Proc.new { @table[name] } }
+        setter_proc = nil.instance_eval{ Proc.new {|x| @table[name] = x} }
+        ::Ractor.make_shareable(getter_proc)
+        ::Ractor.make_shareable(setter_proc)
+      else
+        getter_proc = Proc.new { @table[name] }
+        setter_proc = Proc.new {|x| @table[name] = x}
+      end
+      define_singleton_method!(name, &getter_proc)
+      define_singleton_method!("#{name}=", &setter_proc)
     end
   end
   private :new_ostruct_member!
@@ -221,10 +251,18 @@ class OpenStruct
   private def is_method_protected!(name) # :nodoc:
     if !respond_to?(name, true)
       false
-    elsif name.end_with?('!')
+    elsif name.match?(/!$/)
       true
     else
-      method!(name).owner < OpenStruct
+      owner = method!(name).owner
+      if owner.class == ::Class
+        owner < ::OpenStruct
+      else
+        self.class!.ancestors.any? do |mod|
+          return false if mod == ::OpenStruct
+          mod == owner
+        end
+      end
     end
   end
 
@@ -241,6 +279,7 @@ class OpenStruct
       end
       set_ostruct_member_value!(mname, args[0])
     elsif len == 0
+      @table[mid]
     else
       begin
         super
@@ -255,7 +294,7 @@ class OpenStruct
   # :call-seq:
   #   ostruct[name]  -> object
   #
-  # Returns the value of an attribute, or `nil` if there is no such attribute.
+  # Returns the value of an attribute, or +nil+ if there is no such attribute.
   #
   #   require "ostruct"
   #   person = OpenStruct.new("name" => "John Smith", "age" => 70)
@@ -290,7 +329,7 @@ class OpenStruct
   # Finds and returns the object in nested objects
   # that is specified by +name+ and +identifiers+.
   # The nested objects may be instances of various classes.
-  # See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+  # See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
   #
   # Examples:
   #   require "ostruct"
@@ -308,8 +347,10 @@ class OpenStruct
   end
 
   #
-  # Removes the named field from the object. Returns the value that the field
-  # contained if it was defined.
+  # Removes the named field from the object and returns the value the field
+  # contained if it was defined. You may optionally provide a block.
+  # If the field is not defined, the result of the block is returned,
+  # or a NameError is raised if no block was given.
   #
   #   require "ostruct"
   #
@@ -323,13 +364,18 @@ class OpenStruct
   #   person.pension = nil
   #   person                 # => #<OpenStruct name="John", pension=nil>
   #
-  def delete_field(name)
+  #   person.delete_field('number')  # => NameError
+  #
+  #   person.delete_field('number') { 8675_309 } # => 8675309
+  #
+  def delete_field(name, &block)
     sym = name.to_sym
     begin
       singleton_class.remove_method(sym, "#{sym}=")
     rescue NameError
     end
     @table.delete(sym) do
+      return yield if block
       raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
@@ -421,12 +467,23 @@ class OpenStruct
     update_to_values!(h)
   end
 
-  # Make all public methods (builtin or our own) accessible with `!`:
-  instance_methods.each do |method|
+  # Make all public methods (builtin or our own) accessible with <code>!</code>:
+  give_access = instance_methods
+  # See https://github.com/ruby/ostruct/issues/30
+  give_access -= %i[instance_exec instance_eval eval] if RUBY_ENGINE == 'jruby'
+  give_access.each do |method|
+    next if method.match(/\W$/)
+
     new_name = "#{method}!"
     alias_method new_name, method
   end
   # Other builtin private methods we use:
   alias_method :raise!, :raise
   private :raise!
+
+  # See https://github.com/ruby/ostruct/issues/40
+  if RUBY_ENGINE != 'jruby'
+    alias_method :block_given!, :block_given?
+    private :block_given!
+  end
 end

@@ -124,7 +124,7 @@ describe "Module#attr" do
     -> { c.new.bar }.should raise_error(NoMethodError)
   end
 
-  it "converts non string/symbol/fixnum names to strings using to_str" do
+  it "converts non string/symbol names to strings using to_str" do
     (o = mock('test')).should_receive(:to_str).any_number_of_times.and_return("test")
     Class.new { attr o }.new.respond_to?("test").should == true
   end
@@ -144,5 +144,13 @@ describe "Module#attr" do
 
   it "is a public method" do
     Module.should have_public_instance_method(:attr, false)
+  end
+
+  it "returns an array of defined method names as symbols" do
+    Class.new do
+      (attr :foo, 'bar').should == [:foo, :bar]
+      (attr :baz, false).should == [:baz]
+      (attr :qux, true).should == [:qux, :qux=]
+    end
   end
 end

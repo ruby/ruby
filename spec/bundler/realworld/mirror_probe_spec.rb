@@ -74,27 +74,12 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
       bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Could not fetch specs from #{mirror}")
-    end
 
-    it "prints each error and warning on a new line" do
-      gemfile <<-G
-        source "#{original}"
-        gem 'weakling'
-      G
-
-      bundle :install, :artifice => nil, :raise_on_error => false
-
-      expect(out).to include "Fetching source index from #{mirror}/"
-      expect(err).to include <<-EOS.strip
-Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
-Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
-Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
-Could not fetch specs from #{mirror}/
-      EOS
+      err_lines = err.split("\n")
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(2/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(3/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(4/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ACould not fetch specs from #{mirror}/ due to underlying error <})
     end
   end
 
@@ -112,10 +97,12 @@ Could not fetch specs from #{mirror}/
       bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Could not fetch specs from #{mirror}")
+
+      err_lines = err.split("\n")
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(2/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(3/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(4/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ACould not fetch specs from #{mirror}/ due to underlying error <})
     end
   end
 
@@ -126,19 +113,19 @@ Could not fetch specs from #{mirror}/
     require_relative "../support/artifice/endpoint"
 
     @server_thread = Thread.new do
-      Rack::Server.start(:app       => Endpoint,
-                         :Host      => host,
-                         :Port      => @server_port,
-                         :server    => "webrick",
+      Rack::Server.start(:app => Endpoint,
+                         :Host => host,
+                         :Port => @server_port,
+                         :server => "webrick",
                          :AccessLog => [],
-                         :Logger    => Spec::SilentLogger.new)
+                         :Logger => Spec::SilentLogger.new)
     end.run
 
     wait_for_server(host, @server_port)
   end
 
   def setup_mirror
-    mirror_port = find_unused_port
-    @mirror_uri = "http://#{host}:#{mirror_port}"
+    @mirror_port = find_unused_port
+    @mirror_uri = "http://#{host}:#{@mirror_port}"
   end
 end

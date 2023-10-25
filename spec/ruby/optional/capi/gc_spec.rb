@@ -7,15 +7,33 @@ describe "CApiGCSpecs" do
     @f = CApiGCSpecs.new
   end
 
-  it "correctly gets the value from a registered address" do
-    @f.registered_tagged_address.should == 10
-    @f.registered_tagged_address.should equal(@f.registered_tagged_address)
-    @f.registered_reference_address.should == "Globally registered data"
-    @f.registered_reference_address.should equal(@f.registered_reference_address)
+  describe "rb_gc_register_address" do
+    it "correctly gets the value from a registered address" do
+      @f.registered_tagged_address.should == 10
+      @f.registered_tagged_address.should equal(@f.registered_tagged_address)
+      @f.registered_reference_address.should == "Globally registered data"
+      @f.registered_reference_address.should equal(@f.registered_reference_address)
+    end
+
+    it "keeps the value alive even if the value is assigned after rb_gc_register_address() is called" do
+      GC.start
+      @f.registered_before_rb_gc_register_address.should == "registered before rb_gc_register_address()"
+    end
+
+    it "can be called outside Init_" do
+      @f.rb_gc_register_address.should == "rb_gc_register_address() outside Init_"
+      @f.rb_gc_unregister_address
+    end
+  end
+
+  describe "rb_global_variable" do
+    it "keeps the value alive even if the value is assigned after rb_global_variable() is called" do
+      GC.start
+      @f.registered_before_rb_global_variable.should == "registered before rb_global_variable()"
+    end
   end
 
   describe "rb_gc_enable" do
-
     after do
       GC.enable
     end

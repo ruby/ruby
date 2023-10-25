@@ -1,3 +1,6 @@
+#ifndef COROUTINE_WIN32_CONTEXT_H
+#define COROUTINE_WIN32_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
@@ -21,6 +24,7 @@ enum {COROUTINE_REGISTERS = 4};
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef void(__fastcall * coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
@@ -57,3 +61,5 @@ struct coroutine_context * __fastcall coroutine_transfer(struct coroutine_contex
 static inline void coroutine_destroy(struct coroutine_context * context)
 {
 }
+
+#endif /* COROUTINE_WIN32_CONTEXT_H */

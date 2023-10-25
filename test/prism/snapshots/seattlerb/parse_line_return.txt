@@ -1,0 +1,36 @@
+@ ProgramNode (location: (1,6)-(5,9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,6)-(5,9))
+    └── body: (length: 1)
+        └── @ DefNode (location: (1,6)-(5,9))
+            ├── name: :blah
+            ├── name_loc: (1,10)-(1,14) = "blah"
+            ├── receiver: ∅
+            ├── parameters: ∅
+            ├── body:
+            │   @ StatementsNode (location: (2,8)-(4,11))
+            │   └── body: (length: 1)
+            │       └── @ IfNode (location: (2,8)-(4,11))
+            │           ├── if_keyword_loc: (2,8)-(2,10) = "if"
+            │           ├── predicate:
+            │           │   @ TrueNode (location: (2,11)-(2,15))
+            │           ├── statements:
+            │           │   @ StatementsNode (location: (3,10)-(3,19))
+            │           │   └── body: (length: 1)
+            │           │       └── @ ReturnNode (location: (3,10)-(3,19))
+            │           │           ├── keyword_loc: (3,10)-(3,16) = "return"
+            │           │           └── arguments:
+            │           │               @ ArgumentsNode (location: (3,17)-(3,19))
+            │           │               └── arguments: (length: 1)
+            │           │                   └── @ IntegerNode (location: (3,17)-(3,19))
+            │           │                       └── flags: decimal
+            │           ├── consequent: ∅
+            │           └── end_keyword_loc: (4,8)-(4,11) = "end"
+            ├── locals: []
+            ├── def_keyword_loc: (1,6)-(1,9) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (5,6)-(5,9) = "end"

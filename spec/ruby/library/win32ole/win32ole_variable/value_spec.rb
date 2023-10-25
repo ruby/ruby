@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 platform_is :windows do
   require 'win32ole'
 
@@ -9,7 +10,7 @@ platform_is :windows do
       @var = ole_type.variables[0]
     end
 
-    it "returns a Integer" do
+    it "returns an Integer" do
       # according to doc, this could return nil
       @var.value.should be_kind_of Integer
     end

@@ -9,21 +9,26 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ *
+ * We  planned to  have multiple  VMs  run side-by-side.   The API  here was  a
+ * preparation of that feature.  The topic branch was eventually abandoned, and
+ * we now have Ractor.  This file is kind of obsolescent.
  */
 #include "ruby/internal/dllexport.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-/* Place holder.
- *
- * We will prepare VM creation/control APIs on 1.9.2 or later.
- *
+/**
+ * The opaque struct to hold VM internals.  Its fields are intentionally hidden
+ * from extension libraries because it changes drastically time to time.
  */
-
-/* VM type declaration */
 typedef struct rb_vm_struct ruby_vm_t;
 
-/* core API */
+/**
+ * Destructs the  passed VM.   You don't  have to call  this API  directly now,
+ * because there is  no way to create one.   There is only one VM  at one time.
+ * ruby_stop() should just suffice.
+ */
 int ruby_vm_destruct(ruby_vm_t *vm);
 
 /**

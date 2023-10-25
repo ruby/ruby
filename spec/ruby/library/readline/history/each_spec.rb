@@ -19,13 +19,5 @@ with_feature :readline do
       end
       result.should == ["1", "2", "3"]
     end
-
-    ruby_version_is ''...'2.7' do
-      it "yields tainted Objects" do
-        Readline::HISTORY.each do |x|
-          x.tainted?.should be_true
-        end
-      end
-    end
   end
 end

@@ -22,6 +22,12 @@ describe 'RbConfig::CONFIG' do
       File.directory?(archdir).should == true
       File.should.exist?("#{archdir}/etc.#{RbConfig::CONFIG['DLEXT']}")
     end
+
+    it "['sitelibdir'] is set and is part of $LOAD_PATH" do
+      sitelibdir = RbConfig::CONFIG['sitelibdir']
+      sitelibdir.should be_kind_of String
+      $LOAD_PATH.map{|path| File.realpath(path) rescue path }.should.include? sitelibdir
+    end
   end
 
   it "contains no frozen strings even with --enable-frozen-string-literal" do
@@ -36,7 +42,18 @@ describe 'RbConfig::CONFIG' do
     RUBY
   end
 
-  guard -> {RbConfig::TOPDIR} do
+  platform_is_not :windows do
+    it "['LIBRUBY'] is the same as LIBRUBY_SO if and only if ENABLE_SHARED" do
+      case RbConfig::CONFIG['ENABLE_SHARED']
+      when 'yes'
+        RbConfig::CONFIG['LIBRUBY'].should == RbConfig::CONFIG['LIBRUBY_SO']
+      when 'no'
+        RbConfig::CONFIG['LIBRUBY'].should_not == RbConfig::CONFIG['LIBRUBY_SO']
+      end
+    end
+  end
+
+  guard -> { RbConfig::TOPDIR } do
     it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
       libdirname = RbConfig::CONFIG['LIBPATHENV'] == 'PATH' ? 'bindir' :
                      RbConfig::CONFIG['libdirname']

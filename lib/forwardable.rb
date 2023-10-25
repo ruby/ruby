@@ -76,7 +76,7 @@
 #     def_delegators :@q, :clear, :first, :push, :shift, :size
 #   end
 #
-#   q = Queue.new
+#   q = Thread::Queue.new
 #   q.enq 1, 2, 3, 4, 5
 #   q.push 6
 #
@@ -112,8 +112,10 @@ module Forwardable
   require 'forwardable/impl'
 
   # Version of +forwardable.rb+
-  VERSION = "1.3.1"
+  VERSION = "1.3.3"
+  VERSION.freeze
   FORWARDABLE_VERSION = VERSION
+  FORWARDABLE_VERSION.freeze
 
   @debug = nil
   class << self

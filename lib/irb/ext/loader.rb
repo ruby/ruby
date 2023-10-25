@@ -1,15 +1,8 @@
 # frozen_string_literal: false
 #
 #   loader.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
-
 
 module IRB # :nodoc:
   # Raised in the event of an exception in a file loaded from an Irb session
@@ -32,7 +25,7 @@ module IRB # :nodoc:
     end
 
     def search_file_from_ruby_path(fn) # :nodoc:
-      if /^#{Regexp.quote(File::Separator)}/ =~ fn
+      if File.absolute_path?(fn)
         return fn if File.exist?(fn)
         return nil
       end
@@ -49,17 +42,20 @@ module IRB # :nodoc:
     #
     # See Irb#suspend_input_method for more information.
     def source_file(path)
+      irb = irb_context.irb
       irb.suspend_name(path, File.basename(path)) do
-        irb.suspend_input_method(FileInputMethod.new(path)) do
-          |back_io|
-          irb.signal_status(:IN_LOAD) do
-            if back_io.kind_of?(FileInputMethod)
-              irb.eval_input
-            else
-              begin
+        FileInputMethod.open(path) do |io|
+          irb.suspend_input_method(io) do
+            |back_io|
+            irb.signal_status(:IN_LOAD) do
+              if back_io.kind_of?(FileInputMethod)
                 irb.eval_input
-              rescue LoadAbort
-                print "load abort!!\n"
+              else
+                begin
+                  irb.eval_input
+                rescue LoadAbort
+                  print "load abort!!\n"
+                end
               end
             end
           end
@@ -71,6 +67,7 @@ module IRB # :nodoc:
     #
     # See Irb#suspend_input_method for more information.
     def load_file(path, priv = nil)
+      irb = irb_context.irb
       irb.suspend_name(path, File.basename(path)) do
 
         if priv
@@ -79,16 +76,18 @@ module IRB # :nodoc:
           ws = WorkSpace.new
         end
         irb.suspend_workspace(ws) do
-          irb.suspend_input_method(FileInputMethod.new(path)) do
-            |back_io|
-            irb.signal_status(:IN_LOAD) do
-              if back_io.kind_of?(FileInputMethod)
-                irb.eval_input
-              else
-                begin
+          FileInputMethod.open(path) do |io|
+            irb.suspend_input_method(io) do
+              |back_io|
+              irb.signal_status(:IN_LOAD) do
+                if back_io.kind_of?(FileInputMethod)
                   irb.eval_input
-                rescue LoadAbort
-                  print "load abort!!\n"
+                else
+                  begin
+                    irb.eval_input
+                  rescue LoadAbort
+                    print "load abort!!\n"
+                  end
                 end
               end
             end

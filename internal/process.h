@@ -1,7 +1,6 @@
 #ifndef INTERNAL_PROCESS_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_PROCESS_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -21,12 +20,13 @@
 #endif
 
 #include "ruby/ruby.h"          /* for VALUE */
+#include "internal/compilers.h" /* for __has_warning */
 #include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
-#include "internal/warnings.h"  /* for COMPILER_WARNING_PUSH */
 
 #define RB_MAX_GROUPS (65536)
 
 struct waitpid_state;
+struct rb_process_status;
 struct rb_execarg {
     union {
         struct {
@@ -57,6 +57,7 @@ struct rb_execarg {
     unsigned gid_given : 1;
     unsigned exception : 1;
     unsigned exception_given : 1;
+    struct rb_process_status *status;
     struct waitpid_state *waitpid_state; /* for async process management */
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
@@ -74,7 +75,7 @@ struct rb_execarg {
 };
 
 /* process.c */
-rb_pid_t rb_fork_ruby(int *status);
+rb_pid_t rb_call_proc__fork(void);
 void rb_last_status_clear(void);
 static inline char **ARGVSTR2ARGV(VALUE argv_str);
 static inline size_t ARGVSTR2ARGC(VALUE argv_str);
@@ -119,18 +120,5 @@ ARGVSTR2ARGC(VALUE argv_str)
         ;
     return i - 1;
 }
-
-#ifdef HAVE_WORKING_FORK
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
-static inline rb_pid_t
-rb_fork(void)
-{
-    return fork();
-}
-COMPILER_WARNING_POP
-#endif
 
 #endif /* INTERNAL_PROCESS_H */

@@ -98,7 +98,7 @@ class TestIseqLoad < Test::Unit::TestCase
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, @next_broke
-    skip "failing due to stack_max mismatch"
+    omit "failing due to stack_max mismatch"
     assert_iseq_roundtrip(src)
   end
 
@@ -121,8 +121,10 @@ class TestIseqLoad < Test::Unit::TestCase
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, test_break_ensure_def_method
-    skip "failing due to exception entry sp mismatch"
+    omit "failing due to exception entry sp mismatch"
     assert_iseq_roundtrip(src)
+  ensure
+    Object.undef_method(:test_break_ensure_def_method) rescue nil
   end
 
   def test_kwarg
@@ -137,7 +139,7 @@ class TestIseqLoad < Test::Unit::TestCase
 
   # FIXME: still failing
   def test_require_integration
-    skip "iseq loader require integration tests still failing"
+    omit "iseq loader require integration tests still failing"
     f = File.expand_path(__FILE__)
     # $(top_srcdir)/test/ruby/test_....rb
     3.times { f = File.dirname(f) }

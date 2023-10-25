@@ -12,7 +12,7 @@ module Memory
     PROC_FILE = procfile
     VM_PAT = pat
     def self.read_status
-      IO.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
+      File.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
         yield($1.downcase.intern, $2.to_i * 1024) if VM_PAT =~ l
       end
     end
@@ -56,11 +56,12 @@ module Memory
       end
     end
 
-    keys << :peak << :size
+    keys.push(:size, :rss, :peak)
     def self.read_status
       if info = Win32.memory_info
-        yield :peak, info.PeakPagefileUsage
         yield :size, info.PagefileUsage
+        yield :rss, info.WorkingSetSize
+        yield :peak, info.PeakWorkingSetSize
       end
     end
   when (require_relative 'find_executable'
@@ -94,6 +95,7 @@ if defined?(Memory::Status)
       Memory.read_status do |key, val|
         self[key] = val
       end
+      self
     end unless method_defined?(:_update)
 
     Header = members.map {|k| k.to_s.upcase.rjust(6)}.join('')

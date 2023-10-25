@@ -26,7 +26,7 @@ RSpec.describe Bundler::Fetcher do
     context "when Gem.configuration specifies http_proxy " do
       let(:proxy) { "http://proxy-example2.com" }
       before do
-        allow(Bundler.rubygems.configuration).to receive(:[]).with(:http_proxy).and_return(proxy)
+        allow(Gem.configuration).to receive(:[]).with(:http_proxy).and_return(proxy)
       end
       it "consider Gem.configuration when determine proxy" do
         expect(fetcher.http_proxy).to match("http://proxy-example2.com")
@@ -113,7 +113,7 @@ RSpec.describe Bundler::Fetcher do
 
     context "when gem ssl configuration is set" do
       before do
-        allow(Bundler.rubygems.configuration).to receive_messages(
+        allow(Gem.configuration).to receive_messages(
           :http_proxy => nil,
           :ssl_client_cert => "cert",
           :ssl_ca_cert => "ca"
@@ -156,6 +156,102 @@ RSpec.describe Bundler::Fetcher do
           expect(ci_part).to match("gitlab")
           expect(ci_part).to match("my_ci")
         end
+      end
+    end
+  end
+
+  describe "#fetch_spec" do
+    let(:name) { "name" }
+    let(:version) { "1.3.17" }
+    let(:platform) { "platform" }
+    let(:downloader) { double("downloader") }
+    let(:body) { double(Net::HTTP::Get, :body => downloaded_data) }
+
+    context "when attempting to load a Gem::Specification" do
+      let(:spec) { Gem::Specification.new(name, version) }
+      let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(spec)) }
+
+      it "returns the spec" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).once.and_return(body)
+        result = fetcher.fetch_spec([name, version, platform])
+        expect(result).to eq(spec)
+      end
+    end
+
+    context "when attempting to load an unexpected class" do
+      let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(3)) }
+
+      it "raises a HTTPError error" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).once.and_return(body)
+        expect { fetcher.fetch_spec([name, version, platform]) }.to raise_error(Bundler::HTTPError, /Gemspec .* contained invalid data/i)
+      end
+    end
+  end
+
+  describe "#specs_with_retry" do
+    let(:downloader)  { double(:downloader) }
+    let(:remote)      { double(:remote, :cache_slug => "slug", :uri => uri, :original_uri => nil, :anonymized_uri => uri) }
+    let(:compact_index) { double(Bundler::Fetcher::CompactIndex, :available? => true, :api_fetcher? => true) }
+    let(:dependency)    { double(Bundler::Fetcher::Dependency, :available? => true, :api_fetcher? => true) }
+    let(:index)         { double(Bundler::Fetcher::Index, :available? => true, :api_fetcher? => false) }
+
+    before do
+      allow(Bundler::Fetcher::CompactIndex).to receive(:new).and_return(compact_index)
+      allow(Bundler::Fetcher::Dependency).to receive(:new).and_return(dependency)
+      allow(Bundler::Fetcher::Index).to receive(:new).and_return(index)
+    end
+
+    it "picks the first fetcher that works" do
+      expect(compact_index).to receive(:specs).with("name").and_return([["name", "1.2.3", "ruby"]])
+      expect(dependency).not_to receive(:specs)
+      expect(index).not_to receive(:specs)
+      fetcher.specs_with_retry("name", double(Bundler::Source::Rubygems))
+    end
+
+    context "when APIs are not available" do
+      before do
+        allow(compact_index).to receive(:available?).and_return(false)
+        allow(dependency).to receive(:available?).and_return(false)
+      end
+
+      it "uses the index" do
+        expect(compact_index).not_to receive(:specs)
+        expect(dependency).not_to receive(:specs)
+        expect(index).to receive(:specs).with("name").and_return([["name", "1.2.3", "ruby"]])
+
+        fetcher.specs_with_retry("name", double(Bundler::Source::Rubygems))
+      end
+    end
+  end
+
+  describe "#api_fetcher?" do
+    let(:downloader)  { double(:downloader) }
+    let(:remote)      { double(:remote, :cache_slug => "slug", :uri => uri, :original_uri => nil, :anonymized_uri => uri) }
+    let(:compact_index) { double(Bundler::Fetcher::CompactIndex, :available? => false, :api_fetcher? => true) }
+    let(:dependency)    { double(Bundler::Fetcher::Dependency, :available? => false, :api_fetcher? => true) }
+    let(:index)         { double(Bundler::Fetcher::Index, :available? => true, :api_fetcher? => false) }
+
+    before do
+      allow(Bundler::Fetcher::CompactIndex).to receive(:new).and_return(compact_index)
+      allow(Bundler::Fetcher::Dependency).to receive(:new).and_return(dependency)
+      allow(Bundler::Fetcher::Index).to receive(:new).and_return(index)
+    end
+
+    context "when an api fetcher is available" do
+      before do
+        allow(compact_index).to receive(:available?).and_return(true)
+      end
+
+      it "is truthy" do
+        expect(fetcher).to be_api_fetcher
+      end
+    end
+
+    context "when only the index fetcher is available" do
+      it "is falsey" do
+        expect(fetcher).not_to be_api_fetcher
       end
     end
   end

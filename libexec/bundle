@@ -10,36 +10,24 @@ end
 base_path = File.expand_path("../lib", __dir__)
 
 if File.exist?(base_path)
-  require_relative "../lib/bundler"
-else
-  require "bundler"
+  $LOAD_PATH.unshift(base_path)
 end
 
-# Workaround for non-activated bundler spec due to missing https://github.com/rubygems/rubygems/commit/4e306d7bcdee924b8d80ca9db6125aa59ee4e5a3
-gem "bundler", Bundler::VERSION if Gem.rubygems_version < Gem::Version.new("2.6.2")
+require "bundler"
 
-# Check if an older version of bundler is installed
-$LOAD_PATH.each do |path|
-  next unless path =~ %r{/bundler-0\.(\d+)} && $1.to_i < 9
-  err = String.new
-  err << "Looks like you have a version of bundler that's older than 0.9.\n"
-  err << "Please remove your old versions.\n"
-  err << "An easy way to do this is by running `gem cleanup bundler`."
-  abort(err)
+if Gem.rubygems_version < Gem::Version.new("3.2.3") && Gem.ruby_version < Gem::Version.new("2.7.a") && !ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"]
+  Bundler.ui.warn \
+    "Your RubyGems version (#{Gem::VERSION}) has a bug that prevents " \
+    "`required_ruby_version` from working for Bundler. Any scripts that use " \
+    "`gem install bundler` will break as soon as Bundler drops support for " \
+    "your Ruby version. Please upgrade RubyGems to avoid future breakage " \
+    "and silence this warning by running `gem update --system 3.2.3`"
 end
 
-if File.exist?(base_path)
-  require_relative "../lib/bundler/friendly_errors"
-else
-  require "bundler/friendly_errors"
-end
+require "bundler/friendly_errors"
 
 Bundler.with_friendly_errors do
-  if File.exist?(base_path)
-    require_relative "../lib/bundler/cli"
-  else
-    require "bundler/cli"
-  end
+  require "bundler/cli"
 
   # Allow any command to use --help flag to show help for that command
   help_flags = %w[--help -h]

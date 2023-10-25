@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocStore < XrefTestCase
 
@@ -161,9 +161,10 @@ class TestRDocStore < XrefTestCase
 
   def test_all_classes_and_modules
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
+      C1 C10 C10::C11 C11 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
       Child
       M1 M1::M2
+      Object
       Parent
     ]
 
@@ -212,8 +213,9 @@ class TestRDocStore < XrefTestCase
 
   def test_classes
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
+      C1 C10 C10::C11 C11 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
       Child
+      Object
       Parent
     ]
 
@@ -317,8 +319,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_friendly_path
-    @orig_xdg_data_home = ENV['XDG_DATA_HOME']
-    ENV.delete('XDG_DATA_HOME')
+    @orig_xdg_data_home = ENV.delete('XDG_DATA_HOME')
 
     @s.path = @tmpdir
     @s.type = nil
@@ -372,9 +373,9 @@ class TestRDocStore < XrefTestCase
     assert_equal [@mod],                s.all_modules.sort
     assert_equal [@page, @top_level],   s.all_files.sort
 
-    methods = s.all_classes_and_modules.map do |mod|
+    methods = s.all_classes_and_modules.flat_map do |mod|
       mod.method_list
-    end.flatten.sort
+    end.sort
 
     _meth_bang_alias = RDoc::AnyMethod.new nil, 'method_bang'
     _meth_bang_alias.parent = @klass
@@ -387,9 +388,9 @@ class TestRDocStore < XrefTestCase
 
     assert_equal @klass, methods.last.parent
 
-    attributes = s.all_classes_and_modules.map do |mod|
+    attributes = s.all_classes_and_modules.flat_map do |mod|
       mod.attributes
-    end.flatten.sort
+    end.sort
 
     assert_equal [@attr], attributes
 

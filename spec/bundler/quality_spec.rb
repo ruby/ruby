@@ -3,25 +3,6 @@
 require "set"
 
 RSpec.describe "The library itself" do
-  def check_for_debugging_mechanisms(filename)
-    debugging_mechanisms_regex = /
-      (binding\.pry)|
-      (debugger)|
-      (sleep\s*\(?\d+)|
-      (fit\s*\(?("|\w))
-    /x
-
-    failing_lines = []
-    each_line(filename) do |line, number|
-      if line =~ debugging_mechanisms_regex && !line.end_with?("# ignore quality_spec\n")
-        failing_lines << number + 1
-      end
-    end
-
-    return if failing_lines.empty?
-    "#{filename} has debugging mechanisms (like binding.pry, sleep, debugger, rspec focusing, etc.) on lines #{failing_lines.join(", ")}"
-  end
-
   def check_for_git_merge_conflicts(filename)
     merge_conflicts_regex = /
       <<<<<<<|
@@ -31,7 +12,7 @@ RSpec.describe "The library itself" do
 
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ merge_conflicts_regex
+      failing_lines << number + 1 if line&.match?(merge_conflicts_regex)
     end
 
     return if failing_lines.empty?
@@ -41,7 +22,7 @@ RSpec.describe "The library itself" do
   def check_for_tab_characters(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ /\t/
+      failing_lines << number + 1 if line.include?("\t")
     end
 
     return if failing_lines.empty?
@@ -51,24 +32,24 @@ RSpec.describe "The library itself" do
   def check_for_extra_spaces(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      next if line =~ /^\s+#.*\s+\n$/
-      failing_lines << number + 1 if line =~ /\s+\n$/
+      next if /^\s+#.*\s+\n$/.match?(line)
+      failing_lines << number + 1 if /\s+\n$/.match?(line)
     end
 
     return if failing_lines.empty?
     "#{filename} has spaces on the EOL on lines #{failing_lines.join(", ")}"
   end
 
-  def check_for_straneous_quotes(filename)
+  def check_for_extraneous_quotes(filename)
     return if File.expand_path(filename) == __FILE__
 
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ /’/
+      failing_lines << number + 1 if /’/.match?(line)
     end
 
     return if failing_lines.empty?
-    "#{filename} has an straneous quote on lines #{failing_lines.join(", ")}"
+    "#{filename} has an extraneous quote on lines #{failing_lines.join(", ")}"
   end
 
   def check_for_expendable_words(filename)
@@ -108,29 +89,19 @@ RSpec.describe "The library itself" do
     exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|index\.txt$/
     error_messages = []
     tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_tab_characters(filename)
       error_messages << check_for_extra_spaces(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "has no estraneous quotes" do
+  it "has no extraneous quotes" do
     exempt = /vendor|vcr_cassettes|LICENSE|rbreadline\.diff/
     error_messages = []
     tracked_files.each do |filename|
-      next if filename =~ exempt
-      error_messages << check_for_straneous_quotes(filename)
-    end
-    expect(error_messages.compact).to be_well_formed
-  end
-
-  it "does not include any leftover debugging or development mechanisms" do
-    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|index\.txt|\.5|\.1}
-    error_messages = []
-    tracked_files.each do |filename|
-      next if filename =~ exempt
-      error_messages << check_for_debugging_mechanisms(filename)
+      next if filename&.match?(exempt)
+      error_messages << check_for_extraneous_quotes(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
@@ -139,7 +110,7 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = %r{lock/lockfile_spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
     tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_git_merge_conflicts(filename)
     end
     expect(error_messages.compact).to be_well_formed
@@ -149,7 +120,7 @@ RSpec.describe "The library itself" do
     included = /ronn/
     error_messages = []
     man_tracked_files.each do |filename|
-      next unless filename =~ included
+      next unless filename&.match?(included)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -160,7 +131,7 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = /vendor|vcr_cassettes|CODE_OF_CONDUCT/
     lib_tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -169,12 +140,17 @@ RSpec.describe "The library itself" do
 
   it "documents all used settings" do
     exemptions = %w[
-      deployment_means_frozen
       forget_cli_options
+      gem.changelog
+      gem.ci
       gem.coc
+      gem.linter
       gem.mit
+      gem.rubocop
+      gem.test
+      git.allow_insecure
       inline
-      use_gem_version_promoter_for_major_updates
+      trust-policy
     ]
 
     all_settings = Hash.new {|h, k| h[k] = [] }
@@ -183,6 +159,7 @@ RSpec.describe "The library itself" do
     Bundler::Settings::BOOL_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::BOOL_KEYS" }
     Bundler::Settings::NUMBER_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::NUMBER_KEYS" }
     Bundler::Settings::ARRAY_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::ARRAY_KEYS" }
+    Bundler::Settings::STRING_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::STRING_KEYS" }
 
     key_pattern = /([a-z\._-]+)/i
     lib_tracked_files.each do |filename|
@@ -190,7 +167,7 @@ RSpec.describe "The library itself" do
         line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
       end
     end
-    documented_settings = File.read("man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
+    documented_settings = File.read("lib/bundler/man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
 
     documented_settings.each do |s|
       all_settings.delete(s)
@@ -216,11 +193,11 @@ RSpec.describe "The library itself" do
   end
 
   it "ships the correct set of files" do
-    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb man/bundle* man/gemfile* libexec/bundle*" : "lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
+    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb libexec/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
 
     gem_list = loaded_gemspec.files
 
-    expect(git_list.to_set).to eq(gem_list.to_set)
+    expect(git_list).to match_array(gem_list)
   end
 
   it "does not contain any warnings" do
@@ -229,7 +206,6 @@ RSpec.describe "The library itself" do
       lib/bundler/deployment.rb
       lib/bundler/gem_tasks.rb
       lib/bundler/vlad.rb
-      lib/bundler/templates/gems.rb
     ]
     files_to_require = lib_tracked_files.grep(/\.rb$/) - exclusions
     files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
@@ -249,10 +225,10 @@ RSpec.describe "The library itself" do
   end
 
   it "does not use require internally, but require_relative" do
-    exempt = %r{templates/|vendor/}
+    exempt = %r{templates/|\.5|\.1|vendor/}
     all_bad_requires = []
     lib_tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       each_line(filename) do |line, number|
         line.scan(/^ *require "bundler/).each { all_bad_requires << "#{filename}:#{number.succ}" }
       end

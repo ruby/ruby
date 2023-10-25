@@ -29,6 +29,7 @@ continued_name = nil
 continued_line = nil
 install_name = nil
 so_name = nil
+platform = nil
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
   name = nil
@@ -62,8 +63,8 @@ File.foreach "config.status" do |line|
     when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
     when /^INSTALLDOC|TARGET$/; next
     when /^DTRACE/; next
-    when /^MJIT_(CC|SUPPORT)$/; # pass
-    when /^MJIT_/; next
+    when /^RJIT_(CC|SUPPORT)$/; # pass
+    when /^RJIT_/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next
     when /^RUBY_INSTALL_NAME$/; next vars[name] = (install_name = val).dup if $install_name
@@ -87,7 +88,7 @@ File.foreach "config.status" do |line|
       unless $install_name
         $install_name = "ruby"
         val.gsub!(/\$\$/, '$')
-        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*)\3((?:(?!\3)(?:\\.|.))*)\3([gi]*)]) do
+        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*+/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*+)\3((?:(?!\3)(?:\\.|.))*+)\3([gi]*)]) do
           |addr, cmd, sep, pat, rep, opt|
           if addr
             Regexp.new(addr[/\A\/(.*)\/\z/, 1]) =~ $install_name or next
@@ -121,9 +122,17 @@ File.foreach "config.status" do |line|
       universal, val = val, 'universal' if universal
     when /^arch$/
       if universal
-        val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
+        platform = val.sub(/universal/, '$(arch)')
       end
-    when /^oldincludedir$/
+    when /^target_cpu$/
+      if universal
+        val = 'cpu'
+      end
+    when /^target$/
+      val = '"$(target_cpu)-$(target_vendor)-$(target_os)"'
+    when /^host(?:_(?:os|vendor|cpu|alias))?$/
+      val = %["$(#{name.sub(/^host/, 'target')})"]
+    when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
@@ -184,17 +193,19 @@ print "  # Ruby installed directory.\n"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  # DESTDIR on make install.\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
-print <<'ARCH' if universal
+print <<"UNIVERSAL", <<'ARCH' if universal
+  universal = #{universal}
+UNIVERSAL
   arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
   arch = arch_flag && arch_flag[/\A\s*-arch\s+(\S+)\s*\z/, 1]
+  cpu = arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]
 ARCH
-print "  universal = #{universal}\n" if universal
 print "  # The hash configurations stored.\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 
 versions = {}
-IO.foreach(File.join(srcdir, "version.h")) do |l|
+File.foreach(File.join(srcdir, "version.h")) do |l|
   m = /^\s*#\s*define\s+RUBY_(PATCHLEVEL)\s+(-?\d+)/.match(l)
   if m
     versions[m[1]] = m[2]
@@ -215,7 +226,7 @@ IO.foreach(File.join(srcdir, "version.h")) do |l|
   end
 end
 if versions.size != 4
-  IO.foreach(File.join(srcdir, "include/ruby/version.h")) do |l|
+  File.foreach(File.join(srcdir, "include/ruby/version.h")) do |l|
     m = /^\s*#\s*define\s+RUBY_API_VERSION_(\w+)\s+(-?\d+)/.match(l)
     if m
       versions[m[1]] ||= m[2]
@@ -267,10 +278,21 @@ EOS
 print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
-print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = "\#{ENV['SDKROOT']}" # don't run xcrun every time, usually useless.
+print prefix.start_with?("/System/") ? <<EOS : <<EOS if /darwin/ =~ arch
+  if sdkroot = ENV["SDKROOT"]
+    sdkroot = sdkroot.dup
+  elsif File.exist?(File.join(CONFIG["prefix"], "include")) ||
+        !(sdkroot = (IO.popen(%w[/usr/bin/xcrun --sdk macosx --show-sdk-path], in: IO::NULL, err: IO::NULL, &:read) rescue nil))
+    sdkroot = +""
+  else
+    sdkroot.chomp!
+  end
+  CONFIG["SDKROOT"] = sdkroot
+EOS
+  CONFIG["SDKROOT"] = ""
 EOS
 print <<EOS
+  CONFIG["platform"] = #{platform || '"$(arch)"'}
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   # Almost same with CONFIG. MAKEFILE_CONFIG has other variable
@@ -330,7 +352,6 @@ print <<EOS
     RbConfig::expand(val)
   end
 
-  # :nodoc:
   # call-seq:
   #
   #   RbConfig.fire_update!(key, val)               -> array
@@ -346,7 +367,7 @@ print <<EOS
   #   RbConfig::CONFIG.values_at("CC", "LDSHARED")          # => ["gcc-8", "gcc-8 -shared"]
   #
   # returns updated keys list, or +nil+ if nothing changed.
-  def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG)
+  def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG) # :nodoc:
     return if mkconf[key] == val
     mkconf[key] = val
     keys = [key]

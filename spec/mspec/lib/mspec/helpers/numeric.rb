@@ -9,7 +9,9 @@ def infinity_value
 end
 
 def bignum_value(plus = 0)
-  0x8000_0000_0000_0000 + plus
+  # Must be >= fixnum_max + 2, so -bignum_value is < fixnum_min
+  # A fixed value has the advantage to be the same numeric value for all Rubies and is much easier to spec
+  (2**64) + plus
 end
 
 def max_long

@@ -1,0 +1,62 @@
+== Julian and Gregorian Calendars
+
+The difference between the
+{Julian calendar}[https://en.wikipedia.org/wiki/Julian_calendar]
+and the
+{Gregorian calendar}[https://en.wikipedia.org/wiki/Gregorian_calendar]
+may matter to your program if it uses dates before the switchovers.
+
+- October 15, 1582.
+- September 14, 1752.
+
+A date will be different in the two calendars, in general.
+
+=== Different switchover dates
+
+The reasons for the difference are religious/political histories.
+
+- On October 15, 1582, several countries changed
+  from the Julian calendar to the Gregorian calendar;
+  these included Italy, Poland, Portugal, and Spain.
+  Other contries in the Western world retained the Julian calendar.
+- On September 14, 1752, most of the British empire
+  changed from the Julian calendar to the Gregorian calendar.
+
+When your code uses a date before these switchover dates,
+it will matter whether it considers the switchover date
+to be the earlier date or the later date (or neither).
+
+See also {a concrete example here}[rdoc-ref:DateTime@When+should+you+use+DateTime+and+when+should+you+use+Time-3F].
+
+=== Argument +start+
+
+Certain methods in class \Date handle differences in the
+{Julian and Gregorian calendars}[rdoc-ref:calendars.rdoc@Julian+and+Gregorian+Calendars]
+by accepting an optional argument +start+, whose value may be:
+
+- Date::ITALY (the default): the created date is Julian
+  if before October 15, 1582, Gregorian otherwise:
+
+      d = Date.new(1582, 10, 15)
+      d.prev_day.julian? # => true
+      d.julian?          # => false
+      d.gregorian?       # => true
+
+- Date::ENGLAND: the created date is Julian if before September 14, 1752,
+  Gregorian otherwise:
+
+    d = Date.new(1752, 9, 14, Date::ENGLAND)
+    d.prev_day.julian? # => true
+    d.julian?          # => false
+    d.gregorian?       # => true
+
+- Date::JULIAN: the created date is Julian regardless of its value:
+
+    d = Date.new(1582, 10, 15, Date::JULIAN)
+    d.julian? # => true
+
+- Date::GREGORIAN: the created date is Gregorian regardless of its value:
+
+    d = Date.new(1752, 9, 14, Date::GREGORIAN)
+    d.prev_day.gregorian? # => true
+

@@ -99,7 +99,7 @@ Usage: "bundle inject GEM VERSION"
 
     it "restores frozen afterwards" do
       bundle "inject 'rack-obama' '> 0'"
-      config = YAML.load(bundled_app(".bundle/config").read)
+      config = Psych.load(bundled_app(".bundle/config").read)
       expect(config["BUNDLE_DEPLOYMENT"] || config["BUNDLE_FROZEN"]).to eq("true")
     end
 
@@ -109,7 +109,7 @@ Usage: "bundle inject GEM VERSION"
         gem "rack-obama"
       G
       bundle "inject 'rack' '> 0'", :raise_on_error => false
-      expect(err).to match(/trying to install in deployment mode after changing/)
+      expect(err).to match(/the lockfile can't be updated because frozen mode is set/)
 
       expect(bundled_app_lock.read).not_to match(/rack-obama/)
     end

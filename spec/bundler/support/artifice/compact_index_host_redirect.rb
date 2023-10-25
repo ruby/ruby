@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexHostRedirect < CompactIndexAPI
   get "/fetch/actual/gem/:id", :host_name => "localgemserver.test" do
@@ -17,5 +15,7 @@ class CompactIndexHostRedirect < CompactIndexAPI
     status 404
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexHostRedirect)

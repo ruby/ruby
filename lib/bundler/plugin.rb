@@ -13,8 +13,9 @@ module Bundler
     class MalformattedPlugin < PluginError; end
     class UndefinedCommandError < PluginError; end
     class UnknownSourceError < PluginError; end
+    class PluginInstallError < PluginError; end
 
-    PLUGIN_FILE_NAME = "plugins.rb".freeze
+    PLUGIN_FILE_NAME = "plugins.rb"
 
     module_function
 
@@ -35,15 +36,16 @@ module Bundler
     # @param [Hash] options various parameters as described in description.
     #               Refer to cli/plugin for available options
     def install(names, options)
+      raise InvalidOption, "You cannot specify `--branch` and `--ref` at the same time." if options["branch"] && options["ref"]
+
       specs = Installer.new.install(names, options)
 
       save_plugins names, specs
-    rescue PluginError => e
+    rescue PluginError
       specs_to_delete = specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }
       specs_to_delete.each_value {|spec| Bundler.rm_rf(spec.full_gem_path) }
 
-      names_list = names.map {|name| "`#{name}`" }.join(", ")
-      Bundler.ui.error "Failed to install the following plugins: #{names_list}. The underlying error was: #{e.message}.\n #{e.backtrace.join("\n ")}"
+      raise
     end
 
     # Uninstalls plugins by the given names
@@ -105,6 +107,7 @@ module Bundler
         else
           builder.eval_gemfile(gemfile)
         end
+        builder.check_primary_source_safety
         definition = builder.to_definition(nil, true)
 
         return if definition.dependencies.empty?
@@ -163,7 +166,7 @@ module Bundler
     end
 
     # To be called from Cli class to pass the command and argument to
-    # approriate plugin class
+    # appropriate plugin class
     def exec_command(command, args)
       raise UndefinedCommandError, "Command `#{command}` not found" unless command? command
 
@@ -182,7 +185,7 @@ module Bundler
       !index.source_plugin(name.to_s).nil?
     end
 
-    # @return [Class] that handles the source. The calss includes API::Source
+    # @return [Class] that handles the source. The class includes API::Source
     def source(name)
       raise UnknownSourceError, "Source #{name} not found" unless source? name
 
@@ -194,7 +197,7 @@ module Bundler
     # @param [Hash] The options that are present in the lock file
     # @return [API::Source] the instance of the class that handles the source
     #                       type passed in locked_opts
-    def source_from_lock(locked_opts)
+    def from_lock(locked_opts)
       src = source(locked_opts["type"])
 
       src.new(locked_opts.merge("uri" => locked_opts["remote"]))
@@ -244,10 +247,11 @@ module Bundler
     # @param [Array<String>] names of inferred source plugins that can be ignored
     def save_plugins(plugins, specs, optional_plugins = [])
       plugins.each do |name|
+        next if index.installed?(name)
+
         spec = specs[name]
-        validate_plugin! Pathname.new(spec.full_gem_path)
-        installed = register_plugin(name, spec, optional_plugins.include?(name))
-        Bundler.ui.info "Installed plugin #{name}" if installed
+
+        save_plugin(name, spec, optional_plugins.include?(name))
       end
     end
 
@@ -260,6 +264,22 @@ module Bundler
     def validate_plugin!(plugin_path)
       plugin_file = plugin_path.join(PLUGIN_FILE_NAME)
       raise MalformattedPlugin, "#{PLUGIN_FILE_NAME} was not found in the plugin." unless plugin_file.file?
+    end
+
+    # Validates and registers a plugin.
+    #
+    # @param [String] name the name of the plugin
+    # @param [Specification] spec of installed plugin
+    # @param [Boolean] optional_plugin, removed if there is conflict with any
+    #                     other plugin (used for default source plugins)
+    #
+    # @raise [PluginInstallError] if validation or registration raises any error
+    def save_plugin(name, spec, optional_plugin = false)
+      validate_plugin! Pathname.new(spec.full_gem_path)
+      installed = register_plugin(name, spec, optional_plugin)
+      Bundler.ui.info "Installed plugin #{name}" if installed
+    rescue PluginError => e
+      raise PluginInstallError, "Failed to install plugin `#{spec.name}`, due to #{e.class} (#{e.message})"
     end
 
     # Runs the plugins.rb file in an isolated namespace, records the plugin
@@ -308,6 +328,8 @@ module Bundler
     #
     # @param [String] name of the plugin
     def load_plugin(name)
+      return unless name && !name.empty?
+
       # Need to ensure before this that plugin root where the rest of gems
       # are installed to be on load path to support plugin deps. Currently not
       # done to avoid conflicts

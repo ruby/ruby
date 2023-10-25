@@ -1,0 +1,4 @@
+prelude: |
+  list = ("aaa".."zzz").to_a*10
+benchmark:
+  tally: list.tally

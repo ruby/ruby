@@ -375,4 +375,3 @@ bar:
   end
 
 end
-

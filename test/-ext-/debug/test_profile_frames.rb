@@ -14,6 +14,8 @@ class SampleClassForTestProfileFrames
   end
 
   class Sample2
+    EVAL_LINE = __LINE__ + 3
+
     def baz(block)
       instance_eval "def zab(block) block.call end"
       [self, zab(block)]
@@ -112,7 +114,7 @@ class TestProfileFrames < Test::Unit::TestCase
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
     ]
-    paths = [ nil, file=__FILE__, "(eval)", file, file, file, file, file, file, nil ]
+    paths = [ nil, file=__FILE__, "(eval at #{__FILE__}:#{SampleClassForTestProfileFrames::Sample2::EVAL_LINE})", file, file, file, file, file, file, nil ]
     absolute_paths = [ "<cfunc>", file, nil, file, file, file, file, file, file, nil ]
 
     assert_equal(labels.size, frames.size)
@@ -135,6 +137,38 @@ class TestProfileFrames < Test::Unit::TestCase
         assert_equal(m.source_location[1], first_lineno, err_msg)
       end
     }
+  end
+
+  def test_matches_backtrace_locations_main_thread
+    assert_equal(Thread.current, Thread.main)
+
+    # Keep these in the same line, so the backtraces match exactly
+    backtrace_locations, profile_frames = [Thread.current.backtrace_locations, Bug::Debug.profile_frames(0, 100)]
+
+    errmsg  = "backtrace_locations:\n  " + backtrace_locations.map.with_index{|loc, i| "#{i} #{loc}"}.join("\n  ")
+    errmsg += "\n\nprofile_frames:\n  "      + profile_frames.map.with_index{|(path, absolute_path, _, base_label, _, _, _, _, _, full_label, lineno), i|
+      if lineno
+        "#{i} #{absolute_path}:#{lineno} // #{full_label}"
+      else
+        "#{i} #{absolute_path} #{full_label}"
+      end
+    }.join("\n  ")
+    assert_equal(backtrace_locations.size, profile_frames.size, errmsg)
+
+    # The first entries are not going to match, since one is #backtrace_locations and the other #profile_frames
+    backtrace_locations.shift
+    profile_frames.shift
+
+    # The rest of the stack is expected to look the same...
+    backtrace_locations.zip(profile_frames).each.with_index do |(location, (path, absolute_path, _, base_label, _, _, _, _, _, _, lineno)), i|
+      next if absolute_path == "<cfunc>" # ...except for cfunc frames
+
+      err_msg = "#{i}th frame"
+      assert_equal(location.absolute_path, absolute_path, err_msg)
+      assert_equal(location.base_label, base_label, err_msg)
+      assert_equal(location.lineno, lineno, err_msg)
+      assert_equal(location.path, path, err_msg)
+    end
   end
 
   def test_ifunc_frame

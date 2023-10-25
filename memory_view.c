@@ -7,29 +7,130 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/hash.h"
 #include "internal/variable.h"
-#include "internal/util.h"
 #include "ruby/memory_view.h"
+#include "ruby/util.h"
+#include "vm_sync.h"
+
+#if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
+#   define INTPTR2NUM LL2NUM
+#   define UINTPTR2NUM ULL2NUM
+#elif SIZEOF_INTPTR_T == SIZEOF_LONG
+#   define INTPTR2NUM LONG2NUM
+#   define UINTPTR2NUM ULONG2NUM
+#else
+#   define INTPTR2NUM INT2NUM
+#   define UINTPTR2NUM UINT2NUM
+#endif
+
 
 #define STRUCT_ALIGNOF(T, result) do { \
     (result) = RUBY_ALIGNOF(T); \
 } while(0)
 
+// Exported Object Registry
+
+static st_table *exported_object_table = NULL;
+VALUE rb_memory_view_exported_object_registry = Qundef;
+
+static int
+exported_object_registry_mark_key_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_gc_mark(key);
+    return ST_CONTINUE;
+}
+
+static void
+exported_object_registry_mark(void *ptr)
+{
+    // Don't use RB_VM_LOCK_ENTER here.  It is unnecessary during GC.
+    st_foreach(exported_object_table, exported_object_registry_mark_key_i, 0);
+}
+
+static void
+exported_object_registry_free(void *ptr)
+{
+    RB_VM_LOCK_ENTER();
+    st_clear(exported_object_table);
+    st_free_table(exported_object_table);
+    exported_object_table = NULL;
+    RB_VM_LOCK_LEAVE();
+}
+
+const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
+    "memory_view/exported_object_registry",
+    {
+        exported_object_registry_mark,
+        exported_object_registry_free,
+        0,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static int
+exported_object_add_ref(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    ASSERT_vm_locking();
+
+    if (existing) {
+        *val += 1;
+    }
+    else {
+        *val = 1;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+exported_object_dec_ref(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    ASSERT_vm_locking();
+
+    if (existing) {
+        *val -= 1;
+        if (*val == 0) {
+            return ST_DELETE;
+        }
+    }
+    return ST_CONTINUE;
+}
+
+static void
+register_exported_object(VALUE obj)
+{
+    RB_VM_LOCK_ENTER();
+    st_update(exported_object_table, (st_data_t)obj, exported_object_add_ref, 0);
+    RB_VM_LOCK_LEAVE();
+}
+
+static void
+unregister_exported_object(VALUE obj)
+{
+    RB_VM_LOCK_ENTER();
+    if (exported_object_table)
+        st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
+    RB_VM_LOCK_LEAVE();
+}
+
+// MemoryView
+
 static ID id_memory_view;
 
 static const rb_data_type_t memory_view_entry_data_type = {
-    "memory_view",
+    "memory_view/entry",
     {
-	0,
-	0,
-	0,
+        0,
+        0,
+        0,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 /* Register memory view functions for the given class */
 bool
-rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry) {
+rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry)
+{
     Check_Type(klass, T_CLASS);
     VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     if (! NIL_P(entry_obj)) {
@@ -95,22 +196,24 @@ rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_si
 }
 
 /* Initialize view to expose a simple byte array */
-int
+bool
 rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly)
 {
     view->obj = obj;
     view->data = data;
-    view->len = len;
+    view->byte_size = len;
     view->readonly = readonly;
     view->format = NULL;
     view->item_size = 1;
+    view->item_desc.components = NULL;
+    view->item_desc.length = 0;
     view->ndim = 1;
     view->shape = NULL;
     view->strides = NULL;
     view->sub_offsets = NULL;
-    *((void **)&view->private) = NULL;
+    view->private_data = NULL;
 
-    return 1;
+    return true;
 }
 
 #ifdef HAVE_TRUE_LONG_LONG
@@ -271,7 +374,8 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianne
 }
 
 static inline ssize_t
-calculate_padding(ssize_t total, ssize_t alignment_size) {
+calculate_padding(ssize_t total, ssize_t alignment_size)
+{
     if (alignment_size > 1) {
         ssize_t res = total % alignment_size;
         if (res > 0) {
@@ -284,18 +388,18 @@ calculate_padding(ssize_t total, ssize_t alignment_size) {
 ssize_t
 rb_memory_view_parse_item_format(const char *format,
                                  rb_memory_view_item_component_t **members,
-                                 ssize_t *n_members, const char **err)
+                                 size_t *n_members, const char **err)
 {
     if (format == NULL) return 1;
 
     VALUE error = Qnil;
     ssize_t total = 0;
-    ssize_t len = 0;
+    size_t len = 0;
     bool alignment = false;
     ssize_t max_alignment_size = 0;
 
     const char *p = format;
-    if (*p == '|') {  // alginment specifier
+    if (*p == '|') {  // alignment specifier
         alignment = true;
         ++format;
         ++p;
@@ -363,10 +467,14 @@ rb_memory_view_parse_item_format(const char *format,
                 switch (type_char) {
                   case 'e':
                   case 'E':
+                  case 'v':
+                  case 'V':
                     little_endian_p = true;
                     break;
                   case 'g':
                   case 'G':
+                  case 'n':
+                  case 'N':
                     little_endian_p = false;
                     break;
                   default:
@@ -444,12 +552,239 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
     return ptr;
 }
 
+static void
+switch_endianness(uint8_t *buf, ssize_t len)
+{
+    RUBY_ASSERT(buf != NULL);
+    RUBY_ASSERT(len >= 0);
+
+    uint8_t *p = buf;
+    uint8_t *q = buf + len - 1;
+
+    while (q - p > 0) {
+        uint8_t t = *p;
+        *p = *q;
+        *q = t;
+        ++p;
+        --q;
+    }
+}
+
+static inline VALUE
+extract_item_member(const uint8_t *ptr, const rb_memory_view_item_component_t *member, const size_t i)
+{
+    RUBY_ASSERT(ptr != NULL);
+    RUBY_ASSERT(member != NULL);
+    RUBY_ASSERT(i < member->repeat);
+
+#ifdef WORDS_BIGENDIAN
+    const bool native_endian_p = !member->little_endian_p;
+#else
+    const bool native_endian_p = member->little_endian_p;
+#endif
+
+    const uint8_t *p = ptr + member->offset + i * member->size;
+
+    if (member->format == 'c') {
+        return INT2FIX(*(char *)p);
+    }
+    else if (member->format == 'C') {
+        return INT2FIX(*(unsigned char *)p);
+    }
+
+    union {
+        short s;
+        unsigned short us;
+        int i;
+        unsigned int ui;
+        long l;
+        unsigned long ul;
+        LONG_LONG ll;
+        unsigned LONG_LONG ull;
+        int16_t i16;
+        uint16_t u16;
+        int32_t i32;
+        uint32_t u32;
+        int64_t i64;
+        uint64_t u64;
+        intptr_t iptr;
+        uintptr_t uptr;
+        float f;
+        double d;
+    } val;
+
+    if (!native_endian_p) {
+        MEMCPY(&val, p, uint8_t, member->size);
+        switch_endianness((uint8_t *)&val, member->size);
+    }
+    else {
+        MEMCPY(&val, p, uint8_t, member->size);
+    }
+
+    switch (member->format) {
+      case 's':
+        if (member->native_size_p) {
+            return INT2FIX(val.s);
+        }
+        else {
+            return INT2FIX(val.i16);
+        }
+
+      case 'S':
+      case 'n':
+      case 'v':
+        if (member->native_size_p) {
+            return UINT2NUM(val.us);
+        }
+        else {
+            return INT2FIX(val.u16);
+        }
+
+      case 'i':
+        return INT2NUM(val.i);
+
+      case 'I':
+        return UINT2NUM(val.ui);
+
+      case 'l':
+        if (member->native_size_p) {
+            return LONG2NUM(val.l);
+        }
+        else {
+            return LONG2NUM(val.i32);
+        }
+
+      case 'L':
+      case 'N':
+      case 'V':
+        if (member->native_size_p) {
+            return ULONG2NUM(val.ul);
+        }
+        else {
+            return ULONG2NUM(val.u32);
+        }
+
+      case 'f':
+      case 'e':
+      case 'g':
+        return DBL2NUM(val.f);
+
+      case 'q':
+        if (member->native_size_p) {
+            return LL2NUM(val.ll);
+        }
+        else {
+#if SIZEOF_INT64_T == SIZEOF_LONG
+            return LONG2NUM(val.i64);
+#else
+            return LL2NUM(val.i64);
+#endif
+        }
+
+      case 'Q':
+        if (member->native_size_p) {
+            return ULL2NUM(val.ull);
+        }
+        else {
+#if SIZEOF_UINT64_T == SIZEOF_LONG
+            return ULONG2NUM(val.u64);
+#else
+            return ULL2NUM(val.u64);
+#endif
+        }
+
+      case 'd':
+      case 'E':
+      case 'G':
+        return DBL2NUM(val.d);
+
+      case 'j':
+        return INTPTR2NUM(val.iptr);
+
+      case 'J':
+        return UINTPTR2NUM(val.uptr);
+
+      default:
+        UNREACHABLE_RETURN(Qnil);
+    }
+}
+
+/* Return a value of the extracted member. */
+VALUE
+rb_memory_view_extract_item_member(const void *ptr, const rb_memory_view_item_component_t *member, const size_t i)
+{
+    if (ptr == NULL) return Qnil;
+    if (member == NULL) return Qnil;
+    if (i >= member->repeat) return Qnil;
+
+    return extract_item_member(ptr, member, i);
+}
+
+/* Return a value that consists of item members.
+ * When an item is a single member, the return value is a single value.
+ * When an item consists of multiple members, an array will be returned. */
+VALUE
+rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members)
+{
+    if (ptr == NULL) return Qnil;
+    if (members == NULL) return Qnil;
+    if (n_members == 0) return Qnil;
+
+    if (n_members == 1 && members[0].repeat == 1) {
+        return rb_memory_view_extract_item_member(ptr, members, 0);
+    }
+
+    size_t i, j;
+    VALUE item = rb_ary_new();
+    for (i = 0; i < n_members; ++i) {
+        for (j = 0; j < members[i].repeat; ++j) {
+            VALUE v = extract_item_member(ptr, &members[i], j);
+            rb_ary_push(item, v);
+        }
+    }
+
+    return item;
+}
+
+void
+rb_memory_view_prepare_item_desc(rb_memory_view_t *view)
+{
+    if (view->item_desc.components == NULL) {
+        const char *err;
+        rb_memory_view_item_component_t **p_components =
+            (rb_memory_view_item_component_t **)&view->item_desc.components;
+        ssize_t n = rb_memory_view_parse_item_format(view->format, p_components, &view->item_desc.length, &err);
+        if (n < 0) {
+            rb_raise(rb_eRuntimeError,
+                     "Unable to parse item format at %"PRIdSIZE" in \"%s\"",
+                     (err - view->format), view->format);
+        }
+    }
+}
+
+/* Return a value that consists of item members in the given memory view. */
+VALUE
+rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices)
+{
+    void *ptr = rb_memory_view_get_item_pointer(view, indices);
+
+    if (view->format == NULL) {
+        return INT2FIX(*(uint8_t *)ptr);
+    }
+
+    if (view->item_desc.components == NULL) {
+        rb_memory_view_prepare_item_desc(view);
+    }
+
+    return rb_memory_view_extract_item_members(ptr, view->item_desc.components, view->item_desc.length);
+}
+
 static const rb_memory_view_entry_t *
 lookup_memory_view_entry(VALUE klass)
 {
     VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     while (NIL_P(entry_obj)) {
-        klass = rb_class_get_superclass(klass);
+        klass = rb_class_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
             return NULL;
@@ -464,7 +799,7 @@ lookup_memory_view_entry(VALUE klass)
 }
 
 /* Examine whether the given object supports memory view. */
-int
+bool
 rb_memory_view_available_p(VALUE obj)
 {
     VALUE klass = CLASS_OF(obj);
@@ -472,35 +807,66 @@ rb_memory_view_available_p(VALUE obj)
     if (entry)
         return (* entry->available_p_func)(obj);
     else
-        return 0;
+        return false;
 }
 
 /* Obtain a memory view from obj, and substitute the information to view. */
-int
+bool
 rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
 {
     VALUE klass = CLASS_OF(obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
-    if (entry)
-        return (*entry->get_func)(obj, view, flags);
+    if (entry) {
+        if (!(*entry->available_p_func)(obj)) {
+            return false;
+        }
+
+        bool rv = (*entry->get_func)(obj, view, flags);
+        if (rv) {
+            view->_memory_view_entry = entry;
+            register_exported_object(view->obj);
+        }
+        return rv;
+    }
     else
-        return 0;
+        return false;
 }
 
 /* Release the memory view obtained from obj. */
-int
+bool
 rb_memory_view_release(rb_memory_view_t* view)
 {
-    VALUE klass = CLASS_OF(view->obj);
-    const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
-    if (entry)
-        return (*entry->release_func)(view->obj, view);
+    const rb_memory_view_entry_t *entry = view->_memory_view_entry;
+    if (entry) {
+        bool rv = true;
+        if (entry->release_func) {
+            rv = (*entry->release_func)(view->obj, view);
+        }
+        if (rv) {
+            unregister_exported_object(view->obj);
+            view->obj = Qnil;
+            if (view->item_desc.components) {
+                xfree((void *)view->item_desc.components);
+            }
+        }
+        return rv;
+    }
     else
-        return 0;
+        return false;
 }
 
 void
 Init_MemoryView(void)
 {
+    exported_object_table = rb_init_identtable();
+
+    // exported_object_table is referred through rb_memory_view_exported_object_registry
+    // in -test-/memory_view extension.
+    VALUE obj = TypedData_Wrap_Struct(
+        0, &rb_memory_view_exported_object_registry_data_type,
+        exported_object_table);
+    rb_gc_register_mark_object(obj);
+    rb_memory_view_exported_object_registry = obj;
+
     id_memory_view = rb_intern_const("__memory_view__");
 }

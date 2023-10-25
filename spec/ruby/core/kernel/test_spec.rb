@@ -3,8 +3,8 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#test" do
   before :all do
-    @file = File.dirname(__FILE__) + '/fixtures/classes.rb'
-    @dir = File.dirname(__FILE__) + '/fixtures'
+    @file = __dir__ + '/fixtures/classes.rb'
+    @dir = __dir__ + '/fixtures'
   end
 
   it "is a private method" do

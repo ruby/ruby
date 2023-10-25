@@ -1,3 +1,6 @@
+# This script is based on commands from the wiki:
+# https://github.com/ruby/spec/wiki/Merging-specs-from-JRuby-and-other-sources
+
 IMPLS = {
   truffleruby: {
     git: "https://github.com/oracle/truffleruby.git",
@@ -17,7 +20,7 @@ IMPLS = {
 
 MSPEC = ARGV.delete('--mspec')
 
-CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
+CHECK_LAST_MERGE = !MSPEC && ENV['CHECK_LAST_MERGE'] != 'false'
 TEST_MASTER = ENV['TEST_MASTER'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
@@ -52,6 +55,10 @@ class RubyImplementation
 
   def repo_name
     File.basename(git_url, ".git")
+  end
+
+  def repo_path
+    "#{__dir__}/#{repo_name}"
   end
 
   def repo_org
@@ -149,6 +156,11 @@ def rebase_commits(impl)
         raise "#{days_since_last_merge.floor} days since last merge, probably wrong commit"
       end
 
+      puts "Checking if the last merge is consistent with upstream files"
+      rubyspec_commit = `git log -n 1 --format='%s' #{last_merge}`.chomp.split('@', 2)[-1]
+      sh "git", "checkout", last_merge
+      sh "git", "diff", "--exit-code", rubyspec_commit, "--", ":!.github"
+
       puts "Rebasing..."
       sh "git", "branch", "-D", rebased if branch?(rebased)
       sh "git", "checkout", "-b", rebased, impl.name
@@ -173,7 +185,7 @@ def test_new_specs
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
-    test_command = MSPEC ? "bundle exec rspec" : "../mspec/bin/mspec -j"
+    test_command = MSPEC ? "bundle install && bundle exec rspec" : "../mspec/bin/mspec -j"
 
     run_test = -> version {
       command = "chruby #{version} && #{test_command}"

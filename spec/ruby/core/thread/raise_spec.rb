@@ -102,6 +102,30 @@ describe "Thread#raise on a sleeping thread" do
       raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
     end
   end
+
+  it "calls #exception in both the caller and in the target thread" do
+    cls = Class.new(Exception) do
+      attr_accessor :log
+      def initialize(*args)
+        @log = [] # This is shared because the super #exception uses a shallow clone
+        super
+      end
+
+      def exception(*args)
+        @log << [self, Thread.current, args]
+        super
+      end
+    end
+    exc = cls.new
+
+    @thr.raise exc, "Thread#raise #exception spec"
+    @thr.join
+    ScratchPad.recorded.should.is_a?(cls)
+    exc.log.should == [
+      [exc, Thread.current, ["Thread#raise #exception spec"]],
+      [ScratchPad.recorded, @thr, []]
+    ]
+  end
 end
 
 describe "Thread#raise on a running thread" do

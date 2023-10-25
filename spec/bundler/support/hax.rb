@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+if ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+  Object.send(:remove_const, :RUBY_PLATFORM)
+  RUBY_PLATFORM = ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+end
+
 module Gem
   def self.ruby=(ruby)
     @ruby = ruby
@@ -9,53 +14,39 @@ module Gem
     Gem.ruby = ENV["RUBY"]
   end
 
-  @default_dir = ENV["BUNDLER_GEM_DEFAULT_DIR"] if ENV["BUNDLER_GEM_DEFAULT_DIR"]
+  if ENV["BUNDLER_GEM_DEFAULT_DIR"]
+    @default_dir = ENV["BUNDLER_GEM_DEFAULT_DIR"]
+    @default_specifications_dir = nil
+  end
+
+  if ENV["BUNDLER_SPEC_WINDOWS"]
+    @@win_platform = true # rubocop:disable Style/ClassVars
+  end
 
   if ENV["BUNDLER_SPEC_PLATFORM"]
+    previous_platforms = @platforms
+    previous_local = Platform.local
+
     class Platform
       @local = new(ENV["BUNDLER_SPEC_PLATFORM"])
     end
-    @platforms = [Gem::Platform::RUBY, Gem::Platform.local]
+    @platforms = previous_platforms.map {|platform| platform == previous_local ? Platform.local : platform }
+  end
 
-    if ENV["BUNDLER_SPEC_PLATFORM"] == "ruby"
-      class << self
-        remove_method :finish_resolve
+  if ENV["BUNDLER_SPEC_GEM_SOURCES"]
+    self.sources = [ENV["BUNDLER_SPEC_GEM_SOURCES"]]
+  end
 
-        def finish_resolve
-          []
-        end
+  if ENV["BUNDLER_IGNORE_DEFAULT_GEM"]
+    module RemoveDefaultBundlerStub
+      def default_stubs(pattern = "*")
+        super.delete_if {|stub| stub.name == "bundler" }
       end
     end
-  end
 
-  # We only need this hack for rubygems versions without the BundlerVersionFinder
-  if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.7.0")
-    @path_to_default_spec_map.delete_if do |_path, spec|
-      spec.name == "bundler"
-    end
-  end
-end
-
-if ENV["BUNDLER_SPEC_WINDOWS"] == "true"
-  require_relative "path"
-  require "bundler/constants"
-
-  module Bundler
-    remove_const :WINDOWS if defined?(WINDOWS)
-    WINDOWS = true
-  end
-end
-
-if ENV["BUNDLER_SPEC_API_REQUEST_LIMIT"]
-  require_relative "path"
-  require "bundler/source"
-  require "bundler/source/rubygems"
-
-  module Bundler
-    class Source
-      class Rubygems < Source
-        remove_const :API_REQUEST_LIMIT
-        API_REQUEST_LIMIT = ENV["BUNDLER_SPEC_API_REQUEST_LIMIT"].to_i
+    class Specification
+      class << self
+        prepend RemoveDefaultBundlerStub
       end
     end
   end

@@ -69,4 +69,10 @@ describe :start_with, shared: true do
     Regexp.last_match.should be_nil
     $1.should be_nil
   end
+
+  ruby_bug "#19784", ""..."3.3" do
+    it "checks that we are not matching part of a character" do
+      "\xC3\xA9".send(@method).should_not.start_with?("\xC3")
+    end
+  end
 end

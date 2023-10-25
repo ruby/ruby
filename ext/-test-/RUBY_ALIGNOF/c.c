@@ -9,7 +9,7 @@ struct T {
 RBIMPL_STATIC_ASSERT(RUBY_ALIGNOF, RUBY_ALIGNOF(double) == offsetof(struct T, t));
 
 void
-Init_RUBY_ALIGNOF()
+Init_RUBY_ALIGNOF(void)
 {
     // Windows linker mandates this symbol to exist.
 }

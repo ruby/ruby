@@ -2,9 +2,7 @@
 require 'test/unit'
 require 'optparse'
 
-class TestOptionParser < Test::Unit::TestCase
-end
-class TestOptionParser::ZshCompletion < Test::Unit::TestCase
+class TestOptionParserZshCompletion < Test::Unit::TestCase
   def setup
     @opt = OptionParser.new
     @opt.define("-z", "zzz") {}

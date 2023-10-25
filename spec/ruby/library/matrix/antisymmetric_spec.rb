@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require 'matrix'
 
-ruby_version_is "2.6" do
+ruby_version_is ""..."3.1" do
+  require 'matrix'
+
   describe "Matrix#antisymmetric?" do
     it "returns true for an antisymmetric Matrix" do
       Matrix[[0, -2, Complex(1, 3)], [2, 0, 5], [-Complex(1, 3), -5, 0]].antisymmetric?.should be_true

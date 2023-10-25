@@ -4,7 +4,7 @@ require 'test/unit'
 class ComplexRational_Test < Test::Unit::TestCase
 
   def test_rat_srat
-    skip unless defined?(Rational)
+    omit unless defined?(Rational)
 
     c = SimpleRat(1,3)
     cc = Rational(3,2)
@@ -89,7 +89,7 @@ class ComplexRational_Test < Test::Unit::TestCase
   end
 
   def test_comp_srat
-    skip unless defined?(Rational)
+    omit unless defined?(Rational)
 
     c = Complex(SimpleRat(2,3),SimpleRat(1,2))
     cc = Complex(Rational(3,2),Rational(2,1))

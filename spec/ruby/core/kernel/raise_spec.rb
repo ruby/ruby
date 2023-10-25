@@ -27,6 +27,25 @@ describe "Kernel#raise" do
 
     ScratchPad.recorded.should be_nil
   end
+
+  it "accepts a cause keyword argument that sets the cause" do
+    cause = StandardError.new
+    -> { raise("error", cause: cause) }.should raise_error(RuntimeError) { |e| e.cause.should == cause }
+  end
+
+  it "accepts a cause keyword argument that overrides the last exception" do
+    begin
+      raise "first raise"
+    rescue => ignored
+      cause = StandardError.new
+      -> { raise("error", cause: cause) }.should raise_error(RuntimeError) { |e| e.cause.should == cause }
+    end
+  end
+
+  it "raises an ArgumentError when only cause is given" do
+    cause = StandardError.new
+    -> { raise(cause: cause) }.should raise_error(ArgumentError)
+  end
 end
 
 describe "Kernel#raise" do

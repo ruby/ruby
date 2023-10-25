@@ -1,6 +1,16 @@
+source_version = ["", "ext/win32ole/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}win32ole.c")) {|f|
+      f.gets("\n#define WIN32OLE_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "win32ole"
-  spec.version       = "1.8.8"
+  spec.version       = source_version
   spec.authors       = ["Masaki Suketa"]
   spec.email         = ["suke@ruby-lang.org"]
 
@@ -8,6 +18,7 @@ Gem::Specification.new do |spec|
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/win32ole"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

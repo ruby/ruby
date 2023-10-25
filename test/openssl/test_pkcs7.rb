@@ -89,6 +89,24 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(@ee2_cert.issuer.to_s, signers[1].issuer.to_s)
   end
 
+  def test_signed_add_signer
+    data = "aaaaa\nbbbbb\nccccc\n"
+    psi = OpenSSL::PKCS7::SignerInfo.new(@ee1_cert, @rsa1024, "sha256")
+    p7 = OpenSSL::PKCS7.new
+    p7.type = :signed
+    p7.add_signer(psi)
+    p7.add_certificate(@ee1_cert)
+    p7.add_certificate(@ca_cert)
+    p7.add_data(data)
+
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
+
+    assert_equal(true, p7.verify([], store))
+    assert_equal(true, OpenSSL::PKCS7.new(p7.to_der).verify([], store))
+    assert_equal(1, p7.signers.size)
+  end
+
   def test_detached_sign
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)

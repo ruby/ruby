@@ -17,10 +17,8 @@ describe "OpenStruct#method_missing when passed additional arguments" do
     -> { os.test(1, 2, 3) }.should raise_error(NoMethodError)
   end
 
-  ruby_version_is "2.7" do
-    it "raises an ArgumentError when the key exists" do
-      os = OpenStruct.new(test: 20)
-      -> { os.test(1, 2, 3) }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when the key exists" do
+    os = OpenStruct.new(test: 20)
+    -> { os.test(1, 2, 3) }.should raise_error(ArgumentError)
   end
 end

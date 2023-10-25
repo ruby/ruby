@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Gem::Resolver::Molinillo
   # Conveys information about the resolution process to a user.
   module UI
@@ -48,7 +49,8 @@ module Gem::Resolver::Molinillo
       if debug?
         debug_info = yield
         debug_info = debug_info.inspect unless debug_info.is_a?(String)
-        output.puts debug_info.split("\n").map { |s| ' ' * depth + s }
+        debug_info = debug_info.split("\n").map { |s| ":#{depth.to_s.rjust 4}: #{s}" }
+        output.puts debug_info
       end
     end
 

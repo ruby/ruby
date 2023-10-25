@@ -83,21 +83,11 @@ describe "Enumerable#one?" do
     end
   end
 
-
   describe 'when given a pattern argument' do
     it "calls `===` on the pattern the return value " do
       pattern = EnumerableSpecs::Pattern.new { |x| x == 1 }
       @enum1.one?(pattern).should == true
       pattern.yielded.should == [[0], [1], [2], [-1]]
-    end
-
-    # may raise an exception in future versions
-    ruby_version_is ""..."2.6" do
-      it "ignores block" do
-        @enum2.one?(NilClass) { raise }.should == true
-        [1, 2, nil].one?(NilClass) { raise }.should == true
-        {a: 1}.one?(Array) { raise }.should == true
-      end
     end
 
     it "always returns false on empty enumeration" do
@@ -153,6 +143,12 @@ describe "Enumerable#one?" do
       pattern = EnumerableSpecs::Pattern.new { false }
       multi.one?(pattern).should == false
       pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
+    end
+
+    it "ignores the block if there is an argument" do
+      -> {
+        EnumerableSpecs::Numerous.new(1, 2, 3, 4, "5").one?(String) { false }.should == true
+      }.should complain(/given block not used/)
     end
   end
 end

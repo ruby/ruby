@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/extend-command.rb - irb extend command
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 module IRB # :nodoc:
   # Installs the default irb extensions command bundle.
   module ExtendCommandBundle
@@ -45,103 +40,204 @@ module IRB # :nodoc:
       [:quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
     ]
 
+
     @EXTEND_COMMANDS = [
       [
-        :irb_current_working_workspace, :CurrentWorkingWorkspace, "irb/cmd/chws",
+        :irb_current_working_workspace, :CurrentWorkingWorkspace, "cmd/chws",
+        [:cwws, NO_OVERRIDE],
+        [:pwws, NO_OVERRIDE],
         [:irb_print_working_workspace, OVERRIDE_ALL],
         [:irb_cwws, OVERRIDE_ALL],
         [:irb_pwws, OVERRIDE_ALL],
-        [:cwws, NO_OVERRIDE],
-        [:pwws, NO_OVERRIDE],
         [:irb_current_working_binding, OVERRIDE_ALL],
         [:irb_print_working_binding, OVERRIDE_ALL],
         [:irb_cwb, OVERRIDE_ALL],
         [:irb_pwb, OVERRIDE_ALL],
       ],
       [
-        :irb_change_workspace, :ChangeWorkspace, "irb/cmd/chws",
-        [:irb_chws, OVERRIDE_ALL],
-        [:irb_cws, OVERRIDE_ALL],
+        :irb_change_workspace, :ChangeWorkspace, "cmd/chws",
         [:chws, NO_OVERRIDE],
         [:cws, NO_OVERRIDE],
+        [:irb_chws, OVERRIDE_ALL],
+        [:irb_cws, OVERRIDE_ALL],
         [:irb_change_binding, OVERRIDE_ALL],
         [:irb_cb, OVERRIDE_ALL],
         [:cb, NO_OVERRIDE],
       ],
 
       [
-        :irb_workspaces, :Workspaces, "irb/cmd/pushws",
+        :irb_workspaces, :Workspaces, "cmd/pushws",
         [:workspaces, NO_OVERRIDE],
         [:irb_bindings, OVERRIDE_ALL],
         [:bindings, NO_OVERRIDE],
       ],
       [
-        :irb_push_workspace, :PushWorkspace, "irb/cmd/pushws",
-        [:irb_pushws, OVERRIDE_ALL],
+        :irb_push_workspace, :PushWorkspace, "cmd/pushws",
         [:pushws, NO_OVERRIDE],
+        [:irb_pushws, OVERRIDE_ALL],
         [:irb_push_binding, OVERRIDE_ALL],
         [:irb_pushb, OVERRIDE_ALL],
         [:pushb, NO_OVERRIDE],
       ],
       [
-        :irb_pop_workspace, :PopWorkspace, "irb/cmd/pushws",
-        [:irb_popws, OVERRIDE_ALL],
+        :irb_pop_workspace, :PopWorkspace, "cmd/pushws",
         [:popws, NO_OVERRIDE],
+        [:irb_popws, OVERRIDE_ALL],
         [:irb_pop_binding, OVERRIDE_ALL],
         [:irb_popb, OVERRIDE_ALL],
         [:popb, NO_OVERRIDE],
       ],
 
       [
-        :irb_load, :Load, "irb/cmd/load"],
+        :irb_load, :Load, "cmd/load"],
       [
-        :irb_require, :Require, "irb/cmd/load"],
+        :irb_require, :Require, "cmd/load"],
       [
-        :irb_source, :Source, "irb/cmd/load",
+        :irb_source, :Source, "cmd/load",
         [:source, NO_OVERRIDE],
       ],
 
       [
-        :irb, :IrbCommand, "irb/cmd/subirb"],
+        :irb, :IrbCommand, "cmd/subirb"],
       [
-        :irb_jobs, :Jobs, "irb/cmd/subirb",
+        :irb_jobs, :Jobs, "cmd/subirb",
         [:jobs, NO_OVERRIDE],
       ],
       [
-        :irb_fg, :Foreground, "irb/cmd/subirb",
+        :irb_fg, :Foreground, "cmd/subirb",
         [:fg, NO_OVERRIDE],
       ],
       [
-        :irb_kill, :Kill, "irb/cmd/subirb",
+        :irb_kill, :Kill, "cmd/subirb",
         [:kill, OVERRIDE_PRIVATE_ONLY],
       ],
 
       [
-        :irb_help, :Help, "irb/cmd/help",
+        :irb_debug, :Debug, "cmd/debug",
+        [:debug, NO_OVERRIDE],
+      ],
+      [
+        :irb_edit, :Edit, "cmd/edit",
+        [:edit, NO_OVERRIDE],
+      ],
+      [
+        :irb_break, :Break, "cmd/break",
+      ],
+      [
+        :irb_catch, :Catch, "cmd/catch",
+      ],
+      [
+        :irb_next, :Next, "cmd/next"
+      ],
+      [
+        :irb_delete, :Delete, "cmd/delete",
+        [:delete, NO_OVERRIDE],
+      ],
+      [
+        :irb_step, :Step, "cmd/step",
+        [:step, NO_OVERRIDE],
+      ],
+      [
+        :irb_continue, :Continue, "cmd/continue",
+        [:continue, NO_OVERRIDE],
+      ],
+      [
+        :irb_finish, :Finish, "cmd/finish",
+        [:finish, NO_OVERRIDE],
+      ],
+      [
+        :irb_backtrace, :Backtrace, "cmd/backtrace",
+        [:backtrace, NO_OVERRIDE],
+        [:bt, NO_OVERRIDE],
+      ],
+      [
+        :irb_debug_info, :Info, "cmd/info",
+        [:info, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_help, :Help, "cmd/help",
         [:help, NO_OVERRIDE],
       ],
 
       [
-        :irb_info, :Info, "irb/cmd/info"
+        :irb_show_doc, :ShowDoc, "cmd/show_doc",
+        [:show_doc, NO_OVERRIDE],
       ],
 
+      [
+        :irb_info, :IrbInfo, "cmd/irb_info"
+      ],
+
+      [
+        :irb_ls, :Ls, "cmd/ls",
+        [:ls, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_measure, :Measure, "cmd/measure",
+        [:measure, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_show_source, :ShowSource, "cmd/show_source",
+        [:show_source, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_whereami, :Whereami, "cmd/whereami",
+        [:whereami, NO_OVERRIDE],
+      ],
+      [
+        :irb_show_cmds, :ShowCmds, "cmd/show_cmds",
+        [:show_cmds, NO_OVERRIDE],
+      ]
     ]
 
-    # Installs the default irb commands:
-    #
-    # +irb_current_working_workspace+::   Context#main
-    # +irb_change_workspace+::            Context#change_workspace
-    # +irb_workspaces+::                  Context#workspaces
-    # +irb_push_workspace+::              Context#push_workspace
-    # +irb_pop_workspace+::               Context#pop_workspace
-    # +irb_load+::                        #irb_load
-    # +irb_require+::                     #irb_require
-    # +irb_source+::                      IrbLoader#source_file
-    # +irb+::                             IRB.irb
-    # +irb_jobs+::                        JobManager
-    # +irb_fg+::                          JobManager#switch
-    # +irb_kill+::                        JobManager#kill
-    # +irb_help+::                        IRB@Command+line+options
+
+    @@commands = []
+
+    def self.all_commands_info
+      return @@commands unless @@commands.empty?
+      user_aliases = IRB.CurrentContext.command_aliases.each_with_object({}) do |(alias_name, target), result|
+        result[target] ||= []
+        result[target] << alias_name
+      end
+
+      @EXTEND_COMMANDS.each do |cmd_name, cmd_class, load_file, *aliases|
+        if !defined?(ExtendCommand) || !ExtendCommand.const_defined?(cmd_class, false)
+          require_relative load_file
+        end
+
+        klass = ExtendCommand.const_get(cmd_class, false)
+        aliases = aliases.map { |a| a.first }
+
+        if additional_aliases = user_aliases[cmd_name]
+          aliases += additional_aliases
+        end
+
+        display_name = aliases.shift || cmd_name
+        @@commands << { display_name: display_name, description: klass.description, category: klass.category }
+      end
+
+      @@commands
+    end
+
+    # Convert a command name to its implementation class if such command exists
+    def self.load_command(command)
+      command = command.to_sym
+      @EXTEND_COMMANDS.each do |cmd_name, cmd_class, load_file, *aliases|
+        next if cmd_name != command && aliases.all? { |alias_name, _| alias_name != command }
+
+        if !defined?(ExtendCommand) || !ExtendCommand.const_defined?(cmd_class, false)
+          require_relative load_file
+        end
+        return ExtendCommand.const_get(cmd_class, false)
+      end
+      nil
+    end
+
+    # Installs the default irb commands.
     def self.install_extend_commands
       for args in @EXTEND_COMMANDS
         def_extend_command(*args)
@@ -154,7 +250,7 @@ module IRB # :nodoc:
     #
     # The optional +load_file+ parameter will be required within the method
     # definition.
-    def self.def_extend_command(cmd_name, cmd_class, load_file = nil, *aliases)
+    def self.def_extend_command(cmd_name, cmd_class, load_file, *aliases)
       case cmd_class
       when Symbol
         cmd_class = cmd_class.id2name
@@ -163,33 +259,12 @@ module IRB # :nodoc:
         cmd_class = cmd_class.name
       end
 
-      if load_file
-        line = __LINE__; eval %[
-          def #{cmd_name}(*opts, &b)
-            require "#{load_file}"
-            arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
-            args = (1..(arity < 0 ? ~arity : arity)).map {|i| "arg" + i.to_s }
-            args << "*opts" if arity < 0
-            args << "&block"
-            args = args.join(", ")
-            line = __LINE__; eval %[
-              unless self.class.class_variable_defined?(:@@#{cmd_name}_)
-              self.class.class_variable_set(:@@#{cmd_name}_, true)
-                def #{cmd_name}_(\#{args})
-                  ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
-                end
-              end
-            ], nil, __FILE__, line
-            __send__ :#{cmd_name}_, *opts, &b
-          end
-        ], nil, __FILE__, line
-      else
-        line = __LINE__; eval %[
-          def #{cmd_name}(*opts, &b)
-            ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
-          end
-        ], nil, __FILE__, line
-      end
+      line = __LINE__; eval %[
+        def #{cmd_name}(*opts, **kwargs, &b)
+          Kernel.require_relative "#{load_file}"
+          ::IRB::ExtendCommand::#{cmd_class}.execute(irb_context, *opts, **kwargs, &b)
+        end
+      ], nil, __FILE__, line
 
       for ali, flag in aliases
         @ALIASES.push [ali, cmd_name, flag]
@@ -214,7 +289,7 @@ module IRB # :nodoc:
           alias_method to, from
         }
       else
-        print "irb: warn: can't alias #{to} from #{from}.\n"
+        Kernel.warn "irb: warn: can't alias #{to} from #{from}.\n"
       end
     end
 
@@ -241,10 +316,9 @@ module IRB # :nodoc:
     CE = ContextExtender # :nodoc:
 
     @EXTEND_COMMANDS = [
-      [:eval_history=, "irb/ext/history.rb"],
-      [:use_tracer=, "irb/ext/tracer.rb"],
-      [:use_loader=, "irb/ext/use-loader.rb"],
-      [:save_history=, "irb/ext/save-history.rb"],
+      [:eval_history=, "ext/eval_history.rb"],
+      [:use_tracer=, "ext/tracer.rb"],
+      [:use_loader=, "ext/use-loader.rb"],
     ]
 
     # Installs the default context extensions as irb commands:
@@ -252,7 +326,6 @@ module IRB # :nodoc:
     # Context#eval_history=::   +irb/ext/history.rb+
     # Context#use_tracer=::     +irb/ext/tracer.rb+
     # Context#use_loader=::     +irb/ext/use-loader.rb+
-    # Context#save_history=::   +irb/ext/save-history.rb+
     def self.install_extend_commands
       for args in @EXTEND_COMMANDS
         def_extend_command(*args)
@@ -267,7 +340,7 @@ module IRB # :nodoc:
       line = __LINE__; Context.module_eval %[
         def #{cmd_name}(*opts, &b)
           Context.module_eval {remove_method(:#{cmd_name})}
-          require "#{load_file}"
+          require_relative "#{load_file}"
           __send__ :#{cmd_name}, *opts, &b
         end
         for ali in aliases
@@ -277,59 +350,5 @@ module IRB # :nodoc:
     end
 
     CE.install_extend_commands
-  end
-
-  # A convenience module for extending Ruby methods.
-  module MethodExtender
-    # Extends the given +base_method+ with a prefix call to the given
-    # +extend_method+.
-    def def_pre_proc(base_method, extend_method)
-      base_method = base_method.to_s
-      extend_method = extend_method.to_s
-
-      alias_name = new_alias_name(base_method)
-      module_eval %[
-        alias_method alias_name, base_method
-        def #{base_method}(*opts)
-          __send__ :#{extend_method}, *opts
-          __send__ :#{alias_name}, *opts
-        end
-      ]
-    end
-
-    # Extends the given +base_method+ with a postfix call to the given
-    # +extend_method+.
-    def def_post_proc(base_method, extend_method)
-      base_method = base_method.to_s
-      extend_method = extend_method.to_s
-
-      alias_name = new_alias_name(base_method)
-      module_eval %[
-        alias_method alias_name, base_method
-        def #{base_method}(*opts)
-          __send__ :#{alias_name}, *opts
-          __send__ :#{extend_method}, *opts
-        end
-      ]
-    end
-
-    # Returns a unique method name to use as an alias for the given +name+.
-    #
-    # Usually returns <code>#{prefix}#{name}#{postfix}<num></code>, example:
-    #
-    #     new_alias_name('foo') #=> __alias_of__foo__
-    #     def bar; end
-    #     new_alias_name('bar') #=> __alias_of__bar__2
-    def new_alias_name(name, prefix = "__alias_of__", postfix = "__")
-      base_name = "#{prefix}#{name}#{postfix}"
-      all_methods = instance_methods(true) + private_instance_methods(true)
-      same_methods = all_methods.grep(/^#{Regexp.quote(base_name)}[0-9]*$/)
-      return base_name if same_methods.empty?
-      no = same_methods.size
-      while !same_methods.include?(alias_name = base_name + no)
-        no += 1
-      end
-      alias_name
-    end
   end
 end

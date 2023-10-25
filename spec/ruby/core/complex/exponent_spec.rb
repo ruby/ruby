@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Complex#**" do
-  describe "with Fixnum 0" do
+  describe "with Integer 0" do
     it "returns Complex(1)" do
       (Complex(3, 4) ** 0).should eql(Complex(1))
     end

@@ -23,6 +23,15 @@ describe "IO.read" do
     IO.read(p)
   end
 
+  # https://bugs.ruby-lang.org/issues/19354
+  it "accepts options as keyword arguments" do
+    IO.read(@fname, 3, 0, mode: "r+").should == @contents[0, 3]
+
+    -> {
+      IO.read(@fname, 3, 0, {mode: "r+"})
+    }.should raise_error(ArgumentError, /wrong number of arguments/)
+  end
+
   it "accepts an empty options Hash" do
     IO.read(@fname, **{}).should == @contents
   end
@@ -53,6 +62,33 @@ describe "IO.read" do
 
   it "reads the file if the options Hash includes read/write append mode" do
     IO.read(@fname, mode: "a+").should == @contents
+  end
+
+  platform_is_not :windows do
+    ruby_version_is ""..."3.3" do
+      it "uses an :open_args option" do
+        string = IO.read(@fname, nil, 0, open_args: ["r", nil, {encoding: Encoding::US_ASCII}])
+        string.encoding.should == Encoding::US_ASCII
+
+        string = IO.read(@fname, nil, 0, open_args: ["r", nil, {}])
+        string.encoding.should == Encoding::UTF_8
+      end
+    end
+  end
+
+  it "disregards other options if :open_args is given" do
+    string = IO.read(@fname,mode: "w", encoding: Encoding::UTF_32LE, open_args: ["r", encoding: Encoding::UTF_8])
+    string.encoding.should == Encoding::UTF_8
+  end
+
+  it "doesn't require mode to be specified in :open_args" do
+    string = IO.read(@fname, nil, 0, open_args: [{encoding: Encoding::US_ASCII}])
+    string.encoding.should == Encoding::US_ASCII
+  end
+
+  it "doesn't require mode to be specified in :open_args even if flags option passed" do
+    string = IO.read(@fname, nil, 0, open_args: [{encoding: Encoding::US_ASCII, flags: File::CREAT}])
+    string.encoding.should == Encoding::US_ASCII
   end
 
   it "treats second nil argument as no length limit" do
@@ -90,9 +126,18 @@ describe "IO.read" do
     -> { IO.read @fname, -1 }.should raise_error(ArgumentError)
   end
 
-  it "raises an Errno::EINVAL when not passed a valid offset" do
-    -> { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
-    -> { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
+  ruby_version_is ''...'3.3' do
+    it "raises an Errno::EINVAL when not passed a valid offset" do
+      -> { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
+      -> { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
+    end
+  end
+
+  ruby_version_is '3.3' do
+    it "raises an ArgumentError when not passed a valid offset" do
+      -> { IO.read @fname, 0, -1  }.should raise_error(ArgumentError)
+      -> { IO.read @fname, -1, -1 }.should raise_error(ArgumentError)
+    end
   end
 
   it "uses the external encoding specified via the :external_encoding option" do
@@ -104,6 +149,14 @@ describe "IO.read" do
     str = IO.read(@fname, encoding: Encoding::ISO_8859_1)
     str.encoding.should == Encoding::ISO_8859_1
   end
+
+  platform_is :windows do
+    it "reads the file in text mode" do
+      # 0x1A is CTRL+Z and is EOF in Windows text mode.
+      File.binwrite(@fname, "\x1Abbb")
+      IO.read(@fname).should.empty?
+    end
+  end
 end
 
 describe "IO.read from a pipe" do
@@ -112,12 +165,19 @@ describe "IO.read from a pipe" do
     platform_is :windows do
       cmd = "|cmd.exe /C echo hello"
     end
-    IO.read(cmd).should == "hello\n"
+
+    suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+      IO.read(cmd).should == "hello\n"
+    end
   end
 
   platform_is_not :windows do
     it "opens a pipe to a fork if the rest is -" do
-      str = IO.read("|-")
+      str = nil
+      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+        str = IO.read("|-")
+      end
+
       if str # parent
         str.should == "hello from child\n"
       else #child
@@ -132,13 +192,18 @@ describe "IO.read from a pipe" do
     platform_is :windows do
       cmd = "|cmd.exe /C echo hello"
     end
-    IO.read(cmd, 1).should == "h"
+
+    suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+      IO.read(cmd, 1).should == "h"
+    end
   end
 
   platform_is_not :windows do
     it "raises Errno::ESPIPE if passed an offset" do
       -> {
-        IO.read("|sh -c 'echo hello'", 1, 1)
+        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+          IO.read("|sh -c 'echo hello'", 1, 1)
+        end
       }.should raise_error(Errno::ESPIPE)
     end
   end
@@ -149,11 +214,23 @@ quarantine! do # The process tried to write to a nonexistent pipe.
     # once https://bugs.ruby-lang.org/issues/12230 is fixed.
     it "raises Errno::EINVAL if passed an offset" do
       -> {
-        IO.read("|cmd.exe /C echo hello", 1, 1)
+        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+          IO.read("|cmd.exe /C echo hello", 1, 1)
+        end
       }.should raise_error(Errno::EINVAL)
     end
   end
 end
+
+  ruby_version_is "3.3" do
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation given a path with a pipe" do
+      cmd = "|echo ok"
+      -> {
+        IO.read(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
 end
 
 describe "IO.read on an empty file" do
@@ -262,6 +339,13 @@ describe "IO#read" do
     @io.read(nil, buf).should equal buf
   end
 
+  it "returns the given buffer when there is nothing to read" do
+    buf = ""
+
+    @io.read
+    @io.read(nil, buf).should equal buf
+  end
+
   it "coerces the second argument to string and uses it as a buffer" do
     buf = "ABCDE"
     obj = mock("buff")
@@ -304,6 +388,9 @@ describe "IO#read" do
     -> { IOSpecs.closed_io.read }.should raise_error(IOError)
   end
 
+  it "raises ArgumentError when length is less than 0" do
+    -> { @io.read(-1) }.should raise_error(ArgumentError)
+  end
 
   platform_is_not :windows do
     it "raises IOError when stream is closed by another thread" do
@@ -380,13 +467,6 @@ describe "IO#read in binary mode" do
 
     result = File.open(@name, "rb") { |f| f.read }.chomp
 
-    result.encoding.should == Encoding::BINARY
-    xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
-  end
-
-  it "does not transcode file contents when an internal encoding is specified" do
-    result = File.open(@name, "r:binary:utf-8") { |f| f.read }.chomp
     result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
     result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)

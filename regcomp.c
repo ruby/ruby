@@ -138,6 +138,27 @@ bitset_on_num(BitSetRef bs)
 }
 #endif
 
+// Attempt to right size allocated buffers for a regex post compile
+static void
+onig_reg_resize(regex_t *reg)
+{
+  do {
+    if (!reg->used) {
+      xfree(reg->p);
+      reg->alloc = 0;
+      reg->p = 0;
+    }
+    else if (reg->alloc > reg->used) {
+      unsigned char *new_ptr = xrealloc(reg->p, reg->used);
+      // Skip the right size optimization if memory allocation fails
+      if (new_ptr) {
+        reg->alloc = reg->used;
+        reg->p = new_ptr;
+      }
+    }
+  } while ((reg = reg->chain) != 0);
+}
+
 extern int
 onig_bbuf_init(BBuf* buf, OnigDistance size)
 {
@@ -174,8 +195,7 @@ unset_addr_list_init(UnsetAddrList* uslist, int size)
 static void
 unset_addr_list_end(UnsetAddrList* uslist)
 {
-  if (IS_NOT_NULL(uslist->us))
-    xfree(uslist->us);
+  xfree(uslist->us);
 }
 
 static int
@@ -320,7 +340,7 @@ static int
 select_str_opcode(int mb_len, OnigDistance byte_len, int ignore_case)
 {
   int op;
-  OnigDistance str_len = (byte_len + mb_len - 1) / mb_len;
+  OnigDistance str_len = roomof(byte_len, mb_len);
 
   if (ignore_case) {
     switch (str_len) {
@@ -1914,7 +1934,7 @@ noname_disable_map(Node** plink, GroupNumRemap* map, int* counter)
 }
 
 static int
-renumber_node_backref(Node* node, GroupNumRemap* map)
+renumber_node_backref(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int i, pos, n, old_num;
   int *backs;
@@ -1930,6 +1950,7 @@ renumber_node_backref(Node* node, GroupNumRemap* map)
     backs = bn->back_dynamic;
 
   for (i = 0, pos = 0; i < old_num; i++) {
+    if (backs[i] > num_mem)  return ONIGERR_INVALID_BACKREF;
     n = map[backs[i]].new_val;
     if (n > 0) {
       backs[pos] = n;
@@ -1942,7 +1963,7 @@ renumber_node_backref(Node* node, GroupNumRemap* map)
 }
 
 static int
-renumber_by_map(Node* node, GroupNumRemap* map)
+renumber_by_map(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int r = 0;
 
@@ -1950,28 +1971,30 @@ renumber_by_map(Node* node, GroupNumRemap* map)
   case NT_LIST:
   case NT_ALT:
     do {
-      r = renumber_by_map(NCAR(node), map);
+      r = renumber_by_map(NCAR(node), map, num_mem);
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
   case NT_QTFR:
-    r = renumber_by_map(NQTFR(node)->target, map);
+    r = renumber_by_map(NQTFR(node)->target, map, num_mem);
     break;
   case NT_ENCLOSE:
     {
       EncloseNode* en = NENCLOSE(node);
-      if (en->type == ENCLOSE_CONDITION)
+      if (en->type == ENCLOSE_CONDITION) {
+	if (en->regnum > num_mem)  return ONIGERR_INVALID_BACKREF;
 	en->regnum = map[en->regnum].new_val;
-      r = renumber_by_map(en->target, map);
+      }
+      r = renumber_by_map(en->target, map, num_mem);
     }
     break;
 
   case NT_BREF:
-    r = renumber_node_backref(node, map);
+    r = renumber_node_backref(node, map, num_mem);
     break;
 
   case NT_ANCHOR:
     if (NANCHOR(node)->target)
-      r = renumber_by_map(NANCHOR(node)->target, map);
+      r = renumber_by_map(NANCHOR(node)->target, map, num_mem);
     break;
 
   default:
@@ -2033,7 +2056,7 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   r = noname_disable_map(root, map, &counter);
   if (r != 0) return r;
 
-  r = renumber_by_map(*root, map);
+  r = renumber_by_map(*root, map, env->num_mem);
   if (r != 0) return r;
 
   for (i = 1, pos = 1; i <= env->num_mem; i++) {
@@ -3733,10 +3756,8 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
   switch (type) {
   case NT_LIST:
     {
-      Node* prev = NULL_NODE;
       do {
 	r = setup_comb_exp_check(NCAR(node), r, env);
-	prev = NCAR(node);
       } while (r >= 0 && IS_NOT_NULL(node = NCDR(node)));
     }
     break;
@@ -5014,7 +5035,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
 	if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
 	  int n = onigenc_strlen(env->enc, sn->s, sn->end);
-	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * n;
+	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
 	}
 	else {
 	  concat_opt_exact_info_str(&opt->exb, sn->s, sn->end,
@@ -5627,12 +5648,12 @@ extern void
 onig_free_body(regex_t* reg)
 {
   if (IS_NOT_NULL(reg)) {
-    if (IS_NOT_NULL(reg->p))                xfree(reg->p);
-    if (IS_NOT_NULL(reg->exact))            xfree(reg->exact);
-    if (IS_NOT_NULL(reg->int_map))          xfree(reg->int_map);
-    if (IS_NOT_NULL(reg->int_map_backward)) xfree(reg->int_map_backward);
-    if (IS_NOT_NULL(reg->repeat_range))     xfree(reg->repeat_range);
-    if (IS_NOT_NULL(reg->chain))            onig_free(reg->chain);
+    xfree(reg->p);
+    xfree(reg->exact);
+    xfree(reg->int_map);
+    xfree(reg->int_map_backward);
+    xfree(reg->repeat_range);
+    onig_free(reg->chain);
 
 #ifdef USE_NAMED_GROUP
     onig_names_free(reg);
@@ -5647,6 +5668,80 @@ onig_free(regex_t* reg)
     onig_free_body(reg);
     xfree(reg);
   }
+}
+
+static void*
+dup_copy(const void *ptr, size_t size)
+{
+  void *newptr = xmalloc(size);
+  if (IS_NOT_NULL(newptr)) {
+    memcpy(newptr, ptr, size);
+  }
+  return newptr;
+}
+
+extern int
+onig_reg_copy(regex_t** nreg, regex_t* oreg)
+{
+  if (IS_NOT_NULL(oreg)) {
+    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+
+    *reg = *oreg;
+
+# define COPY_FAILED(mem, size) IS_NULL(reg->mem = dup_copy(reg->mem, size))
+
+    if (IS_NOT_NULL(reg->exact)) {
+      size_t exact_size = reg->exact_end - reg->exact;
+      if (COPY_FAILED(exact, exact_size))
+        goto err;
+      (reg)->exact_end = (reg)->exact + exact_size;
+    }
+
+    if (IS_NOT_NULL(reg->int_map)) {
+      if (COPY_FAILED(int_map, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
+        goto err_int_map;
+    }
+    if (IS_NOT_NULL(reg->int_map_backward)) {
+      if (COPY_FAILED(int_map_backward, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
+        goto err_int_map_backward;
+    }
+    if (IS_NOT_NULL(reg->p)) {
+      if (COPY_FAILED(p, reg->alloc))
+        goto err_p;
+    }
+    if (IS_NOT_NULL(reg->repeat_range)) {
+      if (COPY_FAILED(repeat_range, reg->repeat_range_alloc * sizeof(OnigRepeatRange)))
+        goto err_repeat_range;
+    }
+    if (IS_NOT_NULL(reg->name_table)) {
+      if (IS_NULL(reg->name_table = st_copy(reg->name_table)))
+        goto err_name_table;
+    }
+    if (IS_NOT_NULL(reg->chain)) {
+      if (onig_reg_copy(&reg->chain, reg->chain))
+        goto err_chain;
+    }
+    return 0;
+# undef COPY_FAILED
+
+  err_chain:
+    onig_st_free_table(reg->name_table);
+  err_name_table:
+    xfree(reg->repeat_range);
+  err_repeat_range:
+    xfree(reg->p);
+  err_p:
+    xfree(reg->int_map_backward);
+  err_int_map_backward:
+    xfree(reg->int_map);
+  err_int_map:
+    xfree(reg->exact);
+  err:
+    xfree(reg);
+    return ONIGERR_MEMORY;
+  }
+  return 0;
 }
 
 #ifdef RUBY
@@ -5886,6 +5981,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 #endif
 
  end:
+  onig_reg_resize(reg);
   return r;
 
  err_unset:
@@ -5904,8 +6000,8 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   }
 
   onig_node_free(root);
-  if (IS_NOT_NULL(scan_env.mem_nodes_dynamic))
-      xfree(scan_env.mem_nodes_dynamic);
+  xfree(scan_env.mem_nodes_dynamic);
+
   return r;
 }
 
@@ -5952,6 +6048,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
+
+  (reg)->timelimit        = 0;
+
   return 0;
 }
 
@@ -5974,20 +6073,15 @@ onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
 	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
 	  OnigErrorInfo* einfo)
 {
-  int r;
-
   *reg = (regex_t* )xmalloc(sizeof(regex_t));
   if (IS_NULL(*reg)) return ONIGERR_MEMORY;
 
-  r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
-  if (r) goto err;
-
-  r = onig_compile(*reg, pattern, pattern_end, einfo);
+  int r = onig_new_without_alloc(*reg, pattern, pattern_end, option, enc, syntax, einfo);
   if (r) {
-  err:
     onig_free(*reg);
     *reg = NULL;
   }
+
   return r;
 }
 

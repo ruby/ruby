@@ -13,7 +13,37 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  context "when --install flag is specified" do
+  context "after 'bundle install' is run" do
+    describe "running 'bundle remove GEM_NAME'" do
+      it "removes it from the lockfile" do
+        rack_dep = <<~L
+
+          DEPENDENCIES
+            rack
+
+        L
+
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          gem "rack"
+        G
+
+        bundle "install"
+
+        expect(lockfile).to include(rack_dep)
+
+        bundle "remove rack"
+
+        expect(gemfile).to eq <<~G
+          source "#{file_uri_for(gem_repo1)}"
+        G
+        expect(lockfile).to_not include(rack_dep)
+      end
+    end
+  end
+
+  context "when --install flag is specified", :bundler => "< 3" do
     it "removes gems from .bundle" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -40,27 +70,30 @@ RSpec.describe "bundle remove" do
         bundle "remove rack"
 
         expect(out).to include("rack was removed.")
-        gemfile_should_be <<-G
+        expect(the_bundle).to_not include_gems "rack"
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
         G
       end
 
       context "when gem is specified in multiple lines" do
         it "shows success for removed gem" do
+          build_git "rack"
+
           gemfile <<-G
             source '#{file_uri_for(gem_repo1)}'
 
             gem 'git'
             gem 'rack',
-                git: 'https://github.com/rack/rack',
-                branch: 'master'
+                git: "#{lib_path("rack-1.0")}",
+                branch: 'main'
             gem 'nokogiri'
           G
 
           bundle "remove rack"
 
           expect(out).to include("rack was removed.")
-          gemfile_should_be <<-G
+          expect(gemfile).to eq <<~G
             source '#{file_uri_for(gem_repo1)}'
 
             gem 'git'
@@ -83,7 +116,7 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  describe "remove mutiple gems from gemfile" do
+  describe "remove multiple gems from gemfile" do
     context "when all gems are present in gemfile" do
       it "shows success fir all removed gems" do
         gemfile <<-G
@@ -97,7 +130,7 @@ RSpec.describe "bundle remove" do
 
         expect(out).to include("rack was removed.")
         expect(out).to include("rails was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
         source "#{file_uri_for(gem_repo1)}"
         G
       end
@@ -116,7 +149,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rails rack minitest", :raise_on_error => false
 
         expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           gem "rails"
@@ -138,7 +171,7 @@ RSpec.describe "bundle remove" do
       bundle "remove rack"
 
       expect(out).to include("rack was removed.")
-      gemfile_should_be <<-G
+      expect(gemfile).to eq <<~G
         source "#{file_uri_for(gem_repo1)}"
       G
     end
@@ -158,7 +191,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
         G
       end
@@ -178,7 +211,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rack"
 
         expect(out).to include("rack was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           group :test do
@@ -204,13 +237,13 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
         G
       end
     end
 
-    context "when the gem belongs to mutiple groups" do
+    context "when the gem belongs to multiple groups" do
       it "removes the groups" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -223,13 +256,13 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
         G
       end
     end
 
-    context "when the gem is present in mutiple groups" do
+    context "when the gem is present in multiple groups" do
       it "removes all empty blocks" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -246,7 +279,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
         G
       end
@@ -269,7 +302,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
         G
       end
@@ -292,7 +325,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           group :test do
@@ -319,7 +352,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           group :test do
@@ -333,7 +366,7 @@ RSpec.describe "bundle remove" do
   end
 
   describe "arbitrary gemfile" do
-    context "when mutiple gems are present in same line" do
+    context "when multiple gems are present in same line" do
       it "shows warning for gems not removed" do
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -343,7 +376,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rails", :raise_on_error => false
 
         expect(err).to include("Gems could not be removed. rack (>= 0) would also have been removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"; gem "rails"
         G
@@ -365,7 +398,7 @@ RSpec.describe "bundle remove" do
         expect(out).to include("rails was removed.")
         expect(out).to include("minitest was removed.")
         expect(out).to include("rack, rspec could not be removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
           gem"rack"
           gem"rspec"
@@ -397,7 +430,7 @@ RSpec.describe "bundle remove" do
       bundle "remove rspec"
 
       expect(out).to include("rspec was removed.")
-      gemfile_should_be <<-G
+      expect(gemfile).to eq <<~G
         source "#{file_uri_for(gem_repo1)}"
 
         gem "rack"
@@ -481,7 +514,7 @@ RSpec.describe "bundle remove" do
 
         expect(out).to include("rack was removed.")
         expect(err).to include("`rack` is not specified in #{bundled_app("Gemfile-other")} so it could not be removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           eval_gemfile "Gemfile-other"
@@ -489,7 +522,7 @@ RSpec.describe "bundle remove" do
       end
     end
 
-    context "when gems can not be removed from other gemfile" do
+    context "when gems cannot be removed from other gemfile" do
       it "shows error" do
         create_file "Gemfile-other", <<-G
           gem "rails"; gem "rack"
@@ -506,7 +539,7 @@ RSpec.describe "bundle remove" do
 
         expect(out).to include("rack was removed.")
         expect(err).to include("Gems could not be removed. rails (>= 0) would also have been removed.")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           eval_gemfile "Gemfile-other"
@@ -531,7 +564,7 @@ RSpec.describe "bundle remove" do
 
         expect(err).to include("Gems could not be removed. rails (>= 0) would also have been removed.")
         expect(bundled_app("Gemfile-other").read).to include("gem \"rack\"")
-        gemfile_should_be <<-G
+        expect(gemfile).to eq <<~G
           source "#{file_uri_for(gem_repo1)}"
 
           eval_gemfile "Gemfile-other"
@@ -541,7 +574,7 @@ RSpec.describe "bundle remove" do
     end
 
     context "when gem present in gemfiles but could not be removed from one from one of them" do
-      it "removes gem which can be removed and shows warning for file from which it can not be removed" do
+      it "removes gem which can be removed and shows warning for file from which it cannot be removed" do
         create_file "Gemfile-other", <<-G
           gem "rack"
         G
@@ -574,7 +607,7 @@ RSpec.describe "bundle remove" do
       bundle "remove rack"
 
       expect(out).to include("rack was removed.")
-      gemfile_should_be <<-G
+      expect(gemfile).to eq <<~G
         source "#{file_uri_for(gem_repo1)}"
       G
     end
@@ -593,7 +626,7 @@ RSpec.describe "bundle remove" do
       bundle "remove rack"
 
       expect(out).to include("rack was removed.")
-      gemfile_should_be <<-G
+      expect(gemfile).to eq <<~G
         source "#{file_uri_for(gem_repo1)}"
       G
     end
@@ -614,6 +647,86 @@ RSpec.describe "bundle remove" do
       bundle "remove foo"
 
       expect(out).to include("foo could not be removed.")
+    end
+  end
+
+  describe "with comments that mention gems" do
+    context "when comment is a separate line comment" do
+      it "does not remove the line comment" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          # gem "rack" might be used in the future
+          gem "rack"
+        G
+
+        bundle "remove rack"
+
+        expect(out).to include("rack was removed.")
+        expect(gemfile).to eq <<~G
+          source "#{file_uri_for(gem_repo1)}"
+
+          # gem "rack" might be used in the future
+        G
+      end
+    end
+
+    context "when gem specified for removal has an inline comment" do
+      it "removes the inline comment" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          gem "rack" # this can be removed
+        G
+
+        bundle "remove rack"
+
+        expect(out).to include("rack was removed.")
+        expect(gemfile).to eq <<~G
+          source "#{file_uri_for(gem_repo1)}"
+        G
+      end
+    end
+
+    context "when gem specified for removal is mentioned in other gem's comment" do
+      it "does not remove other gem" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "puma" # implements interface provided by gem "rack"
+
+          gem "rack"
+        G
+
+        bundle "remove rack"
+
+        expect(out).to_not include("puma was removed.")
+        expect(out).to include("rack was removed.")
+        expect(gemfile).to eq <<~G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "puma" # implements interface provided by gem "rack"
+        G
+      end
+    end
+
+    context "when gem specified for removal has a comment that mentions other gem" do
+      it "does not remove other gem" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "puma" # implements interface provided by gem "rack"
+
+          gem "rack"
+        G
+
+        bundle "remove puma"
+
+        expect(out).to include("puma was removed.")
+        expect(out).to_not include("rack was removed.")
+        expect(gemfile).to eq <<~G
+          source "#{file_uri_for(gem_repo1)}"
+
+          gem "rack"
+        G
+      end
     end
   end
 end

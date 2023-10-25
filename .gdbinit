@@ -67,7 +67,7 @@ define rp
     printf "%sT_OBJECT%s: ", $color_type, $color_end
     print ((struct RObject *)($arg0))->basic
     if ($flags & ROBJECT_EMBED)
-      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (ROBJECT_EMBED_LEN_MAX+0)
+      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (rb_shape_get_shape($arg0)->capacity)
     else
       print (((struct RObject *)($arg0))->as.heap)
       if (((struct RObject*)($arg0))->as.heap.numiv) > 0
@@ -104,8 +104,8 @@ define rp
             (($rsflags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
     set print address off
     output *(char *)(($rsflags & RUBY_FL_USER1) ? \
-	    ((struct RString*)$regsrc)->as.heap.ptr : \
-	    ((struct RString*)$regsrc)->as.ary) @ $len
+            ((struct RString*)$regsrc)->as.heap.ptr : \
+            ((struct RString*)$regsrc)->as.ary) @ $len
     set print address on
     printf " len:%ld ", $len
     if $flags & RUBY_FL_USER6
@@ -126,26 +126,26 @@ define rp
       printf "%sT_ARRAY%s: len=%ld ", $color_type, $color_end, $len
       printf "(embed) "
       if ($len == 0)
-	printf "{(empty)} "
+        printf "{(empty)} "
       else
-	print/x *((VALUE*)((struct RArray*)($arg0))->as.ary) @ $len
-	printf " "
+        print/x *((VALUE*)((struct RArray*)($arg0))->as.ary) @ $len
+        printf " "
       end
     else
       set $len = ((struct RArray*)($arg0))->as.heap.len
       printf "%sT_ARRAY%s: len=%ld ", $color_type, $color_end, $len
       if ($flags & RUBY_FL_USER2)
-	printf "(shared) shared="
-	output/x ((struct RArray*)($arg0))->as.heap.aux.shared_root
-	printf " "
+        printf "(shared) shared="
+        output/x ((struct RArray*)($arg0))->as.heap.aux.shared_root
+        printf " "
       else
-	printf "(ownership) capa=%ld ", ((struct RArray*)($arg0))->as.heap.aux.capa
+        printf "(ownership) capa=%ld ", ((struct RArray*)($arg0))->as.heap.aux.capa
       end
       if ($len == 0)
-	printf "{(empty)} "
+        printf "{(empty)} "
       else
-	print/x *((VALUE*)((struct RArray*)($arg0))->as.heap.ptr) @ $len
-	printf " "
+        print/x *((VALUE*)((struct RArray*)($arg0))->as.heap.ptr) @ $len
+        printf " "
       end
     end
     print (struct RArray *)($arg0)
@@ -265,8 +265,13 @@ define rp
     printf "%sT_ZOMBIE%s: ", $color_type, $color_end
     print (struct RData *)($arg0)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_MOVED
+    printf "%sT_MOVED%s: ", $color_type, $color_end
+    print *(struct RMoved *)$arg0
+  else
     printf "%sunknown%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
+  end
   end
   end
   end
@@ -440,8 +445,8 @@ define output_string
           (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
   if $len > 0
     output *(char *)(($flags & RUBY_FL_USER1) ? \
-	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary) @ $len
+            ((struct RString*)($arg0))->as.heap.ptr : \
+            ((struct RString*)($arg0))->as.ary) @ $len
   else
     output ""
   end
@@ -454,8 +459,8 @@ define print_string
           (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
   if $len > 0
     printf "%s", *(char *)(($flags & RUBY_FL_USER1) ? \
-	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary) @ $len
+            ((struct RString*)($arg0))->as.heap.ptr : \
+            ((struct RString*)($arg0))->as.ary) @ $len
   end
 end
 
@@ -539,13 +544,13 @@ end
 
 define rp_class
   printf "(struct RClass *) %p", (void*)$arg0
-  if ((struct RClass *)($arg0))->ptr.origin_ != $arg0
-    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin_
+  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
+    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
   end
   printf "\n"
   rb_classname $arg0
   print/x *(struct RClass *)($arg0)
-  print *((struct RClass *)($arg0))->ptr
+  print *RCLASS_EXT((struct RClass *)($arg0))
 end
 document rp_class
   Print the content of a Class/Module.
@@ -683,11 +688,6 @@ define nd_stts
   rp ($arg0).u1.node
 end
 
-
-define nd_entry
-  printf "%su3.entry%s: ", $color_highlite, $color_end
-  p ($arg0).u3.entry
-end
 
 define nd_vid
   printf "%su1.id%s: ", $color_highlite, $color_end
@@ -863,22 +863,22 @@ define rb_numtable_entry
     set $rb_numtable_p = $rb_numtable_tbl->as.packed.bins
     while $rb_numtable_p && $rb_numtable_p < $rb_numtable_tbl->as.packed.bins+$rb_numtable_tbl->num_entries
       if $rb_numtable_p.k == $rb_numtable_id
-	set $rb_numtable_key = $rb_numtable_p.k
-	set $rb_numtable_rec = $rb_numtable_p.v
-	set $rb_numtable_p = 0
+        set $rb_numtable_key = $rb_numtable_p.k
+        set $rb_numtable_rec = $rb_numtable_p.v
+        set $rb_numtable_p = 0
       else
-	set $rb_numtable_p = $rb_numtable_p + 1
+        set $rb_numtable_p = $rb_numtable_p + 1
       end
     end
   else
     set $rb_numtable_p = $rb_numtable_tbl->as.big.bins[st_numhash($rb_numtable_id) % $rb_numtable_tbl->num_bins]
     while $rb_numtable_p
       if $rb_numtable_p->key == $rb_numtable_id
-	set $rb_numtable_key = $rb_numtable_p->key
-	set $rb_numtable_rec = $rb_numtable_p->record
-	set $rb_numtable_p = 0
+        set $rb_numtable_key = $rb_numtable_p->key
+        set $rb_numtable_rec = $rb_numtable_p->record
+        set $rb_numtable_p = 0
       else
-	set $rb_numtable_p = $rb_numtable_p->next
+        set $rb_numtable_p = $rb_numtable_p->next
       end
     end
   end
@@ -956,7 +956,7 @@ define iseq
       set $operand_size = ((INSN*)($arg0))->operand_size
       set $operands = ((INSN*)($arg0))->operands
       while $i < $operand_size
-	rp $operands[$i++]
+        rp $operands[$i++]
       end
     end
   end
@@ -974,8 +974,8 @@ end
 
 define rb_ps_vm
   print $ps_vm = (rb_vm_t*)$arg0
-  set $ps_thread_ln = $ps_vm->living_threads.n.next
-  set $ps_thread_ln_last = $ps_vm->living_threads.n.prev
+  set $ps_thread_ln      = $ps_vm->ractor.main_ractor.threads.set.n.next
+  set $ps_thread_ln_last = $ps_vm->ractor.main_ractor.threads.set.n.prev
   while 1
     set $ps_thread_th = (rb_thread_t *)$ps_thread_ln
     set $ps_thread = (VALUE)($ps_thread_th->self)
@@ -1097,11 +1097,11 @@ define print_id
           set $arylen = $ary->as.heap.len
         end
         set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
-	if $result != RUBY_Qnil
+        if $result != RUBY_Qnil
           print_string $result
-	else
-	  echo undef
-	end
+        else
+          echo undef
+        end
       end
     end
   end
@@ -1274,9 +1274,9 @@ document rb_count_objects
   Counts all objects grouped by type.
 end
 
-# Details: https://bugs.ruby-lang.org/projects/ruby-master/wiki/MachineInstructionsTraceWithGDB
+# Details: https://github.com/ruby/ruby/wiki/Machine-Instructions-Trace-with-GDB
 define trace_machine_instructions
-  set logging on
+  set logging enabled
   set height 0
   set width 0
   display/i $pc
@@ -1319,8 +1319,7 @@ define print_flags
   printf "RUBY_FL_PROMOTED0   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
   printf "RUBY_FL_PROMOTED1   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
   printf "RUBY_FL_FINALIZE    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FINALIZE ? "1" : "0"
-  printf "RUBY_FL_TAINT       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_TAINT ? "1" : "0"
-  printf "RUBY_FL_UNTRUSTED   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_UNTRUSTED ? "1" : "0"
+  printf "RUBY_FL_SHAREABLE   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_SHAREABLE ? "1" : "0"
   printf "RUBY_FL_EXIVAR      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_EXIVAR ? "1" : "0"
   printf "RUBY_FL_FREEZE      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FREEZE ? "1" : "0"
 
@@ -1344,3 +1343,5 @@ define print_flags
   printf "RUBY_FL_USER17      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER17 ? "1" : "0"
   printf "RUBY_FL_USER18      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER18 ? "1" : "0"
 end
+
+source misc/gdb.py

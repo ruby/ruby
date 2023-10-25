@@ -1,0 +1,18 @@
+Returns whether +self+ starts with any of the given +string_or_regexp+.
+
+Matches patterns against the beginning of +self+.
+For each given +string_or_regexp+, the pattern is:
+
+- +string_or_regexp+ itself, if it is a Regexp.
+- <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
+
+Returns +true+ if any pattern matches the beginning, +false+ otherwise:
+
+  'hello'.start_with?('hell')               # => true
+  'hello'.start_with?(/H/i)                 # => true
+  'hello'.start_with?('heaven', 'hell')     # => true
+  'hello'.start_with?('heaven', 'paradise') # => false
+  'тест'.start_with?('т')                   # => true
+  'こんにちは'.start_with?('こ')              # => true
+
+Related: String#end_with?.

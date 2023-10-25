@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install" do
   context "installing a gem fails" do
-    it "prints out why that gem was being installed" do
+    it "prints out why that gem was being installed and the underlying error" do
       build_repo2 do
         build_gem "activesupport", "2.3.2" do |s|
           s.extensions << "Rakefile"
@@ -18,102 +18,9 @@ RSpec.describe "bundle install" do
         source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G
+      expect(err).to start_with("Gem::Ext::BuildError: ERROR: Failed to build gem native extension.")
       expect(err).to end_with(<<-M.strip)
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
-Make sure that `gem install activesupport -v '2.3.2' --source '#{file_uri_for(gem_repo2)}/'` succeeds before bundling.
-
-In Gemfile:
-  rails was resolved to 2.3.2, which depends on
-    actionmailer was resolved to 2.3.2, which depends on
-      activesupport
-                     M
-    end
-
-    context "when installing a git gem" do
-      it "does not tell the user to run 'gem install'" do
-        build_git "activesupport", "2.3.2", :path => lib_path("activesupport") do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              abort "make installing activesupport-2.3.2 fail"
-            end
-          RUBY
-        end
-
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rails"
-          gem "activesupport", :git => "#{lib_path("activesupport")}"
-        G
-
-        expect(err).to end_with(<<-M.strip)
-An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
-
-In Gemfile:
-  rails was resolved to 2.3.2, which depends on
-    actionmailer was resolved to 2.3.2, which depends on
-      activesupport
-                     M
-      end
-    end
-
-    context "when installing a gem using a git block" do
-      it "does not tell the user to run 'gem install'" do
-        build_git "activesupport", "2.3.2", :path => lib_path("activesupport") do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              abort "make installing activesupport-2.3.2 fail"
-            end
-          RUBY
-        end
-
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rails"
-
-          git "#{lib_path("activesupport")}" do
-            gem "activesupport"
-          end
-        G
-
-        expect(err).to end_with(<<-M.strip)
-An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
-
-
-In Gemfile:
-  rails was resolved to 2.3.2, which depends on
-    actionmailer was resolved to 2.3.2, which depends on
-      activesupport
-                     M
-      end
-    end
-
-    it "prints out the hint for the remote source when available" do
-      build_repo2 do
-        build_gem "activesupport", "2.3.2" do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              abort "make installing activesupport-2.3.2 fail"
-            end
-          RUBY
-        end
-      end
-
-      build_repo4 do
-        build_gem "a"
-      end
-
-      install_gemfile <<-G, :raise_on_error => false
-        source "#{file_uri_for(gem_repo4)}"
-        source "#{file_uri_for(gem_repo2)}" do
-          gem "rails"
-        end
-      G
-      expect(err).to end_with(<<-M.strip)
-An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
-Make sure that `gem install activesupport -v '2.3.2' --source '#{file_uri_for(gem_repo2)}/'` succeeds before bundling.
 
 In Gemfile:
   rails was resolved to 2.3.2, which depends on

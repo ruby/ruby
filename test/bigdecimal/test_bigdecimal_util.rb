@@ -1,9 +1,10 @@
 # frozen_string_literal: false
-require_relative "testbase"
-
+require_relative "helper"
 require 'bigdecimal/util'
 
 class TestBigDecimalUtil < Test::Unit::TestCase
+  include TestBigDecimalBase
+
   def test_BigDecimal_to_d
     x = BigDecimal(1)
     assert_same(x, x.to_d)
@@ -17,10 +18,16 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_Float_to_d_without_precision
-    delta = 1.0/10**(Float::DIG)
-    assert_in_delta(BigDecimal(0.5, Float::DIG), 0.5.to_d, delta)
-    assert_in_delta(BigDecimal(355.0/113.0, Float::DIG), (355.0/113.0).to_d, delta)
-    assert_equal(9.05.to_d.to_s('F'), "9.05")
+    delta = 1.0/10**(Float::DIG+1)
+    assert_in_delta(BigDecimal(0.5, 0), 0.5.to_d, delta)
+    assert_in_delta(BigDecimal(355.0/113.0, 0), (355.0/113.0).to_d, delta)
+
+    assert_equal(9.05, 9.05.to_d.to_f)
+    assert_equal("9.05", 9.05.to_d.to_s('F'))
+
+    assert_equal("65.6", 65.6.to_d.to_s("F"))
+
+    assert_equal(Math::PI, Math::PI.to_d.to_f)
 
     bug9214 = '[ruby-core:58858]'
     assert_equal((-0.0).to_d.sign, -1, bug9214)
@@ -29,6 +36,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_raise(TypeError) { 0.3.to_d(false) }
 
     assert(1.1.to_d.frozen?)
+
+    assert_equal(BigDecimal("999_999.9999"), 999_999.9999.to_d)
   end
 
   def test_Float_to_d_with_precision
@@ -41,6 +50,29 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_equal((-0.0).to_d(digits).sign, -1, bug9214)
 
     assert(1.1.to_d(digits).frozen?)
+  end
+
+  def test_Float_to_d_bug13331
+    assert_equal(64.4.to_d,
+                 1.to_d * 64.4,
+                 "[ruby-core:80234] [Bug #13331]")
+
+    assert_equal((2*Math::PI).to_d,
+                 2.to_d * Math::PI,
+                 "[ruby-core:80234] [Bug #13331]")
+  end
+
+  def test_Float_to_d_issue_192
+    # https://github.com/ruby/bigdecimal/issues/192
+    # https://github.com/rails/rails/pull/42125
+    if BASE_FIG == 9
+      flo = 1_000_000_000.12345
+      big = BigDecimal("0.100000000012345e10")
+    else  # BASE_FIG == 4
+      flo = 1_0000.12
+      big = BigDecimal("0.1000012e5")
+    end
+    assert_equal(flo.to_d, big, "[ruby/bigdecimal#192]")
   end
 
   def test_Rational_to_d

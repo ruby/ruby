@@ -17,18 +17,25 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `uid_t` and Ruby's.
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
 
+/** Converts a C's `uid_t` into an instance of ::rb_cInteger. */
 #ifndef UIDT2NUM
 # define UIDT2NUM RB_LONG2NUM
 #endif
 
+/** Converts an instance of ::rb_cNumeric into C's `uid_t`. */
 #ifndef NUM2UIDT
 # define NUM2UIDT RB_NUM2LONG
+#endif
+
+/** A rb_sprintf() format prefix to be used for a `uid_t` parameter. */
+#ifndef PRI_UIDT_PREFIX
+# define PRI_UIDT_PREFIX PRI_LONG_PREFIX
 #endif
 
 #endif /* RBIMPL_ARITHMETIC_UID_T_H */

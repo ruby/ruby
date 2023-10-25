@@ -98,3 +98,21 @@ describe "StringIO#readlines when passed [chomp]" do
     io.readlines(chomp: true).should == ["this>is", "an>example"]
   end
 end
+
+describe "StringIO#readlines when passed [limit]" do
+  before :each do
+    @io = StringIO.new("a b c d e\n1 2 3 4 5")
+  end
+
+  it "returns the data read until the limit is met" do
+    @io.readlines(4).should == ["a b ", "c d ", "e\n", "1 2 ", "3 4 ", "5"]
+  end
+
+  it "raises ArgumentError when limit is 0" do
+    -> { @io.readlines(0) }.should raise_error(ArgumentError)
+  end
+
+  it "ignores it when the limit is negative" do
+    @io.readlines(-4).should == ["a b c d e\n", "1 2 3 4 5"]
+  end
+end

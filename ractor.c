@@ -2,43 +2,44 @@
 
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
+#include "ruby/ractor.h"
 #include "ruby/thread_native.h"
 #include "vm_core.h"
+#include "eval_intern.h"
 #include "vm_sync.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "internal/complex.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
+#include "internal/thread.h"
 #include "variable.h"
-#include "gc.h"
+#include "yjit.h"
+#include "rjit.h"
 
-static VALUE rb_cRactor;
+VALUE rb_cRactor;
+static VALUE rb_cRactorSelector;
+
+VALUE rb_eRactorUnsafeError;
+VALUE rb_eRactorIsolationError;
 static VALUE rb_eRactorError;
 static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
 
-VALUE
-rb_ractor_error_class(void)
-{
-    return rb_eRactorError;
-}
-
-RUBY_SYMBOL_EXPORT_BEGIN
-// to share with MJIT
-bool ruby_multi_ractor;
-RUBY_SYMBOL_EXPORT_END
-
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
+
+// Ractor locking
 
 static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (r->locked_by == GET_RACTOR()->self) {
+    // GET_EC is NULL in an RJIT worker
+    if (rb_current_execution_context(false) != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
         rb_bug("recursive ractor locking");
     }
 #endif
@@ -48,8 +49,9 @@ static void
 ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (r->locked_by != GET_RACTOR()->self) {
-        rp(r->locked_by);
+    // GET_EC is NULL in an RJIT worker
+    if (rb_current_execution_context(false) != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
+        rp(r->sync.locked_by);
         rb_bug("ractor lock is not acquired.");
     }
 #endif
@@ -58,23 +60,28 @@ ASSERT_ractor_locking(rb_ractor_t *r)
 static void
 ractor_lock(rb_ractor_t *r, const char *file, int line)
 {
-    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 
     ASSERT_ractor_unlocking(r);
-    rb_native_mutex_lock(&r->lock);
+    rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
-    r->locked_by = GET_RACTOR()->self;
+    if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an RJIT worker
+        rb_ractor_t *cr = rb_current_ractor_raw(false);
+        r->sync.locked_by = cr ? rb_ractor_self(cr) : Qundef;
+    }
 #endif
 
-    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
 ractor_lock_self(rb_ractor_t *cr, const char *file, int line)
 {
     VM_ASSERT(cr == GET_RACTOR());
-    VM_ASSERT(cr->locked_by != cr->self);
+#if RACTOR_CHECK_MODE > 0
+    VM_ASSERT(cr->sync.locked_by != cr->pub.self);
+#endif
     ractor_lock(cr, file, line);
 }
 
@@ -83,18 +90,20 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 {
     ASSERT_ractor_locking(r);
 #if RACTOR_CHECK_MODE > 0
-    r->locked_by = Qnil;
+    r->sync.locked_by = Qnil;
 #endif
-    rb_native_mutex_unlock(&r->lock);
+    rb_native_mutex_unlock(&r->sync.lock);
 
-    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
 ractor_unlock_self(rb_ractor_t *cr, const char *file, int line)
 {
     VM_ASSERT(cr == GET_RACTOR());
-    VM_ASSERT(cr->locked_by == cr->self);
+#if RACTOR_CHECK_MODE > 0
+    VM_ASSERT(cr->sync.locked_by == cr->pub.self);
+#endif
     ractor_unlock(cr, file, line);
 }
 
@@ -103,19 +112,19 @@ ractor_unlock_self(rb_ractor_t *cr, const char *file, int line)
 #define RACTOR_LOCK_SELF(r) ractor_lock_self(r, __FILE__, __LINE__)
 #define RACTOR_UNLOCK_SELF(r) ractor_unlock_self(r, __FILE__, __LINE__)
 
-static void
-ractor_cond_wait(rb_ractor_t *r)
+void
+rb_ractor_lock_self(rb_ractor_t *r)
 {
-#if RACTOR_CHECK_MODE > 0
-    VALUE locked_by = r->locked_by;
-    r->locked_by = Qnil;
-#endif
-    rb_native_cond_wait(&r->wait.cond, &r->lock);
-
-#if RACTOR_CHECK_MODE > 0
-    r->locked_by = locked_by;
-#endif
+    RACTOR_LOCK_SELF(r);
 }
+
+void
+rb_ractor_unlock_self(rb_ractor_t *r)
+{
+    RACTOR_UNLOCK_SELF(r);
+}
+
+// Ractor status
 
 static const char *
 ractor_status_str(enum ractor_status status)
@@ -132,7 +141,7 @@ ractor_status_str(enum ractor_status status)
 static void
 ractor_status_set(rb_ractor_t *r, enum ractor_status status)
 {
-    RUBY_DEBUG_LOG("r:%u [%s]->[%s]", r->id, ractor_status_str(r->status_), ractor_status_str(status));
+    RUBY_DEBUG_LOG("r:%u [%s]->[%s]", r->pub.id, ractor_status_str(r->status_), ractor_status_str(status));
 
     // check 1
     if (r->status_ != ractor_created) {
@@ -153,7 +162,7 @@ ractor_status_set(rb_ractor_t *r, enum ractor_status status)
         VM_ASSERT(status == ractor_running);
         break;
       case ractor_terminated:
-        VM_ASSERT(0); // unreachable
+        rb_bug("unreachable");
         break;
     }
 
@@ -166,13 +175,29 @@ ractor_status_p(rb_ractor_t *r, enum ractor_status status)
     return rb_ractor_status_p(r, status);
 }
 
+// Ractor data/mark/free
+
+static struct rb_ractor_basket *ractor_queue_at(rb_ractor_t *r, struct rb_ractor_queue *rq, int i);
+static void ractor_local_storage_mark(rb_ractor_t *r);
+static void ractor_local_storage_free(rb_ractor_t *r);
+
 static void
 ractor_queue_mark(struct rb_ractor_queue *rq)
 {
     for (int i=0; i<rq->cnt; i++) {
-        int idx = (rq->start + i) % rq->size;
-        rb_gc_mark(rq->baskets[idx].v);
-        rb_gc_mark(rq->baskets[idx].sender);
+        struct rb_ractor_basket *b = ractor_queue_at(NULL, rq, i);
+        rb_gc_mark(b->sender);
+
+        switch (b->type.e) {
+          case basket_type_yielding:
+          case basket_type_take_basket:
+          case basket_type_deleted:
+          case basket_type_reserved:
+            // ignore
+            break;
+          default:
+            rb_gc_mark(b->p.send.v);
+        }
     }
 }
 
@@ -181,24 +206,27 @@ ractor_mark(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
 
-    ractor_queue_mark(&r->incoming_queue);
-    rb_gc_mark(r->wait.taken_basket.v);
-    rb_gc_mark(r->wait.taken_basket.sender);
-    rb_gc_mark(r->wait.yielded_basket.v);
-    rb_gc_mark(r->wait.yielded_basket.sender);
+    ractor_queue_mark(&r->sync.recv_queue);
+    ractor_queue_mark(&r->sync.takers_queue);
+
+    rb_gc_mark(r->receiving_mutex);
+
     rb_gc_mark(r->loc);
     rb_gc_mark(r->name);
     rb_gc_mark(r->r_stdin);
     rb_gc_mark(r->r_stdout);
     rb_gc_mark(r->r_stderr);
+    rb_hook_list_mark(&r->pub.hooks);
 
     if (r->threads.cnt > 0) {
         rb_thread_t *th = 0;
-        list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
         }
     }
+
+    ractor_local_storage_mark(r);
 }
 
 static void
@@ -208,19 +236,18 @@ ractor_queue_free(struct rb_ractor_queue *rq)
 }
 
 static void
-ractor_waiting_list_free(struct rb_ractor_waiting_list *wl)
-{
-    free(wl->ractors);
-}
-
-static void
 ractor_free(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
-    rb_native_mutex_destroy(&r->lock);
-    rb_native_cond_destroy(&r->wait.cond);
-    ractor_queue_free(&r->incoming_queue);
-    ractor_waiting_list_free(&r->taking_ractors);
+    RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
+    rb_native_mutex_destroy(&r->sync.lock);
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_destroy(&r->sync.cond);
+#endif
+    ractor_queue_free(&r->sync.recv_queue);
+    ractor_queue_free(&r->sync.takers_queue);
+    ractor_local_storage_free(r);
+    rb_hook_list_free(&r->pub.hooks);
     ruby_xfree(r);
 }
 
@@ -231,27 +258,21 @@ ractor_queue_memsize(const struct rb_ractor_queue *rq)
 }
 
 static size_t
-ractor_waiting_list_memsize(const struct rb_ractor_waiting_list *wl)
-{
-    return sizeof(rb_ractor_t *) * wl->size;
-}
-
-static size_t
 ractor_memsize(const void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
 
-    // TODO
+    // TODO: more correct?
     return sizeof(rb_ractor_t) +
-      ractor_queue_memsize(&r->incoming_queue) +
-      ractor_waiting_list_memsize(&r->taking_ractors);
+           ractor_queue_memsize(&r->sync.recv_queue) +
+           ractor_queue_memsize(&r->sync.takers_queue);
 }
 
 static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
         ractor_mark,
-	ractor_free,
+        ractor_free,
         ractor_memsize,
         NULL, // update
     },
@@ -273,32 +294,26 @@ static inline rb_ractor_t *
 RACTOR_PTR(VALUE self)
 {
     VM_ASSERT(rb_ractor_p(self));
-
     rb_ractor_t *r = DATA_PTR(self);
-    // TODO: check
     return r;
 }
 
-uint32_t
-rb_ractor_id(const rb_ractor_t *g)
-{
-    return g->id;
-}
-
-static uint32_t ractor_last_id;
+static rb_atomic_t ractor_last_id;
 
 #if RACTOR_CHECK_MODE > 0
-MJIT_FUNC_EXPORTED uint32_t
+uint32_t
 rb_ractor_current_id(void)
 {
     if (GET_THREAD()->ractor == NULL) {
         return 1; // main ractor
     }
     else {
-        return GET_RACTOR()->id;
+        return rb_ractor_id(GET_RACTOR());
     }
 }
 #endif
+
+// Ractor queue
 
 static void
 ractor_queue_setup(struct rb_ractor_queue *rq)
@@ -309,33 +324,91 @@ ractor_queue_setup(struct rb_ractor_queue *rq)
     rq->baskets = malloc(sizeof(struct rb_ractor_basket) * rq->size);
 }
 
+static struct rb_ractor_basket *
+ractor_queue_head(rb_ractor_t *r, struct rb_ractor_queue *rq)
+{
+    if (r != NULL) ASSERT_ractor_locking(r);
+    return &rq->baskets[rq->start];
+}
+
+static struct rb_ractor_basket *
+ractor_queue_at(rb_ractor_t *r, struct rb_ractor_queue *rq, int i)
+{
+    if (r != NULL) ASSERT_ractor_locking(r);
+    return &rq->baskets[(rq->start + i) % rq->size];
+}
+
+static void
+ractor_queue_advance(rb_ractor_t *r, struct rb_ractor_queue *rq)
+{
+    ASSERT_ractor_locking(r);
+
+    if (rq->reserved_cnt == 0) {
+        rq->cnt--;
+        rq->start = (rq->start + 1) % rq->size;
+        rq->serial++;
+    }
+    else {
+        ractor_queue_at(r, rq, 0)->type.e = basket_type_deleted;
+    }
+}
+
+static bool
+ractor_queue_skip_p(rb_ractor_t *r, struct rb_ractor_queue *rq, int i)
+{
+    struct rb_ractor_basket *b = ractor_queue_at(r, rq, i);
+    return basket_type_p(b, basket_type_deleted) ||
+           basket_type_p(b, basket_type_reserved);
+}
+
+static void
+ractor_queue_compact(rb_ractor_t *r, struct rb_ractor_queue *rq)
+{
+    ASSERT_ractor_locking(r);
+
+    while (rq->cnt > 0 && basket_type_p(ractor_queue_at(r, rq, 0), basket_type_deleted)) {
+        ractor_queue_advance(r, rq);
+    }
+}
+
 static bool
 ractor_queue_empty_p(rb_ractor_t *r, struct rb_ractor_queue *rq)
 {
     ASSERT_ractor_locking(r);
-    return rq->cnt == 0;
+
+    if (rq->cnt == 0) {
+        return true;
+    }
+
+    ractor_queue_compact(r, rq);
+
+    for (int i=0; i<rq->cnt; i++) {
+        if (!ractor_queue_skip_p(r, rq, i)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static bool
 ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_basket *basket)
 {
-    bool b;
+    ASSERT_ractor_locking(r);
 
-    RACTOR_LOCK(r);
-    {
-        if (!ractor_queue_empty_p(r, rq)) {
-            *basket = rq->baskets[rq->start];
-            rq->cnt--;
-            rq->start = (rq->start + 1) % rq->size;
-            b = true;
-        }
-        else {
-            b = false;
+    for (int i=0; i<rq->cnt; i++) {
+        if (!ractor_queue_skip_p(r, rq, i)) {
+            struct rb_ractor_basket *b = ractor_queue_at(r, rq, i);
+            *basket = *b;
+
+            // remove from queue
+            b->type.e = basket_type_deleted;
+            ractor_queue_compact(r, rq);
+            return true;
         }
     }
-    RACTOR_UNLOCK(r);
 
-    return b;
+    return false;
 }
 
 static void
@@ -351,99 +424,59 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
         rq->size *= 2;
     }
     rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
-    // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
+    // fprintf(stderr, "%s %p->cnt:%d\n", RUBY_FUNCTION_NAME_STRING, (void *)rq, rq->cnt);
 }
 
 static void
-ractor_basket_clear(struct rb_ractor_basket *b)
+ractor_queue_delete(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_basket *basket)
 {
-    b->type = basket_type_none;
-    b->v = Qfalse;
-    b->sender = Qfalse;
+    basket->type.e = basket_type_deleted;
 }
+
+// Ractor basket
 
 static VALUE ractor_reset_belonging(VALUE obj); // in this file
 
 static VALUE
-ractor_basket_accept(struct rb_ractor_basket *b)
+ractor_basket_value(struct rb_ractor_basket *b)
 {
-    VALUE v;
-
-    switch (b->type) {
+    switch (b->type.e) {
       case basket_type_ref:
-        VM_ASSERT(rb_ractor_shareable_p(b->v));
-        v = b->v;
         break;
       case basket_type_copy:
       case basket_type_move:
       case basket_type_will:
-        v = ractor_reset_belonging(b->v);
+        b->type.e = basket_type_ref;
+        b->p.send.v = ractor_reset_belonging(b->p.send.v);
         break;
       default:
         rb_bug("unreachable");
     }
 
-    if (b->exception) {
+    return b->p.send.v;
+}
+
+static VALUE
+ractor_basket_accept(struct rb_ractor_basket *b)
+{
+    VALUE v = ractor_basket_value(b);
+
+    if (b->p.send.exception) {
         VALUE cause = v;
         VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
         rb_ivar_set(err, rb_intern("@ractor"), b->sender);
-        ractor_basket_clear(b);
         rb_ec_setup_exception(NULL, err, cause);
         rb_exc_raise(err);
     }
 
-    ractor_basket_clear(b);
     return v;
 }
 
-static VALUE
-ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
-{
-    struct rb_ractor_queue *rq = &r->incoming_queue;
-    struct rb_ractor_basket basket;
-
-    if (ractor_queue_deq(r, rq, &basket) == false) {
-        if (r->incoming_port_closed) {
-            rb_raise(rb_eRactorClosedError, "The incoming port is already closed");
-        }
-        else {
-            return Qundef;
-        }
-    }
-
-    return ractor_basket_accept(&basket);
-}
-
-static void *
-ractor_sleep_wo_gvl(void *ptr)
-{
-    rb_ractor_t *cr = ptr;
-    RACTOR_LOCK_SELF(cr);
-    VM_ASSERT(cr->wait.status != wait_none);
-    if (cr->wait.wakeup_status == wakeup_none) {
-        ractor_cond_wait(cr);
-    }
-    cr->wait.status = wait_none;
-    RACTOR_UNLOCK_SELF(cr);
-    return NULL;
-}
-
-static void
-ractor_sleep_interrupt(void *ptr)
-{
-    rb_ractor_t *r = ptr;
-
-    RACTOR_LOCK(r);
-    if (r->wait.wakeup_status == wakeup_none) {
-        r->wait.wakeup_status = wakeup_by_interrupt;
-        rb_native_cond_signal(&r->wait.cond);
-    }
-    RACTOR_UNLOCK(r);
-}
+// Ractor synchronizations
 
 #if USE_RUBY_DEBUG_LOG
 static const char *
-wait_status_str(enum ractor_wait_status wait_status)
+wait_status_str(enum rb_ractor_wait_status wait_status)
 {
     switch ((int)wait_status) {
       case wait_none: return "none";
@@ -455,11 +488,11 @@ wait_status_str(enum ractor_wait_status wait_status)
       case wait_taking|wait_yielding: return "taking|yielding";
       case wait_receiving|wait_taking|wait_yielding: return "receiving|taking|yielding";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 
 static const char *
-wakeup_status_str(enum ractor_wakeup_status wakeup_status)
+wakeup_status_str(enum rb_ractor_wakeup_status wakeup_status)
 {
     switch (wakeup_status) {
       case wakeup_none: return "none";
@@ -470,43 +503,61 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_by_interrupt: return "by_interrupt";
       case wakeup_by_retry: return "by_retry";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
+}
+
+static const char *
+basket_type_name(enum rb_ractor_basket_type type)
+{
+    switch (type) {
+      case basket_type_none: return  "none";
+      case basket_type_ref: return "ref";
+      case basket_type_copy: return "copy";
+      case basket_type_move: return "move";
+      case basket_type_will: return "will";
+      case basket_type_deleted: return "deleted";
+      case basket_type_reserved: return "reserved";
+      case basket_type_take_basket: return "take_basket";
+      case basket_type_yielding: return "yielding";
+    }
+    VM_ASSERT(0);
+    return NULL;
 }
 #endif // USE_RUBY_DEBUG_LOG
 
+static bool
+ractor_sleeping_by(const rb_ractor_t *r, enum rb_ractor_wait_status wait_status)
+{
+    return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
+}
+
+#ifdef RUBY_THREAD_PTHREAD_H
+// thread_*.c
+void rb_ractor_sched_wakeup(rb_ractor_t *r);
+#else
+
 static void
-ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
+rb_ractor_sched_wakeup(rb_ractor_t *r)
 {
-    VM_ASSERT(GET_RACTOR() == cr);
-    VM_ASSERT(cr->wait.status != wait_none);
-    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", __func__, cr,
-    //                 wait_status_str(cr->wait.status), wakeup_status_str(cr->wait.wakeup_status));
-
-    RACTOR_UNLOCK(cr);
-    rb_nogvl(ractor_sleep_wo_gvl, cr,
-             ractor_sleep_interrupt, cr,
-             RB_NOGVL_UBF_ASYNC_SAFE);
-    RACTOR_LOCK(cr);
+    rb_native_cond_broadcast(&r->sync.cond);
 }
+#endif
+
 
 static bool
-ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
-{
-    return (r->wait.status & wait_status) && r->wait.wakeup_status == wakeup_none;
-}
-
-static bool
-ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
+ractor_wakeup(rb_ractor_t *r, enum rb_ractor_wait_status wait_status, enum rb_ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_locking(r);
 
-    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, r,
-    //         wait_status_str(r->wait.status), wait_status_str(wait_status),
-    //         wakeup_status_str(r->wait.wakeup_status), wakeup_status_str(wakeup_status));
+    RUBY_DEBUG_LOG("r:%u wait_by:%s -> wait:%s wakeup:%s",
+                   rb_ractor_id(r),
+                   wait_status_str(r->sync.wait.status),
+                   wait_status_str(wait_status),
+                   wakeup_status_str(wakeup_status));
 
     if (ractor_sleeping_by(r, wait_status)) {
-        r->wait.wakeup_status = wakeup_status;
-        rb_native_cond_signal(&r->wait.cond);
+        r->sync.wait.wakeup_status = wakeup_status;
+        rb_ractor_sched_wakeup(r);
         return true;
     }
     else {
@@ -515,140 +566,363 @@ ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_w
 }
 
 static void
-ractor_register_taking(rb_ractor_t *r, rb_ractor_t *cr)
+ractor_sleep_interrupt(void *ptr)
 {
-    VM_ASSERT(cr == GET_RACTOR());
-    bool retry_try = false;
+    rb_ractor_t *r = ptr;
 
     RACTOR_LOCK(r);
     {
-        if (ractor_sleeping_by(r, wait_yielding)) {
-            // already waiting for yielding. retry try_take.
-            retry_try = true;
-        }
-        else {
-            // insert cr into taking list
-            struct rb_ractor_waiting_list *wl = &r->taking_ractors;
-
-            for (int i=0; i<wl->cnt; i++) {
-                if (wl->ractors[i] == cr) {
-                    // TODO: make it clean code.
-                    rb_native_mutex_unlock(&r->lock);
-                    rb_raise(rb_eRuntimeError, "Already another thread of same ractor is waiting.");
-                }
-            }
-
-            if (wl->size == 0) {
-                wl->size = 1;
-                wl->ractors = malloc(sizeof(rb_ractor_t *) * wl->size);
-                if (wl->ractors == NULL) rb_bug("can't allocate buffer");
-            }
-            else if (wl->size <= wl->cnt + 1) {
-                wl->size *= 2;
-                wl->ractors = realloc(wl->ractors, sizeof(rb_ractor_t *) * wl->size);
-                if (wl->ractors == NULL) rb_bug("can't re-allocate buffer");
-            }
-            wl->ractors[wl->cnt++] = cr;
-        }
+        ractor_wakeup(r, wait_receiving | wait_taking | wait_yielding, wakeup_by_interrupt);
     }
     RACTOR_UNLOCK(r);
+}
 
-    if (retry_try) {
-        RACTOR_LOCK(cr);
+typedef void (*ractor_sleep_cleanup_function)(rb_ractor_t *cr, void *p);
+
+static void
+ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_cleanup_function cf_func, void *cf_data)
+{
+    if (cr->sync.wait.status != wait_none) {
+        enum rb_ractor_wait_status prev_wait_status = cr->sync.wait.status;
+        cr->sync.wait.status = wait_none;
+        cr->sync.wait.wakeup_status = wakeup_by_interrupt;
+
+        RACTOR_UNLOCK(cr);
         {
-            if (cr->wait.wakeup_status == wakeup_none) {
-                VM_ASSERT(cr->wait.status != wait_none);
+            if (cf_func) {
+                int state;
+                EC_PUSH_TAG(ec);
+                if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+                    rb_thread_check_ints();
+                }
+                EC_POP_TAG();
 
-                cr->wait.wakeup_status = wakeup_by_retry;
-                cr->wait.status = wait_none;
+                if (state) {
+                    (*cf_func)(cr, cf_data);
+                    EC_JUMP_TAG(ec, state);
+                }
+            }
+            else {
+                rb_thread_check_ints();
             }
         }
-        RACTOR_UNLOCK(cr);
+
+        // reachable?
+        RACTOR_LOCK(cr);
+        cr->sync.wait.status = prev_wait_status;
     }
+}
+
+#ifdef RUBY_THREAD_PTHREAD_H
+void rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf);
+#else
+
+// win32
+static void
+ractor_cond_wait(rb_ractor_t *r)
+{
+#if RACTOR_CHECK_MODE > 0
+    VALUE locked_by = r->sync.locked_by;
+    r->sync.locked_by = Qnil;
+#endif
+    rb_native_cond_wait(&r->sync.cond, &r->sync.lock);
+
+#if RACTOR_CHECK_MODE > 0
+    r->sync.locked_by = locked_by;
+#endif
+}
+
+static void *
+ractor_sleep_wo_gvl(void *ptr)
+{
+    rb_ractor_t *cr = ptr;
+    RACTOR_LOCK_SELF(cr);
+    {
+        VM_ASSERT(cr->sync.wait.status != wait_none);
+        if (cr->sync.wait.wakeup_status == wakeup_none) {
+            ractor_cond_wait(cr);
+        }
+        cr->sync.wait.status = wait_none;
+    }
+    RACTOR_UNLOCK_SELF(cr);
+    return NULL;
 }
 
 static void
-ractor_waiting_list_del(rb_ractor_t *r, struct rb_ractor_waiting_list *wl, rb_ractor_t *wr)
+rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf)
 {
-    RACTOR_LOCK(r);
+    RACTOR_UNLOCK(cr);
     {
-        int pos = -1;
-        for (int i=0; i<wl->cnt; i++) {
-            if (wl->ractors[i] == wr) {
-                pos = i;
-                break;
-            }
-        }
-        if (pos >= 0) { // found
-            wl->cnt--;
-            for (int i=pos; i<wl->cnt; i++) {
-                wl->ractors[i] = wl->ractors[i+1];
-            }
-        }
+        rb_nogvl(ractor_sleep_wo_gvl, cr,
+                 ubf, cr,
+                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
     }
-    RACTOR_UNLOCK(r);
+    RACTOR_LOCK(cr);
+}
+#endif
+
+static enum rb_ractor_wakeup_status
+ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_ractor_wait_status wait_status,
+                          ractor_sleep_cleanup_function cf_func, void *cf_data)
+{
+    enum rb_ractor_wakeup_status wakeup_status;
+    VM_ASSERT(GET_RACTOR() == cr);
+
+    // TODO: multi-threads
+    VM_ASSERT(cr->sync.wait.status == wait_none);
+    VM_ASSERT(wait_status != wait_none);
+    cr->sync.wait.status = wait_status;
+    cr->sync.wait.wakeup_status = wakeup_none;
+
+    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", RUBY_FUNCTION_NAME_STRING, (void *)cr,
+    //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
+
+    RUBY_DEBUG_LOG("sleep by %s", wait_status_str(wait_status));
+
+    while (cr->sync.wait.wakeup_status == wakeup_none) {
+        rb_ractor_sched_sleep(ec, cr, ractor_sleep_interrupt);
+        ractor_check_ints(ec, cr, cf_func, cf_data);
+    }
+
+    cr->sync.wait.status = wait_none;
+
+    // TODO: multi-thread
+    wakeup_status = cr->sync.wait.wakeup_status;
+    cr->sync.wait.wakeup_status = wakeup_none;
+
+    RUBY_DEBUG_LOG("wakeup %s", wakeup_status_str(wakeup_status));
+
+    return wakeup_status;
 }
 
-static rb_ractor_t *
-ractor_waiting_list_shift(rb_ractor_t *r, struct rb_ractor_waiting_list *wl)
+static enum rb_ractor_wakeup_status
+ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_ractor_wait_status wait_status)
 {
-    ASSERT_ractor_locking(r);
-    VM_ASSERT(&r->taking_ractors == wl);
+    return ractor_sleep_with_cleanup(ec, cr, wait_status, 0, NULL);
+}
 
-    if (wl->cnt > 0) {
-        rb_ractor_t *tr = wl->ractors[0];
-        for (int i=1; i<wl->cnt; i++) {
-            wl->ractors[i-1] = wl->ractors[i];
-        }
-        wl->cnt--;
-        return tr;
-    }
-    else {
-        return NULL;
+// Ractor.receive
+
+static void
+ractor_recursive_receive_if(rb_ractor_t *r)
+{
+    if (r->receiving_mutex && rb_mutex_owned_p(r->receiving_mutex)) {
+        rb_raise(rb_eRactorError, "can not call receive/receive_if recursively");
     }
 }
 
 static VALUE
-ractor_receive(rb_execution_context_t *ec, rb_ractor_t *r)
+ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *rq)
 {
-    VM_ASSERT(r == rb_ec_ractor_ptr(ec));
-    VALUE v;
+    struct rb_ractor_basket basket;
+    ractor_recursive_receive_if(cr);
+    bool received = false;
 
-    while ((v = ractor_try_receive(ec, r)) == Qundef) {
-        RACTOR_LOCK(r);
-        {
-            if (ractor_queue_empty_p(r, &r->incoming_queue)) {
-                VM_ASSERT(r->wait.status == wait_none);
-                VM_ASSERT(r->wait.wakeup_status == wakeup_none);
-                r->wait.status = wait_receiving;
+    RACTOR_LOCK_SELF(cr);
+    {
+        RUBY_DEBUG_LOG("rq->cnt:%d", rq->cnt);
+        received = ractor_queue_deq(cr, rq, &basket);
+    }
+    RACTOR_UNLOCK_SELF(cr);
 
-                ractor_sleep(ec, r);
-
-                r->wait.wakeup_status = wakeup_none;
-            }
+    if (!received) {
+        if (cr->sync.incoming_port_closed) {
+            rb_raise(rb_eRactorClosedError, "The incoming port is already closed");
         }
-        RACTOR_UNLOCK(r);
+        return Qundef;
+    }
+    else {
+        return ractor_basket_accept(&basket);
+    }
+}
+
+static void
+ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *rq)
+{
+    VM_ASSERT(cr == rb_ec_ractor_ptr(ec));
+    ractor_recursive_receive_if(cr);
+
+    RACTOR_LOCK(cr);
+    {
+        while (ractor_queue_empty_p(cr, rq)) {
+            ractor_sleep(ec, cr, wait_receiving);
+        }
+    }
+    RACTOR_UNLOCK(cr);
+}
+
+static VALUE
+ractor_receive(rb_execution_context_t *ec, rb_ractor_t *cr)
+{
+    VM_ASSERT(cr == rb_ec_ractor_ptr(ec));
+    VALUE v;
+    struct rb_ractor_queue *rq = &cr->sync.recv_queue;
+
+    while (UNDEF_P(v = ractor_try_receive(ec, cr, rq))) {
+        ractor_wait_receive(ec, cr, rq);
     }
 
     return v;
+}
+
+#if 0
+static void
+rq_dump(struct rb_ractor_queue *rq)
+{
+    bool bug = false;
+    for (int i=0; i<rq->cnt; i++) {
+        struct rb_ractor_basket *b = ractor_queue_at(NULL, rq, i);
+        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type),
+                (void *)b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
+        if (basket_type_p(b, basket_type_reserved) bug = true;
+    }
+    if (bug) rb_bug("!!");
+}
+#endif
+
+struct receive_block_data {
+    rb_ractor_t *cr;
+    struct rb_ractor_queue *rq;
+    VALUE v;
+    int index;
+    bool success;
+};
+
+static void
+ractor_receive_if_lock(rb_ractor_t *cr)
+{
+    VALUE m = cr->receiving_mutex;
+    if (m == Qfalse) {
+        m = cr->receiving_mutex = rb_mutex_new();
+    }
+    rb_mutex_lock(m);
+}
+
+static VALUE
+receive_if_body(VALUE ptr)
+{
+    struct receive_block_data *data = (struct receive_block_data *)ptr;
+
+    ractor_receive_if_lock(data->cr);
+    VALUE block_result = rb_yield(data->v);
+    rb_ractor_t *cr = data->cr;
+
+    RACTOR_LOCK_SELF(cr);
+    {
+        struct rb_ractor_basket *b = ractor_queue_at(cr, data->rq, data->index);
+        VM_ASSERT(basket_type_p(b, basket_type_reserved));
+        data->rq->reserved_cnt--;
+
+        if (RTEST(block_result)) {
+            ractor_queue_delete(cr, data->rq, b);
+            ractor_queue_compact(cr, data->rq);
+        }
+        else {
+            b->type.e = basket_type_ref;
+        }
+    }
+    RACTOR_UNLOCK_SELF(cr);
+
+    data->success = true;
+
+    if (RTEST(block_result)) {
+        return data->v;
+    }
+    else {
+        return Qundef;
+    }
+}
+
+static VALUE
+receive_if_ensure(VALUE v)
+{
+    struct receive_block_data *data = (struct receive_block_data *)v;
+    rb_ractor_t *cr = data->cr;
+
+    if (!data->success) {
+        RACTOR_LOCK_SELF(cr);
+        {
+            struct rb_ractor_basket *b = ractor_queue_at(cr, data->rq, data->index);
+            VM_ASSERT(basket_type_p(b, basket_type_reserved));
+            b->type.e = basket_type_deleted;
+            data->rq->reserved_cnt--;
+        }
+        RACTOR_UNLOCK_SELF(cr);
+    }
+
+    rb_mutex_unlock(cr->receiving_mutex);
+    return Qnil;
+}
+
+static VALUE
+ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
+{
+    if (!RTEST(b)) rb_raise(rb_eArgError, "no block given");
+
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    unsigned int serial = (unsigned int)-1;
+    int index = 0;
+    struct rb_ractor_queue *rq = &cr->sync.recv_queue;
+
+    while (1) {
+        VALUE v = Qundef;
+
+        ractor_wait_receive(ec, cr, rq);
+
+        RACTOR_LOCK_SELF(cr);
+        {
+            if (serial != rq->serial) {
+                serial = rq->serial;
+                index = 0;
+            }
+
+            // check newer version
+            for (int i=index; i<rq->cnt; i++) {
+                if (!ractor_queue_skip_p(cr, rq, i)) {
+                    struct rb_ractor_basket *b = ractor_queue_at(cr, rq, i);
+                    v = ractor_basket_value(b);
+                    b->type.e = basket_type_reserved;
+                    rq->reserved_cnt++;
+                    index = i;
+                    break;
+                }
+            }
+        }
+        RACTOR_UNLOCK_SELF(cr);
+
+        if (!UNDEF_P(v)) {
+            struct receive_block_data data = {
+                .cr = cr,
+                .rq = rq,
+                .v = v,
+                .index = index,
+                .success = false,
+            };
+
+            VALUE result = rb_ensure(receive_if_body, (VALUE)&data,
+                                     receive_if_ensure, (VALUE)&data);
+
+            if (!UNDEF_P(result)) return result;
+            index++;
+        }
+
+        RUBY_VM_CHECK_INTS(ec);
+    }
 }
 
 static void
 ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_basket *b)
 {
     bool closed = false;
-    struct rb_ractor_queue *rq = &r->incoming_queue;
 
     RACTOR_LOCK(r);
     {
-        if (r->incoming_port_closed) {
+        if (r->sync.incoming_port_closed) {
             closed = true;
         }
         else {
-            ractor_queue_enq(r, rq, b);
-            if (ractor_wakeup(r, wait_receiving, wakeup_by_send)) {
-                RUBY_DEBUG_LOG("wakeup", 0);
-            }
+            ractor_queue_enq(r, &r->sync.recv_queue, b);
+            ractor_wakeup(r, wait_receiving, wakeup_by_send);
         }
     }
     RACTOR_UNLOCK(r);
@@ -658,386 +932,844 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
     }
 }
 
+// Ractor#send
+
 static VALUE ractor_move(VALUE obj); // in this file
 static VALUE ractor_copy(VALUE obj); // in this file
 
 static void
-ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc, bool is_will)
+ractor_basket_prepare_contents(VALUE obj, VALUE move, volatile VALUE *pobj, enum rb_ractor_basket_type *ptype)
 {
-    basket->sender = rb_ec_ractor_ptr(ec)->self;
-    basket->exception = exc;
+    VALUE v;
+    enum rb_ractor_basket_type type;
 
-    if (is_will) {
-        basket->type = basket_type_will;
-        basket->v = obj;
-    }
-    else if (rb_ractor_shareable_p(obj)) {
-        basket->type = basket_type_ref;
-        basket->v = obj;
+    if (rb_ractor_shareable_p(obj)) {
+        type = basket_type_ref;
+        v = obj;
     }
     else if (!RTEST(move)) {
-        basket->v = ractor_copy(obj);
-        basket->type = basket_type_copy;
+        v = ractor_copy(obj);
+        type = basket_type_copy;
     }
     else {
-        basket->type = basket_type_move;
-        basket->v = ractor_move(obj);
+        type = basket_type_move;
+        v = ractor_move(obj);
     }
+
+    *pobj = v;
+    *ptype = type;
+}
+
+static void
+ractor_basket_fill_(rb_ractor_t *cr, struct rb_ractor_basket *basket, VALUE obj, bool exc)
+{
+    VM_ASSERT(cr == GET_RACTOR());
+
+    basket->sender = cr->pub.self;
+    basket->p.send.exception = exc;
+    basket->p.send.v = obj;
+}
+
+static void
+ractor_basket_fill(rb_ractor_t *cr, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc)
+{
+    VALUE v;
+    enum rb_ractor_basket_type type;
+    ractor_basket_prepare_contents(obj, move, &v, &type);
+    ractor_basket_fill_(cr, basket, v, exc);
+    basket->type.e = type;
+}
+
+static void
+ractor_basket_fill_will(rb_ractor_t *cr, struct rb_ractor_basket *basket, VALUE obj, bool exc)
+{
+    ractor_basket_fill_(cr, basket, obj, exc);
+    basket->type.e = basket_type_will;
 }
 
 static VALUE
 ractor_send(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
 {
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, obj, move, false, false);
+    // TODO: Ractor local GC
+    ractor_basket_fill(rb_ec_ractor_ptr(ec), &basket, obj, move, false);
     ractor_send_basket(ec, r, &basket);
-    return r->self;
+    return r->pub.self;
 }
 
-static VALUE
-ractor_try_take(rb_execution_context_t *ec, rb_ractor_t *r)
+// Ractor#take
+
+static bool
+ractor_take_has_will(rb_ractor_t *r)
 {
-    struct rb_ractor_basket basket = {
-        .type = basket_type_none,
+    ASSERT_ractor_locking(r);
+
+    return basket_type_p(&r->sync.will_basket, basket_type_will);
+}
+
+static bool
+ractor_take_will(rb_ractor_t *r, struct rb_ractor_basket *b)
+{
+    ASSERT_ractor_locking(r);
+
+    if (ractor_take_has_will(r)) {
+        *b = r->sync.will_basket;
+        r->sync.will_basket.type.e = basket_type_none;
+        return true;
+    }
+    else {
+        VM_ASSERT(basket_type_p(&r->sync.will_basket, basket_type_none));
+        return false;
+    }
+}
+
+static bool
+ractor_take_will_lock(rb_ractor_t *r, struct rb_ractor_basket *b)
+{
+    ASSERT_ractor_unlocking(r);
+    bool taken;
+
+    RACTOR_LOCK(r);
+    {
+        taken = ractor_take_will(r, b);
+    }
+    RACTOR_UNLOCK(r);
+
+    return taken;
+}
+
+static bool
+ractor_register_take(rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *take_basket,
+                     bool is_take, struct rb_ractor_selector_take_config *config, bool ignore_error)
+{
+    struct rb_ractor_basket b = {
+        .type.e = basket_type_take_basket,
+        .sender = cr->pub.self,
+        .p = {
+            .take = {
+                .basket = take_basket,
+                .config = config,
+            },
+        },
     };
     bool closed = false;
 
     RACTOR_LOCK(r);
     {
-        if (ractor_wakeup(r, wait_yielding, wakeup_by_take)) {
-            VM_ASSERT(r->wait.yielded_basket.type != basket_type_none);
-            basket = r->wait.yielded_basket;
-            ractor_basket_clear(&r->wait.yielded_basket);
+        if (is_take && ractor_take_will(r, take_basket)) {
+            RUBY_DEBUG_LOG("take over a will of r:%d", rb_ractor_id(r));
         }
-        else if (r->outgoing_port_closed) {
+        else if (!is_take && ractor_take_has_will(r)) {
+            RUBY_DEBUG_LOG("has_will");
+            VM_ASSERT(config != NULL);
+            config->closed = true;
+        }
+        else if (r->sync.outgoing_port_closed) {
             closed = true;
         }
         else {
-            // not reached.
+            RUBY_DEBUG_LOG("register in r:%d", rb_ractor_id(r));
+            ractor_queue_enq(r, &r->sync.takers_queue, &b);
+
+            if (basket_none_p(take_basket)) {
+                ractor_wakeup(r, wait_yielding, wakeup_by_take);
+            }
         }
     }
     RACTOR_UNLOCK(r);
 
-    if (basket.type == basket_type_none) {
-        if (closed) {
-            rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
-        }
-        else {
-            return Qundef;
-        }
+    if (closed) {
+        if (!ignore_error) rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
+        return false;
     }
     else {
-        return ractor_basket_accept(&basket);
+        return true;
     }
 }
 
 static bool
-ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_basket *basket)
+ractor_deregister_take(rb_ractor_t *r, struct rb_ractor_basket *take_basket)
 {
-    ASSERT_ractor_unlocking(cr);
-    VM_ASSERT(basket->type != basket_type_none);
+    struct rb_ractor_queue *ts = &r->sync.takers_queue;
+    bool deleted = false;
 
-    if (cr->outgoing_port_closed) {
-        rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
-    }
-
-    rb_ractor_t *r;
-
-  retry_shift:
-    RACTOR_LOCK(cr);
+    RACTOR_LOCK(r);
     {
-        r = ractor_waiting_list_shift(cr, &cr->taking_ractors);
-    }
-    RACTOR_UNLOCK(cr);
-
-    if (r) {
-        bool retry_shift = false;
-
-        RACTOR_LOCK(r);
-        {
-            if (ractor_wakeup(r, wait_taking, wakeup_by_yield)) {
-                VM_ASSERT(r->wait.taken_basket.type == basket_type_none);
-                r->wait.taken_basket = *basket;
-            }
-            else {
-                retry_shift = true;
-            }
-        }
-        RACTOR_UNLOCK(r);
-
-        if (retry_shift) {
-            // get candidate take-waiting ractor, but already woke up by another reason.
-            // retry to check another ractor.
-            goto retry_shift;
+        if (r->sync.outgoing_port_closed) {
+            // ok
         }
         else {
-            return true;
+            for (int i=0; i<ts->cnt; i++) {
+                struct rb_ractor_basket *b = ractor_queue_at(r, ts, i);
+                if (basket_type_p(b, basket_type_take_basket) && b->p.take.basket == take_basket) {
+                    ractor_queue_delete(r, ts, b);
+                    deleted = true;
+                }
+            }
+            if (deleted) {
+                ractor_queue_compact(r, ts);
+            }
+        }
+    }
+    RACTOR_UNLOCK(r);
+
+    return deleted;
+}
+
+static VALUE
+ractor_try_take(rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *take_basket)
+{
+    bool taken;
+
+    RACTOR_LOCK_SELF(cr);
+    {
+        if (basket_none_p(take_basket) || basket_type_p(take_basket, basket_type_yielding)) {
+            taken = false;
+        }
+        else {
+            taken = true;
+        }
+    }
+    RACTOR_UNLOCK_SELF(cr);
+
+    if (taken) {
+        RUBY_DEBUG_LOG("taken");
+        if (basket_type_p(take_basket, basket_type_deleted)) {
+            VM_ASSERT(r->sync.outgoing_port_closed);
+            rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
+        }
+        return ractor_basket_accept(take_basket);
+    }
+    else {
+        RUBY_DEBUG_LOG("not taken");
+        return Qundef;
+    }
+}
+
+
+#if VM_CHECK_MODE > 0
+static bool
+ractor_check_specific_take_basket_lock(rb_ractor_t *r, struct rb_ractor_basket *tb)
+{
+    bool ret = false;
+    struct rb_ractor_queue *ts = &r->sync.takers_queue;
+
+    RACTOR_LOCK(r);
+    {
+        for (int i=0; i<ts->cnt; i++) {
+            struct rb_ractor_basket *b = ractor_queue_at(r, ts, i);
+            if (basket_type_p(b, basket_type_take_basket) && b->p.take.basket == tb) {
+                ret = true;
+                break;
+            }
+        }
+    }
+    RACTOR_UNLOCK(r);
+
+    return ret;
+}
+#endif
+
+static void
+ractor_take_cleanup(rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *tb)
+{
+  retry:
+    if (basket_none_p(tb)) { // not yielded yet
+        if (!ractor_deregister_take(r, tb)) {
+            // not in r's takers queue
+            rb_thread_sleep(0);
+            goto retry;
         }
     }
     else {
-        return false;
+        VM_ASSERT(!ractor_check_specific_take_basket_lock(r, tb));
     }
 }
 
-// select(r1, r2, r3, receive: true, yield: obj)
-static VALUE
-ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yielded_value, bool move, VALUE *ret_r)
+struct take_wait_take_cleanup_data {
+    rb_ractor_t *r;
+    struct rb_ractor_basket *tb;
+};
+
+static void
+ractor_wait_take_cleanup(rb_ractor_t *cr, void *ptr)
 {
-    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    VALUE crv = cr->self;
-    VALUE ret = Qundef;
-    int i;
-    bool interrupted = false;
-    enum ractor_wait_status wait_status = 0;
-    bool yield_p = (yielded_value != Qundef) ? true : false;
-
-    struct ractor_select_action {
-        enum ractor_select_action_type {
-            ractor_select_action_take,
-            ractor_select_action_receive,
-            ractor_select_action_yield,
-        } type;
-        VALUE v;
-    } *actions = ALLOCA_N(struct ractor_select_action, alen + (yield_p ? 1 : 0));
-
-    VM_ASSERT(cr->wait.status == wait_none);
-    VM_ASSERT(cr->wait.wakeup_status == wakeup_none);
-    VM_ASSERT(cr->wait.taken_basket.type == basket_type_none);
-    VM_ASSERT(cr->wait.yielded_basket.type == basket_type_none);
-
-    // setup actions
-    for (i=0; i<alen; i++) {
-        VALUE v = rs[i];
-
-        if (v == crv) {
-            actions[i].type = ractor_select_action_receive;
-            actions[i].v = Qnil;
-            wait_status |= wait_receiving;
-        }
-        else if (rb_ractor_p(v)) {
-            actions[i].type = ractor_select_action_take;
-            actions[i].v = v;
-            wait_status |= wait_taking;
-        }
-        else {
-            rb_raise(rb_eArgError, "It should be ractor objects");
-        }
-    }
-    rs = NULL;
-
-  restart:
-
-    if (yield_p) {
-        actions[i].type = ractor_select_action_yield;
-        actions[i].v = Qundef;
-        wait_status |= wait_yielding;
-        alen++;
-
-        ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false, false);
-    }
-
-    // TODO: shuffle actions
-
-    while (1) {
-        RUBY_DEBUG_LOG("try actions (%s)", wait_status_str(wait_status));
-
-        for (i=0; i<alen; i++) {
-            VALUE v, rv;
-            switch (actions[i].type) {
-              case ractor_select_action_take:
-                rv = actions[i].v;
-                v = ractor_try_take(ec, RACTOR_PTR(rv));
-                if (v != Qundef) {
-                    *ret_r = rv;
-                    ret = v;
-                    goto cleanup;
-                }
-                break;
-              case ractor_select_action_receive:
-                v = ractor_try_receive(ec, cr);
-                if (v != Qundef) {
-                    *ret_r = ID2SYM(rb_intern("receive"));
-                    ret = v;
-                    goto cleanup;
-                }
-                break;
-              case ractor_select_action_yield:
-                {
-                    if (ractor_try_yield(ec, cr, &cr->wait.yielded_basket)) {
-                        *ret_r = ID2SYM(rb_intern("yield"));
-                        ret = Qnil;
-                        goto cleanup;
-                    }
-                }
-                break;
-            }
-        }
-
-        RUBY_DEBUG_LOG("wait actions (%s)", wait_status_str(wait_status));
-
-        RACTOR_LOCK(cr);
-        {
-            VM_ASSERT(cr->wait.status == wait_none);
-            VM_ASSERT(cr->wait.wakeup_status == wakeup_none);
-            cr->wait.status = wait_status;
-        }
-        RACTOR_UNLOCK(cr);
-
-        // prepare waiting
-        for (i=0; i<alen; i++) {
-            rb_ractor_t *r;
-            switch (actions[i].type) {
-              case ractor_select_action_take:
-                r = RACTOR_PTR(actions[i].v);
-                ractor_register_taking(r, cr);
-                break;
-              case ractor_select_action_yield:
-              case ractor_select_action_receive:
-                break;
-            }
-        }
-
-        // wait
-        RACTOR_LOCK(cr);
-        {
-            if (cr->wait.wakeup_status == wakeup_none) {
-                for (i=0; i<alen; i++) {
-                    rb_ractor_t *r;
-
-                    switch (actions[i].type) {
-                      case ractor_select_action_take:
-                        r = RACTOR_PTR(actions[i].v);
-                        if (ractor_sleeping_by(r, wait_yielding)) {
-                            RUBY_DEBUG_LOG("wakeup_none, but r:%u is waiting for yielding", r->id);
-                            cr->wait.wakeup_status = wakeup_by_retry;
-                            goto skip_sleep;
-                        }
-                        break;
-                      case ractor_select_action_receive:
-                        if (cr->incoming_queue.cnt > 0) {
-                            RUBY_DEBUG_LOG("wakeup_none, but incoming_queue has %u messages", cr->incoming_queue.cnt);
-                            cr->wait.wakeup_status = wakeup_by_retry;
-                            goto skip_sleep;
-                        }
-                        break;
-                      case ractor_select_action_yield:
-                        if (cr->taking_ractors.cnt > 0) {
-                            RUBY_DEBUG_LOG("wakeup_none, but %u taking_ractors are waiting", cr->taking_ractors.cnt);
-                            cr->wait.wakeup_status = wakeup_by_retry;
-                            goto skip_sleep;
-                        }
-                        else if (cr->outgoing_port_closed) {
-                            cr->wait.wakeup_status = wakeup_by_close;
-                            goto skip_sleep;
-                        }
-                        break;
-                    }
-                }
-
-                RUBY_DEBUG_LOG("sleep %s", wait_status_str(cr->wait.status));
-                ractor_sleep(ec, cr);
-                RUBY_DEBUG_LOG("awaken %s", wakeup_status_str(cr->wait.wakeup_status));
-            }
-            else {
-              skip_sleep:
-                RUBY_DEBUG_LOG("no need to sleep %s->%s",
-                               wait_status_str(cr->wait.status),
-                               wakeup_status_str(cr->wait.wakeup_status));
-                cr->wait.status = wait_none;
-            }
-        }
-        RACTOR_UNLOCK(cr);
-
-        // cleanup waiting
-        for (i=0; i<alen; i++) {
-            rb_ractor_t *r;
-            switch (actions[i].type) {
-              case ractor_select_action_take:
-                r = RACTOR_PTR(actions[i].v);
-                ractor_waiting_list_del(r, &r->taking_ractors, cr);
-                break;
-              case ractor_select_action_receive:
-              case ractor_select_action_yield:
-                break;
-            }
-        }
-
-        // check results
-        enum ractor_wakeup_status wakeup_status = cr->wait.wakeup_status;
-        cr->wait.wakeup_status = wakeup_none;
-
-        switch (wakeup_status) {
-          case wakeup_none:
-            // OK. something happens.
-            // retry loop.
-            break;
-          case wakeup_by_retry:
-            // Retry request.
-            break;
-          case wakeup_by_send:
-            // OK.
-            // retry loop and try_receive will succss.
-            break;
-          case wakeup_by_yield:
-            // take was succeeded!
-            // cr.wait.taken_basket contains passed block
-            VM_ASSERT(cr->wait.taken_basket.type != basket_type_none);
-            *ret_r = cr->wait.taken_basket.sender;
-            VM_ASSERT(rb_ractor_p(*ret_r));
-            ret = ractor_basket_accept(&cr->wait.taken_basket);
-            goto cleanup;
-          case wakeup_by_take:
-            *ret_r = ID2SYM(rb_intern("yield"));
-            ret = Qnil;
-            goto cleanup;
-          case wakeup_by_close:
-            // OK.
-            // retry loop and will get CloseError.
-            break;
-          case wakeup_by_interrupt:
-            ret = Qundef;
-            interrupted = true;
-            goto cleanup;
-        }
-    }
-
-  cleanup:
-    RUBY_DEBUG_LOG("cleanup actions (%s)", wait_status_str(wait_status));
-
-    if (cr->wait.yielded_basket.type != basket_type_none) {
-        ractor_basket_clear(&cr->wait.yielded_basket);
-    }
-
-    VM_ASSERT(cr->wait.status == wait_none);
-    VM_ASSERT(cr->wait.wakeup_status == wakeup_none);
-    VM_ASSERT(cr->wait.taken_basket.type == basket_type_none);
-    VM_ASSERT(cr->wait.yielded_basket.type == basket_type_none);
-
-    if (interrupted) {
-        rb_vm_check_ints_blocking(ec);
-        interrupted = false;
-        goto restart;
-    }
-
-    VM_ASSERT(ret != Qundef);
-    return ret;
+    struct take_wait_take_cleanup_data *data = (struct take_wait_take_cleanup_data *)ptr;
+    ractor_take_cleanup(cr, data->r, data->tb);
 }
 
-static VALUE
-ractor_yield(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
+static void
+ractor_wait_take(rb_execution_context_t *ec, rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *take_basket)
 {
-    VALUE ret_r;
-    ractor_select(ec, NULL, 0, obj, RTEST(move) ? true : false, &ret_r);
-    return Qnil;
+    struct take_wait_take_cleanup_data data = {
+        .r = r,
+        .tb = take_basket,
+    };
+
+    RACTOR_LOCK_SELF(cr);
+    {
+        if (basket_none_p(take_basket) || basket_type_p(take_basket, basket_type_yielding)) {
+            ractor_sleep_with_cleanup(ec, cr, wait_taking, ractor_wait_take_cleanup, &data);
+        }
+    }
+    RACTOR_UNLOCK_SELF(cr);
 }
 
 static VALUE
 ractor_take(rb_execution_context_t *ec, rb_ractor_t *r)
 {
-    VALUE ret_r;
-    VALUE v = ractor_select(ec, &r->self, 1, Qundef, false, &ret_r);
+    RUBY_DEBUG_LOG("from r:%u", rb_ractor_id(r));
+    VALUE v;
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+
+    struct rb_ractor_basket take_basket = {
+        .type.e = basket_type_none,
+        .sender = 0,
+    };
+
+    ractor_register_take(cr, r, &take_basket, true, NULL, false);
+
+    while (UNDEF_P(v = ractor_try_take(cr, r, &take_basket))) {
+        ractor_wait_take(ec, cr, r, &take_basket);
+    }
+
+    VM_ASSERT(!basket_none_p(&take_basket));
+    VM_ASSERT(!ractor_check_specific_take_basket_lock(r, &take_basket));
+
     return v;
 }
+
+// Ractor.yield
+
+static bool
+ractor_check_take_basket(rb_ractor_t *cr, struct rb_ractor_queue *rs)
+{
+    ASSERT_ractor_locking(cr);
+
+    for (int i=0; i<rs->cnt; i++) {
+        struct rb_ractor_basket *b = ractor_queue_at(cr, rs, i);
+        if (basket_type_p(b, basket_type_take_basket) &&
+            basket_none_p(b->p.take.basket)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool
+ractor_deq_take_basket(rb_ractor_t *cr, struct rb_ractor_queue *rs, struct rb_ractor_basket *b)
+{
+    ASSERT_ractor_unlocking(cr);
+    struct rb_ractor_basket *first_tb = NULL;
+    bool found = false;
+
+    RACTOR_LOCK_SELF(cr);
+    {
+        while (ractor_queue_deq(cr, rs, b)) {
+            if (basket_type_p(b, basket_type_take_basket)) {
+                struct rb_ractor_basket *tb = b->p.take.basket;
+
+                if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_none, basket_type_yielding) == basket_type_none) {
+                    found = true;
+                    break;
+                }
+                else {
+                    ractor_queue_enq(cr, rs, b);
+                    if (first_tb == NULL) first_tb = tb;
+                    struct rb_ractor_basket *head = ractor_queue_head(cr, rs);
+                    VM_ASSERT(head != NULL);
+                    if (basket_type_p(head, basket_type_take_basket) && head->p.take.basket == first_tb) {
+                        break; // loop detected
+                    }
+                }
+            }
+            else {
+                VM_ASSERT(basket_none_p(b));
+            }
+        }
+
+        if (found && b->p.take.config && !b->p.take.config->oneshot) {
+            ractor_queue_enq(cr, rs, b);
+        }
+    }
+    RACTOR_UNLOCK_SELF(cr);
+
+    return found;
+}
+
+static bool
+ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *ts, volatile VALUE obj, VALUE move, bool exc, bool is_will)
+{
+    ASSERT_ractor_unlocking(cr);
+
+    struct rb_ractor_basket b;
+
+    if (ractor_deq_take_basket(cr, ts, &b)) {
+        VM_ASSERT(basket_type_p(&b, basket_type_take_basket));
+        VM_ASSERT(basket_type_p(b.p.take.basket, basket_type_yielding));
+
+        rb_ractor_t *tr = RACTOR_PTR(b.sender);
+        struct rb_ractor_basket *tb = b.p.take.basket;
+        enum rb_ractor_basket_type type;
+
+        RUBY_DEBUG_LOG("basket from r:%u", rb_ractor_id(tr));
+
+        if (is_will) {
+            type = basket_type_will;
+        }
+        else {
+            int state;
+
+            // begin
+            EC_PUSH_TAG(ec);
+            if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+                // TODO: Ractor local GC
+                ractor_basket_prepare_contents(obj, move, &obj, &type);
+            }
+            EC_POP_TAG();
+            // rescue
+            if (state) {
+                RACTOR_LOCK_SELF(cr);
+                {
+                    b.p.take.basket->type.e = basket_type_none;
+                    ractor_queue_enq(cr, ts, &b);
+                }
+                RACTOR_UNLOCK_SELF(cr);
+                EC_JUMP_TAG(ec, state);
+            }
+        }
+
+        RACTOR_LOCK(tr);
+        {
+            VM_ASSERT(basket_type_p(tb, basket_type_yielding));
+            // fill atomic
+            RUBY_DEBUG_LOG("fill %sbasket from r:%u", is_will ? "will " : "", rb_ractor_id(tr));
+            ractor_basket_fill_(cr, tb, obj, exc);
+            if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_yielding, type) != basket_type_yielding) {
+                rb_bug("unreachable");
+            }
+            ractor_wakeup(tr, wait_taking, wakeup_by_yield);
+        }
+        RACTOR_UNLOCK(tr);
+
+        return true;
+    }
+    else {
+        RUBY_DEBUG_LOG("no take basket");
+        return false;
+    }
+}
+
+static void
+ractor_wait_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *ts)
+{
+    RACTOR_LOCK_SELF(cr);
+    {
+        while (!ractor_check_take_basket(cr, ts)) {
+            ractor_sleep(ec, cr, wait_yielding);
+        }
+    }
+    RACTOR_UNLOCK_SELF(cr);
+}
+
+static VALUE
+ractor_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE obj, VALUE move)
+{
+    struct rb_ractor_queue *ts = &cr->sync.takers_queue;
+
+    while (!ractor_try_yield(ec, cr, ts, obj, move, false, false)) {
+        ractor_wait_yield(ec, cr, ts);
+    }
+
+    return Qnil;
+}
+
+// Ractor::Selector
+
+struct rb_ractor_selector {
+    rb_ractor_t *r;
+    struct rb_ractor_basket take_basket;
+    st_table *take_ractors; // rb_ractor_t * => (struct rb_ractor_selector_take_config *)
+};
+
+static int
+ractor_selector_mark_ractors_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    const rb_ractor_t *r = (rb_ractor_t *)key;
+    rb_gc_mark(r->pub.self);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_selector_mark(void *ptr)
+{
+    struct rb_ractor_selector *s = ptr;
+
+    if (s->take_ractors) {
+        st_foreach(s->take_ractors, ractor_selector_mark_ractors_i, 0);
+    }
+
+    switch (s->take_basket.type.e) {
+      case basket_type_ref:
+      case basket_type_copy:
+      case basket_type_move:
+      case basket_type_will:
+        rb_gc_mark(s->take_basket.sender);
+        rb_gc_mark(s->take_basket.p.send.v);
+        break;
+      default:
+        break;
+    }
+}
+
+static int
+ractor_selector_release_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    struct rb_ractor_selector *s = (struct rb_ractor_selector *)data;
+    struct rb_ractor_selector_take_config *config = (struct rb_ractor_selector_take_config *)val;
+
+    if (!config->closed) {
+        ractor_deregister_take((rb_ractor_t *)key, &s->take_basket);
+    }
+    free(config);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_selector_free(void *ptr)
+{
+    struct rb_ractor_selector *s = ptr;
+    st_foreach(s->take_ractors, ractor_selector_release_i, (st_data_t)s);
+    st_free_table(s->take_ractors);
+    ruby_xfree(ptr);
+}
+
+static size_t
+ractor_selector_memsize(const void *ptr)
+{
+    const struct rb_ractor_selector *s = ptr;
+    return sizeof(struct rb_ractor_selector) +
+      st_memsize(s->take_ractors) +
+      s->take_ractors->num_entries * sizeof(struct rb_ractor_selector_take_config);
+}
+
+static const rb_data_type_t ractor_selector_data_type = {
+    "ractor/selector",
+    {
+        ractor_selector_mark,
+        ractor_selector_free,
+        ractor_selector_memsize,
+        NULL, // update
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static struct rb_ractor_selector *
+RACTOR_SELECTOR_PTR(VALUE selv)
+{
+    VM_ASSERT(rb_typeddata_is_kind_of(selv, &ractor_selector_data_type));
+
+    return (struct rb_ractor_selector *)DATA_PTR(selv);
+}
+
+// Ractor::Selector.new
+
+static VALUE
+ractor_selector_create(VALUE crv)
+{
+    struct rb_ractor_selector *s;
+    VALUE selv = TypedData_Make_Struct(rb_cRactorSelector, struct rb_ractor_selector, &ractor_selector_data_type, s);
+    s->take_basket.type.e = basket_type_reserved;
+    s->take_ractors = st_init_numtable(); // ractor (ptr) -> take_config
+    return selv;
+}
+
+// Ractor::Selector#add(r)
+
+static VALUE
+ractor_selector_add(rb_execution_context_t *ec, VALUE selv, VALUE rv)
+{
+    if (!rb_ractor_p(rv)) {
+        rb_raise(rb_eArgError, "Not a ractor object");
+    }
+
+    rb_ractor_t *r = RACTOR_PTR(rv);
+    struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
+
+    if (st_lookup(s->take_ractors, (st_data_t)r, NULL)) {
+        rb_raise(rb_eArgError, "already added");
+    }
+
+    struct rb_ractor_selector_take_config *config = malloc(sizeof(struct rb_ractor_selector_take_config));
+    VM_ASSERT(config != NULL);
+    config->closed = false;
+    config->oneshot = false;
+
+    if (ractor_register_take(rb_ec_ractor_ptr(ec), r, &s->take_basket, false, config, true)) {
+        st_insert(s->take_ractors, (st_data_t)r, (st_data_t)config);
+    }
+
+    return rv;
+}
+
+// Ractor::Selector#remove(r)
+
+static VALUE
+ractor_selector_remove(rb_execution_context_t *ec, VALUE selv, VALUE rv)
+{
+    if (!rb_ractor_p(rv)) {
+        rb_raise(rb_eArgError, "Not a ractor object");
+    }
+
+    rb_ractor_t *r = RACTOR_PTR(rv);
+    struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
+
+    RUBY_DEBUG_LOG("r:%u", rb_ractor_id(r));
+
+    if (!st_lookup(s->take_ractors, (st_data_t)r, NULL)) {
+        rb_raise(rb_eArgError, "not added yet");
+    }
+
+    ractor_deregister_take(r, &s->take_basket);
+    struct rb_ractor_selector_take_config *config;
+    st_delete(s->take_ractors, (st_data_t *)&r, (st_data_t *)&config);
+    free(config);
+
+    return rv;
+}
+
+// Ractor::Selector#clear
+
+struct ractor_selector_clear_data {
+    VALUE selv;
+    rb_execution_context_t *ec;
+};
+
+static int
+ractor_selector_clear_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    struct ractor_selector_clear_data *ptr = (struct ractor_selector_clear_data *)data;
+    rb_ractor_t *r = (rb_ractor_t *)key;
+    ractor_selector_remove(ptr->ec, ptr->selv, r->pub.self);
+    return ST_CONTINUE;
+}
+
+static VALUE
+ractor_selector_clear(rb_execution_context_t *ec, VALUE selv)
+{
+    struct ractor_selector_clear_data data = {
+        .selv = selv,
+        .ec = ec,
+    };
+    struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
+
+    st_foreach(s->take_ractors, ractor_selector_clear_i, (st_data_t)&data);
+    st_clear(s->take_ractors);
+    return selv;
+}
+
+static VALUE
+ractor_selector_empty_p(rb_execution_context_t *ec, VALUE selv)
+{
+    struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
+    return s->take_ractors->num_entries == 0 ? Qtrue : Qfalse;
+}
+
+static int
+ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t dat)
+{
+    rb_ractor_t *r = (rb_ractor_t *)key;
+    struct rb_ractor_basket *tb = (struct rb_ractor_basket *)dat;
+    int ret;
+
+    if (!basket_none_p(tb)) {
+        RUBY_DEBUG_LOG("already taken:%s", basket_type_name(tb->type.e));
+        return ST_STOP;
+    }
+
+    RACTOR_LOCK(r);
+    {
+        if (basket_type_p(&r->sync.will_basket, basket_type_will)) {
+            RUBY_DEBUG_LOG("r:%u has will", rb_ractor_id(r));
+
+            if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_none, basket_type_will) == basket_type_none) {
+                ractor_take_will(r, tb);
+                ret = ST_STOP;
+            }
+            else {
+                RUBY_DEBUG_LOG("has will, but already taken (%s)", basket_type_name(tb->type.e));
+                ret = ST_CONTINUE;
+            }
+        }
+        else if (r->sync.outgoing_port_closed) {
+            RUBY_DEBUG_LOG("r:%u is closed", rb_ractor_id(r));
+
+            if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_none, basket_type_deleted) == basket_type_none) {
+                tb->sender = r->pub.self;
+                ret = ST_STOP;
+            }
+            else {
+                RUBY_DEBUG_LOG("closed, but already taken (%s)", basket_type_name(tb->type.e));
+                ret = ST_CONTINUE;
+            }
+        }
+        else {
+            RUBY_DEBUG_LOG("wakeup r:%u", rb_ractor_id(r));
+            ractor_wakeup(r, wait_yielding, wakeup_by_take);
+            ret = ST_CONTINUE;
+        }
+    }
+    RACTOR_UNLOCK(r);
+
+    return ret;
+}
+
+// Ractor::Selector#wait
+
+static void
+ractor_selector_wait_cleaup(rb_ractor_t *cr, void *ptr)
+{
+    struct rb_ractor_basket *tb = (struct rb_ractor_basket *)ptr;
+
+    RACTOR_LOCK_SELF(cr);
+    {
+        while (basket_type_p(tb, basket_type_yielding)) rb_thread_sleep(0);
+        // if tb->type is not none, taking is succeeded, but interruption ignore it unfortunately.
+        tb->type.e = basket_type_reserved;
+    }
+    RACTOR_UNLOCK_SELF(cr);
+}
+
+static VALUE
+ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yield_value, VALUE move)
+{
+    struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
+    struct rb_ractor_basket *tb = &s->take_basket;
+    struct rb_ractor_basket taken_basket;
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    bool do_receive = !!RTEST(do_receivev);
+    bool do_yield = !!RTEST(do_yieldv);
+    VALUE ret_v, ret_r;
+    enum rb_ractor_wait_status wait_status;
+    struct rb_ractor_queue *rq = &cr->sync.recv_queue;
+    struct rb_ractor_queue *ts = &cr->sync.takers_queue;
+
+    RUBY_DEBUG_LOG("start");
+
+  retry:
+    RUBY_DEBUG_LOG("takers:%ld", s->take_ractors->num_entries);
+
+    // setup wait_status
+    wait_status = wait_none;
+    if (s->take_ractors->num_entries > 0) wait_status |= wait_taking;
+    if (do_receive)                       wait_status |= wait_receiving;
+    if (do_yield)                         wait_status |= wait_yielding;
+
+    RUBY_DEBUG_LOG("wait:%s", wait_status_str(wait_status));
+
+    if (wait_status == wait_none) {
+        rb_raise(rb_eRactorError, "no taking ractors");
+    }
+
+    // check recv_queue
+    if (do_receive && (ret_v = ractor_try_receive(ec, cr, rq)) != Qundef) {
+        ret_r = ID2SYM(rb_intern("receive"));
+        goto success;
+    }
+
+    // check takers
+    if (do_yield && ractor_try_yield(ec, cr, ts, yield_value, move, false, false)) {
+        ret_v = Qnil;
+        ret_r = ID2SYM(rb_intern("yield"));
+        goto success;
+    }
+
+    // check take_basket
+    VM_ASSERT(basket_type_p(&s->take_basket, basket_type_reserved));
+    s->take_basket.type.e = basket_type_none;
+    // kick all take target ractors
+    st_foreach(s->take_ractors, ractor_selector_wait_i, (st_data_t)tb);
+
+    RACTOR_LOCK_SELF(cr);
+    {
+      retry_waiting:
+        while (1) {
+            if (!basket_none_p(tb)) {
+                RUBY_DEBUG_LOG("taken:%s from r:%u", basket_type_name(tb->type.e),
+                               tb->sender ? rb_ractor_id(RACTOR_PTR(tb->sender)) : 0);
+                break;
+            }
+            if (do_receive && !ractor_queue_empty_p(cr, rq)) {
+                RUBY_DEBUG_LOG("can receive (%d)", rq->cnt);
+                break;
+            }
+            if (do_yield && ractor_check_take_basket(cr, ts)) {
+                RUBY_DEBUG_LOG("can yield");
+                break;
+            }
+
+            ractor_sleep_with_cleanup(ec, cr, wait_status, ractor_selector_wait_cleaup, tb);
+        }
+
+        taken_basket = *tb;
+
+        // ensure
+        //   tb->type.e = basket_type_reserved # do it atomic in the following code
+        if (taken_basket.type.e == basket_type_yielding ||
+            RUBY_ATOMIC_CAS(tb->type.atomic, taken_basket.type.e, basket_type_reserved) != taken_basket.type.e) {
+
+            if (basket_type_p(tb, basket_type_yielding)) {
+                RACTOR_UNLOCK_SELF(cr);
+                {
+                    rb_thread_sleep(0);
+                }
+                RACTOR_LOCK_SELF(cr);
+            }
+            goto retry_waiting;
+        }
+    }
+    RACTOR_UNLOCK_SELF(cr);
+
+    // check the taken resutl
+    switch (taken_basket.type.e) {
+      case basket_type_none:
+        VM_ASSERT(do_receive || do_yield);
+        goto retry;
+      case basket_type_yielding:
+        rb_bug("unreachable");
+      case basket_type_deleted: {
+          ractor_selector_remove(ec, selv, taken_basket.sender);
+
+          rb_ractor_t *r = RACTOR_PTR(taken_basket.sender);
+          if (ractor_take_will_lock(r, &taken_basket)) {
+              RUBY_DEBUG_LOG("has_will");
+          }
+          else {
+              RUBY_DEBUG_LOG("no will");
+              // rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
+              // remove and retry wait
+              goto retry;
+          }
+          break;
+      }
+      case basket_type_will:
+        // no more messages
+        ractor_selector_remove(ec, selv, taken_basket.sender);
+        break;
+      default:
+        break;
+    }
+
+    RUBY_DEBUG_LOG("taken_basket:%s", basket_type_name(taken_basket.type.e));
+
+    ret_v = ractor_basket_accept(&taken_basket);
+    ret_r = taken_basket.sender;
+  success:
+    return rb_ary_new_from_args(2, ret_r, ret_v);
+}
+
+// Ractor#close_incoming
 
 static VALUE
 ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
@@ -1046,12 +1778,12 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
 
     RACTOR_LOCK(r);
     {
-        if (!r->incoming_port_closed) {
+        if (!r->sync.incoming_port_closed) {
             prev = Qfalse;
-            r->incoming_port_closed = true;
+            r->sync.incoming_port_closed = true;
             if (ractor_wakeup(r, wait_receiving, wakeup_by_close)) {
-                VM_ASSERT(r->incoming_queue.cnt == 0);
-                RUBY_DEBUG_LOG("cancel receiving", 0);
+                VM_ASSERT(ractor_queue_empty_p(r, &r->sync.recv_queue));
+                RUBY_DEBUG_LOG("cancel receiving");
             }
         }
         else {
@@ -1062,6 +1794,8 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
     return prev;
 }
 
+// Ractor#close_outgoing
+
 static VALUE
 ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
 {
@@ -1069,27 +1803,50 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
 
     RACTOR_LOCK(r);
     {
-        if (!r->outgoing_port_closed) {
+        struct rb_ractor_queue *ts = &r->sync.takers_queue;
+        rb_ractor_t *tr;
+        struct rb_ractor_basket b;
+
+        if (!r->sync.outgoing_port_closed) {
             prev = Qfalse;
-            r->outgoing_port_closed = true;
+            r->sync.outgoing_port_closed = true;
         }
         else {
+            VM_ASSERT(ractor_queue_empty_p(r, ts));
             prev = Qtrue;
         }
 
         // wakeup all taking ractors
-        rb_ractor_t *taking_ractor;
-        while ((taking_ractor = ractor_waiting_list_shift(r, &r->taking_ractors)) != NULL) {
-            RACTOR_LOCK(taking_ractor);
-            ractor_wakeup(taking_ractor, wait_taking, wakeup_by_close);
-            RACTOR_UNLOCK(taking_ractor);
+        while (ractor_queue_deq(r, ts, &b)) {
+            if (basket_type_p(&b, basket_type_take_basket)) {
+                tr = RACTOR_PTR(b.sender);
+                struct rb_ractor_basket *tb = b.p.take.basket;
+
+                if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_none, basket_type_yielding) == basket_type_none) {
+                    b.p.take.basket->sender = r->pub.self;
+                    if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_yielding, basket_type_deleted) != basket_type_yielding) {
+                        rb_bug("unreachable");
+                    }
+                    RUBY_DEBUG_LOG("set delete for r:%u", rb_ractor_id(RACTOR_PTR(b.sender)));
+                }
+
+                if (b.p.take.config) {
+                    b.p.take.config->closed = true;
+                }
+
+                // TODO: deadlock-able?
+                RACTOR_LOCK(tr);
+                {
+                    ractor_wakeup(tr, wait_taking, wakeup_by_close);
+                }
+                RACTOR_UNLOCK(tr);
+            }
         }
 
         // raising yielding Ractor
-        if (!r->yield_atexit &&
-            ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
-            RUBY_DEBUG_LOG("cancel yielding", 0);
-        }
+        ractor_wakeup(r, wait_yielding, wakeup_by_close);
+
+        VM_ASSERT(ractor_queue_empty_p(r, ts));
     }
     RACTOR_UNLOCK(r);
     return prev;
@@ -1102,23 +1859,36 @@ ractor_next_id(void)
 {
     uint32_t id;
 
-    RB_VM_LOCK();
-    {
-        id = ++ractor_last_id;
-    }
-    RB_VM_UNLOCK();
+    id = (uint32_t)(RUBY_ATOMIC_FETCH_ADD(ractor_last_id, 1) + 1);
 
     return id;
 }
 
 static void
-vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r)
+vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
 {
-    RUBY_DEBUG_LOG("r:%u ractor.cnt:%u++", r->id, vm->ractor.cnt);
-    VM_ASSERT(!rb_multi_ractor_p() || RB_VM_LOCKED_P());
+    RUBY_DEBUG_LOG("r:%u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
+    VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
-    list_add_tail(&vm->ractor.set, &r->vmlr_node);
+    ccan_list_add_tail(&vm->ractor.set, &r->vmlr_node);
     vm->ractor.cnt++;
+}
+
+static void
+cancel_single_ractor_mode(void)
+{
+    // enable multi-ractor mode
+    RUBY_DEBUG_LOG("enable multi-ractor mode");
+
+    VALUE was_disabled = rb_gc_enable();
+
+    rb_gc_start();
+
+    if (was_disabled) {
+        rb_gc_disable();
+    }
+
+    ruby_single_main_ractor = NULL;
 }
 
 static void
@@ -1129,29 +1899,22 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
     if (rb_multi_ractor_p()) {
         RB_VM_LOCK();
         {
-            vm_insert_ractor0(vm, r);
+            vm_insert_ractor0(vm, r, false);
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
         }
         RB_VM_UNLOCK();
     }
     else {
-        vm_insert_ractor0(vm, r);
-
-        if (vm->ractor.cnt == 1) {
+        if (vm->ractor.cnt == 0) {
             // main ractor
+            vm_insert_ractor0(vm, r, true);
             ractor_status_set(r, ractor_blocking);
             ractor_status_set(r, ractor_running);
         }
         else {
+            cancel_single_ractor_mode();
+            vm_insert_ractor0(vm, r, true);
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
-
-            RUBY_DEBUG_LOG("ruby_multi_ractor=true", 0);
-            // enable multi-ractor mode
-            ruby_multi_ractor = true;
-
-            if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
-                rb_warn("Ractor is experimental, and the behavior may change in future versions of Ruby! Also there are many implementation issues.");
-            }
         }
     }
 }
@@ -1169,12 +1932,15 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
         VM_ASSERT(vm->ractor.cnt > 0);
-        list_del(&cr->vmlr_node);
+        ccan_list_del(&cr->vmlr_node);
 
         if (vm->ractor.cnt <= 2 && vm->ractor.sync.terminate_waiting) {
             rb_native_cond_signal(&vm->ractor.sync.terminate_cond);
         }
         vm->ractor.cnt--;
+
+        /* Clear the cached freelist to prevent a memory leak. */
+        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
 
         ractor_status_set(cr, ractor_terminated);
     }
@@ -1187,7 +1953,7 @@ ractor_alloc(VALUE klass)
     rb_ractor_t *r;
     VALUE rv = TypedData_Make_Struct(klass, rb_ractor_t, &ractor_data_type, r);
     FL_SET_RAW(rv, RUBY_FL_SHAREABLE);
-    r->self = rv;
+    r->pub.self = rv;
     VM_ASSERT(ractor_status_p(r, ractor_created));
     return rv;
 }
@@ -1197,23 +1963,43 @@ rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = ruby_mimmalloc(sizeof(rb_ractor_t));
     if (r == NULL) {
-	fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
+        fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
     }
     MEMZERO(r, rb_ractor_t, 1);
-    r->id = ++ractor_last_id;
+    r->pub.id = ++ractor_last_id;
     r->loc = Qnil;
     r->name = Qnil;
+    r->pub.self = Qnil;
+    ruby_single_main_ractor = r;
 
     return r;
 }
 
-void rb_gvl_init(rb_global_vm_lock_t *gvl);
+#if defined(HAVE_WORKING_FORK)
+void
+rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
+{
+    // initialize as a main ractor
+    vm->ractor.cnt = 0;
+    vm->ractor.blocking_cnt = 0;
+    ruby_single_main_ractor = th->ractor;
+    th->ractor->status_ = ractor_created;
+
+    rb_ractor_living_threads_init(th->ractor);
+    rb_ractor_living_threads_insert(th->ractor, th);
+
+    VM_ASSERT(vm->ractor.blocking_cnt == 0);
+    VM_ASSERT(vm->ractor.cnt == 1);
+}
+#endif
+
+void rb_thread_sched_init(struct rb_thread_sched *, bool atfork);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
 {
-    list_head_init(&r->threads.set);
+    ccan_list_head_init(&r->threads.set);
     r->threads.cnt = 0;
     r->threads.blocking_cnt = 0;
 }
@@ -1221,13 +2007,18 @@ rb_ractor_living_threads_init(rb_ractor_t *r)
 static void
 ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 {
-    ractor_queue_setup(&r->incoming_queue);
-    rb_native_mutex_initialize(&r->lock);
-    rb_native_cond_initialize(&r->wait.cond);
+    ractor_queue_setup(&r->sync.recv_queue);
+    ractor_queue_setup(&r->sync.takers_queue);
+    rb_native_mutex_initialize(&r->sync.lock);
     rb_native_cond_initialize(&r->barrier_wait_cond);
 
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_initialize(&r->sync.cond);
+    rb_native_cond_initialize(&r->barrier_wait_cond);
+#endif
+
     // thread management
-    rb_gvl_init(&r->threads.gvl);
+    rb_thread_sched_init(&r->threads.sched, false);
     rb_ractor_living_threads_init(r);
 
     // naming
@@ -1248,17 +2039,12 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 void
 rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
 {
-    r->self = TypedData_Wrap_Struct(rb_cRactor, &ractor_data_type, r);
-    FL_SET_RAW(r->self, RUBY_FL_SHAREABLE);
+    r->pub.self = TypedData_Wrap_Struct(rb_cRactor, &ractor_data_type, r);
+    FL_SET_RAW(r->pub.self, RUBY_FL_SHAREABLE);
     ractor_init(r, Qnil, Qnil);
     r->threads.main = th;
     rb_ractor_living_threads_insert(r, th);
 }
-
-// io.c
-VALUE rb_io_prep_stdin(void);
-VALUE rb_io_prep_stdout(void);
-VALUE rb_io_prep_stderr(void);
 
 static VALUE
 ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VALUE args, VALUE block)
@@ -1268,17 +2054,15 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     ractor_init(r, name, loc);
 
     // can block here
-    r->id = ractor_next_id();
-    RUBY_DEBUG_LOG("r:%u", r->id);
-
-    r->r_stdin = rb_io_prep_stdin();
-    r->r_stdout = rb_io_prep_stdout();
-    r->r_stderr = rb_io_prep_stderr();
+    r->pub.id = ractor_next_id();
+    RUBY_DEBUG_LOG("r:%u", r->pub.id);
 
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     r->verbose = cr->verbose;
     r->debug = cr->debug;
 
+    rb_yjit_before_ractor_spawn();
+    rb_rjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -1288,28 +2072,29 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 static void
 ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
 {
+    if (cr->sync.outgoing_port_closed) {
+        return;
+    }
+
     ASSERT_ractor_unlocking(cr);
 
-    struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, v, Qfalse, exc, true);
+    struct rb_ractor_queue *ts = &cr->sync.takers_queue;
 
   retry:
-    if (ractor_try_yield(ec, cr, &basket)) {
+    if (ractor_try_yield(ec, cr, ts, v, Qfalse, exc, true)) {
         // OK.
     }
     else {
         bool retry = false;
         RACTOR_LOCK(cr);
         {
-            if (cr->taking_ractors.cnt == 0) {
-                cr->wait.yielded_basket = basket;
-
-                VM_ASSERT(cr->wait.status == wait_none);
-                cr->wait.status = wait_yielding;
-                VM_ASSERT(cr->yield_atexit == false);
-                cr->yield_atexit = true;
+            if (!ractor_check_take_basket(cr, ts)) {
+                VM_ASSERT(cr->sync.wait.status == wait_none);
+                RUBY_DEBUG_LOG("leave a will");
+                ractor_basket_fill_will(cr, &cr->sync.will_basket, v, exc);
             }
             else {
+                RUBY_DEBUG_LOG("rare timing!");
                 retry = true; // another ractor is waiting for the yield.
             }
         }
@@ -1317,6 +2102,20 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
 
         if (retry) goto retry;
     }
+}
+
+void
+rb_ractor_atexit(rb_execution_context_t *ec, VALUE result)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    ractor_yield_atexit(ec, cr, result, false);
+}
+
+void
+rb_ractor_atexit_exception(rb_execution_context_t *ec)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    ractor_yield_atexit(ec, cr, ec->errinfo, true);
 }
 
 void
@@ -1336,20 +2135,6 @@ rb_ractor_teardown(rb_execution_context_t *ec)
 }
 
 void
-rb_ractor_atexit(rb_execution_context_t *ec, VALUE result)
-{
-    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_yield_atexit(ec, cr, result, false);
-}
-
-void
-rb_ractor_atexit_exception(rb_execution_context_t *ec)
-{
-    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_yield_atexit(ec, cr, ec->errinfo, true);
-}
-
-void
 rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
     for (int i=0; i<len; i++) {
@@ -1366,13 +2151,7 @@ rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *r, VALUE args
     }
 }
 
-VALUE
-rb_ractor_self(const rb_ractor_t *r)
-{
-    return r->self;
-}
-
-MJIT_FUNC_EXPORTED bool
+bool
 rb_ractor_main_p_(void)
 {
     VM_ASSERT(rb_multi_ractor_p());
@@ -1388,26 +2167,21 @@ rb_obj_is_main_ractor(VALUE gv)
     return r == GET_VM()->ractor.main_ractor;
 }
 
-rb_global_vm_lock_t *
-rb_ractor_gvl(rb_ractor_t *r)
-{
-    return &r->threads.gvl;
-}
-
 int
 rb_ractor_living_thread_num(const rb_ractor_t *r)
 {
     return r->threads.cnt;
 }
 
+// only for current ractor
 VALUE
-rb_ractor_thread_list(rb_ractor_t *r)
+rb_ractor_thread_list(void)
 {
-    VALUE ary = rb_ary_new();
+    rb_ractor_t *r = GET_RACTOR();
     rb_thread_t *th = 0;
+    VALUE ary = rb_ary_new();
 
-    RACTOR_LOCK(r);
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         switch (th->status) {
           case THREAD_RUNNABLE:
           case THREAD_STOPPED:
@@ -1417,7 +2191,7 @@ rb_ractor_thread_list(rb_ractor_t *r)
             break;
         }
     }
-    RACTOR_UNLOCK(r);
+
     return ary;
 }
 
@@ -1428,8 +2202,8 @@ rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th)
 
     RACTOR_LOCK(r);
     {
-        RUBY_DEBUG_LOG("r(%d)->threads.cnt:%d++", r->id, r->threads.cnt);
-        list_add_tail(&r->threads.set, &th->lt_node);
+        RUBY_DEBUG_LOG("r(%d)->threads.cnt:%d++", r->pub.id, r->threads.cnt);
+        ccan_list_add_tail(&r->threads.set, &th->lt_node);
         r->threads.cnt++;
     }
     RACTOR_UNLOCK(r);
@@ -1499,6 +2273,8 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
     }
 }
 
+void rb_threadptr_remove(rb_thread_t *th);
+
 void
 rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
@@ -1506,13 +2282,15 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
     ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
 
+    rb_threadptr_remove(th);
+
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
     }
     else {
         RACTOR_LOCK(cr);
         {
-            list_del(&th->lt_node);
+            ccan_list_del(&th->lt_node);
             cr->threads.cnt--;
         }
         RACTOR_UNLOCK(cr);
@@ -1586,12 +2364,12 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
             rb_threadptr_interrupt(main_th);
         }
         else {
-            RUBY_DEBUG_LOG("killed (%p)", main_th);
+            RUBY_DEBUG_LOG("killed (%p)", (void *)main_th);
         }
     }
 }
 
-void rb_thread_terminate_all(void); // thread.c
+void rb_thread_terminate_all(rb_thread_t *th); // thread.c
 
 static void
 ractor_terminal_interrupt_all(rb_vm_t *vm)
@@ -1599,13 +2377,17 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
     if (vm->ractor.cnt > 1) {
         // send terminate notification to all ractors
         rb_ractor_t *r = 0;
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
+                RUBY_DEBUG_LOG("r:%d", rb_ractor_id(r));
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
         }
     }
 }
+
+void rb_add_running_thread(rb_thread_t *th);
+void rb_del_running_thread(rb_thread_t *th);
 
 void
 rb_ractor_terminate_all(void)
@@ -1613,14 +2395,18 @@ rb_ractor_terminate_all(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *cr = vm->ractor.main_ractor;
 
+    RUBY_DEBUG_LOG("ractor.cnt:%d", (int)vm->ractor.cnt);
+
     VM_ASSERT(cr == GET_RACTOR()); // only main-ractor's main-thread should kick it.
 
     if (vm->ractor.cnt > 1) {
         RB_VM_LOCK();
-        ractor_terminal_interrupt_all(vm); // kill all ractors
+        {
+            ractor_terminal_interrupt_all(vm); // kill all ractors
+        }
         RB_VM_UNLOCK();
     }
-    rb_thread_terminate_all(); // kill other threads in main-ractor and wait
+    rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
 
     RB_VM_LOCK();
     {
@@ -1630,7 +2416,9 @@ rb_ractor_terminate_all(void)
 
             // wait for 1sec
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
+            rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
+            rb_add_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
 
             ractor_terminal_interrupt_all(vm);
@@ -1651,14 +2439,111 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
     rb_raise(rb_eRactorMovedError, "can not send any methods to a moved object");
 }
 
+/*
+ *  Document-class: Ractor::ClosedError
+ *
+ *  Raised when an attempt is made to send a message to a closed port,
+ *  or to retrieve a message from a closed and empty port.
+ *  Ports may be closed explicitly with Ractor#close_outgoing/close_incoming
+ *  and are closed implicitly when a Ractor terminates.
+ *
+ *     r = Ractor.new { sleep(500) }
+ *     r.close_outgoing
+ *     r.take # Ractor::ClosedError
+ *
+ *  ClosedError is a descendant of StopIteration, so the closing of the ractor will break
+ *  the loops without propagating the error:
+ *
+ *     r = Ractor.new do
+ *       loop do
+ *         msg = receive # raises ClosedError and loop traps it
+ *         puts "Received: #{msg}"
+ *       end
+ *       puts "loop exited"
+ *     end
+ *
+ *     3.times{|i| r << i}
+ *     r.close_incoming
+ *     r.take
+ *     puts "Continue successfully"
+ *
+ *  This will print:
+ *
+ *     Received: 0
+ *     Received: 1
+ *     Received: 2
+ *     loop exited
+ *     Continue successfully
+ */
+
+/*
+ *  Document-class: Ractor::RemoteError
+ *
+ *  Raised on attempt to Ractor#take if there was an uncaught exception in the Ractor.
+ *  Its +cause+ will contain the original exception, and +ractor+ is the original ractor
+ *  it was raised in.
+ *
+ *     r = Ractor.new { raise "Something weird happened" }
+ *
+ *     begin
+ *       r.take
+ *     rescue => e
+ *       p e             # => #<Ractor::RemoteError: thrown by remote Ractor.>
+ *       p e.ractor == r # => true
+ *       p e.cause       # => #<RuntimeError: Something weird happened>
+ *     end
+ *
+ */
+
+/*
+ *  Document-class: Ractor::MovedError
+ *
+ *  Raised on an attempt to access an object which was moved in Ractor#send or Ractor.yield.
+ *
+ *     r = Ractor.new { sleep }
+ *
+ *     ary = [1, 2, 3]
+ *     r.send(ary, move: true)
+ *     ary.inspect
+ *     # Ractor::MovedError (can not send any methods to a moved object)
+ *
+ */
+
+/*
+ *  Document-class: Ractor::MovedObject
+ *
+ *  A special object which replaces any value that was moved to another ractor in Ractor#send
+ *  or Ractor.yield. Any attempt to access the object results in Ractor::MovedError.
+ *
+ *     r = Ractor.new { receive }
+ *
+ *     ary = [1, 2, 3]
+ *     r.send(ary, move: true)
+ *     p Ractor::MovedObject === ary
+ *     # => true
+ *     ary.inspect
+ *     # Ractor::MovedError (can not send any methods to a moved object)
+ */
+
+// Main docs are in ractor.rb, but without this clause there are weird artifacts
+// in their rendering.
+/*
+ *  Document-class: Ractor
+ *
+ */
+
 void
 Init_Ractor(void)
 {
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
-    rb_eRactorError       = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
-    rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
-    rb_eRactorMovedError  = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
-    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+    rb_undef_alloc_func(rb_cRactor);
+
+    rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
+    rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
+    rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
+    rb_eRactorMovedError     = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
+    rb_eRactorClosedError    = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+    rb_eRactorUnsafeError    = rb_define_class_under(rb_cRactor, "UnsafeError", rb_eRactorError);
 
     rb_cRactorMovedObject = rb_define_class_under(rb_cRactor, "MovedObject", rb_cBasicObject);
     rb_undef_alloc_func(rb_cRactorMovedObject);
@@ -1674,7 +2559,8 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "instance_eval", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
 
-    rb_obj_freeze(rb_cRactorMovedObject);
+    rb_cRactorSelector = rb_define_class_under(rb_cRactor, "Selector", rb_cObject);
+    rb_undef_alloc_func(rb_cRactorSelector);
 }
 
 void
@@ -1683,9 +2569,9 @@ rb_ractor_dump(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *r = 0;
 
-    list_for_each(&vm->ractor.set, r, vmlr_node) {
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
         if (r != vm->ractor.main_ractor) {
-            fprintf(stderr, "r:%u (%s)\n", r->id, ractor_status_str(r->status_));
+            fprintf(stderr, "r:%u (%s)\n", r->pub.id, ractor_status_str(r->status_));
         }
     }
 }
@@ -1734,7 +2620,7 @@ rb_ractor_stdin_set(VALUE in)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
-        RB_OBJ_WRITE(cr->self, &cr->r_stdin, in);
+        RB_OBJ_WRITE(cr->pub.self, &cr->r_stdin, in);
     }
 }
 
@@ -1746,7 +2632,7 @@ rb_ractor_stdout_set(VALUE out)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
-        RB_OBJ_WRITE(cr->self, &cr->r_stdout, out);
+        RB_OBJ_WRITE(cr->pub.self, &cr->r_stdout, out);
     }
 }
 
@@ -1758,8 +2644,14 @@ rb_ractor_stderr_set(VALUE err)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
-        RB_OBJ_WRITE(cr->self, &cr->r_stderr, err);
+        RB_OBJ_WRITE(cr->pub.self, &cr->r_stderr, err);
     }
+}
+
+rb_hook_list_t *
+rb_ractor_hooks(rb_ractor_t *cr)
+{
+    return &cr->pub.hooks;
 }
 
 /// traverse function
@@ -1776,6 +2668,9 @@ enum obj_traverse_iterator_result {
 
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj);
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_final_func)(VALUE obj);
+
+static enum obj_traverse_iterator_result null_leave(VALUE obj);
 
 struct obj_traverse_data {
     rb_obj_traverse_enter_func enter_func;
@@ -1811,6 +2706,19 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
+static int
+obj_hash_iv_traverse_i(st_data_t key, st_data_t val, st_data_t ptr)
+{
+    struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
+
+    if (obj_traverse_i((VALUE)val, d->data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
@@ -1826,7 +2734,7 @@ obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
-        data->rec = rb_hash_st_table(data->rec_hash);
+        data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
 }
@@ -1852,7 +2760,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
         for (uint32_t i = 0; i < ivtbl->numiv; i++) {
             VALUE val = ivtbl->ivptr[i];
-            if (val != Qundef && obj_traverse_i(val, data)) return 1;
+            if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
         }
     }
 
@@ -1869,12 +2777,22 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_OBJECT:
         {
-            uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+            if (rb_shape_obj_too_complex(obj)) {
+                struct obj_traverse_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                };
+                rb_st_foreach(ROBJECT_IV_HASH(obj), obj_hash_iv_traverse_i, (st_data_t)&d);
+                if (d.stop) return 1;
+            }
+            else {
+                uint32_t len = ROBJECT_IV_COUNT(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                VALUE val = ptr[i];
-                if (val != Qundef && obj_traverse_i(val, data)) return 1;
+                for (uint32_t i=0; i<len; i++) {
+                    VALUE val = ptr[i];
+                    if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
+                }
             }
         }
         break;
@@ -1928,7 +2846,11 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 .stop = false,
                 .data = data,
             };
-            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            RB_VM_LOCK_ENTER_NO_BARRIER();
+            {
+                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            }
+            RB_VM_LOCK_LEAVE_NO_BARRIER();
             if (d.stop) return 1;
         }
         break;
@@ -1950,12 +2872,29 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     }
 }
 
+struct rb_obj_traverse_final_data {
+    rb_obj_traverse_final_func final_func;
+    int stopped;
+};
+
+static int
+obj_traverse_final_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct rb_obj_traverse_final_data *data = (void *)arg;
+    if (data->final_func(key)) {
+        data->stopped = 1;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 // 0: traverse all
 // 1: stopped
 static int
 rb_obj_traverse(VALUE obj,
                 rb_obj_traverse_enter_func enter_func,
-                rb_obj_traverse_leave_func leave_func)
+                rb_obj_traverse_leave_func leave_func,
+                rb_obj_traverse_final_func final_func)
 {
     struct obj_traverse_data data = {
         .enter_func = enter_func,
@@ -1963,7 +2902,13 @@ rb_obj_traverse(VALUE obj,
         .rec = NULL,
     };
 
-    return obj_traverse_i(obj, &data);
+    if (obj_traverse_i(obj, &data)) return 1;
+    if (final_func && data.rec) {
+        struct rb_obj_traverse_final_data f = {final_func, 0};
+        st_foreach(data.rec, obj_traverse_final_i, (st_data_t)&f);
+        return f.stopped;
+    }
+    return 0;
 }
 
 static int
@@ -1995,7 +2940,7 @@ make_shareable_check_shareable(VALUE obj)
     VM_ASSERT(!SPECIAL_CONST_P(obj));
     bool made_shareable = false;
 
-    if (RB_OBJ_SHAREABLE_P(obj)) {
+    if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
     }
     else if (!frozen_shareable_p(obj, &made_shareable)) {
@@ -2034,8 +2979,34 @@ rb_ractor_make_shareable(VALUE obj)
 {
     rb_obj_traverse(obj,
                     make_shareable_check_shareable,
-                    mark_shareable);
+                    null_leave, mark_shareable);
     return obj;
+}
+
+VALUE
+rb_ractor_make_shareable_copy(VALUE obj)
+{
+    VALUE copy = ractor_copy(obj);
+    return rb_ractor_make_shareable(copy);
+}
+
+VALUE
+rb_ractor_ensure_shareable(VALUE obj, VALUE name)
+{
+    if (!rb_ractor_shareable_p(obj)) {
+        VALUE message = rb_sprintf("cannot assign unshareable object to %"PRIsVALUE,
+                                   name);
+        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, message));
+    }
+    return obj;
+}
+
+void
+rb_ractor_ensure_main_ractor(const char *msg)
+{
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRactorIsolationError, "%s", msg);
+    }
 }
 
 static enum obj_traverse_iterator_result
@@ -2059,11 +3030,11 @@ shareable_p_enter(VALUE obj)
     return traverse_stop; // fail
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
     if (rb_obj_traverse(obj,
-                        shareable_p_enter,
+                        shareable_p_enter, null_leave,
                         mark_shareable)) {
         return false;
     }
@@ -2084,20 +3055,19 @@ reset_belonging_enter(VALUE obj)
         return traverse_cont;
     }
 }
+#endif
 
 static enum obj_traverse_iterator_result
 null_leave(VALUE obj)
 {
     return traverse_cont;
 }
-#endif
 
 static VALUE
 ractor_reset_belonging(VALUE obj)
 {
 #if RACTOR_CHECK_MODE > 0
-    rp(obj);
-    rb_obj_traverse(obj, reset_belonging_enter, null_leave);
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
 #endif
     return obj;
 }
@@ -2164,27 +3134,66 @@ obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int e
     return ST_CONTINUE;
 }
 
+static int
+obj_iv_hash_traverse_replace_foreach_i(st_data_t _key, st_data_t _val, st_data_t _data, int _x)
+{
+    return ST_REPLACE;
+}
+
+static int
+obj_iv_hash_traverse_replace_i(st_data_t * _key, st_data_t * val, st_data_t ptr, int exists)
+{
+    struct obj_traverse_replace_callback_data *d = (struct obj_traverse_replace_callback_data *)ptr;
+    struct obj_traverse_replace_data *data = d->data;
+
+    if (obj_traverse_replace_i(*(VALUE *)val, data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+    else if (*(VALUE *)val != data->replacement) {
+        VALUE v = *(VALUE *)val = data->replacement;
+        RB_OBJ_WRITTEN(d->src, Qundef, v);
+    }
+
+    return ST_CONTINUE;
+}
+
 static struct st_table *
 obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
-        data->rec = rb_hash_st_table(data->rec_hash);
+        data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
 }
 
-#if USE_TRANSIENT_HEAP
-void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
-void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
-void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
-void rb_struct_transient_heap_evacuate(VALUE st, int promote);
-#endif
+static void
+obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
+{
+    int *pcnt = (int *)ptr;
+
+    if (!rb_ractor_shareable_p(obj)) {
+        ++*pcnt;
+    }
+}
+
+static int
+obj_refer_only_shareables_p(VALUE obj)
+{
+    int cnt = 0;
+    RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    }
+    RB_VM_LOCK_LEAVE_NO_BARRIER();
+    return cnt == 0;
+}
 
 static int
 obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 {
-    VALUE replacement;
+    st_data_t replacement;
 
     if (RB_SPECIAL_CONST_P(obj)) {
         data->replacement = obj;
@@ -2197,14 +3206,14 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case traverse_stop: return 1; // stop search
     }
 
-    replacement = data->replacement;
+    replacement = (st_data_t)data->replacement;
 
-    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t *)&replacement))) {
-        data->replacement = replacement;
+    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, &replacement))) {
+        data->replacement = (VALUE)replacement;
         return 0;
     }
     else {
-        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t)replacement);
+        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
     }
 
     if (!data->move) {
@@ -2221,7 +3230,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         struct gen_ivtbl *ivtbl;
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
         for (uint32_t i = 0; i < ivtbl->numiv; i++) {
-            if (ivtbl->ivptr[i] != Qundef) {
+            if (!UNDEF_P(ivtbl->ivptr[i])) {
                 CHECK_AND_REPLACE(ivtbl->ivptr[i]);
             }
         }
@@ -2237,21 +3246,32 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_MATCH:
         break;
       case T_STRING:
-        rb_str_modify(obj);
+        rb_str_make_independent(obj);
         break;
 
       case T_OBJECT:
         {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
-#endif
+            if (rb_shape_obj_too_complex(obj)) {
+                st_table * table = ROBJECT_IV_HASH(obj);
+                struct obj_traverse_replace_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                    .src = obj,
+                };
+                rb_st_foreach_with_replace(
+                        table,
+                        obj_iv_hash_traverse_replace_foreach_i,
+                        obj_iv_hash_traverse_replace_i,
+                        (st_data_t)&d);
+            }
+            else {
+                uint32_t len = ROBJECT_IV_COUNT(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
-
-            for (uint32_t i=0; i<len; i++) {
-                if (ptr[i] != Qundef) {
-                    CHECK_AND_REPLACE(ptr[i]);
+                for (uint32_t i=0; i<len; i++) {
+                    if (!UNDEF_P(ptr[i])) {
+                        CHECK_AND_REPLACE(ptr[i]);
+                    }
                 }
             }
         }
@@ -2259,10 +3279,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_ARRAY:
         {
-            rb_ary_modify(obj);
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
-#endif
+            rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
                 VALUE e = rb_ary_entry(obj, i);
@@ -2277,12 +3294,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             RB_GC_GUARD(obj);
         }
         break;
-
       case T_HASH:
         {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_hash_transient_heap_evacuate(obj, TRUE);
-#endif
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
@@ -2307,9 +3320,6 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_STRUCT:
         {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_struct_transient_heap_evacuate(obj, TRUE);
-#endif
             long len = RSTRUCT_LEN(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
@@ -2329,6 +3339,14 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         break;
 
       case T_DATA:
+        if (!data->move && obj_refer_only_shareables_p(obj)) {
+            break;
+        }
+        else {
+            rb_raise(rb_eRactorError, "can not %s %"PRIsVALUE" object.",
+                     data->move ? "move" : "copy", rb_class_of(obj));
+        }
+
       case T_IMEMO:
         // not supported yet
         return 1;
@@ -2342,7 +3360,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         rb_bug("unreachable");
     }
 
-    data->replacement = replacement;
+    data->replacement = (VALUE)replacement;
 
     if (data->leave_func(obj, data) == traverse_stop) {
         return 1;
@@ -2447,7 +3465,7 @@ static VALUE
 ractor_move(VALUE obj)
 {
     VALUE val = rb_obj_traverse_replace(obj, move_enter, move_leave, true);
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;
     }
     else {
@@ -2474,15 +3492,268 @@ copy_leave(VALUE obj, struct obj_traverse_replace_data *data)
     return traverse_cont;
 }
 
-static VALUE ractor_copy(VALUE obj)
+static VALUE
+ractor_copy(VALUE obj)
 {
     VALUE val = rb_obj_traverse_replace(obj, copy_enter, copy_leave, false);
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;
     }
     else {
         rb_raise(rb_eRactorError, "can not copy the object");
     }
+}
+
+// Ractor local storage
+
+struct rb_ractor_local_key_struct {
+    const struct rb_ractor_local_storage_type *type;
+    void *main_cache;
+};
+
+static struct freed_ractor_local_keys_struct {
+    int cnt;
+    int capa;
+    rb_ractor_local_key_t *keys;
+} freed_ractor_local_keys;
+
+static int
+ractor_local_storage_mark_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    struct rb_ractor_local_key_struct *k = (struct rb_ractor_local_key_struct *)key;
+    if (k->type->mark) (*k->type->mark)((void *)val);
+    return ST_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+idkey_local_storage_mark_i(ID id, VALUE val, void *dmy)
+{
+    rb_gc_mark(val);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+ractor_local_storage_mark(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_mark_i, 0);
+
+        for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+            rb_ractor_local_key_t key = freed_ractor_local_keys.keys[i];
+            st_data_t val, k = (st_data_t)key;
+            if (st_delete(r->local_storage, &k, &val) &&
+                (key = (rb_ractor_local_key_t)k)->type->free) {
+                (*key->type->free)((void *)val);
+            }
+        }
+    }
+
+    if (r->idkey_local_storage) {
+        rb_id_table_foreach(r->idkey_local_storage, idkey_local_storage_mark_i, NULL);
+    }
+}
+
+static int
+ractor_local_storage_free_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    struct rb_ractor_local_key_struct *k = (struct rb_ractor_local_key_struct *)key;
+    if (k->type->free) (*k->type->free)((void *)val);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_local_storage_free(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_free_i, 0);
+        st_free_table(r->local_storage);
+    }
+
+    if (r->idkey_local_storage) {
+        rb_id_table_free(r->idkey_local_storage);
+    }
+}
+
+static void
+rb_ractor_local_storage_value_mark(void *ptr)
+{
+    rb_gc_mark((VALUE)ptr);
+}
+
+static const struct rb_ractor_local_storage_type ractor_local_storage_type_null = {
+    NULL,
+    NULL,
+};
+
+const struct rb_ractor_local_storage_type rb_ractor_local_storage_type_free = {
+    NULL,
+    ruby_xfree,
+};
+
+static const struct rb_ractor_local_storage_type ractor_local_storage_type_value = {
+    rb_ractor_local_storage_value_mark,
+    NULL,
+};
+
+rb_ractor_local_key_t
+rb_ractor_local_storage_ptr_newkey(const struct rb_ractor_local_storage_type *type)
+{
+    rb_ractor_local_key_t key = ALLOC(struct rb_ractor_local_key_struct);
+    key->type = type ? type : &ractor_local_storage_type_null;
+    key->main_cache = (void *)Qundef;
+    return key;
+}
+
+rb_ractor_local_key_t
+rb_ractor_local_storage_value_newkey(void)
+{
+    return rb_ractor_local_storage_ptr_newkey(&ractor_local_storage_type_value);
+}
+
+void
+rb_ractor_local_storage_delkey(rb_ractor_local_key_t key)
+{
+    RB_VM_LOCK_ENTER();
+    {
+        if (freed_ractor_local_keys.cnt == freed_ractor_local_keys.capa) {
+            freed_ractor_local_keys.capa = freed_ractor_local_keys.capa ? freed_ractor_local_keys.capa * 2 : 4;
+            REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa);
+        }
+        freed_ractor_local_keys.keys[freed_ractor_local_keys.cnt++] = key;
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static bool
+ractor_local_ref(rb_ractor_local_key_t key, void **pret)
+{
+    if (rb_ractor_main_p()) {
+        if (!UNDEF_P((VALUE)key->main_cache)) {
+            *pret = key->main_cache;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        rb_ractor_t *cr = GET_RACTOR();
+
+        if (cr->local_storage && st_lookup(cr->local_storage, (st_data_t)key, (st_data_t *)pret)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+
+static void
+ractor_local_set(rb_ractor_local_key_t key, void *ptr)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+
+    if (cr->local_storage == NULL) {
+        cr->local_storage = st_init_numtable();
+    }
+
+    st_insert(cr->local_storage, (st_data_t)key, (st_data_t)ptr);
+
+    if (rb_ractor_main_p()) {
+        key->main_cache = ptr;
+    }
+}
+
+VALUE
+rb_ractor_local_storage_value(rb_ractor_local_key_t key)
+{
+    void *val;
+    if (ractor_local_ref(key, &val)) {
+        return (VALUE)val;
+    }
+    else {
+        return Qnil;
+    }
+}
+
+bool
+rb_ractor_local_storage_value_lookup(rb_ractor_local_key_t key, VALUE *val)
+{
+    if (ractor_local_ref(key, (void **)val)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void
+rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val)
+{
+    ractor_local_set(key, (void *)val);
+}
+
+void *
+rb_ractor_local_storage_ptr(rb_ractor_local_key_t key)
+{
+    void *ret;
+    if (ractor_local_ref(key, &ret)) {
+        return ret;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr)
+{
+    ractor_local_set(key, ptr);
+}
+
+#define DEFAULT_KEYS_CAPA 0x10
+
+void
+rb_ractor_finish_marking(void)
+{
+    for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+        ruby_xfree(freed_ractor_local_keys.keys[i]);
+    }
+    freed_ractor_local_keys.cnt = 0;
+    if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
+        freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
+        REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
+    }
+}
+
+static VALUE
+ractor_local_value(rb_execution_context_t *ec, VALUE self, VALUE sym)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    ID id = rb_check_id(&sym);
+    struct rb_id_table *tbl = cr->idkey_local_storage;
+    VALUE val;
+
+    if (id && tbl && rb_id_table_lookup(tbl, id, &val)) {
+        return val;
+    }
+    else {
+        return Qnil;
+    }
+}
+
+static VALUE
+ractor_local_value_set(rb_execution_context_t *ec, VALUE self, VALUE sym, VALUE val)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    ID id = SYM2ID(rb_to_symbol(sym));
+    struct rb_id_table *tbl = cr->idkey_local_storage;
+
+    if (tbl == NULL) {
+        tbl = cr->idkey_local_storage = rb_id_table_create(2);
+    }
+    rb_id_table_insert(tbl, id, val);
+    return val;
 }
 
 #include "ractor.rbinc"

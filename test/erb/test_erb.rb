@@ -73,12 +73,28 @@ class TestERB < Test::Unit::TestCase
     assert_equal("", ERB::Util.html_escape(""))
     assert_equal("abc", ERB::Util.html_escape("abc"))
     assert_equal("&lt;&lt;", ERB::Util.html_escape("<\<"))
+    assert_equal("&#39;&amp;&quot;&gt;&lt;", ERB::Util.html_escape("'&\"><"))
 
     assert_equal("", ERB::Util.html_escape(nil))
     assert_equal("123", ERB::Util.html_escape(123))
   end
 
+  def test_html_escape_to_s
+    object = Object.new
+    def object.to_s
+      "object"
+    end
+    assert_equal("object", ERB::Util.html_escape(object))
+  end
+
+  def test_html_escape_extension
+    assert_nil(ERB::Util.method(:html_escape).source_location)
+  end if RUBY_ENGINE == 'ruby'
+
   def test_concurrent_default_binding
+    # This test randomly fails with JRuby -- NameError: undefined local variable or method `template2'
+    pend if RUBY_ENGINE == 'jruby'
+
     template1 = 'one <%= ERB.new(template2).result %>'
 
     eval 'template2 = "two"', TOPLEVEL_BINDING
@@ -236,6 +252,8 @@ EOS
   end
 
   def test_invalid_trim_mode
+    pend if RUBY_ENGINE == 'truffleruby'
+
     assert_warning(/#{__FILE__}:#{__LINE__ + 1}/) do
       @erb.new("", trim_mode: 'abc-def')
     end
@@ -663,26 +681,20 @@ EOS
 
   # [deprecated] These interfaces will be removed later
   def test_deprecated_interface_warnings
-    [nil, 0].each do |safe|
-      assert_warning(/2nd argument of ERB.new is deprecated/) do
-        ERB.new('', safe)
-      end
-    end
-
-    [1, 2].each do |safe|
+    [nil, 0, 1, 2].each do |safe|
       assert_warn(/2nd argument of ERB.new is deprecated/) do
         ERB.new('', safe)
       end
     end
 
     [nil, '', '%', '%<>'].each do |trim|
-      assert_warning(/3rd argument of ERB.new is deprecated/) do
+      assert_warn(/3rd argument of ERB.new is deprecated/) do
         ERB.new('', nil, trim)
       end
     end
 
     [nil, '_erbout', '_hamlout'].each do |eoutvar|
-      assert_warning(/4th argument of ERB.new is deprecated/) do
+      assert_warn(/4th argument of ERB.new is deprecated/) do
         ERB.new('', nil, nil, eoutvar)
       end
     end
@@ -700,6 +712,18 @@ EOS
     erb.instance_variable_set(:@_init, true)
     erb = Marshal.load(Marshal.dump(erb))
     assert_raise(ArgumentError) {erb.result}
+  end
+
+  def test_multi_line_comment_lineno
+    erb = ERB.new(<<~EOS)
+      <%= __LINE__ %>
+      <%#
+      %><%= __LINE__ %>
+    EOS
+    assert_equal <<~EOS, erb.result
+      1
+      3
+    EOS
   end
 end
 

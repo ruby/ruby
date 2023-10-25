@@ -13,13 +13,13 @@ module Psych
 
       (Handler.instance_methods(true) -
        Object.instance_methods).each do |m|
-        class_eval %{
+        class_eval <<~RUBY, __FILE__, __LINE__ + 1
           def #{m} *args
             @strings += args.flatten.find_all { |a|
               String === a
             }
           end
-        }
+        RUBY
       end
     end
 
@@ -63,7 +63,7 @@ module Psych
         # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
         # process the file.
         File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
-          assert_raises Psych::SyntaxError do
+          assert_raise Psych::SyntaxError do
             Psych.load(f)
           end
         end
@@ -119,9 +119,11 @@ module Psych
     end
 
     def test_emit_alias
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
       @emitter.start_stream Psych::Parser::UTF8
       @emitter.start_document [], [], true
-      e = assert_raises(RuntimeError) do
+      e = assert_raise(RuntimeError) do
         @emitter.alias 'ドラえもん'.encode('EUC-JP')
       end
       assert_match(/alias value/, e.message)
@@ -151,6 +153,7 @@ module Psych
       @emitter.end_mapping
       @emitter.end_document false
       @emitter.end_stream
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
       @parser.parse @buffer.string
       assert_encodings @utf8, @handler.strings
@@ -170,6 +173,7 @@ module Psych
       @emitter.end_sequence
       @emitter.end_document false
       @emitter.end_stream
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
       @parser.parse @buffer.string
       assert_encodings @utf8, @handler.strings
@@ -187,6 +191,7 @@ module Psych
       @emitter.scalar 'foo', nil, nil, true, false, Nodes::Scalar::ANY
       @emitter.end_document false
       @emitter.end_stream
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
       @parser.parse @buffer.string
       assert_encodings @utf8, @handler.strings
@@ -263,6 +268,8 @@ module Psych
     end
 
     def test_dump_non_ascii_string_to_file
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
       Tempfile.create(['utf8', 'yml'], :encoding => 'UTF-8') do |t|
         h = {'one' => 'いち'}
         Psych.dump(h, t)

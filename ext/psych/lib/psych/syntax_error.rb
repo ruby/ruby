@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'psych/exception'
+require_relative 'exception'
 
 module Psych
   class SyntaxError < Psych::Exception

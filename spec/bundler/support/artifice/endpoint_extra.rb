@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint"
-
-Artifice.deactivate
+require_relative "helpers/endpoint"
 
 class EndpointExtra < Endpoint
   get "/extra/api/v1/dependencies" do
@@ -29,5 +27,7 @@ class EndpointExtra < Endpoint
     File.binread("#{gem_repo2}/gems/#{params[:id]}")
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointExtra)

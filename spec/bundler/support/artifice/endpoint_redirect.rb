@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint"
-
-Artifice.deactivate
+require_relative "helpers/endpoint"
 
 class EndpointRedirect < Endpoint
   get "/fetch/actual/gem/:id" do
@@ -13,5 +11,7 @@ class EndpointRedirect < Endpoint
     status 404
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointRedirect)

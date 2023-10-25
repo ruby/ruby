@@ -1,12 +1,13 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/user_interaction'
-require 'rbconfig'
+require_relative "user_interaction"
+require "rbconfig"
 
 ##
 # Gem::ConfigFile RubyGems options and gem command options from gemrc.
@@ -39,12 +40,13 @@ require 'rbconfig'
 class Gem::ConfigFile
   include Gem::UserInteraction
 
-  DEFAULT_BACKTRACE = false
+  DEFAULT_BACKTRACE = true
   DEFAULT_BULK_THRESHOLD = 1000
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
+  DEFAULT_IPV4_FALLBACK_ENABLED = false
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -70,7 +72,7 @@ class Gem::ConfigFile
 
   # :startdoc:
 
-  SYSTEM_WIDE_CONFIG_FILE = File.join SYSTEM_CONFIG_PATH, 'gemrc'
+  SYSTEM_WIDE_CONFIG_FILE = File.join SYSTEM_CONFIG_PATH, "gemrc"
 
   ##
   # List of arguments supplied to the config file object.
@@ -141,6 +143,12 @@ class Gem::ConfigFile
   attr_accessor :cert_expiration_length_days
 
   ##
+  # == Experimental ==
+  # Fallback to IPv4 when IPv6 is not reachable or slow (default: false)
+
+  attr_accessor :ipv4_fallback_enabled
+
+  ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
@@ -175,25 +183,26 @@ class Gem::ConfigFile
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
+    @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name.dup.tap(&Gem::UNTAINT)
 
-    environment_config = (ENV['GEMRC'] || '')
-      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+    environment_config = (ENV["GEMRC"] || "").
+      split(File::PATH_SEPARATOR).inject({}) do |result, file|
         result.merge load_file file
       end
 
     @hash = operating_system_config.merge platform_config
-    unless args.index '--norc'
+    unless args.index "--norc"
       @hash = @hash.merge system_config
       @hash = @hash.merge user_config
       @hash = @hash.merge environment_config
     end
 
-    # HACK these override command-line args, which is bad
+    # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
@@ -203,6 +212,7 @@ class Gem::ConfigFile
     @disable_default_gem_server  = @hash[:disable_default_gem_server]  if @hash.key? :disable_default_gem_server
     @sources                     = @hash[:sources]                     if @hash.key? :sources
     @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
+    @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
@@ -231,9 +241,9 @@ class Gem::ConfigFile
     return if Gem.win_platform? # windows doesn't write 0600 as 0600
     return unless File.exist? credentials_path
 
-    existing_permissions = File.stat(credentials_path).mode & 0777
+    existing_permissions = File.stat(credentials_path).mode & 0o777
 
-    return if existing_permissions == 0600
+    return if existing_permissions == 0o600
 
     alert_error <<-ERROR
 Your gem push credentials file located at:
@@ -260,7 +270,7 @@ if you believe they were disclosed to a third party.
   # Location of RubyGems.org credentials
 
   def credentials_path
-    credentials = File.join Gem.user_home, '.gem', 'credentials'
+    credentials = File.join Gem.user_home, ".gem", "credentials"
     if File.exist? credentials
       credentials
     else
@@ -272,10 +282,10 @@ if you believe they were disclosed to a third party.
     check_credentials_permissions
 
     @api_keys = if File.exist? credentials_path
-                  load_file(credentials_path)
-                else
-                  @hash
-                end
+      load_file(credentials_path)
+    else
+      @hash
+    end
 
     if @api_keys.key? :rubygems_api_key
       @rubygems_api_key    = @api_keys[:rubygems_api_key]
@@ -311,13 +321,12 @@ if you believe they were disclosed to a third party.
     config = load_file(credentials_path).merge(host => api_key)
 
     dirname = File.dirname credentials_path
-    Dir.mkdir(dirname) unless File.exist? dirname
+    require "fileutils"
+    FileUtils.mkdir_p(dirname)
 
-    Gem.load_yaml
-
-    permissions = 0600 & (~File.umask)
-    File.open(credentials_path, 'w', permissions) do |f|
-      f.write config.to_yaml
+    permissions = 0o600 & (~File.umask)
+    File.open(credentials_path, "w", permissions) do |f|
+      f.write self.class.dump_with_rubygems_yaml(config)
     end
 
     load_api_keys # reload
@@ -333,20 +342,18 @@ if you believe they were disclosed to a third party.
   end
 
   def load_file(filename)
-    Gem.load_yaml
-
     yaml_errors = [ArgumentError]
-    yaml_errors << Psych::SyntaxError if defined?(Psych::SyntaxError)
 
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      content = Gem::SafeYAML.load(File.read(filename))
-      unless content.kind_of? Hash
+      config = self.class.load_with_rubygems_config_hash(File.read(filename))
+      if config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
+      else
+        return config
       end
-      return content
     rescue *yaml_errors => e
       warn "Failed to load #{filename}, #{e}"
     rescue Errno::EACCES
@@ -358,12 +365,45 @@ if you believe they were disclosed to a third party.
 
   # True if the backtrace option has been specified, or debug is on.
   def backtrace
-    @backtrace or $DEBUG
+    @backtrace || $DEBUG
+  end
+
+  # Check state file is writable. Creates empty file if not present to ensure we can write to it.
+  def state_file_writable?
+    if File.exist?(state_file_name)
+      File.writable?(state_file_name)
+    else
+      require "fileutils"
+      FileUtils.mkdir_p File.dirname(state_file_name)
+      File.open(state_file_name, "w") {}
+      true
+    end
+  rescue Errno::EACCES
+    false
   end
 
   # The name of the configuration file.
   def config_file_name
     @config_file_name || Gem.config_file
+  end
+
+  # The name of the state file.
+  def state_file_name
+    Gem.state_file
+  end
+
+  # Reads time of last update check from state file
+  def last_update_check
+    if File.readable?(state_file_name)
+      File.read(state_file_name).to_i
+    else
+      0
+    end
+  end
+
+  # Writes time of last update check to state file
+  def last_update_check=(timestamp)
+    File.write(state_file_name, timestamp.to_s) if state_file_writable?
   end
 
   # Delegates to @hash
@@ -379,7 +419,7 @@ if you believe they were disclosed to a third party.
     yield :backtrace, @backtrace
     yield :bulk_threshold, @bulk_threshold
 
-    yield 'config_file_name', @config_file_name if @config_file_name
+    yield "config_file_name", @config_file_name if @config_file_name
 
     hash.each(&block)
   end
@@ -395,7 +435,7 @@ if you believe they were disclosed to a third party.
       when /^--debug$/ then
         $DEBUG = true
 
-        warn 'NOTE:  Debugging mode prints all exceptions even when rescued'
+        warn "NOTE:  Debugging mode prints all exceptions even when rescued"
       else
         @args << arg
       end
@@ -433,26 +473,25 @@ if you believe they were disclosed to a third party.
     yaml_hash[:ssl_client_cert] =
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
-    keys = yaml_hash.keys.map {|key| key.to_s }
-    keys << 'debug'
+    keys = yaml_hash.keys.map(&:to_s)
+    keys << "debug"
     re = Regexp.union(*keys)
 
     @hash.each do |key, value|
       key = key.to_s
-      next if key =~ re
+      next if key&.match?(re)
       yaml_hash[key.to_s] = value
     end
 
-    yaml_hash.to_yaml
+    self.class.dump_with_rubygems_yaml(yaml_hash)
   end
 
   # Writes out this config file, replacing its source.
   def write
-    unless File.exist?(File.dirname(config_file_name))
-      FileUtils.mkdir_p File.dirname(config_file_name)
-    end
+    require "fileutils"
+    FileUtils.mkdir_p File.dirname(config_file_name)
 
-    File.open config_file_name, 'w' do |io|
+    File.open config_file_name, "w" do |io|
       io.write to_yaml
     end
   end
@@ -468,16 +507,67 @@ if you believe they were disclosed to a third party.
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @backtrace == other.backtrace and
-      @bulk_threshold == other.bulk_threshold and
-      @verbose == other.verbose and
-      @update_sources == other.update_sources and
+    self.class === other &&
+      @backtrace == other.backtrace &&
+      @bulk_threshold == other.bulk_threshold &&
+      @verbose == other.verbose &&
+      @update_sources == other.update_sources &&
       @hash == other.hash
   end
 
   attr_reader :hash
   protected :hash
+
+  def self.dump_with_rubygems_yaml(content)
+    content.transform_keys! do |k|
+      k.is_a?(Symbol) ? ":#{k}" : k
+    end
+
+    require_relative "yaml_serializer"
+    Gem::YAMLSerializer.dump(content)
+  end
+
+  def self.load_with_rubygems_config_hash(yaml)
+    require_relative "yaml_serializer"
+
+    content = Gem::YAMLSerializer.load(yaml)
+
+    content.transform_keys! do |k|
+      if k.match?(/\A:(.*)\Z/)
+        k[1..-1].to_sym
+      elsif k.include?("__") || k.match?(%r{/\Z})
+        if k.is_a?(Symbol)
+          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+        else
+          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+        end
+      else
+        k
+      end
+    end
+
+    content.transform_values! do |v|
+      if v.is_a?(String)
+        if v.match?(/\A:(.*)\Z/)
+          v[1..-1].to_sym
+        elsif v.match?(/\A[+-]?\d+\Z/)
+          v.to_i
+        elsif v.match?(/\Atrue|false\Z/)
+          v == "true"
+        elsif v.empty?
+          nil
+        else
+          v
+        end
+      elsif v.is_a?(Hash) && v.empty?
+        nil
+      else
+        v
+      end
+    end
+
+    content
+  end
 
   private
 
@@ -491,7 +581,7 @@ if you believe they were disclosed to a third party.
         need_config_file_name = false
       elsif arg =~ /^--config-file=(.*)/
         @config_file_name = $1
-      elsif arg =~ /^--config-file$/
+      elsif /^--config-file$/.match?(arg)
         need_config_file_name = true
       end
     end

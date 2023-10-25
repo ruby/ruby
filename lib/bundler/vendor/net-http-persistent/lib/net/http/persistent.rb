@@ -3,6 +3,8 @@ require_relative '../../../../uri/lib/uri'
 require 'cgi' # for escaping
 require_relative '../../../../connection_pool/lib/connection_pool'
 
+autoload :OpenSSL, 'openssl'
+
 ##
 # Persistent connections for Net::HTTP
 #
@@ -147,14 +149,9 @@ class Bundler::Persistent::Net::HTTP::Persistent
   EPOCH = Time.at 0 # :nodoc:
 
   ##
-  # Is OpenSSL available?
+  # Is OpenSSL available?  This test works with autoload
 
-  HAVE_OPENSSL = begin # :nodoc:
-                   require 'openssl'
-                   true
-                 rescue LoadError
-                   false
-                 end
+  HAVE_OPENSSL = defined? OpenSSL::SSL # :nodoc:
 
   ##
   # The default connection pool size is 1/4 the allowed open files
@@ -162,7 +159,14 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # limits (typically windows).
 
   if Process.const_defined? :RLIMIT_NOFILE
-    DEFAULT_POOL_SIZE = Process.getrlimit(Process::RLIMIT_NOFILE).first / 4
+    open_file_limits = Process.getrlimit(Process::RLIMIT_NOFILE)
+
+    # Under JRuby on Windows Process responds to `getrlimit` but returns something that does not match docs
+    if open_file_limits.respond_to?(:first)
+      DEFAULT_POOL_SIZE = open_file_limits.first / 4
+    else
+      DEFAULT_POOL_SIZE = 256
+    end
   else
     DEFAULT_POOL_SIZE = 256
   end
@@ -170,7 +174,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   ##
   # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
 
-  VERSION = '4.0.0'
+  VERSION = '4.0.2'
 
   ##
   # Error class for errors raised by Bundler::Persistent::Net::HTTP::Persistent.  Various

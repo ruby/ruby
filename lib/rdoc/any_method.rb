@@ -26,6 +26,9 @@ class RDoc::AnyMethod < RDoc::MethodAttr
 
   attr_accessor :c_function
 
+  # The section title of the method (if defined in a C file via +:category:+)
+  attr_accessor :section_title
+
   # Parameters for this method
 
   attr_accessor :params
@@ -110,6 +113,13 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     return if call_seq.empty?
 
     @call_seq = call_seq
+  end
+
+  ##
+  # Whether the method has a call-seq.
+
+  def has_call_seq?
+    !!(@call_seq || is_alias_for&._call_seq)
   end
 
   ##
@@ -294,6 +304,14 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   end
 
   ##
+  # Whether to skip the method description, true for methods that have
+  # aliases with a call-seq that doesn't include the method name.
+
+  def skip_description?
+    has_call_seq? && call_seq.nil? && !!(is_alias_for || !aliases.empty?)
+  end
+
+  ##
   # Sets the store for this method and its referenced code objects.
 
   def store= store
@@ -347,15 +365,15 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       ignore << is_alias_for.name
       ignore.concat is_alias_for.aliases.map(&:name)
     end
-    ignore.map! { |n| n =~ /\A\[/ ? n[0, 1] : n}
+    ignore.map! { |n| n =~ /\A\[/ ? /\[.*\]/ : n}
     ignore.delete(method_name)
     ignore = Regexp.union(ignore)
 
     matching = entries.reject do |entry|
-      entry =~ /^\w*\.?#{ignore}/ or
+      entry =~ /^\w*\.?#{ignore}[$\(\s]/ or
         entry =~ /\s#{ignore}\s/
     end
 
-    matching.join "\n"
+    matching.empty? ? nil : matching.join("\n")
   end
 end

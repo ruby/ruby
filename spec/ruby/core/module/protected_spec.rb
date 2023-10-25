@@ -39,11 +39,25 @@ describe "Module#protected" do
                   :module_specs_public_method_on_object_for_kernel_protected)
   end
 
-  it "returns self" do
-    (class << Object.new; self; end).class_eval do
-      def foo; end
-      protected(:foo).should equal(self)
-      protected.should equal(self)
+  ruby_version_is ""..."3.1" do
+    it "returns self" do
+      (class << Object.new; self; end).class_eval do
+        def foo; end
+        protected(:foo).should equal(self)
+        protected.should equal(self)
+      end
+    end
+  end
+
+  ruby_version_is "3.1" do
+    it "returns argument or arguments if given" do
+      (class << Object.new; self; end).class_eval do
+        def foo; end
+        protected(:foo).should equal(:foo)
+        protected([:foo, :foo]).should == [:foo, :foo]
+        protected(:foo, :foo).should == [:foo, :foo]
+        protected.should equal(nil)
+      end
     end
   end
 

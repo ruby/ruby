@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The global rubygems pool represented via the traditional
 # source index.
@@ -43,24 +44,24 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     name = req.dependency.name
 
     @all[name].each do |uri, n|
-      if req.match? n, @prerelease
-        res << Gem::Resolver::IndexSpecification.new(
-          self, n.name, n.version, uri, n.platform)
-      end
+      next unless req.match? n, @prerelease
+      res << Gem::Resolver::IndexSpecification.new(
+        self, n.name, n.version, uri, n.platform
+      )
     end
 
     res
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[IndexSet', ']' do
+    q.group 2, "[IndexSet", "]" do
       q.breakable
-      q.text 'sources:'
+      q.text "sources:"
       q.breakable
       q.pp @f.sources
 
       q.breakable
-      q.text 'specs:'
+      q.text "specs:"
 
       q.breakable
 

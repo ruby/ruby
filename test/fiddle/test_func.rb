@@ -15,7 +15,7 @@ module Fiddle
       begin
         f = Function.new(@libm['sinf'], [TYPE_FLOAT], TYPE_FLOAT)
       rescue Fiddle::DLError
-        skip "libm may not have sinf()"
+        omit "libm may not have sinf()"
       end
       assert_in_delta 1.0, f.call(90 * Math::PI / 180), 0.0001
     end
@@ -26,14 +26,13 @@ module Fiddle
     end
 
     def test_string
-      stress, GC.stress = GC.stress, true
-      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
-      buff = +"000"
-      str = f.call(buff, "123")
-      assert_equal("123", buff)
-      assert_equal("123", str.to_s)
-    ensure
-      GC.stress = stress
+      under_gc_stress do
+        f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+        buff = +"000"
+        str = f.call(buff, "123")
+        assert_equal("123", buff)
+        assert_equal("123", str.to_s)
+      end
     end
 
     def test_isdigit
@@ -61,28 +60,40 @@ module Fiddle
     end
 
     def test_qsort1
-      cb = Class.new(Closure) {
+      closure_class = Class.new(Closure) do
         def call(x, y)
           Pointer.new(x)[0] <=> Pointer.new(y)[0]
         end
-      }.new(TYPE_INT, [TYPE_VOIDP, TYPE_VOIDP])
+      end
 
-      qsort = Function.new(@libc['qsort'],
-                           [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP],
-                           TYPE_VOID)
-      buff = "9341"
-      qsort.call(buff, buff.size, 1, cb)
-      assert_equal("1349", buff)
+      closure_class.create(TYPE_INT, [TYPE_VOIDP, TYPE_VOIDP]) do |callback|
+        qsort = Function.new(@libc['qsort'],
+                             [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP],
+                             TYPE_VOID)
+        buff = "9341"
+        qsort.call(buff, buff.size, 1, callback)
+        assert_equal("1349", buff)
 
-      bug4929 = '[ruby-core:37395]'
-      buff = "9341"
-      EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
-      assert_equal("1349", buff, bug4929)
+        bug4929 = '[ruby-core:37395]'
+        buff = "9341"
+        under_gc_stress do
+          qsort.call(buff, buff.size, 1, callback)
+        end
+        assert_equal("1349", buff, bug4929)
+      end
+    ensure
+      # Ensure freeing all closures.
+      # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
+      not_freed_closures = []
+      ObjectSpace.each_object(Fiddle::Closure) do |closure|
+        not_freed_closures << closure unless closure.freed?
+      end
+      assert_equal([], not_freed_closures)
     end
 
     def test_snprintf
       unless Fiddle.const_defined?("TYPE_VARIADIC")
-        skip "libffi doesn't support variadic arguments"
+        omit "libffi doesn't support variadic arguments"
       end
       if Fiddle::WINDOWS
         snprintf_name = "_snprintf"
@@ -92,35 +103,46 @@ module Fiddle
       begin
         snprintf_pointer = @libc[snprintf_name]
       rescue Fiddle::DLError
-        skip "Can't find #{snprintf_name}: #{$!.message}"
+        omit "Can't find #{snprintf_name}: #{$!.message}"
       end
       snprintf = Function.new(snprintf_pointer,
                               [
-                                TYPE_VOIDP,
-                                TYPE_SIZE_T,
-                                TYPE_VOIDP,
-                                TYPE_VARIADIC,
+                                :voidp,
+                                :size_t,
+                                :const_string,
+                                :variadic,
                               ],
-                              TYPE_INT)
+                              :int)
       output_buffer = " " * 1024
       output = Pointer[output_buffer]
 
       written = snprintf.call(output,
                               output.size,
-                              "int: %d, string: %.*s\n",
-                              TYPE_INT, -29,
-                              TYPE_INT, 4,
-                              TYPE_VOIDP, "Hello")
-      assert_equal("int: -29, string: Hell\n",
+                              "int: %d, string: %.*s, const string: %s\n",
+                              :int, -29,
+                              :int, 4,
+                              :voidp, "Hello",
+                              :const_string, "World")
+      assert_equal("int: -29, string: Hell, const string: World\n",
                    output_buffer[0, written])
 
+      string_like_class = Class.new do
+        def initialize(string)
+          @string = string
+        end
+
+        def to_str
+          @string
+        end
+      end
       written = snprintf.call(output,
                               output.size,
-                              "string: %.*s, uint: %u\n",
-                              TYPE_INT, 2,
-                              TYPE_VOIDP, "Hello",
-                              TYPE_INT, 29)
-      assert_equal("string: He, uint: 29\n",
+                              "string: %.*s, const string: %s, uint: %u\n",
+                              :int, 2,
+                              :voidp, "Hello",
+                              :const_string, string_like_class.new("World"),
+                              :int, 29)
+      assert_equal("string: He, const string: World, uint: 29\n",
                    output_buffer[0, written])
     end
   end

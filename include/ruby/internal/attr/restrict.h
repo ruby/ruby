@@ -17,12 +17,11 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_RESTRICT.
  */
 #include "ruby/internal/compiler_since.h"
 #include "ruby/internal/has/attribute.h"
-#include "ruby/internal/token_paste.h"
 
 /* :FIXME:  config.h  includes conflicting  `#define  restrict`.   MSVC can  be
  * detected  using `RBIMPL_COMPILER_SINCE()`,  but  Clang &  family cannot  use
@@ -30,7 +29,7 @@
 
 /** Wraps (or simulates) `__declspec(restrict)` */
 #if RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
-# define RBIMPL_ATTR_RESTRICT() __declspec(RBIMPL_TOKEN_PASTE(re, strict))
+# define RBIMPL_ATTR_RESTRICT() __declspec(re ## strict)
 
 #elif RBIMPL_HAS_ATTRIBUTE(malloc)
 # define RBIMPL_ATTR_RESTRICT() __attribute__((__malloc__))

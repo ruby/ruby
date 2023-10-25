@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Integer#nobits?" do
-  it "returns true iff all no bits of the argument are set in the receiver" do
+  it "returns true if and only if all no bits of the argument are set in the receiver" do
     42.nobits?(42).should == false
     0b1010_1010.nobits?(0b1000_0010).should == false
     0b1010_1010.nobits?(0b1000_0001).should == false

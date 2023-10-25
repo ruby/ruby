@@ -24,12 +24,6 @@ class RubygemsVersionManager
 
   def assert_system_features_not_loaded!
     at_exit do
-      errors = if $?.nil?
-        ""
-      else
-        all_commands_output
-      end
-
       rubylibdir = RbConfig::CONFIG["rubylibdir"]
 
       rubygems_path = rubylibdir + "/rubygems"
@@ -43,11 +37,11 @@ class RubygemsVersionManager
           (loaded_feature.start_with?(bundler_path) && !bundler_exemptions.any? {|bundler_exemption| loaded_feature.start_with?(bundler_exemption) })
       end
 
-      if bad_loaded_features.any?
-        errors += "the following features were incorrectly loaded:\n#{bad_loaded_features.join("\n")}"
+      errors = if bad_loaded_features.any?
+        all_commands_output + "the following features were incorrectly loaded:\n#{bad_loaded_features.join("\n")}"
       end
 
-      raise errors unless errors.empty?
+      raise errors if errors
     end
   end
 
@@ -78,6 +72,7 @@ class RubygemsVersionManager
   end
 
   def rubygems_unrequire_needed?
+    require "rubygems"
     !$LOADED_FEATURES.include?(local_copy_path.join("lib/rubygems.rb").to_s)
   end
 
@@ -118,7 +113,7 @@ class RubygemsVersionManager
   end
 
   def resolve_target_tag
-    return "v#{@source}" if @source.match(/^\d/)
+    return "v#{@source}" if @source.match?(/^\d/)
 
     @source
   end

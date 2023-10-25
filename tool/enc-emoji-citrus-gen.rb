@@ -71,7 +71,7 @@ end
 def generate_to_ucs(params, pairs)
   pairs.sort_by! {|u, c| c }
   name = "EMOJI_#{params[:name]}%UCS"
-  open("#{name}.src", "w") do |io|
+  File.open("#{name}.src", "w") do |io|
     io.print header(params.merge(name: name.tr('%', '/')))
     io.puts
     io.puts  "BEGIN_MAP"
@@ -83,7 +83,7 @@ end
 def generate_from_ucs(params, pairs)
   pairs.sort_by! {|u, c| u }
   name = "UCS%EMOJI_#{params[:name]}"
-  open("#{name}.src", "w") do |io|
+  File.open("#{name}.src", "w") do |io|
     io.print header(params.merge(name: name.tr('%', '/')))
     io.puts
     io.puts  "BEGIN_MAP"

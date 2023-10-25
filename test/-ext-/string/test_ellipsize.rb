@@ -10,7 +10,7 @@ class Test_StringEllipsize < Test::Unit::TestCase
   def assert_equal_with_class(expected, result, *rest)
     assert_equal(expected.encoding, result.encoding, *rest)
     assert_equal(expected, result, result.encoding.name)
-    assert_instance_of(Bug::String, result, *rest)
+    assert_instance_of(String, result, *rest)
   end
 
   def test_longer

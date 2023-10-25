@@ -167,10 +167,14 @@ describe "StringIO.open when passed [Object]" do
     io.should equal(ret)
   end
 
-  it "sets the mode to read-write" do
+  it "sets the mode to read-write (r+)" do
     io = StringIO.open("example")
     io.closed_read?.should be_false
     io.closed_write?.should be_false
+
+    io = StringIO.new("example")
+    io.printf("%d", 123)
+    io.string.should == "123mple"
   end
 
   it "tries to convert the passed Object to a String using #to_str" do
@@ -195,10 +199,14 @@ describe "StringIO.open when passed no arguments" do
     io.should equal(ret)
   end
 
-  it "sets the mode to read-write" do
+  it "sets the mode to read-write (r+)" do
     io = StringIO.open
     io.closed_read?.should be_false
     io.closed_write?.should be_false
+
+    io = StringIO.new("example")
+    io.printf("%d", 123)
+    io.string.should == "123mple"
   end
 
   it "uses an empty String as the StringIO backend" do

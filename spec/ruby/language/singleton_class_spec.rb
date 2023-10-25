@@ -14,7 +14,7 @@ describe "A singleton class" do
     nil.singleton_class.should == NilClass
   end
 
-  it "raises a TypeError for Fixnum's" do
+  it "raises a TypeError for Integer's" do
     -> { 1.singleton_class }.should raise_error(TypeError)
   end
 
@@ -74,7 +74,7 @@ describe "A singleton class" do
   end
 
   it "doesn't have singleton class" do
-    -> { bignum_value.singleton_class.superclass.should == Bignum }.should raise_error(TypeError)
+    -> { bignum_value.singleton_class }.should raise_error(TypeError)
   end
 end
 
@@ -153,23 +153,6 @@ describe "A constant on a singleton class" do
 
     class << @object
       CONST.should_not be_nil
-    end
-  end
-end
-
-describe "Defining yield in singleton class" do
-  ruby_version_is "2.7"..."3.0" do
-    it 'emits a deprecation warning' do
-      code = <<~RUBY
-          def m
-            class << Object.new
-              yield
-            end
-          end
-          m { :ok }
-        RUBY
-
-      -> { eval(code) }.should complain(/warning: `yield' in class syntax will not be supported from Ruby 3.0/)
     end
   end
 end
@@ -306,5 +289,22 @@ describe "Instantiating a singleton class" do
     -> {
       Object.new.singleton_class.allocate
     }.should raise_error(TypeError)
+  end
+end
+
+describe "Frozen properties" do
+  it "is frozen if the object it is created from is frozen" do
+    o = Object.new
+    o.freeze
+    klass = o.singleton_class
+    klass.frozen?.should == true
+  end
+
+  it "will be frozen if the object it is created from becomes frozen" do
+    o = Object.new
+    klass = o.singleton_class
+    klass.frozen?.should == false
+    o.freeze
+    klass.frozen?.should == true
   end
 end

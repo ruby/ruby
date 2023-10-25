@@ -103,7 +103,7 @@ describe "The 'case'-construct" do
     $1.should == "42"
   end
 
-  it "tests with a regexp interpolated within another regexp" do
+  it "tests with a string interpolated in a regexp" do
     digits = '\d+'
     case "foo44"
     when /oo(#{digits})/
@@ -116,7 +116,7 @@ describe "The 'case'-construct" do
     $1.should == "44"
   end
 
-  it "tests with a string interpolated in a regexp" do
+  it "tests with a regexp interpolated within another regexp" do
     digits_regexp = /\d+/
     case "foo43"
     when /oo(#{digits_regexp})/
@@ -154,6 +154,15 @@ describe "The 'case'-construct" do
     when 'x', 'y', 'z'
       "bar"
     end.should == "foo"
+  end
+
+  it "tests an empty array" do
+    case []
+    when []
+      'foo'
+    else
+      'bar'
+    end.should == 'foo'
   end
 
   it "expands arrays to lists of values" do
@@ -421,6 +430,15 @@ describe "The 'case'-construct with no target expression" do
   it "accepts complex expressions within ()" do
     case 'a'
     when (raise if 2+2 == 3; /a/)
+      :called
+    end.should == :called
+  end
+
+  it "only matches last value in complex expressions within ()" do
+    case 'a'
+    when ('a'; 'b')
+      :wrong_called
+    when ('b'; 'a')
       :called
     end.should == :called
   end

@@ -1,6 +1,13 @@
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib/rinda", "."].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
 Gem::Specification.new do |spec|
-  spec.name          = "rinda"
-  spec.version       = "0.1.0"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Masatoshi SEKI"]
   spec.email         = ["seki@ruby-lang.org"]
 
@@ -21,4 +28,8 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+
+  spec.add_dependency "drb"
+  spec.add_dependency "ipaddr"
+  spec.add_dependency "forwardable"
 end

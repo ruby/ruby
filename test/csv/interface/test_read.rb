@@ -26,21 +26,39 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
 
   def test_foreach
     rows = []
-    CSV.foreach(@input.path, col_sep: "\t", row_sep: "\r\n").each do |row|
+    CSV.foreach(@input.path, col_sep: "\t", row_sep: "\r\n") do |row|
       rows << row
     end
     assert_equal(@rows, rows)
+  end
+
+  if respond_to?(:ractor)
+    ractor
+    def test_foreach_in_ractor
+      ractor = Ractor.new(@input.path) do |path|
+        rows = []
+        CSV.foreach(path, col_sep: "\t", row_sep: "\r\n") do |row|
+          rows << row
+        end
+        rows
+      end
+      rows = [
+        ["1", "2", "3"],
+        ["4", "5"],
+      ]
+      assert_equal(rows, ractor.take)
+    end
   end
 
   def test_foreach_mode
     rows = []
-    CSV.foreach(@input.path, "r", col_sep: "\t", row_sep: "\r\n").each do |row|
+    CSV.foreach(@input.path, "r", col_sep: "\t", row_sep: "\r\n") do |row|
       rows << row
     end
     assert_equal(@rows, rows)
   end
 
-  def test_foreach_enumurator
+  def test_foreach_enumerator
     rows = CSV.foreach(@input.path, col_sep: "\t", row_sep: "\r\n").to_a
     assert_equal(@rows, rows)
   end
@@ -95,11 +113,11 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
       file << "\u{1F600},\u{1F601}"
     end
     CSV.open(@input.path, encoding: "EUC-JP") do |csv|
-      error = assert_raise(CSV::MalformedCSVError) do
+      error = assert_raise(CSV::InvalidEncodingError) do
         csv.shift
       end
-      assert_equal("Invalid byte sequence in EUC-JP in line 1.",
-                   error.message)
+      assert_equal([Encoding::EUC_JP, "Invalid byte sequence in EUC-JP in line 1."],
+                   [error.encoding, error.message])
     end
   end
 
@@ -187,6 +205,16 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
     end
   end
 
+  def test_open_with_newline
+    CSV.open(@input.path, col_sep: "\t", universal_newline: true) do |csv|
+      assert_equal(@rows, csv.to_a)
+    end
+    File.binwrite(@input.path, "1,2,3\r\n" "4,5\n")
+    CSV.open(@input.path, newline: :universal) do |csv|
+      assert_equal(@rows, csv.to_a)
+    end
+  end
+
   def test_parse
     assert_equal(@rows,
                  CSV.parse(@data, col_sep: "\t", row_sep: "\r\n"))
@@ -238,6 +266,20 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
   def test_read
     assert_equal(@rows,
                  CSV.read(@input.path, col_sep: "\t", row_sep: "\r\n"))
+  end
+
+  if respond_to?(:ractor)
+    ractor
+    def test_read_in_ractor
+      ractor = Ractor.new(@input.path) do |path|
+        CSV.read(path, col_sep: "\t", row_sep: "\r\n")
+      end
+      rows = [
+        ["1", "2", "3"],
+        ["4", "5"],
+      ]
+      assert_equal(rows, ractor.take)
+    end
   end
 
   def test_readlines

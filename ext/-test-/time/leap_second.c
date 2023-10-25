@@ -1,3 +1,4 @@
+#include "ruby.h"
 #include "internal/time.h"
 
 static VALUE

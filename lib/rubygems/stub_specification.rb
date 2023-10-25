@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Gem::StubSpecification reads the stub: line from the gemspec.  This prevents
 # us having to eval the entire gemspec in order to find out certain
@@ -6,10 +7,10 @@
 
 class Gem::StubSpecification < Gem::BasicSpecification
   # :nodoc:
-  PREFIX = "# stub: ".freeze
+  PREFIX = "# stub: "
 
   # :nodoc:
-  OPEN_MODE = 'r:UTF-8:-'.freeze
+  OPEN_MODE = "r:UTF-8:-"
 
   class StubLine # :nodoc: all
     attr_reader :name, :version, :platform, :require_paths, :extensions,
@@ -19,9 +20,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     # These are common require paths.
     REQUIRE_PATHS = { # :nodoc:
-      'lib'  => 'lib'.freeze,
-      'test' => 'test'.freeze,
-      'ext'  => 'ext'.freeze,
+      "lib" => "lib",
+      "test" => "test",
+      "ext" => "ext",
     }.freeze
 
     # These are common require path lists.  This hash is used to optimize
@@ -29,28 +30,28 @@ class Gem::StubSpecification < Gem::BasicSpecification
     # in their require paths, so lets take advantage of that by pre-allocating
     # a require path list for that case.
     REQUIRE_PATH_LIST = { # :nodoc:
-      'lib' => ['lib'].freeze
+      "lib" => ["lib"].freeze,
     }.freeze
 
     def initialize(data, extensions)
-      parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
-      @name          = parts[0].freeze
+      parts          = data[PREFIX.length..-1].split(" ", 4)
+      @name          = -parts[0]
       @version       = if Gem::Version.correct?(parts[1])
-                         Gem::Version.new(parts[1])
-                       else
-                         Gem::Version.new(0)
-                       end
+        Gem::Version.new(parts[1])
+      else
+        Gem::Version.new(0)
+      end
 
       @platform      = Gem::Platform.new parts[2]
       @extensions    = extensions
       @full_name     = if platform == Gem::Platform::RUBY
-                         "#{name}-#{version}"
-                       else
-                         "#{name}-#{version}-#{platform}"
-                       end
+        "#{name}-#{version}"
+      else
+        "#{name}-#{version}-#{platform}"
+      end
 
       path_list = parts.last
-      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! do |x|
+      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0").map! do |x|
         REQUIRE_PATHS[x] || x
       end
     end
@@ -84,10 +85,10 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def activated?
     @activated ||=
-    begin
-      loaded = Gem.loaded_specs[name]
-      loaded && loaded.version == version
-    end
+      begin
+        loaded = Gem.loaded_specs[name]
+        loaded && loaded.version == version
+      end
   end
 
   def default_gem?
@@ -110,21 +111,24 @@ class Gem::StubSpecification < Gem::BasicSpecification
       begin
         saved_lineno = $.
 
-        File.open loaded_from, OPEN_MODE do |file|
-          begin
-            file.readline # discard encoding line
-            stubline = file.readline.chomp
-            if stubline.start_with?(PREFIX)
-              extensions = if /\A#{PREFIX}/ =~ file.readline.chomp
-                             $'.split "\0"
-                           else
-                             StubLine::NO_EXTENSIONS
-                           end
+        Gem.open_file loaded_from, OPEN_MODE do |file|
+          file.readline # discard encoding line
+          stubline = file.readline
+          if stubline.start_with?(PREFIX)
+            extline = file.readline
 
-              @data = StubLine.new stubline, extensions
-            end
-          rescue EOFError
+            extensions =
+              if extline.delete_prefix!(PREFIX)
+                extline.chomp!
+                extline.split "\0"
+              else
+                StubLine::NO_EXTENSIONS
+              end
+
+            stubline.chomp! # readline(chomp: true) allocates 3x as much as .readline.chomp!
+            @data = StubLine.new stubline, extensions
           end
+        rescue EOFError
         end
       ensure
         $. = saved_lineno
@@ -183,17 +187,15 @@ class Gem::StubSpecification < Gem::BasicSpecification
   ##
   # The full Gem::Specification for this gem, loaded from evalling its gemspec
 
-  def to_spec
+  def spec
     @spec ||= if @data
-                loaded = Gem.loaded_specs[name]
-                loaded if loaded && loaded.version == version
-              end
+      loaded = Gem.loaded_specs[name]
+      loaded if loaded && loaded.version == version
+    end
 
     @spec ||= Gem::Specification.load(loaded_from)
-    @spec.ignored = @ignored if @spec
-
-    @spec
   end
+  alias_method :to_spec, :spec
 
   ##
   # Is this StubSpecification valid? i.e. have we found a stub line, OR does

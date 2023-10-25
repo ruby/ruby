@@ -6,22 +6,16 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the  file for
 # details.
 
-# This is  a Travis-CI  build configuration file.   The list  of configurations
-# available is located in
-#
-#     http://about.travis-ci.org/docs/user/build-configuration/
-#
-# and as Ruby itself is a project written in C language,
-#
-#     http://about.travis-ci.org/docs/user/languages/c/
-#
-# is also a good place to look at.
+# We only manage non-amd64 free pipelines.
+# https://docs.travis-ci.com/user/billing-overview/
 
 language: c
 
 os: linux
 
-dist: xenial
+if: commit_message !~ /\[DOC\]/
+
+dist: focal
 
 git:
   quiet: true
@@ -34,6 +28,10 @@ cache:
 
 env:
   global:
+    # The tests skipped in `make test-all`.
+    - TEST_ALL_SKIPPED_TESTS=
+    # The tests executed separately by `make test-all`.
+    - TEST_ALL_SEPARATED_TESTS=
     # Reset timestamps early
     - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
@@ -46,64 +44,29 @@ env:
     - SETARCH=
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
-    - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
-    - BEFORE_INSTALL=true
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
+    # -O1 is faster than -O3 in our tests.
+    - optflags=-O1
+    # -g0 disables backtraces when SEGV.  Do not set that.
+    - debugflags=-ggdb3
 
 .org.ruby-lang.ci.matrix-definitions:
 
-  - &make-test-only
-    script:
-      - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-
-  - &gcc-8
-    compiler: gcc-8
-    # # Not using addon to control retries
-    # addons:
-    #   apt:
-    #     sources:
-    #       - ubuntu-toolchain-r-test
+  - &gcc-10
+    compiler: gcc-10
     before_install:
-      - bash -cx "${BEFORE_INSTALL}"
-      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
         ccache
-        gcc-8
-        g++-8
+        gcc-10
+        g++-10
         libffi-dev
-        libgdbm-dev
-        libncurses5-dev
+        libncurses-dev
         libncursesw5-dev
-        libreadline6-dev
-        libssl-dev
-        libyaml-dev
-        openssl
-        zlib1g-dev
-
-  - &clang-8
-    compiler: clang-8
-    addons:
-      apt:
-        # Not doing this manually unlike other sources, because it has been stable.
-        sources:
-          - llvm-toolchain-xenial-8
-        config:
-          retries: true
-    before_install:
-      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        clang-8
-        llvm-8-tools
-        libffi-dev
-        libgdbm-dev
-        libncurses5-dev
-        libncursesw5-dev
-        libreadline6-dev
+        libreadline-dev
         libssl-dev
         libyaml-dev
         openssl
@@ -111,65 +74,37 @@ env:
 
   # --------
 
-  - &x86_64-linux
-    name: x86_64-linux
-    <<: *gcc-8
-
   - &arm64-linux
     name: arm64-linux
     arch: arm64
-    <<: *gcc-8
+    <<: *gcc-10
+
+  - &ppc64le-linux
+    name: ppc64le-linux
+    arch: ppc64le
+    compiler: gcc
 
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    <<: *gcc-8
-
-  - &i686-linux
-    name: i686-linux
-    compiler: gcc-8
+    dist: jammy
+    compiler: gcc
     env:
-      - GCC_FLAGS=-m32
-      - CXX='g++-8 -m32'
-      - debugflags=-g0
-      - SETARCH='setarch i686 --verbose --3gb'
-    # # Not using addon to control retries
-    # addons:
-    #   apt:
-    #     sources:
-    #       - ubuntu-toolchain-r-test
-    before_install:
-      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        gcc-8-multilib
-        g++-8
-        g++-8-multilib
-        libstdc++-8-dev:i386
-        libffi-dev:i386
-        libffi6:i386
-        libgdbm-dev:i386
-        libgdbm3:i386
-        libncurses5-dev:i386
-        libncurses5:i386
-        libncursesw5-dev:i386
-        libreadline6-dev:i386
-        libreadline6:i386
-        libssl-dev:i386
-        libssl1.0.0:i386
-        linux-libc-dev:i386
-        zlib1g-dev:i386
-        zlib1g:i386
+      # Avoid possible test failures with the zlib applying the following patch
+      # on s390x CPU architecture.
+      # https://github.com/madler/zlib/pull/410
+      - DFLTCC=0
 
   - &arm32-linux
     name: arm32-linux
     arch: arm64
-    # https://packages.ubuntu.com/xenial/crossbuild-essential-armhf
+    # https://packages.ubuntu.com/focal/crossbuild-essential-armhf
     compiler: arm-linux-gnueabihf-gcc
     env:
-      - debugflags=-g0
       - SETARCH='setarch linux32 --verbose --32bit'
+      # The "TestReadline#test_interrupt_in_other_thread" started failing on arm32
+      # from https://www.travis-ci.com/github/ruby/ruby/jobs/529005145
+      - TEST_ALL_SKIPPED_TESTS=test_interrupt_in_other_thread
     before_install:
       - sudo dpkg --add-architecture armhf
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
@@ -178,37 +113,53 @@ env:
         ccache
         crossbuild-essential-armhf
         libc6:armhf
-        libstdc++-5-dev:armhf
+        libstdc++-10-dev:armhf
         libffi-dev:armhf
-        libffi6:armhf
-        libgdbm-dev:armhf
-        libgdbm3:armhf
-        libncurses5-dev:armhf
-        libncurses5:armhf
+        libncurses-dev:armhf
         libncursesw5-dev:armhf
-        libreadline6-dev:armhf
-        libreadline6:armhf
+        libreadline-dev:armhf
         libssl-dev:armhf
-        libssl1.0.0:armhf
+        libyaml-dev:armhf
         linux-libc-dev:armhf
         zlib1g-dev:armhf
-        zlib1g:armhf
 
 matrix:
   include:
-    # Build every commit:
-    - <<: *i686-linux
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
-    - <<: *arm64-linux
+    # Comment out as the 2nd arm64 pipeline is unstable.
+    # - <<: *arm64-linux
+    - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
+    # We see multiple errors indicating errors on the Travis environment itself in a short while:
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/544382885
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/544361370
+    # It's not a fault of Ruby's arm32 support but just Travis arm32 seems unsable.
     - name: arm32-linux
-    - name: arm64-linux
+    # - name: arm64-linux
+    # We see "Some worker was crashed." in about 40% of recent ppc64le-linux jobs
+    # e.g. https://app.travis-ci.com/github/ruby/ruby/jobs/530959548
+    - name: ppc64le-linux
+    # Tentatively disable, because often hungs up **after** all tests
+    # have finished successfully and saving caches.
     - name: s390x-linux
   fast_finish: true
 
 before_script:
+  - . tool/ci_functions.sh
+  - |-
+    if [ -n "${TEST_ALL_SKIPPED_TESTS}" ]; then
+      TEST_ALL_OPTS="${TEST_ALL_OPTS} $(ci_to_excluded_test_opts "${TEST_ALL_SKIPPED_TESTS}")"
+      if [ -z "${TEST_ALL_SEPARATED_TESTS}" ]; then
+        TEST_ALL_SEPARATED_TESTS="${TEST_ALL_SKIPPED_TESTS}"
+      fi
+    fi
+  - |-
+    if [ -n "${TEST_ALL_SEPARATED_TESTS}" ]; then
+      TEST_ALL_OPTS_SEPARATED="$(ci_to_included_test_opts "${TEST_ALL_SEPARATED_TESTS}")"
+    fi
+  - echo TEST_ALL_OPTS="${TEST_ALL_OPTS}" TEST_ALL_OPTS_SEPARATED="${TEST_ALL_OPTS_SEPARATED}"
   - rm -fr .ext autom4te.cache
   - |-
     [ -d ~/.downloaded-cache ] ||
@@ -217,8 +168,7 @@ before_script:
   - "> config.status"
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
-  - make touch-unicode-files
-  - make -s $JOBS $UPDATE_UNICODE up
+  - make -s $JOBS up
   - make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
@@ -227,9 +177,9 @@ before_script:
     else
       mkdir build
     fi
-  - mkdir config_1st config_2nd
+  - mkdir config_1st config_2nd gems/src
   - chmod -R a-w .
-  - chmod -R u+w build config_1st config_2nd
+  - chmod -R u+w build config_1st config_2nd gems/src .bundle
   - cd build
   - |-
     case "$CC" in
@@ -258,18 +208,18 @@ before_script:
 
 script:
   - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
-  - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+  - ../tool/travis_wait.sh $SETARCH make -s test-all -o exts TESTOPTS="$JOBS -q --tty=no ${TEST_ALL_OPTS}" RUBYOPT="-w"
+  # Run the failing tests separately returning ok status to check if it works,
+  # visualize them.
+  - |
+    if [ -n "${TEST_ALL_OPTS_SEPARATED}" ]; then
+      $SETARCH make -s test-all -o exts TESTOPTS="$JOBS -v --tty=no ${TEST_ALL_OPTS_SEPARATED}" RUBYOPT="-w" || :
+    fi
+  - $SETARCH make -s test-spec # not using `-j` because sometimes `mspec -j` silently dies
   - $SETARCH make -s -o showflags leaked-globals
 
-# Branch matrix.  Not all branches are Travis-ready so we limit branches here.
-branches:
-  only:
-    - master
-    - ruby_2_4
-    - ruby_2_5
-    - ruby_2_6
-    - ruby_2_7
+# We enable Travis on the specific branches or forked repositories here.
+if: (repo = ruby/ruby AND (branch = master OR branch =~ /^ruby_\d_\d$/)) OR repo != ruby/ruby
 
 # We want to be notified when something happens.
 notifications:
@@ -288,4 +238,4 @@ notifications:
     on_failure: always
 
   email:
-    - ko1c-failure@atdot.net
+    - jaruga@ruby-lang.org

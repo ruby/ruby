@@ -434,7 +434,7 @@ if defined?(WIN32OLE_VARIANT)
       begin
         WIN32OLE.locale = 0x0411 # set locale Japanese
       rescue WIN32OLERuntimeError
-        skip("Japanese locale is not installed")
+        omit("Japanese locale is not installed")
       end
       if WIN32OLE.locale == 0x0411
         obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)

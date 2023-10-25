@@ -37,7 +37,7 @@ bubblebabble_str_new(VALUE str_digest)
     digest_len = RSTRING_LEN(str_digest);
 
     if ((LONG_MAX - 2) / 3 < (digest_len | 1)) {
-	rb_raise(rb_eRuntimeError, "digest string too long");
+        rb_raise(rb_eRuntimeError, "digest string too long");
     }
 
     str = rb_str_new(0, (digest_len | 1) * 3 + 2);

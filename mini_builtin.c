@@ -21,9 +21,26 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
     rb_ast_t *ast = rb_builtin_ast(feature_name, &name_str);
     rb_vm_t *vm = GET_VM();
 
+    if (!ast) {
+        rb_fatal("builtin_iseq_load: can not find %s; "
+                 "probably miniprelude.c is out of date",
+                 feature_name);
+    }
     vm->builtin_function_table = table;
     vm->builtin_inline_index = 0;
-    const rb_iseq_t *iseq = rb_iseq_new(&ast->body, name_str, name_str, Qnil, NULL, ISEQ_TYPE_TOP);
+    static const rb_compile_option_t optimization = {
+        TRUE, /* unsigned int inline_const_cache; */
+        TRUE, /* unsigned int peephole_optimization; */
+        FALSE,/* unsigned int tailcall_optimization; */
+        TRUE, /* unsigned int specialized_instruction; */
+        TRUE, /* unsigned int operands_unification; */
+        TRUE, /* unsigned int instructions_unification; */
+        TRUE, /* unsigned int frozen_string_literal; */
+        FALSE, /* unsigned int debug_frozen_string_literal; */
+        FALSE, /* unsigned int coverage_enabled; */
+        0, /* int debug_level; */
+    };
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(&ast->body, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization);
     GET_VM()->builtin_function_table = NULL;
 
     rb_ast_dispose(ast);

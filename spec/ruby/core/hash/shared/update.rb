@@ -64,15 +64,13 @@ describe :hash_update, shared: true do
     hash.should == {1 => :foo, 3 => :bar, 5 => 6}
   end
 
-  ruby_version_is "2.6" do
-    it "accepts multiple hashes" do
-      result = { a: 1 }.send(@method, { b: 2 }, { c: 3 }, { d: 4 })
-      result.should == { a: 1, b: 2, c: 3, d: 4 }
-    end
+  it "accepts multiple hashes" do
+    result = { a: 1 }.send(@method, { b: 2 }, { c: 3 }, { d: 4 })
+    result.should == { a: 1, b: 2, c: 3, d: 4 }
+  end
 
-    it "accepts zero arguments" do
-      hash = { a: 1 }
-      hash.send(@method).should eql(hash)
-    end
+  it "accepts zero arguments" do
+    hash = { a: 1 }
+    hash.send(@method).should eql(hash)
   end
 end

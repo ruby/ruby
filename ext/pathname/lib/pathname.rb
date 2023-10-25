@@ -14,6 +14,8 @@ require 'pathname.so'
 
 class Pathname
 
+  VERSION = "0.2.1"
+
   # :stopdoc:
 
   # to_path is implemented so Pathname objects are usable with File.open, etc.
@@ -338,6 +340,8 @@ class Pathname
 
   #
   # Appends a pathname fragment to +self+ to produce a new Pathname object.
+  # Since +other+ is considered as a path relative to +self+, if +other+ is
+  # an absolute path, the new Pathname object is created from just +other+.
   #
   #   p1 = Pathname.new("/usr")      # Pathname:/usr
   #   p2 = p1 + "bin/ruby"           # Pathname:/usr/bin/ruby
@@ -399,6 +403,8 @@ class Pathname
 
   #
   # Joins the given pathnames onto +self+ to create a new Pathname object.
+  # This is effectively the same as using Pathname#+ to append +self+ and
+  # all arguments sequentially.
   #
   #   path0 = Pathname.new("/usr")                # Pathname:/usr
   #   path0 = path0.join("bin/ruby")              # Pathname:/usr/bin/ruby
@@ -574,25 +580,26 @@ class Pathname    # * Find *
 end
 
 
+autoload(:FileUtils, 'fileutils')
+
 class Pathname    # * FileUtils *
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath
-    require 'fileutils'
-    FileUtils.mkpath(@path)
+  def mkpath(mode: nil)
+    FileUtils.mkpath(@path, mode: mode)
     nil
   end
 
   # Recursively deletes a directory, including all directories beneath it.
   #
-  # See FileUtils.rm_r
-  def rmtree
+  # See FileUtils.rm_rf
+  def rmtree(noop: nil, verbose: nil, secure: nil)
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".
     require 'fileutils'
-    FileUtils.rm_r(@path)
+    FileUtils.rm_rf(@path, noop: noop, verbose: verbose, secure: secure)
     nil
   end
 end

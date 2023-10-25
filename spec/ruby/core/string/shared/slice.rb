@@ -80,18 +80,7 @@ describe :string_slice_index_length, shared: true do
     "hello there".send(@method, -3,2).should == "er"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self is tainted" do
-      str = "hello world"
-      str.taint
-
-      str.send(@method, 0,0).should.tainted?
-      str.send(@method, 0,1).should.tainted?
-      str.send(@method, 2,1).should.tainted?
-    end
-  end
-
-  it "returns a string with the same encoding" do
+  it "returns a string with the same encoding as self" do
     s = "hello there"
     s.send(@method, 1, 9).encoding.should == s.encoding
 
@@ -163,11 +152,11 @@ describe :string_slice_index_length, shared: true do
     -> { "hello".send(@method, 0, bignum_value) }.should raise_error(RangeError)
   end
 
-  it "returns subclass instances" do
+  it "returns String instances" do
     s = StringSpecs::MyString.new("hello")
-    s.send(@method, 0,0).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 0,4).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 1,4).should be_an_instance_of(StringSpecs::MyString)
+    s.send(@method, 0,0).should be_an_instance_of(String)
+    s.send(@method, 0,4).should be_an_instance_of(String)
+    s.send(@method, 1,4).should be_an_instance_of(String)
   end
 
   it "handles repeated application" do
@@ -206,6 +195,10 @@ describe :string_slice_range, shared: true do
     "x".send(@method, 1..-1).should == ""
   end
 
+  it "returns a String in the same encoding as self" do
+    "hello there".encode("US-ASCII").send(@method, 1..1).encoding.should == Encoding::US_ASCII
+  end
+
   it "returns nil if the beginning of the range falls outside of self" do
     "hello there".send(@method, 12..-1).should == nil
     "hello there".send(@method, 20..25).should == nil
@@ -238,25 +231,11 @@ describe :string_slice_range, shared: true do
     "x".send(@method, 1...-1).should == ""
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self is tainted" do
-      str = "hello world"
-      str.taint
-
-      str.send(@method, 0..0).should.tainted?
-      str.send(@method, 0...0).should.tainted?
-      str.send(@method, 0..1).should.tainted?
-      str.send(@method, 0...1).should.tainted?
-      str.send(@method, 2..3).should.tainted?
-      str.send(@method, 2..0).should.tainted?
-    end
-  end
-
-  it "returns subclass instances" do
+  it "returns String instances" do
     s = StringSpecs::MyString.new("hello")
-    s.send(@method, 0...0).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 0..4).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 1..4).should be_an_instance_of(StringSpecs::MyString)
+    s.send(@method, 0...0).should be_an_instance_of(String)
+    s.send(@method, 0..4).should be_an_instance_of(String)
+    s.send(@method, 1..4).should be_an_instance_of(String)
   end
 
   it "calls to_int on range arguments" do
@@ -305,13 +284,19 @@ describe :string_slice_range, shared: true do
     -> { "hello".send(@method, 0..bignum_value) }.should raise_error(RangeError)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      "hello there".send(@method, eval("(2..)")).should == "llo there"
-      "hello there".send(@method, eval("(2...)")).should == "llo there"
-      "hello there".send(@method, eval("(-4..)")).should == "here"
-      "hello there".send(@method, eval("(-4...)")).should == "here"
-    end
+  it "works with endless ranges" do
+    "hello there".send(@method, eval("(2..)")).should == "llo there"
+    "hello there".send(@method, eval("(2...)")).should == "llo there"
+    "hello there".send(@method, eval("(-4..)")).should == "here"
+    "hello there".send(@method, eval("(-4...)")).should == "here"
+  end
+
+  it "works with beginless ranges" do
+    "hello there".send(@method, (..5)).should == "hello "
+    "hello there".send(@method, (...5)).should == "hello"
+    "hello there".send(@method, (..-4)).should == "hello th"
+    "hello there".send(@method, (...-4)).should == "hello t"
+    "hello there".send(@method, (...nil)).should == "hello there"
   end
 end
 
@@ -325,33 +310,14 @@ describe :string_slice_regexp, shared: true do
     "hello there".send(@method, /xyz/).should == nil
   end
 
-  not_supported_on :opal do
-    ruby_version_is ''...'2.7' do
-      it "always taints resulting strings when self or regexp is tainted" do
-        strs = ["hello world"]
-        strs += strs.map { |s| s.dup.taint }
-
-        strs.each do |str|
-          str.send(@method, //).tainted?.should == str.tainted?
-          str.send(@method, /hello/).tainted?.should == str.tainted?
-
-          tainted_re = /./
-          tainted_re.taint
-
-          str.send(@method, tainted_re).should.tainted?
-        end
-      end
-
-      it "returns an untrusted string if the regexp is untrusted" do
-        "hello".send(@method, /./.untrust).untrusted?.should be_true
-      end
-    end
+  it "returns a String in the same encoding as self" do
+    "hello there".encode("US-ASCII").send(@method, /[aeiou](.)\1/).encoding.should == Encoding::US_ASCII
   end
 
-  it "returns subclass instances" do
+  it "returns String instances" do
     s = StringSpecs::MyString.new("hello")
-    s.send(@method, //).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, /../).should be_an_instance_of(StringSpecs::MyString)
+    s.send(@method, //).should be_an_instance_of(String)
+    s.send(@method, /../).should be_an_instance_of(String)
   end
 
   it "sets $~ to MatchData when there is a match and nil when there's none" do
@@ -378,44 +344,28 @@ describe :string_slice_regexp_index, shared: true do
     "har".send(@method, /(.)(.)(.)/, -3).should == "h"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str.send(@method, //, 0).tainted?.should == str.tainted?
-        str.send(@method, /hello/, 0).tainted?.should == str.tainted?
-
-        str.send(@method, /(.)(.)(.)/, 0).tainted?.should == str.tainted?
-        str.send(@method, /(.)(.)(.)/, 1).tainted?.should == str.tainted?
-        str.send(@method, /(.)(.)(.)/, -1).tainted?.should == str.tainted?
-        str.send(@method, /(.)(.)(.)/, -2).tainted?.should == str.tainted?
-
-        tainted_re = /(.)(.)(.)/
-        tainted_re.taint
-
-        str.send(@method, tainted_re, 0).should.tainted?
-        str.send(@method, tainted_re, 1).should.tainted?
-        str.send(@method, tainted_re, -1).should.tainted?
-      end
-    end
-
-    not_supported_on :opal do
-      it "returns an untrusted string if the regexp is untrusted" do
-        "hello".send(@method, /(.)/.untrust, 1).untrusted?.should be_true
-      end
-    end
-  end
-
   it "returns nil if there is no match" do
     "hello there".send(@method, /(what?)/, 1).should == nil
   end
 
+  it "returns nil if the index is larger than the number of captures" do
+    "hello there".send(@method, /hello (.)/, 2).should == nil
+    # You can't refer to 0 using negative indices
+    "hello there".send(@method, /hello (.)/, -2).should == nil
+  end
+
   it "returns nil if there is no capture for the given index" do
     "hello there".send(@method, /[aeiou](.)\1/, 2).should == nil
-    # You can't refer to 0 using negative indices
-    "hello there".send(@method, /[aeiou](.)\1/, -2).should == nil
+  end
+
+  it "returns nil if the given capture group was not matched but still sets $~" do
+    "test".send(@method, /te(z)?/, 1).should == nil
+    $~[0].should == "te"
+    $~[1].should == nil
+  end
+
+  it "returns a String in the same encoding as self" do
+    "hello there".encode("US-ASCII").send(@method, /[aeiou](.)\1/, 0).encoding.should == Encoding::US_ASCII
   end
 
   it "calls to_int on the given index" do
@@ -436,10 +386,10 @@ describe :string_slice_regexp_index, shared: true do
     -> { "hello".send(@method, /(.)(.)(.)/, nil) }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances" do
+  it "returns String instances" do
     s = StringSpecs::MyString.new("hello")
-    s.send(@method, /(.)(.)/, 0).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, /(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
+    s.send(@method, /(.)(.)/, 0).should be_an_instance_of(String)
+    s.send(@method, /(.)(.)/, 1).should be_an_instance_of(String)
   end
 
   it "sets $~ to MatchData when there is a match and nil when there's none" do
@@ -460,21 +410,6 @@ describe :string_slice_string, shared: true do
     "hello there".send(@method, s).should == s
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting strings when other is tainted" do
-      strs = ["", "hello world", "hello"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        strs.each do |other|
-          r = str.send(@method, other)
-
-          r.tainted?.should == !r.nil? & other.tainted?
-        end
-      end
-    end
-  end
-
   it "doesn't set $~" do
     $~ = nil
 
@@ -493,11 +428,11 @@ describe :string_slice_string, shared: true do
     -> { "hello".send(@method, o) }.should raise_error(TypeError)
   end
 
-  it "returns a subclass instance when given a subclass instance" do
+  it "returns a String instance when given a subclass instance" do
     s = StringSpecs::MyString.new("el")
     r = "hello".send(@method, s)
     r.should == "el"
-    r.should be_an_instance_of(StringSpecs::MyString)
+    r.should be_an_instance_of(String)
   end
 end
 
@@ -523,30 +458,6 @@ describe :string_slice_regexp_group, shared: true do
       "hello there".send(@method, /(?<g>h(?<g>.))/, 'g').should == "e"
     end
 
-    ruby_version_is ''...'2.7' do
-      it "always taints resulting strings when self or regexp is tainted" do
-        strs = ["hello world"]
-        strs += strs.map { |s| s.dup.taint }
-
-        strs.each do |str|
-          str.send(@method, /(?<hi>hello)/, 'hi').tainted?.should == str.tainted?
-
-          str.send(@method, /(?<g>(.)(.)(.))/, 'g').tainted?.should == str.tainted?
-          str.send(@method, /(?<h>.)(.)(.)/, 'h').tainted?.should == str.tainted?
-          str.send(@method, /(.)(?<a>.)(.)/, 'a').tainted?.should == str.tainted?
-          str.send(@method, /(.)(.)(?<r>.)/, 'r').tainted?.should == str.tainted?
-          str.send(@method, /(?<h>.)(?<a>.)(?<r>.)/, 'r').tainted?.should == str.tainted?
-
-          tainted_re = /(?<a>.)(?<b>.)(?<c>.)/
-          tainted_re.taint
-
-          str.send(@method, tainted_re, 'a').tainted?.should be_true
-          str.send(@method, tainted_re, 'b').tainted?.should be_true
-          str.send(@method, tainted_re, 'c').tainted?.should be_true
-        end
-      end
-    end
-
     it "returns nil if there is no match" do
       "hello there".send(@method, /(?<whut>what?)/, 'whut').should be_nil
     end
@@ -567,9 +478,9 @@ describe :string_slice_regexp_group, shared: true do
       -> { "hello".send(@method, /(?<q>)/, '') }.should raise_error(IndexError)
     end
 
-    it "returns subclass instances" do
+    it "returns String instances" do
       s = StringSpecs::MyString.new("hello")
-      s.send(@method, /(?<q>.)/, 'q').should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, /(?<q>.)/, 'q').should be_an_instance_of(String)
     end
 
     it "sets $~ to MatchData when there is a match and nil when there's none" do

@@ -5,11 +5,18 @@
   #define SIP_HASH_STREAMING 1
 #endif
 
-#ifdef _WIN32
+#if defined(__MINGW32__)
+  #include <sys/param.h>
+
+  /* MinGW only defines LITTLE_ENDIAN and BIG_ENDIAN macros */
+  #define __LITTLE_ENDIAN LITTLE_ENDIAN
+  #define __BIG_ENDIAN BIG_ENDIAN
+#elif defined(_WIN32)
   #define BYTE_ORDER __LITTLE_ENDIAN
-#elif !defined BYTE_ORDER
+#elif !defined(BYTE_ORDER)
   #include <endian.h>
 #endif
+
 #ifndef LITTLE_ENDIAN
 #define LITTLE_ENDIAN __LITTLE_ENDIAN
 #endif
@@ -27,10 +34,11 @@
   #error "Only strictly little or big endian supported"
 #endif
 
+/* __POWERPC__ added to accommodate Darwin case. */
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || defined(__aarch64__) || \
+     defined(__powerpc64__) || defined(__POWERPC__) || defined(__aarch64__) || \
      defined(__mc68020__)
 #   define UNALIGNED_WORD_ACCESS 1
 # endif
@@ -89,7 +97,7 @@ u64to8_le(uint8_t *p, uint64_t v)
 }
 
 #define ROTL64_TO(v, s) ((s) > 32 ? rotl64_swap(rotl64_to(&(v), (s) - 32)) : \
-			 (s) == 32 ? rotl64_swap(&(v)) : rotl64_to(&(v), (s)))
+                         (s) == 32 ? rotl64_swap(&(v)) : rotl64_to(&(v), (s)))
 static inline uint64_t *
 rotl64_to(uint64_t *v, unsigned int s)
 {
@@ -180,10 +188,10 @@ int_sip_dump(sip_state *state)
     int v;
 
     for (v = 0; v < 4; v++) {
-#if HAVE_UINT64_T
-	printf("v%d: %" PRIx64 "\n", v, state->v[v]);
+#ifdef HAVE_UINT64_T
+        printf("v%d: %" PRIx64 "\n", v, state->v[v]);
 #else
-	printf("v%d: %" PRIx32 "%.8" PRIx32 "\n", v, state->v[v].hi, state->v[v].lo);
+        printf("v%d: %" PRIx32 "%.8" PRIx32 "\n", v, state->v[v].hi, state->v[v].lo);
 #endif
     }
 }
@@ -208,7 +216,7 @@ int_sip_round(sip_state *state, int n)
     int i;
 
     for (i = 0; i < n; i++) {
-	SIP_COMPRESS(state->v[0], state->v[1], state->v[2], state->v[3]);
+        SIP_COMPRESS(state->v[0], state->v[1], state->v[2], state->v[3]);
     }
 }
 
@@ -242,8 +250,8 @@ int_sip_post_update(sip_state *state, const uint8_t *data, size_t len)
 {
     uint8_t r = len % sizeof(uint64_t);
     if (r) {
-	memcpy(state->buf, data + len - r, r);
-	state->buflen = r;
+        memcpy(state->buf, data + len - r, r);
+        state->buflen = r;
     }
 }
 
@@ -262,16 +270,16 @@ int_sip_update(sip_state *state, const uint8_t *data, size_t len)
 
 #if BYTE_ORDER == LITTLE_ENDIAN
     while (data64 != end) {
-	int_sip_update_block(state, *data64++);
+        int_sip_update_block(state, *data64++);
     }
 #elif BYTE_ORDER == BIG_ENDIAN
     {
-	uint64_t m;
-	uint8_t *data8 = data;
-	for (; data8 != (uint8_t *) end; data8 += sizeof(uint64_t)) {
-	    m = U8TO64_LE(data8);
-	    int_sip_update_block(state, m);
-	}
+        uint64_t m;
+        uint8_t *data8 = data;
+        for (; data8 != (uint8_t *) end; data8 += sizeof(uint64_t)) {
+            m = U8TO64_LE(data8);
+            int_sip_update_block(state, m);
+        }
     }
 #endif
 
@@ -284,7 +292,7 @@ int_sip_pad_final_block(sip_state *state)
     int i;
     /* pad with 0's and finalize with msg_len mod 256 */
     for (i = state->buflen; i < sizeof(uint64_t); i++) {
-	state->buf[i] = 0x00;
+        state->buf[i] = 0x00;
     }
     state->buf[sizeof(uint64_t) - 1] = state->msglen_byte;
 }
@@ -413,14 +421,14 @@ sip_hash13(const uint8_t key[16], const uint8_t *data, size_t len)
     {
         uint64_t *data64 = (uint64_t *)data;
         while (data64 != (uint64_t *) end) {
-	    m = *data64++;
-	    SIP_ROUND(m, v0, v1, v2, v3);
+            m = *data64++;
+            SIP_ROUND(m, v0, v1, v2, v3);
         }
     }
 #else
     for (; data != end; data += sizeof(uint64_t)) {
-	m = U8TO64_LE(data);
-	SIP_ROUND(m, v0, v1, v2, v3);
+        m = U8TO64_LE(data);
+        SIP_ROUND(m, v0, v1, v2, v3);
     }
 #endif
 
@@ -431,40 +439,40 @@ sip_hash13(const uint8_t key[16], const uint8_t *data, size_t len)
     last.hi = len << 24;
     last.lo = 0;
 #define OR_BYTE(n) do { \
-	if (n >= 4) \
-	    last.hi |= ((uint32_t) end[n]) << ((n) >= 4 ? (n) * 8 - 32 : 0); \
-	else \
-	    last.lo |= ((uint32_t) end[n]) << ((n) >= 4 ? 0 : (n) * 8); \
+        if (n >= 4) \
+            last.hi |= ((uint32_t) end[n]) << ((n) >= 4 ? (n) * 8 - 32 : 0); \
+        else \
+            last.lo |= ((uint32_t) end[n]) << ((n) >= 4 ? 0 : (n) * 8); \
     } while (0)
 #endif
 
     switch (len % sizeof(uint64_t)) {
-	case 7:
-	    OR_BYTE(6);
-	case 6:
-	    OR_BYTE(5);
-	case 5:
-	    OR_BYTE(4);
-	case 4:
+        case 7:
+            OR_BYTE(6);
+        case 6:
+            OR_BYTE(5);
+        case 5:
+            OR_BYTE(4);
+        case 4:
 #if BYTE_ORDER == LITTLE_ENDIAN && UNALIGNED_WORD_ACCESS
-  #if HAVE_UINT64_T
-	    last |= (uint64_t) ((uint32_t *) end)[0];
+  #ifdef HAVE_UINT64_T
+            last |= (uint64_t) ((uint32_t *) end)[0];
   #else
-	    last.lo |= ((uint32_t *) end)[0];
+            last.lo |= ((uint32_t *) end)[0];
   #endif
-	    break;
+            break;
 #else
-	    OR_BYTE(3);
+            OR_BYTE(3);
 #endif
-	case 3:
-	    OR_BYTE(2);
-	case 2:
-	    OR_BYTE(1);
-	case 1:
-	    OR_BYTE(0);
-	    break;
-	case 0:
-	    break;
+        case 3:
+            OR_BYTE(2);
+        case 2:
+            OR_BYTE(1);
+        case 1:
+            OR_BYTE(0);
+            break;
+        case 0:
+            break;
     }
 
     SIP_ROUND(last, v0, v1, v2, v3);

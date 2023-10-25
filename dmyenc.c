@@ -5,6 +5,6 @@ void
 Init_enc(void)
 {
     if (require("enc/encdb.so") == 1) {
-	require("enc/trans/transdb.so");
+        require("enc/trans/transdb.so");
     }
 }

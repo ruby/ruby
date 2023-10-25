@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -6,15 +7,14 @@
 #++
 
 class Gem::Ext::ConfigureBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil)
-    unless File.exist?('Makefile')
-      cmd = "sh ./configure --prefix=#{dest_path}"
-      cmd << " #{args.join ' '}" unless args.empty?
+  def self.build(extension, dest_path, results, args=[], lib_dir=nil, configure_dir=Dir.pwd)
+    unless File.exist?(File.join(configure_dir, "Makefile"))
+      cmd = ["sh", "./configure", "--prefix=#{dest_path}", *args]
 
-      run cmd, results
+      run cmd, results, class_name, configure_dir
     end
 
-    make dest_path, results
+    make dest_path, results, configure_dir
 
     results
   end

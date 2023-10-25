@@ -93,3 +93,7 @@ class NameErrorSpecs
     end
   end
 end
+
+module DetailedMessageSpec
+  C = Class.new(RuntimeError)
+end

@@ -1,140 +1,161 @@
 name: MinGW
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
 
 # Notes:
 # Actions console encoding causes issues, see test-all & test-spec steps
 #
 jobs:
   make:
-    runs-on: windows-2019
+    runs-on: windows-2022
+
+    name: ${{ github.workflow }} (${{ matrix.msystem }})
+
     env:
-      MSYSTEM: MINGW64
-      MSYSTEM_PREFIX: /mingw64
+      MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: x86_64
-      CHOST: "x86_64-w64-mingw32"
-      CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe -fstack-protector-strong"
-      CXXFLAGS: "-march=x86-64 -mtune=generic -O3 -pipe"
-      CPPFLAGS: "-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048"
-      LDFLAGS:  "-pipe -fstack-protector-strong"
-      UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      CHOST: 'x86_64-w64-mingw32'
+      CFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
+      CXXFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
+      CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
+      LDFLAGS: '-pipe'
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
+        include:
+          # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
+          - msystem: 'UCRT64'
+            base_ruby: head
+            test_task: 'check'
+            test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
       fail-fast: false
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: git config
-        run: |
-          git config --system core.autocrlf false
-          git config --system core.eol lf
-          git config --system advice.detachedHead 0
-      - uses: actions/checkout@v2
-        with:
-          path: src
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/setup-ruby-pkgs@v1
+        uses: ruby/setup-ruby@a05e47355e80e57b9a67566a813648fa67d92011 # v1.157.0
         with:
-          ruby-version: 2.6
-          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
-          msys2: automake1.16 bison
+          ruby-version: ${{ matrix.base_ruby }}
+
       - name: where check
         run: |
           # show where
-          Write-Host
-          $where = 'gcc.exe', 'ragel.exe', 'make.exe', 'bison.exe', 'libcrypto-1_1-x64.dll', 'libssl-1_1-x64.dll'
-          foreach ($e in $where) {
-            $rslt = where.exe $e 2>&1 | Out-String
-            if ($rslt.contains($e)) { Write-Host $rslt }
-            else { Write-Host "`nCan't find $e" }
-          }
-      - name: misc setup, autoreconf
-        run: |
-          mkdir install
-          mkdir temp
-          cd src
-          sh -c "autoreconf -fi"
+          mv /c/Windows/System32/libcrypto-1_1-x64.dll /c/Windows/System32/libcrypto-1_1-x64.dll_
+          mv /c/Windows/System32/libssl-1_1-x64.dll    /c/Windows/System32/libssl-1_1-x64.dll_
+          result=true
+          for e in gcc.exe ragel.exe make.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
+            echo ::group::$'\033[93m'$e$'\033[m'
+            where $e || result=false
+            echo ::endgroup::
+          done
+          $result
         working-directory:
 
+      - name: version check
+        run: |
+          # show version
+          result=true
+          for e in gcc ragel make "openssl version"; do
+            case "$e" in *" "*) ;; *) e="$e --version";; esac
+            echo ::group::$'\033[93m'$e$'\033[m'
+            $e || result=false
+            echo ::endgroup::
+          done
+          $result
+        working-directory:
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
       - name: configure
-        run: |
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          $config_args = "--build=$env:CHOST --host=$env:CHOST --target=$env:CHOST"
-          Write-Host $config_args
-          sh -c "../src/configure --disable-install-doc --prefix=/install $config_args"
-          # Write-Host "-------------------------------------- config.log"
-          # Get-Content ./config.log | foreach {Write-Output $_}
-
-      - name: update
-        run: |
-          $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
-          make -j $jobs incs
-
-      - name: download gems
-        run: |
-          $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
-          make -j $jobs update-gems
+        run: >
+          ../src/configure --disable-install-doc --prefix=/.
+          --build=$CHOST --host=$CHOST --target=$CHOST
 
       - name: make all
-        timeout-minutes: 40
-        run: |
-          $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
-          make -j $jobs
+        timeout-minutes: 30
+        run: make
 
       - name: make install
-        run: |
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          make DESTDIR=.. install-nodoc
+        run: make DESTDIR=../install install-nodoc
 
       - name: test
-        timeout-minutes: 5
-        run: |
-          make test
+        timeout-minutes: 30
+        run: make test
+        env:
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test' }}
 
       - name: test-all
-        timeout-minutes: 60
+        timeout-minutes: 45
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          $jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
-          make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
+          chcp.com 437
+          make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
+        env:
+          RUBY_TESTOPTS: >-
+            --retry --job-status=normal --show-skip --timeout-scale=1.5
+            ${{ matrix.test-all-opts }}
+          BUNDLER_VERSION:
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/') }}
 
       - name: test-spec
         timeout-minutes: 10
-        working-directory: src/spec/ruby
         run: |
-          $env:Path = "$pwd/../../../install/bin;$env:Path"
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          ruby -v
-          ruby ../mspec/bin/mspec -j
+          make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/') }}
 
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ./src/.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
-            }
-        env:
+          label: ${{ matrix.msystem }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() }}
 
 defaults:
   run:
     working-directory: build
+    shell: sh

@@ -18,19 +18,20 @@ profile_frames(VALUE self, VALUE start_v, VALUE num_v)
     collected_size = rb_profile_frames(start, buff_size, buff, lines);
 
     for (i=0; i<collected_size; i++) {
-	VALUE ary = rb_ary_new();
-	rb_ary_push(ary, rb_profile_frame_path(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_absolute_path(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_label(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_base_label(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_full_label(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_first_lineno(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_classpath(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_singleton_method_p(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_method_name(buff[i]));
-	rb_ary_push(ary, rb_profile_frame_qualified_method_name(buff[i]));
+        VALUE ary = rb_ary_new();
+        rb_ary_push(ary, rb_profile_frame_path(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_absolute_path(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_label(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_base_label(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_full_label(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_first_lineno(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_classpath(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_singleton_method_p(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_method_name(buff[i]));
+        rb_ary_push(ary, rb_profile_frame_qualified_method_name(buff[i]));
+        rb_ary_push(ary, INT2NUM(lines[i]));
 
-	rb_ary_push(result, ary);
+        rb_ary_push(result, ary);
     }
 
     return result;

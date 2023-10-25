@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Used Internally. Wraps a Dependency object to also track which spec
 # contained the Dependency.
@@ -28,7 +29,7 @@ class Gem::Resolver::DependencyRequest
     when Gem::Dependency
       @dependency == other
     when Gem::Resolver::DependencyRequest
-      @dependency == other.dependency && @requester == other.requester
+      @dependency == other.dependency
     else
       false
     end
@@ -95,12 +96,12 @@ class Gem::Resolver::DependencyRequest
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Dependency request ', ']' do
+    q.group 2, "[Dependency request ", "]" do
       q.breakable
       q.text @dependency.to_s
 
       q.breakable
-      q.text ' requested by '
+      q.text " requested by "
       q.pp @requester
     end
   end

@@ -5,7 +5,7 @@ require_relative "helper"
 
 class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
-  include Helper
+  include CSVHelper
 
   def setup
     super
@@ -280,12 +280,43 @@ class TestCSVEncodings < Test::Unit::TestCase
   def test_invalid_encoding_row_error
     csv = CSV.new("valid,x\rinvalid,\xF8\r".force_encoding("UTF-8"),
                   encoding: "UTF-8", row_sep: "\r")
-    error = assert_raise(CSV::MalformedCSVError) do
+    error = assert_raise(CSV::InvalidEncodingError) do
       csv.shift
       csv.shift
     end
-    assert_equal("Invalid byte sequence in UTF-8 in line 2.",
-                 error.message)
+    assert_equal([Encoding::UTF_8, "Invalid byte sequence in UTF-8 in line 2."],
+                 [error.encoding, error.message])
+  end
+
+  def test_string_input_transcode
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046"
+    csv = CSV.new(value, encoding: "UTF-8:EUC-JP")
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
+  def test_string_input_set_encoding_string
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046".encode("EUC-JP")
+    csv = CSV.new(value.dup.force_encoding("UTF-8"), encoding: "EUC-JP")
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
+  def test_string_input_set_encoding_encoding
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046".encode("EUC-JP")
+    csv = CSV.new(value.dup.force_encoding("UTF-8"),
+                  encoding: Encoding.find("EUC-JP"))
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
   end
 
   private

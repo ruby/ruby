@@ -36,7 +36,6 @@
 #include "ruby/internal/intern/error.h"
 #include "ruby/internal/intern/eval.h"
 #include "ruby/internal/intern/file.h"
-#include "ruby/internal/intern/gc.h"
 #include "ruby/internal/intern/hash.h"
 #include "ruby/internal/intern/io.h"
 #include "ruby/internal/intern/load.h"

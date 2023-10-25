@@ -1,7 +1,6 @@
 #ifndef RUBY_BACKWARD2_ATTRIBUTES_H                  /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_ATTRIBUTES_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -17,7 +16,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Various attribute-related macros.
  *
  * ### Q&A ###
@@ -40,6 +39,7 @@
 #include "ruby/internal/attr/noinline.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/attr/packed_struct.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/restrict.h"
 #include "ruby/internal/attr/returns_nonnull.h"
@@ -81,25 +81,19 @@
 #undef NOINLINE
 #define NOINLINE(x) RBIMPL_ATTR_NOINLINE() x
 
-#ifndef MJIT_HEADER
-# undef ALWAYS_INLINE
-# define ALWAYS_INLINE(x) RBIMPL_ATTR_FORCEINLINE() x
-#endif
+#undef ALWAYS_INLINE
+#define ALWAYS_INLINE(x) RBIMPL_ATTR_FORCEINLINE() x
 
 #undef ERRORFUNC
 #define ERRORFUNC(mesg, x) RBIMPL_ATTR_ERROR(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(error)
 # define HAVE_ATTRIBUTE_ERRORFUNC 1
-#else
-# define HAVE_ATTRIBUTE_ERRORFUNC 0
 #endif
 
 #undef WARNINGFUNC
 #define WARNINGFUNC(mesg, x) RBIMPL_ATTR_WARNING(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(warning)
 # define HAVE_ATTRIBUTE_WARNINGFUNC 1
-#else
-# define HAVE_ATTRIBUTE_WARNINGFUNC 0
 #endif
 
 /*
@@ -152,17 +146,14 @@
 #define NORETURN(x) RBIMPL_ATTR_NORETURN() x
 #define NORETURN_STYLE_NEW
 
-#ifndef PACKED_STRUCT
-# define PACKED_STRUCT(x) x
-#endif
+#undef PACKED_STRUCT
+#define PACKED_STRUCT(x) \
+    RBIMPL_ATTR_PACKED_STRUCT_BEGIN() x RBIMPL_ATTR_PACKED_STRUCT_END()
 
-#ifndef PACKED_STRUCT_UNALIGNED
-# if UNALIGNED_WORD_ACCESS
-#   define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
-# else
-#   define PACKED_STRUCT_UNALIGNED(x) x
-# endif
-#endif
+#undef PACKED_STRUCT_UNALIGNED
+#define PACKED_STRUCT_UNALIGNED(x) \
+    RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN() x \
+    RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END()
 
 #undef RB_UNUSED_VAR
 #define RB_UNUSED_VAR(x) x RBIMPL_ATTR_MAYBE_UNUSED()

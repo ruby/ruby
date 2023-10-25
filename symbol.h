@@ -20,7 +20,7 @@
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define rb_id2sym(id) \
     RB_GNUC_EXTENSION_BLOCK(__builtin_constant_p(id) && !DYNAMIC_ID_P(id) ? \
-			    STATIC_ID2SYM(id) : rb_id2sym(id))
+                            STATIC_ID2SYM(id) : rb_id2sym(id))
 #endif
 
 struct RSymbol {
@@ -45,10 +45,10 @@ static inline int
 id_type(ID id)
 {
     if (is_notop_id(id)) {
-	return (int)(id&ID_SCOPE_MASK);
+        return (int)(id&ID_SCOPE_MASK);
     }
     else {
-	return -1;
+        return -1;
     }
 }
 
@@ -69,10 +69,10 @@ static inline rb_id_serial_t
 rb_id_to_serial(ID id)
 {
     if (is_notop_id(id)) {
-	return (rb_id_serial_t)(id >> ID_SCOPE_SHIFT);
+        return (rb_id_serial_t)(id >> ID_SCOPE_SHIFT);
     }
     else {
-	return (rb_id_serial_t)id;
+        return (rb_id_serial_t)id;
     }
 }
 
@@ -81,13 +81,13 @@ sym_type(VALUE sym)
 {
     ID id;
     if (STATIC_SYM_P(sym)) {
-	id = RSHIFT(sym, RUBY_SPECIAL_SHIFT);
-	if (id<=tLAST_OP_ID) {
-	    return -1;
-	}
+        id = RSHIFT(sym, RUBY_SPECIAL_SHIFT);
+        if (id<=tLAST_OP_ID) {
+            return -1;
+        }
     }
     else {
-	id = RSYMBOL(sym)->id;
+        id = RSYMBOL(sym)->id;
     }
     return (int)(id&ID_SCOPE_MASK);
 }
@@ -100,7 +100,7 @@ sym_type(VALUE sym)
 #define is_class_sym(sym) (sym_type(sym)==ID_CLASS)
 #define is_junk_sym(sym) (sym_type(sym)==ID_JUNK)
 
-RUBY_FUNC_EXPORTED const unsigned int ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
+RUBY_FUNC_EXPORTED const uint_least32_t ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
 
 static inline int
 is_global_name_punct(const int c)
@@ -109,10 +109,9 @@ is_global_name_punct(const int c)
     return (ruby_global_name_punct_bits[(c - 0x20) / 32] >> (c % 32)) & 1;
 }
 
-int rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
-
 RUBY_SYMBOL_EXPORT_BEGIN
 
+int rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
 size_t rb_sym_immortal_count(void);
 
 RUBY_SYMBOL_EXPORT_END

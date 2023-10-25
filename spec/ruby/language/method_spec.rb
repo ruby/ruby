@@ -572,6 +572,13 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
+        def m(a:, **kw) [a, kw] end
+      ruby
+
+      -> { m(b: 1) }.should raise_error(ArgumentError)
+    end
+
+    evaluate <<-ruby do
         def m(a: 1) a end
       ruby
 
@@ -602,13 +609,11 @@ describe "A method" do
       -> { m(2) }.should raise_error(ArgumentError)
     end
 
-    ruby_version_is "2.7" do
-      evaluate <<-ruby do
-        def m(**k); k end;
-        ruby
+    evaluate <<-ruby do
+      def m(**k); k end;
+      ruby
 
-        m("a" => 1).should == { "a" => 1 }
-      end
+      m("a" => 1).should == { "a" => 1 }
     end
 
     evaluate <<-ruby do
@@ -744,68 +749,31 @@ describe "A method" do
       end
     end
 
-    ruby_version_is ""..."3.0" do
-      evaluate <<-ruby do
-          def m(a, b: 1) [a, b] end
-        ruby
+    evaluate <<-ruby do
+        def m(a, b: 1) [a, b] end
+      ruby
 
-        m(2).should == [2, 1]
-        m(1, b: 2).should == [1, 2]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, 1]
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(a, **) a end
-        ruby
-
-        m(1).should == 1
-        m(1, a: 2, b: 3).should == 1
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == {"a" => 1, b: 2}
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(a, **k) [a, k] end
-        ruby
-
-        m(1).should == [1, {}]
-        m(1, a: 2, b: 3).should == [1, {a: 2, b: 3}]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, {}]
-        end
-      end
+      m(2).should == [2, 1]
+      m(1, b: 2).should == [1, 2]
+      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
     end
 
-    ruby_version_is "3.0" do
-      evaluate <<-ruby do
-          def m(a, b: 1) [a, b] end
-        ruby
+    evaluate <<-ruby do
+        def m(a, **) a end
+      ruby
 
-        m(2).should == [2, 1]
-        m(1, b: 2).should == [1, 2]
-        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
-      end
+      m(1).should == 1
+      m(1, a: 2, b: 3).should == 1
+      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+    end
 
-      evaluate <<-ruby do
-          def m(a, **) a end
-        ruby
+    evaluate <<-ruby do
+        def m(a, **k) [a, k] end
+      ruby
 
-        m(1).should == 1
-        m(1, a: 2, b: 3).should == 1
-        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
-      end
-
-      evaluate <<-ruby do
-          def m(a, **k) [a, k] end
-        ruby
-
-        m(1).should == [1, {}]
-        m(1, a: 2, b: 3).should == [1, {a: 2, b: 3}]
-        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
-      end
+      m(1).should == [1, {}]
+      m(1, a: 2, b: 3).should == [1, {a: 2, b: 3}]
+      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -916,72 +884,32 @@ describe "A method" do
       result.should == [[1, 2, 3], 4, [5, 6], 7, [], 8]
     end
 
-    ruby_version_is ""..."3.0" do
-      evaluate <<-ruby do
-          def m(a=1, b:) [a, b] end
-        ruby
+    evaluate <<-ruby do
+        def m(a=1, b:) [a, b] end
+      ruby
 
-        m(b: 2).should == [1, 2]
-        m(2, b: 1).should == [2, 1]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [{"a" => 1}, 2]
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(a=1, b: 2) [a, b] end
-        ruby
-
-        m().should == [1, 2]
-        m(2).should == [2, 2]
-        m(b: 3).should == [1, 3]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [{"a" => 1}, 2]
-        end
-      end
+      m(b: 2).should == [1, 2]
+      m(2, b: 1).should == [2, 1]
+      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
     end
 
-    ruby_version_is "3.0" do
-      evaluate <<-ruby do
-          def m(a=1, b:) [a, b] end
-        ruby
+    evaluate <<-ruby do
+        def m(a=1, b: 2) [a, b] end
+      ruby
 
-        m(b: 2).should == [1, 2]
-        m(2, b: 1).should == [2, 1]
-        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
-      end
-
-      evaluate <<-ruby do
-          def m(a=1, b: 2) [a, b] end
-        ruby
-
-        m().should == [1, 2]
-        m(2).should == [2, 2]
-        m(b: 3).should == [1, 3]
-        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
-      end
+      m().should == [1, 2]
+      m(2).should == [2, 2]
+      m(b: 3).should == [1, 3]
+      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
     end
 
-    ruby_version_is ""..."2.7" do
-      evaluate <<-ruby do
-          def m(a=1, **) a end
-        ruby
+    evaluate <<-ruby do
+        def m(a=1, **) a end
+      ruby
 
-        m().should == 1
-        m(2, a: 1, b: 0).should == 2
-        m("a" => 1, a: 2).should == {"a" => 1}
-      end
-    end
-
-    ruby_version_is "2.7" do
-      evaluate <<-ruby do
-          def m(a=1, **) a end
-        ruby
-
-        m().should == 1
-        m(2, a: 1, b: 0).should == 2
-        m("a" => 1, a: 2).should == 1
-      end
+      m().should == 1
+      m(2, a: 1, b: 0).should == 2
+      m("a" => 1, a: 2).should == 1
     end
 
     evaluate <<-ruby do
@@ -1019,449 +947,6 @@ describe "A method" do
 
       m(1).should == [[], 1]
       m(1, 2, 3).should == [[1, 2], 3]
-    end
-
-    ruby_version_is ""..."2.7" do
-      evaluate <<-ruby do
-          def m(*, a:) a end
-        ruby
-
-        m(a: 1).should == 1
-        m(1, 2, a: 3).should == 3
-        suppress_keyword_warning do
-          m("a" => 1, a: 2).should == 2
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, b:) [a, b] end
-        ruby
-
-        m(b: 1).should == [[], 1]
-        m(1, 2, b: 3).should == [[1, 2], 3]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*, a: 1) a end
-        ruby
-
-        m().should == 1
-        m(1, 2).should == 1
-        m(a: 2).should == 2
-        m(1, a: 2).should == 2
-        suppress_keyword_warning do
-          m("a" => 1, a: 2).should == 2
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, b: 1) [a, b] end
-        ruby
-
-        m().should == [[], 1]
-        m(1, 2, 3, b: 4).should == [[1, 2, 3], 4]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
-        end
-
-        a = mock("splat")
-        a.should_not_receive(:to_ary)
-        m(*a).should == [[a], 1]
-      end
-
-      evaluate <<-ruby do
-          def m(*, **) end
-        ruby
-
-        m().should be_nil
-        m(a: 1, b: 2).should be_nil
-        m(1, 2, 3, a: 4, b: 5).should be_nil
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash).and_return({a: 1})
-        suppress_keyword_warning do
-          m(h).should be_nil
-        end
-
-        h = mock("keyword splat")
-        error = RuntimeError.new("error while converting to a hash")
-        h.should_receive(:to_hash).and_raise(error)
-        -> { m(h) }.should raise_error(error)
-      end
-
-      evaluate <<-ruby do
-          def m(*a, **) a end
-        ruby
-
-        m().should == []
-        m(1, 2, 3, a: 4, b: 5).should == [1, 2, 3]
-        m("a" => 1, a: 1).should == [{"a" => 1}]
-        m(1, **{a: 2}).should == [1]
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash)
-        -> { m(**h) }.should raise_error(TypeError)
-      end
-
-      evaluate <<-ruby do
-          def m(*, **k) k end
-        ruby
-
-        m().should == {}
-        m(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-        m("a" => 1, a: 1).should == {a: 1}
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash).and_return({a: 1})
-        m(h).should == {a: 1}
-      end
-
-      evaluate <<-ruby do
-          def m(a = nil, **k) [a, k] end
-        ruby
-
-        m().should == [nil, {}]
-        m("a" => 1).should == [{"a" => 1}, {}]
-        m(a: 1).should == [nil, {a: 1}]
-        m("a" => 1, a: 1).should == [{"a" => 1}, {a: 1}]
-        m({ "a" => 1 }, a: 1).should == [{"a" => 1}, {a: 1}]
-        m({a: 1}, {}).should == [{a: 1}, {}]
-
-        h = {"a" => 1, b: 2}
-        m(h).should == [{"a" => 1}, {b: 2}]
-        h.should == {"a" => 1, b: 2}
-
-        h = {"a" => 1}
-        m(h).first.should == h
-
-        h = {}
-        r = m(h)
-        r.first.should be_nil
-        r.last.should == {}
-
-        hh = {}
-        h = mock("keyword splat empty hash")
-        h.should_receive(:to_hash).and_return(hh)
-        r = m(h)
-        r.first.should be_nil
-        r.last.should == {}
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash).and_return({"a" => 1, a: 2})
-        m(h).should == [{"a" => 1}, {a: 2}]
-      end
-
-      evaluate <<-ruby do
-          def m(*a, **k) [a, k] end
-        ruby
-
-        m().should == [[], {}]
-        m(1).should == [[1], {}]
-        m(a: 1, b: 2).should == [[], {a: 1, b: 2}]
-        m(1, 2, 3, a: 2).should == [[1, 2, 3], {a: 2}]
-
-        m("a" => 1).should == [[{"a" => 1}], {}]
-        m(a: 1).should == [[], {a: 1}]
-        m("a" => 1, a: 1).should == [[{"a" => 1}], {a: 1}]
-        m({ "a" => 1 }, a: 1).should == [[{"a" => 1}], {a: 1}]
-        m({a: 1}, {}).should == [[{a: 1}], {}]
-        m({a: 1}, {"a" => 1}).should == [[{a: 1}, {"a" => 1}], {}]
-
-        bo = BasicObject.new
-        def bo.to_a; [1, 2, 3]; end
-        def bo.to_hash; {:b => 2, :c => 3}; end
-
-        m(*bo, **bo).should == [[1, 2, 3], {:b => 2, :c => 3}]
-      end
-    end
-
-    ruby_version_is "2.7"...'3.0' do
-      evaluate <<-ruby do
-          def m(*, a:) a end
-        ruby
-
-        m(a: 1).should == 1
-        m(1, 2, a: 3).should == 3
-        suppress_keyword_warning do
-          m("a" => 1, a: 2).should == 2
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, b:) [a, b] end
-        ruby
-
-        m(b: 1).should == [[], 1]
-        m(1, 2, b: 3).should == [[1, 2], 3]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*, a: 1) a end
-        ruby
-
-        m().should == 1
-        m(1, 2).should == 1
-        m(a: 2).should == 2
-        m(1, a: 2).should == 2
-        suppress_keyword_warning do
-          m("a" => 1, a: 2).should == 2
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, b: 1) [a, b] end
-        ruby
-
-        m().should == [[], 1]
-        m(1, 2, 3, b: 4).should == [[1, 2, 3], 4]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
-        end
-
-        a = mock("splat")
-        a.should_not_receive(:to_ary)
-        m(*a).should == [[a], 1]
-      end
-
-      evaluate <<-ruby do
-          def m(*a, **) a end
-        ruby
-
-        m().should == []
-        m(1, 2, 3, a: 4, b: 5).should == [1, 2, 3]
-        m("a" => 1, a: 1).should == []
-        m(1, **{a: 2}).should == [1]
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash)
-        -> { m(**h) }.should raise_error(TypeError)
-      end
-
-      evaluate <<-ruby do
-          def m(*, **k) k end
-        ruby
-
-        m().should == {}
-        m(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-        m("a" => 1, a: 1).should == {"a" => 1, a: 1}
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash).and_return({a: 1})
-        suppress_warning do
-          m(h).should == {a: 1}
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(a = nil, **k) [a, k] end
-        ruby
-
-        m().should == [nil, {}]
-        m("a" => 1).should == [nil, {"a" => 1}]
-        m(a: 1).should == [nil, {a: 1}]
-        m("a" => 1, a: 1).should == [nil, {"a" => 1, a: 1}]
-        m({ "a" => 1 }, a: 1).should == [{"a" => 1}, {a: 1}]
-        suppress_warning do
-          m({a: 1}, {}).should == [{a: 1}, {}]
-
-          h = {"a" => 1, b: 2}
-          m(h).should == [{"a" => 1}, {b: 2}]
-          h.should == {"a" => 1, b: 2}
-
-          h = {"a" => 1}
-          m(h).first.should == h
-
-          h = {}
-          r = m(h)
-          r.first.should be_nil
-          r.last.should == {}
-
-          hh = {}
-          h = mock("keyword splat empty hash")
-          h.should_receive(:to_hash).and_return(hh)
-          r = m(h)
-          r.first.should be_nil
-          r.last.should == {}
-
-          h = mock("keyword splat")
-          h.should_receive(:to_hash).and_return({"a" => 1, a: 2})
-          m(h).should == [{"a" => 1}, {a: 2}]
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, **k) [a, k] end
-        ruby
-
-        m().should == [[], {}]
-        m(1).should == [[1], {}]
-        m(a: 1, b: 2).should == [[], {a: 1, b: 2}]
-        m(1, 2, 3, a: 2).should == [[1, 2, 3], {a: 2}]
-
-        m("a" => 1).should == [[], {"a" => 1}]
-        m(a: 1).should == [[], {a: 1}]
-        m("a" => 1, a: 1).should == [[], {"a" => 1, a: 1}]
-        m({ "a" => 1 }, a: 1).should == [[{"a" => 1}], {a: 1}]
-        suppress_warning do
-          m({a: 1}, {}).should == [[{a: 1}], {}]
-        end
-        m({a: 1}, {"a" => 1}).should == [[{a: 1}, {"a" => 1}], {}]
-
-        bo = BasicObject.new
-        def bo.to_a; [1, 2, 3]; end
-        def bo.to_hash; {:b => 2, :c => 3}; end
-
-        m(*bo, **bo).should == [[1, 2, 3], {:b => 2, :c => 3}]
-      end
-
-      evaluate <<-ruby do
-          def m(*, a:) a end
-        ruby
-
-        m(a: 1).should == 1
-        m(1, 2, a: 3).should == 3
-        suppress_keyword_warning do
-          m("a" => 1, a: 2).should == 2
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, b:) [a, b] end
-        ruby
-
-        m(b: 1).should == [[], 1]
-        m(1, 2, b: 3).should == [[1, 2], 3]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*, a: 1) a end
-        ruby
-
-        m().should == 1
-        m(1, 2).should == 1
-        m(a: 2).should == 2
-        m(1, a: 2).should == 2
-        suppress_keyword_warning do
-          m("a" => 1, a: 2).should == 2
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(*a, b: 1) [a, b] end
-        ruby
-
-        m().should == [[], 1]
-        m(1, 2, 3, b: 4).should == [[1, 2, 3], 4]
-        suppress_keyword_warning do
-          m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
-        end
-
-        a = mock("splat")
-        a.should_not_receive(:to_ary)
-        m(*a).should == [[a], 1]
-      end
-
-      evaluate <<-ruby do
-          def m(*a, **) a end
-        ruby
-
-        m().should == []
-        m(1, 2, 3, a: 4, b: 5).should == [1, 2, 3]
-        m("a" => 1, a: 1).should == []
-        m(1, **{a: 2}).should == [1]
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash)
-        -> { m(**h) }.should raise_error(TypeError)
-      end
-
-      evaluate <<-ruby do
-          def m(*, **k) k end
-        ruby
-
-        m().should == {}
-        m(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-        m("a" => 1, a: 1).should == {"a" => 1, a: 1}
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash).and_return({a: 1})
-        suppress_keyword_warning do
-          m(h).should == {a: 1}
-        end
-      end
-
-      evaluate <<-ruby do
-          def m(a = nil, **k) [a, k] end
-        ruby
-
-        m().should == [nil, {}]
-        m("a" => 1).should == [nil, {"a" => 1}]
-        m(a: 1).should == [nil, {a: 1}]
-        m("a" => 1, a: 1).should == [nil, {"a" => 1, a: 1}]
-        m({ "a" => 1 }, a: 1).should == [{"a" => 1}, {a: 1}]
-        suppress_keyword_warning do
-          m({a: 1}, {}).should == [{a: 1}, {}]
-        end
-
-        h = {"a" => 1, b: 2}
-        suppress_keyword_warning do
-          m(h).should == [{"a" => 1}, {b: 2}]
-        end
-        h.should == {"a" => 1, b: 2}
-
-        h = {"a" => 1}
-        m(h).first.should == h
-
-        h = {}
-        suppress_keyword_warning do
-          m(h).should == [nil, {}]
-        end
-
-        hh = {}
-        h = mock("keyword splat empty hash")
-        h.should_receive(:to_hash).and_return({a: 1})
-        suppress_keyword_warning do
-          m(h).should == [nil, {a: 1}]
-        end
-
-        h = mock("keyword splat")
-        h.should_receive(:to_hash).and_return({"a" => 1})
-        m(h).should == [h, {}]
-      end
-
-      evaluate <<-ruby do
-          def m(*a, **k) [a, k] end
-        ruby
-
-        m().should == [[], {}]
-        m(1).should == [[1], {}]
-        m(a: 1, b: 2).should == [[], {a: 1, b: 2}]
-        m(1, 2, 3, a: 2).should == [[1, 2, 3], {a: 2}]
-
-        m("a" => 1).should == [[], {"a" => 1}]
-        m(a: 1).should == [[], {a: 1}]
-        m("a" => 1, a: 1).should == [[], {"a" => 1, a: 1}]
-        m({ "a" => 1 }, a: 1).should == [[{"a" => 1}], {a: 1}]
-        suppress_keyword_warning do
-          m({a: 1}, {}).should == [[{a: 1}], {}]
-        end
-        m({a: 1}, {"a" => 1}).should == [[{a: 1}, {"a" => 1}], {}]
-
-        bo = BasicObject.new
-        def bo.to_a; [1, 2, 3]; end
-        def bo.to_hash; {:b => 2, :c => 3}; end
-
-        m(*bo, **bo).should == [[1, 2, 3], {:b => 2, :c => 3}]
-      end
     end
 
     evaluate <<-ruby do
@@ -1503,44 +988,22 @@ describe "A method" do
       end
     end
 
-    ruby_version_is ''...'2.7' do
-      evaluate <<-ruby do
-          def m(a:, **) a end
-        ruby
+    evaluate <<-ruby do
+        def m(a:, **) a end
+      ruby
 
-        m(a: 1).should == 1
-        m(a: 1, b: 2).should == 1
-        -> { m("a" => 1, a: 1, b: 2) }.should raise_error(ArgumentError)
-      end
-
-      evaluate <<-ruby do
-          def m(a:, **k) [a, k] end
-        ruby
-
-        m(a: 1).should == [1, {}]
-        m(a: 1, b: 2, c: 3).should == [1, {b: 2, c: 3}]
-        -> { m("a" => 1, a: 1, b: 2) }.should raise_error(ArgumentError)
-      end
+      m(a: 1).should == 1
+      m(a: 1, b: 2).should == 1
+      m("a" => 1, a: 1, b: 2).should == 1
     end
 
-    ruby_version_is '2.7' do
-      evaluate <<-ruby do
-          def m(a:, **) a end
-        ruby
+    evaluate <<-ruby do
+        def m(a:, **k) [a, k] end
+      ruby
 
-        m(a: 1).should == 1
-        m(a: 1, b: 2).should == 1
-        m("a" => 1, a: 1, b: 2).should == 1
-      end
-
-      evaluate <<-ruby do
-          def m(a:, **k) [a, k] end
-        ruby
-
-        m(a: 1).should == [1, {}]
-        m(a: 1, b: 2, c: 3).should == [1, {b: 2, c: 3}]
-        m("a" => 1, a: 1, b: 2).should == [1, {"a" => 1, b: 2}]
-      end
+      m(a: 1).should == [1, {}]
+      m(a: 1, b: 2, c: 3).should == [1, {b: 2, c: 3}]
+      m("a" => 1, a: 1, b: 2).should == [1, {"a" => 1, b: 2}]
     end
 
     evaluate <<-ruby do
@@ -1637,126 +1100,78 @@ describe "A method" do
       result.should == [1, 1, [], 2, 3, 2, 4, { h: 5, i: 6 }, l]
     end
 
-    ruby_version_is "2.7" do
-      evaluate <<-ruby do
-        def m(a, **nil); a end;
-        ruby
+    evaluate <<-ruby do
+      def m(a, **nil); a end;
+      ruby
 
-        m({a: 1}).should == {a: 1}
-        m({"a" => 1}).should == {"a" => 1}
+      m({a: 1}).should == {a: 1}
+      m({"a" => 1}).should == {"a" => 1}
 
-        -> { m(a: 1) }.should raise_error(ArgumentError)
-        -> { m(**{a: 1}) }.should raise_error(ArgumentError)
-        -> { m("a" => 1) }.should raise_error(ArgumentError)
-      end
+      -> { m(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
     end
 
-    ruby_version_is ''...'3.0' do
-      evaluate <<-ruby do
-          def m(a, b = nil, c = nil, d, e: nil, **f)
-            [a, b, c, d, e, f]
-          end
-        ruby
-
-        result = m(1, 2)
-        result.should == [1, nil, nil, 2, nil, {}]
-
-        suppress_warning do
-          result = m(1, 2, {foo: :bar})
-          result.should == [1, nil, nil, 2, nil, {foo: :bar}]
+    evaluate <<-ruby do
+        def m(a, b = nil, c = nil, d, e: nil, **f)
+          [a, b, c, d, e, f]
         end
+      ruby
 
-        result = m(1, {foo: :bar})
-        result.should == [1, nil, nil, {foo: :bar}, nil, {}]
-      end
-    end
+      result = m(1, 2)
+      result.should == [1, nil, nil, 2, nil, {}]
 
-    ruby_version_is '3.0' do
-      evaluate <<-ruby do
-          def m(a, b = nil, c = nil, d, e: nil, **f)
-            [a, b, c, d, e, f]
-          end
-        ruby
+      result = m(1, 2, {foo: :bar})
+      result.should == [1, 2, nil, {foo: :bar}, nil, {}]
 
-        result = m(1, 2)
-        result.should == [1, nil, nil, 2, nil, {}]
-
-        result = m(1, 2, {foo: :bar})
-        result.should == [1, 2, nil, {foo: :bar}, nil, {}]
-
-        result = m(1, {foo: :bar})
-        result.should == [1, nil, nil, {foo: :bar}, nil, {}]
-      end
+      result = m(1, {foo: :bar})
+      result.should == [1, nil, nil, {foo: :bar}, nil, {}]
     end
   end
 
-  ruby_version_is '2.7' do
-    context 'when passing an empty keyword splat to a method that does not accept keywords' do
-      evaluate <<-ruby do
-          def m(*a); a; end
-        ruby
+  context 'when passing an empty keyword splat to a method that does not accept keywords' do
+    evaluate <<-ruby do
+        def m(*a); a; end
+      ruby
 
-        h = {}
-        m(**h).should == []
-      end
+      h = {}
+      m(**h).should == []
     end
   end
 
-  ruby_version_is '2.7'...'3.0' do
-    context 'when passing an empty keyword splat to a method that does not accept keywords' do
-      evaluate <<-ruby do
-          def m(a); a; end
-        ruby
-        h = {}
+  context 'when passing an empty keyword splat to a method that does not accept keywords' do
+    evaluate <<-ruby do
+        def m(a); a; end
+      ruby
+      h = {}
 
-        -> do
-          m(**h).should == {}
-        end.should complain(/warning: Passing the keyword argument as the last hash parameter is deprecated/)
-      end
+      -> do
+        m(**h).should == {}
+      end.should raise_error(ArgumentError)
     end
   end
 
-  ruby_version_is ''...'3.0' do
-    context "assigns keyword arguments from a passed Hash without modifying it" do
-      evaluate <<-ruby do
-          def m(a: nil); a; end
-        ruby
+  context "raises ArgumentError if passing hash as keyword arguments" do
+    evaluate <<-ruby do
+        def m(a: nil); a; end
+      ruby
 
-        options = {a: 1}.freeze
-        -> do
-          suppress_warning do
-            m(options).should == 1
-          end
-        end.should_not raise_error
-        options.should == {a: 1}
-      end
+      options = {a: 1}.freeze
+      -> do
+        m(options)
+      end.should raise_error(ArgumentError)
     end
   end
 
-  ruby_version_is '3.0' do
-    context 'when passing an empty keyword splat to a method that does not accept keywords' do
-      evaluate <<-ruby do
-          def m(a); a; end
-        ruby
-        h = {}
-
-        -> do
-          m(**h).should == {}
-        end.should raise_error(ArgumentError)
-      end
+  it "assigns the last Hash to the last optional argument if the Hash contains non-Symbol keys and is not passed as keywords" do
+    def m(a = nil, b = {}, v: false)
+      [a, b, v]
     end
 
-    context "raises ArgumentError if passing hash as keyword arguments" do
-      evaluate <<-ruby do
-          def m(a: nil); a; end
-        ruby
-
-        options = {a: 1}.freeze
-        -> do
-          m(options)
-        end.should raise_error(ArgumentError)
-      end
-    end
+    h = { "key" => "value" }
+    m(:a, h).should == [:a, h, false]
+    m(:a, h, v: true).should == [:a, h, true]
+    m(v: true).should == [nil, {}, true]
   end
 end
 
@@ -1778,14 +1193,42 @@ describe "A method call with a space between method name and parentheses" do
     end
   end
 
-  context "when a single argument provided" do
-    it "assigns it" do
+  context "when a single argument is provided" do
+    it "assigns a simple expression" do
+      args = m (1)
+      args.should == [1]
+    end
+
+    it "assigns an expression consisting of multiple statements" do
+      args = m ((0; 1))
+      args.should == [1]
+    end
+
+    it "assigns one single statement, without the need of parentheses" do
       args = m (1 == 1 ? true : false)
       args.should == [true]
     end
+
+    ruby_version_is "3.3" do
+      it "supports multiple statements" do
+        eval("m (1; 2)").should == [2]
+      end
+    end
   end
 
-  context "when 2+ arguments provided" do
+  context "when multiple arguments are provided" do
+    it "assigns simple expressions" do
+      args = m (1), (2)
+      args.should == [1, 2]
+    end
+
+    it "assigns expressions consisting of multiple statements" do
+      args = m ((0; 1)), ((2; 3))
+      args.should == [1, 3]
+    end
+  end
+
+  context "when the argument looks like an argument list" do
     it "raises a syntax error" do
       -> {
         eval("m (1, 2)")
@@ -1850,15 +1293,175 @@ describe "An array-dereference method ([])" do
   end
 end
 
-ruby_version_is '3.0' do
-  describe "An endless method definition" do
+describe "An endless method definition" do
+  context "without arguments" do
     evaluate <<-ruby do
-      def m(a) = a
-    ruby
+        def m() = 42
+      ruby
 
-      a = b = m 1
-      a.should == 1
-      b.should == 1
+      m.should == 42
+    end
+
+    context "without parenthesis" do
+      evaluate <<-ruby do
+        def m = 42
+      ruby
+
+        m.should == 42
+      end
+    end
+  end
+
+  context "with arguments" do
+    evaluate <<-ruby do
+        def m(a, b) = a + b
+      ruby
+
+      m(1, 4).should == 5
+    end
+  end
+
+  context "with multiline body" do
+    evaluate <<-ruby do
+        def m(n) =
+          if n > 2
+            m(n - 2) + m(n - 1)
+          else
+            1
+          end
+      ruby
+
+      m(6).should == 8
+    end
+  end
+
+  context "with args forwarding" do
+    evaluate <<-ruby do
+        def mm(word, num:)
+          word * num
+        end
+
+        def m(...) = mm(...) + mm(...)
+      ruby
+
+      m("meow", num: 2).should == "meow" * 4
+    end
+  end
+end
+
+describe "Keyword arguments are now separated from positional arguments" do
+  context "when the method has only positional parameters" do
+    it "treats incoming keyword arguments as positional for compatibility" do
+      def foo(a, b, c, hsh)
+        hsh[:key]
+      end
+
+      foo(1, 2, 3, key: 42).should == 42
+    end
+  end
+
+  context "when the method takes a ** parameter" do
+    it "captures the passed literal keyword arguments" do
+      def foo(a, b, c, **hsh)
+        hsh[:key]
+      end
+
+      foo(1, 2, 3, key: 42).should == 42
+    end
+
+    it "captures the passed ** keyword arguments" do
+      def foo(a, b, c, **hsh)
+        hsh[:key]
+      end
+
+      h = { key: 42 }
+      foo(1, 2, 3, **h).should == 42
+    end
+
+    it "does not convert a positional Hash to keyword arguments" do
+      def foo(a, b, c, **hsh)
+        hsh[:key]
+      end
+
+      -> {
+        foo(1, 2, 3, { key: 42 })
+      }.should raise_error(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
+    end
+  end
+
+  context "when the method takes a key: parameter" do
+    context "when it's called with a positional Hash and no **" do
+      it "raises ArgumentError" do
+        def foo(a, b, c, key: 1)
+          key
+        end
+
+        -> {
+          foo(1, 2, 3, { key: 42 })
+        }.should raise_error(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
+      end
+    end
+
+    context "when it's called with **" do
+      it "captures the passed keyword arguments" do
+        def foo(a, b, c, key: 1)
+          key
+        end
+
+        h = { key: 42 }
+        foo(1, 2, 3, **h).should == 42
+      end
+    end
+  end
+end
+
+ruby_version_is "3.1" do
+  describe "kwarg with omitted value in a method call" do
+    context "accepts short notation 'kwarg' in method call" do
+      evaluate <<-ruby do
+          def call(*args, **kwargs) = [args, kwargs]
+        ruby
+
+        a, b, c = 1, 2, 3
+        arr, h = eval('call a:')
+        h.should == {a: 1}
+        arr.should == []
+
+        arr, h = eval('call(a:, b:, c:)')
+        h.should == {a: 1, b: 2, c: 3}
+        arr.should == []
+
+        arr, h = eval('call(a:, b: 10, c:)')
+        h.should == {a: 1, b: 10, c: 3}
+        arr.should == []
+      end
+    end
+
+    context "with methods and local variables" do
+      evaluate <<-ruby do
+          def call(*args, **kwargs) = [args, kwargs]
+
+          def bar
+            "baz"
+          end
+
+          def foo(val)
+            call bar:, val:
+          end
+        ruby
+
+        foo(1).should == [[], {bar: "baz", val: 1}]
+      end
+    end
+  end
+
+  describe "Inside 'endless' method definitions" do
+    it "allows method calls without parenthesis" do
+      eval <<-ruby
+        def greet(person) = "Hi, ".concat person
+      ruby
+
+      greet("Homer").should == "Hi, Homer"
     end
   end
 end

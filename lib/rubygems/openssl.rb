@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-begin
-  require "openssl"
-rescue LoadError => e
-  raise unless e.path == 'openssl'
+autoload :OpenSSL, "openssl"
+
+module Gem
+  HAVE_OPENSSL = defined? OpenSSL::SSL # :nodoc:
 end

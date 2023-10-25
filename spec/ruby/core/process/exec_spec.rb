@@ -30,7 +30,7 @@ describe "Process.exec" do
   end
 
   it "raises Errno::EACCES when passed a directory" do
-    -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+    -> { Process.exec __dir__ }.should raise_error(Errno::EACCES)
   end
 
   it "runs the specified command, replacing current process" do
@@ -193,9 +193,11 @@ describe "Process.exec" do
           map_fd_fixture = fixture __FILE__, "map_fd.rb"
           cmd = <<-EOC
             f = File.open(#{@name.inspect}, "w+")
-            child_fd = f.fileno + 1
-            File.open(#{@child_fd_file.inspect}, "w") { |io| io.print child_fd }
-            Process.exec "#{ruby_cmd(map_fd_fixture)} \#{child_fd}", { child_fd => f }
+            File.open(#{__FILE__.inspect}, "r") do |io|
+              child_fd = io.fileno
+              File.open(#{@child_fd_file.inspect}, "w") { |io| io.print child_fd }
+              Process.exec "#{ruby_cmd(map_fd_fixture)} \#{child_fd}", { child_fd => f }
+            end
             EOC
 
           ruby_exe(cmd, escape: true)

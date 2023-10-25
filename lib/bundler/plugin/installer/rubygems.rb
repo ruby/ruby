@@ -4,15 +4,7 @@ module Bundler
   module Plugin
     class Installer
       class Rubygems < Bundler::Source::Rubygems
-        def version_message(spec)
-          "#{spec.name} #{spec.version}"
-        end
-
         private
-
-        def requires_sudo?
-          false # Will change on implementation of project level plugins
-        end
 
         def rubygems_dir
           Plugin.root

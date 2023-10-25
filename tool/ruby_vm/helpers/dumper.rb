@@ -28,8 +28,8 @@ class RubyVM::Dumper
     path  = Pathname.new(__FILE__)
     path  = (path.relative_path_from(Pathname.pwd) rescue path).dirname
     path += '../views'
-    path += spec
-    src   = path.read mode: 'rt:utf-8:utf-8'
+    path += Pathname.pwd.join(spec).expand_path.to_s.sub("#{@base}/", '')
+    src   = path.expand_path.read mode: 'rt:utf-8:utf-8'
   rescue Errno::ENOENT
     raise "don't know how to generate #{path}"
   else
@@ -85,10 +85,11 @@ class RubyVM::Dumper
       . join
   end
 
-  def initialize dst
+  def initialize dst, base
     @erb   = {}
     @empty = new_binding
     @file  = cstr dst.to_path
+    @base  = base
   end
 
   def render partial, opts = { :locals => {} }

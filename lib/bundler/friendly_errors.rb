@@ -6,6 +6,18 @@ module Bundler
   module FriendlyErrors
     module_function
 
+    def enable!
+      @disabled = false
+    end
+
+    def disabled?
+      @disabled
+    end
+
+    def disable!
+      @disabled = true
+    end
+
     def log_error(error)
       case error
       when YamlSyntaxError
@@ -17,13 +29,13 @@ module Bundler
         Bundler.ui.error error.message
         Bundler.ui.trace error.orig_exception
       when BundlerError
-        Bundler.ui.error error.message, :wrap => true
-        Bundler.ui.trace error
+        if Bundler.ui.debug?
+          Bundler.ui.trace error
+        else
+          Bundler.ui.error error.message, :wrap => true
+        end
       when Thor::Error
         Bundler.ui.error error.message
-      when LoadError
-        raise error unless error.message =~ /cannot load such file -- openssl|openssl.so|libcrypto.so/
-        Bundler.ui.error "\nCould not load OpenSSL. #{error.class}: #{error}\n#{error.backtrace.join("\n  ")}"
       when Interrupt
         Bundler.ui.error "\nQuitting..."
         Bundler.ui.trace error
@@ -37,8 +49,6 @@ module Bundler
           "Alternatively, you can increase the amount of memory the JVM is able to use by running Bundler with jruby -J-Xmx1024m -S bundle (JRuby defaults to 500MB)."
       else request_issue_report_for(error)
       end
-    rescue StandardError
-      raise error
     end
 
     def exit_status(error)
@@ -51,40 +61,11 @@ module Bundler
     end
 
     def request_issue_report_for(e)
-      Bundler.ui.error <<-EOS.gsub(/^ {8}/, ""), nil, nil
+      Bundler.ui.error <<~EOS, nil, nil
         --- ERROR REPORT TEMPLATE -------------------------------------------------------
-        # Error Report
-
-        ## Questions
-
-        Please fill out answers to these questions, it'll help us figure out
-        why things are going wrong.
-
-        - **What did you do?**
-
-          I ran the command `#{$PROGRAM_NAME} #{ARGV.join(" ")}`
-
-        - **What did you expect to happen?**
-
-          I expected Bundler to...
-
-        - **What happened instead?**
-
-          Instead, what happened was...
-
-        - **Have you tried any solutions posted on similar issues in our issue tracker, stack overflow, or google?**
-
-          I tried...
-
-        - **Have you read our issues document, https://github.com/rubygems/rubygems/blob/master/bundler/doc/contributing/ISSUES.md?**
-
-          ...
-
-        ## Backtrace
 
         ```
-        #{e.class}: #{e.message}
-          #{e.backtrace && e.backtrace.join("\n          ").chomp}
+        #{exception_message(e)}
         ```
 
         #{Bundler::Env.report}
@@ -94,13 +75,27 @@ module Bundler
 
       Bundler.ui.error "Unfortunately, an unexpected error occurred, and Bundler cannot continue."
 
-      Bundler.ui.error <<-EOS.gsub(/^ {8}/, ""), nil, :yellow
+      Bundler.ui.error <<~EOS, nil, :yellow
 
         First, try this link to see if there are any existing issue reports for this error:
         #{issues_url(e)}
 
-        If there aren't any reports for this error yet, please create copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
-        https://github.com/rubygems/rubygems/issues/new?labels=Bundler
+        If there aren't any reports for this error yet, please fill in the new issue form located at #{new_issue_url}, and copy and paste the report template above in there.
+      EOS
+    end
+
+    def exception_message(error)
+      message = serialized_exception_for(error)
+      cause = error.cause
+      return message unless cause
+
+      message + serialized_exception_for(cause)
+    end
+
+    def serialized_exception_for(e)
+      <<~EOS
+        #{e.class}: #{e.message}
+          #{e.backtrace&.join("\n          ")&.chomp}
       EOS
     end
 
@@ -111,13 +106,20 @@ module Bundler
       "https://github.com/rubygems/rubygems/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end
+
+    def new_issue_url
+      "https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md"
+    end
   end
 
   def self.with_friendly_errors
+    FriendlyErrors.enable!
     yield
   rescue SignalException
     raise
   rescue Exception => e # rubocop:disable Lint/RescueException
+    raise if FriendlyErrors.disabled?
+
     FriendlyErrors.log_error(e)
     exit FriendlyErrors.exit_status(e)
   end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Resolver sets are used to look up specifications (and their
 # dependencies) used in resolution.  This set is abstract.
@@ -20,7 +21,6 @@ class Gem::Resolver::Set
   attr_accessor :prerelease
 
   def initialize # :nodoc:
-    require 'uri'
     @prerelease = false
     @remote     = true
     @errors     = []

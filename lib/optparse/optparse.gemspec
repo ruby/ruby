@@ -22,10 +22,9 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{\A(?:test|spec|features)/}) }
-  end
+  spec.files         = Dir["{doc,lib,misc}/**/*"] + %w[README.md ChangeLog COPYING]
+  spec.rdoc_options  = ["--main=README.md", "--op=rdoc", "--page-dir=doc"]
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.require_paths = ["lib"]
 end

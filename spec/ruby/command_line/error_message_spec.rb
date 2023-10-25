@@ -2,10 +2,10 @@ require_relative '../spec_helper'
 
 describe "The error message caused by an exception" do
   it "is not printed to stdout" do
-    out = ruby_exe("this_does_not_exist", args: "2> #{File::NULL}")
+    out = ruby_exe("this_does_not_exist", args: "2> #{File::NULL}", exit_status: 1)
     out.chomp.should.empty?
 
-    out = ruby_exe("end #syntax error", args: "2> #{File::NULL}")
+    out = ruby_exe("end #syntax error", args: "2> #{File::NULL}", exit_status: 1)
     out.chomp.should.empty?
   end
 end

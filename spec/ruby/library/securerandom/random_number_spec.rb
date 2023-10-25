@@ -10,7 +10,7 @@ describe "SecureRandom.random_number" do
   it "generates a random positive number smaller then the positive integer argument" do
     (1..64).each do |idx|
       num = SecureRandom.random_number(idx)
-      num.should be_kind_of(Fixnum)
+      num.should be_kind_of(Integer)
       (0 <= num).should == true
       (num < idx).should == true
     end

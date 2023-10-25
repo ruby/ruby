@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/command_manager'
+
+require "rubygems/command_manager"
 
 ##
 # This is an example of exactly what NOT to do.
@@ -12,7 +13,7 @@ end
 
 class Gem::Commands::InterruptCommand < Gem::Command
   def initialize
-    super('interrupt', 'Raises an Interrupt Exception', {})
+    super("interrupt", "Raises an Interrupt Exception", {})
   end
 
   def execute

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -19,8 +20,8 @@ class Gem::Package::Old < Gem::Package
   # cannot be written.
 
   def initialize(gem, security_policy)
-    require 'fileutils'
-    require 'zlib'
+    require "fileutils"
+    require "zlib"
     Gem.load_yaml
 
     @contents        = nil
@@ -41,7 +42,7 @@ class Gem::Package::Old < Gem::Package
       read_until_dashes io # spec
       header = file_list io
 
-      @contents = header.map {|file| file['path'] }
+      @contents = header.map {|file| file["path"] }
     end
   end
 
@@ -59,7 +60,7 @@ class Gem::Package::Old < Gem::Package
       raise Gem::Exception, errstr unless header
 
       header.each do |entry|
-        full_name = entry['path']
+        full_name = entry["path"]
 
         destination = install_location full_name, destination_dir
 
@@ -73,13 +74,13 @@ class Gem::Package::Old < Gem::Package
         file_data = Zlib::Inflate.inflate file_data
 
         raise Gem::Package::FormatError, "#{full_name} in #{@gem} is corrupt" if
-          file_data.length != entry['size'].to_i
+          file_data.length != entry["size"].to_i
 
         FileUtils.rm_rf destination
 
-        FileUtils.mkdir_p File.dirname(destination), :mode => dir_mode && 0755
+        FileUtils.mkdir_p File.dirname(destination), :mode => dir_mode && 0o755
 
-        File.open destination, 'wb', file_mode(entry['mode']) do |out|
+        File.open destination, "wb", file_mode(entry["mode"]) do |out|
           out.write file_data
         end
 
@@ -119,7 +120,7 @@ class Gem::Package::Old < Gem::Package
     loop do
       line = io.gets
 
-      return if line.chomp == '__END__'
+      return if line.chomp == "__END__"
       break unless line
     end
 
@@ -145,7 +146,7 @@ class Gem::Package::Old < Gem::Package
 
     begin
       @spec = Gem::Specification.from_yaml yaml
-    rescue YAML::SyntaxError
+    rescue Psych::SyntaxError
       raise Gem::Exception, "Failed to parse gem specification out of gem file"
     end
   rescue ArgumentError
@@ -160,7 +161,7 @@ class Gem::Package::Old < Gem::Package
     return true unless @security_policy
 
     raise Gem::Security::Exception,
-          'old format gems do not contain signatures and cannot be verified' if
+          "old format gems do not contain signatures and cannot be verified" if
       @security_policy.verify_data
 
     true

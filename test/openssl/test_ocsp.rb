@@ -99,7 +99,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     request.sign(@cert, @cert_key, [@ca_cert], 0)
     asn1 = OpenSSL::ASN1.decode(request.to_der)
     assert_equal cid.to_der, asn1.value[0].value.find { |a| a.tag_class == :UNIVERSAL }.value[0].value[0].to_der
-    assert_equal OpenSSL::ASN1.ObjectId("sha1WithRSAEncryption").to_der, asn1.value[1].value[0].value[0].value[0].to_der
+    assert_equal OpenSSL::ASN1.ObjectId("sha256WithRSAEncryption").to_der, asn1.value[1].value[0].value[0].value[0].to_der
     assert_equal @cert.to_der, asn1.value[1].value[0].value[2].value[0].value[0].to_der
     assert_equal @ca_cert.to_der, asn1.value[1].value[0].value[2].value[0].value[1].to_der
     assert_equal asn1.to_der, OpenSSL::OCSP::Request.new(asn1.to_der).to_der
@@ -123,14 +123,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
     assert_equal true, req.verify([@cert], store, OpenSSL::OCSP::NOINTERN)
     ret = req.verify([@cert], store)
-    if ret || openssl?(1, 0, 2)
-      assert_equal true, ret
-    else
-      # RT2560; OCSP_request_verify() does not find signer cert from 'certs' when
-      # OCSP_NOINTERN is not specified.
-      # fixed by OpenSSL 1.0.1j, 1.0.2
-      pend "RT2560: ocsp_req_find_signer"
-    end
+    assert_equal true, ret
 
     # not signed
     req = OpenSSL::OCSP::Request.new.add_certid(cid)

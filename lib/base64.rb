@@ -22,6 +22,9 @@
 # binary data into purely printable characters.
 
 module Base64
+
+  VERSION = "0.1.1"
+
   module_function
 
   # Returns the Base64-encoded version of +bin+.
@@ -82,8 +85,8 @@ module Base64
   # You can remove the padding by setting +padding+ as false.
   def urlsafe_encode64(bin, padding: true)
     str = strict_encode64(bin)
+    str.chomp!("==") or str.chomp!("=") unless padding
     str.tr!("+/", "-_")
-    str.delete!("=") unless padding
     str
   end
 
@@ -99,9 +102,11 @@ module Base64
     # NOTE: RFC 4648 does say nothing about unpadded input, but says that
     # "the excess pad characters MAY also be ignored", so it is inferred that
     # unpadded input is also acceptable.
-    str = str.tr("-_", "+/")
     if !str.end_with?("=") && str.length % 4 != 0
       str = str.ljust((str.length + 3) & ~3, "=")
+      str.tr!("-_", "+/")
+    else
+      str = str.tr("-_", "+/")
     end
     strict_decode64(str)
   end

@@ -16,14 +16,7 @@ Gem::Specification.new do |spec|
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = Dir.glob("lib/**/*.rb") + ["logger.gemspec"]
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 2.3.0"
-
-  spec.add_development_dependency "bundler", ">= 0"
-  spec.add_development_dependency "rake", ">= 12.3.3"
-  spec.add_development_dependency "test-unit"
-  spec.add_development_dependency "rdoc"
+  spec.required_ruby_version = ">= 2.5.0"
 end

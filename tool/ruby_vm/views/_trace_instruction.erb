@@ -11,6 +11,11 @@
 INSN_ENTRY(<%= insn.name %>)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
+%   if insn.name =~
+%   /\Atrace_opt_(plus|minus|mult|div|mod|eq|neq|lt|le|gt|ge|ltlt|and|or|aref|aset|length|size|empty_p|nil_p|succ|not|regexpmatch2)\z/
+%     jump_dest = "opt_send_without_block"
+%   end
+    <%= 'ADD_PC(1);' if insn.name == 'trace_opt_neq' %>
+    DISPATCH_ORIGINAL_INSN(<%= jump_dest || insn.jump_destination %>);
     END_INSN(<%= insn.name %>);
 }

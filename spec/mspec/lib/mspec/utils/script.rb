@@ -37,10 +37,19 @@ class MSpecScript
     config[key]
   end
 
+  class << self
+    attr_accessor :child_process
+  end
+
+  # True if the current process is the one going to run the specs with `MSpec.process`.
+  # False for e.g. `mspec` which exec's to `mspec-run`.
+  # This is useful in .mspec config files.
+  def self.child_process?
+    MSpecScript.child_process
+  end
+
   def initialize
-    ruby_version_is ""..."2.5" do
-      abort "MSpec needs Ruby 2.5 or more recent"
-    end
+    check_version!
 
     config[:formatter] = nil
     config[:includes]  = []
@@ -269,15 +278,22 @@ class MSpecScript
 
   # Instantiates an instance and calls the series of methods to
   # invoke the script.
-  def self.main
+  def self.main(child_process = true)
+    MSpecScript.child_process = child_process
+
     script = new
     script.load_default
-    script.try_load '~/.mspecrc'
     script.options
     script.signals
     script.register
     script.setup_env
     require 'mspec'
     script.run
+  end
+
+  private def check_version!
+    ruby_version_is ""..."2.6" do
+      warn "MSpec is supported for Ruby 2.6 and above only"
+    end
   end
 end

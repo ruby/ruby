@@ -3,7 +3,7 @@
  * Copyright (C) 2007, 2017 Ruby/OpenSSL Project Authors
  */
 #include "ossl.h"
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_LIBRESSL_PREREQ(3, 6, 0)
 # include <openssl/kdf.h>
 #endif
 
@@ -21,7 +21,7 @@ static VALUE mKDF, eKDF;
  * (https://tools.ietf.org/html/rfc2898#section-5.2).
  *
  * === Parameters
- * pass       :: The passphrase.
+ * pass       :: The password.
  * salt       :: The salt. Salts prevent attacks based on dictionaries of common
  *               passwords and attacks based on rainbow tables. It is a public
  *               value that can be safely stored along with the password (e.g.
@@ -141,7 +141,7 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
 }
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_LIBRESSL_PREREQ(3, 6, 0)
 /*
  * call-seq:
  *    KDF.hkdf(ikm, salt:, info:, length:, hash:) -> String
@@ -163,6 +163,14 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
  *   HashLen is the length of the hash function output in octets.
  * _hash_::
  *   The hash function.
+ *
+ * === Example
+ *   # The values from https://datatracker.ietf.org/doc/html/rfc5869#appendix-A.1
+ *   ikm = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
+ *   salt = ["000102030405060708090a0b0c"].pack("H*")
+ *   info = ["f0f1f2f3f4f5f6f7f8f9"].pack("H*")
+ *   p OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: 42, hash: "SHA256").unpack1("H*")
+ *   # => "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865"
  */
 static VALUE
 kdf_hkdf(int argc, VALUE *argv, VALUE self)
@@ -297,7 +305,7 @@ Init_ossl_kdf(void)
 #if defined(HAVE_EVP_PBE_SCRYPT)
     rb_define_module_function(mKDF, "scrypt", kdf_scrypt, -1);
 #endif
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_LIBRESSL_PREREQ(3, 6, 0)
     rb_define_module_function(mKDF, "hkdf", kdf_hkdf, -1);
 #endif
 }

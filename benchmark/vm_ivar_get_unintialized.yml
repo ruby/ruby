@@ -1,0 +1,12 @@
+prelude: |
+  class Example
+    def read
+      @uninitialized
+    end
+  end
+
+  obj = Example.new
+benchmark:
+  vm_ivar_get_uninitialized: |
+    obj.read
+loop_count: 30000000

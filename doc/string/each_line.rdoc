@@ -1,0 +1,60 @@
+With a block given, forms the substrings ("lines")
+that are the result of splitting +self+
+at each occurrence of the given line separator +line_sep+;
+passes each line to the block;
+returns +self+:
+
+  s = <<~EOT
+  This is the first line.
+  This is line two.
+
+  This is line four.
+  This is line five.
+  EOT
+
+  s.each_line {|line| p line }
+
+Output:
+
+  "This is the first line.\n"
+  "This is line two.\n"
+  "\n"
+  "This is line four.\n"
+  "This is line five.\n"
+
+With a different +line_sep+:
+
+  s.each_line(' is ') {|line| p line }
+
+Output:
+
+  "This is "
+  "the first line.\nThis is "
+  "line two.\n\nThis is "
+  "line four.\nThis is "
+  "line five.\n"
+
+With +chomp+ as +true+, removes the trailing +line_sep+ from each line:
+
+  s.each_line(chomp: true) {|line| p line }
+
+Output:
+
+  "This is the first line."
+  "This is line two."
+  ""
+  "This is line four."
+  "This is line five."
+
+With an empty string as +line_sep+,
+forms and passes "paragraphs" by splitting at each occurrence
+of two or more newlines:
+
+  s.each_line('') {|line| p line }
+
+Output:
+
+  "This is the first line.\nThis is line two.\n\n"
+  "This is line four.\nThis is line five.\n"
+
+With no block given, returns an enumerator.

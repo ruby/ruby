@@ -20,7 +20,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
 
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
     crl = issue_crl([], 1, now, now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     assert_equal(1, crl.version)
     assert_equal(cert.issuer.to_der, crl.issuer.to_der)
     assert_equal(now, crl.last_update)
@@ -57,7 +57,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     ]
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
     crl = issue_crl(revoke_info, 1, Time.now, Time.now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     revoked = crl.revoked
     assert_equal(5, revoked.size)
     assert_equal(1, revoked[0].serial)
@@ -98,7 +98,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
 
     revoke_info = (1..1000).collect{|i| [i, now, 0] }
     crl = issue_crl(revoke_info, 1, Time.now, Time.now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     revoked = crl.revoked
     assert_equal(1000, revoked.size)
     assert_equal(1, revoked[0].serial)
@@ -124,7 +124,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
 
     cert = issue_cert(@ca, @rsa2048, 1, cert_exts, nil, nil)
     crl = issue_crl([], 1, Time.now, Time.now+1600, crl_exts,
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     exts = crl.extensions
     assert_equal(3, exts.size)
     assert_equal("1", exts[0].value)
@@ -160,24 +160,24 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal(false, exts[2].critical?)
 
     no_ext_crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-      cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+      cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     assert_equal nil, no_ext_crl.authority_key_identifier
   end
 
   def test_crlnumber
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     assert_match(1.to_s, crl.extensions[0].value)
     assert_match(/X509v3 CRL Number:\s+#{1}/m, crl.to_text)
 
     crl = issue_crl([], 2**32, Time.now, Time.now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     assert_match((2**32).to_s, crl.extensions[0].value)
     assert_match(/X509v3 CRL Number:\s+#{2**32}/m, crl.to_text)
 
     crl = issue_crl([], 2**100, Time.now, Time.now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     assert_match(/X509v3 CRL Number:\s+#{2**100}/m, crl.to_text)
     assert_match((2**100).to_s, crl.extensions[0].value)
   end
@@ -185,7 +185,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
   def test_sign_and_verify
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-                    cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                    cert, @rsa2048, OpenSSL::Digest.new('SHA256'))
     assert_equal(false, crl.verify(@rsa1024))
     assert_equal(true,  crl.verify(@rsa2048))
     assert_equal(false, crl_error_returns_false { crl.verify(@dsa256) })
@@ -195,7 +195,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
 
     cert = issue_cert(@ca, @dsa512, 1, [], nil, nil)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-                    cert, @dsa512, OpenSSL::Digest.new('SHA1'))
+                    cert, @dsa512, OpenSSL::Digest.new('SHA256'))
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa1024) })
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa2048) })
     assert_equal(false, crl.verify(@dsa256))

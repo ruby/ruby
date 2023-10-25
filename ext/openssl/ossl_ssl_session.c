@@ -4,6 +4,7 @@
 
 #include "ossl.h"
 
+#ifndef OPENSSL_NO_SOCK
 VALUE cSSLSession;
 static VALUE eSSLSession;
 
@@ -18,7 +19,7 @@ const rb_data_type_t ossl_ssl_session_type = {
     {
 	0, ossl_ssl_session_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE ossl_ssl_session_alloc(VALUE klass)
@@ -34,43 +35,38 @@ static VALUE ossl_ssl_session_alloc(VALUE klass)
  * Creates a new Session object from an instance of SSLSocket or DER/PEM encoded
  * String.
  */
-static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
+static VALUE
+ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 {
-	SSL_SESSION *ctx = NULL;
+    SSL_SESSION *ctx;
 
-	if (RDATA(self)->data)
-		ossl_raise(eSSLSession, "SSL Session already initialized");
+    if (RTYPEDDATA_DATA(self))
+        ossl_raise(eSSLSession, "SSL Session already initialized");
 
-	if (rb_obj_is_instance_of(arg1, cSSLSocket)) {
-		SSL *ssl;
+    if (rb_obj_is_instance_of(arg1, cSSLSocket)) {
+        SSL *ssl;
 
-		GetSSL(arg1, ssl);
+        GetSSL(arg1, ssl);
 
-		if ((ctx = SSL_get1_session(ssl)) == NULL)
-			ossl_raise(eSSLSession, "no session available");
-	} else {
-		BIO *in = ossl_obj2bio(&arg1);
+        if ((ctx = SSL_get1_session(ssl)) == NULL)
+            ossl_raise(eSSLSession, "no session available");
+    }
+    else {
+        BIO *in = ossl_obj2bio(&arg1);
 
-		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
+        ctx = d2i_SSL_SESSION_bio(in, NULL);
+        if (!ctx) {
+            OSSL_BIO_reset(in);
+            ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
+        }
+        BIO_free(in);
+        if (!ctx)
+            ossl_raise(rb_eArgError, "unknown type");
+    }
 
-		if (!ctx) {
-		        OSSL_BIO_reset(in);
-			ctx = d2i_SSL_SESSION_bio(in, NULL);
-		}
+    RTYPEDDATA_DATA(self) = ctx;
 
-		BIO_free(in);
-
-		if (!ctx)
-			ossl_raise(rb_eArgError, "unknown type");
-	}
-
-	/* should not happen */
-	if (ctx == NULL)
-		ossl_raise(eSSLSession, "ctx not set - internal error");
-
-	RDATA(self)->data = ctx;
-
-	return self;
+    return self;
 }
 
 static VALUE
@@ -304,6 +300,7 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 	return ossl_membio2str(out);
 }
 
+#endif /* !defined(OPENSSL_NO_SOCK) */
 
 void Init_ossl_ssl_session(void)
 {
@@ -312,6 +309,7 @@ void Init_ossl_ssl_session(void)
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
+#ifndef OPENSSL_NO_SOCK
 	cSSLSession = rb_define_class_under(mSSL, "Session", rb_cObject);
 	eSSLSession = rb_define_class_under(cSSLSession, "SessionError", eOSSLError);
 
@@ -329,4 +327,5 @@ void Init_ossl_ssl_session(void)
 	rb_define_method(cSSLSession, "to_der", ossl_ssl_session_to_der, 0);
 	rb_define_method(cSSLSession, "to_pem", ossl_ssl_session_to_pem, 0);
 	rb_define_method(cSSLSession, "to_text", ossl_ssl_session_to_text, 0);
+#endif /* !defined(OPENSSL_NO_SOCK) */
 }

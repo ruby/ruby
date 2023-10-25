@@ -263,9 +263,26 @@ class RDoc::Parser
     @preprocess.options = @options
   end
 
-  autoload :RubyTools, 'rdoc/parser/ruby_tools'
-  autoload :Text,      'rdoc/parser/text'
+  autoload :RubyTools, "#{__dir__}/parser/ruby_tools"
+  autoload :Text,      "#{__dir__}/parser/text"
 
+  ##
+  # Normalizes tabs in +body+
+
+  def handle_tab_width(body)
+    if /\t/ =~ body
+      tab_width = @options.tab_width
+      body.split(/\n/).map do |line|
+        1 while line.gsub!(/\t+/) do
+          b, e = $~.offset(0)
+          ' ' * (tab_width * (e-b) - b % tab_width)
+        end
+        line
+      end.join "\n"
+    else
+      body
+    end
+  end
 end
 
 # simple must come first in order to show up last in the parsers list

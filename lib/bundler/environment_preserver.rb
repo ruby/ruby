@@ -2,11 +2,12 @@
 
 module Bundler
   class EnvironmentPreserver
-    INTENTIONALLY_NIL = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL".freeze
+    INTENTIONALLY_NIL = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL"
     BUNDLER_KEYS = %w[
       BUNDLE_BIN_PATH
       BUNDLE_GEMFILE
       BUNDLER_VERSION
+      BUNDLER_SETUP
       GEM_HOME
       GEM_PATH
       MANPATH
@@ -15,7 +16,7 @@ module Bundler
       RUBYLIB
       RUBYOPT
     ].map(&:freeze).freeze
-    BUNDLER_PREFIX = "BUNDLER_ORIG_".freeze
+    BUNDLER_PREFIX = "BUNDLER_ORIG_"
 
     def self.from_env
       new(env_to_hash(ENV), BUNDLER_KEYS)
@@ -38,7 +39,10 @@ module Bundler
 
     # Replaces `ENV` with the bundler environment variables backed up
     def replace_with_backup
-      ENV.replace(backup) unless Gem.win_platform?
+      unless Gem.win_platform?
+        ENV.replace(backup)
+        return
+      end
 
       # Fallback logic for Windows below to workaround
       # https://bugs.ruby-lang.org/issues/16798. Can be dropped once all

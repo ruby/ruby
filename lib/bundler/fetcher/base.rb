@@ -19,14 +19,12 @@ module Bundler
       end
 
       def fetch_uri
-        @fetch_uri ||= begin
-          if remote_uri.host == "rubygems.org"
-            uri = remote_uri.dup
-            uri.host = "index.rubygems.org"
-            uri
-          else
-            remote_uri
-          end
+        @fetch_uri ||= if remote_uri.host == "rubygems.org"
+          uri = remote_uri.dup
+          uri.host = "index.rubygems.org"
+          uri
+        else
+          remote_uri
         end
       end
 
@@ -40,9 +38,9 @@ module Bundler
 
       private
 
-      def log_specs(debug_msg)
+      def log_specs(&block)
         if Bundler.ui.debug?
-          Bundler.ui.debug debug_msg
+          Bundler.ui.debug yield
         else
           Bundler.ui.info ".", false
         end

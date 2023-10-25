@@ -27,3 +27,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
 	# Restore callee state (8 registers program counter)
 	pop {r4-r11,pc}
+
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif

@@ -23,17 +23,6 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     @io.string.should == "reopened, another time"
   end
 
-  ruby_version_is ""..."3.0" do
-    # NOTE: WEIRD!
-    it "does not taint self when the passed Object was tainted" do
-      @io.reopen("reopened".taint, IO::RDONLY)
-      @io.tainted?.should be_false
-
-      @io.reopen("reopened".taint, IO::WRONLY)
-      @io.tainted?.should be_false
-    end
-  end
-
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return("to_str")
@@ -90,17 +79,6 @@ describe "StringIO#reopen when passed [Object, Object]" do
   it "truncates the passed String when opened in truncate mode" do
     @io.reopen(str = "reopened", "w")
     str.should == ""
-  end
-
-  ruby_version_is ""..."3.0" do
-    # NOTE: WEIRD!
-    it "does not taint self when the passed Object was tainted" do
-      @io.reopen("reopened".taint, "r")
-      @io.tainted?.should be_false
-
-      @io.reopen("reopened".taint, "w")
-      @io.tainted?.should be_false
-    end
   end
 
   it "tries to convert the passed Object to a String using #to_str" do
@@ -164,14 +142,6 @@ describe "StringIO#reopen when passed [String]" do
     @io.string.should == "reopened"
   end
 
-  ruby_version_is ""..."3.0" do
-    # NOTE: WEIRD!
-    it "does not taint self when the passed Object was tainted" do
-      @io.reopen("reopened".taint)
-      @io.tainted?.should be_false
-    end
-  end
-
   it "resets self's position to 0" do
     @io.read(5)
     @io.reopen("reopened")
@@ -205,14 +175,6 @@ describe "StringIO#reopen when passed [Object]" do
     obj.should_receive(:to_strio).and_return(StringIO.new("to_strio"))
     @io.reopen(obj)
     @io.string.should == "to_strio"
-  end
-
-  # NOTE: WEIRD!
-  ruby_version_is ""..."2.7" do
-    it "taints self when the passed Object was tainted" do
-      @io.reopen(StringIO.new("reopened").taint)
-      @io.tainted?.should be_true
-    end
   end
 end
 
@@ -276,15 +238,6 @@ describe "StringIO#reopen" do
     @io.reopen(str, 'w')
     @io.string.should == ''
     str.should == ''
-  end
-
-  ruby_version_is ""..."2.7" do
-    it "taints self if the provided StringIO argument is tainted" do
-      new_io = StringIO.new("tainted")
-      new_io.taint
-      @io.reopen(new_io)
-      @io.should.tainted?
-    end
   end
 
   it "does not truncate the content even when the StringIO argument is in the truncate mode" do

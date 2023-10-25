@@ -1,0 +1,845 @@
+# -*- rdoc -*-
+
+= NEWS for Ruby 2.7.0
+
+This document is a list of user visible feature changes made between
+releases except for bug fixes.
+
+Note that each entry is kept so brief that no reason behind or reference
+information is supplied with.  For a full list of changes with all
+sufficient information, see the ChangeLog file or Redmine
+(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>).
+
+== Changes since the 2.6.0 release
+
+=== Language changes
+
+==== Pattern matching
+
+* Pattern matching is introduced as an experimental feature. [Feature #14912]
+
+    case [0, [1, 2, 3]]
+    in [a, [b, *c]]
+      p a #=> 0
+      p b #=> 1
+      p c #=> [2, 3]
+    end
+
+    case {a: 0, b: 1}
+    in {a: 0, x: 1}
+      :unreachable
+    in {a: 0, b: var}
+      p var #=> 1
+    end
+
+    case -1
+    in 0 then :unreachable
+    in 1 then :unreachable
+    end #=> NoMatchingPatternError
+
+    json = <<END
+    {
+      "name": "Alice",
+      "age": 30,
+      "children": [{ "name": "Bob", "age": 2 }]
+    }
+    END
+
+    JSON.parse(json, symbolize_names: true) in {name: "Alice", children: [{name: name, age: age}]}
+
+    p name #=> "Bob"
+    p age  #=> 2
+
+    JSON.parse(json, symbolize_names: true) in {name: "Alice", children: [{name: "Charlie", age: age}]}
+    #=> NoMatchingPatternError
+
+* See the following slides for more details:
+  * https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7
+  * Note that the slides are slightly obsolete.
+
+* The warning against pattern matching can be suppressed with
+  {-W:no-experimental option}[#label-Warning+option].
+
+==== The spec of keyword arguments is changed towards 3.0
+
+* Automatic conversion of keyword arguments and positional arguments is
+  deprecated, and conversion will be removed in Ruby 3.  [Feature #14183]
+
+  * When a method call passes a Hash at the last argument, and when it
+    passes no keywords, and when the called method accepts keywords,
+    a warning is emitted.  To continue treating the hash as keywords,
+    add a double splat operator to avoid the warning and ensure
+    correct behavior in Ruby 3.
+
+      def foo(key: 42); end; foo({key: 42})   # warned
+      def foo(**kw);    end; foo({key: 42})   # warned
+      def foo(key: 42); end; foo(**{key: 42}) # OK
+      def foo(**kw);    end; foo(**{key: 42}) # OK
+
+  * When a method call passes keywords to a method that accepts keywords,
+    but it does not pass enough required positional arguments, the
+    keywords are treated as a final required positional argument, and a
+    warning is emitted.  Pass the argument as a hash instead of keywords
+    to avoid the warning and ensure correct behavior in Ruby 3.
+
+      def foo(h, **kw); end; foo(key: 42)      # warned
+      def foo(h, key: 42); end; foo(key: 42)   # warned
+      def foo(h, **kw); end; foo({key: 42})    # OK
+      def foo(h, key: 42); end; foo({key: 42}) # OK
+
+  * When a method accepts specific keywords but not a keyword splat, and
+    a hash or keywords splat is passed to the method that includes both
+    Symbol and non-Symbol keys, the hash will continue to be split, and
+    a warning will be emitted.  You will need to update the calling code
+    to pass separate hashes to ensure correct behavior in Ruby 3.
+
+      def foo(h={}, key: 42); end; foo("key" => 43, key: 42)   # warned
+      def foo(h={}, key: 42); end; foo({"key" => 43, key: 42}) # warned
+      def foo(h={}, key: 42); end; foo({"key" => 43}, key: 42) # OK
+
+  * If a method does not accept keywords, and is called with keywords,
+    the keywords are still treated as a positional hash, with no warning.
+    This behavior will continue to work in Ruby 3.
+
+      def foo(opt={});  end; foo( key: 42 )   # OK
+
+* Non-symbols are allowed as keyword argument keys if the method accepts
+  arbitrary keywords. [Feature #14183]
+
+  * Non-Symbol keys in a keyword arguments hash were prohibited in 2.6.0,
+    but are now allowed again.  [Bug #15658]
+
+      def foo(**kw); p kw; end; foo("str" => 1) #=> {"str"=>1}
+
+* <code>**nil</code> is allowed in method definitions to explicitly mark
+  that the method accepts no keywords. Calling such a method with keywords
+  will result in an ArgumentError. [Feature #14183]
+
+    def foo(h, **nil); end; foo(key: 1)       # ArgumentError
+    def foo(h, **nil); end; foo(**{key: 1})   # ArgumentError
+    def foo(h, **nil); end; foo("str" => 1)   # ArgumentError
+    def foo(h, **nil); end; foo({key: 1})     # OK
+    def foo(h, **nil); end; foo({"str" => 1}) # OK
+
+* Passing an empty keyword splat to a method that does not accept keywords
+  no longer passes an empty hash, unless the empty hash is necessary for
+  a required parameter, in which case a warning will be emitted.  Remove
+  the double splat to continue passing a positional hash.  [Feature #14183]
+
+    h = {}; def foo(*a) a end; foo(**h) # []
+    h = {}; def foo(a) a end; foo(**h)  # {} and warning
+    h = {}; def foo(*a) a end; foo(h)   # [{}]
+    h = {}; def foo(a) a end; foo(h)    # {}
+
+* Above warnings can be suppressed also with {-W:no-deprecated option}[#label-Warning+option].
+
+==== Numbered parameters
+
+* Numbered parameters as default block parameters are introduced. [Feature #4475]
+
+    [1, 2, 10].map { _1.to_s(16) }    #=> ["1", "2", "a"]
+    [[1, 2], [3, 4]].map { _1 + _2 }  #=> [3, 7]
+
+  You can still define a local variable named +_1+ and so on,
+  and that is honored when present, but renders a warning.
+
+    _1 = 0            #=> warning: `_1' is reserved for numbered parameter; consider another name
+    [1].each { p _1 } # prints 0 instead of 1
+
+==== proc/lambda without block is deprecated
+
+* Proc.new and Kernel#proc with no block in a method called with a block will
+  now display a warning.
+
+    def foo
+      proc
+    end
+    foo { puts "Hello" } #=> warning: Capturing the given block using Kernel#proc is deprecated; use `&block` instead
+
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
+
+* Kernel#lambda with no block in a method called with a block raises an exception.
+
+    def bar
+      lambda
+    end
+    bar { puts "Hello" } #=> tried to create Proc object without a block (ArgumentError)
+
+==== Other miscellaneous changes
+
+* A beginless range is experimentally introduced.  It might be useful
+  in +case+, new call-sequence of the <code>Comparable#clamp</code>,
+  constants and DSLs.  [Feature #14799]
+
+     ary[..3]  # identical to ary[0..3]
+
+     case RUBY_VERSION
+     when ..."2.4" then puts "EOL"
+     # ...
+     end
+
+     age.clamp(..100)
+
+     where(sales: ..100)
+
+* Setting <code>$;</code> to a non-nil value will now display a warning. [Feature #14240]
+  This includes the usage in String#split.
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
+
+* Setting <code>$,</code> to a non-nil value will now display a warning. [Feature #14240]
+  This includes the usage in Array#join.
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
+
+* Quoted here-document identifiers must end within the same line.
+
+     <<"EOS
+     " # This had been warned since 2.4; Now it raises a SyntaxError
+     EOS
+
+* The flip-flop syntax deprecation is reverted. [Feature #5400]
+
+* Comment lines can be placed between fluent dot now.
+
+    foo
+      # .bar
+      .baz # => foo.baz
+
+* Calling a private method with a literal +self+ as the receiver
+  is now allowed. [Feature #11297] [Feature #16123]
+
+* Modifier rescue now operates the same for multiple assignment as single
+  assignment. [Bug #8279]
+
+    a, b = raise rescue [1, 2]
+    # Previously parsed as: (a, b = raise) rescue [1, 2]
+    # Now parsed as:         a, b = (raise rescue [1, 2])
+
+* +yield+ in singleton class syntax will now display a warning. This behavior
+  will soon be deprecated. [Feature #15575].
+
+   def foo
+     class << Object.new
+       yield #=> warning: `yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]
+     end
+   end
+   foo { p :ok }
+
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
+
+* Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
+
+    def foo(...)
+      bar(...)
+    end
+
+  All arguments to +foo+ are forwarded to +bar+, including keyword and
+  block arguments.
+  Note that the parentheses are mandatory.  <code>bar ...</code> is parsed
+  as an endless range.
+
+* Access and setting of <code>$SAFE</code> will now always display a warning.
+  <code>$SAFE</code> will become a normal global variable in Ruby 3.0.  [Feature #16131]
+
+* <code>Object#{taint,untaint,trust,untrust}</code> and related functions in the C-API
+  no longer have an effect (all objects are always considered untainted), and will now
+  display a warning in verbose mode. This warning will be disabled even in non-verbose mode in
+  Ruby 3.0, and the methods and C functions will be removed in Ruby 3.2. [Feature #16131]
+
+* Refinements take place at Object#method and Module#instance_method. [Feature #15373]
+
+=== Command line options
+
+==== Warning option
+
+The +-W+ option has been extended with a following +:+, to manage categorized
+warnings.  [Feature #16345] [Feature #16420]
+
+* To suppress deprecation warnings:
+
+    $ ruby -e '$; = ""'
+    -e:1: warning: `$;' is deprecated
+
+    $ ruby -W:no-deprecated -e '$; = //'
+
+* It works with the +RUBYOPT+ environment variable:
+
+    $ RUBYOPT=-W:no-deprecated ruby -e '$; = //'
+
+* To suppress experimental feature warnings:
+
+    $ ruby -e '0 in a'
+    -e:1: warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
+
+    $ ruby -W:no-experimental -e '0 in a'
+
+* To suppress both by using +RUBYOPT+, set space separated values:
+
+    $ RUBYOPT='-W:no-deprecated -W:no-experimental' ruby -e '($; = "") in a'
+
+See also Warning in {Core classes updates}[#label-Core+classes+updates+-28outstanding+ones+only-29].
+
+=== Core classes updates (outstanding ones only)
+
+[Array]
+
+  [New methods]
+
+    * Added Array#intersection. [Feature #16155]
+
+    * Added Array#minmax, with a faster implementation than Enumerable#minmax. [Bug #15929]
+
+[Comparable]
+
+  [Modified method]
+
+    * Comparable#clamp now accepts a Range argument. [Feature #14784]
+
+        -1.clamp(0..2) #=> 0
+         1.clamp(0..2) #=> 1
+         3.clamp(0..2) #=> 2
+        # With beginless and endless ranges:
+        -1.clamp(0..)  #=> 0
+         3.clamp(..2)  #=> 2
+
+
+[Complex]
+
+  [New method]
+
+    * Added Complex#<=>.
+      So <code>0 <=> 0i</code> will not raise NoMethodError. [Bug #15857]
+
+[Dir]
+
+  [Modified methods]
+
+    * Dir.glob and Dir.[] no longer allow NUL-separated glob pattern.
+      Use Array instead.  [Feature #14643]
+
+[Encoding]
+
+  [New encoding]
+
+    * Added new encoding CESU-8. [Feature #15931]
+
+[Enumerable]
+
+  [New methods]
+
+    * Added Enumerable#filter_map.  [Feature #15323]
+
+        [1, 2, 3].filter_map {|x| x.odd? ? x.to_s : nil } #=> ["1", "3"]
+
+    * Added Enumerable#tally.  [Feature #11076]
+
+        ["A", "B", "C", "B", "A"].tally #=> {"A"=>2, "B"=>2, "C"=>1}
+
+[Enumerator]
+
+  [New methods]
+
+    * Added Enumerator.produce to generate an Enumerator from any custom
+      data transformation.  [Feature #14781]
+
+        require "date"
+        dates = Enumerator.produce(Date.today, &:succ) #=> infinite sequence of dates
+        dates.detect(&:tuesday?) #=> next Tuesday
+
+    * Added Enumerator::Lazy#eager that generates a non-lazy enumerator
+      from a lazy enumerator.  [Feature #15901]
+
+        a = %w(foo bar baz)
+        e = a.lazy.map {|x| x.upcase }.map {|x| x + "!" }.eager
+        p e.class               #=> Enumerator
+        p e.map {|x| x + "?" }  #=> ["FOO!?", "BAR!?", "BAZ!?"]
+
+    * Added Enumerator::Yielder#to_proc so that a Yielder object
+      can be directly passed to another method as a block
+      argument.  [Feature #15618]
+
+    * Added Enumerator::Lazy#with_index be lazy
+      Previously, Enumerator::Lazy#with_index was not defined, so it
+      picked up the default implementation from Enumerator, which was
+      not lazy.  [Bug #7877]
+
+        ("a"..).lazy.with_index(1) { |it, index| puts "#{index}:#{it}" }.take(3).force
+        # => 1:a
+        #    2:b
+        #    3:c
+
+[Fiber]
+
+  [New method]
+
+    * Added Fiber#raise that behaves like Fiber#resume but raises an
+      exception on the resumed fiber.  [Feature #10344]
+
+[File]
+
+  [New method]
+
+    * Added File.absolute_path? to check whether a path is absolute or
+      not in a portable way. [Feature #15868]
+
+        File.absolute_path?("/foo")   # => true (on *nix)
+        File.absolute_path?("C:/foo") # => true (on Windows)
+        File.absolute_path?("foo")    # => false
+
+  [Modified method]
+
+    * File.extname now returns a dot string for names ending with a dot on
+      non-Windows platforms.  [Bug #15267]
+
+          File.extname("foo.") #=> "."
+
+[FrozenError]
+
+  [New method]
+
+    * Added FrozenError#receiver to return the frozen object on which
+      modification was attempted.  To set this object when raising
+      FrozenError in Ruby code, FrozenError.new accepts a +:receiver+
+      option.  [Feature #15751]
+
+[GC]
+
+  [New method]
+
+    * Added GC.compact method for compacting the heap.
+      This function compacts live objects in the heap so that fewer pages may
+      be used, and the heap may be more CoW (copy-on-write) friendly. [Feature #15626]
+
+      Details on the algorithm and caveats can be found here:
+      https://bugs.ruby-lang.org/issues/15626
+
+[IO]
+
+  [New method]
+
+    * Added IO#set_encoding_by_bom to check the BOM and set the external
+      encoding.  [Bug #15210]
+
+[Integer]
+
+  [Modified method]
+
+    * Integer#[] now supports range operations.  [Feature #8842]
+
+         0b01001101[2, 4]  #=> 0b0011
+         0b01001100[2..5]  #=> 0b0011
+         0b01001100[2...6] #=> 0b0011
+         #   ^^^^
+
+[Method]
+
+  [Modified method]
+
+    * Method#inspect shows more information. [Feature #14145]
+
+[Module]
+
+  [New methods]
+
+    * Added Module#const_source_location to retrieve the location where a
+      constant is defined.  [Feature #10771]
+
+    * Added Module#ruby2_keywords for marking a method as passing keyword
+      arguments through a regular argument splat, useful when delegating
+      all arguments to another method in a way that can be backwards
+      compatible with older Ruby versions.  [Bug #16154]
+
+  [Modified methods]
+
+    * Module#autoload? now takes an +inherit+ optional argument, like
+      Module#const_defined?.  [Feature #15777]
+
+    * Module#name now always returns a frozen String. The returned String is
+      always the same for a given Module. This change is
+      experimental. [Feature #16150]
+
+[NilClass / TrueClass / FalseClass]
+
+  [Modified methods]
+
+    * NilClass#to_s, TrueClass#to_s, and FalseClass#to_s now always return a
+      frozen String. The returned String is always the same for each of these
+      values. This change is experimental. [Feature #16150]
+
+[ObjectSpace::WeakMap]
+
+  [Modified method]
+
+    * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
+      values.  [Feature #16035]
+
+[Proc]
+
+  [New method]
+
+    * Added Proc#ruby2_keywords for marking the proc as passing keyword
+      arguments through a regular argument splat, useful when delegating
+      all arguments to another method or proc in a way that can be backwards
+      compatible with older Ruby versions.  [Feature #16404]
+
+[Range]
+
+  [New method]
+
+    * Added Range#minmax, with a faster implementation than Enumerable#minmax.
+      It returns a maximum that now corresponds to Range#max. [Bug #15807]
+
+  [Modified method]
+
+    * Range#=== now uses Range#cover? for String arguments, too (in Ruby 2.6, it was
+      changed from Range#include? for all types except strings). [Bug #15449]
+
+
+[RubyVM]
+
+  [Removed method]
+
+    * +RubyVM.resolve_feature_path+ moved to
+      <code>$LOAD_PATH.resolve_feature_path</code>.  [Feature #15903] [Feature #15230]
+
+[String]
+
+  [Unicode]
+
+    * Update Unicode version and Emoji version from 11.0.0 to
+      12.0.0.  [Feature #15321]
+
+    * Update Unicode version to 12.1.0, adding support for
+      U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
+
+    * Update Unicode Emoji version to 12.1. [Feature #16272]
+
+[Symbol]
+
+  [New methods]
+
+    * Added Symbol#start_with? and Symbol#end_with? methods.  [Feature #16348]
+
+[Time]
+
+  [New methods]
+
+    * Added Time#ceil method.  [Feature #15772]
+
+    * Added Time#floor method.  [Feature #15653]
+
+  [Modified method]
+
+    * Time#inspect is separated from Time#to_s and it shows
+      the time's sub second.  [Feature #15958]
+
+[UnboundMethod]
+
+  [New method]
+
+    * Added UnboundMethod#bind_call method.  [Feature #15955]
+
+      <code>umethod.bind_call(obj, ...)</code> is semantically equivalent
+      to <code>umethod.bind(obj).call(...)</code>.  This idiom is used in
+      some libraries to call a method that is overridden.  The added
+      method does the same without allocation of an intermediate Method
+      object.
+
+          class Foo
+            def add_1(x)
+              x + 1
+            end
+          end
+          class Bar < Foo
+            def add_1(x) # override
+              x + 2
+            end
+          end
+
+          obj = Bar.new
+          p obj.add_1(1) #=> 3
+          p Foo.instance_method(:add_1).bind(obj).call(1) #=> 2
+          p Foo.instance_method(:add_1).bind_call(obj, 1) #=> 2
+
+[Warning]
+
+  [New methods]
+
+    * Added Warning.[] and Warning.[]= to manage emitting/suppressing
+      some categories of warnings.  [Feature #16345] [Feature #16420]
+
+[$LOAD_PATH]
+
+  [New method]
+
+    * Added <code>$LOAD_PATH.resolve_feature_path</code>.  [Feature #15903] [Feature #15230]
+
+=== Stdlib updates (outstanding ones only)
+
+[Bundler]
+
+  * Upgrade to Bundler 2.1.2.
+    See https://github.com/bundler/bundler/releases/tag/v2.1.2
+
+[CGI]
+
+  * CGI.escapeHTML becomes 2~5x faster when there is at least one escaped character.
+    See https://github.com/ruby/ruby/pull/2226
+
+[CSV]
+
+  * Upgrade to 3.1.2.
+    See https://github.com/ruby/csv/blob/master/NEWS.md.
+
+[Date]
+
+  * Date.jisx0301, Date#jisx0301, and Date.parse support the new Japanese
+    era.  [Feature #15742]
+
+[Delegator]
+
+  * Object#DelegateClass accepts a block and module_evals it in the context
+    of the returned class, similar to Class.new and Struct.new.
+
+[ERB]
+
+  * Prohibit marshaling ERB instance.
+
+[IRB]
+
+  * Introduce syntax highlighting inspired by the Pry gem to Binding#irb
+    source lines, REPL input, and inspect output of some core-class objects.
+
+  * Introduce multiline editing mode provided by Reline.
+
+  * Show documentation when completion.
+
+  * Enable auto indent and save/load history by default.
+
+[JSON]
+
+  * Upgrade to 2.3.0.
+
+[Net::FTP]
+
+  * Add Net::FTP#features to check available features, and Net::FTP#option to
+    enable/disable each of them.  [Feature #15964]
+
+[Net::HTTP]
+
+  * Add +ipaddr+ optional parameter to Net::HTTP#start to replace the address for
+    the TCP/IP connection. [Feature #5180]
+
+[Net::IMAP]
+
+  * Add Server Name Indication (SNI) support.  [Feature #15594]
+
+[open-uri]
+
+  * Warn open-uri's "open" method at Kernel.
+    Use URI.open instead.  [Misc #15893]
+
+  * The default charset of "text/*" media type is UTF-8 instead of
+    ISO-8859-1.  [Bug #15933]
+
+[OptionParser]
+
+  * Now show "Did you mean?" for unknown options.  [Feature #16256]
+
+    test.rb:
+
+      require "optparse"
+      OptionParser.new do |opts|
+        opts.on("-f", "--foo", "foo") {|v| }
+        opts.on("-b", "--bar", "bar") {|v| }
+        opts.on("-c", "--baz", "baz") {|v| }
+      end.parse!
+
+    example:
+
+      $ ruby test.rb --baa
+      Traceback (most recent call last):
+      test.rb:7:in `<main>': invalid option: --baa (OptionParser::InvalidOption)
+      Did you mean?  baz
+                     bar
+
+[Pathname]
+
+  * Pathname.glob now delegates 3 arguments to Dir.glob
+    to accept +base+ keyword. [Feature #14405]
+
+[Racc]
+
+  * Merge 1.4.15 from upstream repository and added cli of racc.
+
+[Reline]
+
+  * New stdlib that is compatible with the readline stdlib but is
+    implemented in pure Ruby. It also provides a multiline editing mode.
+
+[REXML]
+
+  * Upgrade to 3.2.3.
+    See https://github.com/ruby/rexml/blob/master/NEWS.md.
+
+[RSS]
+
+  * Upgrade to RSS 0.2.8.
+    See https://github.com/ruby/rss/blob/master/NEWS.md.
+
+[RubyGems]
+
+  * Upgrade to RubyGems 3.1.2.
+    * https://github.com/rubygems/rubygems/releases/tag/v3.1.0
+    * https://github.com/rubygems/rubygems/releases/tag/v3.1.1
+    * https://github.com/rubygems/rubygems/releases/tag/v3.1.2
+
+[StringScanner]
+
+  * Upgrade to 1.0.3.
+    See https://github.com/ruby/strscan/blob/master/NEWS.md.
+
+=== Compatibility issues (excluding feature bug fixes)
+
+* The following libraries are no longer bundled gems.
+  Install corresponding gems to use these features.
+  * CMath (cmath gem)
+  * Scanf (scanf gem)
+  * Shell (shell gem)
+  * Synchronizer (sync gem)
+  * ThreadsWait (thwait gem)
+  * E2MM (e2mmap gem)
+
+[Proc]
+  * The Proc#to_s format was changed. [Feature #16101]
+
+[Range]
+  * Range#minmax used to iterate on the range to determine the maximum.
+    It now uses the same algorithm as Range#max. In rare cases (e.g.
+    ranges of Floats or Strings), this may yield different results. [Bug #15807]
+
+=== Stdlib compatibility issues (excluding feature bug fixes)
+
+* Promote stdlib to default gems
+  * The following default gems were published on rubygems.org
+    * benchmark
+    * cgi
+    * delegate
+    * getoptlong
+    * net-pop
+    * net-smtp
+    * open3
+    * pstore
+    * readline
+    * readline-ext
+    * singleton
+  * The following default gems were only promoted at ruby-core,
+    but not yet published on rubygems.org.
+    * monitor
+    * observer
+    * timeout
+    * tracer
+    * uri
+    * yaml
+* The <tt>did_you_mean</tt> gem has been promoted up to a default gem from a bundled gem
+
+[pathname]
+
+  * Kernel#Pathname when called with a Pathname argument now returns
+    the argument instead of creating a new Pathname. This is more
+    similar to other Kernel methods, but can break code that modifies
+    the return value and expects the argument not to be modified.
+
+[profile.rb, Profiler__]
+
+  * Removed from standard library. It was unmaintained since Ruby 2.0.0.
+
+=== C API updates
+
+* Many <code>*_kw</code> functions have been added for setting whether
+  the final argument being passed should be treated as keywords. You
+  may need to switch to these functions to avoid keyword argument
+  separation warnings, and to ensure correct behavior in Ruby 3.
+
+* The <code>:</code> character in rb_scan_args format string is now
+  treated as keyword arguments. Passing a positional hash instead of
+  keyword arguments will emit a deprecation warning.
+
+* C API declarations with +ANYARGS+ are changed not to use +ANYARGS+.
+  See https://github.com/ruby/ruby/pull/2404
+
+=== Implementation improvements
+
+[Fiber]
+
+  * Allow selecting different coroutine implementations by using
+    +--with-coroutine=+, e.g.
+
+         $ ./configure --with-coroutine=ucontext
+         $ ./configure --with-coroutine=copy
+
+  * Replace previous stack cache with fiber pool cache. The fiber pool
+    allocates many stacks in a single memory region. Stack allocation
+    becomes O(log N) and fiber creation is amortized O(1). Around 10x
+    performance improvement was measured in micro-benchmarks.
+    https://github.com/ruby/ruby/pull/2224
+
+[File]
+  * File.realpath now uses realpath(3) on many platforms, which can
+    significantly improve performance. [Feature #15797]
+
+[Hash]
+  * Change data structure of small Hash objects. [Feature #15602]
+
+[Monitor]
+  * Monitor class is written in C-extension. [Feature #16255]
+
+[Thread]
+
+  * VM stack memory allocation is now combined with native thread stack,
+    improving thread allocation performance and reducing allocation related
+    failures. Around 10x performance improvement was measured in micro-benchmarks.
+
+[JIT]
+
+  * JIT-ed code is recompiled to less-optimized code when an optimization assumption is invalidated.
+
+  * Method inlining is performed when a method is considered as pure.
+    This optimization is still experimental and many methods are NOT considered as pure yet.
+
+  * The default value of +--jit-max-cache+ is changed from 1,000 to 100.
+
+  * The default value of +--jit-min-calls+ is changed from 5 to 10,000.
+
+[RubyVM]
+
+  * Per-call-site method cache, which has been there since around 1.9, was
+    improved: cache hit rate raised from 89% to 94%.
+    See https://github.com/ruby/ruby/pull/2583
+
+[RubyVM::InstructionSequence]
+
+  * RubyVM::InstructionSequence#to_binary method generates compiled binary.
+    The binary size is reduced. [Feature #16163]
+
+=== Miscellaneous changes
+
+* Support for IA64 architecture has been removed. Hardware for testing was
+  difficult to find, native fiber code is difficult to implement, and it added
+  non-trivial complexity to the interpreter. [Feature #15894]
+
+* Require compilers to support C99. [Misc #15347]
+
+  * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-master/wiki/C99
+
+* Ruby's upstream repository is changed from Subversion to Git.
+
+  * https://git.ruby-lang.org/ruby.git
+
+  * RUBY_REVISION class is changed from Integer to String.
+
+  * RUBY_DESCRIPTION includes Git revision instead of Subversion's one.
+
+* Support built-in methods in Ruby with the <code>_\_builtin_</code> syntax. [Feature #16254]
+
+  Some methods are defined in *.rb (such as trace_point.rb).
+  For example, it is easy to define a method which accepts keyword arguments.

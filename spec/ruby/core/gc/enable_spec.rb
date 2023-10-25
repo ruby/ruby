@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "GC.enable" do
 
-  it "returns true iff the garbage collection was already disabled" do
+  it "returns true if and only if the garbage collection was already disabled" do
     GC.enable
     GC.enable.should == false
     GC.disable

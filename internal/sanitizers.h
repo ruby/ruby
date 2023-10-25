@@ -1,7 +1,6 @@
 #ifndef INTERNAL_SANITIZERS_H                            /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_SANITIZERS_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -89,8 +88,6 @@
 #ifndef VALGRIND_MAKE_MEM_UNDEFINED
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
-
-#ifndef MJIT_HEADER
 
 /*!
  * This function asserts that a (continuous) memory region from ptr to size
@@ -185,7 +182,5 @@ asan_unpoison_object(VALUE obj, bool newobj_p)
     MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
     asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
-
-#endif /* MJIT_HEADER */
 
 #endif /* INTERNAL_SANITIZERS_H */

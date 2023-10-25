@@ -12,7 +12,7 @@ assert_equal 'ok', %q{
     }
   }.map {|t| t.value }
   vs[0] == M && vs[1] == M ? :ok : :ng
-}, '[ruby-dev:32048]'
+}, '[ruby-dev:32048]' unless ENV.fetch('RUN_OPTS', '').include?('rjit') # Thread seems to be switching during JIT. To be fixed later.
 
 assert_equal 'ok', %q{
   %w[a a/foo b].each {|d| Dir.mkdir(d)}

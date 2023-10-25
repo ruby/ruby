@@ -41,7 +41,7 @@ describe 'Thread::Backtrace::Location#path' do
       context 'when using a relative script path' do
         it 'returns a path relative to the working directory' do
           path      = 'fixtures/main.rb'
-          directory = File.dirname(__FILE__)
+          directory = __dir__
           Dir.chdir(directory) {
             ruby_exe(path)
           }.should == path

@@ -16,15 +16,13 @@ module Bundler
 
         version = options[:version] || [">= 0"]
 
-        Bundler.settings.temporary(:disable_multisource => false) do
-          if options[:git]
-            install_git(names, version, options)
-          elsif options[:local_git]
-            install_local_git(names, version, options)
-          else
-            sources = options[:source] || Bundler.rubygems.sources
-            install_rubygems(names, version, sources)
-          end
+        if options[:git]
+          install_git(names, version, options)
+        elsif options[:local_git]
+          install_local_git(names, version, options)
+        else
+          sources = options[:source] || Gem.sources
+          install_rubygems(names, version, sources)
         end
       end
 
@@ -79,12 +77,17 @@ module Bundler
         source_list = SourceList.new
 
         source_list.add_git_source(git_source_options) if git_source_options
-        source_list.add_rubygems_source("remotes" => rubygems_source) if rubygems_source
+        Array(rubygems_source).each {|remote| source_list.add_global_rubygems_remote(remote) } if rubygems_source
 
         deps = names.map {|name| Dependency.new name, version }
 
-        definition = Definition.new(nil, deps, source_list, true)
-        install_definition(definition)
+        Bundler.configure_gem_home_and_path(Plugin.root)
+
+        Bundler.settings.temporary(:deployment => false, :frozen => false) do
+          definition = Definition.new(nil, deps, source_list, true)
+
+          install_definition(definition)
+        end
       end
 
       # Installs the plugins and deps from the provided specs and returns map of

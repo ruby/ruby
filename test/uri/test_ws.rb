@@ -3,10 +3,7 @@ require 'test/unit'
 require 'uri/http'
 require 'uri/ws'
 
-module URI
-
-
-class TestWS < Test::Unit::TestCase
+class URI::TestWS < Test::Unit::TestCase
   def setup
   end
 
@@ -65,7 +62,4 @@ class TestWS < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
-end
-
-
 end

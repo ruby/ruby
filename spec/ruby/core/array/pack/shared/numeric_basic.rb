@@ -37,8 +37,14 @@ describe :array_pack_float, shared: true do
     -> { ["a"].pack(pack_format) }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError when the object does not respond to #to_f" do
-    obj = mock('not an float')
+  it "raises a TypeError when the object is not Numeric" do
+    obj = Object.new
+    -> { [obj].pack(pack_format) }.should raise_error(TypeError, /can't convert Object into Float/)
+  end
+
+  it "raises a TypeError when the Numeric object does not respond to #to_f" do
+    klass = Class.new(Numeric)
+    obj = klass.new
     -> { [obj].pack(pack_format) }.should raise_error(TypeError)
   end
 end

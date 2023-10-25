@@ -66,11 +66,14 @@ class Bundler::Thor
     # ==== Parameters
     # source<String>:: the address of the given content.
     # destination<String>:: the relative path to the destination root.
-    # config<Hash>:: give :verbose => false to not log the status.
+    # config<Hash>:: give :verbose => false to not log the status, and
+    #                :http_headers => <Hash> to add headers to an http request.
     #
     # ==== Examples
     #
     #   get "http://gist.github.com/103208", "doc/README"
+    #
+    #   get "http://gist.github.com/103208", "doc/README", :http_headers => {"Content-Type" => "application/json"}
     #
     #   get "http://gist.github.com/103208" do |content|
     #     content.split("\n").first
@@ -82,10 +85,10 @@ class Bundler::Thor
 
       render = if source =~ %r{^https?\://}
         require "open-uri"
-        URI.send(:open, source) { |input| input.binmode.read }
+        URI.send(:open, source, config.fetch(:http_headers, {})) { |input| input.binmode.read }
       else
         source = File.expand_path(find_in_source_paths(source.to_s))
-        open(source) { |input| input.binmode.read }
+        File.open(source) { |input| input.binmode.read }
       end
 
       destination ||= if block_given?
@@ -120,12 +123,7 @@ class Bundler::Thor
       context = config.delete(:context) || instance_eval("binding")
 
       create_file destination, nil, config do
-        match = ERB.version.match(/(\d+\.\d+\.\d+)/)
-        capturable_erb = if match && match[1] >= "2.2.0" # Ruby 2.6+
-          CapturableERB.new(::File.binread(source), :trim_mode => "-", :eoutvar => "@output_buffer")
-        else
-          CapturableERB.new(::File.binread(source), nil, "-", "@output_buffer")
-        end
+        capturable_erb = CapturableERB.new(::File.binread(source), trim_mode: "-", eoutvar: "@output_buffer")
         content = capturable_erb.tap do |erb|
           erb.filename = source
         end.result(context)
@@ -210,9 +208,9 @@ class Bundler::Thor
     #
     # ==== Examples
     #
-    #   inject_into_class "app/controllers/application_controller.rb", ApplicationController, "  filter_parameter :password\n"
+    #   inject_into_class "app/controllers/application_controller.rb", "ApplicationController", "  filter_parameter :password\n"
     #
-    #   inject_into_class "app/controllers/application_controller.rb", ApplicationController do
+    #   inject_into_class "app/controllers/application_controller.rb", "ApplicationController" do
     #     "  filter_parameter :password\n"
     #   end
     #
@@ -233,9 +231,9 @@ class Bundler::Thor
     #
     # ==== Examples
     #
-    #   inject_into_module "app/helpers/application_helper.rb", ApplicationHelper, "  def help; 'help'; end\n"
+    #   inject_into_module "app/helpers/application_helper.rb", "ApplicationHelper", "  def help; 'help'; end\n"
     #
-    #   inject_into_module "app/helpers/application_helper.rb", ApplicationHelper do
+    #   inject_into_module "app/helpers/application_helper.rb", "ApplicationHelper" do
     #     "  def help; 'help'; end\n"
     #   end
     #
@@ -251,7 +249,8 @@ class Bundler::Thor
     # path<String>:: path of the file to be changed
     # flag<Regexp|String>:: the regexp or string to be replaced
     # replacement<String>:: the replacement, can be also given as a block
-    # config<Hash>:: give :verbose => false to not log the status.
+    # config<Hash>:: give :verbose => false to not log the status, and
+    #                :force => true, to force the replacement regardless of runner behavior.
     #
     # ==== Example
     #
@@ -262,8 +261,9 @@ class Bundler::Thor
     #   end
     #
     def gsub_file(path, flag, *args, &block)
-      return unless behavior == :invoke
       config = args.last.is_a?(Hash) ? args.pop : {}
+
+      return unless behavior == :invoke || config.fetch(:force, false)
 
       path = File.expand_path(path, destination_root)
       say_status :gsub, relative_to_original_destination_root(path), config.fetch(:verbose, true)
@@ -329,7 +329,7 @@ class Bundler::Thor
       path = File.expand_path(path, destination_root)
 
       say_status :remove, relative_to_original_destination_root(path), config.fetch(:verbose, true)
-      if !options[:pretend] && File.exist?(path)
+      if !options[:pretend] && (File.exist?(path) || File.symlink?(path))
         require "fileutils"
         ::FileUtils.rm_rf(path)
       end

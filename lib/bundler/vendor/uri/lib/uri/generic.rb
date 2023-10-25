@@ -4,7 +4,6 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See Bundler::URI for general documentation
 #
@@ -565,14 +564,24 @@ module Bundler::URI
       end
     end
 
-    # Returns the user component.
+    # Returns the user component (without Bundler::URI decoding).
     def user
       @user
     end
 
-    # Returns the password component.
+    # Returns the password component (without Bundler::URI decoding).
     def password
       @password
+    end
+
+    # Returns the user component after Bundler::URI decoding.
+    def decoded_user
+      Bundler::URI.decode_uri_component(@user) if @user
+    end
+
+    # Returns the password component after Bundler::URI decoding.
+    def decoded_password
+      Bundler::URI.decode_uri_component(@password) if @password
     end
 
     #
@@ -644,7 +653,7 @@ module Bundler::URI
     #
     def hostname
       v = self.host
-      /\A\[(.*)\]\z/ =~ v ? $1 : v
+      v&.start_with?('[') && v.end_with?(']') ? v[1..-2] : v
     end
 
     # Sets the host part of the Bundler::URI as the argument with brackets for IPv6 addresses.
@@ -660,7 +669,7 @@ module Bundler::URI
     # it is wrapped with brackets.
     #
     def hostname=(v)
-      v = "[#{v}]" if /\A\[.*\]\z/ !~ v && /:/ =~ v
+      v = "[#{v}]" if !(v&.start_with?('[') && v&.end_with?(']')) && v&.index(':')
       self.host = v
     end
 
@@ -1098,7 +1107,7 @@ module Bundler::URI
     #   # => "http://my.example.com/main.rbx?page=1"
     #
     def merge(oth)
-      rel = parser.send(:convert_to_uri, oth)
+      rel = parser.__send__(:convert_to_uri, oth)
 
       if rel.absolute?
         #raise BadURIError, "both Bundler::URI are absolute" if absolute?
@@ -1183,7 +1192,7 @@ module Bundler::URI
 
     # :stopdoc:
     def route_from0(oth)
-      oth = parser.send(:convert_to_uri, oth)
+      oth = parser.__send__(:convert_to_uri, oth)
       if self.relative?
         raise BadURIError,
           "relative Bundler::URI: #{self}"
@@ -1291,7 +1300,7 @@ module Bundler::URI
     #   #=> #<Bundler::URI::Generic /main.rbx?page=1>
     #
     def route_to(oth)
-      parser.send(:convert_to_uri, oth).route_from(self)
+      parser.__send__(:convert_to_uri, oth).route_from(self)
     end
 
     #
@@ -1405,7 +1414,7 @@ module Bundler::URI
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
       component.collect do |x|
-        self.send(x)
+        self.__send__(x)
       end
     end
     protected :component_ary
@@ -1430,7 +1439,7 @@ module Bundler::URI
     def select(*components)
       components.collect do |c|
         if component.include?(c)
-          self.send(c)
+          self.__send__(c)
         else
           raise ArgumentError,
             "expected of components of #{self.class} (#{self.class.component.join(', ')})"
@@ -1515,9 +1524,19 @@ module Bundler::URI
           proxy_uri = env["CGI_#{name.upcase}"]
         end
       elsif name == 'http_proxy'
-        unless proxy_uri = env[name]
-          if proxy_uri = env[name.upcase]
-            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+        if RUBY_ENGINE == 'jruby' && p_addr = ENV_JAVA['http.proxyHost']
+          p_port = ENV_JAVA['http.proxyPort']
+          if p_user = ENV_JAVA['http.proxyUser']
+            p_pass = ENV_JAVA['http.proxyPass']
+            proxy_uri = "http://#{p_user}:#{p_pass}@#{p_addr}:#{p_port}"
+          else
+            proxy_uri = "http://#{p_addr}:#{p_port}"
+          end
+        else
+          unless proxy_uri = env[name]
+            if proxy_uri = env[name.upcase]
+              warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+            end
           end
         end
       else

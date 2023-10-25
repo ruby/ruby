@@ -1,0 +1,77 @@
+@ ProgramNode (location: (1,0)-(3,17))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,17))
+    └── body: (length: 2)
+        ├── @ CallNode (location: (1,0)-(1,12))
+        │   ├── receiver:
+        │   │   @ ParenthesesNode (location: (1,1)-(1,12))
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (1,2)-(1,11))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ FlipFlopNode (location: (1,2)-(1,11))
+        │   │   │           ├── left:
+        │   │   │           │   @ CallNode (location: (1,2)-(1,5))
+        │   │   │           │   ├── receiver: ∅
+        │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── message_loc: (1,2)-(1,5) = "foo"
+        │   │   │           │   ├── opening_loc: ∅
+        │   │   │           │   ├── arguments: ∅
+        │   │   │           │   ├── closing_loc: ∅
+        │   │   │           │   ├── block: ∅
+        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   └── name: :foo
+        │   │   │           ├── right:
+        │   │   │           │   @ CallNode (location: (1,8)-(1,11))
+        │   │   │           │   ├── receiver: ∅
+        │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── message_loc: (1,8)-(1,11) = "bar"
+        │   │   │           │   ├── opening_loc: ∅
+        │   │   │           │   ├── arguments: ∅
+        │   │   │           │   ├── closing_loc: ∅
+        │   │   │           │   ├── block: ∅
+        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   └── name: :bar
+        │   │   │           ├── operator_loc: (1,5)-(1,8) = "..."
+        │   │   │           └── flags: exclude_end
+        │   │   ├── opening_loc: (1,1)-(1,2) = "("
+        │   │   └── closing_loc: (1,11)-(1,12) = ")"
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (1,0)-(1,1) = "!"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: :!
+        └── @ IfNode (location: (3,0)-(3,17))
+            ├── if_keyword_loc: (3,0)-(3,2) = "if"
+            ├── predicate:
+            │   @ FlipFlopNode (location: (3,3)-(3,12))
+            │   ├── left:
+            │   │   @ CallNode (location: (3,3)-(3,6))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (3,3)-(3,6) = "foo"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: :foo
+            │   ├── right:
+            │   │   @ CallNode (location: (3,9)-(3,12))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (3,9)-(3,12) = "bar"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: :bar
+            │   ├── operator_loc: (3,6)-(3,9) = "..."
+            │   └── flags: exclude_end
+            ├── statements: ∅
+            ├── consequent: ∅
+            └── end_keyword_loc: (3,14)-(3,17) = "end"

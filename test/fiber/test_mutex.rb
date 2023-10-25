@@ -4,17 +4,17 @@ require_relative 'scheduler'
 
 class TestFiberMutex < Test::Unit::TestCase
   def test_mutex_synchronize
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        assert_not_predicate Thread.current, :blocking?
+        assert_not_predicate Fiber, :blocking?
 
         mutex.synchronize do
-          assert_not_predicate Thread.current, :blocking?
+          assert_not_predicate Fiber, :blocking?
         end
       end
     end
@@ -23,11 +23,11 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_interleaved_locking
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.lock
@@ -48,12 +48,12 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_thread
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
     mutex.lock
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.lock
@@ -71,7 +71,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_fiber_raise
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
     ran = false
 
     main = Thread.new do
@@ -79,7 +79,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
       thread = Thread.new do
         scheduler = Scheduler.new
-        Thread.current.scheduler = scheduler
+        Fiber.set_scheduler scheduler
 
         f = Fiber.schedule do
           assert_raise_with_message(RuntimeError, "bye") do
@@ -103,14 +103,14 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_condition_variable
-    mutex = Mutex.new
-    condition = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condition = Thread::ConditionVariable.new
 
     signalled = 0
 
-    thread = Thread.new do
+    Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.synchronize do
@@ -132,20 +132,18 @@ class TestFiberMutex < Test::Unit::TestCase
       end
 
       scheduler.run
-    end
+    end.join
 
-    thread.join
-
-    assert_operator signalled, :>, 1
+    assert_equal 3, signalled
   end
 
   def test_queue
-    queue = Queue.new
+    queue = Thread::Queue.new
     processed = 0
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         3.times do |i|
@@ -171,12 +169,12 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_queue_pop_waits
-    queue = Queue.new
+    queue = Thread::Queue.new
     running = false
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       result = nil
       Fiber.schedule do
@@ -196,15 +194,15 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_deadlock
-    error_pattern = /No live threads left. Deadlock\?/
+    error_pattern = /lock already owned by another fiber/
 
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], error_pattern, success: false
     require 'scheduler'
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.synchronize do
@@ -218,5 +216,25 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread.join
     RUBY
+  end
+
+  def test_mutex_fiber_deadlock_no_scheduler
+    thr = Thread.new do
+      loop do
+        sleep 1
+      end
+    end
+
+    mutex = Mutex.new
+    mutex.synchronize do
+      error = assert_raise ThreadError do
+        Fiber.new do
+          mutex.lock
+        end.resume
+      end
+      assert_includes error.message, "deadlock; lock already owned by another fiber belonging to the same thread"
+    end
+  ensure
+    thr&.kill&.join
   end
 end

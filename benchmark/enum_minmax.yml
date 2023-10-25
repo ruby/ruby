@@ -1,0 +1,25 @@
+prelude: |
+  set2 = 2.times.to_a.shuffle.to_set
+  set10 = 10.times.to_a.shuffle.to_set
+  set100 = 100.times.to_a.shuffle.to_set
+  set1000 = 1000.times.to_a.shuffle.to_set
+  set10000 = 10000.times.to_a.shuffle.to_set
+
+benchmark:
+  set2.min: set2.min
+  set10.min: set10.min
+  set100.min: set100.min
+  set1000.min: set1000.min
+  set10000.min: set10000.min
+  set2.max: set2.max
+  set10.max: set10.max
+  set100.max: set100.max
+  set1000.max: set1000.max
+  set10000.max: set10000.max
+  set2.minmax: set2.minmax
+  set10.minmax: set10.minmax
+  set100.minmax: set100.minmax
+  set1000.minmax: set1000.minmax
+  set10000.minmax: set10000.minmax
+
+loop_count: 10000

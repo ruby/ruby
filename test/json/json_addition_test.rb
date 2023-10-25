@@ -1,5 +1,5 @@
 #frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 require 'json/add/core'
 require 'json/add/complex'
 require 'json/add/rational'
@@ -165,7 +165,7 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_utc_datetime
     now = Time.now
-    d = DateTime.parse(now.to_s, :create_additions => true) # usual case
+    d = DateTime.parse(now.to_s) # usual case
     assert_equal d, parse(d.to_json, :create_additions => true)
     d = DateTime.parse(now.utc.to_s) # of = 0
     assert_equal d, parse(d.to_json, :create_additions => true)
@@ -183,7 +183,7 @@ class JSONAdditionTest < Test::Unit::TestCase
   def test_bigdecimal
     assert_equal BigDecimal('3.141', 23), JSON(JSON(BigDecimal('3.141', 23)), :create_additions => true)
     assert_equal BigDecimal('3.141', 666), JSON(JSON(BigDecimal('3.141', 666)), :create_additions => true)
-  end
+  end if defined?(::BigDecimal)
 
   def test_ostruct
     o = OpenStruct.new
@@ -195,9 +195,5 @@ class JSONAdditionTest < Test::Unit::TestCase
   def test_set
     s = Set.new([:a, :b, :c, :a])
     assert_equal s, JSON.parse(JSON(s), :create_additions => true)
-    ss = SortedSet.new([:d, :b, :a, :c])
-    ss_again = JSON.parse(JSON(ss), :create_additions => true)
-    assert_kind_of ss.class, ss_again
-    assert_equal ss, ss_again
   end
 end

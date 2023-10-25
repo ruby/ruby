@@ -1,0 +1,14 @@
+prelude: |
+  flo = 4.2
+benchmark:
+  to_f: |
+    flo.to_f
+  abs: |
+    flo.abs
+  magnitude: |
+    flo.magnitude
+  -@: |
+    -flo
+  zero?: |
+    flo.zero?
+loop_count: 20000000

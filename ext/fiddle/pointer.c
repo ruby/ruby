@@ -2,10 +2,16 @@
  * $Id$
  */
 
+#include <stdbool.h>
 #include <ruby/ruby.h>
 #include <ruby/io.h>
+
 #include <ctype.h>
 #include <fiddle.h>
+
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
+# include <ruby/memory_view.h>
+#endif
 
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
@@ -18,12 +24,13 @@
 
 VALUE rb_cPointer;
 
-typedef void (*freefunc_t)(void*);
+typedef rb_fiddle_freefunc_t freefunc_t;
 
 struct ptr_data {
     void *ptr;
     long size;
     freefunc_t free;
+    bool freed;
     VALUE wrap[2];
 };
 
@@ -57,14 +64,19 @@ fiddle_ptr_mark(void *ptr)
 }
 
 static void
-fiddle_ptr_free(void *ptr)
+fiddle_ptr_free_ptr(void *ptr)
 {
     struct ptr_data *data = ptr;
-    if (data->ptr) {
-	if (data->free) {
-	    (*(data->free))(data->ptr);
-	}
+    if (data->ptr && data->free && !data->freed) {
+	data->freed = true;
+	(*(data->free))(data->ptr);
     }
+}
+
+static void
+fiddle_ptr_free(void *ptr)
+{
+    fiddle_ptr_free_ptr(ptr);
     xfree(ptr);
 }
 
@@ -76,12 +88,49 @@ fiddle_ptr_memsize(const void *ptr)
 }
 
 static const rb_data_type_t fiddle_ptr_data_type = {
-    "fiddle/pointer",
-    {fiddle_ptr_mark, fiddle_ptr_free, fiddle_ptr_memsize,},
+    .wrap_struct_name = "fiddle/pointer",
+    .function = {
+        .dmark = fiddle_ptr_mark,
+        .dfree = fiddle_ptr_free,
+        .dsize = fiddle_ptr_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
+static struct ptr_data *
+fiddle_ptr_check_memory_view(VALUE obj)
+{
+    struct ptr_data *data;
+    TypedData_Get_Struct(obj, struct ptr_data, &fiddle_ptr_data_type, data);
+    if (data->ptr == NULL || data->size == 0) return NULL;
+    return data;
+}
+
+static bool
+fiddle_ptr_memory_view_available_p(VALUE obj)
+{
+    return fiddle_ptr_check_memory_view(obj) != NULL;
+}
+
+static bool
+fiddle_ptr_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
+{
+    struct ptr_data *data = fiddle_ptr_check_memory_view(obj);
+    rb_memory_view_init_as_byte_array(view, obj, data->ptr, data->size, true);
+
+    return true;
+}
+
+static const rb_memory_view_entry_t fiddle_ptr_memory_view_entry = {
+    fiddle_ptr_get_memory_view,
+    NULL,
+    fiddle_ptr_memory_view_available_p
+};
+#endif
+
 static VALUE
-rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
+rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func, VALUE wrap0, VALUE wrap1)
 {
     struct ptr_data *data;
     VALUE val;
@@ -89,25 +138,34 @@ rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     val = TypedData_Make_Struct(klass, struct ptr_data, &fiddle_ptr_data_type, data);
     data->ptr = ptr;
     data->free = func;
+    data->freed = false;
     data->size = size;
+    RB_OBJ_WRITE(val, &data->wrap[0], wrap0);
+    RB_OBJ_WRITE(val, &data->wrap[1], wrap1);
 
     return val;
+}
+
+VALUE
+rb_fiddle_ptr_new_wrap(void *ptr, long size, freefunc_t func, VALUE wrap0, VALUE wrap1)
+{
+    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func, wrap0, wrap1);
 }
 
 static VALUE
 rb_fiddle_ptr_new(void *ptr, long size, freefunc_t func)
 {
-    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func);
+    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func, 0, 0);
 }
 
 static VALUE
-rb_fiddle_ptr_malloc(long size, freefunc_t func)
+rb_fiddle_ptr_malloc(VALUE klass, long size, freefunc_t func)
 {
     void *ptr;
 
     ptr = ruby_xmalloc((size_t)size);
     memset(ptr,0,(size_t)size);
-    return rb_fiddle_ptr_new(ptr, size, func);
+    return rb_fiddle_ptr_new2(klass, ptr, size, func, 0, 0);
 }
 
 static void *
@@ -140,6 +198,7 @@ rb_fiddle_ptr_s_allocate(VALUE klass)
     data->ptr = 0;
     data->size = 0;
     data->free = 0;
+    data->freed = false;
 
     return obj;
 }
@@ -181,8 +240,8 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
 	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
 	    (*(data->free))(data->ptr);
 	}
-	data->wrap[0] = wrap;
-	data->wrap[1] = funcwrap;
+	RB_OBJ_WRITE(self, &data->wrap[0], wrap);
+	RB_OBJ_WRITE(self, &data->wrap[1], funcwrap);
 	data->ptr  = p;
 	data->size = s;
 	data->free = f;
@@ -191,17 +250,31 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
     return Qnil;
 }
 
+static VALUE
+rb_fiddle_ptr_call_free(VALUE self);
+
 /*
  * call-seq:
  *    Fiddle::Pointer.malloc(size, freefunc = nil)  => fiddle pointer instance
+ *    Fiddle::Pointer.malloc(size, freefunc) { |pointer| ... } => ...
  *
  * == Examples
+ *
+ *    # Automatically freeing the pointer when the block is exited - recommended
+ *    Fiddle::Pointer.malloc(size, Fiddle::RUBY_FREE) do |pointer|
+ *      ...
+ *    end
+ *
+ *    # Manually freeing but relying on the garbage collector otherwise
+ *    pointer = Fiddle::Pointer.malloc(size, Fiddle::RUBY_FREE)
+ *    ...
+ *    pointer.call_free
  *
  *    # Relying on the garbage collector - may lead to unlimited memory allocated before freeing any, but safe
  *    pointer = Fiddle::Pointer.malloc(size, Fiddle::RUBY_FREE)
  *    ...
  *
- *    # Manual freeing
+ *    # Only manually freeing
  *    pointer = Fiddle::Pointer.malloc(size)
  *    begin
  *      ...
@@ -214,13 +287,16 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
  *    ...
  *
  * Allocate +size+ bytes of memory and associate it with an optional
- * +freefunc+ that will be called when the pointer is garbage collected.
- * +freefunc+ must be an address pointing to a function or an instance of
- * +Fiddle::Function+. Using +freefunc+ may lead to unlimited memory being
- * allocated before any is freed as the native memory the pointer references
- * does not contribute to triggering the Ruby garbage collector. Consider
- * manually freeing the memory as illustrated above. You cannot combine
- * the techniques as this may lead to a double-free.
+ * +freefunc+.
+ *
+ * If a block is supplied, the pointer will be yielded to the block instead of
+ * being returned, and the return value of the block will be returned. A
+ * +freefunc+ must be supplied if a block is.
+ *
+ * If a +freefunc+ is supplied it will be called once, when the pointer is
+ * garbage collected or when the block is left if a block is supplied or
+ * when the user calls +call_free+, whichever happens first. +freefunc+ must be
+ * an address pointing to a function or an instance of +Fiddle::Function+.
  */
 static VALUE
 rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
@@ -242,10 +318,17 @@ rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 	rb_bug("rb_fiddle_ptr_s_malloc");
     }
 
-    obj = rb_fiddle_ptr_malloc(s,f);
-    if (wrap) RPTR_DATA(obj)->wrap[1] = wrap;
+    obj = rb_fiddle_ptr_malloc(klass, s,f);
+    if (wrap) RB_OBJ_WRITE(obj, &RPTR_DATA(obj)->wrap[1], wrap);
 
-    return obj;
+    if (rb_block_given_p()) {
+        if (!f) {
+            rb_raise(rb_eArgError, "a free function must be supplied to Fiddle::Pointer.malloc when it is called with a block");
+        }
+        return rb_ensure(rb_yield, obj, rb_fiddle_ptr_call_free, obj);
+    } else {
+        return obj;
+    }
 }
 
 /*
@@ -368,6 +451,34 @@ rb_fiddle_ptr_free_get(VALUE self)
     rb_ary_push(arg_types, INT2NUM(TYPE_VOIDP));
 
     return rb_fiddle_new_function(address, arg_types, ret_type);
+}
+
+/*
+ * call-seq: call_free => nil
+ *
+ * Call the free function for this pointer. Calling more than once will do
+ * nothing. Does nothing if there is no free function attached.
+ */
+static VALUE
+rb_fiddle_ptr_call_free(VALUE self)
+{
+    struct ptr_data *pdata;
+    TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, pdata);
+    fiddle_ptr_free_ptr(pdata);
+    return Qnil;
+}
+
+/*
+ * call-seq: freed? => bool
+ *
+ * Returns if the free function for this pointer has been called.
+ */
+static VALUE
+rb_fiddle_ptr_freed_p(VALUE self)
+{
+    struct ptr_data *pdata;
+    TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, pdata);
+    return pdata->freed ? Qtrue : Qfalse;
 }
 
 /*
@@ -561,7 +672,7 @@ rb_fiddle_ptr_aref(int argc, VALUE argv[], VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    if (!data->ptr) rb_raise(rb_eFiddleError, "NULL pointer dereference");
+    if (!data->ptr) rb_raise(rb_eFiddleDLError, "NULL pointer dereference");
     switch( rb_scan_args(argc, argv, "11", &arg0, &arg1) ){
       case 1:
 	offset = NUM2ULONG(arg0);
@@ -599,7 +710,7 @@ rb_fiddle_ptr_aset(int argc, VALUE argv[], VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    if (!data->ptr) rb_raise(rb_eFiddleError, "NULL pointer dereference");
+    if (!data->ptr) rb_raise(rb_eFiddleDLError, "NULL pointer dereference");
     switch( rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2) ){
       case 2:
 	offset = NUM2ULONG(arg0);
@@ -672,6 +783,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
     }
     else if (RTEST(rb_obj_is_kind_of(val, rb_cString))){
 	char *str = StringValuePtr(val);
+        wrap = val;
 	ptr = rb_fiddle_ptr_new(str, RSTRING_LEN(val), NULL);
     }
     else if ((vptr = rb_check_funcall(val, id_to_ptr, 0, 0)) != Qundef){
@@ -680,7 +792,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 	    wrap = 0;
 	}
 	else{
-	    rb_raise(rb_eFiddleError, "to_ptr should return a Fiddle::Pointer object");
+	    rb_raise(rb_eFiddleDLError, "to_ptr should return a Fiddle::Pointer object");
 	}
     }
     else{
@@ -688,8 +800,35 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 	if (num == val) wrap = 0;
 	ptr = rb_fiddle_ptr_new(NUM2PTR(num), 0, NULL);
     }
-    if (wrap) RPTR_DATA(ptr)->wrap[0] = wrap;
+    if (wrap) RB_OBJ_WRITE(ptr, &RPTR_DATA(ptr)->wrap[0], wrap);
     return ptr;
+}
+
+/*
+ * call-seq:
+ *    Fiddle::Pointer.read(address, len)     => string
+ *
+ * Or read the memory at address +address+ with length +len+ and return a
+ * string with that memory
+ */
+
+static VALUE
+rb_fiddle_ptr_read_mem(VALUE klass, VALUE address, VALUE len)
+{
+    return rb_str_new((char *)NUM2PTR(address), NUM2ULONG(len));
+}
+
+/*
+ * call-seq:
+ *    Fiddle::Pointer.write(address, str)
+ *
+ * Write bytes in +str+ to the location pointed to by +address+.
+ */
+static VALUE
+rb_fiddle_ptr_write_mem(VALUE klass, VALUE addr, VALUE str)
+{
+    memcpy(NUM2PTR(addr), StringValuePtr(str), RSTRING_LEN(str));
+    return str;
 }
 
 void
@@ -708,9 +847,13 @@ Init_fiddle_pointer(void)
     rb_define_singleton_method(rb_cPointer, "malloc", rb_fiddle_ptr_s_malloc, -1);
     rb_define_singleton_method(rb_cPointer, "to_ptr", rb_fiddle_ptr_s_to_ptr, 1);
     rb_define_singleton_method(rb_cPointer, "[]", rb_fiddle_ptr_s_to_ptr, 1);
+    rb_define_singleton_method(rb_cPointer, "read", rb_fiddle_ptr_read_mem, 2);
+    rb_define_singleton_method(rb_cPointer, "write", rb_fiddle_ptr_write_mem, 2);
     rb_define_method(rb_cPointer, "initialize", rb_fiddle_ptr_initialize, -1);
     rb_define_method(rb_cPointer, "free=", rb_fiddle_ptr_free_set, 1);
     rb_define_method(rb_cPointer, "free",  rb_fiddle_ptr_free_get, 0);
+    rb_define_method(rb_cPointer, "call_free",  rb_fiddle_ptr_call_free, 0);
+    rb_define_method(rb_cPointer, "freed?",  rb_fiddle_ptr_freed_p, 0);
     rb_define_method(rb_cPointer, "to_i",  rb_fiddle_ptr_to_i, 0);
     rb_define_method(rb_cPointer, "to_int",  rb_fiddle_ptr_to_i, 0);
     rb_define_method(rb_cPointer, "to_value",  rb_fiddle_ptr_to_value, 0);
@@ -731,6 +874,10 @@ Init_fiddle_pointer(void)
     rb_define_method(rb_cPointer, "[]=", rb_fiddle_ptr_aset, -1);
     rb_define_method(rb_cPointer, "size", rb_fiddle_ptr_size_get, 0);
     rb_define_method(rb_cPointer, "size=", rb_fiddle_ptr_size_set, 1);
+
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
+    rb_memory_view_register(rb_cPointer, &fiddle_ptr_memory_view_entry);
+#endif
 
     /*  Document-const: NULL
      *

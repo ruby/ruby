@@ -1,16 +1,19 @@
 # frozen_string_literal: true
-# -*- coding: utf-8 -*-
+
+#
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/deprecate'
-require 'rubygems/basic_specification'
-require 'rubygems/stub_specification'
-require 'rubygems/specification_policy'
-require 'rubygems/util/list'
+require_relative "deprecate"
+require_relative "basic_specification"
+require_relative "stub_specification"
+require_relative "platform"
+require_relative "util/list"
+
+require "rbconfig"
 
 ##
 # The Specification class contains the information for a gem.  Typically
@@ -74,40 +77,36 @@ class Gem::Specification < Gem::BasicSpecification
   # key should be equal to the CURRENT_SPECIFICATION_VERSION.
 
   SPECIFICATION_VERSION_HISTORY = { # :nodoc:
-    -1 => ['(RubyGems versions up to and including 0.7 did not have versioned specifications)'],
-    1  => [
+    -1 => ["(RubyGems versions up to and including 0.7 did not have versioned specifications)"],
+    1 => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
-      '"test_file=x" is a shortcut for "test_files=[x]"'
+      '"test_file=x" is a shortcut for "test_files=[x]"',
     ],
     2 => [
       'Added "required_rubygems_version"',
-      'Now forward-compatible with future versions',
+      "Now forward-compatible with future versions",
     ],
     3 => [
-      'Added Fixnum validation to the specification_version'
+      "Added Fixnum validation to the specification_version",
     ],
     4 => [
-      'Added sandboxed freeform metadata to the specification version.'
-    ]
+      "Added sandboxed freeform metadata to the specification version.",
+    ],
   }.freeze
 
   MARSHAL_FIELDS = { # :nodoc:
     -1 => 16,
-     1 => 16,
-     2 => 16,
-     3 => 17,
-     4 => 18,
+    1 => 16,
+    2 => 16,
+    3 => 17,
+    4 => 18,
   }.freeze
 
   today = Time.now.utc
   TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
-  # rubocop:disable Style/MutableConstant
-  LOAD_CACHE = {} # :nodoc:
-  # rubocop:enable Style/MutableConstant
-  LOAD_CACHE_MUTEX = Mutex.new
-
-  private_constant :LOAD_CACHE if defined? private_constant
+  @load_cache = {} # :nodoc:
+  @load_cache_mutex = Thread::Mutex.new
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 
@@ -128,39 +127,39 @@ class Gem::Specification < Gem::BasicSpecification
   # Map of attribute names to default values.
 
   @@default_value = {
-    :authors                   => [],
-    :autorequire               => nil,
-    :bindir                    => 'bin',
-    :cert_chain                => [],
-    :date                      => nil,
-    :dependencies              => [],
-    :description               => nil,
-    :email                     => nil,
-    :executables               => [],
-    :extensions                => [],
-    :extra_rdoc_files          => [],
-    :files                     => [],
-    :homepage                  => nil,
-    :licenses                  => [],
-    :metadata                  => {},
-    :name                      => nil,
-    :platform                  => Gem::Platform::RUBY,
-    :post_install_message      => nil,
-    :rdoc_options              => [],
-    :require_paths             => ['lib'],
-    :required_ruby_version     => Gem::Requirement.default,
+    :authors => [],
+    :autorequire => nil,
+    :bindir => "bin",
+    :cert_chain => [],
+    :date => nil,
+    :dependencies => [],
+    :description => nil,
+    :email => nil,
+    :executables => [],
+    :extensions => [],
+    :extra_rdoc_files => [],
+    :files => [],
+    :homepage => nil,
+    :licenses => [],
+    :metadata => {},
+    :name => nil,
+    :platform => Gem::Platform::RUBY,
+    :post_install_message => nil,
+    :rdoc_options => [],
+    :require_paths => ["lib"],
+    :required_ruby_version => Gem::Requirement.default,
     :required_rubygems_version => Gem::Requirement.default,
-    :requirements              => [],
-    :rubygems_version          => Gem::VERSION,
-    :signing_key               => nil,
-    :specification_version     => CURRENT_SPECIFICATION_VERSION,
-    :summary                   => nil,
-    :test_files                => [],
-    :version                   => nil,
+    :requirements => [],
+    :rubygems_version => Gem::VERSION,
+    :signing_key => nil,
+    :specification_version => CURRENT_SPECIFICATION_VERSION,
+    :summary => nil,
+    :test_files => [],
+    :version => nil,
   }.freeze
 
   # rubocop:disable Style/MutableConstant
-  INITIALIZE_CODE_FOR_DEFAULTS = { } # :nodoc:
+  INITIALIZE_CODE_FOR_DEFAULTS = {} # :nodoc:
   # rubocop:enable Style/MutableConstant
 
   @@default_value.each do |k,v|
@@ -169,25 +168,30 @@ class Gem::Specification < Gem::BasicSpecification
                                         v.inspect
                                       when String
                                         v.dump
-                                      when Numeric
-                                        "default_value(:#{k})"
                                       else
                                         "default_value(:#{k}).dup"
-                                      end
+    end
   end
 
-  @@attributes = @@default_value.keys.sort_by {|s| s.to_s }
-  @@array_attributes = @@default_value.reject {|k,v| v != [] }.keys
+  @@attributes = @@default_value.keys.sort_by(&:to_s)
+  @@array_attributes = @@default_value.reject {|_k,v| v != [] }.keys
   @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition do |k|
     @@default_value[k].nil?
   end
 
-  @@stubs_by_name = {}
+  def self.clear_specs # :nodoc:
+    @@all = nil
+    @@stubs = nil
+    @@stubs_by_name = {}
+    @@spec_with_requirable_file = {}
+    @@active_stub_with_requirable_file = {}
+  end
+  private_class_method :clear_specs
+
+  clear_specs
 
   # Sentinel object to represent "not found" stubs
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
-  @@spec_with_requirable_file = {}
-  @@active_stub_with_requirable_file = {}
 
   # Tracking removed method calls to warn users during build time.
   REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
@@ -221,7 +225,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :version
 
   ##
-  # A short summary of this gem's description.  Displayed in `gem list -d`.
+  # A short summary of this gem's description.  Displayed in <tt>gem list -d</tt>.
   #
   # The #description should be more detailed than the summary.
   #
@@ -259,15 +263,14 @@ class Gem::Specification < Gem::BasicSpecification
               @test_files,
               add_bindir(@executables),
               @extra_rdoc_files,
-              @extensions,
-             ].flatten.compact.uniq.sort
+              @extensions].flatten.compact.uniq.sort
   end
 
   ##
   # A list of authors for this gem.
   #
   # Alternatively, a single author can be specified by assigning a string to
-  # `spec.author`
+  # +spec.author+
   #
   # Usage:
   #
@@ -279,6 +282,15 @@ class Gem::Specification < Gem::BasicSpecification
 
   ######################################################################
   # :section: Recommended gemspec attributes
+
+  ##
+  # The version of Ruby required by this gem
+  #
+  # Usage:
+  #
+  #   spec.required_ruby_version = '>= 2.7.0'
+
+  attr_reader :required_ruby_version
 
   ##
   # A long description of this gem
@@ -323,17 +335,21 @@ class Gem::Specification < Gem::BasicSpecification
   # This should just be the name of your license. The full text of the license
   # should be inside of the gem (at the top level) when you build it.
   #
-  # The simplest way, is to specify the standard SPDX ID
+  # The simplest way is to specify the standard SPDX ID
   # https://spdx.org/licenses/ for the license.
-  # Ideally you should pick one that is OSI (Open Source Initiative)
-  # http://opensource.org/licenses/alphabetical approved.
+  # Ideally, you should pick one that is OSI (Open Source Initiative)
+  # https://opensource.org/licenses/ approved.
   #
-  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
+  # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.
   #
+  # You can also use a custom license file along with your gemspec and specify
+  # a LicenseRef-<idstring>, where idstring is the name of the file containing
+  # the license text.
+  #
   # You should specify a license for your gem so that people know how they are
-  # permitted to use it, and any restrictions you're placing on it.  Not
-  # specifying a license means all rights are reserved; others have no rights
+  # permitted to use it and any restrictions you're placing on it.  Not
+  # specifying a license means all rights are reserved; others have no right
   # to use the code for any purpose.
   #
   # You can set multiple licenses with #licenses=
@@ -410,11 +426,11 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The path in the gem for executable scripts.  Usually 'bin'
+  # The path in the gem for executable scripts.  Usually 'exe'
   #
   # Usage:
   #
-  #   spec.bindir = 'bin'
+  #   spec.bindir = 'exe'
 
   attr_accessor :bindir
 
@@ -457,7 +473,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.platform = Gem::Platform.local
 
   def platform=(platform)
-    if @original_platform.nil? or
+    if @original_platform.nil? ||
        @original_platform == Gem::Platform::RUBY
       @original_platform = platform
     end
@@ -473,12 +489,12 @@ class Gem::Specification < Gem::BasicSpecification
     # legacy constants
     when nil, Gem::Platform::RUBY then
       @new_platform = Gem::Platform::RUBY
-    when 'mswin32' then # was Gem::Platform::WIN32
-      @new_platform = Gem::Platform.new 'x86-mswin32'
-    when 'i586-linux' then # was Gem::Platform::LINUX_586
-      @new_platform = Gem::Platform.new 'x86-linux'
-    when 'powerpc-darwin' then # was Gem::Platform::DARWIN
-      @new_platform = Gem::Platform.new 'ppc-darwin'
+    when "mswin32" then # was Gem::Platform::WIN32
+      @new_platform = Gem::Platform.new "x86-mswin32"
+    when "i586-linux" then # was Gem::Platform::LINUX_586
+      @new_platform = Gem::Platform.new "x86-linux"
+    when "powerpc-darwin" then # was Gem::Platform::DARWIN
+      @new_platform = Gem::Platform.new "ppc-darwin"
     else
       @new_platform = Gem::Platform.new platform
     end
@@ -486,8 +502,6 @@ class Gem::Specification < Gem::BasicSpecification
     @platform = @new_platform.to_s
 
     invalidate_memoized_attributes
-
-    @new_platform
   end
 
   ##
@@ -510,11 +524,6 @@ class Gem::Specification < Gem::BasicSpecification
   def require_paths=(val)
     @require_paths = Array(val)
   end
-
-  ##
-  # The version of Ruby required by this gem
-
-  attr_reader :required_ruby_version
 
   ##
   # The RubyGems version required by this gem
@@ -566,7 +575,7 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # Executables included in the gem.
   #
-  # For example, the rake gem has rake as an executable. You don’t specify the
+  # For example, the rake gem has rake as an executable. You don't specify the
   # full path (as in bin/rake); all application-style files are expected to be
   # found in bindir.  These files must be executable Ruby files.  Files that
   # use bash or other interpreters will not work.
@@ -587,7 +596,7 @@ class Gem::Specification < Gem::BasicSpecification
   # extconf.rb-style files used to compile extensions.
   #
   # These files will be run when the gem is installed, causing the C (or
-  # whatever) code to be compiled on the user’s machine.
+  # whatever) code to be compiled on the user's machine.
   #
   # Usage:
   #
@@ -645,6 +654,8 @@ class Gem::Specification < Gem::BasicSpecification
     @rdoc_options ||= []
   end
 
+  LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
+
   ##
   # The version of Ruby required by this gem.  The ruby version can be
   # specified to the patch-level:
@@ -665,9 +676,20 @@ class Gem::Specification < Gem::BasicSpecification
   #
   #  # Only prereleases or final releases after 2.6.0.preview2
   #  spec.required_ruby_version = '> 2.6.0.preview2'
+  #
+  #  # This gem will work with 2.3.0 or greater, including major version 3, but lesser than 4.0.0
+  #  spec.required_ruby_version = '>= 2.3', '< 4'
 
   def required_ruby_version=(req)
     @required_ruby_version = Gem::Requirement.create req
+
+    @required_ruby_version.requirements.map! do |op, v|
+      if v >= LATEST_RUBY_WITHOUT_PATCH_VERSIONS && v.release.segments.size == 4
+        [op == "~>" ? "=" : op, Gem::Version.new(v.segments.tap {|s| s.delete_at(3) }.join("."))]
+      else
+        [op, v]
+      end
+    end
   end
 
   ##
@@ -710,7 +732,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   attr_accessor :activated
 
-  alias :activated? :activated
+  alias_method :activated?, :activated
 
   ##
   # Autorequire was used by old RubyGems to automatically require a file.
@@ -740,23 +762,15 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    unless defined?(@@all) && @@all
-      @@all = stubs.map(&:to_spec)
-
-      # After a reset, make sure already loaded specs
-      # are still marked as activated.
-      specs = {}
-      Gem.loaded_specs.each_value{|s| specs[s] = true }
-      @@all.each{|s| s.activated = true if specs[s] }
-    end
-    @@all
+    @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
   end
 
-  def self._clear_load_cache # :nodoc:
-    LOAD_CACHE_MUTEX.synchronize do
-      LOAD_CACHE.clear
+  def self.clear_load_cache # :nodoc:
+    @load_cache_mutex.synchronize do
+      @load_cache.clear
     end
   end
+  private_class_method :clear_load_cache
 
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
@@ -800,11 +814,9 @@ class Gem::Specification < Gem::BasicSpecification
   def self.stubs
     @@stubs ||= begin
       pattern = "*.gemspec"
-      stubs = installed_stubs(dirs, pattern) + default_stubs(pattern)
-      stubs = stubs.uniq {|stub| stub.full_name }
+      stubs = stubs_for_pattern(pattern, false)
 
-      _resort!(stubs)
-      @@stubs_by_name = stubs.select {|s| Gem::Platform.match s.platform }.group_by(&:name)
+      @@stubs_by_name = stubs.select {|s| Gem::Platform.match_spec? s }.group_by(&:name)
       stubs
     end
   end
@@ -820,31 +832,40 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  EMPTY = [].freeze # :nodoc:
-
   ##
   # Returns a Gem::StubSpecification for installed gem named +name+
   # only returns stubs that match Gem.platforms
 
   def self.stubs_for(name)
-    if @@stubs_by_name[name]
-      @@stubs_by_name[name]
+    if @@stubs
+      @@stubs_by_name[name] || []
     else
-      pattern = "#{name}-*.gemspec"
-      stubs = installed_stubs(dirs, pattern).select {|s| Gem::Platform.match s.platform } + default_stubs(pattern)
-      stubs = stubs.uniq {|stub| stub.full_name }.group_by(&:name)
-      stubs.each_value {|v| _resort!(v) }
-
-      @@stubs_by_name.merge! stubs
-      @@stubs_by_name[name] ||= EMPTY
+      @@stubs_by_name[name] ||= stubs_for_pattern("#{name}-*.gemspec").select do |s|
+        s.name == name
+      end
     end
+  end
+
+  ##
+  # Finds stub specifications matching a pattern from the standard locations,
+  # optionally filtering out specs not matching the current platform
+  #
+  def self.stubs_for_pattern(pattern, match_platform = true) # :nodoc:
+    installed_stubs = installed_stubs(Gem::Specification.dirs, pattern)
+    installed_stubs.select! {|s| Gem::Platform.match_spec? s } if match_platform
+    stubs = installed_stubs + default_stubs(pattern)
+    stubs = stubs.uniq(&:full_name)
+    _resort!(stubs)
+    stubs
   end
 
   def self._resort!(specs) # :nodoc:
     specs.sort! do |a, b|
       names = a.name <=> b.name
       next names if names.nonzero?
-      b.version <=> a.version
+      versions = b.version <=> a.version
+      next versions if versions.nonzero?
+      Gem::Platform.sort_priority(b.platform)
     end
   end
 
@@ -857,6 +878,30 @@ class Gem::Specification < Gem::BasicSpecification
       # it at this stage
       Gem.register_default_spec(spec)
     end
+  end
+
+  ##
+  # Adds +spec+ to the known specifications, keeping the collection
+  # properly sorted.
+
+  def self.add_spec(spec)
+    return if _all.include? spec
+
+    _all << spec
+    stubs << spec
+    (@@stubs_by_name[spec.name] ||= []) << spec
+
+    _resort!(@@stubs_by_name[spec.name])
+    _resort!(stubs)
+  end
+
+  ##
+  # Removes +spec+ from the known specs.
+
+  def self.remove_spec(spec)
+    _all.delete spec.to_spec
+    stubs.delete spec
+    (@@stubs_by_name[spec.name] || []).delete spec
   end
 
   ##
@@ -890,7 +935,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return full names of all specs in sorted order.
 
   def self.all_names
-    self._all.map(&:full_name)
+    _all.map(&:full_name)
   end
 
   ##
@@ -925,7 +970,7 @@ class Gem::Specification < Gem::BasicSpecification
   # this resets the list of known specs.
 
   def self.dirs=(dirs)
-    self.reset
+    reset
 
     @@dirs = Array(dirs).map {|dir| File.join dir, "specifications" }
   end
@@ -939,7 +984,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.each
     return enum_for(:each) unless block_given?
 
-    self._all.each do |x|
+    _all.each do |x|
       yield x
     end
   end
@@ -975,14 +1020,20 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Find the best specification matching a +full_name+.
+  def self.find_by_full_name(full_name)
+    stubs.find {|s| s.full_name == full_name }&.to_spec
+  end
+
+  ##
   # Return the best specification that contains the file matching +path+.
 
   def self.find_by_path(path)
     path = path.dup.freeze
-    spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
-      next unless Gem::BundlerVersionFinder.compatible?(s)
+    spec = @@spec_with_requirable_file[path] ||= stubs.find do |s|
       s.contains_requirable_file? path
-    end || NOT_FOUND)
+    end || NOT_FOUND
+
     spec.to_spec
   end
 
@@ -993,16 +1044,16 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_inactive_by_path(path)
     stub = stubs.find do |s|
       next if s.activated?
-      next unless Gem::BundlerVersionFinder.compatible?(s)
       s.contains_requirable_file? path
     end
-    stub && stub.to_spec
+    stub&.to_spec
   end
 
   def self.find_active_stub_by_path(path)
-    stub = @@active_stub_with_requirable_file[path] ||= (stubs.find do |s|
-      s.activated? and s.contains_requirable_file? path
-    end || NOT_FOUND)
+    stub = @@active_stub_with_requirable_file[path] ||= stubs.find do |s|
+      s.activated? && s.contains_requirable_file?(path)
+    end || NOT_FOUND
+
     stub.this
   end
 
@@ -1019,7 +1070,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_in_unresolved_tree(path)
     unresolved_specs.each do |spec|
-      spec.traverse do |from_spec, dep, to_spec, trail|
+      spec.traverse do |_from_spec, _dep, to_spec, trail|
         if to_spec.has_conflicts? || to_spec.conficts_when_loaded_with?(trail)
           :next
         else
@@ -1032,7 +1083,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.unresolved_specs
-    unresolved_deps.values.map {|dep| dep.to_specs }.flatten
+    unresolved_deps.values.map(&:to_specs).flatten
   end
   private_class_method :unresolved_specs
 
@@ -1060,6 +1111,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     spec.specification_version ||= NONEXISTENT_SPECIFICATION_VERSION
     spec.reset_nil_attributes_to_default
+    spec.flatten_require_paths
 
     spec
   end
@@ -1069,7 +1121,7 @@ class Gem::Specification < Gem::BasicSpecification
   # +prerelease+ is true.
 
   def self.latest_specs(prerelease = false)
-    _latest_specs Gem::Specification._all, prerelease
+    _latest_specs Gem::Specification.stubs, prerelease
   end
 
   ##
@@ -1080,20 +1132,17 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self._latest_specs(specs, prerelease = false) # :nodoc:
-    result = Hash.new {|h,k| h[k] = {} }
-    native = {}
+    result = {}
 
     specs.reverse_each do |spec|
-      next if spec.version.prerelease? unless prerelease
+      unless prerelease
+        next if spec.version.prerelease?
+      end
 
-      native[spec.name] = spec.version if spec.platform == Gem::Platform::RUBY
-      result[spec.name][spec.platform] = spec
+      result[spec.name] = spec
     end
 
-    result.map(&:last).map(&:values).flatten.reject do |spec|
-      minimum = native[spec.name]
-      minimum && spec.version < minimum
-    end.sort_by{|tup| tup.name }
+    result.map(&:last).flatten.sort_by(&:name)
   end
 
   ##
@@ -1102,36 +1151,36 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
-    return _spec if _spec
+    spec = @load_cache_mutex.synchronize { @load_cache[file] }
+    return spec if spec
 
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
-    code = File.read file, :mode => 'r:UTF-8:-'
+    code = Gem.open_file(file, "r:UTF-8:-", &:read)
 
     code.tap(&Gem::UNTAINT)
 
     begin
-      _spec = eval code, binding, file
+      spec = eval code, binding, file
 
-      if Gem::Specification === _spec
-        _spec.loaded_from = File.expand_path file.to_s
-        LOAD_CACHE_MUTEX.synchronize do
-          prev = LOAD_CACHE[file]
+      if Gem::Specification === spec
+        spec.loaded_from = File.expand_path file.to_s
+        @load_cache_mutex.synchronize do
+          prev = @load_cache[file]
           if prev
-            _spec = prev
+            spec = prev
           else
-            LOAD_CACHE[file] = _spec
+            @load_cache[file] = spec
           end
         end
-        return _spec
+        return spec
       end
 
-      warn "[#{file}] isn't a Gem::Specification (#{_spec.class} instead)."
+      warn "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
     rescue SignalException, SystemExit
       raise
-    rescue SyntaxError, Exception => e
+    rescue SyntaxError, StandardError => e
       warn "Invalid gemspec in [#{file}]: #{e}"
     end
 
@@ -1193,7 +1242,7 @@ class Gem::Specification < Gem::BasicSpecification
       latest_remote = remotes.sort.last
 
       yield [local_spec, latest_remote] if
-        latest_remote and local_spec.version < latest_remote
+        latest_remote && local_spec.version < latest_remote
     end
 
     nil
@@ -1219,17 +1268,12 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.reset
     @@dirs = nil
-    Gem.pre_reset_hooks.each {|hook| hook.call }
-    @@all = nil
-    @@stubs = nil
-    @@stubs_by_name = {}
-    @@spec_with_requirable_file = {}
-    @@active_stub_with_requirable_file = {}
-    _clear_load_cache
+    Gem.pre_reset_hooks.each(&:call)
+    clear_specs
+    clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
-      w = "W" + "ARN"
-      warn "#{w}: Unresolved or ambiguous specs during Gem::Specification.reset:"
+      warn "WARN: Unresolved or ambiguous specs during Gem::Specification.reset:"
       unresolved.values.each do |dep|
         warn "      #{dep}"
 
@@ -1239,11 +1283,11 @@ class Gem::Specification < Gem::BasicSpecification
           versions.each {|s| warn "      - #{s.version}" }
         end
       end
-      warn "#{w}: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
+      warn "WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
       warn "Please report a bug if this causes problems."
       unresolved.clear
     end
-    Gem.post_reset_hooks.each {|hook| hook.call }
+    Gem.post_reset_hooks.each(&:call)
   end
 
   # DOC: This method needs documented or nodoc'd
@@ -1256,8 +1300,50 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self._load(str)
     Gem.load_yaml
+    Gem.load_safe_marshal
 
-    array = Marshal.load str
+    yaml_set = false
+    retry_count = 0
+
+    array = begin
+      Gem::SafeMarshal.safe_load str
+    rescue ArgumentError => e
+      # Avoid an infinite retry loop when the argument error has nothing to do
+      # with the classes not being defined.
+      # 1 retry each allowed in case all 3 of
+      # - YAML
+      # - YAML::Syck::DefaultKey
+      # - YAML::PrivateType
+      # need to be defined
+      raise if retry_count >= 3
+
+      #
+      # Some very old marshaled specs included references to `YAML::PrivateType`
+      # and `YAML::Syck::DefaultKey` constants due to bugs in the old emitter
+      # that generated them. Workaround the issue by defining the necessary
+      # constants and retrying.
+      #
+      message = e.message
+      raise unless message.include?("YAML::")
+
+      unless Object.const_defined?(:YAML)
+        Object.const_set "YAML", Psych
+        yaml_set = true
+      end
+
+      if message.include?("YAML::Syck::")
+        YAML.const_set "Syck", YAML unless YAML.const_defined?(:Syck)
+
+        YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey") && !YAML::Syck.const_defined?(:DefaultKey)
+      elsif message.include?("YAML::PrivateType") && !YAML.const_defined?(:PrivateType)
+        YAML.const_set "PrivateType", Class.new
+      end
+
+      retry_count += 1
+      retry
+    ensure
+      Object.__send__(:remove_const, "YAML") if yaml_set
+    end
 
     spec = Gem::Specification.new
     spec.instance_variable_set :@specification_version, array[1]
@@ -1265,21 +1351,16 @@ class Gem::Specification < Gem::BasicSpecification
     current_version = CURRENT_SPECIFICATION_VERSION
 
     field_count = if spec.specification_version > current_version
-                    spec.instance_variable_set :@specification_version,
-                                               current_version
-                    MARSHAL_FIELDS[current_version]
-                  else
-                    MARSHAL_FIELDS[spec.specification_version]
-                  end
+      spec.instance_variable_set :@specification_version,
+                                 current_version
+      MARSHAL_FIELDS[current_version]
+    else
+      MARSHAL_FIELDS[spec.specification_version]
+    end
 
     if array.size < field_count
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
     end
-
-    # Cleanup any YAML::PrivateType. They only show up for an old bug
-    # where nil => null, so just convert them to nil based on the type.
-
-    array.map! {|e| e.kind_of?(YAML::PrivateType) ? nil : e }
 
     spec.instance_variable_set :@rubygems_version,          array[0]
     # spec version
@@ -1336,7 +1417,7 @@ class Gem::Specification < Gem::BasicSpecification
       @required_rubygems_version,
       @original_platform,
       @dependencies,
-      '', # rubyforge_project
+      "", # rubyforge_project
       @email,
       @authors,
       @description,
@@ -1344,7 +1425,7 @@ class Gem::Specification < Gem::BasicSpecification
       true, # has_rdoc
       @new_platform,
       @licenses,
-      @metadata
+      @metadata,
     ]
   end
 
@@ -1355,7 +1436,7 @@ class Gem::Specification < Gem::BasicSpecification
   # there are conflicts upon activation.
 
   def activate
-    other = Gem.loaded_specs[self.name]
+    other = Gem.loaded_specs[name]
     if other
       check_version_conflict other
       return false
@@ -1366,11 +1447,11 @@ class Gem::Specification < Gem::BasicSpecification
     activate_dependencies
     add_self_to_load_path
 
-    Gem.loaded_specs[self.name] = self
+    Gem.loaded_specs[name] = self
     @activated = true
     @loaded = true
 
-    return true
+    true
   end
 
   ##
@@ -1381,7 +1462,7 @@ class Gem::Specification < Gem::BasicSpecification
   def activate_dependencies
     unresolved = Gem::Specification.unresolved_deps
 
-    self.runtime_dependencies.each do |spec_dep|
+    runtime_dependencies.each do |spec_dep|
       if loaded = Gem.loaded_specs[spec_dep.name]
         next if spec_dep.matches_spec? loaded
 
@@ -1395,7 +1476,7 @@ class Gem::Specification < Gem::BasicSpecification
       begin
         specs = spec_dep.to_specs
       rescue Gem::MissingSpecError => e
-        raise Gem::MissingSpecError.new(e.name, e.requirement, "at: #{self.spec_file}")
+        raise Gem::MissingSpecError.new(e.name, e.requirement, "at: #{spec_file}")
       end
 
       if specs.size == 1
@@ -1441,7 +1522,7 @@ class Gem::Specification < Gem::BasicSpecification
   def sanitize_string(string)
     return string unless string
 
-    # HACK the #to_s is in here because RSpec has an Array of Arrays of
+    # HACK: the #to_s is in here because RSpec has an Array of Arrays of
     # Strings for authors.  Need a way to disallow bad values on gemspec
     # generation.  (Probably won't happen.)
     string.to_s
@@ -1459,8 +1540,8 @@ class Gem::Specification < Gem::BasicSpecification
     else
       executables
     end
-  rescue
-    return nil
+  rescue StandardError
+    nil
   end
 
   ##
@@ -1470,10 +1551,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   def add_dependency_with_type(dependency, type, requirements)
     requirements = if requirements.empty?
-                     Gem::Requirement.default
-                   else
-                     requirements.flatten
-                   end
+      Gem::Requirement.default
+    else
+      requirements.flatten
+    end
 
     unless dependency.respond_to?(:name) &&
            dependency.respond_to?(:requirement)
@@ -1485,7 +1566,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   private :add_dependency_with_type
 
-  alias add_dependency add_runtime_dependency
+  alias_method :add_dependency, :add_runtime_dependency
 
   ##
   # Adds this spec's require paths to LOAD_PATH, in the proper location.
@@ -1502,7 +1583,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Singular reader for #authors.  Returns the first author in the list
 
   def author
-    val = authors and val.first
+    (val = authors) && val.first
   end
 
   ##
@@ -1537,7 +1618,7 @@ class Gem::Specification < Gem::BasicSpecification
   def build_args
     if File.exist? build_info_file
       build_info = File.readlines build_info_file
-      build_info = build_info.map {|x| x.strip }
+      build_info = build_info.map(&:strip)
       build_info.delete ""
       build_info
     else
@@ -1550,12 +1631,13 @@ class Gem::Specification < Gem::BasicSpecification
   # the gem.build_complete file is missing.
 
   def build_extensions # :nodoc:
-    return if default_gem?
     return if extensions.empty?
-    return if installed_by_version < Gem::Version.new('2.2.0.preview.2')
+    return if default_gem?
+    # we need to fresh build when same name and version of default gems
+    return if self.class.find_by_full_name(full_name)&.default_gem?
     return if File.exist? gem_build_complete_path
-    return if !File.writable?(base_dir)
-    return if !File.exist?(File.join(base_dir, 'extensions'))
+    return unless File.writable?(base_dir)
+    return unless File.exist?(File.join(base_dir, "extensions"))
 
     begin
       # We need to require things in $LOAD_PATH without looking for the
@@ -1563,9 +1645,9 @@ class Gem::Specification < Gem::BasicSpecification
       unresolved_deps = Gem::Specification.unresolved_deps.dup
       Gem::Specification.unresolved_deps.clear
 
-      require 'rubygems/config_file'
-      require 'rubygems/ext'
-      require 'rubygems/user_interaction'
+      require_relative "config_file"
+      require_relative "ext"
+      require_relative "user_interaction"
 
       ui = Gem::SilentUI.new
       Gem::DefaultUserInteraction.use_ui ui do
@@ -1573,7 +1655,7 @@ class Gem::Specification < Gem::BasicSpecification
         builder.build_extensions
       end
     ensure
-      ui.close if ui
+      ui&.close
       Gem::Specification.unresolved_deps.replace unresolved_deps
     end
   end
@@ -1613,9 +1695,9 @@ class Gem::Specification < Gem::BasicSpecification
 
   def conflicts
     conflicts = {}
-    self.runtime_dependencies.each do |dep|
+    runtime_dependencies.each do |dep|
       spec = Gem.loaded_specs[dep.name]
-      if spec and not spec.satisfies_requirement? dep
+      if spec && !spec.satisfies_requirement?(dep)
         (conflicts[spec] ||= []) << dep
       end
     end
@@ -1629,7 +1711,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def conficts_when_loaded_with?(list_of_specs) # :nodoc:
     result = list_of_specs.any? do |spec|
-      spec.dependencies.any? {|dep| dep.runtime? && (dep.name == name) && !satisfies_requirement?(dep) }
+      spec.runtime_dependencies.any? {|dep| (dep.name == name) && !satisfies_requirement?(dep) }
     end
     result
   end
@@ -1639,14 +1721,12 @@ class Gem::Specification < Gem::BasicSpecification
 
   def has_conflicts?
     return true unless Gem.env_requirement(name).satisfied_by?(version)
-    self.dependencies.any? do |dep|
-      if dep.runtime?
-        spec = Gem.loaded_specs[dep.name]
-        spec and not spec.satisfies_requirement? dep
-      else
-        false
-      end
+    runtime_dependencies.any? do |dep|
+      spec = Gem.loaded_specs[dep.name]
+      spec && !spec.satisfies_requirement?(dep)
     end
+  rescue ArgumentError => e
+    raise e, "#{name} #{version}: #{e.message}"
   end
 
   # The date this gem was created.
@@ -1663,7 +1743,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   DateLike = Object.new # :nodoc:
   def DateLike.===(obj) # :nodoc:
-    defined?(::Date) and Date === obj
+    defined?(::Date) && Date === obj
   end
 
   DateTimeFormat = # :nodoc:
@@ -1685,12 +1765,6 @@ class Gem::Specification < Gem::BasicSpecification
             when String then
               if DateTimeFormat =~ date
                 Time.utc($1.to_i, $2.to_i, $3.to_i)
-
-              # Workaround for where the date format output from psych isn't
-              # parsed as a Time object by syck and thus comes through as a
-              # string.
-              elsif /\A(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}\.\d+?Z\z/ =~ date
-                Time.utc($1.to_i, $2.to_i, $3.to_i)
               else
                 raise(Gem::InvalidSpecificationException,
                       "invalid date format in specification: #{date.inspect}")
@@ -1699,7 +1773,7 @@ class Gem::Specification < Gem::BasicSpecification
               Time.utc(date.year, date.month, date.day)
             else
               TODAY
-            end
+    end
   end
 
   ##
@@ -1709,9 +1783,9 @@ class Gem::Specification < Gem::BasicSpecification
   # executable now.  See Gem.bin_path.
 
   def default_executable # :nodoc:
-    if defined?(@default_executable) and @default_executable
+    if defined?(@default_executable) && @default_executable
       result = @default_executable
-    elsif @executables and @executables.size == 1
+    elsif @executables && @executables.size == 1
       result = Array(@executables).first
     else
       result = nil
@@ -1748,13 +1822,12 @@ class Gem::Specification < Gem::BasicSpecification
     Gem::Specification.each do |spec|
       deps = check_dev ? spec.dependencies : spec.runtime_dependencies
       deps.each do |dep|
-        if self.satisfies_requirement?(dep)
-          sats = []
-          find_all_satisfiers(dep) do |sat|
-            sats << sat
-          end
-          out << [spec, dep, sats]
+        next unless satisfies_requirement?(dep)
+        sats = []
+        find_all_satisfiers(dep) do |sat|
+          sats << sat
         end
+        out << [spec, dep, sats]
       end
     end
     out
@@ -1764,7 +1837,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns all specs that matches this spec's runtime dependencies.
 
   def dependent_specs
-    runtime_dependencies.map {|dep| dep.to_specs }.flatten
+    runtime_dependencies.map(&:to_specs).flatten
   end
 
   ##
@@ -1790,7 +1863,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.doc_dir 'ri' # => "/path/to/gem_repo/doc/a-1/ri"
 
   def doc_dir(type = nil)
-    @doc_dir ||= File.join base_dir, 'doc', full_name
+    @doc_dir ||= File.join base_dir, "doc", full_name
 
     if type
       File.join @doc_dir, type
@@ -1802,17 +1875,17 @@ class Gem::Specification < Gem::BasicSpecification
   def encode_with(coder) # :nodoc:
     mark_version
 
-    coder.add 'name', @name
-    coder.add 'version', @version
+    coder.add "name", @name
+    coder.add "version", @version
     platform = case @original_platform
-               when nil, '' then
-                 'ruby'
+               when nil, "" then
+                 "ruby"
                when String then
                  @original_platform
                else
                  @original_platform.to_s
-               end
-    coder.add 'platform', platform
+    end
+    coder.add "platform", platform
 
     attributes = @@attributes.map(&:to_s) - %w[name version platform]
     attributes.each do |name|
@@ -1828,7 +1901,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Singular accessor for #executables
 
   def executable
-    val = executables and val.first
+    (val = executables) && val.first
   end
 
   ##
@@ -1933,18 +2006,18 @@ class Gem::Specification < Gem::BasicSpecification
   end
   rubygems_deprecate :has_rdoc=
 
-  alias :has_rdoc? :has_rdoc # :nodoc:
+  alias_method :has_rdoc?, :has_rdoc # :nodoc:
   rubygems_deprecate :has_rdoc?
 
   ##
   # True if this gem has files in test_files
 
   def has_unit_tests? # :nodoc:
-    not test_files.empty?
+    !test_files.empty?
   end
 
   # :stopdoc:
-  alias has_test_suite? has_unit_tests?
+  alias_method :has_test_suite?, :has_unit_tests?
   # :startdoc:
 
   def hash # :nodoc:
@@ -1993,7 +2066,7 @@ class Gem::Specification < Gem::BasicSpecification
     self.name = name if name
     self.version = version if version
 
-    if platform = Gem.platforms.last and platform != Gem::Platform::RUBY and platform != Gem::Platform.local
+    if (platform = Gem.platforms.last) && platform != Gem::Platform::RUBY && platform != Gem::Platform.local
       self.platform = platform
     end
 
@@ -2028,10 +2101,10 @@ class Gem::Specification < Gem::BasicSpecification
   def base_dir
     return Gem.dir unless loaded_from
     @base_dir ||= if default_gem?
-                    File.dirname File.dirname File.dirname loaded_from
-                  else
-                    File.dirname File.dirname loaded_from
-                  end
+      File.dirname File.dirname File.dirname loaded_from
+    else
+      File.dirname File.dirname loaded_from
+    end
   end
 
   ##
@@ -2108,8 +2181,8 @@ class Gem::Specification < Gem::BasicSpecification
       return
     end
 
-    if @specification_version > CURRENT_SPECIFICATION_VERSION and
-      sym.to_s.end_with?("=")
+    if @specification_version > CURRENT_SPECIFICATION_VERSION &&
+       sym.to_s.end_with?("=")
       warn "ignoring #{sym} loading #{full_name}" if $DEBUG
     else
       super
@@ -2121,9 +2194,8 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
-    return false if default_gem?
     return false if extensions.empty?
-    return false if installed_by_version < Gem::Version.new('2.2.0.preview.2')
+    return false if default_gem?
     return false if File.exist? gem_build_complete_path
 
     true
@@ -2136,7 +2208,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   file list.
 
   def normalize
-    if defined?(@extra_rdoc_files) and @extra_rdoc_files
+    if defined?(@extra_rdoc_files) && @extra_rdoc_files
       @extra_rdoc_files.uniq!
       @files ||= []
       @files.concat(@extra_rdoc_files)
@@ -2161,7 +2233,7 @@ class Gem::Specification < Gem::BasicSpecification
   # platform.  For use with legacy gems.
 
   def original_name # :nodoc:
-    if platform == Gem::Platform::RUBY or platform.nil?
+    if platform == Gem::Platform::RUBY || platform.nil?
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@original_platform}"
@@ -2179,11 +2251,11 @@ class Gem::Specification < Gem::BasicSpecification
   # The platform this gem runs on.  See Gem::Platform for details.
 
   def platform
-    @new_platform ||= Gem::Platform::RUBY
+    @new_platform ||= Gem::Platform::RUBY # rubocop:disable Naming/MemoizedInstanceVariableName
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, 'Gem::Specification.new do |s|', 'end' do
+    q.group 2, "Gem::Specification.new do |s|", "end" do
       q.breakable
 
       attributes = @@attributes - [:name, :version]
@@ -2192,23 +2264,22 @@ class Gem::Specification < Gem::BasicSpecification
       attributes.unshift :name
 
       attributes.each do |attr_name|
-        current_value = self.send attr_name
-        current_value = current_value.sort if %i[files test_files].include? attr_name
-        if current_value != default_value(attr_name) or
-           self.class.required_attribute? attr_name
+        current_value = send attr_name
+        current_value = current_value.sort if [:files, :test_files].include? attr_name
+        next unless current_value != default_value(attr_name) ||
+                    self.class.required_attribute?(attr_name)
 
-          q.text "s.#{attr_name} = "
+        q.text "s.#{attr_name} = "
 
-          if attr_name == :date
-            current_value = current_value.utc
+        if attr_name == :date
+          current_value = current_value.utc
 
-            q.text "Time.utc(#{current_value.year}, #{current_value.month}, #{current_value.day})"
-          else
-            q.pp current_value
-          end
-
-          q.breakable
+          q.text "Time.utc(#{current_value.year}, #{current_value.month}, #{current_value.day})"
+        else
+          q.pp current_value
         end
+
+        q.breakable
       end
     end
   end
@@ -2218,7 +2289,7 @@ class Gem::Specification < Gem::BasicSpecification
   # that is already loaded (+other+)
 
   def check_version_conflict(other) # :nodoc:
-    return if self.version == other.version
+    return if version == other.version
 
     # This gem is already loaded.  If the currently loaded gem is not in the
     # list of candidate gems, then we have a version conflict.
@@ -2226,7 +2297,7 @@ class Gem::Specification < Gem::BasicSpecification
     msg = "can't activate #{full_name}, already activated #{other.full_name}"
 
     e = Gem::LoadError.new msg
-    e.name = self.name
+    e.name = name
 
     raise e
   end
@@ -2253,7 +2324,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Singular accessor for #require_paths
 
   def require_path
-    val = require_paths and val.first
+    (val = require_paths) && val.first
   end
 
   ##
@@ -2278,7 +2349,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns the full path to this spec's ri directory.
 
   def ri_dir
-    @ri_dir ||= File.join base_dir, 'ri', full_name
+    @ri_dir ||= File.join base_dir, "ri", full_name
   end
 
   ##
@@ -2288,16 +2359,16 @@ class Gem::Specification < Gem::BasicSpecification
   def ruby_code(obj)
     case obj
     when String             then obj.dump + ".freeze"
-    when Array              then '[' + obj.map {|x| ruby_code x }.join(", ") + ']'
+    when Array              then "[" + obj.map {|x| ruby_code x }.join(", ") + "]"
     when Hash               then
       seg = obj.keys.sort.map {|k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
-      "{ #{seg.join(', ')} }"
-    when Gem::Version       then obj.to_s.dump
-    when DateLike           then obj.strftime('%Y-%m-%d').dump
-    when Time               then obj.strftime('%Y-%m-%d').dump
+      "{ #{seg.join(", ")} }"
+    when Gem::Version       then ruby_code(obj.to_s)
+    when DateLike           then obj.strftime("%Y-%m-%d").dump
+    when Time               then obj.strftime("%Y-%m-%d").dump
     when Numeric            then obj.inspect
     when true, false, nil   then obj.inspect
-    when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
+    when Gem::Platform      then "Gem::Platform.new(#{ruby_code obj.to_a})"
     when Gem::Requirement   then
       list = obj.as_list
       "Gem::Requirement.new(#{ruby_code(list.size == 1 ? obj.to_s : list)})"
@@ -2318,7 +2389,7 @@ class Gem::Specification < Gem::BasicSpecification
   # True if this gem has the same attributes as +other+.
 
   def same_attributes?(spec)
-    @@attributes.all? {|name, default| self.send(name) == spec.send(name) }
+    @@attributes.all? {|name, _default| send(name) == spec.send(name) }
   end
 
   private :same_attributes?
@@ -2327,7 +2398,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Checks if this specification meets the requirement of +dependency+.
 
   def satisfies_requirement?(dependency)
-    return @name == dependency.name &&
+    @name == dependency.name &&
       dependency.requirement.satisfied_by?(@version)
   end
 
@@ -2335,7 +2406,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns an object you can use to sort specifications in #sort_by.
 
   def sort_obj
-    [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@new_platform)]
   end
 
   ##
@@ -2382,7 +2453,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Singular accessor for #test_files
 
   def test_file # :nodoc:
-    val = test_files and val.first
+    (val = test_files) && val.first
   end
 
   ##
@@ -2404,7 +2475,7 @@ class Gem::Specification < Gem::BasicSpecification
       @test_files = [@test_suite_file].flatten
       @test_suite_file = nil
     end
-    if defined?(@test_files) and @test_files
+    if defined?(@test_files) && @test_files
       @test_files
     else
       @test_files = []
@@ -2417,7 +2488,6 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
-    require_relative 'openssl'
     mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
@@ -2429,13 +2499,13 @@ class Gem::Specification < Gem::BasicSpecification
 
     result << "  s.name = #{ruby_code name}"
     result << "  s.version = #{ruby_code version}"
-    unless platform.nil? or platform == Gem::Platform::RUBY
+    unless platform.nil? || platform == Gem::Platform::RUBY
       result << "  s.platform = #{ruby_code original_platform}"
     end
     result << ""
     result << "  s.required_rubygems_version = #{ruby_code required_rubygems_version} if s.respond_to? :required_rubygems_version="
 
-    if metadata and !metadata.empty?
+    if metadata && !metadata.empty?
       result << "  s.metadata = #{ruby_code metadata} if s.respond_to? :metadata="
     end
     result << "  s.require_paths = #{ruby_code raw_require_paths}"
@@ -2450,43 +2520,36 @@ class Gem::Specification < Gem::BasicSpecification
       :version,
       :has_rdoc,
       :default_executable,
-      :metadata
+      :metadata,
+      :signing_key,
     ]
 
     @@attributes.each do |attr_name|
       next if handled.include? attr_name
-      current_value = self.send(attr_name)
+      current_value = send(attr_name)
       if current_value != default_value(attr_name) || self.class.required_attribute?(attr_name)
-        result << "  s.#{attr_name} = #{ruby_code current_value}" unless defined?(OpenSSL::PKey::RSA) && current_value.is_a?(OpenSSL::PKey::RSA)
+        result << "  s.#{attr_name} = #{ruby_code current_value}"
       end
+    end
+
+    if String === signing_key
+      result << "  s.signing_key = #{ruby_code signing_key}"
     end
 
     if @installed_by_version
       result << nil
-      result << "  s.installed_by_version = \"#{Gem::VERSION}\" if s.respond_to? :installed_by_version"
+      result << "  s.installed_by_version = #{ruby_code Gem::VERSION} if s.respond_to? :installed_by_version"
     end
 
     unless dependencies.empty?
       result << nil
-      result << "  if s.respond_to? :specification_version then"
-      result << "    s.specification_version = #{specification_version}"
-      result << "  end"
+      result << "  s.specification_version = #{specification_version}"
       result << nil
 
-      result << "  if s.respond_to? :add_runtime_dependency then"
-
       dependencies.each do |dep|
-        req = dep.requirements_list.inspect
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "    s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
+        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{ruby_code dep.requirements_list})"
       end
-
-      result << "  else"
-      dependencies.each do |dep|
-        version_reqs_param = dep.requirements_list.inspect
-        result << "    s.add_dependency(%q<#{dep.name}>.freeze, #{version_reqs_param})"
-      end
-      result << "  end"
     end
 
     result << "end"
@@ -2523,14 +2586,14 @@ class Gem::Specification < Gem::BasicSpecification
     # back, we have to check again here to make sure that our
     # psych code was properly loaded, and load it if not.
     unless Gem.const_defined?(:NoAliasYAMLTree)
-      require 'rubygems/psych_tree'
+      require_relative "psych_tree"
     end
 
     builder = Gem::NoAliasYAMLTree.create
     builder << self
     ast = builder.tree
 
-    require 'stringio'
+    require "stringio"
     io = StringIO.new
     io.set_encoding Encoding::UTF_8
 
@@ -2546,10 +2609,9 @@ class Gem::Specification < Gem::BasicSpecification
   def traverse(trail = [], visited = {}, &block)
     trail.push(self)
     begin
-      dependencies.each do |dep|
-        next unless dep.runtime?
-        dep.to_specs.each do |dep_spec|
-          next if visited.has_key?(dep_spec)
+      runtime_dependencies.each do |dep|
+        dep.matching_specs(true).each do |dep_spec|
+          next if visited.key?(dep_spec)
           visited[dep_spec] = true
           trail.push(dep_spec)
           begin
@@ -2557,11 +2619,10 @@ class Gem::Specification < Gem::BasicSpecification
           ensure
             trail.pop
           end
-          unless result == :next
-            spec_name = dep_spec.name
-            dep_spec.traverse(trail, visited, &block) unless
-              trail.any? {|s| s.name == spec_name }
-          end
+          next if result == :next
+          spec_name = dep_spec.name
+          dep_spec.traverse(trail, visited, &block) unless
+            trail.any? {|s| s.name == spec_name }
         end
       end
     ensure
@@ -2614,14 +2675,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   def version=(version)
     @version = Gem::Version.create(version)
+    return if @version.nil?
+
     # skip to set required_ruby_version when pre-released rubygems.
     # It caused to raise CircularDependencyError
     if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")
-      self.required_rubygems_version = '> 1.3.1'
+      self.required_rubygems_version = "> 1.3.1"
     end
     invalidate_memoized_attributes
-
-    return @version
   end
 
   def stubbed?
@@ -2652,17 +2713,26 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     nil_attributes.each do |attribute|
-      default = self.default_value attribute
+      default = default_value attribute
 
       value = case default
               when Time, Numeric, Symbol, true, false, nil then default
               else default.dup
-              end
+      end
 
       instance_variable_set "@#{attribute}", value
     end
 
     @installed_by_version ||= nil
+
+    nil
+  end
+
+  def flatten_require_paths # :nodoc:
+    return unless raw_require_paths.first.is_a?(Array)
+
+    warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
+    raw_require_paths.flatten!
   end
 
   def raw_require_paths # :nodoc:

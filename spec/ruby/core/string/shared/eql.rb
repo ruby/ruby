@@ -21,7 +21,7 @@ describe :string_eql_value, shared: true do
   end
 
   it "considers encoding compatibility" do
-    "hello".force_encoding("utf-8").send(@method, "hello".force_encoding("utf-32le")).should be_false
+    "abcd".force_encoding("utf-8").send(@method, "abcd".force_encoding("utf-32le")).should be_false
   end
 
   it "ignores subclass differences" do
@@ -30,5 +30,9 @@ describe :string_eql_value, shared: true do
 
     a.send(@method, b).should be_true
     b.send(@method, a).should be_true
+  end
+
+  it "returns true when comparing 2 empty strings but one is not ASCII-compatible" do
+    "".send(@method, "".force_encoding('iso-2022-jp')).should == true
   end
 end

@@ -1,6 +1,12 @@
 require_relative '../spec_helper'
 
 describe "The --enable and --disable flags" do
+  before :all do
+    # Since some specs disable reading RUBYOPT, we instead pass its contents as :options for those specs
+    rubyopt = [ENV["RUBYOPT"]]
+    rubyopt << ENV["#{RUBY_ENGINE.upcase}OPT"] unless RUBY_ENGINE == 'ruby'
+    @rubyopt = RUBY_ENGINE == "ruby" ? "" : rubyopt.compact.join(" ")
+  end
 
   it "can be used with gems" do
     ruby_exe("p defined?(Gem)", options: "--enable=gems").chomp.should == "\"constant\""
@@ -25,9 +31,9 @@ describe "The --enable and --disable flags" do
 
   it "can be used with rubyopt" do
     ruby_exe("p $VERBOSE", options: "--enable=rubyopt", env: {'RUBYOPT' => '-w'}).chomp.should == "true"
-    ruby_exe("p $VERBOSE", options: "--disable=rubyopt", env: {'RUBYOPT' => '-w'}).chomp.should == "false"
+    ruby_exe("p $VERBOSE", options: "#{@rubyopt} --disable=rubyopt", env: {'RUBYOPT' => '-w'}).chomp.should == "false"
     ruby_exe("p $VERBOSE", options: "--enable-rubyopt", env: {'RUBYOPT' => '-w'}).chomp.should == "true"
-    ruby_exe("p $VERBOSE", options: "--disable-rubyopt", env: {'RUBYOPT' => '-w'}).chomp.should == "false"
+    ruby_exe("p $VERBOSE", options: "#{@rubyopt} --disable-rubyopt", env: {'RUBYOPT' => '-w'}).chomp.should == "false"
   end
 
   it "can be used with frozen-string-literal" do
@@ -37,7 +43,9 @@ describe "The --enable and --disable flags" do
     ruby_exe("p 'foo'.frozen?", options: "--disable-frozen-string-literal").chomp.should == "false"
   end
 
-  platform_is_not :darwin do # frequently hangs for >60s on GitHub Actions macos-latest
+  # frequently hangs for >60s on GitHub Actions macos-latest
+  # MinGW's YJIT support seems broken
+  platform_is_not :darwin, :mingw do
     it "can be used with all for enable" do
       e = "p [defined?(Gem), defined?(DidYouMean), $VERBOSE, 'foo'.frozen?]"
       env = {'RUBYOPT' => '-w'}
@@ -49,8 +57,8 @@ describe "The --enable and --disable flags" do
   it "can be used with all for disable" do
     e = "p [defined?(Gem), defined?(DidYouMean), $VERBOSE, 'foo'.frozen?]"
     env = {'RUBYOPT' => '-w'}
-    ruby_exe(e, options: "--disable=all", env: env).chomp.should == "[nil, nil, false, false]"
-    ruby_exe(e, options: "--disable-all", env: env).chomp.should == "[nil, nil, false, false]"
+    ruby_exe(e, options: "#{@rubyopt} --disable=all", env: env).chomp.should == "[nil, nil, false, false]"
+    ruby_exe(e, options: "#{@rubyopt} --disable-all", env: env).chomp.should == "[nil, nil, false, false]"
   end
 
   it "prints a warning for unknown features" do

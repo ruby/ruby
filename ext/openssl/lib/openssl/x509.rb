@@ -279,11 +279,29 @@ module OpenSSL
       end
 
       class << self
+        # Parses the UTF-8 string representation of a distinguished name,
+        # according to RFC 2253.
+        #
+        # See also #to_utf8 for the opposite operation.
         def parse_rfc2253(str, template=OBJECT_TYPE_TEMPLATE)
           ary = OpenSSL::X509::Name::RFC2253DN.scan(str)
           self.new(ary, template)
         end
 
+        # Parses the string representation of a distinguished name. Two
+        # different forms are supported:
+        #
+        # - \OpenSSL format (<tt>X509_NAME_oneline()</tt>) used by
+        #   <tt>#to_s</tt>. For example: <tt>/DC=com/DC=example/CN=nobody</tt>
+        # - \OpenSSL format (<tt>X509_NAME_print()</tt>)
+        #   used by <tt>#to_s(OpenSSL::X509::Name::COMPAT)</tt>. For example:
+        #   <tt>DC=com, DC=example, CN=nobody</tt>
+        #
+        # Neither of them is standardized and has quirks and inconsistencies
+        # in handling of escaped characters or multi-valued RDNs.
+        #
+        # Use of this method is discouraged in new applications. See
+        # Name.parse_rfc2253 and #to_utf8 for the alternative.
         def parse_openssl(str, template=OBJECT_TYPE_TEMPLATE)
           if str.start_with?("/")
             # /A=B/C=D format
@@ -337,6 +355,10 @@ module OpenSSL
           q.text 'not_before='; q.pp self.not_before; q.text ','; q.breakable
           q.text 'not_after='; q.pp self.not_after
         }
+      end
+
+      def self.load_file(path)
+        load(File.binread(path))
       end
     end
 

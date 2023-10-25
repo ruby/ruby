@@ -6,6 +6,7 @@ module Bundler
   # be seeded with what we're given from the source's abbreviated index - the
   # full specification will only be fetched when necessary.
   class RemoteSpecification
+    include MatchRemoteMetadata
     include MatchPlatform
     include Comparable
 
@@ -16,7 +17,8 @@ module Bundler
     def initialize(name, version, platform, spec_fetcher)
       @name         = name
       @version      = Gem::Version.create version
-      @platform     = platform
+      @original_platform = platform || Gem::Platform::RUBY
+      @platform     = Gem::Platform.new(platform)
       @spec_fetcher = spec_fetcher
       @dependencies = nil
     end
@@ -28,10 +30,10 @@ module Bundler
     end
 
     def full_name
-      if platform == Gem::Platform::RUBY || platform.nil?
+      @full_name ||= if @platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
-        "#{@name}-#{@version}-#{platform}"
+        "#{@name}-#{@version}-#{@platform}"
       end
     end
 
@@ -98,9 +100,9 @@ module Bundler
     end
 
     def _remote_specification
-      @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, @platform])
+      @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, @original_platform])
       @_remote_specification || raise(GemspecError, "Gemspec data for #{full_name} was" \
-        " missing from the server! Try installing with `--full-index` as a workaround.")
+        " missing from the server!")
     end
 
     def method_missing(method, *args, &blk)

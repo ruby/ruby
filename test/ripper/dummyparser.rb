@@ -101,7 +101,11 @@ class DummyParser < Ripper
     Node.new('valias', a, b)
   end
 
-  def on_alias_error(a)
+  def on_assign_error(mesg = nil, a)
+    Node.new('assign_error', a)
+  end
+
+  def on_alias_error(mesg = nil, a)
     Node.new('aliaserr', a)
   end
 

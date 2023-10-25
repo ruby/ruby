@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A connection "pool" that only manages one connection for now.  Provides
 # thread safe `checkout` and `checkin` methods.  The pool consists of one
@@ -12,7 +13,7 @@ class Gem::Request::HTTPPool # :nodoc:
     @http_args  = http_args
     @cert_files = cert_files
     @proxy_uri  = proxy_uri
-    @queue      = SizedQueue.new 1
+    @queue      = Thread::SizedQueue.new 1
     @queue << nil
   end
 
@@ -26,7 +27,7 @@ class Gem::Request::HTTPPool # :nodoc:
 
   def close_all
     until @queue.empty?
-      if connection = @queue.pop(true) and connection.started?
+      if (connection = @queue.pop(true)) && connection.started?
         connection.finish
       end
     end

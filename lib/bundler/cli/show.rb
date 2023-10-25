@@ -18,7 +18,7 @@ module Bundler
 
       if gem_name
         if gem_name == "bundler"
-          path = File.expand_path("../../../..", __FILE__)
+          path = File.expand_path("../../..", __dir__)
         else
           spec = Bundler::CLI::Common.select_spec(gem_name, :regex_match)
           return unless spec
@@ -40,8 +40,8 @@ module Bundler
           desc = "  * #{s.name} (#{s.version}#{s.git_version})"
           if @verbose
             latest = latest_specs.find {|l| l.name == s.name }
-            Bundler.ui.info <<-END.gsub(/^ +/, "")
-              #{desc}
+            Bundler.ui.info <<~END
+              #{desc.lstrip}
               \tSummary:  #{s.summary || "No description available."}
               \tHomepage: #{s.homepage || "No website available."}
               \tStatus:   #{outdated?(s, latest) ? "Outdated - #{s.version} < #{latest.version}" : "Up to date"}

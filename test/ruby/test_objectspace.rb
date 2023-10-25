@@ -65,6 +65,11 @@ End
     assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(Object.new)}
   end
 
+  def test_id2ref_invalid_symbol_id
+    msg = /is not symbol id value/
+    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]) }
+  end
+
   def test_count_objects
     h = {}
     ObjectSpace.count_objects(h)
@@ -161,6 +166,40 @@ End
     END
   end
 
+  def test_exception_in_finalizer
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], /finalizing \(RuntimeError\)/)
+    begin;
+      ObjectSpace.define_finalizer(Object.new) {raise "finalizing"}
+    end;
+  end
+
+  def test_finalizer_thread_raise
+    GC.disable
+    fzer = proc do |id|
+      sleep 0.2
+    end
+    2.times do
+      o = Object.new
+      ObjectSpace.define_finalizer(o, fzer)
+    end
+
+    my_error = Class.new(RuntimeError)
+    begin
+      main_th = Thread.current
+      Thread.new do
+        sleep 0.1
+        main_th.raise(my_error)
+      end
+      GC.start
+      puts "After GC"
+      sleep(10)
+      assert(false)
+    rescue my_error
+    end
+  ensure
+    GC.enable
+  end
+
   def test_each_object
     klass = Class.new
     new_obj = klass.new
@@ -185,7 +224,7 @@ End
     assert_same(new_obj, found[0])
   end
 
-  def test_each_object_no_gabage
+  def test_each_object_no_garbage
     assert_separately([], <<-End)
     GC.disable
     eval('begin; 1.times{}; rescue; ensure; end')
@@ -232,5 +271,12 @@ End
     meta = klass.singleton_class
     assert_kind_of(meta, sclass)
     assert_include(ObjectSpace.each_object(meta).to_a, sclass)
+  end
+
+  def test_each_object_with_allocation
+    assert_normal_exit(<<-End)
+      list = []
+      ObjectSpace.each_object { |o| list << Object.new }
+    End
   end
 end

@@ -9,13 +9,19 @@
  */
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
-#include <ruby/thread_native.h> /* for OpenSSL < 1.1.0 locks */
+
+/* OpenSSL >= 1.1.0 and LibreSSL >= 2.9.0 */
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER >= 0x10100000
+# define HAVE_OPENSSL_110_THREADING_API
+#else
+# include <ruby/thread_native.h>
+#endif
 
 /*
  * Data Conversion
  */
 #define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)	\
-STACK_OF(type) *						\
+VALUE								\
 ossl_##name##_ary2sk0(VALUE ary)				\
 {								\
     STACK_OF(type) *sk;						\
@@ -37,7 +43,7 @@ ossl_##name##_ary2sk0(VALUE ary)				\
 	x = dup(val); /* NEED TO DUP */				\
 	sk_##type##_push(sk, x);				\
     }								\
-    return sk;							\
+    return (VALUE)sk;						\
 }								\
 								\
 STACK_OF(type) *						\
@@ -201,7 +207,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 
     while (1) {
 	/*
-	 * when the flag is nonzero, this passphrase
+	 * when the flag is nonzero, this password
 	 * will be used to perform encryption; otherwise it will
 	 * be used to perform decryption.
 	 */
@@ -262,31 +268,32 @@ ossl_to_der_if_possible(VALUE obj)
 /*
  * Errors
  */
-static VALUE
-ossl_make_error(VALUE exc, const char *fmt, va_list args)
+VALUE
+ossl_make_error(VALUE exc, VALUE str)
 {
-    VALUE str = Qnil;
     unsigned long e;
+    const char *data;
+    int flags;
 
-    if (fmt) {
-	str = rb_vsprintf(fmt, args);
-    }
-    e = ERR_peek_last_error();
+    if (NIL_P(str))
+        str = rb_str_new(NULL, 0);
+
+#ifdef HAVE_ERR_GET_ERROR_ALL
+    e = ERR_peek_last_error_all(NULL, NULL, NULL, &data, &flags);
+#else
+    e = ERR_peek_last_error_line_data(NULL, NULL, &data, &flags);
+#endif
     if (e) {
-	const char *msg = ERR_reason_error_string(e);
+        const char *msg = ERR_reason_error_string(e);
 
-	if (NIL_P(str)) {
-	    if (msg) str = rb_str_new_cstr(msg);
-	}
-	else {
-	    if (RSTRING_LEN(str)) rb_str_cat2(str, ": ");
-	    rb_str_cat2(str, msg ? msg : "(null)");
-	}
-	ossl_clear_error();
+        if (RSTRING_LEN(str)) rb_str_cat_cstr(str, ": ");
+        rb_str_cat_cstr(str, msg ? msg : "(null)");
+        if (flags & ERR_TXT_STRING && data)
+            rb_str_catf(str, " (%s)", data);
+        ossl_clear_error();
     }
 
-    if (NIL_P(str)) str = rb_str_new(0, 0);
-    return rb_exc_new3(exc, str);
+    return rb_exc_new_str(exc, str);
 }
 
 void
@@ -294,37 +301,48 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
     VALUE err;
-    va_start(args, fmt);
-    err = ossl_make_error(exc, fmt, args);
-    va_end(args);
-    rb_exc_raise(err);
+
+    if (fmt) {
+	va_start(args, fmt);
+	err = rb_vsprintf(fmt, args);
+	va_end(args);
+    }
+    else {
+	err = Qnil;
+    }
+
+    rb_exc_raise(ossl_make_error(exc, err));
 }
 
 void
 ossl_clear_error(void)
 {
     if (dOSSL == Qtrue) {
-	unsigned long e;
-	const char *file, *data, *errstr;
-	int line, flags;
+        unsigned long e;
+        const char *file, *data, *func, *lib, *reason;
+        char append[256] = "";
+        int line, flags;
 
-	while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
-	    errstr = ERR_error_string(e, NULL);
-	    if (!errstr)
-		errstr = "(null)";
+#ifdef HAVE_ERR_GET_ERROR_ALL
+        while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
+#else
+        while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+            func = ERR_func_error_string(e);
+#endif
+            lib = ERR_lib_error_string(e);
+            reason = ERR_reason_error_string(e);
 
-	    if (flags & ERR_TXT_STRING) {
-		if (!data)
-		    data = "(null)";
-		rb_warn("error on stack: %s (%s)", errstr, data);
-	    }
-	    else {
-		rb_warn("error on stack: %s", errstr);
-	    }
-	}
+            if (flags & ERR_TXT_STRING) {
+                if (!data)
+                    data = "(null)";
+                snprintf(append, sizeof(append), " (%s)", data);
+            }
+            rb_warn("error on stack: error:%08lX:%s:%s:%s%s", e, lib ? lib : "",
+                    func ? func : "", reason ? reason : "", append);
+        }
     }
     else {
-	ERR_clear_error();
+        ERR_clear_error();
     }
 }
 
@@ -356,22 +374,6 @@ ossl_get_errors(VALUE _)
  */
 VALUE dOSSL;
 
-#if !defined(HAVE_VA_ARGS_MACRO)
-void
-ossl_debug(const char *fmt, ...)
-{
-    va_list args;
-
-    if (dOSSL == Qtrue) {
-	fprintf(stderr, "OSSL_DEBUG: ");
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-	fprintf(stderr, " [CONTEXT N/A]\n");
-    }
-}
-#endif
-
 /*
  * call-seq:
  *   OpenSSL.debug -> true | false
@@ -386,7 +388,7 @@ ossl_debug_get(VALUE self)
  * call-seq:
  *   OpenSSL.debug = boolean -> boolean
  *
- * Turns on or off debug mode. With debug mode, all erros added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE
@@ -405,7 +407,11 @@ static VALUE
 ossl_fips_mode_get(VALUE self)
 {
 
-#ifdef OPENSSL_FIPS
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    VALUE enabled;
+    enabled = EVP_default_properties_is_fips_enabled(NULL) ? Qtrue : Qfalse;
+    return enabled;
+#elif defined(OPENSSL_FIPS)
     VALUE enabled;
     enabled = FIPS_mode() ? Qtrue : Qfalse;
     return enabled;
@@ -429,8 +435,18 @@ ossl_fips_mode_get(VALUE self)
 static VALUE
 ossl_fips_mode_set(VALUE self, VALUE enabled)
 {
-
-#ifdef OPENSSL_FIPS
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    if (RTEST(enabled)) {
+        if (!EVP_default_properties_enable_fips(NULL, 1)) {
+            ossl_raise(eOSSLError, "Turning on FIPS mode failed");
+        }
+    } else {
+        if (!EVP_default_properties_enable_fips(NULL, 0)) {
+            ossl_raise(eOSSLError, "Turning off FIPS mode failed");
+        }
+    }
+    return enabled;
+#elif defined(OPENSSL_FIPS)
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -446,72 +462,6 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
     return enabled;
 #endif
 }
-
-#if defined(OSSL_DEBUG)
-#if !defined(LIBRESSL_VERSION_NUMBER) && \
-    (OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(OPENSSL_NO_CRYPTO_MDEBUG) || \
-     defined(CRYPTO_malloc_debug_init))
-/*
- * call-seq:
- *   OpenSSL.mem_check_start -> nil
- *
- * Calls CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON). Starts tracking memory
- * allocations. See also OpenSSL.print_mem_leaks.
- *
- * This is available only when built with a capable OpenSSL and --enable-debug
- * configure option.
- */
-static VALUE
-mem_check_start(VALUE self)
-{
-	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
-	return Qnil;
-}
-
-/*
- * call-seq:
- *   OpenSSL.print_mem_leaks -> true | false
- *
- * For debugging the Ruby/OpenSSL library. Calls CRYPTO_mem_leaks_fp(stderr).
- * Prints detected memory leaks to standard error. This cleans the global state
- * up thus you cannot use any methods of the library after calling this.
- *
- * Returns +true+ if leaks detected, +false+ otherwise.
- *
- * This is available only when built with a capable OpenSSL and --enable-debug
- * configure option.
- *
- * === Example
- *   OpenSSL.mem_check_start
- *   NOT_GCED = OpenSSL::PKey::RSA.new(256)
- *
- *   END {
- *     GC.start
- *     OpenSSL.print_mem_leaks # will print the leakage
- *   }
- */
-static VALUE
-print_mem_leaks(VALUE self)
-{
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-    int ret;
-#endif
-
-    BN_CTX_free(ossl_bn_ctx);
-    ossl_bn_ctx = NULL;
-
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-    ret = CRYPTO_mem_leaks_fp(stderr);
-    if (ret < 0)
-	ossl_raise(eOSSLError, "CRYPTO_mem_leaks_fp");
-    return ret ? Qfalse : Qtrue;
-#else
-    CRYPTO_mem_leaks_fp(stderr);
-    return Qnil;
-#endif
-}
-#endif
-#endif
 
 #if !defined(HAVE_OPENSSL_110_THREADING_API)
 /**
@@ -655,23 +605,21 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  *   key = OpenSSL::PKey::RSA.new 2048
  *
- *   open 'private_key.pem', 'w' do |io| io.write key.to_pem end
- *   open 'public_key.pem', 'w' do |io| io.write key.public_key.to_pem end
+ *   File.write 'private_key.pem', key.private_to_pem
+ *   File.write 'public_key.pem', key.public_to_pem
  *
  * === Exporting a Key
  *
  * Keys saved to disk without encryption are not secure as anyone who gets
  * ahold of the key may use it unless it is encrypted.  In order to securely
- * export a key you may export it with a pass phrase.
+ * export a key you may export it with a password.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
- *   pass_phrase = 'my secure pass phrase goes here'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
+ *   password = 'my secure password goes here'
  *
- *   key_secure = key.export cipher, pass_phrase
+ *   key_secure = key.private_to_pem cipher, password
  *
- *   open 'private.secure.pem', 'w' do |io|
- *     io.write key_secure
- *   end
+ *   File.write 'private.secure.pem', key_secure
  *
  * OpenSSL::Cipher.ciphers returns a list of available ciphers.
  *
@@ -679,25 +627,25 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * A key can also be loaded from a file.
  *
- *   key2 = OpenSSL::PKey::RSA.new File.read 'private_key.pem'
+ *   key2 = OpenSSL::PKey.read File.read 'private_key.pem'
  *   key2.public? # => true
  *   key2.private? # => true
  *
  * or
  *
- *   key3 = OpenSSL::PKey::RSA.new File.read 'public_key.pem'
+ *   key3 = OpenSSL::PKey.read File.read 'public_key.pem'
  *   key3.public? # => true
  *   key3.private? # => false
  *
  * === Loading an Encrypted Key
  *
- * OpenSSL will prompt you for your pass phrase when loading an encrypted key.
- * If you will not be able to type in the pass phrase you may provide it when
+ * OpenSSL will prompt you for your password when loading an encrypted key.
+ * If you will not be able to type in the password you may provide it when
  * loading the key:
  *
  *   key4_pem = File.read 'private.secure.pem'
- *   pass_phrase = 'my secure pass phrase goes here'
- *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
+ *   password = 'my secure password goes here'
+ *   key4 = OpenSSL::PKey.read key4_pem, password
  *
  * == RSA Encryption
  *
@@ -772,7 +720,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * using PBKDF2. PKCS #5 v2.0 recommends at least 8 bytes for the salt,
  * the number of iterations largely depends on the hardware being used.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   cipher.encrypt
  *   iv = cipher.random_iv
  *
@@ -795,7 +743,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * Use the same steps as before to derive the symmetric AES key, this time
  * setting the Cipher up for decryption.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   cipher.decrypt
  *   cipher.iv = iv # the one generated with #random_iv
  *
@@ -812,45 +760,6 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  *   decrypted = cipher.update encrypted
  *   decrypted << cipher.final
- *
- * == PKCS #5 Password-based Encryption
- *
- * PKCS #5 is a password-based encryption standard documented at
- * RFC2898[http://www.ietf.org/rfc/rfc2898.txt].  It allows a short password or
- * passphrase to be used to create a secure encryption key. If possible, PBKDF2
- * as described above should be used if the circumstances allow it.
- *
- * PKCS #5 uses a Cipher, a pass phrase and a salt to generate an encryption
- * key.
- *
- *   pass_phrase = 'my secure pass phrase goes here'
- *   salt = '8 octets'
- *
- * === Encryption
- *
- * First set up the cipher for encryption
- *
- *   encryptor = OpenSSL::Cipher.new 'AES-256-CBC'
- *   encryptor.encrypt
- *   encryptor.pkcs5_keyivgen pass_phrase, salt
- *
- * Then pass the data you want to encrypt through
- *
- *   encrypted = encryptor.update 'top secret document'
- *   encrypted << encryptor.final
- *
- * === Decryption
- *
- * Use a new Cipher instance set up for decryption
- *
- *   decryptor = OpenSSL::Cipher.new 'AES-256-CBC'
- *   decryptor.decrypt
- *   decryptor.pkcs5_keyivgen pass_phrase, salt
- *
- * Then pass the data you want to decrypt through
- *
- *   plain = decryptor.update encrypted
- *   plain << decryptor.final
  *
  * == X509 Certificates
  *
@@ -929,12 +838,12 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * not readable by other users.
  *
  *   ca_key = OpenSSL::PKey::RSA.new 2048
- *   pass_phrase = 'my secure pass phrase goes here'
+ *   password = 'my secure password goes here'
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = 'aes-256-cbc'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
- *     io.write ca_key.export(cipher, pass_phrase)
+ *     io.write ca_key.private_to_pem(cipher, password)
  *   end
  *
  * === CA Certificate
@@ -1069,13 +978,13 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   loop do
  *     ssl_connection = ssl_server.accept
  *
- *     data = connection.gets
+ *     data = ssl_connection.gets
  *
  *     response = "I got #{data.dump}"
  *     puts response
  *
- *     connection.puts "I got #{data.dump}"
- *     connection.close
+ *     ssl_connection.puts "I got #{data.dump}"
+ *     ssl_connection.close
  *   end
  *
  * === SSL client
@@ -1126,6 +1035,10 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 void
 Init_openssl(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     /*
      * Init timezone info
@@ -1150,8 +1063,8 @@ Init_openssl(void)
     /*
      * Init main module
      */
-    mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
+    mOSSL = rb_define_module("OpenSSL");
     rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
@@ -1170,15 +1083,35 @@ Init_openssl(void)
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with
-     * (base 16)
+     * (base 16). The formats are below.
+     *
+     * [OpenSSL 3] <tt>0xMNN00PP0 (major minor 00 patch 0)</tt>
+     * [OpenSSL before 3] <tt>0xMNNFFPPS (major minor fix patch status)</tt>
+     * [LibreSSL] <tt>0x20000000 (fixed value)</tt>
+     *
+     * See also the man page OPENSSL_VERSION_NUMBER(3).
      */
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
+
+#if defined(LIBRESSL_VERSION_NUMBER)
+    /*
+     * Version number of LibreSSL the ruby OpenSSL extension was built with
+     * (base 16). The format is <tt>0xMNNFF00f (major minor fix 00
+     * status)</tt>. This constant is only defined in LibreSSL cases.
+     *
+     * See also the man page LIBRESSL_VERSION_NUMBER(3).
+     */
+    rb_define_const(mOSSL, "LIBRESSL_VERSION_NUMBER", INT2NUM(LIBRESSL_VERSION_NUMBER));
+#endif
 
     /*
      * Boolean indicating whether OpenSSL is FIPS-capable or not
      */
     rb_define_const(mOSSL, "OPENSSL_FIPS",
-#ifdef OPENSSL_FIPS
+/* OpenSSL 3 is FIPS-capable even when it is installed without fips option */
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+                    Qtrue
+#elif defined(OPENSSL_FIPS)
 		    Qtrue
 #else
 		    Qfalse
@@ -1188,12 +1121,12 @@ Init_openssl(void)
     rb_define_module_function(mOSSL, "fips_mode", ossl_fips_mode_get, 0);
     rb_define_module_function(mOSSL, "fips_mode=", ossl_fips_mode_set, 1);
 
+    rb_global_variable(&eOSSLError);
     /*
      * Generic error,
      * common for all classes under OpenSSL module
      */
     eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
-    rb_global_variable(&eOSSLError);
 
     /*
      * Init debug core
@@ -1234,42 +1167,7 @@ Init_openssl(void)
     Init_ossl_x509();
     Init_ossl_ocsp();
     Init_ossl_engine();
+    Init_ossl_provider();
     Init_ossl_asn1();
     Init_ossl_kdf();
-
-#if defined(OSSL_DEBUG)
-    /*
-     * For debugging Ruby/OpenSSL. Enable only when built with --enable-debug
-     */
-#if !defined(LIBRESSL_VERSION_NUMBER) && \
-    (OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(OPENSSL_NO_CRYPTO_MDEBUG) || \
-     defined(CRYPTO_malloc_debug_init))
-    rb_define_module_function(mOSSL, "mem_check_start", mem_check_start, 0);
-    rb_define_module_function(mOSSL, "print_mem_leaks", print_mem_leaks, 0);
-
-#if defined(CRYPTO_malloc_debug_init) /* <= 1.0.2 */
-    CRYPTO_malloc_debug_init();
-#endif
-
-#if defined(V_CRYPTO_MDEBUG_ALL) /* <= 1.0.2 */
-    CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
-#endif
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000 /* <= 1.0.2 */
-    {
-	int i;
-	/*
-	 * See crypto/ex_data.c; call def_get_class() immediately to avoid
-	 * allocations. 15 is the maximum number that is used as the class index
-	 * in OpenSSL 1.0.2.
-	 */
-	for (i = 0; i <= 15; i++) {
-	    if (CRYPTO_get_ex_new_index(i, 0, (void *)"ossl-mdebug-dummy", 0, 0, 0) < 0)
-		rb_raise(rb_eRuntimeError, "CRYPTO_get_ex_new_index for "
-			 "class index %d failed", i);
-	}
-    }
-#endif
-#endif
-#endif
 }

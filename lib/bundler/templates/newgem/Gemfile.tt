@@ -9,12 +9,18 @@ gem "rake", "~> 13.0"
 <%- if config[:ext] -%>
 
 gem "rake-compiler"
+<%- if config[:ext] == 'rust' -%>
+gem "rb_sys", "~> 0.9.63"
+<%- end -%>
 <%- end -%>
 <%- if config[:test] -%>
 
 gem "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
-<%- if config[:rubocop] -%>
+<%- if config[:linter] == "rubocop" -%>
 
-gem "rubocop", "~> 0.80"
+gem "rubocop", "~> <%= config[:linter_version] %>"
+<%- elsif config[:linter] == "standard" -%>
+
+gem "standard", "~> <%= config[:linter_version] %>"
 <%- end -%>

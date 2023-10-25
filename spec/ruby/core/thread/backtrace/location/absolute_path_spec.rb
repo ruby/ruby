@@ -17,11 +17,30 @@ describe 'Thread::Backtrace::Location#absolute_path' do
     end
   end
 
+  it 'returns the correct absolute path when using a relative main script path and changing CWD' do
+    script = fixture(__FILE__, 'subdir/absolute_path_main_chdir.rb')
+    sibling = fixture(__FILE__, 'subdir/sibling.rb')
+    subdir = File.dirname script
+    Dir.chdir(fixture(__FILE__)) do
+      ruby_exe('subdir/absolute_path_main_chdir.rb').should == "subdir/absolute_path_main_chdir.rb\n#{subdir}\n#{subdir}\n#{script}\n#{sibling}\n"
+    end
+  end
+
   context "when used in eval with a given filename" do
-    it "returns filename" do
-      code = "caller_locations(0)[0].absolute_path"
-      eval(code, nil, "foo.rb").should == "foo.rb"
-      eval(code, nil, "foo/bar.rb").should == "foo/bar.rb"
+    code = "caller_locations(0)[0].absolute_path"
+
+    ruby_version_is ""..."3.1" do
+      it "returns filename with absolute_path" do
+        eval(code, nil, "foo.rb").should == "foo.rb"
+        eval(code, nil, "foo/bar.rb").should == "foo/bar.rb"
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "returns nil with absolute_path" do
+        eval(code, nil, "foo.rb").should == nil
+        eval(code, nil, "foo/bar.rb").should == nil
+      end
     end
   end
 

@@ -37,6 +37,8 @@ end
 
 class Resolv
 
+  VERSION = "0.2.2"
+
   ##
   # Looks up the first IP address for +name+.
 
@@ -196,7 +198,7 @@ class Resolv
               next unless addr
               @addr2name[addr] = [] unless @addr2name.include? addr
               @addr2name[addr] << hostname
-              @addr2name[addr] += aliases
+              @addr2name[addr].concat(aliases)
               @name2addr[hostname] = [] unless @name2addr.include? hostname
               @name2addr[hostname] << addr
               aliases.each {|n|
@@ -696,13 +698,13 @@ class Resolv
           rescue DecodeError
             next # broken DNS message ignored
           end
-          if s = sender_for(from, msg)
+          if sender == sender_for(from, msg)
             break
           else
             # unexpected DNS message ignored
           end
         end
-        return msg, s.data
+        return msg, sender.data
       end
 
       def sender_for(addr, msg)
@@ -965,7 +967,7 @@ class Resolv
             next unless keyword
             case keyword
             when 'nameserver'
-              nameserver += args
+              nameserver.concat(args)
             when 'domain'
               next if args.empty?
               search = [args[0]]
@@ -1487,14 +1489,14 @@ class Resolv
           }
         end
 
-        def put_name(d)
-          put_labels(d.to_a)
+        def put_name(d, compress: true)
+          put_labels(d.to_a, compress: compress)
         end
 
-        def put_labels(d)
+        def put_labels(d, compress: true)
           d.each_index {|i|
             domain = d[i..-1]
-            if idx = @names[domain]
+            if compress && idx = @names[domain]
               self.put_pack("n", 0xc000 | idx)
               return
             else
@@ -2328,7 +2330,7 @@ class Resolv
             msg.put_pack("n", @priority)
             msg.put_pack("n", @weight)
             msg.put_pack("n", @port)
-            msg.put_name(@target)
+            msg.put_name(@target, compress: false)
           end
 
           def self.decode_rdata(msg) # :nodoc:
@@ -2460,13 +2462,38 @@ class Resolv
       \z/x
 
     ##
+    # IPv6 link local address format fe80:b:c:d:e:f:g:h%em1
+    Regex_8HexLinkLocal = /\A
+      [Ff][Ee]80
+      (?::[0-9A-Fa-f]{1,4}){7}
+      %[-0-9A-Za-z._~]+
+      \z/x
+
+    ##
+    # Compressed IPv6 link local address format fe80::b%em1
+
+    Regex_CompressedHexLinkLocal = /\A
+      [Ff][Ee]80:
+      (?:
+        ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?) ::
+        ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+        |
+        :((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+      )?
+      :[0-9A-Fa-f]{1,4}%[-0-9A-Za-z._~]+
+      \z/x
+
+    ##
     # A composite IPv6 address Regexp.
 
     Regex = /
       (?:#{Regex_8Hex}) |
       (?:#{Regex_CompressedHex}) |
       (?:#{Regex_6Hex4Dec}) |
-      (?:#{Regex_CompressedHex4Dec})/x
+      (?:#{Regex_CompressedHex4Dec}) |
+      (?:#{Regex_8HexLinkLocal}) |
+      (?:#{Regex_CompressedHexLinkLocal})
+      /x
 
     ##
     # Creates a new IPv6 address from +arg+ which may be:

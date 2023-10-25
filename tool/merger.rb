@@ -116,7 +116,7 @@ class << Merger
     v, pl = version
     if relname
       abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
-      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
+      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && relname.end_with?(".0")
       pl = relname[/-(.*)\z/, 1]
       curver = "#{v.join('.')}#{("-#{pl}" if pl)}"
       if relname != curver
@@ -204,7 +204,7 @@ class << Merger
     if svn_mode?
       command = %w[svn diff --diff-cmd=diff -x -upw]
     else
-      command = %w[git diff --color]
+      command = %w[git diff --color HEAD]
     end
     IO.popen(command + [file].compact, &:read)
   end
@@ -220,8 +220,7 @@ class << Merger
     else
       current_branch = IO.popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], &:read).strip
       execute('git', 'add', '.') &&
-        execute('git', 'commit', '-F', file) &&
-        execute('git', 'push', ORIGIN, current_branch)
+        execute('git', 'commit', '-F', file)
     end
   end
 
@@ -296,7 +295,8 @@ else
     tickets = ''
   end
 
-  revstr = ARGV[0].delete('^, :\-0-9a-fA-F')
+  revstr = ARGV[0].gsub(%r!https://github\.com/ruby/ruby/commit/|https://bugs\.ruby-lang\.org/projects/ruby-master/repository/git/revisions/!, '')
+  revstr = revstr.delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
   commit_message = ''
 
@@ -326,7 +326,7 @@ else
 
       message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
       puts '+ git apply'
-      IO.popen(['git', 'apply'], 'wb') { |f| f.write(patch) }
+      IO.popen(['git', 'apply', '--3way'], 'wb') { |f| f.write(patch) }
     else
       default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
       svn_src = "#{Merger::REPOS}#{ARGV[1] || default_merge_branch}"

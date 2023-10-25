@@ -1,5 +1,5 @@
 class Bundler::Thor
-  class Options < Arguments #:nodoc: # rubocop:disable ClassLength
+  class Options < Arguments #:nodoc:
     LONG_RE     = /^(--\w+(?:-\w+)*)$/
     SHORT_RE    = /^(-[a-z])$/i
     EQ_RE       = /^(--\w+(?:-\w+)*|-[a-z])=(.*)$/i
@@ -29,8 +29,10 @@ class Bundler::Thor
     #
     # If +stop_on_unknown+ is true, #parse will stop as soon as it encounters
     # an unknown option or a regular argument.
-    def initialize(hash_options = {}, defaults = {}, stop_on_unknown = false, disable_required_check = false)
+    def initialize(hash_options = {}, defaults = {}, stop_on_unknown = false, disable_required_check = false, relations = {})
       @stop_on_unknown = stop_on_unknown
+      @exclusives = (relations[:exclusive_option_names] || []).select{|array| !array.empty?}
+      @at_least_ones = (relations[:at_least_one_option_names] || []).select{|array| !array.empty?}
       @disable_required_check = disable_required_check
       options = hash_options.values
       super(options)
@@ -45,12 +47,12 @@ class Bundler::Thor
       @switches = {}
       @extra = []
       @stopped_parsing_after_extra_index = nil
+      @is_treated_as_value = false
 
       options.each do |option|
         @switches[option.switch_name] = option
 
-        option.aliases.each do |short|
-          name = short.to_s.sub(/^(?!\-)/, "-")
+        option.aliases.each do |name|
           @shorts[name] ||= option.switch_name
         end
       end
@@ -74,8 +76,19 @@ class Bundler::Thor
       end
     end
 
-    def parse(args) # rubocop:disable MethodLength
+    def shift
+      @is_treated_as_value = false
+      super
+    end
+
+    def unshift(arg, is_value: false)
+      @is_treated_as_value = is_value
+      super(arg)
+    end
+
+    def parse(args) # rubocop:disable Metrics/MethodLength
       @pile = args.dup
+      @is_treated_as_value = false
       @parsing_options = true
 
       while peek
@@ -88,7 +101,10 @@ class Bundler::Thor
             when SHORT_SQ_RE
               unshift($1.split("").map { |f| "-#{f}" })
               next
-            when EQ_RE, SHORT_NUM
+            when EQ_RE
+              unshift($2, is_value: true)
+              switch = $1
+            when SHORT_NUM
               unshift($2)
               switch = $1
             when LONG_RE, SHORT_RE
@@ -117,10 +133,36 @@ class Bundler::Thor
       end
 
       check_requirement! unless @disable_required_check
+      check_exclusive!
+      check_at_least_one!
 
       assigns = Bundler::Thor::CoreExt::HashWithIndifferentAccess.new(@assigns)
       assigns.freeze
       assigns
+    end
+
+    def check_exclusive!
+      opts = @assigns.keys
+      # When option A and B are exclusive, if A and B are given at the same time,
+      # the diffrence of argument array size will decrease.
+      found = @exclusives.find{ |ex| (ex - opts).size < ex.size - 1 }
+      if found
+        names = names_to_switch_names(found & opts).map{|n| "'#{n}'"}
+        class_name = self.class.name.split("::").last.downcase
+        fail ExclusiveArgumentError, "Found exclusive #{class_name} #{names.join(", ")}"
+      end
+    end
+
+    def check_at_least_one!
+      opts = @assigns.keys
+      # When at least one is required of the options A and B,
+      # if the both options were not given, none? would be true.
+      found = @at_least_ones.find{ |one_reqs| one_reqs.none?{ |o| opts.include? o} }
+      if found
+        names = names_to_switch_names(found).map{|n| "'#{n}'"}
+        class_name = self.class.name.split("::").last.downcase
+        fail AtLeastOneRequiredArgumentError, "Not found at least one of required #{class_name} #{names.join(", ")}"
+      end
     end
 
     def check_unknown!
@@ -133,20 +175,33 @@ class Bundler::Thor
 
   protected
 
-  def assign_result!(option, result)
-    if option.repeatable && option.type == :hash
-      (@assigns[option.human_name] ||= {}).merge!(result)
-    elsif option.repeatable
-      (@assigns[option.human_name] ||= []) << result
-    else
-      @assigns[option.human_name] = result
+    # Option names changes to swith name or human name
+    def names_to_switch_names(names = [])
+      @switches.map do |_, o|
+        if names.include? o.name
+          o.respond_to?(:switch_name) ? o.switch_name : o.human_name
+        else
+          nil
+        end
+      end.compact
     end
-  end
+
+    def assign_result!(option, result)
+      if option.repeatable && option.type == :hash
+        (@assigns[option.human_name] ||= {}).merge!(result)
+      elsif option.repeatable
+        (@assigns[option.human_name] ||= []) << result
+      else
+        @assigns[option.human_name] = result
+      end
+    end
+
     # Check if the current value in peek is a registered switch.
     #
     # Two booleans are returned.  The first is true if the current value
     # starts with a hyphen; the second is true if it is a registered switch.
     def current_is_switch?
+      return [false, false] if @is_treated_as_value
       case peek
       when LONG_RE, SHORT_RE, EQ_RE, SHORT_NUM
         [true, switch?($1)]
@@ -158,6 +213,7 @@ class Bundler::Thor
     end
 
     def current_is_switch_formatted?
+      return false if @is_treated_as_value
       case peek
       when LONG_RE, SHORT_RE, EQ_RE, SHORT_NUM, SHORT_SQ_RE
         true
@@ -167,6 +223,7 @@ class Bundler::Thor
     end
 
     def current_is_value?
+      return true if @is_treated_as_value
       peek && (!parsing_options? || super)
     end
 
@@ -175,7 +232,7 @@ class Bundler::Thor
     end
 
     def switch_option(arg)
-      if match = no_or_skip?(arg) # rubocop:disable AssignmentInCondition
+      if match = no_or_skip?(arg) # rubocop:disable Lint/AssignmentInCondition
         @switches[arg] || @switches["--#{match}"]
       else
         @switches[arg]

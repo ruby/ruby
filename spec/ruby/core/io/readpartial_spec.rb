@@ -59,7 +59,7 @@ describe "IO#readpartial" do
   end
 
   it "discards the existing buffer content upon successful read" do
-    buffer = "existing"
+    buffer = "existing content"
     @wr.write("hello world")
     @wr.close
     @rd.readpartial(11, buffer)
@@ -93,4 +93,19 @@ describe "IO#readpartial" do
     @rd.readpartial(0).should == ""
   end
 
+  ruby_bug "#18421", ""..."3.0.4" do
+    it "clears and returns the given buffer if the length argument is 0" do
+      buffer = "existing content"
+      @rd.readpartial(0, buffer).should == buffer
+      buffer.should == ""
+    end
+  end
+
+  it "preserves the encoding of the given buffer" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    @wr.write("abc")
+    @wr.close
+    @rd.readpartial(10, buffer)
+    buffer.encoding.should == Encoding::ISO_8859_1
+  end
 end

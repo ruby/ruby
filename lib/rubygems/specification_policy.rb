@@ -1,4 +1,6 @@
-require 'rubygems/user_interaction'
+# frozen_string_literal: true
+
+require_relative "user_interaction"
 
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
@@ -120,30 +122,30 @@ class Gem::SpecificationPolicy
     metadata = @specification.metadata
 
     unless Hash === metadata
-      error 'metadata must be a hash'
+      error "metadata must be a hash"
     end
 
     metadata.each do |key, value|
-      if !key.kind_of?(String)
+      entry = "metadata['#{key}']"
+      unless key.is_a?(String)
         error "metadata keys must be a String"
       end
 
       if key.size > 128
-        error "metadata key too large (#{key.size} > 128)"
+        error "metadata key is too large (#{key.size} > 128)"
       end
 
-      if !value.kind_of?(String)
-        error "metadata values must be a String"
+      unless value.is_a?(String)
+        error "#{entry} value must be a String"
       end
 
       if value.size > 1024
-        error "metadata value too large (#{value.size} > 1024)"
+        error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
-      if METADATA_LINK_KEYS.include? key
-        if value !~ VALID_URI_PATTERN
-          error "metadata['#{key}'] has invalid link: #{value.inspect}"
-        end
+      next unless METADATA_LINK_KEYS.include? key
+      unless VALID_URI_PATTERN.match?(value)
+        error "#{entry} has invalid link: #{value.inspect}"
       end
     end
   end
@@ -153,14 +155,14 @@ class Gem::SpecificationPolicy
 
   def validate_duplicate_dependencies # :nodoc:
     # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
-    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {}}) }
+    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {} }) }
 
     error_messages = []
     @specification.dependencies.each do |dep|
       if prev = seen[dep.type][dep.name]
         error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
-    add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
+    add_#{dep.type}_dependency \"#{dep.name}\", \"#{dep.requirement}\", \"#{prev.requirement}\"
         MESSAGE
       end
 
@@ -172,6 +174,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   ##
+  # Checks that the gem does not depend on itself.
   # Checks that dependencies use requirements as we recommend.  Warnings are
   # issued when dependencies are open-ended or overly strict for semantic
   # versioning.
@@ -179,6 +182,10 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_dependencies # :nodoc:
     warning_messages = []
     @specification.dependencies.each do |dep|
+      if dep.name == @specification.name # warn on self reference
+        warning_messages << "Self referencing dependency is unnecessary and strongly discouraged."
+      end
+
       prerelease_dep = dep.requirements_list.any? do |req|
         Gem::Requirement.new(req).prerelease?
       end
@@ -187,31 +194,30 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        not version.prerelease? and (op == '>' or op == '>=')
+        !version.prerelease? && [">", ">="].include?(op)
       end
 
-      if open_ended
-        op, dep_version = dep.requirement.requirements.first
+      next unless open_ended
+      op, dep_version = dep.requirement.requirements.first
 
-        segments = dep_version.segments
+      segments = dep_version.segments
 
-        base = segments.first 2
+      base = segments.first 2
 
-        recommendation = if (op == '>' || op == '>=') && segments == [0]
-                           "  use a bounded requirement, such as '~> x.y'"
-                         else
-                           bugfix = if op == '>'
-                                      ", '> #{dep_version}'"
-                                    elsif op == '>=' and base != segments
-                                      ", '>= #{dep_version}'"
-                                    end
+      recommendation = if [">", ">="].include?(op) && segments == [0]
+        "  use a bounded requirement, such as \"~> x.y\""
+      else
+        bugfix = if op == ">"
+          ", \"> #{dep_version}\""
+        elsif op == ">=" && base != segments
+          ", \">= #{dep_version}\""
+        end
 
-                           "  if #{dep.name} is semantically versioned, use:\n" \
-                           "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
-                         end
-
-        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
+        "  if #{dep.name} is semantically versioned, use:\n" \
+        "    add_#{dep.type}_dependency \"#{dep.name}\", \"~> #{base.join "."}\"#{bugfix}"
       end
+
+      warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }
@@ -228,7 +234,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     @specification.files.each do |file|
       next unless File.file?(file)
-      next if File.stat(file).mode & 0444 == 0444
+      next if File.stat(file).mode & 0o444 == 0o444
       warning "#{file} is not world-readable"
     end
 
@@ -247,7 +253,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       @specification.instance_variable_get("@#{attrname}").nil?
     end
     return if nil_attributes.empty?
-    error "#{nil_attributes.join ', '} must not be nil"
+    error "#{nil_attributes.join ", "} must not be nil"
   end
 
   def validate_rubygems_version
@@ -273,11 +279,11 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     if !name.is_a?(String)
       error "invalid value for attribute name: \"#{name.inspect}\" must be a string"
-    elsif name !~ /[a-zA-Z]/
+    elsif !/[a-zA-Z]/.match?(name)
       error "invalid value for attribute name: #{name.dump} must include at least one letter"
-    elsif name !~ VALID_NAME_PATTERN
+    elsif !VALID_NAME_PATTERN.match?(name)
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
-    elsif name =~ SPECIAL_CHARACTERS
+    elsif SPECIAL_CHARACTERS.match?(name)
       error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
     end
   end
@@ -285,7 +291,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_require_paths
     return unless @specification.raw_require_paths.empty?
 
-    error 'specification must have at least one require_path'
+    error "specification must have at least one require_path"
   end
 
   def validate_non_files
@@ -309,7 +315,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_specification_version
     return if @specification.specification_version.is_a?(Integer)
 
-    error 'specification_version must be an Integer (did you mean version?)'
+    error "specification_version must be an Integer (did you mean version?)"
   end
 
   def validate_platform
@@ -335,9 +341,9 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
               Gem::Dependency
             else
               String
-            end
+    end
 
-    unless Array === val and val.all? {|x| x.kind_of?(klass) }
+    unless Array === val && val.all? {|x| x.is_a?(klass) || (field == :licenses && x.nil?) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -352,6 +358,8 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
+      next if license.nil?
+
       if license.length > 64
         error "each license must be 64 characters or less"
       end
@@ -362,25 +370,37 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
-      if !Gem::Licenses.match?(license)
-        suggestions = Gem::Licenses.suggestions(license)
-        message = <<-WARNING
-license value '#{license}' is invalid.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-        WARNING
-        message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(', ')}?\n" unless suggestions.nil?
-        warning(message)
+      next if Gem::Licenses.match?(license) || license.nil?
+      license_id_deprecated = Gem::Licenses.deprecated_license_id?(license)
+      exception_id_deprecated = Gem::Licenses.deprecated_exception_id?(license)
+      suggestions = Gem::Licenses.suggestions(license)
+
+      if license_id_deprecated
+        main_message = "License identifier '#{license}' is deprecated"
+      elsif exception_id_deprecated
+        main_message = "Exception identifier at '#{license}' is deprecated"
+      else
+        main_message = "License identifier '#{license}' is invalid"
       end
+
+      message = <<-WARNING
+#{main_message}. Use an identifier from
+https://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
+      WARNING
+      message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(", ")}?\n" unless suggestions.nil?
+      warning(message)
     end
 
     warning <<-WARNING if licenses.empty?
-licenses is empty, but is recommended.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
+licenses is empty, but is recommended. Use an license identifier from
+https://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
-  LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-  LAZY_PATTERN = /FI XME|TO DO/x.freeze
+  LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata
@@ -392,19 +412,19 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       error "#{LAZY} is not an email"
     end
 
-    if @specification.description =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.description)
       error "#{LAZY} is not a description"
     end
 
-    if @specification.summary =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.summary)
       error "#{LAZY} is not a summary"
     end
 
     homepage = @specification.homepage
 
     # Make sure a homepage is valid HTTP/HTTPS URI
-    if homepage and not homepage.empty?
-      require 'uri'
+    if homepage && !homepage.empty?
+      require "uri"
       begin
         homepage_uri = URI.parse(homepage)
         unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
@@ -444,7 +464,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
   def validate_shebang_line_in(executable)
     executable_path = File.join(@specification.bindir, executable)
-    return if File.read(executable_path, 2) == '#!'
+    return if File.read(executable_path, 2) == "#!"
 
     warning "#{executable_path} is missing #! line"
   end
@@ -456,11 +476,25 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   def validate_extensions # :nodoc:
-    require_relative 'ext'
+    require_relative "ext"
     builder = Gem::Ext::Builder.new(@specification)
 
+    validate_rake_extensions(builder)
+    validate_rust_extensions(builder)
+  end
+
+  def validate_rust_extensions(builder) # :nodoc:
+    rust_extension = @specification.extensions.any? {|s| builder.builder_for(s).is_a? Gem::Ext::CargoBuilder }
+    missing_cargo_lock = !@specification.files.any? {|f| f.end_with?("Cargo.lock") }
+
+    error <<-ERROR if rust_extension && missing_cargo_lock
+You have specified rust based extension, but Cargo.lock is not part of the gem files. Please run `cargo generate-lockfile` or any other command to generate Cargo.lock and ensure it is added to your gem files section in gemspec.
+    ERROR
+  end
+
+  def validate_rake_extensions(builder) # :nodoc:
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
-    rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake' }
+    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" }
 
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.

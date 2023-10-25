@@ -1,47 +1,81 @@
 name: BASERUBY Check
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
 
 jobs:
   baseruby:
     name: BASERUBY
+
     runs-on: ubuntu-20.04
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     strategy:
       matrix:
         ruby:
-          - ruby-2.2
-          - ruby-2.3
-          - ruby-2.4
           - ruby-2.5
-          - ruby-2.6
-          - ruby-2.7
+#         - ruby-2.6
+#         - ruby-2.7
+          - ruby-3.0
+          - ruby-3.1
+          - ruby-3.2
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@a05e47355e80e57b9a67566a813648fa67d92011 # v1.157.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
-      - run: echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - run: sudo apt-get install build-essential autoconf bison
-      - run: autoconf
-      - run: ./configure --disable-install-doc
-      - run: $make update-unicode
-      - run: $make common-srcs
-      - run: $make incs
-      - run: $make all
-      - run: $make test
-      - uses: k0kubun/action-slack@v2.0.0
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ./.github/actions/setup/directories
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / BASERUBY @ ${{ matrix.ruby }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
-            }
-        env:
+          makeup: true
+
+      - run: ./configure --disable-install-doc
+
+      - run: make all
+
+      - run: make test
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ matrix.ruby }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() }}

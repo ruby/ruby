@@ -41,7 +41,7 @@ static const rb_data_type_t ossl_x509rev_type = {
     {
 	0, ossl_x509rev_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -223,13 +223,13 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509Rev(self, rev);
-    while ((ext = X509_REVOKED_delete_ext(rev, 0)))
-	X509_EXTENSION_free(ext);
+    for (i = X509_REVOKED_get_ext_count(rev); i > 0; i--)
+        X509_EXTENSION_free(X509_REVOKED_delete_ext(rev, 0));
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
 	ext = GetX509ExtPtr(item);
 	if(!X509_REVOKED_add_ext(rev, ext, -1)) {
-	    ossl_raise(eX509RevError, NULL);
+	    ossl_raise(eX509RevError, "X509_REVOKED_add_ext");
 	}
     }
 

@@ -38,7 +38,7 @@ if defined?(WIN32OLE)
     end
 
     def test_err_in_callback
-      skip "'ADODB.Connection' is not available" unless available_adodb?
+      omit "'ADODB.Connection' is not available" unless available_adodb?
       if @ruby
         Dir.mktmpdir do |tmpdir|
           logfile = File.join(tmpdir, "test_err_in_callback.log")

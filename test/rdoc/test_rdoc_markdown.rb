@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require_relative 'helper'
-require 'rdoc/markup/block_quote'
-require 'rdoc/markdown'
+require_relative '../../lib/rdoc/markup/block_quote'
+require_relative '../../lib/rdoc/markdown'
 
 class TestRDocMarkdown < RDoc::TestCase
 
@@ -143,7 +143,7 @@ a block quote
   end
 
   def test_parse_code_github
-    doc = parse <<-MD
+    doc = <<-MD
 Example:
 
 ```
@@ -156,11 +156,25 @@ code goes here
         para("Example:"),
         verb("code goes here\n"))
 
-    assert_equal expected, doc
+    assert_equal expected, parse(doc)
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
+
+    @parser.github = false
+
+    expected =
+      doc(para("Example:"),
+          para("<code>\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc)
+
+    expected =
+      doc(para("Example:\n<code>\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
   end
 
   def test_parse_code_github_format
-    doc = parse <<-MD
+    doc = <<-MD
 Example:
 
 ``` ruby
@@ -176,7 +190,21 @@ code goes here
         para("Example:"),
         code)
 
-    assert_equal expected, doc
+    assert_equal expected, parse(doc)
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
+
+    @parser.github = false
+
+    expected =
+      doc(para("Example:"),
+          para("<code>ruby\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc)
+
+    expected =
+      doc(para("Example:\n<code>ruby\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
   end
 
   def test_parse_definition_list
@@ -733,7 +761,6 @@ with inline notes^[like this]
 and an extra note.[^2]
 
 [^1]: With a footnote
-
 [^2]: Which should be numbered correctly
     MD
 
@@ -1012,9 +1039,52 @@ and an extra note.[^2]
     assert_equal expected, doc
   end
 
+  def test_gfm_table
+    doc = parse <<~MD
+    |      |                 |compare-ruby|built-ruby|
+    |------|:----------------|-----------:|---------:|
+    |test  | 1               |     11.618M|   10.757M|
+    |      |                 |       1.08x|         -|
+    |test  | 10              |      1.849M|    1.723M|
+    |      |                 |       1.07x|         -|
+    MD
+
+    head = ["", "", "compare-ruby", "built-ruby"]
+    align = [nil, :left, :right, :right]
+    body = [
+      ["test", "1", "11.618M", "10.757M"],
+      ["", "", "1.08x", "-"],
+      ["test", "10", "1.849M", "1.723M"],
+      ["", "", "1.07x", "-"],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
+
+    assert_equal expected, doc
+  end
+
+  def test_gfm_table_2
+    doc = parse <<~'MD'
+    | Cmd | Returns | Meaning
+    ----- | :-----: | -------
+    |"b"  | boolean | True if file1 is a block device
+    "c"   | boolean | True if file1 is a character device
+    |"\|" | boolean | escaped bar \| test
+    MD
+
+    head = %w[Cmd Returns Meaning]
+    align = [nil, :center, nil]
+    body = [
+      ['"b"', 'boolean', 'True if file1 is a block device'],
+      ['"c"', 'boolean', 'True if file1 is a character device'],
+      ['"|"', 'boolean', 'escaped bar | test'],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
+
+    assert_equal expected, doc
+  end
+
   def parse text
     @parser.parse text
   end
 
 end
-

@@ -22,7 +22,7 @@ assert_match /\Awrong number of arguments \(.*\b0\b.* 1\)\z/, %q{
 }
 
 # default argument
-assert_equal '1',       'def m(x=1) x end; m()'
+assert_equal '1',       'def m(x=1) x end; m();'
 assert_equal '1',       'def m(x=7) x end; m(1)'
 assert_equal '1',       'def m(a,x=1) x end; m(7)'
 assert_equal '1',       'def m(a,x=7) x end; m(7,1)'

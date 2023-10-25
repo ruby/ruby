@@ -82,6 +82,8 @@ if::
 in::
   Used to separate the iterable object and iterator variable in a +for+ loop.
   See {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+  It also serves as a pattern in a +case+ expression.
+  See {pattern matching}[rdoc-ref:syntax/pattern_matching.rdoc]
 
 module::
   Creates or opens a module.  See {modules and classes

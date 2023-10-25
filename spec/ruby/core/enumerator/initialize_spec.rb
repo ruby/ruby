@@ -11,10 +11,6 @@ describe "Enumerator#initialize" do
     Enumerator.should have_private_instance_method(:initialize, false)
   end
 
-  it "returns self when given an object" do
-    @uninitialized.send(:initialize, Object.new).should equal(@uninitialized)
-  end
-
   it "returns self when given a block" do
     @uninitialized.send(:initialize) {}.should equal(@uninitialized)
   end
@@ -43,7 +39,7 @@ describe "Enumerator#initialize" do
     @uninitialized.send(:initialize, Float::INFINITY) {}.size.should equal(Float::INFINITY)
   end
 
-  it "sets size to the given size if the given size is a Fixnum" do
+  it "sets size to the given size if the given size is an Integer" do
     @uninitialized.send(:initialize, 100) {}.size.should == 100
   end
 
@@ -52,10 +48,10 @@ describe "Enumerator#initialize" do
   end
 
   describe "on frozen instance" do
-    it "raises a RuntimeError" do
+    it "raises a FrozenError" do
       -> {
         @uninitialized.freeze.send(:initialize) {}
-      }.should raise_error(RuntimeError)
+      }.should raise_error(FrozenError)
     end
   end
 end

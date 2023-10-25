@@ -1,9 +1,9 @@
-describe :net_ftp_putbinaryfile, shared: :true do
+describe :net_ftp_putbinaryfile, shared: true do
   before :each do
     @server = NetFTPSpecs::DummyFTP.new
     @server.serve_once
 
-    @local_fixture_file  = File.dirname(__FILE__) + "/../fixtures/putbinaryfile"
+    @local_fixture_file  = __dir__ + "/../fixtures/putbinaryfile"
     @remote_tmp_file = tmp("binaryfile", false)
 
     @ftp = Net::FTP.new

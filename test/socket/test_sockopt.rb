@@ -34,7 +34,7 @@ class TestSocketOption < Test::Unit::TestCase
       }
     rescue TypeError
       if /aix/ =~ RUBY_PLATFORM
-        skip "Known bug in getsockopt(2) on AIX"
+        omit "Known bug in getsockopt(2) on AIX"
       end
       raise $!
     end

@@ -17,6 +17,19 @@ describe "The class keyword" do
     eval "class ClassSpecsKeywordWithoutSemicolon end"
     ClassSpecsKeywordWithoutSemicolon.should be_an_instance_of(Class)
   end
+
+  it "can redefine a class when called from a block" do
+    ClassSpecs::DEFINE_CLASS.call
+    A.should be_an_instance_of(Class)
+
+    Object.send(:remove_const, :A)
+    defined?(A).should be_nil
+
+    ClassSpecs::DEFINE_CLASS.call
+    A.should be_an_instance_of(Class)
+  ensure
+    Object.send(:remove_const, :A) if defined?(::A)
+  end
 end
 
 describe "A class definition" do
@@ -286,7 +299,7 @@ describe "A class definition extending an object (sclass)" do
   end
 
   it "raises a TypeError when trying to extend non-Class" do
-    error_msg = /superclass must be a Class/
+    error_msg = /superclass must be a.* Class/
     -> { class TestClass < "";              end }.should raise_error(TypeError, error_msg)
     -> { class TestClass < 1;               end }.should raise_error(TypeError, error_msg)
     -> { class TestClass < :symbol;         end }.should raise_error(TypeError, error_msg)
@@ -295,20 +308,10 @@ describe "A class definition extending an object (sclass)" do
     -> { class TestClass < BasicObject.new; end }.should raise_error(TypeError, error_msg)
   end
 
-  ruby_version_is ""..."3.0" do
-    it "allows accessing the block of the original scope" do
-      suppress_warning do
-        ClassSpecs.sclass_with_block { 123 }.should == 123
-      end
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "does not allow accessing the block of the original scope" do
-      -> {
-        ClassSpecs.sclass_with_block { 123 }
-      }.should raise_error(SyntaxError)
-    end
+  it "does not allow accessing the block of the original scope" do
+    -> {
+      ClassSpecs.sclass_with_block { 123 }
+    }.should raise_error(SyntaxError)
   end
 
   it "can use return to cause the enclosing method to return" do

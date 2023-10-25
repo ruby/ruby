@@ -1,0 +1,4 @@
+type: lib/benchmark_driver/runner/ractor
+benchmark:
+  ractor_const: Object
+ractor: 1

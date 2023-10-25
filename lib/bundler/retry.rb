@@ -49,14 +49,14 @@ module Bundler
         raise e
       end
       return true unless name
-      Bundler.ui.info "" unless Bundler.ui.debug? # Add new line incase dots preceded this
+      Bundler.ui.info "" unless Bundler.ui.debug? # Add new line in case dots preceded this
       Bundler.ui.warn "Retrying #{name} due to error (#{current_run.next}/#{total_runs}): #{e.class} #{e.message}", Bundler.ui.debug?
     end
 
     def keep_trying?
       return true  if current_run.zero?
       return false if last_attempt?
-      return true  if @failed
+      true if @failed
     end
 
     def last_attempt?

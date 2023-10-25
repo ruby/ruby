@@ -11,7 +11,11 @@ describe "Integer#chr without argument" do
 
   it "raises a RangeError is self is less than 0" do
     -> { -1.chr }.should raise_error(RangeError)
-    -> { -bignum_value.chr }.should raise_error(RangeError)
+    -> { (-bignum_value).chr }.should raise_error(RangeError)
+  end
+
+  it "raises a RangeError if self is too large" do
+    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
   end
 
   describe "when Encoding.default_internal is nil" do
@@ -162,7 +166,7 @@ describe "Integer#chr with an encoding argument" do
   # http://redmine.ruby-lang.org/issues/4869
   it "raises a RangeError is self is less than 0" do
     -> { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
-    -> { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
+    -> { (-bignum_value).chr(Encoding::EUC_JP) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if self is too large" do
@@ -219,38 +223,35 @@ describe "Integer#chr with an encoding argument" do
 
   # #5864
   it "raises RangeError if self is invalid as a codepoint in the specified encoding" do
-    [ [0x80,   "US-ASCII"],
-      [0x0100, "BINARY"],
-      [0x0100, "EUC-JP"],
-      [0xA1A0, "EUC-JP"],
-      [0xA1,   "EUC-JP"],
-      [0x80,   "SHIFT_JIS"],
-      [0xE0,   "SHIFT_JIS"],
-      [0x0100, "ISO-8859-9"],
-      [620,    "TIS-620"],
-      [0xD800, "UTF-8"],
-      [0xDBFF, "UTF-8"],
-      [0xDC00, "UTF-8"],
-      [0xDFFF, "UTF-8"],
-      [0xD800, "UTF-16"],
-      [0xDBFF, "UTF-16"],
-      [0xDC00, "UTF-16"],
-      [0xDFFF, "UTF-16"],
-    ].each do |integer, encoding_name|
-      -> { integer.chr(encoding_name) }.should raise_error(RangeError)
-    end
+    -> { 0x80.chr("US-ASCII") }.should raise_error(RangeError)
+    -> { 0x0100.chr("BINARY") }.should raise_error(RangeError)
+    -> { 0x0100.chr("EUC-JP") }.should raise_error(RangeError)
+    -> { 0xA1A0.chr("EUC-JP") }.should raise_error(RangeError)
+    -> { 0xA1.chr("EUC-JP") }.should raise_error(RangeError)
+    -> { 0x80.chr("SHIFT_JIS") }.should raise_error(RangeError)
+    -> { 0xE0.chr("SHIFT_JIS") }.should raise_error(RangeError)
+    -> { 0x0100.chr("ISO-8859-9") }.should raise_error(RangeError)
+    -> { 620.chr("TIS-620") }.should raise_error(RangeError)
+    # UTF-16 surrogate range
+    -> { 0xD800.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xDBFF.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xDC00.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xDFFF.chr("UTF-8") }.should raise_error(RangeError)
+    # UTF-16 surrogate range
+    -> { 0xD800.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xDBFF.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xDC00.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xDFFF.chr("UTF-16") }.should raise_error(RangeError)
   end
 
-  ruby_version_is "2.7" do
-    it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do
-      # see more details here https://en.wikipedia.org/wiki/CESU-8
-      # code points from U+0000 to U+FFFF is encoded in the same way as in UTF-8
-      0x0045.chr(Encoding::CESU_8).bytes.should == 0x0045.chr(Encoding::UTF_8).bytes
+  it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do
+    # see more details here https://en.wikipedia.org/wiki/CESU-8
+    # code points from U+0000 to U+FFFF is encoded in the same way as in UTF-8
+    0x0045.chr(Encoding::CESU_8).bytes.should == 0x0045.chr(Encoding::UTF_8).bytes
 
-      # code points in range from U+10000 to U+10FFFF is CESU-8 data containing a 6-byte surrogate pair,
-      # which decodes to a 4-byte UTF-8 string
-      0x10400.chr(Encoding::CESU_8).bytes.should != 0x10400.chr(Encoding::UTF_8).bytes
-      0x10400.chr(Encoding::CESU_8).bytes.to_a.should == [0xED, 0xA0, 0x81, 0xED, 0xB0, 0x80]
-    end
+    # code points in range from U+10000 to U+10FFFF is CESU-8 data containing a 6-byte surrogate pair,
+    # which decodes to a 4-byte UTF-8 string
+    0x10400.chr(Encoding::CESU_8).bytes.should != 0x10400.chr(Encoding::UTF_8).bytes
+    0x10400.chr(Encoding::CESU_8).bytes.to_a.should == [0xED, 0xA0, 0x81, 0xED, 0xB0, 0x80]
   end
 end

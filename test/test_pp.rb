@@ -3,6 +3,7 @@
 require 'pp'
 require 'delegate'
 require 'test/unit'
+require 'ruby2_keywords'
 
 module PPTestModule
 
@@ -142,6 +143,15 @@ class PPCycleTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
 
+  if "3.2" <= RUBY_VERSION
+    D = Data.define(:aaa, :bbb)
+    def test_data
+      a = D.new("aaa", "bbb")
+      assert_equal("#<data PPTestModule::PPCycleTest::D\n aaa=\"aaa\",\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
+    end
+  end
+
   def test_object
     a = Object.new
     a.instance_eval {@a = a}
@@ -154,6 +164,7 @@ class PPCycleTest < Test::Unit::TestCase
   end
 
   def test_withinspect
+    omit if RUBY_ENGINE == "jruby"
     a = []
     a << HasInspect.new(a)
     assert_equal("[<inspect:[...]>]\n", PP.pp(a, ''.dup))
@@ -178,6 +189,7 @@ class PPSingleLineTest < Test::Unit::TestCase
   end
 
   def test_hash_in_array
+    omit if RUBY_ENGINE == "jruby"
     assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
     assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
   end

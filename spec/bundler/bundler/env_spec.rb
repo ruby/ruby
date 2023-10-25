@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require "openssl"
 require "bundler/settings"
+require "openssl"
 
 RSpec.describe Bundler::Env do
-  let(:git_proxy_stub) { Bundler::Source::Git::GitProxy.new(nil, nil, nil) }
+  let(:git_proxy_stub) { Bundler::Source::Git::GitProxy.new(nil, nil) }
 
   describe "#report" do
     it "prints the environment" do
@@ -34,8 +34,6 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user home" do
-        skip "needs to use a valid HOME" if Gem.win_platform? && RUBY_VERSION < "2.6.0"
-
         with_clear_paths("HOME", "/a/b/c") do
           out = described_class.report
           expect(out).to include("User Home   /a/b/c")
@@ -43,8 +41,6 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user path" do
-        skip "needs to use a valid HOME" if Gem.win_platform? && RUBY_VERSION < "2.6.0"
-
         with_clear_paths("HOME", "/a/b/c") do
           allow(File).to receive(:exist?)
           allow(File).to receive(:exist?).with("/a/b/c/.gem").and_return(true)
@@ -74,7 +70,7 @@ RSpec.describe Bundler::Env do
 
     context "when there is a Gemfile and a lockfile and print_gemfile is true" do
       before do
-        gemfile "gem 'rack', '1.0.0'"
+        gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem 'rack', '1.0.0'"
 
         lockfile <<-L
           GEM
@@ -113,9 +109,37 @@ RSpec.describe Bundler::Env do
       end
     end
 
+    context "when there's bundler config with credentials" do
+      before do
+        bundle "config set https://localgemserver.test/ user:pass"
+      end
+
+      let(:output) { described_class.report(:print_gemfile => true) }
+
+      it "prints the config with redacted values" do
+        expect(output).to include("https://localgemserver.test")
+        expect(output).to include("user:[REDACTED]")
+        expect(output).to_not include("user:pass")
+      end
+    end
+
+    context "when there's bundler config with OAuth token credentials" do
+      before do
+        bundle "config set https://localgemserver.test/ api_token:x-oauth-basic"
+      end
+
+      let(:output) { described_class.report(:print_gemfile => true) }
+
+      it "prints the config with redacted values" do
+        expect(output).to include("https://localgemserver.test")
+        expect(output).to include("[REDACTED]:x-oauth-basic")
+        expect(output).to_not include("api_token:x-oauth-basic")
+      end
+    end
+
     context "when Gemfile contains a gemspec and print_gemspecs is true" do
       let(:gemspec) do
-        strip_whitespace(<<-GEMSPEC)
+        <<~GEMSPEC
           Gem::Specification.new do |gem|
             gem.name = "foo"
             gem.author = "Fumofu"
@@ -124,7 +148,7 @@ RSpec.describe Bundler::Env do
       end
 
       before do
-        gemfile("gemspec")
+        gemfile("source \"#{file_uri_for(gem_repo1)}\"; gemspec")
 
         File.open(bundled_app.join("foo.gemspec"), "wb") do |f|
           f.write(gemspec)
@@ -154,7 +178,7 @@ RSpec.describe Bundler::Env do
         allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
 
         output = described_class.report(:print_gemspecs => true)
-        expect(output).to include(strip_whitespace(<<-ENV))
+        expect(output).to include(<<~ENV)
           ## Gemfile
 
           ### Gemfile
@@ -193,7 +217,7 @@ RSpec.describe Bundler::Env do
 
     context "when the git version is OS specific" do
       it "includes OS specific information with the version number" do
-        expect(git_proxy_stub).to receive(:git).with("--version").
+        expect(git_proxy_stub).to receive(:git_local).with("--version").
           and_return("git version 1.2.3 (Apple Git-BS)")
         expect(Bundler::Source::Git::GitProxy).to receive(:new).and_return(git_proxy_stub)
 

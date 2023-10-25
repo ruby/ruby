@@ -50,7 +50,7 @@ module Psych
       # +tag+ is an associated tag or nil
       # +plain+ is a boolean value
       # +quoted+ is a boolean value
-      # +style+ is an integer idicating the string style
+      # +style+ is an integer indicating the string style
       #
       # == See Also
       #
