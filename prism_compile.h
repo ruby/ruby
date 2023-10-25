@@ -11,10 +11,8 @@ typedef struct pm_scope_node {
     pm_constant_id_list_t locals;
     pm_parser_t *parser;
 
-    // We don't have the CRuby types ID and st_table within Prism
-    // so we use void *
-    void *constants; // ID *constants
-    void *index_lookup_table; // st_table *index_lookup_table
+    ID *constants;
+    st_table *index_lookup_table;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);

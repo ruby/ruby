@@ -2467,7 +2467,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             st_insert(index_lookup_table, constant_id, i);
         }
 
-        scope_node->index_lookup_table = (void *)index_lookup_table;
+        scope_node->index_lookup_table = index_lookup_table;
 
         ISEQ_BODY(iseq)->param.lead_num = (int)requireds_list.size;
         ISEQ_BODY(iseq)->param.opt_num = (int)optionals_list.size;
