@@ -600,13 +600,13 @@ module Prism
     end
 
     def test_CallAndWriteNode
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def Subclass.test_call_and_write_node; end;
         Subclass.test_call_and_write_node &&= 1
       CODE
       )
 
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def Subclass.test_call_and_write_node
           "str"
         end
@@ -617,13 +617,13 @@ module Prism
       CODE
       )
 
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def self.test_call_and_write_node; end;
         self.test_call_and_write_node &&= 1
       CODE
       )
 
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def self.test_call_and_write_node
           "str"
         end
@@ -636,7 +636,7 @@ module Prism
     end
 
     def test_CallOrWriteNode
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def Subclass.test_call_or_write_node; end;
         def Subclass.test_call_or_write_node=(val)
           val
@@ -645,7 +645,7 @@ module Prism
       CODE
       )
 
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def Subclass.test_call_or_write_node
           "str"
         end
@@ -653,7 +653,7 @@ module Prism
       CODE
       )
 
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def self.test_call_or_write_node; end;
         def self.test_call_or_write_node=(val)
           val
@@ -662,7 +662,7 @@ module Prism
       CODE
       )
 
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def self.test_call_or_write_node
           "str"
         end
@@ -672,7 +672,7 @@ module Prism
     end
 
     def test_CallOperatorWriteNode
-      test_prism_eval(<<-CODE
+      assert_prism_eval(<<-CODE
         def Subclass.test_call_operator_write_node
           2
         end
