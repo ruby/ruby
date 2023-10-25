@@ -1192,6 +1192,52 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_POP_IF_POPPED;
         return;
       }
+      case PM_CALL_AND_WRITE_NODE: {
+        pm_call_and_write_node_t *call_and_write_node = (pm_call_and_write_node_t*) node;
+
+        LABEL *call_end_label = NEW_LABEL(lineno);
+        LABEL *end_label = NEW_LABEL(lineno);
+
+        int flag = 0;
+
+        if (PM_NODE_TYPE_P(call_and_write_node->receiver, PM_SELF_NODE)) {
+            flag = VM_CALL_FCALL;
+        }
+
+        PM_COMPILE(call_and_write_node->receiver);
+
+        ID write_name_id = pm_constant_id_lookup(scope_node, call_and_write_node->write_name);
+        ID read_name_id = pm_constant_id_lookup(scope_node, call_and_write_node->read_name);
+        ADD_INSN(ret, &dummy_line_node, dup);
+
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, read_name_id, INT2FIX(0), INT2FIX(flag));
+
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, dup);
+        }
+        ADD_INSNL(ret, &dummy_line_node, branchunless, call_end_label);
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, pop);
+        }
+
+        PM_COMPILE(call_and_write_node->value);
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+        }
+        ID aid = rb_id_attrset(write_name_id);
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, aid, INT2FIX(1), INT2FIX(flag));
+        ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+        ADD_LABEL(ret, call_end_label);
+
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, swap);
+        }
+
+        ADD_LABEL(ret, end_label);
+        ADD_INSN(ret, &dummy_line_node, pop);
+        return;
+      }
       case PM_CLASS_NODE: {
         pm_class_node_t *class_node = (pm_class_node_t *)node;
         pm_scope_node_t next_scope_node;
