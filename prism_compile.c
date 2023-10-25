@@ -39,6 +39,9 @@
 #define PM_PUTNIL_UNLESS_POPPED \
     if (!popped) PM_PUTNIL;
 
+#define PM_SWAP \
+    ADD_INSN(ret, &dummy_line_node, swap);
+
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
@@ -673,6 +676,58 @@ pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *
     }
 }
 
+static void
+pm_compile_call_and_or_node(bool and_node, pm_node_t *receiver, pm_node_t *value, pm_constant_id_t write_name, pm_constant_id_t read_name, LINK_ANCHOR *const ret, rb_iseq_t *iseq, int lineno, const uint8_t * src, bool popped, pm_scope_node_t *scope_node)
+{
+    LABEL *call_end_label = NEW_LABEL(lineno);
+    LABEL *end_label = NEW_LABEL(lineno);
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    int flag = 0;
+
+    if (PM_NODE_TYPE_P(receiver, PM_SELF_NODE)) {
+        flag = VM_CALL_FCALL;
+    }
+
+    PM_COMPILE(receiver);
+
+    ID write_name_id = pm_constant_id_lookup(scope_node, write_name);
+    ID read_name_id = pm_constant_id_lookup(scope_node, read_name);
+    ADD_INSN(ret, &dummy_line_node, dup);
+
+    ADD_SEND_WITH_FLAG(ret, &dummy_line_node, read_name_id, INT2FIX(0), INT2FIX(flag));
+
+    PM_DUP_UNLESS_POPPED;
+
+    if (and_node) {
+        ADD_INSNL(ret, &dummy_line_node, branchunless, call_end_label);
+    }
+    else {
+        // or_node
+        ADD_INSNL(ret, &dummy_line_node, branchif, call_end_label);
+    }
+
+    PM_POP_UNLESS_POPPED;
+
+    PM_COMPILE(value);
+    if (!popped) {
+        PM_SWAP;
+        ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+    }
+    ID aid = rb_id_attrset(write_name_id);
+    ADD_SEND_WITH_FLAG(ret, &dummy_line_node, aid, INT2FIX(1), INT2FIX(flag));
+    ADD_INSNL(ret, &dummy_line_node, jump, end_label);
+    ADD_LABEL(ret, call_end_label);
+
+    if (!popped) {
+        PM_SWAP;
+    }
+
+    ADD_LABEL(ret, end_label);
+    ADD_INSN(ret, &dummy_line_node, pop);
+    return;
+}
+
 /**
  * In order to properly compile multiple-assignment, some preprocessing needs to
  * be performed in the case of call or constant path targets. This is when they
@@ -680,7 +735,7 @@ pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *
  * receiver in the case of a call, the parent constant in the case of a constant
  * path).
  */
-static uint8_t
+    static uint8_t
 pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, uint8_t pushed, bool nested)
 {
     switch (PM_NODE_TYPE(node)) {
@@ -1195,47 +1250,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_CALL_AND_WRITE_NODE: {
         pm_call_and_write_node_t *call_and_write_node = (pm_call_and_write_node_t*) node;
 
-        LABEL *call_end_label = NEW_LABEL(lineno);
-        LABEL *end_label = NEW_LABEL(lineno);
-
-        int flag = 0;
-
-        if (PM_NODE_TYPE_P(call_and_write_node->receiver, PM_SELF_NODE)) {
-            flag = VM_CALL_FCALL;
-        }
-
-        PM_COMPILE(call_and_write_node->receiver);
-
-        ID write_name_id = pm_constant_id_lookup(scope_node, call_and_write_node->write_name);
-        ID read_name_id = pm_constant_id_lookup(scope_node, call_and_write_node->read_name);
-        ADD_INSN(ret, &dummy_line_node, dup);
-
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, read_name_id, INT2FIX(0), INT2FIX(flag));
-
-        if (!popped) {
-            ADD_INSN(ret, &dummy_line_node, dup);
-        }
-        ADD_INSNL(ret, &dummy_line_node, branchunless, call_end_label);
-        if (!popped) {
-            ADD_INSN(ret, &dummy_line_node, pop);
-        }
-
-        PM_COMPILE(call_and_write_node->value);
-        if (!popped) {
-            ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
-        }
-        ID aid = rb_id_attrset(write_name_id);
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, aid, INT2FIX(1), INT2FIX(flag));
-        ADD_INSNL(ret, &dummy_line_node, jump, end_label);
-        ADD_LABEL(ret, call_end_label);
-
-        if (!popped) {
-            ADD_INSN(ret, &dummy_line_node, swap);
-        }
-
-        ADD_LABEL(ret, end_label);
-        ADD_INSN(ret, &dummy_line_node, pop);
+        pm_compile_call_and_or_node(true, call_and_write_node->receiver, call_and_write_node->value, call_and_write_node->write_name, call_and_write_node->read_name, ret, iseq, lineno, src, popped, scope_node);
         return;
       }
       case PM_CLASS_NODE: {
@@ -1407,10 +1422,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         PM_COMPILE_NOT_POPPED(constant_path_write_node->value);
         if (!popped) {
-            ADD_INSN(ret, &dummy_line_node, swap);
+            PM_SWAP;
             ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
         }
-        ADD_INSN(ret, &dummy_line_node, swap);
+        PM_SWAP;
         VALUE constant_name = ID2SYM(pm_constant_id_lookup(scope_node,
                     ((pm_constant_read_node_t *)constant_path_write_node->target->child)->name));
         ADD_INSN1(ret, &dummy_line_node, setconstant, constant_name);
@@ -1761,7 +1776,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         }
 
                         ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                        ADD_INSN(ret, &dummy_line_node, swap);
+                        PM_SWAP;
                         PM_COMPILE(elements->nodes[index]);
 
                         allocated_hashes++;
