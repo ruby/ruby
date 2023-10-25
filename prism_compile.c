@@ -385,6 +385,8 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
     ADD_INSNL(ret, &dummy_line_node, jump, then_label);
 }
 
+void pm_compile_defined_expr(rb_iseq_t *iseq, const pm_defined_node_t *defined_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node,  NODE dummy_line_node, bool in_condition);
+
 static void
 pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond,
                          LABEL *then_label, LABEL *else_label, const uint8_t *src, bool popped, pm_scope_node_t *scope_node)
@@ -427,6 +429,11 @@ again:
         pm_compile_flip_flop((pm_flip_flop_node_t *)cond, else_label, then_label, iseq, lineno, ret, src, popped, scope_node);
         return;
         // TODO: Several more nodes in this case statement
+      case PM_DEFINED_NODE: {
+        pm_defined_node_t *defined_node = (pm_defined_node_t *)cond;
+        pm_compile_defined_expr(iseq, defined_node, ret, src, popped, scope_node, dummy_line_node, true);
+        break;
+      }
       default: {
         DECL_ANCHOR(cond_seq);
         INIT_ANCHOR(cond_seq);
@@ -979,6 +986,112 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     }
 }
 
+void
+pm_compile_defined_expr(rb_iseq_t *iseq, const pm_defined_node_t *defined_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node,  NODE dummy_line_node, bool in_condition)
+{
+    // in_condition is the same as compile.c's needstr
+    enum defined_type dtype = DEFINED_NOT_DEFINED;
+    switch (PM_NODE_TYPE(defined_node->value)) {
+      case PM_NIL_NODE: {
+        dtype = DEFINED_NIL;
+        break;
+      }
+      case PM_SELF_NODE:
+        dtype = DEFINED_SELF;
+        break;
+      case PM_TRUE_NODE:
+        dtype = DEFINED_TRUE;
+        break;
+      case PM_FALSE_NODE:
+        dtype = DEFINED_FALSE;
+        break;
+      case PM_STRING_NODE:
+      case PM_AND_NODE:
+      case PM_OR_NODE:
+        dtype = DEFINED_EXPR;
+        break;
+      case PM_LOCAL_VARIABLE_READ_NODE:
+        dtype = DEFINED_LVAR;
+        break;
+#define PUSH_VAL(type) (in_condition ? Qtrue : rb_iseq_defined_string(type))
+      case PM_INSTANCE_VARIABLE_READ_NODE: {
+        pm_instance_variable_read_node_t *instance_variable_read_node = (pm_instance_variable_read_node_t *)defined_node->value;
+        ID id = pm_constant_id_lookup(scope_node, instance_variable_read_node->name);
+        ADD_INSN3(ret, &dummy_line_node, definedivar,
+                  ID2SYM(id), get_ivar_ic_value(iseq, id), PUSH_VAL(DEFINED_IVAR));
+        return;
+      }
+      case PM_GLOBAL_VARIABLE_READ_NODE: {
+        pm_global_variable_read_node_t *glabal_variable_read_node = (pm_global_variable_read_node_t *)defined_node->value;
+        ADD_INSN(ret, &dummy_line_node, putnil);
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_GVAR),
+                  ID2SYM(pm_constant_id_lookup(scope_node, glabal_variable_read_node->name)), PUSH_VAL(DEFINED_GVAR));
+        return;
+      }
+      case PM_CLASS_VARIABLE_READ_NODE: {
+        pm_class_variable_read_node_t *class_variable_read_node = (pm_class_variable_read_node_t *)defined_node->value;
+        ADD_INSN(ret, &dummy_line_node, putnil);
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_CVAR),
+                  ID2SYM(pm_constant_id_lookup(scope_node, class_variable_read_node->name)), PUSH_VAL(DEFINED_CVAR));
+
+        return;
+      }
+      case PM_CONSTANT_READ_NODE: {
+        pm_constant_read_node_t *constant_node = (pm_constant_read_node_t *)defined_node->value;
+        ADD_INSN(ret, &dummy_line_node, putnil);
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_CONST),
+                  ID2SYM(pm_constant_id_lookup(scope_node, constant_node->name)), PUSH_VAL(DEFINED_CONST));
+        return;
+      }
+      case PM_YIELD_NODE:
+        ADD_INSN(ret, &dummy_line_node, putnil);
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_YIELD), 0,
+                  PUSH_VAL(DEFINED_YIELD));
+        return;
+      case PM_SUPER_NODE:
+      case PM_FORWARDING_SUPER_NODE:
+        ADD_INSN(ret, &dummy_line_node, putnil);
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_ZSUPER), 0,
+                  PUSH_VAL(DEFINED_ZSUPER));
+        return;
+      case PM_CONSTANT_WRITE_NODE:
+      case PM_CONSTANT_OPERATOR_WRITE_NODE:
+      case PM_CONSTANT_AND_WRITE_NODE:
+      case PM_CONSTANT_OR_WRITE_NODE:
+
+      case PM_GLOBAL_VARIABLE_WRITE_NODE:
+      case PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE:
+      case PM_GLOBAL_VARIABLE_AND_WRITE_NODE:
+      case PM_GLOBAL_VARIABLE_OR_WRITE_NODE:
+
+      case PM_CLASS_VARIABLE_WRITE_NODE:
+      case PM_CLASS_VARIABLE_OPERATOR_WRITE_NODE:
+      case PM_CLASS_VARIABLE_AND_WRITE_NODE:
+      case PM_CLASS_VARIABLE_OR_WRITE_NODE:
+
+      case PM_INSTANCE_VARIABLE_WRITE_NODE:
+      case PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE:
+      case PM_INSTANCE_VARIABLE_AND_WRITE_NODE:
+      case PM_INSTANCE_VARIABLE_OR_WRITE_NODE:
+
+      case PM_LOCAL_VARIABLE_WRITE_NODE:
+      case PM_LOCAL_VARIABLE_OPERATOR_WRITE_NODE:
+      case PM_LOCAL_VARIABLE_AND_WRITE_NODE:
+      case PM_LOCAL_VARIABLE_OR_WRITE_NODE:
+
+      case PM_MULTI_WRITE_NODE:
+        dtype = DEFINED_ASGN;
+        break;
+      default:
+        assert(0 && "TODO");
+    }
+
+    assert(dtype != DEFINED_NOT_DEFINED);
+
+    ADD_INSN1(ret, &dummy_line_node, putobject, PUSH_VAL(dtype));
+#undef PUSH_VAL
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *
@@ -1497,17 +1610,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_DEFINED_NODE: {
-        ADD_INSN(ret, &dummy_line_node, putself);
         pm_defined_node_t *defined_node = (pm_defined_node_t *)node;
-        // TODO: Correct defined_type
-        enum defined_type dtype = DEFINED_CONST;
-
-        VALUE sym = Qnil;
-        if (PM_NODE_TYPE_P(defined_node->value, PM_INTEGER_NODE)) {
-            sym = parse_integer((pm_integer_node_t *) defined_node->value);
-        }
-
-        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(dtype), sym, rb_iseq_defined_string(dtype));
+        pm_compile_defined_expr(iseq, defined_node, ret, src, popped, scope_node, dummy_line_node, false);
         return;
       }
       case PM_EMBEDDED_STATEMENTS_NODE: {
