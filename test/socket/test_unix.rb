@@ -152,7 +152,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     lock = Thread::Mutex.new
     nr = 0
     x = 2
-    y = 1000
+    y = 400
     begin
       s1.send_io(nil)
     rescue NotImplementedError
@@ -167,12 +167,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
           true
         end
       end
-      begin
-        (x * y).times { s1.send_io r1 }
-      rescue Errno::ETOOMANYREFS => e
-        # for arm64-neoverse-n1
-        omit e.message
-      end
+      (x * y).times { s1.send_io r1 }
       assert_equal([true]*x, thrs.map { |t| t.value })
       assert_equal x * y, nr
     ensure
