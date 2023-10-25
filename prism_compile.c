@@ -1342,6 +1342,32 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_POP_IF_POPPED;
         return;
       }
+      case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE: {
+        pm_constant_path_operator_write_node_t *constant_path_operator_write_node = (pm_constant_path_operator_write_node_t*) node;
+
+        pm_constant_path_node_t *target = constant_path_operator_write_node->target;
+        PM_COMPILE(target->parent);
+
+        ADD_INSN(ret, &dummy_line_node, dup);
+        ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+
+        pm_constant_read_node_t *child = (pm_constant_read_node_t *)target->child;
+        VALUE child_name = ID2SYM(pm_constant_id_lookup(scope_node, child->name));
+        ADD_INSN1(ret, &dummy_line_node, getconstant, child_name);
+
+        PM_COMPILE(constant_path_operator_write_node->value);
+        ID method_id = pm_constant_id_lookup(scope_node, constant_path_operator_write_node->operator);
+        ADD_CALL(ret, &dummy_line_node, method_id, INT2FIX(1));
+        ADD_INSN(ret, &dummy_line_node, swap);
+
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+            ADD_INSN(ret, &dummy_line_node, swap);
+        }
+
+        ADD_INSN1(ret, &dummy_line_node, setconstant, child_name);
+        return ;
+      }
       case PM_CONSTANT_PATH_TARGET_NODE: {
         pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *)node;
 
