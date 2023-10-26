@@ -10,13 +10,14 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,5)-(4,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (1,5)-(4,8))
-        │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (1,5)-(1,6) = "\""
-        │   │           ├── content_loc: (1,6)-(4,7) = "hello\\\n my\\\n dear\\\n friend"
-        │   │           ├── closing_loc: (4,7)-(4,8) = "\""
-        │   │           └── unescaped: "hello my dear friend"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ StringNode (location: (1,5)-(4,8))
+        │   │   │       ├── flags: ∅
+        │   │   │       ├── opening_loc: (1,5)-(1,6) = "\""
+        │   │   │       ├── content_loc: (1,6)-(4,7) = "hello\\\n my\\\n dear\\\n friend"
+        │   │   │       ├── closing_loc: (4,7)-(4,8) = "\""
+        │   │   │       └── unescaped: "hello my dear friend"
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -38,17 +39,18 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (6,4)-(6,5))
-            │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (6,4)-(6,5))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (6,4)-(6,5) = "b"
-            │           ├── opening_loc: ∅
-            │           ├── arguments: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :b
+            │   ├── arguments: (length: 1)
+            │   │   └── @ CallNode (location: (6,4)-(6,5))
+            │   │       ├── receiver: ∅
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (6,4)-(6,5) = "b"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block: ∅
+            │   │       ├── flags: variable_call
+            │   │       └── name: :b
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

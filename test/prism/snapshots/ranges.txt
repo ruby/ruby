@@ -55,14 +55,15 @@
         │   ├── opening_loc: (7,3)-(7,4) = "["
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (7,4)-(7,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ RangeNode (location: (7,4)-(7,8))
-        │   │           ├── left: ∅
-        │   │           ├── right:
-        │   │           │   @ IntegerNode (location: (7,7)-(7,8))
-        │   │           │   └── flags: decimal
-        │   │           ├── operator_loc: (7,4)-(7,7) = "..."
-        │   │           └── flags: exclude_end
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ RangeNode (location: (7,4)-(7,8))
+        │   │   │       ├── left: ∅
+        │   │   │       ├── right:
+        │   │   │       │   @ IntegerNode (location: (7,7)-(7,8))
+        │   │   │       │   └── flags: decimal
+        │   │   │       ├── operator_loc: (7,4)-(7,7) = "..."
+        │   │   │       └── flags: exclude_end
+        │   │   └── flags: ∅
         │   ├── closing_loc: (7,8)-(7,9) = "]"
         │   ├── block: ∅
         │   ├── flags: ∅

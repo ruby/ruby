@@ -161,7 +161,7 @@ module Prism
           nil,
           node.operator_loc.copy(length: node.operator_loc.length - 1),
           nil,
-          ArgumentsNode.new([node.value], node.value.location),
+          ArgumentsNode.new([node.value], 0, node.value.location),
           nil,
           nil,
           0,

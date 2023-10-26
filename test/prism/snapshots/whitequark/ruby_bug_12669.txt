@@ -18,12 +18,13 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (1,16)-(1,18))
-        │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ SymbolNode (location: (1,16)-(1,18))
-        │   │   │   │           ├── opening_loc: (1,16)-(1,17) = ":"
-        │   │   │   │           ├── value_loc: (1,17)-(1,18) = "x"
-        │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           └── unescaped: "x"
+        │   │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   │   └── @ SymbolNode (location: (1,16)-(1,18))
+        │   │   │   │   │       ├── opening_loc: (1,16)-(1,17) = ":"
+        │   │   │   │   │       ├── value_loc: (1,17)-(1,18) = "x"
+        │   │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │   │       └── unescaped: "x"
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
@@ -50,12 +51,13 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (3,15)-(3,17))
-        │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ SymbolNode (location: (3,15)-(3,17))
-        │   │   │   │           ├── opening_loc: (3,15)-(3,16) = ":"
-        │   │   │   │           ├── value_loc: (3,16)-(3,17) = "x"
-        │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           └── unescaped: "x"
+        │   │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   │   └── @ SymbolNode (location: (3,15)-(3,17))
+        │   │   │   │   │       ├── opening_loc: (3,15)-(3,16) = ":"
+        │   │   │   │   │       ├── value_loc: (3,16)-(3,17) = "x"
+        │   │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │   │       └── unescaped: "x"
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
@@ -80,12 +82,13 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (5,15)-(5,17))
-        │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ SymbolNode (location: (5,15)-(5,17))
-        │   │   │   │           ├── opening_loc: (5,15)-(5,16) = ":"
-        │   │   │   │           ├── value_loc: (5,16)-(5,17) = "x"
-        │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           └── unescaped: "x"
+        │   │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   │   └── @ SymbolNode (location: (5,15)-(5,17))
+        │   │   │   │   │       ├── opening_loc: (5,15)-(5,16) = ":"
+        │   │   │   │   │       ├── value_loc: (5,16)-(5,17) = "x"
+        │   │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │   │       └── unescaped: "x"
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
@@ -111,12 +114,13 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments:
             │   │   │   @ ArgumentsNode (location: (7,14)-(7,16))
-            │   │   │   └── arguments: (length: 1)
-            │   │   │       └── @ SymbolNode (location: (7,14)-(7,16))
-            │   │   │           ├── opening_loc: (7,14)-(7,15) = ":"
-            │   │   │           ├── value_loc: (7,15)-(7,16) = "x"
-            │   │   │           ├── closing_loc: ∅
-            │   │   │           └── unescaped: "x"
+            │   │   │   ├── arguments: (length: 1)
+            │   │   │   │   └── @ SymbolNode (location: (7,14)-(7,16))
+            │   │   │   │       ├── opening_loc: (7,14)-(7,15) = ":"
+            │   │   │   │       ├── value_loc: (7,15)-(7,16) = "x"
+            │   │   │   │       ├── closing_loc: ∅
+            │   │   │   │       └── unescaped: "x"
+            │   │   │   └── flags: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
             │   │   ├── flags: ∅

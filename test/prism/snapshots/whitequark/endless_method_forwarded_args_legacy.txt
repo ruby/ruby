@@ -27,8 +27,9 @@
             │           ├── opening_loc: (1,18)-(1,19) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,19)-(1,22))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ ForwardingArgumentsNode (location: (1,19)-(1,22))
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ ForwardingArgumentsNode (location: (1,19)-(1,22))
+            │           │   └── flags: ∅
             │           ├── closing_loc: (1,22)-(1,23) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

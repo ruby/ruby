@@ -9882,9 +9882,11 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
 }
 
 // Parse all of the elements of a hash.
-static void
+// Returns true if a double splat was found
+static bool
 parse_assocs(pm_parser_t *parser, pm_node_t *node) {
     assert(PM_NODE_TYPE_P(node, PM_HASH_NODE) || PM_NODE_TYPE_P(node, PM_KEYWORD_HASH_NODE));
+    bool contains_keyword_splat = false;
 
     while (true) {
         pm_node_t *element;
@@ -9902,6 +9904,7 @@ parse_assocs(pm_parser_t *parser, pm_node_t *node) {
                 }
 
                 element = (pm_node_t *) pm_assoc_splat_node_create(parser, value, &operator);
+                contains_keyword_splat = true;
                 break;
             }
             case PM_TOKEN_LABEL: {
@@ -9960,7 +9963,7 @@ parse_assocs(pm_parser_t *parser, pm_node_t *node) {
         }
 
         // If there's no comma after the element, then we're done.
-        if (!accept1(parser, PM_TOKEN_COMMA)) return;
+        if (!accept1(parser, PM_TOKEN_COMMA)) break;
 
         // If the next element starts with a label or a **, then we know we have
         // another element in the hash, so we'll continue parsing.
@@ -9971,8 +9974,9 @@ parse_assocs(pm_parser_t *parser, pm_node_t *node) {
         if (token_begins_expression_p(parser->current.type)) continue;
 
         // Otherwise by default we will exit out of this loop.
-        return;
+        break;
     }
+    return contains_keyword_splat;
 }
 
 // Append an argument to a list of arguments.
@@ -10020,12 +10024,16 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 pm_keyword_hash_node_t *hash = pm_keyword_hash_node_create(parser);
                 argument = (pm_node_t *) hash;
 
+                bool contains_keyword_splat = false;
                 if (!match7(parser, terminator, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                    parse_assocs(parser, (pm_node_t *) hash);
+                    contains_keyword_splat = parse_assocs(parser, (pm_node_t *) hash);
                 }
 
                 parsed_bare_hash = true;
                 parse_arguments_append(parser, arguments, argument);
+                if (contains_keyword_splat) {
+                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_KEYWORD_SPLAT;
+                }
                 break;
             }
             case PM_TOKEN_UAMPERSAND: {
@@ -10099,6 +10107,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     argument = parse_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_EXPECT_ARGUMENT);
                 }
 
+                bool contains_keyword_splat = false;
                 if (pm_symbol_node_label_p(argument) || accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
                     if (parsed_bare_hash) {
                         pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
@@ -10125,13 +10134,16 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         token_begins_expression_p(parser->current.type) ||
                         match2(parser, PM_TOKEN_USTAR_STAR, PM_TOKEN_LABEL)
                     )) {
-                        parse_assocs(parser, (pm_node_t *) bare_hash);
+                        contains_keyword_splat = parse_assocs(parser, (pm_node_t *) bare_hash);
                     }
 
                     parsed_bare_hash = true;
                 }
 
                 parse_arguments_append(parser, arguments, argument);
+                if (contains_keyword_splat) {
+                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_KEYWORD_SPLAT;
+                }
                 break;
             }
         }

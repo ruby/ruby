@@ -10,9 +10,10 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,2)-(1,4))
-            │   └── arguments: (length: 1)
-            │       └── @ InstanceVariableReadNode (location: (1,2)-(1,4))
-            │           └── name: :@b
+            │   ├── arguments: (length: 1)
+            │   │   └── @ InstanceVariableReadNode (location: (1,2)-(1,4))
+            │   │       └── name: :@b
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (1,5)-(1,15))

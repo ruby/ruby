@@ -22,10 +22,11 @@
                 ├── opening_loc: ∅
                 ├── arguments:
                 │   @ ArgumentsNode (location: (1,13)-(1,16))
-                │   └── arguments: (length: 1)
-                │       └── @ LocalVariableReadNode (location: (1,13)-(1,16))
-                │           ├── name: :foo
-                │           └── depth: 0
+                │   ├── arguments: (length: 1)
+                │   │   └── @ LocalVariableReadNode (location: (1,13)-(1,16))
+                │   │       ├── name: :foo
+                │   │       └── depth: 0
+                │   └── flags: ∅
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: ∅

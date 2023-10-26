@@ -22,17 +22,18 @@
                 ├── opening_loc: ∅
                 ├── arguments:
                 │   @ ArgumentsNode (location: (1,10)-(1,11))
-                │   └── arguments: (length: 1)
-                │       └── @ CallNode (location: (1,10)-(1,11))
-                │           ├── receiver: ∅
-                │           ├── call_operator_loc: ∅
-                │           ├── message_loc: (1,10)-(1,11) = "d"
-                │           ├── opening_loc: ∅
-                │           ├── arguments: ∅
-                │           ├── closing_loc: ∅
-                │           ├── block: ∅
-                │           ├── flags: variable_call
-                │           └── name: :d
+                │   ├── arguments: (length: 1)
+                │   │   └── @ CallNode (location: (1,10)-(1,11))
+                │   │       ├── receiver: ∅
+                │   │       ├── call_operator_loc: ∅
+                │   │       ├── message_loc: (1,10)-(1,11) = "d"
+                │   │       ├── opening_loc: ∅
+                │   │       ├── arguments: ∅
+                │   │       ├── closing_loc: ∅
+                │   │       ├── block: ∅
+                │   │       ├── flags: variable_call
+                │   │       └── name: :d
+                │   └── flags: ∅
                 ├── closing_loc: ∅
                 ├── block: ∅
                 ├── flags: ∅

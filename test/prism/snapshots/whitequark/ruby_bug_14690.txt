@@ -10,11 +10,12 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,4)-(1,6))
-            │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (1,4)-(1,6))
-            │           ├── body: ∅
-            │           ├── opening_loc: (1,4)-(1,5) = "("
-            │           └── closing_loc: (1,5)-(1,6) = ")"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ ParenthesesNode (location: (1,4)-(1,6))
+            │   │       ├── body: ∅
+            │   │       ├── opening_loc: (1,4)-(1,5) = "("
+            │   │       └── closing_loc: (1,5)-(1,6) = ")"
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (1,7)-(1,23))
@@ -30,17 +31,18 @@
             │   │           ├── opening_loc: (1,10)-(1,11) = "("
             │   │           ├── arguments:
             │   │           │   @ ArgumentsNode (location: (1,11)-(1,12))
-            │   │           │   └── arguments: (length: 1)
-            │   │           │       └── @ CallNode (location: (1,11)-(1,12))
-            │   │           │           ├── receiver: ∅
-            │   │           │           ├── call_operator_loc: ∅
-            │   │           │           ├── message_loc: (1,11)-(1,12) = "a"
-            │   │           │           ├── opening_loc: ∅
-            │   │           │           ├── arguments: ∅
-            │   │           │           ├── closing_loc: ∅
-            │   │           │           ├── block: ∅
-            │   │           │           ├── flags: variable_call
-            │   │           │           └── name: :a
+            │   │           │   ├── arguments: (length: 1)
+            │   │           │   │   └── @ CallNode (location: (1,11)-(1,12))
+            │   │           │   │       ├── receiver: ∅
+            │   │           │   │       ├── call_operator_loc: ∅
+            │   │           │   │       ├── message_loc: (1,11)-(1,12) = "a"
+            │   │           │   │       ├── opening_loc: ∅
+            │   │           │   │       ├── arguments: ∅
+            │   │           │   │       ├── closing_loc: ∅
+            │   │           │   │       ├── block: ∅
+            │   │           │   │       ├── flags: variable_call
+            │   │           │   │       └── name: :a
+            │   │           │   └── flags: ∅
             │   │           ├── closing_loc: (1,12)-(1,13) = ")"
             │   │           ├── block:
             │   │           │   @ BlockNode (location: (1,14)-(1,21))

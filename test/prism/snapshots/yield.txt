@@ -18,20 +18,22 @@
         │   ├── lparen_loc: (5,5)-(5,6) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (5,6)-(5,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (5,6)-(5,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (5,6)-(5,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   └── rparen_loc: (5,7)-(5,8) = ")"
         └── @ YieldNode (location: (7,0)-(7,14))
             ├── keyword_loc: (7,0)-(7,5) = "yield"
             ├── lparen_loc: (7,5)-(7,6) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (7,6)-(7,13))
-            │   └── arguments: (length: 3)
-            │       ├── @ IntegerNode (location: (7,6)-(7,7))
-            │       │   └── flags: decimal
-            │       ├── @ IntegerNode (location: (7,9)-(7,10))
-            │       │   └── flags: decimal
-            │       └── @ IntegerNode (location: (7,12)-(7,13))
-            │           └── flags: decimal
+            │   ├── arguments: (length: 3)
+            │   │   ├── @ IntegerNode (location: (7,6)-(7,7))
+            │   │   │   └── flags: decimal
+            │   │   ├── @ IntegerNode (location: (7,9)-(7,10))
+            │   │   │   └── flags: decimal
+            │   │   └── @ IntegerNode (location: (7,12)-(7,13))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
             └── rparen_loc: (7,13)-(7,14) = ")"

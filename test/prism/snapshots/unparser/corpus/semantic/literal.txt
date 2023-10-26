@@ -63,29 +63,31 @@
             ├── opening_loc: (14,1)-(14,2) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (14,2)-(14,9))
-            │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (14,2)-(14,9))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (14,2)-(14,5) = "foo"
-            │           ├── opening_loc: ∅
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (14,6)-(14,9))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ CallNode (location: (14,6)-(14,9))
-            │           │           ├── receiver: ∅
-            │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (14,6)-(14,9) = "bar"
-            │           │           ├── opening_loc: ∅
-            │           │           ├── arguments: ∅
-            │           │           ├── closing_loc: ∅
-            │           │           ├── block: ∅
-            │           │           ├── flags: variable_call
-            │           │           └── name: :bar
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :foo
+            │   ├── arguments: (length: 1)
+            │   │   └── @ CallNode (location: (14,2)-(14,9))
+            │   │       ├── receiver: ∅
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (14,2)-(14,5) = "foo"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments:
+            │   │       │   @ ArgumentsNode (location: (14,6)-(14,9))
+            │   │       │   ├── arguments: (length: 1)
+            │   │       │   │   └── @ CallNode (location: (14,6)-(14,9))
+            │   │       │   │       ├── receiver: ∅
+            │   │       │   │       ├── call_operator_loc: ∅
+            │   │       │   │       ├── message_loc: (14,6)-(14,9) = "bar"
+            │   │       │   │       ├── opening_loc: ∅
+            │   │       │   │       ├── arguments: ∅
+            │   │       │   │       ├── closing_loc: ∅
+            │   │       │   │       ├── block: ∅
+            │   │       │   │       ├── flags: variable_call
+            │   │       │   │       └── name: :bar
+            │   │       │   └── flags: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block: ∅
+            │   │       ├── flags: ∅
+            │   │       └── name: :foo
+            │   └── flags: ∅
             ├── closing_loc: (14,9)-(14,10) = ")"
             ├── block: ∅
             ├── flags: ∅

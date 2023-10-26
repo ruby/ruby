@@ -48,9 +48,10 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (3,17)-(3,18))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (3,17)-(3,18))
-        │   │           │           └── flags: decimal
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ IntegerNode (location: (3,17)-(3,18))
+        │   │           │   │       └── flags: decimal
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -127,9 +128,10 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (7,21)-(7,22))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ IntegerNode (location: (7,21)-(7,22))
-            │           │           └── flags: decimal
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ IntegerNode (location: (7,21)-(7,22))
+            │           │   │       └── flags: decimal
+            │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

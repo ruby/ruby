@@ -45,17 +45,18 @@
         │       ├── keyword_loc: (2,11)-(2,17) = "return"
         │       └── arguments:
         │           @ ArgumentsNode (location: (2,18)-(2,21))
-        │           └── arguments: (length: 1)
-        │               └── @ CallNode (location: (2,18)-(2,21))
-        │                   ├── receiver: ∅
-        │                   ├── call_operator_loc: ∅
-        │                   ├── message_loc: (2,18)-(2,21) = "bar"
-        │                   ├── opening_loc: ∅
-        │                   ├── arguments: ∅
-        │                   ├── closing_loc: ∅
-        │                   ├── block: ∅
-        │                   ├── flags: variable_call
-        │                   └── name: :bar
+        │           ├── arguments: (length: 1)
+        │           │   └── @ CallNode (location: (2,18)-(2,21))
+        │           │       ├── receiver: ∅
+        │           │       ├── call_operator_loc: ∅
+        │           │       ├── message_loc: (2,18)-(2,21) = "bar"
+        │           │       ├── opening_loc: ∅
+        │           │       ├── arguments: ∅
+        │           │       ├── closing_loc: ∅
+        │           │       ├── block: ∅
+        │           │       ├── flags: variable_call
+        │           │       └── name: :bar
+        │           └── flags: ∅
         └── @ LocalVariableWriteNode (location: (3,0)-(3,27))
             ├── name: :x
             ├── depth: 0
@@ -83,17 +84,18 @@
             │   │               ├── keyword_loc: (3,16)-(3,22) = "return"
             │   │               └── arguments:
             │   │                   @ ArgumentsNode (location: (3,23)-(3,26))
-            │   │                   └── arguments: (length: 1)
-            │   │                       └── @ CallNode (location: (3,23)-(3,26))
-            │   │                           ├── receiver: ∅
-            │   │                           ├── call_operator_loc: ∅
-            │   │                           ├── message_loc: (3,23)-(3,26) = "bar"
-            │   │                           ├── opening_loc: ∅
-            │   │                           ├── arguments: ∅
-            │   │                           ├── closing_loc: ∅
-            │   │                           ├── block: ∅
-            │   │                           ├── flags: variable_call
-            │   │                           └── name: :bar
+            │   │                   ├── arguments: (length: 1)
+            │   │                   │   └── @ CallNode (location: (3,23)-(3,26))
+            │   │                   │       ├── receiver: ∅
+            │   │                   │       ├── call_operator_loc: ∅
+            │   │                   │       ├── message_loc: (3,23)-(3,26) = "bar"
+            │   │                   │       ├── opening_loc: ∅
+            │   │                   │       ├── arguments: ∅
+            │   │                   │       ├── closing_loc: ∅
+            │   │                   │       ├── block: ∅
+            │   │                   │       ├── flags: variable_call
+            │   │                   │       └── name: :bar
+            │   │                   └── flags: ∅
             │   ├── opening_loc: (3,4)-(3,5) = "("
             │   └── closing_loc: (3,26)-(3,27) = ")"
             └── operator_loc: (3,2)-(3,3) = "="

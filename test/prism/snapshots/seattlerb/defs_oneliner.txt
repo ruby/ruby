@@ -29,10 +29,11 @@
             │           ├── opening_loc: (1,27)-(1,28) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,28)-(1,31))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ LocalVariableReadNode (location: (1,28)-(1,31))
-            │           │           ├── name: :cmd
-            │           │           └── depth: 0
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ LocalVariableReadNode (location: (1,28)-(1,31))
+            │           │   │       ├── name: :cmd
+            │           │   │       └── depth: 0
+            │           │   └── flags: ∅
             │           ├── closing_loc: (1,31)-(1,32) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

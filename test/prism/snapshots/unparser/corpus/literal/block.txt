@@ -162,9 +162,10 @@
         │   ├── opening_loc: (11,3)-(11,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (11,4)-(11,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (11,4)-(11,5))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: (11,5)-(11,6) = ")"
         │   ├── block:
         │   │   @ BlockNode (location: (11,7)-(13,1))
@@ -1352,10 +1353,11 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments:
             │   │           │   @ ArgumentsNode (location: (95,7)-(95,9))
-            │   │           │   └── arguments: (length: 1)
-            │   │           │       └── @ LocalVariableReadNode (location: (95,7)-(95,9))
-            │   │           │           ├── name: :_2
-            │   │           │           └── depth: 0
+            │   │           │   ├── arguments: (length: 1)
+            │   │           │   │   └── @ LocalVariableReadNode (location: (95,7)-(95,9))
+            │   │           │   │       ├── name: :_2
+            │   │           │   │       └── depth: 0
+            │   │           │   └── flags: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅

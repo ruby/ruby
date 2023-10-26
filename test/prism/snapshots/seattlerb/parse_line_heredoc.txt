@@ -32,10 +32,11 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (4,11)-(4,17))
-            │   └── arguments: (length: 1)
-            │       └── @ LocalVariableReadNode (location: (4,11)-(4,17))
-            │           ├── name: :string
-            │           └── depth: 0
+            │   ├── arguments: (length: 1)
+            │   │   └── @ LocalVariableReadNode (location: (4,11)-(4,17))
+            │   │       ├── name: :string
+            │   │       └── depth: 0
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

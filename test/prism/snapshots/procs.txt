@@ -333,10 +333,11 @@
         │                           ├── opening_loc: ∅
         │                           ├── arguments:
         │                           │   @ ArgumentsNode (location: (25,20)-(25,21))
-        │                           │   └── arguments: (length: 1)
-        │                           │       └── @ LocalVariableReadNode (location: (25,20)-(25,21))
-        │                           │           ├── name: :b
-        │                           │           └── depth: 0
+        │                           │   ├── arguments: (length: 1)
+        │                           │   │   └── @ LocalVariableReadNode (location: (25,20)-(25,21))
+        │                           │   │       ├── name: :b
+        │                           │   │       └── depth: 0
+        │                           │   └── flags: ∅
         │                           ├── closing_loc: ∅
         │                           ├── block: ∅
         │                           ├── flags: ∅

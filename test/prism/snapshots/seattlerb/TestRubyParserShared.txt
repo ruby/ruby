@@ -141,10 +141,11 @@
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (54,8)-(54,9))
-        │   │           │           │   └── arguments: (length: 1)
-        │   │           │           │       └── @ LocalVariableReadNode (location: (54,8)-(54,9))
-        │   │           │           │           ├── name: :b
-        │   │           │           │           └── depth: 0
+        │   │           │           │   ├── arguments: (length: 1)
+        │   │           │           │   │   └── @ LocalVariableReadNode (location: (54,8)-(54,9))
+        │   │           │           │   │       ├── name: :b
+        │   │           │           │   │       └── depth: 0
+        │   │           │           │   └── flags: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
@@ -232,10 +233,11 @@
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (69,8)-(69,9))
-        │   │           │           │   └── arguments: (length: 1)
-        │   │           │           │       └── @ LocalVariableReadNode (location: (69,8)-(69,9))
-        │   │           │           │           ├── name: :b
-        │   │           │           │           └── depth: 0
+        │   │           │           │   ├── arguments: (length: 1)
+        │   │           │           │   │   └── @ LocalVariableReadNode (location: (69,8)-(69,9))
+        │   │           │           │   │       ├── name: :b
+        │   │           │           │   │       └── depth: 0
+        │   │           │           │   └── flags: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
@@ -315,17 +317,18 @@
             ├── opening_loc: (89,1)-(89,2) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (90,0)-(91,6))
-            │   └── arguments: (length: 2)
-            │       ├── @ SymbolNode (location: (90,0)-(90,6))
-            │       │   ├── opening_loc: (90,0)-(90,1) = ":"
-            │       │   ├── value_loc: (90,1)-(90,6) = "line2"
-            │       │   ├── closing_loc: ∅
-            │       │   └── unescaped: "line2"
-            │       └── @ SymbolNode (location: (91,0)-(91,6))
-            │           ├── opening_loc: (91,0)-(91,1) = ":"
-            │           ├── value_loc: (91,1)-(91,6) = "line3"
-            │           ├── closing_loc: ∅
-            │           └── unescaped: "line3"
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ SymbolNode (location: (90,0)-(90,6))
+            │   │   │   ├── opening_loc: (90,0)-(90,1) = ":"
+            │   │   │   ├── value_loc: (90,1)-(90,6) = "line2"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "line2"
+            │   │   └── @ SymbolNode (location: (91,0)-(91,6))
+            │   │       ├── opening_loc: (91,0)-(91,1) = ":"
+            │   │       ├── value_loc: (91,1)-(91,6) = "line3"
+            │   │       ├── closing_loc: ∅
+            │   │       └── unescaped: "line3"
+            │   └── flags: ∅
             ├── closing_loc: (92,0)-(92,1) = ")"
             ├── block: ∅
             ├── flags: ∅

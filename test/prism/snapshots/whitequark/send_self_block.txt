@@ -58,9 +58,10 @@
             ├── opening_loc: (7,3)-(7,4) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (7,4)-(7,5))
-            │   └── arguments: (length: 1)
-            │       └── @ IntegerNode (location: (7,4)-(7,5))
-            │           └── flags: decimal
+            │   ├── arguments: (length: 1)
+            │   │   └── @ IntegerNode (location: (7,4)-(7,5))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
             ├── closing_loc: (7,5)-(7,6) = ")"
             ├── block:
             │   @ BlockNode (location: (7,7)-(7,10))

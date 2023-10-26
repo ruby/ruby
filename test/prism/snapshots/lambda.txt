@@ -110,9 +110,10 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments:
         │   │   │   │           │   @ ArgumentsNode (location: (7,10)-(7,11))
-        │   │   │   │           │   └── arguments: (length: 1)
-        │   │   │   │           │       └── @ IntegerNode (location: (7,10)-(7,11))
-        │   │   │   │           │           └── flags: decimal
+        │   │   │   │           │   ├── arguments: (length: 1)
+        │   │   │   │           │   │   └── @ IntegerNode (location: (7,10)-(7,11))
+        │   │   │   │           │   │       └── flags: decimal
+        │   │   │   │           │   └── flags: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
         │   │   │   │           ├── flags: ∅

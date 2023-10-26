@@ -16,27 +16,28 @@
             ├── lparen_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (3,6)-(3,14))
-            │   └── arguments: (length: 2)
-            │       ├── @ CallNode (location: (3,6)-(3,9))
-            │       │   ├── receiver: ∅
-            │       │   ├── call_operator_loc: ∅
-            │       │   ├── message_loc: (3,6)-(3,9) = "foo"
-            │       │   ├── opening_loc: ∅
-            │       │   ├── arguments: ∅
-            │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   ├── flags: variable_call
-            │       │   └── name: :foo
-            │       └── @ CallNode (location: (3,11)-(3,14))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (3,11)-(3,14) = "bar"
-            │           ├── opening_loc: ∅
-            │           ├── arguments: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :bar
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ CallNode (location: (3,6)-(3,9))
+            │   │   │   ├── receiver: ∅
+            │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── message_loc: (3,6)-(3,9) = "foo"
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── arguments: ∅
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   ├── block: ∅
+            │   │   │   ├── flags: variable_call
+            │   │   │   └── name: :foo
+            │   │   └── @ CallNode (location: (3,11)-(3,14))
+            │   │       ├── receiver: ∅
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (3,11)-(3,14) = "bar"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block: ∅
+            │   │       ├── flags: variable_call
+            │   │       └── name: :bar
+            │   └── flags: ∅
             ├── rparen_loc: ∅
             └── block:
                 @ BlockNode (location: (3,15)-(3,21))

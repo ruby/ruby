@@ -10,9 +10,10 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (2,2)-(2,3))
-            │   └── arguments: (length: 1)
-            │       └── @ IntegerNode (location: (2,2)-(2,3))
-            │           └── flags: decimal
+            │   ├── arguments: (length: 1)
+            │   │   └── @ IntegerNode (location: (2,2)-(2,3))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

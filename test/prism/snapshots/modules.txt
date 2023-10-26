@@ -163,9 +163,10 @@
             │   │   ├── opening_loc: (17,8)-(17,9) = "["
             │   │   ├── arguments:
             │   │   │   @ ArgumentsNode (location: (17,9)-(17,10))
-            │   │   │   └── arguments: (length: 1)
-            │   │   │       └── @ IntegerNode (location: (17,9)-(17,10))
-            │   │   │           └── flags: decimal
+            │   │   │   ├── arguments: (length: 1)
+            │   │   │   │   └── @ IntegerNode (location: (17,9)-(17,10))
+            │   │   │   │       └── flags: decimal
+            │   │   │   └── flags: ∅
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   ├── block: ∅
             │   │   ├── flags: ∅

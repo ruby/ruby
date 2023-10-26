@@ -44,10 +44,11 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments:
             │   │           │   @ ArgumentsNode (location: (2,6)-(2,7))
-            │   │           │   └── arguments: (length: 1)
-            │   │           │       └── @ LocalVariableReadNode (location: (2,6)-(2,7))
-            │   │           │           ├── name: :y
-            │   │           │           └── depth: 0
+            │   │           │   ├── arguments: (length: 1)
+            │   │           │   │   └── @ LocalVariableReadNode (location: (2,6)-(2,7))
+            │   │           │   │       ├── name: :y
+            │   │           │   │       └── depth: 0
+            │   │           │   └── flags: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅

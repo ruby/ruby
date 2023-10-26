@@ -18,12 +18,13 @@
             │   ├── opening_loc: ∅
             │   ├── arguments:
             │   │   @ ArgumentsNode (location: (1,13)-(1,15))
-            │   │   └── arguments: (length: 1)
-            │   │       └── @ SymbolNode (location: (1,13)-(1,15))
-            │   │           ├── opening_loc: (1,13)-(1,14) = ":"
-            │   │           ├── value_loc: (1,14)-(1,15) = "b"
-            │   │           ├── closing_loc: ∅
-            │   │           └── unescaped: "b"
+            │   │   ├── arguments: (length: 1)
+            │   │   │   └── @ SymbolNode (location: (1,13)-(1,15))
+            │   │   │       ├── opening_loc: (1,13)-(1,14) = ":"
+            │   │   │       ├── value_loc: (1,14)-(1,15) = "b"
+            │   │   │       ├── closing_loc: ∅
+            │   │   │       └── unescaped: "b"
+            │   │   └── flags: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅

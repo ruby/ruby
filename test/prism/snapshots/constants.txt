@@ -71,9 +71,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (13,4)-(13,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (13,4)-(13,5))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (13,4)-(13,5))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -85,20 +86,21 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (15,4)-(15,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ SplatNode (location: (15,4)-(15,8))
-        │   │           ├── operator_loc: (15,4)-(15,5) = "*"
-        │   │           └── expression:
-        │   │               @ CallNode (location: (15,5)-(15,8))
-        │   │               ├── receiver: ∅
-        │   │               ├── call_operator_loc: ∅
-        │   │               ├── message_loc: (15,5)-(15,8) = "bar"
-        │   │               ├── opening_loc: ∅
-        │   │               ├── arguments: ∅
-        │   │               ├── closing_loc: ∅
-        │   │               ├── block: ∅
-        │   │               ├── flags: variable_call
-        │   │               └── name: :bar
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ SplatNode (location: (15,4)-(15,8))
+        │   │   │       ├── operator_loc: (15,4)-(15,5) = "*"
+        │   │   │       └── expression:
+        │   │   │           @ CallNode (location: (15,5)-(15,8))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (15,5)-(15,8) = "bar"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: :bar
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -110,22 +112,23 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (17,4)-(17,9))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ KeywordHashNode (location: (17,4)-(17,9))
-        │   │           └── elements: (length: 1)
-        │   │               └── @ AssocSplatNode (location: (17,4)-(17,9))
-        │   │                   ├── value:
-        │   │                   │   @ CallNode (location: (17,6)-(17,9))
-        │   │                   │   ├── receiver: ∅
-        │   │                   │   ├── call_operator_loc: ∅
-        │   │                   │   ├── message_loc: (17,6)-(17,9) = "bar"
-        │   │                   │   ├── opening_loc: ∅
-        │   │                   │   ├── arguments: ∅
-        │   │                   │   ├── closing_loc: ∅
-        │   │                   │   ├── block: ∅
-        │   │                   │   ├── flags: variable_call
-        │   │                   │   └── name: :bar
-        │   │                   └── operator_loc: (17,4)-(17,6) = "**"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ KeywordHashNode (location: (17,4)-(17,9))
+        │   │   │       └── elements: (length: 1)
+        │   │   │           └── @ AssocSplatNode (location: (17,4)-(17,9))
+        │   │   │               ├── value:
+        │   │   │               │   @ CallNode (location: (17,6)-(17,9))
+        │   │   │               │   ├── receiver: ∅
+        │   │   │               │   ├── call_operator_loc: ∅
+        │   │   │               │   ├── message_loc: (17,6)-(17,9) = "bar"
+        │   │   │               │   ├── opening_loc: ∅
+        │   │   │               │   ├── arguments: ∅
+        │   │   │               │   ├── closing_loc: ∅
+        │   │   │               │   ├── block: ∅
+        │   │   │               │   ├── flags: variable_call
+        │   │   │               │   └── name: :bar
+        │   │   │               └── operator_loc: (17,4)-(17,6) = "**"
+        │   │   └── flags: keyword_splat
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -162,20 +165,21 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (21,9)-(21,13))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ SplatNode (location: (21,9)-(21,13))
-        │   │           ├── operator_loc: (21,9)-(21,10) = "*"
-        │   │           └── expression:
-        │   │               @ CallNode (location: (21,10)-(21,13))
-        │   │               ├── receiver: ∅
-        │   │               ├── call_operator_loc: ∅
-        │   │               ├── message_loc: (21,10)-(21,13) = "baz"
-        │   │               ├── opening_loc: ∅
-        │   │               ├── arguments: ∅
-        │   │               ├── closing_loc: ∅
-        │   │               ├── block: ∅
-        │   │               ├── flags: variable_call
-        │   │               └── name: :baz
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ SplatNode (location: (21,9)-(21,13))
+        │   │   │       ├── operator_loc: (21,9)-(21,10) = "*"
+        │   │   │       └── expression:
+        │   │   │           @ CallNode (location: (21,10)-(21,13))
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── message_loc: (21,10)-(21,13) = "baz"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── block: ∅
+        │   │   │           ├── flags: variable_call
+        │   │   │           └── name: :baz
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -189,22 +193,23 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (23,9)-(23,14))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ KeywordHashNode (location: (23,9)-(23,14))
-        │   │           └── elements: (length: 1)
-        │   │               └── @ AssocSplatNode (location: (23,9)-(23,14))
-        │   │                   ├── value:
-        │   │                   │   @ CallNode (location: (23,11)-(23,14))
-        │   │                   │   ├── receiver: ∅
-        │   │                   │   ├── call_operator_loc: ∅
-        │   │                   │   ├── message_loc: (23,11)-(23,14) = "baz"
-        │   │                   │   ├── opening_loc: ∅
-        │   │                   │   ├── arguments: ∅
-        │   │                   │   ├── closing_loc: ∅
-        │   │                   │   ├── block: ∅
-        │   │                   │   ├── flags: variable_call
-        │   │                   │   └── name: :baz
-        │   │                   └── operator_loc: (23,9)-(23,11) = "**"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ KeywordHashNode (location: (23,9)-(23,14))
+        │   │   │       └── elements: (length: 1)
+        │   │   │           └── @ AssocSplatNode (location: (23,9)-(23,14))
+        │   │   │               ├── value:
+        │   │   │               │   @ CallNode (location: (23,11)-(23,14))
+        │   │   │               │   ├── receiver: ∅
+        │   │   │               │   ├── call_operator_loc: ∅
+        │   │   │               │   ├── message_loc: (23,11)-(23,14) = "baz"
+        │   │   │               │   ├── opening_loc: ∅
+        │   │   │               │   ├── arguments: ∅
+        │   │   │               │   ├── closing_loc: ∅
+        │   │   │               │   ├── block: ∅
+        │   │   │               │   ├── flags: variable_call
+        │   │   │               │   └── name: :baz
+        │   │   │               └── operator_loc: (23,9)-(23,11) = "**"
+        │   │   └── flags: keyword_splat
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1009,17 +1014,18 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (157,4)-(157,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (157,4)-(157,5))
-        │   │           ├── receiver: ∅
-        │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (157,4)-(157,5) = "i"
-        │   │           ├── opening_loc: ∅
-        │   │           ├── arguments: ∅
-        │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :i
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ CallNode (location: (157,4)-(157,5))
+        │   │   │       ├── receiver: ∅
+        │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── message_loc: (157,4)-(157,5) = "i"
+        │   │   │       ├── opening_loc: ∅
+        │   │   │       ├── arguments: ∅
+        │   │   │       ├── closing_loc: ∅
+        │   │   │       ├── block: ∅
+        │   │   │       ├── flags: variable_call
+        │   │   │       └── name: :i
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1033,17 +1039,18 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (159,4)-(159,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (159,4)-(159,5))
-        │   │           ├── receiver: ∅
-        │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (159,4)-(159,5) = "w"
-        │   │           ├── opening_loc: ∅
-        │   │           ├── arguments: ∅
-        │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :w
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ CallNode (location: (159,4)-(159,5))
+        │   │   │       ├── receiver: ∅
+        │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── message_loc: (159,4)-(159,5) = "w"
+        │   │   │       ├── opening_loc: ∅
+        │   │   │       ├── arguments: ∅
+        │   │   │       ├── closing_loc: ∅
+        │   │   │       ├── block: ∅
+        │   │   │       ├── flags: variable_call
+        │   │   │       └── name: :w
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1057,17 +1064,18 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (161,4)-(161,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ CallNode (location: (161,4)-(161,5))
-        │   │           ├── receiver: ∅
-        │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (161,4)-(161,5) = "x"
-        │   │           ├── opening_loc: ∅
-        │   │           ├── arguments: ∅
-        │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :x
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ CallNode (location: (161,4)-(161,5))
+        │   │   │       ├── receiver: ∅
+        │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── message_loc: (161,4)-(161,5) = "x"
+        │   │   │       ├── opening_loc: ∅
+        │   │   │       ├── arguments: ∅
+        │   │   │       ├── closing_loc: ∅
+        │   │   │       ├── block: ∅
+        │   │   │       ├── flags: variable_call
+        │   │   │       └── name: :x
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1081,9 +1089,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (163,4)-(163,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ ConstantReadNode (location: (163,4)-(163,5))
-        │   │           └── name: :I
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ ConstantReadNode (location: (163,4)-(163,5))
+        │   │   │       └── name: :I
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1097,9 +1106,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (165,4)-(165,5))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ ConstantReadNode (location: (165,4)-(165,5))
-        │   │           └── name: :W
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ ConstantReadNode (location: (165,4)-(165,5))
+        │   │   │       └── name: :W
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅

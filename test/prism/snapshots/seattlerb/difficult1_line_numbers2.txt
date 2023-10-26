@@ -17,13 +17,14 @@
         │   │       │   ├── opening_loc: (2,3)-(2,4) = "("
         │   │       │   ├── arguments:
         │   │       │   │   @ ArgumentsNode (location: (2,4)-(2,7))
-        │   │       │   │   └── arguments: (length: 1)
-        │   │       │   │       └── @ StringNode (location: (2,4)-(2,7))
-        │   │       │   │           ├── flags: ∅
-        │   │       │   │           ├── opening_loc: (2,4)-(2,5) = "\""
-        │   │       │   │           ├── content_loc: (2,5)-(2,6) = "a"
-        │   │       │   │           ├── closing_loc: (2,6)-(2,7) = "\""
-        │   │       │   │           └── unescaped: "a"
+        │   │       │   │   ├── arguments: (length: 1)
+        │   │       │   │   │   └── @ StringNode (location: (2,4)-(2,7))
+        │   │       │   │   │       ├── flags: ∅
+        │   │       │   │   │       ├── opening_loc: (2,4)-(2,5) = "\""
+        │   │       │   │   │       ├── content_loc: (2,5)-(2,6) = "a"
+        │   │       │   │   │       ├── closing_loc: (2,6)-(2,7) = "\""
+        │   │       │   │   │       └── unescaped: "a"
+        │   │       │   │   └── flags: ∅
         │   │       │   ├── closing_loc: (2,7)-(2,8) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅
@@ -43,10 +44,11 @@
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments:
         │   │       │   │   @ ArgumentsNode (location: (4,4)-(4,5))
-        │   │       │   │   └── arguments: (length: 1)
-        │   │       │   │       └── @ LocalVariableReadNode (location: (4,4)-(4,5))
-        │   │       │   │           ├── name: :b
-        │   │       │   │           └── depth: 0
+        │   │       │   │   ├── arguments: (length: 1)
+        │   │       │   │   │   └── @ LocalVariableReadNode (location: (4,4)-(4,5))
+        │   │       │   │   │       ├── name: :b
+        │   │       │   │   │       └── depth: 0
+        │   │       │   │   └── flags: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅

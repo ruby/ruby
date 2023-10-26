@@ -329,6 +329,10 @@ tokens:
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
 flags:
+  - name: ArgumentsNodeFlags
+    values:
+      - name: KEYWORD_SPLAT
+        comment: "if arguments contain keyword splat"
   - name: CallNodeFlags
     values:
       - name: SAFE_NAVIGATION
@@ -432,6 +436,9 @@ nodes:
     fields:
       - name: arguments
         type: node[]
+      - name: flags
+        type: flags
+        kind: ArgumentsNodeFlags
     comment: |
       Represents a set of arguments to a method or a keyword.
 
@@ -1924,8 +1931,8 @@ nodes:
     comment: |
       Represents a multi-target expression.
 
-          a, b, c = 1, 2, 3
-          ^^^^^^^
+          a, (b, c) = 1, 2, 3
+             ^^^^^^
   - name: MultiWriteNode
     fields:
       - name: targets

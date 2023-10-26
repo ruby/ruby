@@ -32,10 +32,11 @@
         │   │   │           ├── opening_loc: (2,8)-(2,9) = "("
         │   │   │           ├── arguments:
         │   │   │           │   @ ArgumentsNode (location: (2,9)-(2,12))
-        │   │   │           │   └── arguments: (length: 1)
-        │   │   │           │       └── @ LocalVariableReadNode (location: (2,9)-(2,12))
-        │   │   │           │           ├── name: :cmd
-        │   │   │           │           └── depth: 0
+        │   │   │           │   ├── arguments: (length: 1)
+        │   │   │           │   │   └── @ LocalVariableReadNode (location: (2,9)-(2,12))
+        │   │   │           │   │       ├── name: :cmd
+        │   │   │           │   │       └── depth: 0
+        │   │   │           │   └── flags: ∅
         │   │   │           ├── closing_loc: (2,12)-(2,13) = ")"
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: ∅
@@ -89,10 +90,11 @@
         │   │           │   ├── opening_loc: (9,8)-(9,9) = "("
         │   │           │   ├── arguments:
         │   │           │   │   @ ArgumentsNode (location: (9,9)-(9,12))
-        │   │           │   │   └── arguments: (length: 1)
-        │   │           │   │       └── @ LocalVariableReadNode (location: (9,9)-(9,12))
-        │   │           │   │           ├── name: :cmd
-        │   │           │   │           └── depth: 0
+        │   │           │   │   ├── arguments: (length: 1)
+        │   │           │   │   │   └── @ LocalVariableReadNode (location: (9,9)-(9,12))
+        │   │           │   │   │       ├── name: :cmd
+        │   │           │   │   │       └── depth: 0
+        │   │           │   │   └── flags: ∅
         │   │           │   ├── closing_loc: (9,12)-(9,13) = ")"
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: ∅
@@ -135,10 +137,11 @@
             │           │   ├── opening_loc: (13,27)-(13,28) = "("
             │           │   ├── arguments:
             │           │   │   @ ArgumentsNode (location: (13,28)-(13,31))
-            │           │   │   └── arguments: (length: 1)
-            │           │   │       └── @ LocalVariableReadNode (location: (13,28)-(13,31))
-            │           │   │           ├── name: :cmd
-            │           │   │           └── depth: 0
+            │           │   │   ├── arguments: (length: 1)
+            │           │   │   │   └── @ LocalVariableReadNode (location: (13,28)-(13,31))
+            │           │   │   │       ├── name: :cmd
+            │           │   │   │       └── depth: 0
+            │           │   │   └── flags: ∅
             │           │   ├── closing_loc: (13,31)-(13,32) = ")"
             │           │   ├── block: ∅
             │           │   ├── flags: ∅

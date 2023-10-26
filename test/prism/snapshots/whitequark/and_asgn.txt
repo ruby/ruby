@@ -40,11 +40,12 @@
             ├── opening_loc: (3,3)-(3,4) = "["
             ├── arguments:
             │   @ ArgumentsNode (location: (3,4)-(3,8))
-            │   └── arguments: (length: 2)
-            │       ├── @ IntegerNode (location: (3,4)-(3,5))
-            │       │   └── flags: decimal
-            │       └── @ IntegerNode (location: (3,7)-(3,8))
-            │           └── flags: decimal
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ IntegerNode (location: (3,4)-(3,5))
+            │   │   │   └── flags: decimal
+            │   │   └── @ IntegerNode (location: (3,7)-(3,8))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
             ├── closing_loc: (3,8)-(3,9) = "]"
             ├── block: ∅
             ├── flags: ∅

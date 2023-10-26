@@ -85,7 +85,7 @@ module Prism
             nil,
             Location(),
             nil,
-            ArgumentsNode([MissingNode()]),
+            ArgumentsNode([MissingNode()], 0),
             nil,
             nil,
             0,
@@ -346,7 +346,7 @@ module Prism
         ArgumentsNode([
           KeywordHashNode([AssocSplatNode(expression("kwargs"), Location())]),
           SplatNode(Location(), expression("args"))
-        ]),
+        ], 1),
         Location(),
         nil,
         0,
@@ -364,7 +364,7 @@ module Prism
         nil,
         Location(),
         Location(),
-        ArgumentsNode([expression("foo")]),
+        ArgumentsNode([expression("foo")], 0),
         Location(),
         BlockArgumentNode(expression("block"), Location()),
         0,
@@ -399,7 +399,7 @@ module Prism
             )]
           ),
           SplatNode(Location(), expression("args"))
-        ]),
+        ], 0),
         Location(),
         nil,
         0,
