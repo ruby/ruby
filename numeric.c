@@ -1550,8 +1550,8 @@ rb_float_pow(VALUE x, VALUE y)
  *    1.eql?(Rational(1, 1)) # => false
  *    1.eql?(Complex(1, 0))  # => false
  *
- *  \Method +eql?+ is different from +==+ in that +eql?+ requires matching types,
- *  while +==+ does not.
+ *  \Method +eql?+ is different from <code>==</code> in that +eql?+ requires matching types,
+ *  while <code>==</code> does not.
  *
  */
 
