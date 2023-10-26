@@ -353,13 +353,13 @@
             │   │   @ ParametersNode (location: (27,4)-(27,14))
             │   │   ├── requireds: (length: 1)
             │   │   │   └── @ MultiTargetNode (location: (27,4)-(27,10))
-            │   │   │       ├── requireds: (length: 2)
+            │   │   │       ├── lefts: (length: 2)
             │   │   │       │   ├── @ RequiredParameterNode (location: (27,5)-(27,6))
             │   │   │       │   │   └── name: :a
             │   │   │       │   └── @ RequiredParameterNode (location: (27,8)-(27,9))
             │   │   │       │       └── name: :b
             │   │   │       ├── rest: ∅
-            │   │   │       ├── posts: (length: 0)
+            │   │   │       ├── rights: (length: 0)
             │   │   │       ├── lparen_loc: (27,4)-(27,5) = "("
             │   │   │       └── rparen_loc: (27,9)-(27,10) = ")"
             │   │   ├── optionals: (length: 0)

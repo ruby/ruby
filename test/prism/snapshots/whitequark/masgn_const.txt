@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(3,18))
     └── body: (length: 2)
         ├── @ MultiWriteNode (location: (1,0)-(1,14))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ ConstantPathTargetNode (location: (1,0)-(1,3))
         │   │   │   ├── parent: ∅
         │   │   │   ├── child:
@@ -15,7 +15,7 @@
         │   │       ├── name: :foo
         │   │       └── depth: 0
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (1,9)-(1,10) = "="
@@ -24,7 +24,7 @@
         │       ├── name: :foo
         │       └── depth: 0
         └── @ MultiWriteNode (location: (3,0)-(3,18))
-            ├── requireds: (length: 2)
+            ├── lefts: (length: 2)
             │   ├── @ ConstantPathTargetNode (location: (3,0)-(3,7))
             │   │   ├── parent:
             │   │   │   @ SelfNode (location: (3,0)-(3,4))
@@ -36,7 +36,7 @@
             │       ├── name: :foo
             │       └── depth: 0
             ├── rest: ∅
-            ├── posts: (length: 0)
+            ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (3,13)-(3,14) = "="

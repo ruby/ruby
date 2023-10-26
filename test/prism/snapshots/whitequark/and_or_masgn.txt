@@ -21,7 +21,7 @@
         │   │   │   @ StatementsNode (location: (1,8)-(1,18))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ MultiWriteNode (location: (1,8)-(1,18))
-        │   │   │           ├── requireds: (length: 2)
+        │   │   │           ├── lefts: (length: 2)
         │   │   │           │   ├── @ LocalVariableTargetNode (location: (1,8)-(1,9))
         │   │   │           │   │   ├── name: :a
         │   │   │           │   │   └── depth: 0
@@ -29,7 +29,7 @@
         │   │   │           │       ├── name: :b
         │   │   │           │       └── depth: 0
         │   │   │           ├── rest: ∅
-        │   │   │           ├── posts: (length: 0)
+        │   │   │           ├── rights: (length: 0)
         │   │   │           ├── lparen_loc: ∅
         │   │   │           ├── rparen_loc: ∅
         │   │   │           ├── operator_loc: (1,13)-(1,14) = "="
@@ -65,7 +65,7 @@
             │   │   @ StatementsNode (location: (3,8)-(3,18))
             │   │   └── body: (length: 1)
             │   │       └── @ MultiWriteNode (location: (3,8)-(3,18))
-            │   │           ├── requireds: (length: 2)
+            │   │           ├── lefts: (length: 2)
             │   │           │   ├── @ LocalVariableTargetNode (location: (3,8)-(3,9))
             │   │           │   │   ├── name: :a
             │   │           │   │   └── depth: 0
@@ -73,7 +73,7 @@
             │   │           │       ├── name: :b
             │   │           │       └── depth: 0
             │   │           ├── rest: ∅
-            │   │           ├── posts: (length: 0)
+            │   │           ├── rights: (length: 0)
             │   │           ├── lparen_loc: ∅
             │   │           ├── rparen_loc: ∅
             │   │           ├── operator_loc: (3,13)-(3,14) = "="

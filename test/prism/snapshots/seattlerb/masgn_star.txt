@@ -4,12 +4,12 @@
     @ StatementsNode (location: (1,0)-(1,5))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,5))
-            ├── requireds: (length: 0)
+            ├── lefts: (length: 0)
             ├── rest:
             │   @ SplatNode (location: (1,0)-(1,1))
             │   ├── operator_loc: (1,0)-(1,1) = "*"
             │   └── expression: ∅
-            ├── posts: (length: 0)
+            ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (1,2)-(1,3) = "="

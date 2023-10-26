@@ -116,9 +116,9 @@ module Prism
             while (param = param_stack.pop)
               case param
               when MultiTargetNode
-                param_stack.concat(param.posts.reverse)
+                param_stack.concat(param.rights.reverse)
                 param_stack << param.rest
-                param_stack.concat(param.requireds.reverse)
+                param_stack.concat(param.lefts.reverse)
               when RequiredParameterNode
                 sorted << param.name
               when SplatNode

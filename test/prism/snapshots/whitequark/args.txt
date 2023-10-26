@@ -36,17 +36,17 @@
         │   │   @ ParametersNode (location: (3,7)-(3,12))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (3,7)-(3,12))
-        │   │   │       ├── requireds: (length: 1)
+        │   │   │       ├── lefts: (length: 1)
         │   │   │       │   └── @ MultiTargetNode (location: (3,8)-(3,11))
-        │   │   │       │       ├── requireds: (length: 1)
+        │   │   │       │       ├── lefts: (length: 1)
         │   │   │       │       │   └── @ RequiredParameterNode (location: (3,9)-(3,10))
         │   │   │       │       │       └── name: :a
         │   │   │       │       ├── rest: ∅
-        │   │   │       │       ├── posts: (length: 0)
+        │   │   │       │       ├── rights: (length: 0)
         │   │   │       │       ├── lparen_loc: (3,8)-(3,9) = "("
         │   │   │       │       └── rparen_loc: (3,10)-(3,11) = ")"
         │   │   │       ├── rest: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (3,7)-(3,8) = "("
         │   │   │       └── rparen_loc: (3,11)-(3,12) = ")"
         │   │   ├── optionals: (length: 0)
@@ -71,12 +71,12 @@
         │   │   @ ParametersNode (location: (5,7)-(5,10))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (5,7)-(5,10))
-        │   │   │       ├── requireds: (length: 0)
+        │   │   │       ├── lefts: (length: 0)
         │   │   │       ├── rest:
         │   │   │       │   @ SplatNode (location: (5,8)-(5,9))
         │   │   │       │   ├── operator_loc: (5,8)-(5,9) = "*"
         │   │   │       │   └── expression: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (5,7)-(5,8) = "("
         │   │   │       └── rparen_loc: (5,9)-(5,10) = ")"
         │   │   ├── optionals: (length: 0)
@@ -101,12 +101,12 @@
         │   │   @ ParametersNode (location: (7,7)-(7,13))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (7,7)-(7,13))
-        │   │   │       ├── requireds: (length: 0)
+        │   │   │       ├── lefts: (length: 0)
         │   │   │       ├── rest:
         │   │   │       │   @ SplatNode (location: (7,8)-(7,9))
         │   │   │       │   ├── operator_loc: (7,8)-(7,9) = "*"
         │   │   │       │   └── expression: ∅
-        │   │   │       ├── posts: (length: 1)
+        │   │   │       ├── rights: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (7,11)-(7,12))
         │   │   │       │       └── name: :p
         │   │   │       ├── lparen_loc: (7,7)-(7,8) = "("
@@ -133,14 +133,14 @@
         │   │   @ ParametersNode (location: (9,7)-(9,11))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (9,7)-(9,11))
-        │   │   │       ├── requireds: (length: 0)
+        │   │   │       ├── lefts: (length: 0)
         │   │   │       ├── rest:
         │   │   │       │   @ SplatNode (location: (9,8)-(9,10))
         │   │   │       │   ├── operator_loc: (9,8)-(9,9) = "*"
         │   │   │       │   └── expression:
         │   │   │       │       @ RequiredParameterNode (location: (9,9)-(9,10))
         │   │   │       │       └── name: :r
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (9,7)-(9,8) = "("
         │   │   │       └── rparen_loc: (9,10)-(9,11) = ")"
         │   │   ├── optionals: (length: 0)
@@ -165,14 +165,14 @@
         │   │   @ ParametersNode (location: (11,7)-(11,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (11,7)-(11,14))
-        │   │   │       ├── requireds: (length: 0)
+        │   │   │       ├── lefts: (length: 0)
         │   │   │       ├── rest:
         │   │   │       │   @ SplatNode (location: (11,8)-(11,10))
         │   │   │       │   ├── operator_loc: (11,8)-(11,9) = "*"
         │   │   │       │   └── expression:
         │   │   │       │       @ RequiredParameterNode (location: (11,9)-(11,10))
         │   │   │       │       └── name: :r
-        │   │   │       ├── posts: (length: 1)
+        │   │   │       ├── rights: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (11,12)-(11,13))
         │   │   │       │       └── name: :p
         │   │   │       ├── lparen_loc: (11,7)-(11,8) = "("
@@ -199,14 +199,14 @@
         │   │   @ ParametersNode (location: (13,7)-(13,13))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (13,7)-(13,13))
-        │   │   │       ├── requireds: (length: 1)
+        │   │   │       ├── lefts: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (13,8)-(13,9))
         │   │   │       │       └── name: :a
         │   │   │       ├── rest:
         │   │   │       │   @ SplatNode (location: (13,11)-(13,12))
         │   │   │       │   ├── operator_loc: (13,11)-(13,12) = "*"
         │   │   │       │   └── expression: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (13,7)-(13,8) = "("
         │   │   │       └── rparen_loc: (13,12)-(13,13) = ")"
         │   │   ├── optionals: (length: 0)
@@ -231,14 +231,14 @@
         │   │   @ ParametersNode (location: (15,7)-(15,16))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (15,7)-(15,16))
-        │   │   │       ├── requireds: (length: 1)
+        │   │   │       ├── lefts: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (15,8)-(15,9))
         │   │   │       │       └── name: :a
         │   │   │       ├── rest:
         │   │   │       │   @ SplatNode (location: (15,11)-(15,12))
         │   │   │       │   ├── operator_loc: (15,11)-(15,12) = "*"
         │   │   │       │   └── expression: ∅
-        │   │   │       ├── posts: (length: 1)
+        │   │   │       ├── rights: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (15,14)-(15,15))
         │   │   │       │       └── name: :p
         │   │   │       ├── lparen_loc: (15,7)-(15,8) = "("
@@ -265,7 +265,7 @@
         │   │   @ ParametersNode (location: (17,7)-(17,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (17,7)-(17,14))
-        │   │   │       ├── requireds: (length: 1)
+        │   │   │       ├── lefts: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (17,8)-(17,9))
         │   │   │       │       └── name: :a
         │   │   │       ├── rest:
@@ -274,7 +274,7 @@
         │   │   │       │   └── expression:
         │   │   │       │       @ RequiredParameterNode (location: (17,12)-(17,13))
         │   │   │       │       └── name: :r
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (17,7)-(17,8) = "("
         │   │   │       └── rparen_loc: (17,13)-(17,14) = ")"
         │   │   ├── optionals: (length: 0)
@@ -299,7 +299,7 @@
         │   │   @ ParametersNode (location: (19,7)-(19,17))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (19,7)-(19,17))
-        │   │   │       ├── requireds: (length: 1)
+        │   │   │       ├── lefts: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (19,8)-(19,9))
         │   │   │       │       └── name: :a
         │   │   │       ├── rest:
@@ -308,7 +308,7 @@
         │   │   │       │   └── expression:
         │   │   │       │       @ RequiredParameterNode (location: (19,12)-(19,13))
         │   │   │       │       └── name: :r
-        │   │   │       ├── posts: (length: 1)
+        │   │   │       ├── rights: (length: 1)
         │   │   │       │   └── @ RequiredParameterNode (location: (19,15)-(19,16))
         │   │   │       │       └── name: :p
         │   │   │       ├── lparen_loc: (19,7)-(19,8) = "("
@@ -335,13 +335,13 @@
         │   │   @ ParametersNode (location: (21,7)-(21,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (21,7)-(21,14))
-        │   │   │       ├── requireds: (length: 2)
+        │   │   │       ├── lefts: (length: 2)
         │   │   │       │   ├── @ RequiredParameterNode (location: (21,8)-(21,9))
         │   │   │       │   │   └── name: :a
         │   │   │       │   └── @ RequiredParameterNode (location: (21,11)-(21,13))
         │   │   │       │       └── name: :a1
         │   │   │       ├── rest: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (21,7)-(21,8) = "("
         │   │   │       └── rparen_loc: (21,13)-(21,14) = ")"
         │   │   ├── optionals: (length: 0)

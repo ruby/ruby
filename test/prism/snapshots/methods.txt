@@ -11,13 +11,13 @@
         │   │   @ ParametersNode (location: (1,8)-(1,18))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,18))
-        │   │   │       ├── requireds: (length: 2)
+        │   │   │       ├── lefts: (length: 2)
         │   │   │       │   ├── @ RequiredParameterNode (location: (1,9)-(1,12))
         │   │   │       │   │   └── name: :bar
         │   │   │       │   └── @ RequiredParameterNode (location: (1,14)-(1,17))
         │   │   │       │       └── name: :baz
         │   │   │       ├── rest: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("
         │   │   │       └── rparen_loc: (1,17)-(1,18) = ")"
         │   │   ├── optionals: (length: 0)
@@ -42,13 +42,13 @@
         │   │   @ ParametersNode (location: (4,8)-(4,44))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (4,8)-(4,18))
-        │   │   │       ├── requireds: (length: 2)
+        │   │   │       ├── lefts: (length: 2)
         │   │   │       │   ├── @ RequiredParameterNode (location: (4,9)-(4,12))
         │   │   │       │   │   └── name: :bar
         │   │   │       │   └── @ RequiredParameterNode (location: (4,14)-(4,17))
         │   │   │       │       └── name: :baz
         │   │   │       ├── rest: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (4,8)-(4,9) = "("
         │   │   │       └── rparen_loc: (4,17)-(4,18) = ")"
         │   │   ├── optionals: (length: 1)
@@ -62,13 +62,13 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ MultiTargetNode (location: (4,34)-(4,44))
-        │   │   │       ├── requireds: (length: 2)
+        │   │   │       ├── lefts: (length: 2)
         │   │   │       │   ├── @ RequiredParameterNode (location: (4,35)-(4,38))
         │   │   │       │   │   └── name: :bin
         │   │   │       │   └── @ RequiredParameterNode (location: (4,40)-(4,43))
         │   │   │       │       └── name: :bag
         │   │   │       ├── rest: ∅
-        │   │   │       ├── posts: (length: 0)
+        │   │   │       ├── rights: (length: 0)
         │   │   │       ├── lparen_loc: (4,34)-(4,35) = "("
         │   │   │       └── rparen_loc: (4,43)-(4,44) = ")"
         │   │   ├── keywords: (length: 0)

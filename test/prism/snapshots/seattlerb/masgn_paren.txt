@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,12))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,12))
-            ├── requireds: (length: 2)
+            ├── lefts: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (1,1)-(1,2))
             │   │   ├── name: :a
             │   │   └── depth: 0
@@ -12,7 +12,7 @@
             │       ├── name: :b
             │       └── depth: 0
             ├── rest: ∅
-            ├── posts: (length: 0)
+            ├── rights: (length: 0)
             ├── lparen_loc: (1,0)-(1,1) = "("
             ├── rparen_loc: (1,5)-(1,6) = ")"
             ├── operator_loc: (1,7)-(1,8) = "="

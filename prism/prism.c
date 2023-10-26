@@ -3612,9 +3612,9 @@ pm_multi_target_node_create(pm_parser_t *parser) {
             .type = PM_MULTI_TARGET_NODE,
             .location = { .start = NULL, .end = NULL }
         },
-        .requireds = PM_EMPTY_NODE_LIST,
+        .lefts = PM_EMPTY_NODE_LIST,
         .rest = NULL,
-        .posts = PM_EMPTY_NODE_LIST,
+        .rights = PM_EMPTY_NODE_LIST,
         .lparen_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .rparen_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
@@ -3630,12 +3630,12 @@ pm_multi_target_node_targets_append(pm_parser_t *parser, pm_multi_target_node_t 
             node->rest = target;
         } else {
             pm_parser_err_node(parser, target, PM_ERR_MULTI_ASSIGN_MULTI_SPLATS);
-            pm_node_list_append(&node->posts, target);
+            pm_node_list_append(&node->rights, target);
         }
     } else if (node->rest == NULL) {
-        pm_node_list_append(&node->requireds, target);
+        pm_node_list_append(&node->lefts, target);
     } else {
-        pm_node_list_append(&node->posts, target);
+        pm_node_list_append(&node->rights, target);
     }
 
     if (node->base.location.start == NULL || (node->base.location.start > target->location.start)) {
@@ -3674,9 +3674,9 @@ pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, 
                 .end = value->location.end
             }
         },
-        .requireds = target->requireds,
+        .lefts = target->lefts,
         .rest = target->rest,
-        .posts = target->posts,
+        .rights = target->rights,
         .lparen_loc = target->lparen_loc,
         .rparen_loc = target->rparen_loc,
         .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
@@ -10189,7 +10189,7 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
 
         // If we get here then we have a trailing comma. In this case we'll
         // create an implicit splat node.
-        if (node->requireds.size > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+        if (node->lefts.size > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             param = (pm_node_t *) pm_splat_node_create(parser, &parser->previous, NULL);
             pm_multi_target_node_targets_append(parser, node, param);
             break;

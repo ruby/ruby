@@ -21,12 +21,12 @@
             │   │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
             │   │   │   │   │   └── name: :a
             │   │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,14))
-            │   │   │   │       ├── requireds: (length: 0)
+            │   │   │   │       ├── lefts: (length: 0)
             │   │   │   │       ├── rest:
             │   │   │   │       │   @ SplatNode (location: (1,9)-(1,10))
             │   │   │   │       │   ├── operator_loc: (1,9)-(1,10) = "*"
             │   │   │   │       │   └── expression: ∅
-            │   │   │   │       ├── posts: (length: 1)
+            │   │   │   │       ├── rights: (length: 1)
             │   │   │   │       │   └── @ RequiredParameterNode (location: (1,12)-(1,13))
             │   │   │   │       │       └── name: :b
             │   │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("

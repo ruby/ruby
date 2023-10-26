@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,12))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,12))
-            ├── requireds: (length: 1)
+            ├── lefts: (length: 1)
             │   └── @ LocalVariableTargetNode (location: (1,0)-(1,1))
             │       ├── name: :a
             │       └── depth: 0
@@ -15,7 +15,7 @@
             │       @ LocalVariableTargetNode (location: (1,4)-(1,5))
             │       ├── name: :b
             │       └── depth: 0
-            ├── posts: (length: 1)
+            ├── rights: (length: 1)
             │   └── @ LocalVariableTargetNode (location: (1,7)-(1,8))
             │       ├── name: :c
             │       └── depth: 0

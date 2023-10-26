@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,14))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,14))
-            ├── requireds: (length: 3)
+            ├── lefts: (length: 3)
             │   ├── @ LocalVariableTargetNode (location: (1,0)-(1,1))
             │   │   ├── name: :a
             │   │   └── depth: 0
@@ -18,7 +18,7 @@
             │   @ SplatNode (location: (1,9)-(1,10))
             │   ├── operator_loc: (1,9)-(1,10) = "*"
             │   └── expression: ∅
-            ├── posts: (length: 0)
+            ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (1,11)-(1,12) = "="

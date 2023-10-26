@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(5,18))
     └── body: (length: 3)
         ├── @ MultiWriteNode (location: (1,0)-(1,17))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ CallNode (location: (1,0)-(1,6))
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
@@ -20,7 +20,7 @@
         │   │       ├── name: :foo
         │   │       └── depth: 0
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (1,12)-(1,13) = "="
@@ -29,7 +29,7 @@
         │       ├── name: :foo
         │       └── depth: 0
         ├── @ MultiWriteNode (location: (3,0)-(3,24))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ CallNode (location: (3,0)-(3,6))
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
@@ -60,7 +60,7 @@
         │   │       ├── flags: ∅
         │   │       └── name: :[]=
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (3,19)-(3,20) = "="
@@ -69,7 +69,7 @@
         │       ├── name: :foo
         │       └── depth: 0
         └── @ MultiWriteNode (location: (5,0)-(5,18))
-            ├── requireds: (length: 2)
+            ├── lefts: (length: 2)
             │   ├── @ CallNode (location: (5,0)-(5,7))
             │   │   ├── receiver:
             │   │   │   @ SelfNode (location: (5,0)-(5,4))
@@ -85,7 +85,7 @@
             │       ├── name: :foo
             │       └── depth: 0
             ├── rest: ∅
-            ├── posts: (length: 0)
+            ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (5,13)-(5,14) = "="

@@ -21,7 +21,7 @@
             │   │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
             │   │   │   │   │   └── name: :a
             │   │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,15))
-            │   │   │   │       ├── requireds: (length: 1)
+            │   │   │   │       ├── lefts: (length: 1)
             │   │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
             │   │   │   │       │       └── name: :b
             │   │   │   │       ├── rest:
@@ -30,7 +30,7 @@
             │   │   │   │       │   └── expression:
             │   │   │   │       │       @ RequiredParameterNode (location: (1,13)-(1,14))
             │   │   │   │       │       └── name: :c
-            │   │   │   │       ├── posts: (length: 0)
+            │   │   │   │       ├── rights: (length: 0)
             │   │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("
             │   │   │   │       └── rparen_loc: (1,14)-(1,15) = ")"
             │   │   │   ├── optionals: (length: 0)

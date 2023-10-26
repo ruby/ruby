@@ -19,12 +19,12 @@
             │   │   │   @ ParametersNode (location: (1,5)-(1,11))
             │   │   │   ├── requireds: (length: 1)
             │   │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,11))
-            │   │   │   │       ├── requireds: (length: 0)
+            │   │   │   │       ├── lefts: (length: 0)
             │   │   │   │       ├── rest:
             │   │   │   │       │   @ SplatNode (location: (1,6)-(1,7))
             │   │   │   │       │   ├── operator_loc: (1,6)-(1,7) = "*"
             │   │   │   │       │   └── expression: ∅
-            │   │   │   │       ├── posts: (length: 1)
+            │   │   │   │       ├── rights: (length: 1)
             │   │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
             │   │   │   │       │       └── name: :a
             │   │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("

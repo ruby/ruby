@@ -13,13 +13,13 @@
         │   │   └── flags: decimal
         │   └── operator_loc: (3,6)-(3,7) = "="
         ├── @ MultiWriteNode (location: (5,0)-(5,16))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ ClassVariableTargetNode (location: (5,0)-(5,5))
         │   │   │   └── name: :@@foo
         │   │   └── @ ClassVariableTargetNode (location: (5,7)-(5,12))
         │   │       └── name: :@@bar
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (5,13)-(5,14) = "="
@@ -76,13 +76,13 @@
         │   │   └── flags: decimal
         │   └── operator_loc: (19,4)-(19,5) = "="
         ├── @ MultiWriteNode (location: (21,0)-(21,14))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ GlobalVariableTargetNode (location: (21,0)-(21,4))
         │   │   │   └── name: :$foo
         │   │   └── @ GlobalVariableTargetNode (location: (21,6)-(21,10))
         │   │       └── name: :$bar
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (21,11)-(21,12) = "="
@@ -103,13 +103,13 @@
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (23,5)-(23,6) = "="
         ├── @ MultiWriteNode (location: (25,0)-(25,14))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ InstanceVariableTargetNode (location: (25,0)-(25,4))
         │   │   │   └── name: :@foo
         │   │   └── @ InstanceVariableTargetNode (location: (25,6)-(25,10))
         │   │       └── name: :@bar
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (25,11)-(25,12) = "="
@@ -166,7 +166,7 @@
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (31,4)-(31,5) = "="
         ├── @ MultiWriteNode (location: (33,0)-(33,13))
-        │   ├── requireds: (length: 1)
+        │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (33,0)-(33,3))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -174,7 +174,7 @@
         │   │   @ SplatNode (location: (33,5)-(33,6))
         │   │   ├── operator_loc: (33,5)-(33,6) = "*"
         │   │   └── expression: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (33,7)-(33,8) = "="
@@ -188,7 +188,7 @@
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (35,0)-(35,11))
-        │   ├── requireds: (length: 1)
+        │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (35,0)-(35,3))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -196,7 +196,7 @@
         │   │   @ SplatNode (location: (35,3)-(35,4))
         │   │   ├── operator_loc: (35,3)-(35,4) = ","
         │   │   └── expression: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (35,5)-(35,6) = "="
@@ -210,7 +210,7 @@
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (37,0)-(37,16))
-        │   ├── requireds: (length: 1)
+        │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (37,0)-(37,3))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -221,7 +221,7 @@
         │   │       @ LocalVariableTargetNode (location: (37,6)-(37,9))
         │   │       ├── name: :bar
         │   │       └── depth: 0
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (37,10)-(37,11) = "="
@@ -235,12 +235,12 @@
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (39,0)-(39,27))
-        │   ├── requireds: (length: 2)
+        │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (39,0)-(39,3))
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
         │   │   └── @ MultiTargetNode (location: (39,5)-(39,15))
-        │   │       ├── requireds: (length: 2)
+        │   │       ├── lefts: (length: 2)
         │   │       │   ├── @ LocalVariableTargetNode (location: (39,6)-(39,9))
         │   │       │   │   ├── name: :bar
         │   │       │   │   └── depth: 0
@@ -248,11 +248,11 @@
         │   │       │       ├── name: :baz
         │   │       │       └── depth: 0
         │   │       ├── rest: ∅
-        │   │       ├── posts: (length: 0)
+        │   │       ├── rights: (length: 0)
         │   │       ├── lparen_loc: (39,5)-(39,6) = "("
         │   │       └── rparen_loc: (39,14)-(39,15) = ")"
         │   ├── rest: ∅
-        │   ├── posts: (length: 0)
+        │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
         │   ├── operator_loc: (39,16)-(39,17) = "="
@@ -337,12 +337,12 @@
         │   ├── opening_loc: (45,0)-(45,1) = "("
         │   └── closing_loc: (45,8)-(45,9) = ")"
         └── @ MultiWriteNode (location: (47,0)-(47,17))
-            ├── requireds: (length: 3)
+            ├── lefts: (length: 3)
             │   ├── @ LocalVariableTargetNode (location: (47,0)-(47,1))
             │   │   ├── name: :a
             │   │   └── depth: 0
             │   ├── @ MultiTargetNode (location: (47,3)-(47,9))
-            │   │   ├── requireds: (length: 2)
+            │   │   ├── lefts: (length: 2)
             │   │   │   ├── @ LocalVariableTargetNode (location: (47,4)-(47,5))
             │   │   │   │   ├── name: :b
             │   │   │   │   └── depth: 0
@@ -350,14 +350,14 @@
             │   │   │       ├── name: :c
             │   │   │       └── depth: 0
             │   │   ├── rest: ∅
-            │   │   ├── posts: (length: 0)
+            │   │   ├── rights: (length: 0)
             │   │   ├── lparen_loc: (47,3)-(47,4) = "("
             │   │   └── rparen_loc: (47,8)-(47,9) = ")"
             │   └── @ LocalVariableTargetNode (location: (47,11)-(47,12))
             │       ├── name: :d
             │       └── depth: 0
             ├── rest: ∅
-            ├── posts: (length: 0)
+            ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (47,13)-(47,14) = "="
