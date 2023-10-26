@@ -5,11 +5,11 @@ require_relative "user_interaction"
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
 
-  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
+  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
-  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
+  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/ # :nodoc:
 
-  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}.freeze # :nodoc:
+  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z} # :nodoc:
 
   METADATA_LINK_KEYS = %w[
     bug_tracker_uri
@@ -400,8 +400,8 @@ or set it to nil if you don't want to specify a license.
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
-  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
-  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x
+  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i
 
   def validate_lazy_metadata
     unless @specification.authors.grep(LAZY_PATTERN).empty?

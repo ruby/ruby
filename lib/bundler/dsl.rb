@@ -18,7 +18,7 @@ module Bundler
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
                     platform platforms type source install_if gemfile force_ruby_platform].freeze
 
-    GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}.freeze
+    GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
 
     attr_reader :gemspecs
     attr_accessor :dependencies

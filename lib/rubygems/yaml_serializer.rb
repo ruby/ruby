@@ -36,7 +36,7 @@ module Gem
       (.*) # value
       \1 # matching closing quote
       $
-    /xo.freeze
+    /xo
 
     HASH_REGEX = /
       ^
@@ -48,7 +48,7 @@ module Gem
       (.*) # value
       \3 # matching closing quote
       $
-    /xo.freeze
+    /xo
 
     def load(str)
       res = {}
