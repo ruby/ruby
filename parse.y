@@ -14551,15 +14551,18 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
     NODE *result = 0;
     NODE *last_expr = 0;
     rb_code_location_t loc = hash->nd_loc;
-    while (hash && RNODE_LIST(hash)->nd_head && RNODE_LIST(hash)->nd_next) {
+    while (hash && RNODE_LIST(hash)->nd_next) {
         NODE *head = RNODE_LIST(hash)->nd_head;
         NODE *value = RNODE_LIST(hash)->nd_next;
         NODE *next = RNODE_LIST(value)->nd_next;
         st_data_t key = (st_data_t)head;
         st_data_t data;
         RNODE_LIST(value)->nd_next = 0;
-        if (nd_type_p(head, NODE_LIT) &&
-            st_delete(literal_keys, (key = (st_data_t)RNODE_LIT(head)->nd_lit, &key), &data)) {
+        if (!head) {
+            key = (st_data_t)value;
+        }
+        else if (nd_type_p(head, NODE_LIT) &&
+                 st_delete(literal_keys, (key = (st_data_t)RNODE_LIT(head)->nd_lit, &key), &data)) {
             NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
@@ -14572,7 +14575,7 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
             }
         }
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-        last_expr = nd_type_p(head, NODE_LIT) ? value : head;
+        last_expr = !head || nd_type_p(head, NODE_LIT) ? value : head;
         hash = next;
     }
     st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
