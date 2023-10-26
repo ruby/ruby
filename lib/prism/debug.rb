@@ -52,9 +52,21 @@ module Prism
         stack = [ISeq.new(RubyVM::InstructionSequence.compile(source).to_a)]
 
         while (iseq = stack.pop)
-          # For some reason, CRuby occasionally pushes this special local
-          # variable when there are splat arguments. We get rid of that here.
-          locals << (iseq.local_table - [:"#arg_rest"])
+          names = [*iseq.local_table]
+          names.map!.with_index do |name, index|
+            # When an anonymous local variable is present in the iseq's local
+            # table, it is represented as the stack offset from the top.
+            # However, when these are dumped to binary and read back in, they
+            # are replaced with the symbol :#arg_rest. To consistently handle
+            # this, we replace them here with their index.
+            if name == :"#arg_rest"
+              names.length - index + 1
+            else
+              name
+            end
+          end
+
+          locals << names
           iseq.each_child { |child| stack << child }
         end
 
@@ -69,8 +81,6 @@ module Prism
     # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
     def self.prism_locals(source)
-      check_to_debug = ENV["RUBY_ISEQ_DUMP_DEBUG"] == "to_binary"
-
       locals = []
       stack = [Prism.parse(source).value]
 
@@ -108,7 +118,7 @@ module Prism
               *params.keywords.select(&:value).map(&:name)
             ]
 
-            sorted << AnonymousLocal if params.keywords.any? && !check_to_debug
+            sorted << AnonymousLocal if params.keywords.any?
 
             # Recurse down the parameter tree to find any destructured
             # parameters and add them after the other parameters.
@@ -129,17 +139,17 @@ module Prism
 
           names.map!.with_index do |name, index|
             if name == AnonymousLocal
-              names.length - index + 1 unless check_to_debug
+              names.length - index + 1
             else
               name
             end
           end
 
-          locals << names.compact
+          locals << names
         when ClassNode, ModuleNode, ProgramNode, SingletonClassNode
           locals << node.locals
         when ForNode
-          locals << (check_to_debug ? [] : [2])
+          locals << [2]
         when PostExecutionNode
           locals.push([], [])
         when InterpolatedRegularExpressionNode
