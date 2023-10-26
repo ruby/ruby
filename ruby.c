@@ -2340,8 +2340,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (opt->e_script) {
             size_t len = RSTRING_LEN(opt->e_script);
             pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(opt->e_script), len, "-e");
-        }
-        else {
+        } else {
             pm_string_t input;
             char *filepath = RSTRING_PTR(opt->script_name);
             pm_string_mapped_init(&input, filepath);
@@ -2349,7 +2348,13 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
 
         pm_node_t *node = pm_parse(&parser);
-        pm_print_node(&parser, node);
+        pm_buffer_t output_buffer = { 0 };
+
+        pm_prettyprint(&output_buffer, &parser, node);
+        rb_io_write(rb_stdout, rb_str_new((const char *) output_buffer.value, output_buffer.length));
+        rb_io_flush(rb_stdout);
+
+        pm_buffer_free(&output_buffer);
         pm_node_destroy(&parser, node);
         pm_parser_free(&parser);
     }
