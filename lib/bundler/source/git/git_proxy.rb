@@ -131,7 +131,11 @@ module Bundler
           end
 
           ref = @commit_ref || (locked_to_full_sha? && @revision)
-          git "fetch", "--force", "--quiet", *extra_fetch_args(ref), :dir => destination if ref
+          if ref
+            git "config", "uploadpack.allowAnySHA1InWant", "true", :dir => path.to_s if @commit_ref.nil? && needs_allow_any_sha1_in_want?
+
+            git "fetch", "--force", "--quiet", *extra_fetch_args(ref), :dir => destination
+          end
 
           git "reset", "--hard", @revision, :dir => destination
 
@@ -432,6 +436,10 @@ module Bundler
 
         def supports_minus_c?
           @supports_minus_c ||= Gem::Version.new(version) >= Gem::Version.new("1.8.5")
+        end
+
+        def needs_allow_any_sha1_in_want?
+          @needs_allow_any_sha1_in_want ||= Gem::Version.new(version) <= Gem::Version.new("2.13.7")
         end
 
         def supports_fetching_unreachable_refs?
