@@ -337,8 +337,8 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], a)
     a.clear
     r = nil
-    z = {}
-    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), **z, k: a.add(2))")}
+    _z = {}
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), **_z, k: a.add(2))")}
     assert_equal(2, r)
     assert_equal([1, 2], a)
   end
