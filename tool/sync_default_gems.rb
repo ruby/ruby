@@ -411,6 +411,7 @@ module SyncDefaultGems
 
       cp_r("#{upstream}/config.yml", "prism/")
       cp_r("#{upstream}/templates", "prism/")
+      rm_rf("prism/templates/javascript")
       rm_rf("prism/templates/java")
 
       rm("prism/extconf.rb")
