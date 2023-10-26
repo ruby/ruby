@@ -130,6 +130,9 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_user_install_disabled_read_only
+    pend "skipped on MS Windows (chmod has no effect)" if Gem.win_platform?
+    pend "skipped in root privilege" if Process.uid.zero?
+
     @spec = quick_gem "a" do |spec|
       util_make_exec spec
     end
@@ -137,23 +140,17 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     util_build_gem @spec
     @gem = @spec.cache_file
 
-    if Gem.win_platform?
-      pend("test_user_install_disabled_read_only test skipped on MS Windows")
-    elsif Process.uid.zero?
-      pend("test_user_install_disabled_read_only test skipped in root privilege")
-    else
-      @cmd.handle_options %w[--no-user-install]
+    @cmd.handle_options %w[--no-user-install]
 
-      refute @cmd.options[:user_install]
+    refute @cmd.options[:user_install]
 
-      FileUtils.chmod 0o755, @userhome
-      FileUtils.chmod 0o000, @gemhome
+    FileUtils.chmod 0o755, @userhome
+    FileUtils.chmod 0o000, @gemhome
 
-      Gem.use_paths @gemhome, @userhome
+    Gem.use_paths @gemhome, @userhome
 
-      assert_raise(Gem::FilePermissionError) do
-        Gem::Installer.at(@gem, @cmd.options).install
-      end
+    assert_raise(Gem::FilePermissionError) do
+      Gem::Installer.at(@gem, @cmd.options).install
     end
   ensure
     FileUtils.chmod 0o755, @gemhome
