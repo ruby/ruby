@@ -20,10 +20,16 @@
 #endif
 
 #if SIZEOF_SHAPE_T == 4
+#if RUBY_DEBUG
+#define SHAPE_BUFFER_SIZE 0x8000
+#else
 #define SHAPE_BUFFER_SIZE 0x80000
+#endif
 #else
 #define SHAPE_BUFFER_SIZE 0x8000
 #endif
+
+#define REDBLACK_CACHE_SIZE (SHAPE_BUFFER_SIZE * 32)
 
 #define SINGLE_CHILD_TAG 0x1
 #define TAG_SINGLE_CHILD(x) (struct rb_id_table *)((uintptr_t)x | SINGLE_CHILD_TAG)
@@ -125,6 +131,10 @@ redblack_id_for(redblack_node_t * node)
 static redblack_node_t *
 redblack_new(char color, ID key, rb_shape_t * value, redblack_node_t * left, redblack_node_t * right)
 {
+    if (GET_SHAPE_TREE()->cache_size + 1 >= REDBLACK_CACHE_SIZE) {
+        // We're out of cache, just quit
+        return LEAF;
+    }
     redblack_node_t * redblack_nodes = GET_SHAPE_TREE()->shape_cache;
     redblack_node_t * node = &redblack_nodes[(GET_SHAPE_TREE()->cache_size)++];
     node->key = key;
@@ -1106,7 +1116,7 @@ Init_default_shapes(void)
     id_t_object = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
-    rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE * 32, sizeof(redblack_node_t), rb_eRuntimeError),
+    rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError),
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     rb_shape_tree_ptr->cache_size = 0;
 #endif
@@ -1189,6 +1199,10 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SPECIAL_CONST_SHAPE_ID", INT2NUM(SPECIAL_CONST_SHAPE_ID));
     rb_define_const(rb_cShape, "OBJ_TOO_COMPLEX_SHAPE_ID", INT2NUM(OBJ_TOO_COMPLEX_SHAPE_ID));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
+    rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
+    rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
+    rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));
+    rb_define_const(rb_cShape, "REDBLACK_CACHE_SIZE", INT2NUM(sizeof(redblack_node_t) * REDBLACK_CACHE_SIZE));
 
     rb_define_singleton_method(rb_cShape, "transition_tree", shape_transition_tree, 0);
     rb_define_singleton_method(rb_cShape, "find_by_id", rb_shape_find_by_id, 1);
