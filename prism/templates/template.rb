@@ -62,6 +62,10 @@ module Prism
     def rbs_class
       ruby_type
     end
+
+    def rbi_class
+      ruby_type
+    end
   end
 
   # This represents a field on a node that is itself a node and can be
@@ -70,6 +74,10 @@ module Prism
     def rbs_class
       "#{ruby_type}?"
     end
+
+    def rbi_class
+      "T.nilable(#{ruby_type})"
+    end
   end
 
   # This represents a field on a node that is a list of nodes. We pass them as
@@ -77,6 +85,10 @@ module Prism
   class NodeListField < Field
     def rbs_class
       "Array[Node]"
+    end
+
+    def rbi_class
+      "T::Array[Node]"
     end
 
     def java_type
@@ -88,6 +100,10 @@ module Prism
   # through the parser's constant pool.
   class ConstantField < Field
     def rbs_class
+      "Symbol"
+    end
+
+    def rbi_class
       "Symbol"
     end
 
@@ -103,6 +119,10 @@ module Prism
       "Symbol?"
     end
 
+    def rbi_class
+      "T.nilable(Symbol)"
+    end
+
     def java_type
       JAVA_STRING_TYPE
     end
@@ -115,6 +135,10 @@ module Prism
       "Array[Symbol]"
     end
 
+    def rbi_class
+      "T::Array[Symbol]"
+    end
+
     def java_type
       "#{JAVA_STRING_TYPE}[]"
     end
@@ -123,6 +147,10 @@ module Prism
   # This represents a field on a node that is a string.
   class StringField < Field
     def rbs_class
+      "String"
+    end
+
+    def rbi_class
       "String"
     end
 
@@ -141,6 +169,10 @@ module Prism
       "Location"
     end
 
+    def rbi_class
+      "Location"
+    end
+
     def java_type
       "Location"
     end
@@ -156,6 +188,10 @@ module Prism
       "Location?"
     end
 
+    def rbi_class
+      "T.nilable(Location)"
+    end
+
     def java_type
       "Location"
     end
@@ -164,6 +200,10 @@ module Prism
   # This represents an integer field.
   class UInt32Field < Field
     def rbs_class
+      "Integer"
+    end
+
+    def rbi_class
       "Integer"
     end
 
@@ -177,6 +217,10 @@ module Prism
   # convenient methods for checking if a flag is set.
   class FlagsField < Field
     def rbs_class
+      "Integer"
+    end
+
+    def rbi_class
       "Integer"
     end
 
