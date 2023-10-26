@@ -12,10 +12,10 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/compilers.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/sanitizers.h"
@@ -434,7 +434,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ZSUPER);
                 COUNT_NODE(NODE_LIST);
                 COUNT_NODE(NODE_ZLIST);
-                COUNT_NODE(NODE_VALUES);
                 COUNT_NODE(NODE_HASH);
                 COUNT_NODE(NODE_RETURN);
                 COUNT_NODE(NODE_YIELD);
@@ -493,6 +492,8 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ARYPTN);
                 COUNT_NODE(NODE_FNDPTN);
                 COUNT_NODE(NODE_HSHPTN);
+                COUNT_NODE(NODE_RIPPER);
+                COUNT_NODE(NODE_RIPPER_VALUES);
                 COUNT_NODE(NODE_ERROR);
 #undef COUNT_NODE
               case NODE_LAST: break;

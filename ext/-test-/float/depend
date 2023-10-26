@@ -55,6 +55,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -114,7 +115,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -145,7 +145,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -215,6 +214,7 @@ nextafter.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 nextafter.o: $(hdrdir)/ruby/internal/attr/noinline.h
 nextafter.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 nextafter.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+nextafter.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 nextafter.o: $(hdrdir)/ruby/internal/attr/pure.h
 nextafter.o: $(hdrdir)/ruby/internal/attr/restrict.h
 nextafter.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -274,7 +274,6 @@ nextafter.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/error.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/eval.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/file.h
-nextafter.o: $(hdrdir)/ruby/internal/intern/gc.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/hash.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/io.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -305,7 +304,6 @@ nextafter.o: $(hdrdir)/ruby/internal/memory.h
 nextafter.o: $(hdrdir)/ruby/internal/method.h
 nextafter.o: $(hdrdir)/ruby/internal/module.h
 nextafter.o: $(hdrdir)/ruby/internal/newobj.h
-nextafter.o: $(hdrdir)/ruby/internal/rgengc.h
 nextafter.o: $(hdrdir)/ruby/internal/scan_args.h
 nextafter.o: $(hdrdir)/ruby/internal/special_consts.h
 nextafter.o: $(hdrdir)/ruby/internal/static_assert.h

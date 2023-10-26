@@ -51,6 +51,7 @@ extract.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 extract.o: $(hdrdir)/ruby/internal/attr/noinline.h
 extract.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 extract.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+extract.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 extract.o: $(hdrdir)/ruby/internal/attr/pure.h
 extract.o: $(hdrdir)/ruby/internal/attr/restrict.h
 extract.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +111,6 @@ extract.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 extract.o: $(hdrdir)/ruby/internal/intern/error.h
 extract.o: $(hdrdir)/ruby/internal/intern/eval.h
 extract.o: $(hdrdir)/ruby/internal/intern/file.h
-extract.o: $(hdrdir)/ruby/internal/intern/gc.h
 extract.o: $(hdrdir)/ruby/internal/intern/hash.h
 extract.o: $(hdrdir)/ruby/internal/intern/io.h
 extract.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +141,6 @@ extract.o: $(hdrdir)/ruby/internal/memory.h
 extract.o: $(hdrdir)/ruby/internal/method.h
 extract.o: $(hdrdir)/ruby/internal/module.h
 extract.o: $(hdrdir)/ruby/internal/newobj.h
-extract.o: $(hdrdir)/ruby/internal/rgengc.h
 extract.o: $(hdrdir)/ruby/internal/scan_args.h
 extract.o: $(hdrdir)/ruby/internal/special_consts.h
 extract.o: $(hdrdir)/ruby/internal/static_assert.h

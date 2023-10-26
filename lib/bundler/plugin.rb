@@ -197,7 +197,7 @@ module Bundler
     # @param [Hash] The options that are present in the lock file
     # @return [API::Source] the instance of the class that handles the source
     #                       type passed in locked_opts
-    def source_from_lock(locked_opts)
+    def from_lock(locked_opts)
       src = source(locked_opts["type"])
 
       src.new(locked_opts.merge("uri" => locked_opts["remote"]))

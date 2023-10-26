@@ -15,13 +15,13 @@ prelude: |
   Newsgroups:   rec.games.roguelike.nethack
   X-Mailer:     Mozilla 1.1N (Macintosh; I; 68K)
 
-  Hello there, Izchak Miller was my father.  When I was younger I spent 
-  many a night, hunched over the keyboard with a cup of tea, playing 
-  nethack with him and my brother.  my dad was a philosopher with a strong 
-  weakness for fantasy/sci fi.  I remember when he started to get involved 
-  with the Nethack team- my brother's Dungeons and Dragons monster book 
-  found a regular place beside my dad's desk. it's nice to see him living 
-  on in the game he loved so much :-).  
+  Hello there,  Izchak Miller was my  father.  When I was  younger I spent
+  many  a night,  hunched over  the keyboard  with a  cup of  tea, playing
+  nethack with him and my brother.  my dad was a philosopher with a strong
+  weakness for fantasy/sci fi.  I remember when he started to get involved
+  with the  Nethack team- my  brother's Dungeons and Dragons  monster book
+  found a regular place beside my dad's  desk. it's nice to see him living
+  on in the game he loved so much :-).
                                                                     Tamar Miller
 
   The following is a really long word of 5000 characters:
@@ -38,8 +38,9 @@ prelude: |
       13.times{
         data << data
       }
-      open(wcinput, 'w'){|f| f.write data}
+      File.write(wcinput, data)
     end
+    at_exit {File.unlink(wcinput) rescue nil}
   end
 
   prepare_wc_input(wc_input_base)
@@ -49,16 +50,16 @@ benchmark:
     # $Id: wc-ruby.code,v 1.4 2004/11/13 07:43:32 bfulgham Exp $
     # http://www.bagley.org/~doug/shootout/
     # with help from Paul Brannan
-    input = open(File.join(File.dirname($0), 'wc.input'), 'rb')
 
     nl = nw = nc = 0
-    while true
-      tmp = input.read(4096) or break
-      data = tmp << (input.gets || "")
-      nc += data.length
-      nl += data.count("\n")
-      ((data.strip! || data).tr!("\n", " ") || data).squeeze!
-      nw += data.count(" ") + 1
+    File.open(File.join(File.dirname($0), 'wc.input'), 'rb') do |input|
+      while tmp = input.read(4096)
+        data = tmp << (input.gets || "")
+        nc += data.length
+        nl += data.count("\n")
+        ((data.strip! || data).tr!("\n", " ") || data).squeeze!
+        nw += data.count(" ") + 1
+      end
     end
     # STDERR.puts "#{nl} #{nw} #{nc}"
 

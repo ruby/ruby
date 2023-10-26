@@ -58,7 +58,7 @@ describe "Time.new with a utc_offset argument" do
     Time.new(2000, 1, 1, 0, 0, 0, "-04:10:43").utc_offset.should == -15043
   end
 
-  ruby_bug '#13669', '3.0'...'3.1' do
+  ruby_bug '#13669', ''...'3.1' do
     it "returns a Time with a UTC offset specified as +HH" do
       Time.new(2000, 1, 1, 0, 0, 0, "+05").utc_offset.should == 3600 * 5
     end
@@ -200,10 +200,8 @@ describe "Time.new with a timezone argument" do
 
     time.zone.should == zone
     time.utc_offset.should == 5*3600+30*60
-    ruby_version_is "3.0" do
-      time.wday.should == 6
-      time.yday.should == 1
-    end
+    time.wday.should == 6
+    time.yday.should == 1
   end
 
   it "accepts timezone argument that must have #local_to_utc and #utc_to_local methods" do
@@ -431,6 +429,10 @@ describe "Time.new with a timezone argument" do
         time.zone.should == nil
       end
 
+      it "returns a Time with UTC offset specified as a single letter military timezone" do
+        Time.new(2000, 1, 1, 0, 0, 0, in: "W").utc_offset.should == 3600 * -10
+      end
+
       it "could be a timezone object" do
         zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
@@ -445,13 +447,199 @@ describe "Time.new with a timezone argument" do
         time.zone.should == zone
       end
 
+      it "allows omitting minor arguments" do
+        Time.new(2000, 1, 1, 12, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 1, "+05:00")
+        Time.new(2000, 1, 1, 12, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 0, "+05:00")
+        Time.new(2000, 1, 1, 12, in: "+05:00").should == Time.new(2000, 1, 1, 12, 0, 0, "+05:00")
+        Time.new(2000, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+        Time.new(2000, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+        Time.new(2000, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+        Time.new(in: "+05:00").should be_close(Time.now.getlocal("+05:00"), TIME_TOLERANCE)
+      end
+
+      it "converts to a provided timezone if all the positional arguments are omitted" do
+        Time.new(in: "+05:00").utc_offset.should == 5*3600
+      end
+
       it "raises ArgumentError if format is invalid" do
         -> { Time.new(2000, 1, 1, 12, 0, 0, in: "+09:99") }.should raise_error(ArgumentError)
         -> { Time.new(2000, 1, 1, 12, 0, 0, in: "ABC") }.should raise_error(ArgumentError)
       end
 
       it "raises ArgumentError if two offset arguments are given" do
-        -> { Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00") }.should raise_error(ArgumentError)
+        -> {
+          Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00")
+        }.should raise_error(ArgumentError, "timezone argument given as positional and keyword arguments")
+      end
+    end
+  end
+
+  ruby_version_is "3.2" do
+    describe "Time.new with a String argument" do
+      it "parses an ISO-8601 like format" do
+        t = Time.utc(2020, 12, 24, 15, 56, 17)
+
+        Time.new("2020-12-24T15:56:17Z").should == t
+        Time.new("2020-12-25 00:56:17 +09:00").should == t
+        Time.new("2020-12-25 00:57:47 +09:01:30").should == t
+        Time.new("2020-12-25 00:56:17 +0900").should == t
+        Time.new("2020-12-25 00:57:47 +090130").should == t
+        Time.new("2020-12-25T00:56:17+09:00").should == t
+      end
+
+      it "accepts precision keyword argument and truncates specified digits of sub-second part" do
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00").subsec.should == 0.123456789r
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: nil).subsec.should == 0.123456789876r
+        Time.new("2021-12-25 00:00:00 +09:00", precision: 0).subsec.should == 0
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: -1).subsec.should == 0.123456789876r
+      end
+
+      it "returns Time in local timezone if not provided in the String argument" do
+        Time.new("2021-12-25 00:00:00").zone.should == Time.new(2021, 12, 25).zone
+        Time.new("2021-12-25 00:00:00").utc_offset.should == Time.new(2021, 12, 25).utc_offset
+      end
+
+      it "returns Time in timezone specified in the String argument" do
+        Time.new("2021-12-25 00:00:00 +05:00").to_s.should == "2021-12-25 00:00:00 +0500"
+      end
+
+      it "returns Time in timezone specified in the String argument even if the in keyword argument provided" do
+        Time.new("2021-12-25 00:00:00 +09:00", in: "-01:00").to_s.should == "2021-12-25 00:00:00 +0900"
+      end
+
+      it "returns Time in timezone specified with in keyword argument if timezone isn't provided in the String argument" do
+        Time.new("2021-12-25 00:00:00", in: "-01:00").to_s.should == "2021-12-25 00:00:00 -0100"
+      end
+
+      it "converts precision keyword argument into Integer if is not nil" do
+        obj = Object.new
+        def obj.to_int; 3; end
+
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: 1.2).subsec.should == 0.1r
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: obj).subsec.should == 0.123r
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: 3r).subsec.should == 0.123r
+      end
+
+      ruby_version_is ""..."3.3" do
+        it "raise TypeError is can't convert precision keyword argument into Integer" do
+          -> {
+            Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: "")
+          }.should raise_error(TypeError, "no implicit conversion from string")
+        end
+      end
+
+      ruby_version_is "3.3" do
+        it "raise TypeError is can't convert precision keyword argument into Integer" do
+          -> {
+            Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: "")
+          }.should raise_error(TypeError, "no implicit conversion of String into Integer")
+        end
+      end
+
+      it "raises ArgumentError if part of time string is missing" do
+        -> {
+          Time.new("2020-12-25 00:56 +09:00")
+        }.should raise_error(ArgumentError, "missing sec part: 00:56 ")
+
+        -> {
+          Time.new("2020-12-25 00 +09:00")
+        }.should raise_error(ArgumentError, "missing min part: 00 ")
+      end
+
+      it "raises ArgumentError if subsecond is missing after dot" do
+        -> {
+          Time.new("2020-12-25 00:56:17. +0900")
+        }.should raise_error(ArgumentError, "subsecond expected after dot: 00:56:17. ")
+      end
+
+      it "raises ArgumentError if String argument is not in the supported format" do
+        -> {
+          Time.new("021-12-25 00:00:00.123456 +09:00")
+        }.should raise_error(ArgumentError, "year must be 4 or more digits: 021")
+
+        -> {
+          Time.new("2020-012-25 00:56:17 +0900")
+        }.should raise_error(ArgumentError, "two digits mon is expected after `-': -012-25 00:")
+
+        -> {
+          Time.new("2020-2-25 00:56:17 +0900")
+        }.should raise_error(ArgumentError, "two digits mon is expected after `-': -2-25 00:56")
+
+        -> {
+          Time.new("2020-12-215 00:56:17 +0900")
+        }.should raise_error(ArgumentError, "two digits mday is expected after `-': -215 00:56:")
+
+        -> {
+          Time.new("2020-12-25 000:56:17 +0900")
+        }.should raise_error(ArgumentError, "two digits hour is expected:  000:56:17 ")
+
+        -> {
+          Time.new("2020-12-25 0:56:17 +0900")
+        }.should raise_error(ArgumentError, "two digits hour is expected:  0:56:17 +0")
+
+        -> {
+          Time.new("2020-12-25 00:516:17 +0900")
+        }.should raise_error(ArgumentError, "two digits min is expected after `:': :516:17 +09")
+
+        -> {
+          Time.new("2020-12-25 00:6:17 +0900")
+        }.should raise_error(ArgumentError, "two digits min is expected after `:': :6:17 +0900")
+
+        -> {
+          Time.new("2020-12-25 00:56:137 +0900")
+        }.should raise_error(ArgumentError, "two digits sec is expected after `:': :137 +0900")
+
+        -> {
+          Time.new("2020-12-25 00:56:7 +0900")
+        }.should raise_error(ArgumentError, "two digits sec is expected after `:': :7 +0900")
+
+        -> {
+          Time.new("2020-12-25 00:56. +0900")
+        }.should raise_error(ArgumentError, "fraction min is not supported: 00:56.")
+
+        -> {
+          Time.new("2020-12-25 00. +0900")
+        }.should raise_error(ArgumentError, "fraction hour is not supported: 00.")
+      end
+
+      it "raises ArgumentError if date/time parts values are not valid" do
+        -> {
+          Time.new("2020-13-25 00:56:17 +09:00")
+        }.should raise_error(ArgumentError, "mon out of range")
+
+        -> {
+          Time.new("2020-12-32 00:56:17 +09:00")
+        }.should raise_error(ArgumentError, "mday out of range")
+
+        -> {
+          Time.new("2020-12-25 25:56:17 +09:00")
+        }.should raise_error(ArgumentError, "hour out of range")
+
+        -> {
+          Time.new("2020-12-25 00:61:17 +09:00")
+        }.should raise_error(ArgumentError, "min out of range")
+
+        -> {
+          Time.new("2020-12-25 00:56:61 +09:00")
+        }.should raise_error(ArgumentError, "sec out of range")
+
+        -> {
+          Time.new("2020-12-25 00:56:17 +23:59:60")
+        }.should raise_error(ArgumentError, "utc_offset out of range")
+
+        -> {
+          Time.new("2020-12-25 00:56:17 +24:00")
+        }.should raise_error(ArgumentError, "utc_offset out of range")
+
+        -> {
+          Time.new("2020-12-25 00:56:17 +23:61")
+        }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +23:61')
+      end
+
+      it "raises ArgumentError if string has not ascii-compatible encoding" do
+        -> {
+          Time.new("2021-11-31 00:00:60 +09:00".encode("utf-32le"))
+        }.should raise_error(ArgumentError, "time string should have ASCII compatible encoding")
       end
     end
   end

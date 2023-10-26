@@ -179,6 +179,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('backtick', %q[p `make all`])
   end
 
+  def test_colon2_call
+    assert_equal ["::"],
+                 scan('op', %q[ a::b ])
+  end
+
   def test_comma
     assert_equal [','] * 6,
                  scan('comma', %q[ m(0,1,2,3,4,5,6) ])
@@ -712,7 +717,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('words_sep', '%w( w w w )')
     assert_equal [' ', "\n", ' ', ' '],
                  scan('words_sep', "%w( w\nw w )")
-    assert_equal ["\n\n", "\n ", ' ', ' '],
+    assert_equal ["\n", "\n", "\n", ' ', ' ', ' '],
                  scan('words_sep', "%w(\n\nw\n w w )")
   end
 

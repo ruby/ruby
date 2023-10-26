@@ -36,18 +36,10 @@ describe "String#scrub with a default replacement" do
     "abc\u3042#{x81}".scrub.encoding.should == Encoding::UTF_8
   end
 
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(String)
-      input = [0x81].pack('C').force_encoding('utf-8')
-      StringSpecs::MyString.new(input).scrub.should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(StringSpecs::MyString)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(String)
+    input = [0x81].pack('C').force_encoding('utf-8')
+    StringSpecs::MyString.new(input).scrub.should be_an_instance_of(String)
   end
 end
 
@@ -97,12 +89,10 @@ describe "String#scrub with a custom replacement" do
     block.should raise_error(TypeError)
   end
 
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("foo").scrub("*").should be_an_instance_of(String)
-      input = [0x81].pack('C').force_encoding('utf-8')
-      StringSpecs::MyString.new(input).scrub("*").should be_an_instance_of(String)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("foo").scrub("*").should be_an_instance_of(String)
+    input = [0x81].pack('C').force_encoding('utf-8')
+    StringSpecs::MyString.new(input).scrub("*").should be_an_instance_of(String)
   end
 end
 
@@ -129,12 +119,10 @@ describe "String#scrub with a block" do
     replaced.should == "€€"
   end
 
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("foo").scrub { |b| "*" }.should be_an_instance_of(String)
-      input = [0x81].pack('C').force_encoding('utf-8')
-      StringSpecs::MyString.new(input).scrub { |b| "<#{b.unpack("H*")[0]}>" }.should be_an_instance_of(String)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("foo").scrub { |b| "*" }.should be_an_instance_of(String)
+    input = [0x81].pack('C').force_encoding('utf-8')
+    StringSpecs::MyString.new(input).scrub { |b| "<#{b.unpack("H*")[0]}>" }.should be_an_instance_of(String)
   end
 end
 

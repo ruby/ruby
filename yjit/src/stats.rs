@@ -3,18 +3,57 @@
 
 #![allow(dead_code)] // Counters are only used with the stats features
 
+use std::alloc::{GlobalAlloc, Layout, System};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Instant;
+
 use crate::codegen::CodegenGlobals;
+use crate::core::Context;
+use crate::core::for_each_iseq_payload;
 use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
-// stats_alloc is a middleware to instrument global allocations in Rust.
-#[cfg(feature="stats")]
+/// A running total of how many ISeqs are in the system.
+#[no_mangle]
+pub static mut rb_yjit_live_iseq_count: u64 = 0;
+
+/// A middleware to count Rust-allocated bytes as yjit_alloc_size.
 #[global_allocator]
-static GLOBAL_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> = &stats_alloc::INSTRUMENTED_SYSTEM;
+static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
+
+pub struct StatsAlloc {
+    alloc_size: AtomicUsize,
+}
+
+unsafe impl GlobalAlloc for StatsAlloc {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
+        System.alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        self.alloc_size.fetch_sub(layout.size(), Ordering::SeqCst);
+        System.dealloc(ptr, layout)
+    }
+
+    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
+        System.alloc_zeroed(layout)
+    }
+
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        if new_size > layout.size() {
+            self.alloc_size.fetch_add(new_size - layout.size(), Ordering::SeqCst);
+        } else if new_size < layout.size() {
+            self.alloc_size.fetch_sub(layout.size() - new_size, Ordering::SeqCst);
+        }
+        System.realloc(ptr, layout, new_size)
+    }
+}
 
 // YJIT exit counts for each instruction type
-const VM_INSTRUCTION_SIZE_USIZE:usize = VM_INSTRUCTION_SIZE as usize;
+const VM_INSTRUCTION_SIZE_USIZE: usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
 
 /// Global state needed for collecting backtraces of exits
@@ -24,7 +63,9 @@ pub struct YjitExitLocations {
     raw_samples: Vec<VALUE>,
     /// Vec to hold line_samples which represent line numbers of
     /// the iseq caller.
-    line_samples: Vec<i32>
+    line_samples: Vec<i32>,
+    /// Number of samples skipped when sampling
+    skipped_samples: usize
 }
 
 /// Private singleton instance of yjit exit locations
@@ -33,11 +74,6 @@ static mut YJIT_EXIT_LOCATIONS: Option<YjitExitLocations> = None;
 impl YjitExitLocations {
     /// Initialize the yjit exit locations
     pub fn init() {
-        // Return if the stats feature is disabled
-        if !cfg!(feature = "stats") {
-            return;
-        }
-
         // Return if --yjit-trace-exits isn't enabled
         if !get_option!(gen_trace_exits) {
             return;
@@ -45,7 +81,8 @@ impl YjitExitLocations {
 
         let yjit_exit_locations = YjitExitLocations {
             raw_samples: Vec::new(),
-            line_samples: Vec::new()
+            line_samples: Vec::new(),
+            skipped_samples: 0
         };
 
         // Initialize the yjit exit locations instance
@@ -69,6 +106,11 @@ impl YjitExitLocations {
         &mut YjitExitLocations::get_instance().line_samples
     }
 
+    /// Get the number of samples skipped
+    pub fn get_skipped_samples() -> &'static mut usize {
+        &mut YjitExitLocations::get_instance().skipped_samples
+    }
+
     /// Mark the data stored in YjitExitLocations::get_raw_samples that needs to be used by
     /// rb_yjit_add_frame. YjitExitLocations::get_raw_samples are an array of
     /// VALUE pointers, exit instruction, and number of times we've seen this stack row
@@ -78,11 +120,6 @@ impl YjitExitLocations {
     pub fn gc_mark_raw_samples() {
         // Return if YJIT is not enabled
         if !yjit_enabled_p() {
-            return;
-        }
-
-        // Return if the stats feature is disabled
-        if !cfg!(feature = "stats") {
             return;
         }
 
@@ -109,7 +146,7 @@ impl YjitExitLocations {
 
             // Increase index for exit instruction.
             idx += 1;
-            // Increase index for bookeeping value (number of times we've seen this
+            // Increase index for bookkeeping value (number of times we've seen this
             // row in a stack).
             idx += 1;
         }
@@ -123,6 +160,20 @@ macro_rules! make_counters {
         #[derive(Default, Debug)]
         pub struct Counters { $(pub $counter_name: u64),+ }
 
+        /// Enum to represent a counter
+        #[allow(non_camel_case_types)]
+        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        pub enum Counter { $($counter_name),+ }
+
+        impl Counter {
+            /// Get a counter name string
+            pub fn get_name(&self) -> String {
+                match self {
+                    $( Counter::$counter_name => stringify!($counter_name).to_string() ),+
+                }
+            }
+        }
+
         /// Global counters instance, initialized to zero
         pub static mut COUNTERS: Counters = Counters { $($counter_name: 0),+ };
 
@@ -130,7 +181,7 @@ macro_rules! make_counters {
         const COUNTER_NAMES: &'static [&'static str] = &[ $(stringify!($counter_name)),+ ];
 
         /// Map a counter name string to a counter pointer
-        fn get_counter_ptr(name: &str) -> *mut u64 {
+        pub fn get_counter_ptr(name: &str) -> *mut u64 {
             match name {
                 $( stringify!($counter_name) => { ptr_to_counter!($counter_name) } ),+
                 _ => panic!()
@@ -138,6 +189,32 @@ macro_rules! make_counters {
         }
     }
 }
+
+/// The list of counters that are available without --yjit-stats.
+/// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
+pub const DEFAULT_COUNTERS: [Counter; 8] = [
+    Counter::code_gc_count,
+    Counter::compiled_iseq_entry,
+    Counter::cold_iseq_entry,
+    Counter::compiled_iseq_count,
+    Counter::compiled_blockid_count,
+    Counter::compiled_block_count,
+    Counter::compiled_branch_count,
+    Counter::compile_time_ns,
+];
+
+/// Macro to increase a counter by name and count
+macro_rules! incr_counter_by {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($counter_name:ident, $count:expr) => {
+        #[allow(unused_unsafe)]
+        {
+            unsafe { $crate::stats::COUNTERS.$counter_name += $count as u64 }
+        }
+    };
+}
+pub(crate) use incr_counter_by;
 
 /// Macro to increment a counter by name
 macro_rules! incr_counter {
@@ -165,8 +242,9 @@ pub(crate) use ptr_to_counter;
 
 // Declare all the counters we track
 make_counters! {
-    exec_instruction,
+    yjit_insns_count,
 
+    // Method calls that fallback to dynamic dispatch
     send_keywords,
     send_kw_splat,
     send_args_splat_super,
@@ -181,20 +259,26 @@ make_counters! {
     send_call_block,
     send_call_kwarg,
     send_call_multi_ractor,
+    send_cme_not_found,
+    send_megamorphic,
     send_missing_method,
     send_refined_method,
+    send_private_not_fcall,
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
     send_cfunc_toomany_args,
     send_cfunc_tracing,
     send_cfunc_kwargs,
+    send_cfunc_splat_with_kw,
+    send_cfunc_splat_send,
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
+    send_iseq_clobbering_block_arg,
+    send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_only_keywords,
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
-    send_iseq_has_rest,
     send_iseq_has_post,
     send_iseq_has_kwrest,
     send_iseq_has_no_kw,
@@ -206,81 +290,169 @@ make_counters! {
     send_iseq_too_many_kwargs,
     send_not_implemented_method,
     send_getter_arity,
-    send_se_cf_overflow,
-    send_se_protected_check_failed,
-    send_splatarray_length_not_equal,
-    send_splat_not_array,
     send_args_splat_non_iseq,
-    send_args_splat_cfunc,
+    send_args_splat_ivar,
+    send_args_splat_attrset,
+    send_args_splat_bmethod,
+    send_args_splat_aref,
+    send_args_splat_aset,
+    send_args_splat_opt_call,
+    send_args_splat_cfunc_var_args,
+    send_args_splat_cfunc_zuper,
+    send_args_splat_cfunc_ruby2_keywords,
+    send_iseq_splat_arity_error,
+    send_splat_too_long,
     send_iseq_ruby2_keywords,
     send_send_not_imm,
     send_send_wrong_args,
     send_send_null_mid,
     send_send_null_cme,
     send_send_nested,
-    send_send_chain,
     send_send_chain_string,
-    send_send_chain_not_string,
-    send_send_chain_not_sym,
     send_send_chain_not_string_or_sym,
     send_send_getter,
     send_send_builtin,
-
+    send_iseq_has_rest_and_captured,
+    send_iseq_has_rest_and_splat,
+    send_iseq_has_rest_and_kw_supplied,
+    send_iseq_has_rest_opt_and_block,
     send_bmethod_ractor,
     send_bmethod_block_arg,
 
-    traced_cfunc_return,
+    invokesuper_defined_class_mismatch,
+    invokesuper_kw_splat,
+    invokesuper_kwarg,
+    invokesuper_megamorphic,
+    invokesuper_no_cme,
+    invokesuper_no_me,
+    invokesuper_not_iseq_or_cfunc,
+    invokesuper_refinement,
 
-    invokesuper_me_changed,
-    invokesuper_block,
-
+    invokeblock_megamorphic,
     invokeblock_none,
-    invokeblock_iseq_arg0_splat,
-    invokeblock_iseq_block_changed,
-    invokeblock_iseq_tag_changed,
-    invokeblock_ifunc,
+    invokeblock_iseq_arg0_optional,
+    invokeblock_iseq_arg0_has_kw,
+    invokeblock_iseq_arg0_args_splat,
+    invokeblock_iseq_arg0_not_array,
+    invokeblock_iseq_arg0_wrong_len,
+    invokeblock_ifunc_args_splat,
+    invokeblock_ifunc_kw_splat,
     invokeblock_proc,
     invokeblock_symbol,
 
+    // Method calls that exit to the interpreter
+    guard_send_block_arg_type,
+    guard_send_klass_megamorphic,
+    guard_send_se_cf_overflow,
+    guard_send_se_protected_check_failed,
+    guard_send_splatarray_length_not_equal,
+    guard_send_splatarray_last_ruby_2_keywords,
+    guard_send_splat_not_array,
+    guard_send_send_chain,
+    guard_send_send_chain_not_string,
+    guard_send_send_chain_not_sym,
+    guard_send_iseq_has_rest_and_splat_not_equal,
+    guard_send_is_a_class_mismatch,
+    guard_send_instance_of_class_mismatch,
+    guard_send_interrupted,
+    guard_send_not_fixnums,
+    guard_send_not_string,
+    guard_send_respond_to_mid_mismatch,
+
+    guard_invokesuper_me_changed,
+
+    guard_invokeblock_tag_changed,
+    guard_invokeblock_iseq_block_changed,
+
+    traced_cfunc_return,
+
     leave_se_interrupt,
     leave_interp_return,
-    leave_start_pc_non_zero,
 
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
     getivar_megamorphic,
+    getivar_not_heap,
 
     setivar_se_self_not_heap,
     setivar_idx_out_of_range,
     setivar_val_heapobject,
     setivar_name_not_mapped,
-    setivar_not_object,
+    setivar_not_heap,
     setivar_frozen,
     setivar_megamorphic,
 
-    oaref_argc_not_one,
-    oaref_arg_not_fixnum,
+    definedivar_not_heap,
+    definedivar_megamorphic,
 
-    opt_getinlinecache_miss,
+    setlocal_wb_required,
+
+    opt_plus_overflow,
+    opt_minus_overflow,
+    opt_mult_overflow,
+
+    opt_mod_zero,
+    opt_div_zero,
+
+    lshift_amt_changed,
+    lshift_overflow,
+
+    opt_aref_argc_not_one,
+    opt_aref_arg_not_fixnum,
+    opt_aref_not_array,
+    opt_aref_not_hash,
+
+    opt_aset_not_array,
+    opt_aset_not_fixnum,
+    opt_aset_not_hash,
+
+    opt_aref_with_qundef,
+
+    opt_case_dispatch_megamorphic,
+
+    opt_getconstant_path_ic_miss,
+    opt_getconstant_path_multi_ractor,
 
     expandarray_splat,
     expandarray_postarg,
     expandarray_not_array,
-    expandarray_rhs_too_small,
+    expandarray_comptime_not_array,
+    expandarray_chain_max_depth,
 
+    // getblockparam
+    gbp_wb_required,
+
+    // getblockparamproxy
+    gbpp_unsupported_type,
     gbpp_block_param_modified,
+    gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
+    gbpp_block_handler_not_proc,
+
+    branchif_interrupted,
+    branchunless_interrupted,
+    branchnil_interrupted,
+    jump_interrupted,
+
+    objtostring_not_string,
 
     binding_allocations,
     binding_set,
 
-    vm_insns_count,
+    compiled_iseq_entry,
+    cold_iseq_entry,
     compiled_iseq_count,
+    compiled_blockid_count,
     compiled_block_count,
     compiled_branch_count,
+    compile_time_ns,
     compilation_failure,
     block_next_count,
     defer_count,
+    defer_empty_count,
+    branch_insn_count,
+    branch_known_count,
+
     freed_iseq_count,
 
     exit_from_branch_stub,
@@ -298,7 +470,31 @@ make_counters! {
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
 
+    code_gc_count,
+
     num_gc_obj_refs,
+
+    num_send,
+    num_send_known_class,
+    num_send_polymorphic,
+    num_send_x86_rel32,
+    num_send_x86_reg,
+    num_send_dynamic,
+
+    num_getivar_megamorphic,
+    num_setivar_megamorphic,
+
+    num_throw,
+    num_throw_break,
+    num_throw_retry,
+    num_throw_return,
+
+    iseq_stack_too_large,
+    iseq_too_long,
+
+    temp_reg_opnd,
+    temp_mem_opnd,
+    temp_spill,
 }
 
 //===========================================================================
@@ -315,11 +511,22 @@ pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALU
     }
 }
 
+/// Primitive called in yjit.rb
+/// Check if stats generation should print at exit
+#[no_mangle]
+pub extern "C" fn rb_yjit_print_stats_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if yjit_enabled_p() && get_option!(print_stats) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
+}
+
 /// Primitive called in yjit.rb.
 /// Export all YJIT statistics as a Ruby hash.
 #[no_mangle]
-pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict())
+pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, context: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict(context == Qtrue))
 }
 
 /// Primitive called in yjit.rb
@@ -328,7 +535,6 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 /// to be enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    #[cfg(feature = "stats")]
     if get_option!(gen_trace_exits) {
         return Qtrue;
     }
@@ -342,11 +548,6 @@ pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
 pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
-        return Qnil;
-    }
-
-    // Return if the stats feature is disabled
-    if !cfg!(feature = "stats") {
         return Qnil;
     }
 
@@ -373,8 +574,18 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
     }
 }
 
+/// Increment a counter by name from the CRuby side
+/// Warning: this is not fast because it requires a hash lookup, so don't use in tight loops
+#[no_mangle]
+pub extern "C" fn rb_yjit_incr_counter(counter_name: *const std::os::raw::c_char) {
+    use std::ffi::CStr;
+    let counter_name = unsafe { CStr::from_ptr(counter_name).to_str().unwrap() };
+    let counter_ptr = get_counter_ptr(counter_name);
+    unsafe { *counter_ptr += 1 };
+}
+
 /// Export all YJIT statistics as a Ruby hash.
-fn rb_yjit_gen_stats_dict() -> VALUE {
+fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
     // If YJIT is not enabled, return Qnil
     if !yjit_enabled_p() {
         return Qnil;
@@ -390,7 +601,6 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
     let hash = unsafe { rb_hash_new() };
 
-    // CodeBlock stats
     unsafe {
         // Get the inline and outlined code blocks
         let cb = CodegenGlobals::get_inline_cb();
@@ -412,24 +622,44 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         // Live pages
         hash_aset_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
 
-        // Code GC count
-        hash_aset_usize!(hash, "code_gc_count", CodegenGlobals::get_code_gc_count());
-
         // Size of memory region allocated for JIT code
         hash_aset_usize!(hash, "code_region_size", cb.mapped_region_size());
 
         // Rust global allocations in bytes
-        #[cfg(feature="stats")]
-        hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
+        hash_aset_usize!(hash, "yjit_alloc_size", GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst));
+
+        // `context` is true at RubyVM::YJIT._print_stats for --yjit-stats. It's false by default
+        // for RubyVM::YJIT.runtime_stats because counting all Contexts could be expensive.
+        if context {
+            let live_context_count = get_live_context_count();
+            let context_size = std::mem::size_of::<Context>();
+            hash_aset_usize!(hash, "live_context_count", live_context_count);
+            hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
+        }
+
+        // VM instructions count
+        hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+
+        hash_aset_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
     }
 
-    // If we're not generating stats, the hash is done
+    // If we're not generating stats, put only default counters
     if !get_option!(gen_stats) {
+        for counter in DEFAULT_COUNTERS {
+            // Get the counter value
+            let counter_ptr = get_counter_ptr(&counter.get_name());
+            let counter_val = unsafe { *counter_ptr };
+
+            // Put counter into hash
+            let key = rust_str_to_sym(&counter.get_name());
+            let value = VALUE::fixnum_from_usize(counter_val as usize);
+            unsafe { rb_hash_aset(hash, key, value); }
+        }
+
         return hash;
     }
 
     // If the stats feature is enabled
-
     unsafe {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
@@ -439,13 +669,6 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
             // Get the counter value
             let counter_ptr = get_counter_ptr(counter_name);
             let counter_val = *counter_ptr;
-
-            #[cfg(not(feature = "stats"))]
-            if counter_name == &"vm_insns_count" {
-                // If the stats feature is disabled, we don't have vm_insns_count
-                // so we are going to exlcude the key
-                continue;
-            }
 
             // Put counter into hash
             let key = rust_str_to_sym(counter_name);
@@ -467,6 +690,21 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
     hash
 }
 
+fn get_live_context_count() -> usize {
+    let mut count = 0;
+    for_each_iseq_payload(|iseq_payload| {
+        for blocks in iseq_payload.version_map.iter() {
+            for block in blocks.iter() {
+                count += unsafe { block.as_ref() }.get_ctx_count();
+            }
+        }
+        for block in iseq_payload.dead_blocks.iter() {
+            count += unsafe { block.as_ref() }.get_ctx_count();
+        }
+    });
+    count
+}
+
 /// Record the backtrace when a YJIT exit occurs. This functionality requires
 /// that the stats feature is enabled as well as the --yjit-trace-exits option.
 ///
@@ -474,15 +712,10 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 /// and line samples. Their length should be the same, however the data stored in
 /// them is different.
 #[no_mangle]
-pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
+pub extern "C" fn rb_yjit_record_exit_stack(_exit_pc: *const VALUE)
 {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
-        return;
-    }
-
-    // Return if the stats feature is disabled
-    if !cfg!(feature = "stats") {
         return;
     }
 
@@ -491,12 +724,22 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         return;
     }
 
+    if get_option!(trace_exits_sample_rate) > 0 {
+        if get_option!(trace_exits_sample_rate) <= *YjitExitLocations::get_skipped_samples() {
+            YjitExitLocations::get_instance().skipped_samples = 0;
+        } else {
+            YjitExitLocations::get_instance().skipped_samples += 1;
+            return;
+        }
+    }
+
     // rb_vm_insn_addr2opcode won't work in cargo test --all-features
     // because it's a C function. Without insn call, this function is useless
     // so wrap the whole thing in a not test check.
-    if cfg!(not(test)) {
+    #[cfg(not(test))]
+    {
         // Get the opcode from the encoded insn handler at this PC
-        let insn = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
+        let insn = unsafe { rb_vm_insn_addr2opcode((*_exit_pc).as_ptr()) };
 
         // Use the same buffer size as Stackprof.
         const BUFF_LEN: usize = 2048;
@@ -527,7 +770,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
             let mut prev_frame_idx = 0;
             let mut seen_already = true;
 
-            // If the previous stack lenght and current stack length are equal,
+            // If the previous stack length and current stack length are equal,
             // loop and compare the current frame to the previous frame. If they are
             // not equal, set seen_already to false and break out of the loop.
             if prev_stack_len == stack_length as i64 {
@@ -578,10 +821,8 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         // Push the insn value into the yjit_raw_samples Vec.
         yjit_raw_samples.push(VALUE(insn as usize));
 
-        // Push the current line onto the yjit_line_samples Vec. This
-        // points to the line in insns.def.
-        let line = yjit_line_samples.len() - 1;
-        yjit_line_samples.push(line as i32);
+        // We don't know the line
+        yjit_line_samples.push(0);
 
         // Push number of times seen onto the stack, which is 1
         // because it's the first time we've seen it.
@@ -599,12 +840,6 @@ pub extern "C" fn rb_yjit_reset_stats_bang(_ec: EcPtr, _ruby_self: VALUE) -> VAL
     }
 
     return Qnil;
-}
-
-/// Increment the number of instructions executed by the interpreter
-#[no_mangle]
-pub extern "C" fn rb_yjit_collect_vm_usage_insn() {
-    incr_counter!(vm_insns_count);
 }
 
 #[no_mangle]
@@ -632,9 +867,11 @@ pub extern "C" fn rb_yjit_count_side_exit_op(exit_pc: *const VALUE) -> *const VA
     return exit_pc;
 }
 
-// Get the size of global allocations in Rust.
-#[cfg(feature="stats")]
-fn global_allocation_size() -> usize {
-    let stats = GLOBAL_ALLOCATOR.stats();
-    stats.bytes_allocated.saturating_sub(stats.bytes_deallocated)
+/// Measure the time taken by func() and add that to yjit_compile_time.
+pub fn with_compile_time<F, R>(func: F) -> R where F: FnOnce() -> R {
+    let start = Instant::now();
+    let ret = func();
+    let nanos = Instant::now().duration_since(start).as_nanos();
+    incr_counter_by!(compile_time_ns, nanos);
+    ret
 }

@@ -13,8 +13,7 @@ class TestSyntax < Test::Unit::TestCase
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
-    assert_separately(%W[--disable-gem - #{srcdir}],
-                      __FILE__, __LINE__, <<-'eom', timeout: Float::INFINITY)
+    assert_separately(%W[- #{srcdir}], __FILE__, __LINE__, <<-'eom', timeout: Float::INFINITY)
       dir = ARGV.shift
       for script in Dir["#{dir}/**/*.rb"].sort
         assert_valid_syntax(IO::read(script), script)
@@ -336,6 +335,12 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn(/duplicated/) {r = eval("a.f(**{k: a.add(1), j: a.add(2), k: a.add(3), k: a.add(4)})")}
     assert_equal(4, r)
     assert_equal([1, 2, 3, 4], a)
+    a.clear
+    r = nil
+    _z = {}
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), **_z, k: a.add(2))")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a)
   end
 
   def test_keyword_empty_splat
@@ -990,7 +995,7 @@ eom
      ["p ", ""],                # no-pop
      ["", "p Foo::Bar"],        # pop
     ].each do |p1, p2|
-      src = <<-EOM.gsub(/^\s*\n/, '')
+      src = <<~EOM
       class Foo
         #{"Bar = " + preset if preset}
       end
@@ -1022,7 +1027,7 @@ eom
      ["p ", ""],                # no-pop
      ["", "p ::Bar"],           # pop
     ].each do |p1, p2|
-      src = <<-EOM.gsub(/^\s*\n/, '')
+      src = <<~EOM
       #{"Bar = " + preset if preset}
       class Foo
         #{p1}::Bar #{op}= 42
@@ -1369,6 +1374,8 @@ eom
       begin raise; ensure return; end and self
       nil&defined?0--begin e=no_method_error(); return; 0;end
       return puts('ignored') #=> ignored
+      BEGIN {return}
+      END {return if false}
     end;
       .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
     failed = proc do |n, s|
@@ -1404,6 +1411,20 @@ eom
 
   def test_return_in_proc_in_class
     assert_in_out_err(['-e', 'class TestSyntax; proc{ return }.call; end'], "", [], /^-e:1:.*unexpected return \(LocalJumpError\)/)
+  end
+
+  def test_return_in_END
+    assert_normal_exit('END {return}')
+  end
+
+  def test_return_in_BEGIN_in_eval
+    # `BEGIN` in `eval` is allowed, even inside a method, and `return`
+    # from that block exits from that method without `LocalJumpError`.
+    obj = Object.new
+    def obj.ok
+      eval("BEGIN {return :ok}")
+    end
+    assert_equal :ok, assert_nothing_raised(LocalJumpError) {obj.ok}
   end
 
   def test_syntax_error_in_rescue
@@ -1625,6 +1646,29 @@ eom
   def test_command_with_cmd_brace_block
     assert_valid_syntax('obj.foo (1) {}')
     assert_valid_syntax('obj::foo (1) {}')
+    assert_valid_syntax('bar {}')
+    assert_valid_syntax('Bar {}')
+    assert_valid_syntax('bar() {}')
+    assert_valid_syntax('Bar() {}')
+    assert_valid_syntax('Foo::bar {}')
+    assert_valid_syntax('Foo::Bar {}')
+    assert_valid_syntax('Foo::bar() {}')
+    assert_valid_syntax('Foo::Bar() {}')
+  end
+
+  def test_command_newline_in_tlparen_args
+    assert_valid_syntax("p (1\n2\n),(3),(4)")
+    assert_valid_syntax("p (\n),(),()")
+    assert_valid_syntax("a.b (1\n2\n),(3),(4)")
+    assert_valid_syntax("a.b (\n),(),()")
+  end
+
+  def test_command_semicolon_in_tlparen_at_the_first_arg
+    bug19281 = '[ruby-core:111499] [Bug #19281]'
+    assert_valid_syntax('p (1;2),(3),(4)', bug19281)
+    assert_valid_syntax('p (;),(),()', bug19281)
+    assert_valid_syntax('a.b (1;2),(3),(4)', bug19281)
+    assert_valid_syntax('a.b (;),(),()', bug19281)
   end
 
   def test_numbered_parameter
@@ -1670,6 +1714,9 @@ eom
         assert_raise(NameError) {eval("_1")},
       ]
     }
+
+    assert_valid_syntax("proc {def foo(_);end;_1}")
+    assert_valid_syntax("p { [_1 **2] }")
   end
 
   def test_value_expr_in_condition

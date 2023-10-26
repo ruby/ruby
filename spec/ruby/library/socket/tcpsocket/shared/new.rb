@@ -14,11 +14,14 @@ describe :tcpsocket_new, shared: true do
     }
   end
 
-  ruby_version_is "3.0"..."3.1" do
+  ruby_version_is ""..."3.2" do
     it 'raises Errno::ETIMEDOUT with :connect_timeout when no server is listening on the given address' do
       -> {
         TCPSocket.send(@method, "192.0.2.1", 80, connect_timeout: 0)
       }.should raise_error(Errno::ETIMEDOUT)
+    rescue Errno::ENETUNREACH
+      # In the case all network interfaces down.
+      # raise_error cannot deal with multiple expected exceptions
     end
   end
 
@@ -27,6 +30,9 @@ describe :tcpsocket_new, shared: true do
       -> {
         TCPSocket.send(@method, "192.0.2.1", 80, connect_timeout: 0)
       }.should raise_error(IO::TimeoutError)
+    rescue Errno::ENETUNREACH
+      # In the case all network interfaces down.
+      # raise_error cannot deal with multiple expected exceptions
     end
   end
 
@@ -92,11 +98,9 @@ describe :tcpsocket_new, shared: true do
       @socket.addr[2].should =~ /^#{@hostname}/
     end
 
-    ruby_version_is "3.0" do
-      it "connects to a server when passed connect_timeout argument" do
-        @socket = TCPSocket.send(@method, @hostname, @server.port, connect_timeout: 1)
-        @socket.should be_an_instance_of(TCPSocket)
-      end
+    it "connects to a server when passed connect_timeout argument" do
+      @socket = TCPSocket.send(@method, @hostname, @server.port, connect_timeout: 1)
+      @socket.should be_an_instance_of(TCPSocket)
     end
   end
 end

@@ -1,6 +1,8 @@
 prelude: |
   CHUNK = "a" * 64
   UCHUNK = "é" * 32
+  SHORT = "a" * (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] / 2)
+  LONG = "a" * (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 2)
   GC.disable # GC causes a lot of variance
 benchmark:
   binary_concat_7bit: |
@@ -43,3 +45,7 @@ benchmark:
       "#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}" \
       "#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}" \
       "#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}"
+  interpolation_same_size_pool: |
+    buffer = "#{SHORT}#{SHORT}"
+  interpolation_switching_size_pools: |
+    buffer = "#{SHORT}#{LONG}"

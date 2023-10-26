@@ -16,6 +16,11 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/irb"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
+  spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["documentation_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/releases"
+
   spec.files         = [
     ".document",
     "Gemfile",
@@ -34,7 +39,8 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.6")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.7")
 
-  spec.add_dependency "reline", ">= 0.3.0"
+  spec.add_dependency "reline", ">= 0.3.8"
+  spec.add_dependency "rdoc"
 end

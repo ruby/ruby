@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#include "gc.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/thread.h"
 #include "internal/sanitizers.h"

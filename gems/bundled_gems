@@ -5,18 +5,19 @@
 # - repository-url: URL from where clone for test
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
-minitest        5.17.0  https://github.com/seattlerb/minitest
+minitest        5.20.0  https://github.com/minitest/minitest
 power_assert    2.0.3   https://github.com/ruby/power_assert
 rake            13.0.6  https://github.com/ruby/rake
-test-unit       3.5.7   https://github.com/test-unit/test-unit
-rexml           3.2.5   https://github.com/ruby/rexml
-rss             0.2.9   https://github.com/ruby/rss
+test-unit       3.6.1   https://github.com/test-unit/test-unit
+rexml           3.2.6   https://github.com/ruby/rexml
+rss             0.3.0   https://github.com/ruby/rss
 net-ftp         0.2.0   https://github.com/ruby/net-ftp
-net-imap        0.3.4   https://github.com/ruby/net-imap
+net-imap        0.4.1   https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
-net-smtp        0.3.3   https://github.com/ruby/net-smtp
+net-smtp        0.4.0   https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
-rbs             2.8.3   https://github.com/ruby/rbs eab5367add3469b3f614e663ba43a3debc62420a
-typeprof        0.21.4  https://github.com/ruby/typeprof
-debug           1.7.1   https://github.com/ruby/debug
+rbs             3.2.2   https://github.com/ruby/rbs 33813a60752624d58dfe5ae770b39bfaf29fbaf1
+typeprof        0.21.8  https://github.com/ruby/typeprof
+debug           1.8.0   https://github.com/ruby/debug 927587afb6aac69b358b86a01f602d207053e8d2
+racc            1.7.1   https://github.com/ruby/racc

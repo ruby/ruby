@@ -17,7 +17,9 @@ describe "String#unpack with directive 'w'" do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "\x01\x02\x03".unpack("w\x00w").should == [1, 2]
+      suppress_warning do
+        "\x01\x02\x03".unpack("w\x00w").should == [1, 2]
+      end
     end
   end
 

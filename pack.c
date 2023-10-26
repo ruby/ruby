@@ -36,10 +36,11 @@
  */
 #ifdef HAVE_TRUE_LONG_LONG
 static const char natstr[] = "sSiIlLqQjJ";
+# define endstr natstr
 #else
 static const char natstr[] = "sSiIlLjJ";
-#endif
 static const char endstr[] = "sSiIlLqQjJ";
+#endif
 
 #ifdef HAVE_TRUE_LONG_LONG
 /* It is intentional to use long long instead of LONG_LONG. */
@@ -537,7 +538,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 bigendian_p = explicit_endian == '>';
             }
             if (integer_size > MAX_INTEGER_PACK_SIZE)
-                rb_bug("unexpected intger size for pack: %d", integer_size);
+                rb_bug("unexpected integer size for pack: %d", integer_size);
             while (len-- > 0) {
                 char intbuf[MAX_INTEGER_PACK_SIZE];
 

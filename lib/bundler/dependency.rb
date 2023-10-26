@@ -9,7 +9,7 @@ module Bundler
     attr_reader :autorequire
     attr_reader :groups, :platforms, :gemfile, :path, :git, :github, :branch, :ref
 
-    ALL_RUBY_VERSIONS = ((18..27).to_a + (30..31).to_a).freeze
+    ALL_RUBY_VERSIONS = ((18..27).to_a + (30..33).to_a).freeze
     PLATFORM_MAP = {
       :ruby => [Gem::Platform::RUBY, ALL_RUBY_VERSIONS],
       :mri => [Gem::Platform::RUBY, ALL_RUBY_VERSIONS],
@@ -17,7 +17,8 @@ module Bundler
       :truffleruby => [Gem::Platform::RUBY],
       :jruby => [Gem::Platform::JAVA, [18, 19]],
       :windows => [Gem::Platform::WINDOWS, ALL_RUBY_VERSIONS],
-      :mswin => [Gem::Platform::MSWIN,     ALL_RUBY_VERSIONS],
+      # deprecated
+      :mswin => [Gem::Platform::MSWIN, ALL_RUBY_VERSIONS],
       :mswin64 => [Gem::Platform::MSWIN64, ALL_RUBY_VERSIONS - [18]],
       :mingw => [Gem::Platform::MINGW, ALL_RUBY_VERSIONS],
       :x64_mingw => [Gem::Platform::X64_MINGW, ALL_RUBY_VERSIONS - [18, 19]],

@@ -144,6 +144,7 @@ RSpec.describe "Bundler.setup" do
 
       ruby <<-RUBY
         require 'bundler'
+        gem "bundler", "#{Bundler::VERSION}" if #{ruby_core?}
         Bundler.setup
         puts $LOAD_PATH
       RUBY
@@ -410,7 +411,7 @@ RSpec.describe "Bundler.setup" do
 
     it "provides a useful exception when the git repo is not checked out yet" do
       run "1", :raise_on_error => false
-      expect(err).to match(/the git source #{lib_path('rack-1.0.0')} is not yet checked out. Please run `bundle install`/i)
+      expect(err).to match(/the git source #{lib_path("rack-1.0.0")} is not yet checked out. Please run `bundle install`/i)
     end
 
     it "does not hit the git binary if the lockfile is available and up to date" do
@@ -497,7 +498,7 @@ RSpec.describe "Bundler.setup" do
 
       FileUtils.rm_rf(lib_path("local-rack"))
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
+      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path("local-rack").to_s)} does not exist/)
     end
 
     it "explodes if branch is not given on runtime" do
@@ -638,6 +639,16 @@ RSpec.describe "Bundler.setup" do
       expect(err).to be_empty
     end
 
+    it "doesn't fail in frozen mode when bundler is a Gemfile dependency" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "bundler"
+      G
+
+      bundle "install --verbose", :env => { "BUNDLE_FROZEN" => "true" }
+      expect(err).to be_empty
+    end
+
     it "doesn't re-resolve when deleting dependencies" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -714,6 +725,27 @@ Gem::Specification.new do |s|
 end
         RUBY
       end
+    R
+
+    run <<-R
+      File.open(File.join(Gem.dir, "specifications", "broken-ext.gemspec"), "w") do |f|
+        f.write <<-RUBY
+# -*- encoding: utf-8 -*-
+# stub: broken-ext 1.0.0 ruby lib
+# stub: a.ext\\0b.ext
+
+Gem::Specification.new do |s|
+  s.name = "broken-ext"
+  s.version = "1.0.0"
+  raise "BROKEN GEMSPEC EXT"
+end
+        RUBY
+      end
+      # Need to write the gem.build_complete file,
+      # otherwise the full spec is loaded to check the installed_by_version
+      extensions_dir = Gem.default_ext_dir_for(Gem.dir) || File.join(Gem.dir, "extensions", Gem::Platform.local.to_s, Gem.extension_api_version)
+      Bundler::FileUtils.mkdir_p(File.join(extensions_dir, "broken-ext-1.0.0"))
+      File.open(File.join(extensions_dir, "broken-ext-1.0.0", "gem.build_complete"), "w") {}
     R
 
     run <<-R
@@ -1195,6 +1227,9 @@ end
 
         DEPENDENCIES
           rack
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
       L
 
       if ruby_version
@@ -1307,6 +1342,7 @@ end
         exempts = %w[did_you_mean bundler]
         exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
+        exempts << "etc" if Gem.ruby_version < Gem::Version.new("3.2") && Gem.win_platform?
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
         exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
@@ -1315,7 +1351,7 @@ end
         exempts
       end
 
-      let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
+      let(:activation_warning_hack) { <<~RUBY }
         require #{spec_dir.join("support/hax").to_s.dump}
 
         Gem::Specification.send(:alias_method, :bundler_spec_activate, :activate)
@@ -1335,7 +1371,7 @@ end
         "-r#{bundled_app("activation_warning_hack.rb")} #{ENV["RUBYOPT"]}"
       end
 
-      let(:code) { strip_whitespace(<<-RUBY) }
+      let(:code) { <<~RUBY }
         require "pp"
         loaded_specs = Gem.loaded_specs.dup
         #{exemptions.inspect}.each {|s| loaded_specs.delete(s) }
@@ -1518,5 +1554,30 @@ end
 
       expect(err).to be_empty
     end
+  end
+
+  it "does not undo the Kernel.require decorations", :rubygems => ">= 3.4.6" do
+    install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    script = bundled_app("bin/script")
+    create_file(script, <<~RUBY)
+      module Kernel
+        module_function
+
+        alias_method :require_before_extra_monkeypatches, :require
+
+        def require(path)
+          puts "requiring \#{path} used the monkeypatch"
+
+          require_before_extra_monkeypatches(path)
+        end
+      end
+
+      require "bundler/setup"
+
+      require "foo"
+    RUBY
+
+    sys_exec "#{Gem.ruby} #{script}", :raise_on_error => false
+    expect(out).to include("requiring foo used the monkeypatch")
   end
 end

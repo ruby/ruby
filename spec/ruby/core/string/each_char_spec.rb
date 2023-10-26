@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative 'shared/chars'
 require_relative 'shared/each_char_without_block'
 

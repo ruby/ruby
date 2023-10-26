@@ -2,10 +2,7 @@
 require 'test/unit'
 require 'uri/ldap'
 
-module URI
-
-
-class TestLDAP < Test::Unit::TestCase
+class URI::TestLDAP < Test::Unit::TestCase
   def setup
   end
 
@@ -99,7 +96,4 @@ class TestLDAP < Test::Unit::TestCase
   def test_parse_invalid_uri
     assert_raise(URI::InvalidURIError) {URI.parse("ldap:https://example.com")}
   end
-end
-
-
 end

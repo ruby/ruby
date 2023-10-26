@@ -25,7 +25,7 @@
 
 /* rb_io_t is in ruby/io.h.  The header file has historically not been included
  * into ruby/ruby.h.  We follow that tradition. */
-struct rb_io_t;
+struct rb_io;
 
 /**
  * Ruby's File  and IO.  Ruby's  IO are not  just file descriptors.   They have
@@ -38,7 +38,7 @@ struct RFile {
     struct RBasic basic;
 
     /** IO's specific fields. */
-    struct rb_io_t *fptr;
+    struct rb_io *fptr;
 };
 
 /**

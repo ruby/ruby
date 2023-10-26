@@ -129,7 +129,7 @@ int flock(int, int);
 # endif
 #else
 # define STAT(p, s)      stat((p), (s))
-#endif
+#endif /* _WIN32 */
 
 #if defined _WIN32 || defined __APPLE__
 # define USE_OSPATH 1
@@ -169,7 +169,6 @@ int flock(int, int);
 #include "internal/thread.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
-#include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 
@@ -264,7 +263,7 @@ rb_str_encode_ospath(VALUE path)
         rb_encoding *utf8 = rb_utf8_encoding();
         path = rb_str_conv_enc(path, enc, utf8);
     }
-#endif
+#endif /* USE_OSPATH */
     return path;
 }
 
@@ -308,7 +307,7 @@ rb_CFString_class_initialize_before_fork(void)
     CFRelease(m);
     CFRelease(s);
 }
-# endif
+# endif /* HAVE_WORKING_FORK */
 
 static VALUE
 rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
@@ -409,9 +408,9 @@ ignored_char_p(const char *p, const char *e, rb_encoding *enc)
     }
     return 0;
 }
-#else
+#else /* !__APPLE__ */
 # define NORMALIZE_UTF8PATH 0
-#endif
+#endif /* __APPLE__ */
 
 #define apply2args(n) (rb_check_arity(argc, n, UNLIMITED_ARGUMENTS), argc-=n)
 
@@ -493,7 +492,7 @@ stat_memsize(const void *p)
 static const rb_data_type_t stat_data_type = {
     "stat",
     {NULL, RUBY_TYPED_DEFAULT_FREE, stat_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -964,7 +963,7 @@ typedef struct stat statx_data;
 # define stat_birthtime stat_ctime
 #else
 # undef HAVE_STAT_BIRTHTIME
-#endif
+#endif /* defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) */
 
 /*
  *  call-seq:
@@ -1189,8 +1188,8 @@ statx(int dirfd, const char *pathname, int flags,
 {
     return (int)syscall(__NR_statx, dirfd, pathname, flags, mask, statxbuf);
 }
-#   endif
-# endif
+#   endif /* __linux__ */
+# endif /* HAVE_STATX */
 
 typedef struct no_gvl_statx_data {
     struct statx *stx;
@@ -1289,7 +1288,8 @@ typedef struct statx statx_data;
 # define rb_statx(file, st, mask) rb_stat(file, st)
 #else
 # define statx_has_birthtime(st) 0
-#endif
+#endif /* !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
+        defined(HAVE_STRUCT_STATX_STX_BTIME) */
 
 static int
 rb_stat(VALUE file, struct stat *st)
@@ -1478,7 +1478,7 @@ rb_group_member(GETGROUPS_T gid)
         ALLOCV_END(v);
 
     return rv;
-#endif
+#endif /* defined(_WIN32) || !defined(HAVE_GETGROUPS) */
 }
 
 #ifndef S_IXUGO
@@ -1529,9 +1529,9 @@ eaccess(const char *path, int mode)
     return -1;
 #else
     return access(path, mode);
-#endif
+#endif /* USE_GETEUID */
 }
-#endif
+#endif /* HAVE_EACCESS */
 
 struct access_arg {
     const char *path;
@@ -1773,7 +1773,7 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
  *
  * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
-  *  File.chardev?($stdin)     # => true
+ *   File.chardev?($stdin)     # => true
  *   File.chardev?('t.txt')     # => false
  *
  */
@@ -2836,7 +2836,7 @@ utime_failed(struct apply_arg *aa)
     }
     rb_syserr_fail_path(e, path);
 }
-#endif
+#endif /* UTIME_EINVAL */
 
 #if defined(HAVE_UTIMES)
 
@@ -2860,8 +2860,8 @@ RBIMPL_WARNING_POP()
 #   define utimensat rb_utimensat()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
 __attribute__((weak)) int utimensat(int, const char *, const struct timespec [2], int);
-#   endif
-# endif
+#   endif /* defined(__has_attribute) && __has_attribute(availability) */
+# endif /* __APPLE__ && < MAC_OS_X_VERSION_13_0 */
 
 static int
 utime_internal(const char *path, void *arg)
@@ -2874,15 +2874,15 @@ utime_internal(const char *path, void *arg)
 # if defined(__APPLE__)
     const int try_utimensat = utimensat != NULL;
     const int try_utimensat_follow = utimensat != NULL;
-# else
+# else /* !__APPLE__ */
 #   define TRY_UTIMENSAT 1
     static int try_utimensat = 1;
-# ifdef AT_SYMLINK_NOFOLLOW
+#   ifdef AT_SYMLINK_NOFOLLOW
     static int try_utimensat_follow = 1;
-# else
+#   else
     const int try_utimensat_follow = 0;
-# endif
-# endif
+#   endif
+# endif /* __APPLE__ */
     int flags = 0;
 
     if (v->follow ? try_utimensat_follow : try_utimensat) {
@@ -2897,15 +2897,15 @@ utime_internal(const char *path, void *arg)
         if (result < 0 && errno == ENOSYS) {
 # ifdef AT_SYMLINK_NOFOLLOW
             try_utimensat_follow = 0;
-# endif
+# endif /* AT_SYMLINK_NOFOLLOW */
             if (!v->follow)
                 try_utimensat = 0;
         }
         else
-# endif
+# endif /* TRY_UTIMESAT */
             return result;
     }
-#endif
+#endif /* defined(HAVE_UTIMENSAT) */
 
     if (tsp) {
         tvbuf[0].tv_sec = tsp[0].tv_sec;
@@ -2920,7 +2920,7 @@ utime_internal(const char *path, void *arg)
     return utimes(path, tvp);
 }
 
-#else
+#else /* !defined(HAVE_UTIMES) */
 
 #if !defined HAVE_UTIME_H && !defined HAVE_SYS_UTIME_H
 struct utimbuf {
@@ -2942,8 +2942,7 @@ utime_internal(const char *path, void *arg)
     }
     return utime(path, utp);
 }
-
-#endif
+#endif /* !defined(HAVE_UTIMES) */
 
 static VALUE
 utime_internal_i(int argc, VALUE *argv, int follow)
@@ -3314,12 +3313,13 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #endif
 
 #ifndef USE_NTFS
-#if defined _WIN32
-#define USE_NTFS 1
-#else
-#define USE_NTFS 0
+#  if defined _WIN32
+#    define USE_NTFS 1
+#  else
+#    define USE_NTFS 0
+#  endif
 #endif
-#endif
+
 #ifndef USE_NTFS_ADS
 # if USE_NTFS
 #   define USE_NTFS_ADS 1
@@ -3333,6 +3333,7 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #else
 #define istrailinggarbage(x) 0
 #endif
+
 #if USE_NTFS_ADS
 # define isADS(x) ((x) == ':')
 #else
@@ -3400,8 +3401,8 @@ not_same_drive(VALUE path, int drive)
         return has_unc(p);
     }
 }
-#endif
-#endif
+#endif /* _WIN32 */
+#endif /* DOSISH_DRIVE_LETTER */
 
 static inline char *
 skiproot(const char *path, const char *end, rb_encoding *enc)
@@ -3445,7 +3446,7 @@ rb_enc_path_skip_prefix(const char *path, const char *end, rb_encoding *enc)
     if (has_drive_letter(path))
         return (char *)(path + 2);
 #endif
-#endif
+#endif /* defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) */
     return (char *)path;
 }
 
@@ -3540,7 +3541,7 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
     }
     return (char *)path;
 }
-#endif
+#endif /* USE_NTFS */
 
 #define BUFCHECK(cond) do {\
     bdiff = p - buf;\
@@ -3645,7 +3646,7 @@ rb_home_dir_of(VALUE user, VALUE result)
     return result;
 }
 
-#ifndef _WIN32
+#ifndef _WIN32 /* this encompasses rb_file_expand_path_internal */
 VALUE
 rb_default_home_dir(VALUE result)
 {
@@ -3675,7 +3676,7 @@ rb_default_home_dir(VALUE result)
         if (NIL_P(login_name)) {
             rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
         }
-# endif
+# endif /* !defined(HAVE_GETPWUID_R) && !defined(HAVE_GETPWUID) */
 
         VALUE pw_dir = rb_getpwdirnam_for_login(login_name);
         if (NIL_P(pw_dir)) {
@@ -3690,7 +3691,7 @@ rb_default_home_dir(VALUE result)
         rb_str_resize(pw_dir, 0);
         return result;
     }
-#endif
+#endif /* defined HAVE_PWD_H */
     if (!dir) {
         rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
     }
@@ -3820,7 +3821,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             s += 2;
         }
     }
-#endif
+#endif /* DOSISH_DRIVE_LETTER */
     else if (!rb_is_absolute_path(s)) {
         if (!NIL_P(dname)) {
             rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
@@ -3840,7 +3841,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             p = skipprefix(buf, p, enc);
         }
         else
-#endif
+#endif /* defined DOSISH || defined __CYGWIN__ */
             p = chompdirsep(skiproot(buf, p, enc), p, enc);
     }
     else {
@@ -3893,7 +3894,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                     else {
                         do ++s; while (istrailinggarbage(*s));
                     }
-#endif
+#endif /* USE_NTFS */
                     break;
                   case '/':
 #if defined DOSISH || defined __CYGWIN__
@@ -3918,7 +3919,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 }
               }
             }
-#endif
+#endif /* USE_NTFS */
             break;
           case '/':
 #if defined DOSISH || defined __CYGWIN__
@@ -3943,7 +3944,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                     break;
                 }
             }
-#endif
+#endif /* __APPLE__ */
             Inc(s, fend, enc);
             break;
         }
@@ -3967,8 +3968,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 s -= prime_len;	/* alternative */
             }
         }
-# endif
-#endif
+# endif /* USE_NTFS_ADS */
+#endif /* USE_NTFS */
         BUFCOPY(b, s-b);
         rb_str_set_len(result, p-buf);
     }
@@ -3989,7 +3990,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
 #else
         char w32buf[MAXPATHLEN];
-#endif
+#endif /* HAVE_CYGWIN_CONV_PATH */
         const char *path;
         ssize_t bufsize;
         int lnk_added = 0, is_symlink = 0;
@@ -4013,12 +4014,12 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 b = w32buf;
             }
         }
-#else
+#else /* !HAVE_CYGWIN_CONV_PATH */
         bufsize = MAXPATHLEN;
         if (cygwin_conv_to_win32_path(path, w32buf) == 0) {
             b = w32buf;
         }
-#endif
+#endif /* !HAVE_CYGWIN_CONV_PATH */
         if (is_symlink && b == w32buf) {
             *p = '\\';
             strlcat(w32buf, p, bufsize);
@@ -4030,7 +4031,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             lnk_added = 0;
         }
         *p = '/';
-#endif
+#endif /* __CYGWIN__ */
         rb_str_set_len(result, p - buf + strlen(p));
         encidx = ENCODING_GET(result);
         tmp = result;
@@ -4078,14 +4079,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         }
 #endif
     }
-#endif
+#endif /* USE_NTFS */
 
     rb_str_set_len(result, p - buf);
     rb_enc_check(fname, result);
     ENC_CODERANGE_CLEAR(result);
     return result;
 }
-#endif /* _WIN32 */
+#endif /* !_WIN32 (this ifdef started above rb_default_home_dir) */
 
 #define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
 
@@ -4325,7 +4326,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
                     rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
                 else
-#endif
+#endif /* HAVE_READLINK */
                 {
                     VALUE s = rb_str_dup_frozen(testpath);
                     rb_hash_aset(loopcheck, s, s);
@@ -4494,7 +4495,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         }
         rb_sys_fail_path(unresolved_path);
     }
-# endif
+# endif /* !defined(__LINUX__) && !defined(__APPLE__) */
 
     if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
@@ -4512,7 +4513,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
 
     RB_GC_GUARD(unresolved_path);
     return resolved;
-#else
+#else /* !HAVE_REALPATH */
     if (mode == RB_REALPATH_CHECK) {
         VALUE arg[3];
         arg[0] = basedir;
@@ -4609,7 +4610,7 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
     if (l1 < l2) return l1;
 
     s = p+l1-l2;
-    if (rb_enc_left_char_head(p, s, p+l1, enc) != s) return 0;
+    if (!at_char_boundary(p, s, p+l1, enc)) return 0;
 #if CASEFOLD_FILESYSTEM
 #define fncomp strncasecmp
 #else
@@ -4649,13 +4650,13 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
             p++;
             f = 0;
         }
-#endif
+#endif /* DOSISH_DRIVE_LETTER */
 #ifdef DOSISH_UNC
         else {
             p = "/";
         }
-#endif
-#endif
+#endif /* DOSISH_UNC */
+#endif /* defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC */
     }
     else {
         if (!(p = strrdirsep(name, end, enc))) {
@@ -4897,7 +4898,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
             continue;
 #else
             e = p;	  /* get the last dot of the last component */
-#endif
+#endif /* USE_NTFS */
         }
 #if USE_NTFS
         else if (isADS(*p)) {
@@ -4970,7 +4971,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  *
  *  Returns the string representation of the path
  *
- *     File.path("/dev/null")          #=> "/dev/null"
+ *     File.path(File::NULL)           #=> "/dev/null"
  *     File.path(Pathname.new("/tmp")) #=> "/tmp"
  *
  */
@@ -5877,10 +5878,8 @@ rb_stat_wr(VALUE obj)
     if ((st->st_mode & (S_IROTH)) == S_IROTH) {
         return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
-    else {
-        return Qnil;
-    }
 #endif
+    return Qnil;
 }
 
 /*
@@ -5965,15 +5964,13 @@ rb_stat_W(VALUE obj)
 static VALUE
 rb_stat_ww(VALUE obj)
 {
-#ifdef S_IROTH
+#ifdef S_IWOTH
     struct stat *st = get_stat(obj);
     if ((st->st_mode & (S_IWOTH)) == S_IWOTH) {
         return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
-    else {
-        return Qnil;
-    }
 #endif
+    return Qnil;
 }
 
 /*
@@ -6089,7 +6086,7 @@ rb_stat_z(VALUE obj)
  *  the file otherwise.
  *
  *     File.stat("testfile").size?   #=> 66
- *     File.stat("/dev/null").size?  #=> nil
+ *     File.stat(File::NULL).size?   #=> nil
  *
  */
 
@@ -6372,7 +6369,11 @@ rb_file_load_ok(const char *path)
 #endif
                 0);
     int fd = rb_cloexec_open(path, mode, 0);
-    if (fd == -1) return 0;
+    if (fd < 0) {
+        if (!rb_gc_for_fd(errno)) return 0;
+        fd = rb_cloexec_open(path, mode, 0);
+        if (fd < 0) return 0;
+    }
     rb_update_max_fd(fd);
     ret = ruby_is_fd_loadable(fd);
     (void)close(fd);
@@ -6530,7 +6531,7 @@ const char ruby_null_device[] =
  *  \Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
- *  === About the Examples
+ *  == About the Examples
  *
  *  Many examples here use these variables:
  *
@@ -6538,11 +6539,11 @@ const char ruby_null_device[] =
  *
  *  == Access Modes
  *
- *  \Methods File.new and File.open each create a \File object for a given file path.
+ *  Methods File.new and File.open each create a \File object for a given file path.
  *
  *  === \String Access Modes
  *
- *  \Methods File.new and File.open each may take string argument +mode+, which:
+ *  Methods File.new and File.open each may take string argument +mode+, which:
  *
  *  - Begins with a 1- or 2-character
  *    {read/write mode}[rdoc-ref:File@Read-2FWrite+Mode].
@@ -7133,7 +7134,6 @@ const char ruby_null_device[] =
  *
  *  Note that file permissions are quite different from the _mode_
  *  of a file stream (\File object).
- *  See IO@Modes.
  *
  *  In a \File object, the permissions are available thus,
  *  where method +mode+, despite its name, returns permissions:
@@ -7179,7 +7179,7 @@ const char ruby_null_device[] =
  *
  *  == \File \Constants
  *
- *  Various constants for use in \File and \IO methods
+ *  Various constants for use in \File and IO methods
  *  may be found in module File::Constants;
  *  an array of their names is returned by <tt>File::Constants.constants</tt>.
  *
@@ -7189,7 +7189,7 @@ const char ruby_null_device[] =
  *
  *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
- *  - Includes {module FileTest}[rdoc-ref:FileTest@What-27s+Here].
+ *  - Includes module FileTest,
  *    which provides dozens of additional methods.
  *
  *  Here, class \File provides methods that are useful for:
@@ -7234,15 +7234,15 @@ const char ruby_null_device[] =
  *
  *  _Times_
  *
- *  - ::atime: Returns a \Time for the most recent access to the given file.
- *  - ::birthtime: Returns a \Time  for the creation of the given file.
- *  - ::ctime: Returns a \Time  for the metadata change of the given file.
- *  - ::mtime: Returns a \Time for the most recent data modification to
+ *  - ::atime: Returns a Time for the most recent access to the given file.
+ *  - ::birthtime: Returns a Time  for the creation of the given file.
+ *  - ::ctime: Returns a Time  for the metadata change of the given file.
+ *  - ::mtime: Returns a Time for the most recent data modification to
  *    the content of the given file.
- *  - #atime: Returns a \Time for the most recent access to +self+.
- *  - #birthtime: Returns a \Time  the creation for +self+.
- *  - #ctime: Returns a \Time for the metadata change of +self+.
- *  - #mtime: Returns a \Time for the most recent data modification
+ *  - #atime: Returns a Time for the most recent access to +self+.
+ *  - #birthtime: Returns a Time  the creation for +self+.
+ *  - #ctime: Returns a Time for the metadata change of +self+.
+ *  - #mtime: Returns a Time for the most recent data modification
  *    to the content of +self+.
  *
  *  _Types_
@@ -7431,93 +7431,373 @@ Init_File(void)
     /*
      * Document-module: File::Constants
      *
-     * File::Constants provides file-related constants.  All possible
-     * file constants are listed in the documentation but they may not all
-     * be present on your platform.
+     * \Module +File::Constants+ defines file-related constants.
      *
-     * If the underlying platform doesn't define a constant the corresponding
-     * Ruby constant is not defined.
+     * There are two families of constants here:
      *
-     * Your platform documentations (e.g. man open(2)) may describe more
-     * detailed information.
+     * - Those having to do with {file access}[rdoc-ref:File::Constants@File+Access].
+     * - Those having to do with {filename globbing}[rdoc-ref:File::Constants@Filename+Globbing+Constants+-28File-3A-3AFNM_-2A-29].
+     *
+     * \File constants defined for the local process may be retrieved
+     * with method File::Constants.constants:
+     *
+     *   File::Constants.constants.take(5)
+     *   # => [:RDONLY, :WRONLY, :RDWR, :APPEND, :CREAT]
+     *
+     * == \File Access
+     *
+     * \File-access constants may be used with optional argument +mode+ in calls
+     * to the following methods:
+     *
+     * - File.new.
+     * - File.open.
+     * - IO.for_fd.
+     * - IO.new.
+     * - IO.open.
+     * - IO.popen.
+     * - IO.reopen.
+     * - IO.sysopen.
+     * - StringIO.new.
+     * - StringIO.open.
+     * - StringIO#reopen.
+     *
+     * === Read/Write Access
+     *
+     * Read-write access for a stream
+     * may be specified by a file-access constant.
+     *
+     * The constant may be specified as part of a bitwise OR of other such constants.
+     *
+     * Any combination of the constants in this section may be specified.
+     *
+     * ==== File::RDONLY
+     *
+     * Flag File::RDONLY specifies the the stream should be opened for reading only:
+     *
+     *   filepath = '/tmp/t.tmp'
+     *   f = File.new(filepath, File::RDONLY)
+     *   f.write('Foo') # Raises IOError (not opened for writing).
+     *
+     * ==== File::WRONLY
+     *
+     * Flag File::WRONLY specifies that the stream should be opened for writing only:
+     *
+     *   f = File.new(filepath, File::WRONLY)
+     *   f.read # Raises IOError (not opened for reading).
+     *
+     * ==== File::RDWR
+     *
+     * Flag File::RDWR specifies that the stream should be opened
+     * for both reading and writing:
+     *
+     *   f = File.new(filepath, File::RDWR)
+     *   f.write('Foo') # => 3
+     *   f.rewind       # => 0
+     *   f.read         # => "Foo"
+     *
+     * === \File Positioning
+     *
+     * ==== File::APPEND
+     *
+     * Flag File::APPEND specifies that the stream should be opened
+     * in append mode.
+     *
+     * Before each write operation, the position is set to end-of-stream.
+     * The modification of the position and the following write operation
+     * are performed as a single atomic step.
+     *
+     * ==== File::TRUNC
+     *
+     * Flag File::TRUNC specifies that the stream should be truncated
+     * at its beginning.
+     * If the file exists and is successfully opened for writing,
+     * it is to be truncated to position zero;
+     * its ctime and mtime are updated.
+     *
+     * There is no effect on a FIFO special file or a terminal device.
+     * The effect on other file types is implementation-defined.
+     * The result of using File::TRUNC with File::RDONLY is undefined.
+     *
+     * === Creating and Preserving
+     *
+     * ==== File::CREAT
+     *
+     * Flag File::CREAT specifies that the stream should be created
+     * if it does not already exist.
+     *
+     * If the file exists:
+     *
+     *   - Raise an exception if File::EXCL is also specified.
+     *   - Otherwise, do nothing.
+     *
+     * If the file does not exist, then it is created.
+     * Upon successful completion, the atime, ctime, and mtime of the file are updated,
+     * and the ctime and mtime of the parent directory are updated.
+     *
+     * ==== File::EXCL
+     *
+     * Flag File::EXCL specifies that the stream should not already exist;
+     * If flags File::CREAT and File::EXCL are both specified
+     * and the stream already exists, an exception is raised.
+     *
+     * The check for the existence and creation of the file is performed as an
+     * atomic operation.
+     *
+     * If both File::EXCL and File::CREAT are specified and the path names a symbolic link,
+     * an exception is raised regardless of the contents of the symbolic link.
+     *
+     * If File::EXCL is specified and File::CREAT is not specified,
+     * the result is undefined.
+     *
+     * === POSIX \File \Constants
+     *
+     * Some file-access constants are defined only on POSIX-compliant systems;
+     * those are:
+     *
+     * - File::SYNC.
+     * - File::DSYNC.
+     * - File::RSYNC.
+     * - File::DIRECT.
+     * - File::NOATIME.
+     * - File::NOCTTY.
+     * - File::NOFOLLOW.
+     * - File::TMPFILE.
+     *
+     * ==== File::SYNC, File::RSYNC, and File::DSYNC
+     *
+     * Flag File::SYNC, File::RSYNC, or File::DSYNC
+     * specifies synchronization of I/O operations with the underlying file system.
+     *
+     * These flags are valid only for POSIX-compliant systems.
+     *
+     * - File::SYNC specifies that all write operations (both data and metadata)
+     *   are immediately to be flushed to the underlying storage device.
+     *   This means that the data is written to the storage device,
+     *   and the file's metadata (e.g., file size, timestamps, permissions)
+     *   are also synchronized.
+     *   This guarantees that data is safely stored on the storage medium
+     *   before returning control to the calling program.
+     *   This flag can have a significant impact on performance
+     *   since it requires synchronous writes, which can be slower
+     *   compared to asynchronous writes.
+     *
+     * - File::RSYNC specifies that any read operations on the file will not return
+     *   until all outstanding write operations
+     *   (those that have been issued but not completed) are also synchronized.
+     *   This is useful when you want to read the most up-to-date data,
+     *   which may still be in the process of being written.
+     *
+     * - File::DSYNC specifies that all _data_ write operations
+     *   are immediately to be flushed to the underlying storage device;
+     *   this differs from File::SYNC, which requires that _metadata_
+     *   also be synchronized.
+     *
+     * Note that the behavior of these flags may vary slightly
+     * depending on the operating system and filesystem being used.
+     * Additionally, using these flags can have an impact on performance
+     * due to the synchronous nature of the I/O operations,
+     * so they should be used judiciously,
+     * especially in performance-critical applications.
+     *
+     * ==== File::NOCTTY
+     *
+     * Flag File::NOCTTY specifies that if the stream is a terminal device,
+     * that device does not become the controlling terminal for the process.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::DIRECT
+     *
+     * Flag File::DIRECT requests that cache effects of the I/O to and from the stream
+     * be minimized.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::NOATIME
+     *
+     * Flag File::NOATIME specifies that act of opening the stream
+     * should not modify its access time (atime).
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::NOFOLLOW
+     *
+     * Flag File::NOFOLLOW specifies that if path is a symbolic link,
+     * it should not be followed.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::TMPFILE
+     *
+     * Flag File::TMPFILE specifies that the opened stream
+     * should be a new temporary file.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * === Other File-Access \Constants
+     *
+     * ==== File::NONBLOCK
+     *
+     * When possible, the file is opened in nonblocking mode.
+     * Neither the open operation nor any subsequent I/O operations on
+     * the file will cause the calling process to wait.
+     *
+     * ==== File::BINARY
+     *
+     * Flag File::BINARY specifies that the stream is to be accessed in binary mode.
+     *
+     * ==== File::SHARE_DELETE (Windows Only)
+     *
+     * Flag File::SHARE_DELETE enables other processes to open the stream
+     * with delete access.
+     *
+     * If the stream is opened for (local) delete access without File::SHARE_DELETE,
+     * and another process attempts to open it with delete access,
+     * the attempt fails and the stream is not opened for that process.
+     *
+     * == Locking
+     *
+     * Four file constants relate to stream locking;
+     * see File#flock:
+     *
+     * ==== File::LOCK_EX
+     *
+     * Flag File::LOCK_EX specifies an exclusive lock;
+     * only one process a a time may lock the stream.
+     *
+     * ==== File::LOCK_NB
+     *
+     * Flag File::LOCK_NB specifies non-blocking locking for the stream;
+     * may be combined with File::LOCK_EX or File::LOCK_SH.
+     *
+     * ==== File::LOCK_SH
+     *
+     * Flag File::LOCK_SH specifies that multiple processes may lock
+     * the stream at the same time.
+     *
+     * ==== File::LOCK_UN
+     *
+     * Flag File::LOCK_UN specifies that the stream is not to be locked.
+     *
+     * == Filename Globbing \Constants (File::FNM_*)
+     *
+     * Filename-globbing constants may be used with optional argument +flags+
+     * in calls to the following methods:
+     *
+     * - Dir.glob.
+     * - File.fnmatch.
+     * - Pathname#fnmatch.
+     * - Pathname.glob.
+     * - Pathname#glob.
+     *
+     * The constants are:
+     *
+     * ==== File::FNM_CASEFOLD
+     *
+     * Flag File::FNM_CASEFOLD makes patterns case insensitive
+     * for File.fnmatch (but not Dir.glob).
+     *
+     * ==== File::FNM_DOTMATCH
+     *
+     * Flag File::FNM_DOTMATCH makes the <tt>'*'</tt> pattern
+     * match a filename starting with <tt>'.'</tt>.
+     *
+     * ==== File::FNM_EXTGLOB
+     *
+     * Flag File::FNM_EXTGLOB enables pattern <tt>'{_a_,_b_}'</tt>,
+     * which matches pattern '_a_' and pattern '_b_';
+     * behaves like
+     * a {regexp union}[rdoc-ref:Regexp.union]
+     * (e.g., <tt>'(?:_a_|_b_)'</tt>):
+     *
+     *   pattern = '{LEGAL,BSDL}'
+     *   Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
+     *   Pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
+     *   pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
+     *
+     * ==== File::FNM_NOESCAPE
+     *
+     * Flag File::FNM_NOESCAPE disables <tt>'\'</tt> escaping.
+     *
+     * ==== File::FNM_PATHNAME
+     *
+     * Flag File::FNM_PATHNAME specifies that patterns <tt>'*'</tt> and <tt>'?'</tt>
+     * do not match the directory separator
+     * (the value of constant File::SEPARATOR).
+     *
+     * ==== File::FNM_SHORTNAME (Windows Only)
+     *
+     * Flag File::FNM_SHORTNAME Allows patterns to match short names if they exist.
+     *
+     * ==== File::FNM_SYSCASE
+     *
+     * Flag File::FNM_SYSCASE specifies that case sensitivity
+     * is the same as in the underlying operating system;
+     * effective for File.fnmatch, but not Dir.glob.
+     *
+     * == Other \Constants
+     *
+     * ==== File::NULL
+     *
+     * Flag File::NULL contains the string value of the null device:
+     *
+     * - On a Unix-like OS, <tt>'/dev/null'</tt>.
+     * - On Windows, <tt>'NUL'</tt>.
+     *
      */
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
     rb_include_module(rb_cIO, rb_mFConst);
-
-    /* open for reading only */
     rb_define_const(rb_mFConst, "RDONLY", INT2FIX(O_RDONLY));
-    /* open for writing only */
     rb_define_const(rb_mFConst, "WRONLY", INT2FIX(O_WRONLY));
-    /* open for reading and writing */
     rb_define_const(rb_mFConst, "RDWR", INT2FIX(O_RDWR));
-    /* append on each write */
     rb_define_const(rb_mFConst, "APPEND", INT2FIX(O_APPEND));
-    /* create file if it does not exist */
     rb_define_const(rb_mFConst, "CREAT", INT2FIX(O_CREAT));
-    /* error if CREAT and the file exists */
     rb_define_const(rb_mFConst, "EXCL", INT2FIX(O_EXCL));
 #if defined(O_NDELAY) || defined(O_NONBLOCK)
 # ifndef O_NONBLOCK
 #   define O_NONBLOCK O_NDELAY
 # endif
-    /* do not block on open or for data to become available */
     rb_define_const(rb_mFConst, "NONBLOCK", INT2FIX(O_NONBLOCK));
 #endif
-    /* truncate size to 0 */
     rb_define_const(rb_mFConst, "TRUNC", INT2FIX(O_TRUNC));
 #ifdef O_NOCTTY
-    /* not to make opened IO the controlling terminal device */
     rb_define_const(rb_mFConst, "NOCTTY", INT2FIX(O_NOCTTY));
 #endif
 #ifndef O_BINARY
 # define  O_BINARY 0
 #endif
-    /* disable line code conversion */
     rb_define_const(rb_mFConst, "BINARY", INT2FIX(O_BINARY));
 #ifndef O_SHARE_DELETE
 # define O_SHARE_DELETE 0
 #endif
-    /* can delete opened file */
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
 #ifdef O_SYNC
-    /* any write operation perform synchronously */
     rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));
 #endif
 #ifdef O_DSYNC
-    /* any write operation perform synchronously except some meta data */
     rb_define_const(rb_mFConst, "DSYNC", INT2FIX(O_DSYNC));
 #endif
 #ifdef O_RSYNC
-    /* any read operation perform synchronously. used with SYNC or DSYNC. */
     rb_define_const(rb_mFConst, "RSYNC", INT2FIX(O_RSYNC));
 #endif
 #ifdef O_NOFOLLOW
-    /* do not follow symlinks */
     rb_define_const(rb_mFConst, "NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
 #endif
 #ifdef O_NOATIME
-    /* do not change atime */
     rb_define_const(rb_mFConst, "NOATIME", INT2FIX(O_NOATIME)); /* Linux */
 #endif
 #ifdef O_DIRECT
-    /*  Try to minimize cache effects of the I/O to and from this file. */
     rb_define_const(rb_mFConst, "DIRECT", INT2FIX(O_DIRECT));
 #endif
 #ifdef O_TMPFILE
-    /* Create an unnamed temporary file */
     rb_define_const(rb_mFConst, "TMPFILE", INT2FIX(O_TMPFILE));
 #endif
 
-    /* shared lock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_SH", INT2FIX(LOCK_SH));
-    /* exclusive lock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_EX", INT2FIX(LOCK_EX));
-    /* unlock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_UN", INT2FIX(LOCK_UN));
-    /* non-blocking lock. used with LOCK_SH or LOCK_EX. see File#flock  */
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
-    /* Name of the null device */
     rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(ruby_null_device));
 
     rb_define_global_function("test", rb_f_test, -1);

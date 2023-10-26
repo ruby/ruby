@@ -15,8 +15,7 @@ module Bundler
           raise BadAuthenticationError, remote_uri if remote_uri.userinfo
           raise AuthenticationRequiredError, remote_uri
         when /403/
-          raise BadAuthenticationError, remote_uri if remote_uri.userinfo
-          raise AuthenticationRequiredError, remote_uri
+          raise AuthenticationForbiddenError, remote_uri
         else
           raise HTTPError, "Could not fetch specs from #{display_uri} due to underlying error <#{e.message}>"
         end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/contents_command"
 
@@ -27,7 +28,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     end
 
     assert_match %r{lib/foo\.rb}, @ui.output
-    assert_match %r{Rakefile}, @ui.output
+    assert_match(/Rakefile/, @ui.output)
     assert_equal "", @ui.error
   end
 
@@ -43,7 +44,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
     assert_match %r{lib/foo\.rb}, @ui.output
     assert_match %r{lib/bar\.rb}, @ui.output
-    assert_match %r{Rakefile}, @ui.output
+    assert_match(/Rakefile/, @ui.output)
     assert_equal "", @ui.error
   end
 
@@ -56,8 +57,8 @@ class TestGemCommandsContentsCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{Unable to find gem 'foo' in default gem paths}, @ui.output
-    assert_match %r{Directories searched:}, @ui.output
+    assert_match(/Unable to find gem 'foo' in default gem paths/, @ui.output)
+    assert_match(/Directories searched:/, @ui.output)
     assert_equal "", @ui.error
   end
 
@@ -71,7 +72,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     end
 
     assert_match %r{lib/foo\.rb}, @ui.output
-    assert_match %r{Rakefile}, @ui.output
+    assert_match(/Rakefile/, @ui.output)
     assert_equal "", @ui.error
   end
 
@@ -86,7 +87,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     end
 
     assert_match %r{lib/foo\.rb}, @ui.output
-    refute_match %r{Rakefile}, @ui.output
+    refute_match(/Rakefile/, @ui.output)
 
     assert_equal "", @ui.error
   end
@@ -147,7 +148,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
     assert_match %r{lib/foo\.rb}, @ui.output
     assert_match %r{lib/bar\.rb}, @ui.output
-    assert_match %r{Rakefile}, @ui.output
+    assert_match(/Rakefile/, @ui.output)
     assert_equal "", @ui.error
   end
 

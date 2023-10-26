@@ -88,7 +88,9 @@ describe "String#unpack with format 'B'" do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "\x80\x00".unpack("B\x00B").should == ["1", "0"]
+      suppress_warning do
+        "\x80\x00".unpack("B\x00B").should == ["1", "0"]
+      end
     end
   end
 
@@ -194,7 +196,9 @@ describe "String#unpack with format 'b'" do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "\x01\x00".unpack("b\x00b").should == ["1", "0"]
+      suppress_warning do
+        "\x01\x00".unpack("b\x00b").should == ["1", "0"]
+      end
     end
   end
 

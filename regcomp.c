@@ -195,8 +195,7 @@ unset_addr_list_init(UnsetAddrList* uslist, int size)
 static void
 unset_addr_list_end(UnsetAddrList* uslist)
 {
-  if (IS_NOT_NULL(uslist->us))
-    xfree(uslist->us);
+  xfree(uslist->us);
 }
 
 static int
@@ -5649,12 +5648,12 @@ extern void
 onig_free_body(regex_t* reg)
 {
   if (IS_NOT_NULL(reg)) {
-    if (IS_NOT_NULL(reg->p))                xfree(reg->p);
-    if (IS_NOT_NULL(reg->exact))            xfree(reg->exact);
-    if (IS_NOT_NULL(reg->int_map))          xfree(reg->int_map);
-    if (IS_NOT_NULL(reg->int_map_backward)) xfree(reg->int_map_backward);
-    if (IS_NOT_NULL(reg->repeat_range))     xfree(reg->repeat_range);
-    if (IS_NOT_NULL(reg->chain))            onig_free(reg->chain);
+    xfree(reg->p);
+    xfree(reg->exact);
+    xfree(reg->int_map);
+    xfree(reg->int_map_backward);
+    xfree(reg->repeat_range);
+    onig_free(reg->chain);
 
 #ifdef USE_NAMED_GROUP
     onig_names_free(reg);
@@ -5669,6 +5668,80 @@ onig_free(regex_t* reg)
     onig_free_body(reg);
     xfree(reg);
   }
+}
+
+static void*
+dup_copy(const void *ptr, size_t size)
+{
+  void *newptr = xmalloc(size);
+  if (IS_NOT_NULL(newptr)) {
+    memcpy(newptr, ptr, size);
+  }
+  return newptr;
+}
+
+extern int
+onig_reg_copy(regex_t** nreg, regex_t* oreg)
+{
+  if (IS_NOT_NULL(oreg)) {
+    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+
+    *reg = *oreg;
+
+# define COPY_FAILED(mem, size) IS_NULL(reg->mem = dup_copy(reg->mem, size))
+
+    if (IS_NOT_NULL(reg->exact)) {
+      size_t exact_size = reg->exact_end - reg->exact;
+      if (COPY_FAILED(exact, exact_size))
+        goto err;
+      (reg)->exact_end = (reg)->exact + exact_size;
+    }
+
+    if (IS_NOT_NULL(reg->int_map)) {
+      if (COPY_FAILED(int_map, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
+        goto err_int_map;
+    }
+    if (IS_NOT_NULL(reg->int_map_backward)) {
+      if (COPY_FAILED(int_map_backward, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
+        goto err_int_map_backward;
+    }
+    if (IS_NOT_NULL(reg->p)) {
+      if (COPY_FAILED(p, reg->alloc))
+        goto err_p;
+    }
+    if (IS_NOT_NULL(reg->repeat_range)) {
+      if (COPY_FAILED(repeat_range, reg->repeat_range_alloc * sizeof(OnigRepeatRange)))
+        goto err_repeat_range;
+    }
+    if (IS_NOT_NULL(reg->name_table)) {
+      if (IS_NULL(reg->name_table = st_copy(reg->name_table)))
+        goto err_name_table;
+    }
+    if (IS_NOT_NULL(reg->chain)) {
+      if (onig_reg_copy(&reg->chain, reg->chain))
+        goto err_chain;
+    }
+    return 0;
+# undef COPY_FAILED
+
+  err_chain:
+    onig_st_free_table(reg->name_table);
+  err_name_table:
+    xfree(reg->repeat_range);
+  err_repeat_range:
+    xfree(reg->p);
+  err_p:
+    xfree(reg->int_map_backward);
+  err_int_map_backward:
+    xfree(reg->int_map);
+  err_int_map:
+    xfree(reg->exact);
+  err:
+    xfree(reg);
+    return ONIGERR_MEMORY;
+  }
+  return 0;
 }
 
 #ifdef RUBY
@@ -5927,8 +6000,8 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   }
 
   onig_node_free(root);
-  if (IS_NOT_NULL(scan_env.mem_nodes_dynamic))
-      xfree(scan_env.mem_nodes_dynamic);
+  xfree(scan_env.mem_nodes_dynamic);
+
   return r;
 }
 
@@ -6000,20 +6073,15 @@ onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
 	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
 	  OnigErrorInfo* einfo)
 {
-  int r;
-
   *reg = (regex_t* )xmalloc(sizeof(regex_t));
   if (IS_NULL(*reg)) return ONIGERR_MEMORY;
 
-  r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
-  if (r) goto err;
-
-  r = onig_compile(*reg, pattern, pattern_end, einfo);
+  int r = onig_new_without_alloc(*reg, pattern, pattern_end, option, enc, syntax, einfo);
   if (r) {
-  err:
     onig_free(*reg);
     *reg = NULL;
   }
+
   return r;
 }
 

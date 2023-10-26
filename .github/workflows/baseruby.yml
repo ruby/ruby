@@ -15,6 +15,13 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -26,15 +33,21 @@ permissions:
 jobs:
   baseruby:
     name: BASERUBY
+
     runs-on: ubuntu-20.04
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     strategy:
       matrix:
         ruby:
-          - ruby-2.2
-#         - ruby-2.3
-#         - ruby-2.4
-#         - ruby-2.5
+          - ruby-2.5
 #         - ruby-2.6
 #         - ruby-2.7
           - ruby-3.0
@@ -42,33 +55,27 @@ jobs:
           - ruby-3.2
 
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
-      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache
-      - uses: ruby/setup-ruby@09c10210cc6e998d842ce8433cd9d245933cd797 # v1.133.0
+      - uses: ruby/setup-ruby@cd48c8e22733480b66887b42bfeb6c0b88ea1a56 # v1.158.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
-      - run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - run: sudo apt-get install build-essential autoconf bison libyaml-dev
-      - run: ./autogen.sh
-      - run: ./configure --disable-install-doc
-      - run: make common-srcs
-      - run: make incs
-      - run: make all
-      - run: make test
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ./.github/actions/setup/directories
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / BASERUBY @ ${{ matrix.ruby }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
+          makeup: true
+
+      - run: ./configure --disable-install-doc
+
+      - run: make all
+
+      - run: make test
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ matrix.ruby }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}

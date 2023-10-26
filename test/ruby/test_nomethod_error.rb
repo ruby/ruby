@@ -85,7 +85,7 @@ class TestNoMethodError < Test::Unit::TestCase
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    msg = "undefined method `#{id}' for \"#{str}\":String"
+    msg = "undefined method `#{id}' for an instance of String"
     assert_raise_with_message(NoMethodError, Regexp.compile(Regexp.quote(msg)), bug3237) do
       str.__send__(id)
     end

@@ -1,18 +1,6 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-def check_bigdecimal_version(gemspec_path)
-  message "checking RUBY_BIGDECIMAL_VERSION... "
-  bigdecimal_version = File.read(gemspec_path).match(/^\s*s\.version\s+=\s+['"]([^'"]+)['"]\s*$/)[1]
-
-  version_components = bigdecimal_version.split('.')
-  bigdecimal_version = version_components[0, 3].join('.')
-  bigdecimal_version << "-#{version_components[3]}" if version_components[3]
-  $defs << %Q[-DRUBY_BIGDECIMAL_VERSION=\\"#{bigdecimal_version}\\"]
-
-  message "#{bigdecimal_version}\n"
-end
-
 def have_builtin_func(name, check_expr, opt = "", &b)
   checking_for checking_message(name.funcall_style, nil, opt) do
     if try_compile(<<SRC, opt, &b)
@@ -26,18 +14,6 @@ SRC
     end
   end
 end
-
-gemspec_name = gemspec_path = nil
-unless ['', '../../'].any? {|dir|
-         gemspec_name = "#{dir}bigdecimal.gemspec"
-         gemspec_path = File.expand_path("../#{gemspec_name}", __FILE__)
-         File.file?(gemspec_path)
-       }
-  $stderr.puts "Unable to find bigdecimal.gemspec"
-  abort
-end
-
-check_bigdecimal_version(gemspec_path)
 
 have_builtin_func("__builtin_clz", "__builtin_clz(0)")
 have_builtin_func("__builtin_clzl", "__builtin_clzl(0)")
@@ -82,6 +58,5 @@ else
 end
 
 create_makefile('bigdecimal') {|mf|
-  mf << "GEMSPEC = #{gemspec_name}\n"
   mf << "BIGDECIMAL_RB = #{bigdecimal_rb}\n"
 }

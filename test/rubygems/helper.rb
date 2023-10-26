@@ -11,8 +11,6 @@ require "test/unit"
 
 ENV["JARS_SKIP"] = "true" if Gem.java_platform? # avoid unnecessary and noisy `jar-dependencies` post install hook
 
-require "rubygems/deprecate"
-
 require "fileutils"
 require "pathname"
 require "pp"
@@ -22,10 +20,9 @@ require "tmpdir"
 require "uri"
 require "zlib"
 require "benchmark" # stdlib
-require "rubygems/mock_gem_ui"
+require_relative "mock_gem_ui"
 
 module Gem
-
   ##
   # Allows setting the gem path searcher.
 
@@ -73,8 +70,6 @@ end
 # your normal set of gems is not affected.
 
 class Gem::TestCase < Test::Unit::TestCase
-  extend Gem::Deprecate
-
   attr_accessor :fetcher # :nodoc:
 
   attr_accessor :gem_repo # :nodoc:
@@ -118,30 +113,30 @@ class Gem::TestCase < Test::Unit::TestCase
   # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
   def capture_subprocess_io
     _synchronize do
-      begin
-        require "tempfile"
+      require "tempfile"
 
-        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
+      captured_stdout = Tempfile.new("out")
+      captured_stderr = Tempfile.new("err")
 
-        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
-        $stdout.reopen captured_stdout
-        $stderr.reopen captured_stderr
+      orig_stdout = $stdout.dup
+      orig_stderr = $stderr.dup
+      $stdout.reopen captured_stdout
+      $stderr.reopen captured_stderr
 
-        yield
+      yield
 
-        $stdout.rewind
-        $stderr.rewind
+      $stdout.rewind
+      $stderr.rewind
 
-        return captured_stdout.read, captured_stderr.read
-      ensure
-        $stdout.reopen orig_stdout
-        $stderr.reopen orig_stderr
+      return captured_stdout.read, captured_stderr.read
+    ensure
+      $stdout.reopen orig_stdout
+      $stderr.reopen orig_stderr
 
-        orig_stdout.close
-        orig_stderr.close
-        captured_stdout.close!
-        captured_stderr.close!
-      end
+      orig_stdout.close
+      orig_stderr.close
+      captured_stdout.close!
+      captured_stderr.close!
     end
   end
 
@@ -257,18 +252,10 @@ class Gem::TestCase < Test::Unit::TestCase
   def assert_contains_make_command(target, output, msg = nil)
     if output.include?("\n")
       msg = build_message(msg,
-        "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
-          ("%s %s" % [make_command, target]).rstrip,
-          output,
-        ]
-      )
+        format("Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT", format("%s %s", make_command, target).rstrip, output))
     else
       msg = build_message(msg,
-        'Expected make command "%s", but was "%s"' % [
-          ("%s %s" % [make_command, target]).rstrip,
-          output,
-        ]
-      )
+        format('Expected make command "%s", but was "%s"', format("%s %s", make_command, target).rstrip, output))
     end
 
     assert scan_make_command_lines(output).any? {|line|
@@ -321,7 +308,7 @@ class Gem::TestCase < Test::Unit::TestCase
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
+    @orig_system_wide_config_file = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
                          File.join(@tempdir, "system-gemrc")
@@ -337,14 +324,18 @@ class Gem::TestCase < Test::Unit::TestCase
       ruby
     end
 
-    @git = ENV["GIT"] || "git#{RbConfig::CONFIG['EXEEXT']}"
+    @git = ENV["GIT"] || "git#{RbConfig::CONFIG["EXEEXT"]}"
 
     Gem.ensure_gem_subdirectories @gemhome
     Gem.ensure_default_gem_subdirectories @gemhome
 
-    @orig_LOAD_PATH = $LOAD_PATH.dup
+    @orig_load_path = $LOAD_PATH.dup
     $LOAD_PATH.map! do |s|
-      expand_path = File.realpath(s) rescue File.expand_path(s)
+      expand_path = begin
+                      File.realpath(s)
+                    rescue StandardError
+                      File.expand_path(s)
+                    end
       if expand_path != s
         expand_path.tap(&Gem::UNTAINT)
         if s.instance_variable_defined?(:@gem_prelude_index)
@@ -413,7 +404,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @orig_arch = RbConfig::CONFIG["arch"]
 
-    if win_platform?
+    if Gem.win_platform?
       util_set_arch "i386-mswin32"
     else
       util_set_arch "i686-darwin8.10.1"
@@ -424,7 +415,7 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
-    @orig_LOADED_FEATURES = $LOADED_FEATURES.dup
+    @orig_loaded_features = $LOADED_FEATURES.dup
   end
 
   ##
@@ -432,14 +423,14 @@ class Gem::TestCase < Test::Unit::TestCase
   # tempdir
 
   def teardown
-    $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
-    if @orig_LOADED_FEATURES
-      if @orig_LOAD_PATH
-        ($LOADED_FEATURES - @orig_LOADED_FEATURES).each do |feat|
+    $LOAD_PATH.replace @orig_load_path if @orig_load_path
+    if @orig_loaded_features
+      if @orig_load_path
+        ($LOADED_FEATURES - @orig_loaded_features).each do |feat|
           $LOADED_FEATURES.delete(feat) if feat.start_with?(@tmp)
         end
       else
-        $LOADED_FEATURES.replace @orig_LOADED_FEATURES
+        $LOADED_FEATURES.replace @orig_loaded_features
       end
     end
 
@@ -457,7 +448,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
-                         @orig_SYSTEM_WIDE_CONFIG_FILE
+                         @orig_system_wide_config_file
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
@@ -473,7 +464,7 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     Gem::Specification.unresolved_deps.clear
-    Gem::refresh
+    Gem.refresh
 
     @orig_hooks.each do |name, hooks|
       Gem.send(name).replace hooks
@@ -486,7 +477,7 @@ class Gem::TestCase < Test::Unit::TestCase
     @temp_cred = File.join(@userhome, ".gem", "credentials")
     FileUtils.mkdir_p File.dirname(@temp_cred)
     File.write @temp_cred, ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
-    File.chmod 0600, @temp_cred
+    File.chmod 0o600, @temp_cred
   end
 
   def credential_teardown
@@ -563,17 +554,16 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir directory do
       unless File.exist? ".git"
         system @git, "init", "--quiet"
-        system @git, "checkout", "-b", "master", "--quiet"
         system @git, "config", "user.name",  "RubyGems Tests"
         system @git, "config", "user.email", "rubygems@example"
       end
 
       system @git, "add", gemspec
       system @git, "commit", "-a", "-m", "a non-empty commit message", "--quiet"
-      head = Gem::Util.popen(@git, "rev-parse", "master").strip
+      head = Gem::Util.popen(@git, "rev-parse", "HEAD").strip
     end
 
-    return name, git_spec.version, directory, head
+    [name, git_spec.version, directory, head]
   end
 
   ##
@@ -689,11 +679,8 @@ class Gem::TestCase < Test::Unit::TestCase
   # Load a YAML file, the psych 3 way
 
   def load_yaml_file(file)
-    if Psych.respond_to?(:unsafe_load_file)
-      Psych.unsafe_load_file(file)
-    else
-      Psych.load_file(file)
-    end
+    require "rubygems/config_file"
+    Gem::ConfigFile.load_with_rubygems_config_hash(File.read(file))
   end
 
   def all_spec_names
@@ -734,7 +721,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem::Specification.reset
 
-    return spec
+    spec
   end
 
   ##
@@ -869,7 +856,7 @@ class Gem::TestCase < Test::Unit::TestCase
       FileUtils.rm spec.spec_file
     end
 
-    return spec
+    spec
   end
 
   ##
@@ -936,7 +923,7 @@ class Gem::TestCase < Test::Unit::TestCase
     @a1 = quick_gem "a", "1" do |s|
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
-      s.date = Gem::Specification::TODAY - 86400
+      s.date = Gem::Specification::TODAY - 86_400
       s.homepage = "http://a.example.com"
       s.email = %w[example@example.com example2@example.com]
       s.authors = %w[Example Example2]
@@ -979,15 +966,15 @@ Also, a list:
       util_build_gem @a2_pre
     end
 
-    write_file File.join(*%W[gems #{@a1.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a3a.original_name}     lib code.rb])
+    write_file File.join(*%W[gems #{@a1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a3a.original_name} lib code.rb])
     write_file File.join(*%W[gems #{@a_evil9.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@b2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@c1_2.original_name}    lib code.rb])
-    write_file File.join(*%W[gems #{@pl1.original_name}     lib code.rb])
-    write_file File.join(*%W[gems #{@x.original_name}       lib code.rb])
-    write_file File.join(*%W[gems #{@dep_x.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@b2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@x.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@dep_x.original_name} lib code.rb])
 
     [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2, @pl1, @x, @dep_x].each do |spec|
       util_build_gem spec
@@ -1047,20 +1034,18 @@ Also, a list:
       spec_fetcher.prerelease_specs[@uri] << spec.name_tuple
     end
 
-    # HACK for test_download_to_cache
+    # HACK: for test_download_to_cache
     unless Gem::RemoteFetcher === @fetcher
       v = Gem.marshal_version
 
-      specs = all.map {|spec| spec.name_tuple }
+      specs = all.map(&:name_tuple)
       s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
 
-      latest_specs = latest.map do |spec|
-        spec.name_tuple
-      end
+      latest_specs = latest.map(&:name_tuple)
 
       l_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic latest_specs
 
-      prerelease_specs = prerelease.map {|spec| spec.name_tuple }
+      prerelease_specs = prerelease.map(&:name_tuple)
       p_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic prerelease_specs
 
       @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
@@ -1096,12 +1081,12 @@ Also, a list:
       Gem.send :remove_instance_variable, :@ruby_version
     end
 
-    @RUBY_VERSION        = RUBY_VERSION
-    @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL     if defined?(RUBY_PATCHLEVEL)
-    @RUBY_REVISION       = RUBY_REVISION       if defined?(RUBY_REVISION)
-    @RUBY_DESCRIPTION    = RUBY_DESCRIPTION
-    @RUBY_ENGINE         = RUBY_ENGINE
-    @RUBY_ENGINE_VERSION = RUBY_ENGINE_VERSION if defined?(RUBY_ENGINE_VERSION)
+    @ruby_version        = RUBY_VERSION
+    @ruby_patchlevel     = RUBY_PATCHLEVEL
+    @ruby_revision       = RUBY_REVISION
+    @ruby_description    = RUBY_DESCRIPTION
+    @ruby_engine         = RUBY_ENGINE
+    @ruby_engine_version = RUBY_ENGINE_VERSION
 
     util_clear_RUBY_VERSION
 
@@ -1110,58 +1095,27 @@ Also, a list:
     Object.const_set :RUBY_REVISION,       revision
     Object.const_set :RUBY_DESCRIPTION,    description
     Object.const_set :RUBY_ENGINE,         engine
-    Object.const_set :RUBY_ENGINE_VERSION, engine_version if engine_version
+    Object.const_set :RUBY_ENGINE_VERSION, engine_version
   end
 
   def util_restore_RUBY_VERSION
     util_clear_RUBY_VERSION
 
-    Object.const_set :RUBY_VERSION,        @RUBY_VERSION
-    Object.const_set :RUBY_PATCHLEVEL,     @RUBY_PATCHLEVEL  if
-      defined?(@RUBY_PATCHLEVEL)
-    Object.const_set :RUBY_REVISION,       @RUBY_REVISION    if
-      defined?(@RUBY_REVISION)
-    Object.const_set :RUBY_DESCRIPTION,    @RUBY_DESCRIPTION
-    Object.const_set :RUBY_ENGINE,         @RUBY_ENGINE
-    Object.const_set :RUBY_ENGINE_VERSION, @RUBY_ENGINE_VERSION if
-      defined?(@RUBY_ENGINE_VERSION)
+    Object.const_set :RUBY_VERSION,        @ruby_version
+    Object.const_set :RUBY_PATCHLEVEL,     @ruby_patchlevel
+    Object.const_set :RUBY_REVISION,       @ruby_revision
+    Object.const_set :RUBY_DESCRIPTION,    @ruby_description
+    Object.const_set :RUBY_ENGINE,         @ruby_engine
+    Object.const_set :RUBY_ENGINE_VERSION, @ruby_engine_version
   end
 
   def util_clear_RUBY_VERSION
     Object.send :remove_const, :RUBY_VERSION
-    Object.send :remove_const, :RUBY_PATCHLEVEL     if defined?(RUBY_PATCHLEVEL)
-    Object.send :remove_const, :RUBY_REVISION       if defined?(RUBY_REVISION)
-    Object.send :remove_const, :RUBY_DESCRIPTION    if defined?(RUBY_DESCRIPTION)
+    Object.send :remove_const, :RUBY_PATCHLEVEL
+    Object.send :remove_const, :RUBY_REVISION
+    Object.send :remove_const, :RUBY_DESCRIPTION
     Object.send :remove_const, :RUBY_ENGINE
-    Object.send :remove_const, :RUBY_ENGINE_VERSION if defined?(RUBY_ENGINE_VERSION)
-  end
-
-  ##
-  # Is this test being run on a Windows platform?
-
-  def self.win_platform?
-    Gem.win_platform?
-  end
-
-  ##
-  # Is this test being run on a Windows platform?
-
-  def win_platform?
-    Gem.win_platform?
-  end
-
-  ##
-  # Is this test being run on a Java platform?
-
-  def self.java_platform?
-    Gem.java_platform?
-  end
-
-  ##
-  # Is this test being run on a Java platform?
-
-  def java_platform?
-    Gem.java_platform?
+    Object.send :remove_const, :RUBY_ENGINE_VERSION
   end
 
   ##
@@ -1173,11 +1127,17 @@ Also, a list:
   end
 
   ##
-  # Returns whether or not we're on a version of Ruby built with VC++ (or
-  # Borland) versus Cygwin, Mingw, etc.
+  # see ::vc_windows?
 
   def vc_windows?
-    RUBY_PLATFORM.match("mswin")
+    self.class.vc_windows?
+  end
+
+  ##
+  # Is this test being run on a version of Ruby built with mingw?
+
+  def mingw_windows?
+    RUBY_PLATFORM.match("mingw")
   end
 
   ##
@@ -1186,15 +1146,6 @@ Also, a list:
 
   def ruby_repo?
     !ENV["GEM_COMMAND"].nil?
-  end
-
-  ##
-  # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
-  # other platforms, including Cygwin, it will return 'make'.
-
-  def self.make_command
-    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
   end
 
   ##
@@ -1219,22 +1170,6 @@ Also, a list:
   def wait_for_child_process_to_exit
     Process.wait if Process.respond_to?(:fork)
   rescue Errno::ECHILD
-  end
-
-  ##
-  # Allows tests to use a random (but controlled) port number instead of
-  # a hardcoded one. This helps CI tools when running parallels builds on
-  # the same builder slave.
-
-  def self.process_based_port
-    @@process_based_port ||= 8000 + $$ % 1000
-  end
-
-  ##
-  # See ::process_based_port
-
-  def process_based_port
-    self.class.process_based_port
   end
 
   ##
@@ -1263,7 +1198,7 @@ Also, a list:
     ruby = ENV["RUBY"]
     return ruby if ruby
     ruby = "ruby"
-    rubyexe = "#{ruby}#{RbConfig::CONFIG['EXEEXT']}"
+    rubyexe = "#{ruby}#{RbConfig::CONFIG["EXEEXT"]}"
 
     3.times do
       if File.exist?(ruby) && File.executable?(ruby) && !File.directory?(ruby)
@@ -1314,32 +1249,29 @@ Also, a list:
   end
 
   def silence_warnings
-    old_verbose, $VERBOSE = $VERBOSE, false
+    old_verbose = $VERBOSE
+    $VERBOSE = false
     yield
   ensure
     $VERBOSE = old_verbose
   end
 
-  class << self
-    # :nodoc:
-    ##
-    # Return the join path, with escaping backticks, dollars, and
-    # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
+  # :nodoc:
+  ##
+  # Return the join path, with escaping backticks, dollars, and
+  # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
 
-    private
-
-    def escape_path(*path)
-      path = File.join(*path)
-      if %r{\A[-+:/=@,.\w]+\z} =~ path
-        path
-      else
-        "\"#{path.gsub(/[`$"]/, '\\&')}\""
-      end
+  def self.escape_path(*path)
+    path = File.join(*path)
+    if %r{\A[-+:/=@,.\w]+\z}.match?(path)
+      path
+    else
+      "\"#{path.gsub(/[`$"]/, '\\&')}\""
     end
   end
 
-  @@good_rake = "#{rubybin} #{escape_path(__dir__, 'good_rake.rb')}"
-  @@bad_rake = "#{rubybin} #{escape_path(__dir__, 'bad_rake.rb')}"
+  @@good_rake = "#{rubybin} #{escape_path(__dir__, "good_rake.rb")}"
+  @@bad_rake = "#{rubybin} #{escape_path(__dir__, "bad_rake.rb")}"
 
   ##
   # Construct a new Gem::Dependency.
@@ -1445,7 +1377,7 @@ Also, a list:
       io.write vendor_spec.to_ruby
     end
 
-    return name, vendor_spec.version, directory
+    [name, vendor_spec.version, directory]
   end
 
   ##
@@ -1525,7 +1457,11 @@ Also, a list:
   # <tt>test/rubygems/</tt>.
 
   def self.cert_path(cert_name)
-    if 32 == (Time.at(2**32) rescue 32)
+    if begin
+         Time.at(2**32)
+       rescue StandardError
+         32
+       end == 32
       cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
 
       return cert_file if File.exist? cert_file

@@ -11,84 +11,83 @@ module SyncDefaultGems
   module_function
 
   REPOSITORIES = {
-    rubygems: 'rubygems/rubygems',
-    rdoc: 'ruby/rdoc',
-    reline: 'ruby/reline',
-    json: 'flori/json',
-    psych: 'ruby/psych',
-    fileutils: 'ruby/fileutils',
-    fiddle: 'ruby/fiddle',
-    stringio: 'ruby/stringio',
     "io-console": 'ruby/io-console',
     "io-nonblock": 'ruby/io-nonblock',
     "io-wait": 'ruby/io-wait',
-    csv: 'ruby/csv',
-    etc: 'ruby/etc',
-    date: 'ruby/date',
-    zlib: 'ruby/zlib',
-    fcntl: 'ruby/fcntl',
-    strscan: 'ruby/strscan',
-    ipaddr: 'ruby/ipaddr',
-    logger: 'ruby/logger',
-    ostruct: 'ruby/ostruct',
-    irb: 'ruby/irb',
-    forwardable: "ruby/forwardable",
-    mutex_m: "ruby/mutex_m",
-    racc: "ruby/racc",
-    singleton: "ruby/singleton",
-    open3: "ruby/open3",
-    getoptlong: "ruby/getoptlong",
-    pstore: "ruby/pstore",
-    delegate: "ruby/delegate",
-    benchmark: "ruby/benchmark",
-    cgi: "ruby/cgi",
-    readline: "ruby/readline",
-    "readline-ext": "ruby/readline-ext",
-    observer: "ruby/observer",
-    timeout: "ruby/timeout",
-    yaml: "ruby/yaml",
-    uri: "ruby/uri",
-    openssl: "ruby/openssl",
-    did_you_mean: "ruby/did_you_mean",
-    weakref: "ruby/weakref",
-    tempfile: "ruby/tempfile",
-    tmpdir: "ruby/tmpdir",
-    English: "ruby/English",
-    "net-protocol": "ruby/net-protocol",
     "net-http": "ruby/net-http",
-    bigdecimal: "ruby/bigdecimal",
-    optparse: "ruby/optparse",
-    set: "ruby/set",
-    find: "ruby/find",
-    rinda: "ruby/rinda",
-    erb: "ruby/erb",
-    nkf: "ruby/nkf",
-    tsort: "ruby/tsort",
-    abbrev: "ruby/abbrev",
-    shellwords: "ruby/shellwords",
-    base64: "ruby/base64",
-    syslog: "ruby/syslog",
+    "net-protocol": "ruby/net-protocol",
     "open-uri": "ruby/open-uri",
-    securerandom: "ruby/securerandom",
-    resolv: "ruby/resolv",
     "resolv-replace": "ruby/resolv-replace",
-    time: "ruby/time",
+    English: "ruby/English",
+    abbrev: "ruby/abbrev",
+    base64: "ruby/base64",
+    benchmark: "ruby/benchmark",
+    bigdecimal: "ruby/bigdecimal",
+    cgi: "ruby/cgi",
+    csv: 'ruby/csv',
+    date: 'ruby/date',
+    delegate: "ruby/delegate",
+    did_you_mean: "ruby/did_you_mean",
+    digest: "ruby/digest",
+    drb: "ruby/drb",
+    erb: "ruby/erb",
+    error_highlight: "ruby/error_highlight",
+    etc: 'ruby/etc',
+    fcntl: 'ruby/fcntl',
+    fiddle: 'ruby/fiddle',
+    fileutils: 'ruby/fileutils',
+    find: "ruby/find",
+    forwardable: "ruby/forwardable",
+    getoptlong: "ruby/getoptlong",
+    ipaddr: 'ruby/ipaddr',
+    irb: 'ruby/irb',
+    json: 'flori/json',
+    logger: 'ruby/logger',
+    mutex_m: "ruby/mutex_m",
+    nkf: "ruby/nkf",
+    observer: "ruby/observer",
+    open3: "ruby/open3",
+    openssl: "ruby/openssl",
+    optparse: "ruby/optparse",
+    ostruct: 'ruby/ostruct',
+    pathname: "ruby/pathname",
     pp: "ruby/pp",
     prettyprint: "ruby/prettyprint",
-    drb: "ruby/drb",
-    pathname: "ruby/pathname",
-    digest: "ruby/digest",
-    error_highlight: "ruby/error_highlight",
+    prism: ["ruby/prism", "main"],
+    pstore: "ruby/pstore",
+    psych: 'ruby/psych',
+    rdoc: 'ruby/rdoc',
+    readline: "ruby/readline",
+    reline: 'ruby/reline',
+    resolv: "ruby/resolv",
+    rinda: "ruby/rinda",
+    rubygems: 'rubygems/rubygems',
+    securerandom: "ruby/securerandom",
+    set: "ruby/set",
+    shellwords: "ruby/shellwords",
+    singleton: "ruby/singleton",
+    stringio: 'ruby/stringio',
+    strscan: 'ruby/strscan',
     syntax_suggest: ["ruby/syntax_suggest", "main"],
+    syslog: "ruby/syslog",
+    tempfile: "ruby/tempfile",
+    time: "ruby/time",
+    timeout: "ruby/timeout",
+    tmpdir: "ruby/tmpdir",
+    tsort: "ruby/tsort",
     un: "ruby/un",
+    uri: "ruby/uri",
+    weakref: "ruby/weakref",
     win32ole: "ruby/win32ole",
-  }
+    yaml: "ruby/yaml",
+    zlib: 'ruby/zlib',
+  }.transform_keys(&:to_s)
 
   CLASSICAL_DEFAULT_BRANCH = "master"
 
   class << REPOSITORIES
     def [](gem)
-      repo, branch = super
+      repo, branch = super(gem)
       return repo, branch || CLASSICAL_DEFAULT_BRANCH
     end
 
@@ -123,16 +122,17 @@ module SyncDefaultGems
   end
 
   def replace_rdoc_ref_all
-    result = pipe_readlines(%W"git status porcelain -z -- *.c *.rb *.rdoc")
+    result = pipe_readlines(%W"git status --porcelain -z -- *.c *.rb *.rdoc")
     result.map! {|line| line[/\A.M (.*)/, 1]}
     result.compact!
+    return if result.empty?
     result = pipe_readlines(%W"git grep -z -l -F [https://docs.ruby-lang.org/en/master/ --" + result)
     result.inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
   end
 
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
   def sync_default_gems(gem)
-    repo, = REPOSITORIES[gem.to_sym]
+    repo, = REPOSITORIES[gem]
     puts "Sync #{repo}"
 
     upstream = File.join("..", "..", repo)
@@ -154,11 +154,10 @@ module SyncDefaultGems
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
       cp_r("#{upstream}/bundler/spec", "spec/bundler")
-      cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/dev_gems*"), "tool/bundler")
-      cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/test_gems*"), "tool/bundler")
-      cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
-      cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
-      rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
+      %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
+        cp_r("#{upstream}/tool/bundler/#{gemfile}.rb", "tool/bundler")
+      end
+      rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
     when "rdoc"
       rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
@@ -288,25 +287,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
       rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
       `git checkout ext/strscan/depend`
-    when "racc"
-      rm_rf(%w[lib/racc lib/racc.rb ext/racc test/racc])
-      parser_files = %w[
-        lib/racc/parser-text.rb
-      ]
-      Dir.chdir(upstream) do
-        `bundle install`
-        parser_files.each do |file|
-          `bundle exec rake #{file}`
-        end
-      end
-      cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
-      mkdir_p("ext/racc/cparse")
-      cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
-      cp_r("#{upstream}/test", "test/racc")
-      cp_r("#{upstream}/racc.gemspec", "lib/racc")
-      rm_rf("test/racc/lib")
-      rm_rf("lib/racc/cparse-jruby.jar")
-      `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
     when "cgi"
       rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
       cp_r("#{upstream}/ext/cgi", "ext")
@@ -335,12 +315,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/lib/net/http", "lib/net")
       cp_r("#{upstream}/test/net/http", "test/net")
       cp_r("#{upstream}/net-http.gemspec", "lib/net/http")
-    when "readline-ext"
-      rm_rf(%w[ext/readline test/readline])
-      cp_r("#{upstream}/ext/readline", "ext")
-      cp_r("#{upstream}/test/readline", "test")
-      cp_r("#{upstream}/readline-ext.gemspec", "ext/readline")
-      `git checkout ext/readline/depend`
     when "did_you_mean"
       rm_rf(%w[lib/did_you_mean lib/did_you_mean.rb test/did_you_mean])
       cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
@@ -398,7 +372,7 @@ module SyncDefaultGems
       `git checkout ext/digest/depend ext/digest/*/depend`
     when "set"
       sync_lib gem, upstream
-      cp_r("#{upstream}/test", ".")
+      cp_r(Dir.glob("#{upstream}/test/*"), "test/set")
     when "optparse"
       sync_lib gem, upstream
       rm_rf(%w[doc/optparse])
@@ -423,26 +397,64 @@ module SyncDefaultGems
       rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
+    when "prism"
+      rm_rf(%w[test/prism prism])
+
+      cp_r("#{upstream}/ext/prism", "prism")
+      cp_r("#{upstream}/lib/.", "lib")
+      cp_r("#{upstream}/test/prism", "test")
+      cp_r("#{upstream}/src/.", "prism")
+
+      cp_r("#{upstream}/prism.gemspec", "lib/prism")
+      cp_r("#{upstream}/include/prism/.", "prism")
+      cp_r("#{upstream}/include/prism.h", "prism")
+
+      cp_r("#{upstream}/config.yml", "prism/")
+      cp_r("#{upstream}/templates", "prism/")
+      rm_rf("prism/templates/javascript")
+      rm_rf("prism/templates/java")
+
+      rm("prism/extconf.rb")
     else
       sync_lib gem, upstream
     end
     replace_rdoc_ref_all
   end
 
-  IGNORE_FILE_PATTERN =
-    /\A(?:[A-Z]\w*\.(?:md|txt)
-    |[^\/]+\.yml
-    |\.git.*
-    |[A-Z]\w+file
-    |COPYING
-    |rakelib\/.*
-    )\z/mx
+  def ignore_file_pattern_for(gem)
+    patterns = []
+
+    # Common patterns
+    patterns << %r[\A(?:
+      [^/]+ # top-level entries
+      |\.git.*
+      |bin/.*
+      |ext/.*\.java
+      |rakelib/.*
+      |test/(?:lib|fixtures)/.*
+      |tool/.*
+    )\z]mx
+
+    # Gem-specific patterns
+    case gem
+    when nil
+    end&.tap do |pattern|
+      patterns << pattern
+    end
+
+    Regexp.union(*patterns)
+  end
 
   def message_filter(repo, sha, input: ARGF)
     log = input.read
     log.delete!("\r")
+    log << "\n" if !log.end_with?("\n")
     repo_url = "https://github.com/#{repo}"
-    subject, log = log.split(/\n(?:[ \t]*(?:\n|\z))/, 2)
+
+    # Split the subject from the log message according to git conventions.
+    # SPECIAL TREAT: when the first line ends with a dot `.` (which is not
+    # obeying the conventions too), takes only that line.
+    subject, log = log.split(/\A.+\.\K\n(?=\S)|\n(?:[ \t]*(?:\n|\z))/, 2)
     conv = proc do |s|
       mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?|close[sd]?|resolve[sd]?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
         "#{repo_url}/pull/"
@@ -472,28 +484,17 @@ module SyncDefaultGems
     puts subject, "\n", log
   end
 
-  # NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh
-  # @param gem [String] A gem name, also used as a git remote name. REPOSITORIES converts it to the appropriate GitHub repository.
-  # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
-  # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
-  def sync_default_gems_with_commits(gem, ranges, edit: nil)
-    repo, default_branch = REPOSITORIES[gem.to_sym]
-    puts "Sync #{repo} with commit history."
-
-    IO.popen(%W"git remote") do |f|
-      unless f.read.split.include?(gem)
-        `git remote add #{gem} git@github.com:#{repo}.git`
-      end
-    end
-    system(*%W"git fetch --no-tags #{gem}")
-
+  # Returns commit list as array of [commit_hash, subject].
+  def commits_in_ranges(gem, repo, default_branch, ranges)
+    # If -a is given, discover all commits since the last picked commit
     if ranges == true
       pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
       log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
-    commits = ranges.flat_map do |range|
+    # Parse a given range with git log
+    ranges.flat_map do |range|
       unless range.include?("..")
         range = "#{range}~1..#{range}"
       end
@@ -502,11 +503,184 @@ module SyncDefaultGems
         f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
       end
     end
+  end
 
-    # Ignore Merge commit and insufficiency commit for ruby core repository.
+  #--
+  # Following methods used by sync_default_gems_with_commits return
+  # true:  success
+  # false: skipped
+  # nil:   failed
+  #++
+
+  def resolve_conflicts(gem, sha, edit)
+    # Skip this commit if everything has been removed as `ignored_paths`.
+    changes = pipe_readlines(%W"git status --porcelain -z")
+    if changes.empty?
+      puts "Skip empty commit #{sha}"
+      return false
+    end
+
+    # We want to skip DD: deleted by both.
+    deleted = changes.grep(/^DD /) {$'}
+    system(*%W"git rm -f --", *deleted) unless deleted.empty?
+
+    # Import UA: added by them
+    added = changes.grep(/^UA /) {$'}
+    system(*%W"git add --", *added) unless added.empty?
+
+    # Discover unmerged files
+    # AU: unmerged, added by us
+    # DU: unmerged, deleted by us
+    # UU: unmerged, both modified
+    # AA: unmerged, both added
+    conflict = changes.grep(/\A(?:.U|AA) /) {$'}
+    # If -e option is given, open each conflicted file with an editor
+    unless conflict.empty?
+      if edit
+        case
+        when (editor = ENV["GIT_EDITOR"] and !editor.empty?)
+        when (editor = `git config core.editor` and (editor.chomp!; !editor.empty?))
+        end
+        if editor
+          system([editor, conflict].join(' '))
+          return system(*%w"git add --", *conflict)
+        end
+      end
+      return false
+    end
+
+    return true
+  end
+
+  def filter_pickup_files(changed, ignore_file_pattern, base)
+    toplevels = {}
+    remove = []
+    ignore = []
+    changed = changed.reject do |f|
+      case
+      when toplevels.fetch(top = f[%r[\A[^/]+(?=/|\z)]m]) {
+             remove << top if toplevels[top] =
+                              !system(*%w"git cat-file -e", "#{base}:#{top}", err: File::NULL)
+           }
+        # Remove any new top-level directories.
+        true
+      when ignore_file_pattern.match?(f)
+        # Forcibly reset any changes matching ignore_file_pattern.
+        ignore << f
+      end
+    end
+    return changed, remove, ignore
+  end
+
+  def pickup_files(gem, changed, picked)
+    # Forcibly remove any files that we don't want to copy to this
+    # repository.
+
+    ignore_file_pattern = ignore_file_pattern_for(gem)
+
+    base = picked ? "HEAD~" : "HEAD"
+    changed, remove, ignore = filter_pickup_files(changed, ignore_file_pattern, base)
+
+    unless remove.empty?
+      puts "Remove added files: #{remove.join(', ')}"
+      system(*%w"git rm -fr --", *remove)
+      if picked
+        system(*%w"git commit --amend --no-edit --", *remove, %i[out err] => File::NULL)
+      end
+    end
+
+    unless ignore.empty?
+      puts "Reset ignored files: #{ignore.join(', ')}"
+      system(*%W"git rm -r --", *ignore)
+      ignore.each {|f| system(*%W"git checkout -f", base, "--", f)}
+    end
+
+    if changed.empty?
+      return nil
+    end
+
+    return changed
+  end
+
+  def pickup_commit(gem, sha, edit)
+    # Attempt to cherry-pick a commit
+    result = IO.popen(%W"git cherry-pick #{sha}", &:read)
+    picked = $?.success?
+    if result =~ /nothing\ to\ commit/
+      `git reset`
+      puts "Skip empty commit #{sha}"
+      return false
+    end
+
+    # Skip empty commits
+    if result.empty?
+      return false
+    end
+
+    if picked
+      changed = pipe_readlines(%w"git diff-tree --name-only -r -z HEAD~..HEAD --")
+    else
+      changed = pipe_readlines(%w"git diff --name-only -r -z HEAD --")
+    end
+
+    # Pick up files to merge.
+    unless changed = pickup_files(gem, changed, picked)
+      puts "Skip commit #{sha} only for tools or toplevel"
+      if picked
+        `git reset --hard HEAD~`
+      else
+        `git cherry-pick --abort`
+      end
+      return false
+    end
+
+    # If the cherry-pick attempt failed, try to resolve conflicts.
+    # Skip the commit, if it contains unresolved conflicts or no files to pick up.
+    unless picked or resolve_conflicts(gem, sha, edit)
+      `git reset` && `git checkout .` && `git clean -fd`
+      return picked || nil      # Fail unless cherry-picked
+    end
+
+    # Commit cherry-picked commit
+    if picked
+      system(*%w"git commit --amend --no-edit")
+    else
+      system(*%w"git cherry-pick --continue --no-edit")
+    end or return nil
+
+    # Amend the commit if RDoc references need to be replaced
+    head = `git log --format=%H -1 HEAD`.chomp
+    system(*%w"git reset --quiet HEAD~ --")
+    amend = replace_rdoc_ref_all
+    system(*%W"git reset --quiet #{head} --")
+    if amend
+      `git commit --amend --no-edit --all`
+    end
+
+    return true
+  end
+
+  # NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh
+  # @param gem [String] A gem name, also used as a git remote name. REPOSITORIES converts it to the appropriate GitHub repository.
+  # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
+  # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
+  def sync_default_gems_with_commits(gem, ranges, edit: nil)
+    repo, default_branch = REPOSITORIES[gem]
+    puts "Sync #{repo} with commit history."
+
+    # Fetch the repository to be synchronized
+    IO.popen(%W"git remote") do |f|
+      unless f.read.split.include?(gem)
+        `git remote add #{gem} https://github.com/#{repo}.git`
+      end
+    end
+    system(*%W"git fetch --no-tags #{gem}")
+
+    commits = commits_in_ranges(gem, repo, default_branch, ranges)
+
+    # Ignore Merge commits and already-merged commits.
     commits.delete_if do |sha, subject|
-      files = pipe_readlines(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}")
-      subject.start_with?("Merge", "Auto Merge") or files.all?(IGNORE_FILE_PATTERN)
+      subject.start_with?("Merge", "Auto Merge")
     end
 
     if commits.empty?
@@ -520,8 +694,6 @@ module SyncDefaultGems
 
     failed_commits = []
 
-    ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
-
     require 'shellwords'
     filter = [
       ENV.fetch('RUBY', 'ruby').shellescape,
@@ -530,72 +702,20 @@ module SyncDefaultGems
     ]
     commits.each do |sha, subject|
       puts "Pick #{sha} from #{repo}."
-
-      skipped = false
-      result = IO.popen(%W"git cherry-pick #{sha}", &:read)
-      if result =~ /nothing\ to\ commit/
-        `git reset`
-        skipped = true
-        puts "Skip empty commit #{sha}"
-      end
-      next if skipped
-
-      case gem
-      when "rubygems"
-        %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
-          if File.exist?(rem)
-            system("git", "reset", rem)
-            rm_rf(rem)
-          end
-        end
-        system(*%w[git add spec/bundler])
-      end
-
-      if result.empty?
-        skipped = true
-      elsif /^CONFLICT/ =~ result
-        result = pipe_readlines(%W"git status --porcelain -z")
-        result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
-        result.compact!
-        ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
-        unless ignore.empty?
-          system(*%W"git reset HEAD --", *ignore)
-          File.unlink(*ignore)
-          ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/\A.. (.*)/, 1]}
-          system(*%W"git checkout HEAD --", *ignore) unless ignore.empty?
-        end
-        unless conflict.empty?
-          if edit
-            case
-            when (editor = ENV["GIT_EDITOR"] and !editor.empty?)
-            when (editor = `git config core.editor` and (editor.chomp!; !editor.empty?))
-            end
-            if editor
-              system([editor, conflict].join(' '))
-            end
-          end
-        end
-        skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
-      end
-
-      if skipped
-        failed_commits << sha
-        `git reset` && `git checkout .` && `git clean -fd`
-        puts "Failed to pick #{sha}"
+      case pickup_commit(gem, sha, edit)
+      when false
         next
-      end
-
-      head = `git log --format=%H -1 HEAD`.chomp
-      system(*%w"git reset --quiet HEAD~ --")
-      amend = replace_rdoc_ref_all
-      system(*%W"git reset --quiet #{head} --")
-      if amend
-        `git commit --amend --no-edit --all`
+      when nil
+        failed_commits << sha
+        next
       end
 
       puts "Update commit message: #{sha}"
 
-      IO.popen(%W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD], &:read)
+      # Run this script itself (tool/sync_default_gems.rb --message-filter) as a message filter
+      IO.popen({"FILTER_BRANCH_SQUELCH_WARNING" => "1"},
+               %W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD],
+               &:read)
       unless $?.success?
         puts "Failed to modify commit message of #{sha}"
         break
@@ -632,7 +752,7 @@ module SyncDefaultGems
 
   def update_default_gems(gem, release: false)
 
-    repository, default_branch = REPOSITORIES[gem.to_sym]
+    repository, default_branch = REPOSITORIES[gem]
     author, repository = repository.split('/')
 
     puts "Update #{author}/#{repository}"
@@ -670,16 +790,16 @@ module SyncDefaultGems
     if ARGV[1]
       update_default_gems(ARGV[1])
     else
-      REPOSITORIES.each_key {|gem| update_default_gems(gem.to_s)}
+      REPOSITORIES.each_key {|gem| update_default_gems(gem)}
     end
   when "all"
     if ARGV[1] == "release"
       REPOSITORIES.each_key do |gem|
-        update_default_gems(gem.to_s, release: true)
-        sync_default_gems(gem.to_s)
+        update_default_gems(gem, release: true)
+        sync_default_gems(gem)
       end
     else
-      REPOSITORIES.each_key {|gem| sync_default_gems(gem.to_s)}
+      REPOSITORIES.each_key {|gem| sync_default_gems(gem)}
     end
   when "list"
     ARGV.shift
@@ -718,6 +838,9 @@ module SyncDefaultGems
 
 \e[1mPick a commit range from the upstream repository\e[0m
   ruby #$0 rubygems 97e9768612..9e53702832
+
+\e[1mPick all commits since the last picked commit\e[0m
+  ruby #$0 -a rubygems
 
 \e[1mList known libraries\e[0m
   ruby #$0 list

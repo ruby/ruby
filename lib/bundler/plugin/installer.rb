@@ -83,8 +83,11 @@ module Bundler
 
         Bundler.configure_gem_home_and_path(Plugin.root)
 
-        definition = Definition.new(nil, deps, source_list, true)
-        install_definition(definition)
+        Bundler.settings.temporary(:deployment => false, :frozen => false) do
+          definition = Definition.new(nil, deps, source_list, true)
+
+          install_definition(definition)
+        end
       end
 
       # Installs the plugins and deps from the provided specs and returns map of

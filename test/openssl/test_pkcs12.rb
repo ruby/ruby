@@ -181,7 +181,7 @@ module OpenSSL
     def test_new_with_no_keys
       # generated with:
       #   openssl pkcs12 -certpbe PBE-SHA1-3DES -in <@mycert> -nokeys -export
-      str = <<~EOF.unpack("m").first
+      str = <<~EOF.unpack1("m")
 MIIGJAIBAzCCBeoGCSqGSIb3DQEHAaCCBdsEggXXMIIF0zCCBc8GCSqGSIb3
 DQEHBqCCBcAwggW8AgEAMIIFtQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMw
 DgQIjv5c3OHvnBgCAggAgIIFiMJa8Z/w7errRvCQPXh9dGQz3eJaFq3S2gXD
@@ -230,7 +230,7 @@ AA==
     def test_new_with_no_certs
       # generated with:
       #   openssl pkcs12 -inkey fixtures/openssl/pkey/rsa-1.pem -nocerts -export
-      str = <<~EOF.unpack("m").first
+      str = <<~EOF.unpack1("m")
 MIIJ7wIBAzCCCbUGCSqGSIb3DQEHAaCCCaYEggmiMIIJnjCCCZoGCSqGSIb3
 DQEHAaCCCYsEggmHMIIJgzCCCX8GCyqGSIb3DQEMCgECoIIJbjCCCWowHAYK
 KoZIhvcNAQwBAzAOBAjX5nN8jyRKwQICCAAEgglIBIRLHfiY1mNHpl3FdX6+

@@ -20,5 +20,3 @@ class RDoc::Parser::Markdown < RDoc::Parser
   end
 
 end
-
-

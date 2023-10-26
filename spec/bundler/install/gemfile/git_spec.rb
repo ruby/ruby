@@ -30,6 +30,13 @@ RSpec.describe "bundle install with git sources" do
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes :size => 1
     end
 
+    it "does not write to cache on bundler/setup" do
+      cache_path = default_bundle_path.join("cache")
+      FileUtils.rm_rf(cache_path)
+      ruby "require 'bundler/setup'"
+      expect(cache_path).not_to exist
+    end
+
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
       simulate_new_machine
       bundle "config set global_gem_cache true"
@@ -565,7 +572,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install, :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
+      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path("local-rack").to_s)} does not exist/)
 
       solution = "config unset local.rack"
       expect(err).to match(/Run `bundle #{solution}` to remove the local override/)
@@ -587,7 +594,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install, :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 at #{Regexp.escape(lib_path('local-rack').to_s)} because :branch is not specified in Gemfile/)
+      expect(err).to match(/Cannot use local override for rack-0.8 at #{Regexp.escape(lib_path("local-rack").to_s)} because :branch is not specified in Gemfile/)
 
       solution = "config unset local.rack"
       expect(err).to match(/Specify a branch or run `bundle #{solution}` to remove the local override/)
@@ -1142,6 +1149,17 @@ RSpec.describe "bundle install with git sources" do
         source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :ref => "deadbeef"
       G
+      expect(err).to include("Revision deadbeef does not exist in the repository")
+    end
+
+    it "gives a helpful error message when the remote branch no longer exists" do
+      build_git "foo"
+
+      install_gemfile <<-G, :env => { "LANG" => "en" }, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :branch => "deadbeef"
+      G
+
       expect(err).to include("Revision deadbeef does not exist in the repository")
     end
   end

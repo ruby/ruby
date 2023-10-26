@@ -9,7 +9,7 @@ describe "UnboundMethod#source_location" do
   it "sets the first value to the path of the file in which the method was defined" do
     file = @method.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.realpath('../fixtures/classes.rb', __FILE__)
+    file.should == File.realpath('fixtures/classes.rb', __dir__)
   end
 
   it "sets the last value to an Integer representing the line on which the method was defined" do
@@ -48,5 +48,12 @@ describe "UnboundMethod#source_location" do
     method = cls.method(:foo)
     method.source_location[0].should =~ /#{__FILE__}/
     method.source_location[1].should == line
+  end
+
+  it "works for eval with a given line" do
+    c = Class.new do
+      eval('def m; end', nil, "foo", 100)
+    end
+    c.instance_method(:m).source_location.should == ["foo", 100]
   end
 end

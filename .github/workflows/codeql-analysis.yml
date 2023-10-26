@@ -1,20 +1,21 @@
-name: "Code scanning - action"
+name: 'CodeQL'
 
 on:
-  # push:
-  #   paths-ignore:
-  #     - 'doc/**'
-  #     - '**/man'
-  #     - '**.md'
-  #     - '**.rdoc'
-  #     - '**/.document'
-  # pull_request:
-  #   paths-ignore:
-  #     - 'doc/**'
-  #     - '**/man'
-  #     - '**.md'
-  #     - '**.rdoc'
-  #     - '**/.document'
+  push:
+    branches: ['master']
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
@@ -23,52 +24,88 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
-permissions:  # added using https://github.com/step-security/secure-workflows
+permissions: # added using https://github.com/step-security/secure-workflows
   contents: read
 
 jobs:
-  CodeQL-Build:
-
-    # CodeQL runs on ubuntu-latest and windows-latest
-    permissions:
-      actions: read  # for github/codeql-action/init to get workflow details
-      contents: read  # for actions/checkout to fetch code
-      security-events: write  # for github/codeql-action/autobuild to send a status report
+  analyze:
+    name: Analyze
     runs-on: ubuntu-latest
+    permissions:
+      actions: read # for github/codeql-action/init to get workflow details
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/autobuild to send a status report
     # CodeQL fails to run pull requests from dependabot due to missing write access to upload results.
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') && github.event.head_commit.pusher.name != 'dependabot[bot]' }}
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
 
     env:
       enable_install_doc: no
 
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['cpp', 'ruby']
+
     steps:
-    - name: Install libraries
-      run: |
-        set -x
-        sudo apt-get update -q || :
-        sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-    - name: Checkout repository
-      uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      - name: Install libraries
+        uses: ./.github/actions/setup/ubuntu
 
-    - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
-      with:
-        path: .downloaded-cache
-        key: downloaded-cache
+      - uses: ./.github/actions/setup/directories
 
-    - name: Remove an obsolete rubygems vendored file
-      run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
+      - name: Remove an obsolete rubygems vendored file
+        run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37
-      with:
-        config-file: ./.github/codeql/codeql-config.yml
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        with:
+          languages: ${{ matrix.language }}
 
-    - name: Set ENV
-      run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        with:
+          category: '/language:${{ matrix.language }}'
+          upload: False
+          output: sarif-results
+          ram: 8192
+        # CodeQL randomly hits `OutOfMemoryError "Java heap space"`.
+        # GitHub recommends running a larger runner to fix it, but we don't pay for it.
+        continue-on-error: true
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37
+      - name: filter-sarif
+        uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d # v1.0
+        with:
+          patterns: |
+            +**/*.rb
+            -lib/uri/mailto.rb:rb/overly-large-range
+            -lib/uri/rfc3986_parser.rb:rb/overly-large-range
+            -lib/bundler/vendor/uri/lib/uri/mailto.rb:rb/overly-large-range
+            -lib/bundler/vendor/uri/lib/uri/rfc3986_parser.rb:rb/overly-large-range
+            -test/ruby/test_io.rb:rb/non-constant-kernel-open
+            -test/open-uri/test_open-uri.rb:rb/non-constant-kernel-open
+            -test/open-uri/test_ssl.rb:rb/non-constant-kernel-open
+            -spec/ruby/core/io/binread_spec.rb:rb/non-constant-kernel-open
+            -spec/ruby/core/io/readlines_spec.rb:rb/non-constant-kernel-open
+            -spec/ruby/core/io/foreach_spec.rb:rb/non-constant-kernel-open
+            -spec/ruby/core/io/write_spec.rb:rb/non-constant-kernel-open
+            -spec/ruby/core/io/read_spec.rb:rb/non-constant-kernel-open
+            -spec/ruby/core/kernel/open_spec.rb:rb/non-constant-kernel-open
+          input: sarif-results/${{ matrix.language }}.sarif
+          output: sarif-results/${{ matrix.language }}.sarif
+        if: ${{ matrix.language == 'ruby' }}
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        with:
+          sarif_file: sarif-results/${{ matrix.language }}.sarif

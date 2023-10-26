@@ -52,6 +52,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -213,6 +212,7 @@ leap_second.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/noinline.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+leap_second.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/pure.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/restrict.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -272,7 +272,6 @@ leap_second.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/error.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/eval.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/file.h
-leap_second.o: $(hdrdir)/ruby/internal/intern/gc.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/hash.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/io.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -303,7 +302,6 @@ leap_second.o: $(hdrdir)/ruby/internal/memory.h
 leap_second.o: $(hdrdir)/ruby/internal/method.h
 leap_second.o: $(hdrdir)/ruby/internal/module.h
 leap_second.o: $(hdrdir)/ruby/internal/newobj.h
-leap_second.o: $(hdrdir)/ruby/internal/rgengc.h
 leap_second.o: $(hdrdir)/ruby/internal/scan_args.h
 leap_second.o: $(hdrdir)/ruby/internal/special_consts.h
 leap_second.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -377,6 +375,7 @@ new.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 new.o: $(hdrdir)/ruby/internal/attr/noinline.h
 new.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 new.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+new.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 new.o: $(hdrdir)/ruby/internal/attr/pure.h
 new.o: $(hdrdir)/ruby/internal/attr/restrict.h
 new.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -436,7 +435,6 @@ new.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 new.o: $(hdrdir)/ruby/internal/intern/error.h
 new.o: $(hdrdir)/ruby/internal/intern/eval.h
 new.o: $(hdrdir)/ruby/internal/intern/file.h
-new.o: $(hdrdir)/ruby/internal/intern/gc.h
 new.o: $(hdrdir)/ruby/internal/intern/hash.h
 new.o: $(hdrdir)/ruby/internal/intern/io.h
 new.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -467,7 +465,6 @@ new.o: $(hdrdir)/ruby/internal/memory.h
 new.o: $(hdrdir)/ruby/internal/method.h
 new.o: $(hdrdir)/ruby/internal/module.h
 new.o: $(hdrdir)/ruby/internal/newobj.h
-new.o: $(hdrdir)/ruby/internal/rgengc.h
 new.o: $(hdrdir)/ruby/internal/scan_args.h
 new.o: $(hdrdir)/ruby/internal/special_consts.h
 new.o: $(hdrdir)/ruby/internal/static_assert.h

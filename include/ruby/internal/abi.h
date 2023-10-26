@@ -31,6 +31,7 @@
 #if defined(HAVE_FUNC_WEAK) && !defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # define RUBY_DLN_CHECK_ABI
 #endif
+#endif  /* RUBY_ABI_VERSION */
 
 #ifdef RUBY_DLN_CHECK_ABI
 
@@ -41,14 +42,16 @@ extern "C" {
 RUBY_FUNC_EXPORTED unsigned long long __attribute__((weak))
 ruby_abi_version(void)
 {
+# ifdef RUBY_ABI_VERSION
     return RUBY_ABI_VERSION;
+# else
+    return 0;
+# endif
 }
 
 # ifdef __cplusplus
 }
 # endif
-
-#endif
 
 #endif
 

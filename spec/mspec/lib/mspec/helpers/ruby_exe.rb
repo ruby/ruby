@@ -140,28 +140,44 @@ def ruby_exe(code = :not_given, opts = {})
   expected_status = opts.fetch(:exit_status, 0)
 
   begin
-    platform_is_not :opal do
-      command = ruby_cmd(code, opts)
-      output = `#{command}`
-      status = Process.last_status
+    command = ruby_cmd(code, opts)
 
-      exit_status = if status.exited?
-                      status.exitstatus
-                    elsif status.signaled?
-                      signame = Signal.signame status.termsig
-                      raise "No signal name?" unless signame
-                      :"SIG#{signame}"
-                    else
-                      raise SpecExpectationNotMetError, "#{exit_status.inspect} is neither exited? nor signaled?"
-                    end
-      if exit_status != expected_status
-        formatted_output = output.lines.map { |line| "  #{line}" }.join
-        raise SpecExpectationNotMetError,
-          "Expected exit status is #{expected_status.inspect} but actual is #{exit_status.inspect} for command ruby_exe(#{command.inspect})\nOutput:\n#{formatted_output}"
-      end
-
-      output
+    # Try to avoid the extra shell for 2>&1
+    # This is notably useful for TimeoutAction which can then signal the ruby subprocess and not the shell
+    popen_options = []
+    if command.end_with?(' 2>&1')
+      command = command[0...-5]
+      popen_options = [{ err: [:child, :out] }]
     end
+
+    output = IO.popen(command, *popen_options) do |io|
+      pid = io.pid
+      MSpec.subprocesses << pid
+      begin
+        io.read
+      ensure
+        MSpec.subprocesses.delete(pid)
+      end
+    end
+
+    status = Process.last_status
+
+    exit_status = if status.exited?
+                    status.exitstatus
+                  elsif status.signaled?
+                    signame = Signal.signame status.termsig
+                    raise "No signal name?" unless signame
+                    :"SIG#{signame}"
+                  else
+                    raise SpecExpectationNotMetError, "#{exit_status.inspect} is neither exited? nor signaled?"
+                  end
+    if exit_status != expected_status
+      formatted_output = output.lines.map { |line| "  #{line}" }.join
+      raise SpecExpectationNotMetError,
+        "Expected exit status is #{expected_status.inspect} but actual is #{exit_status.inspect} for command ruby_exe(#{command.inspect})\nOutput:\n#{formatted_output}"
+    end
+
+    output
   ensure
     saved_env.each { |key, value| ENV[key] = value }
     env.keys.each do |key|

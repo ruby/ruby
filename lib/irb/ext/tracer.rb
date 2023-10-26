@@ -7,9 +7,8 @@
 begin
   require "tracer"
 rescue LoadError
-  $stderr.puts "Tracer extension of IRB is enabled but tracer gem doesn't found."
+  $stderr.puts "Tracer extension of IRB is enabled but tracer gem wasn't found."
   module IRB
-    TracerLoadError = true
     class Context
       def use_tracer=(opt)
         # do nothing
@@ -65,12 +64,12 @@ module IRB
       if context.use_tracer? && file != nil && line != nil
         Tracer.on
         begin
-          __evaluate__(context, statements, file, line)
+          __evaluate__(statements, file, line)
         ensure
           Tracer.off
         end
       else
-        __evaluate__(context, statements, file || __FILE__, line || __LINE__)
+        __evaluate__(statements, file || __FILE__, line || __LINE__)
       end
     end
   end

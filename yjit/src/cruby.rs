@@ -96,7 +96,7 @@ pub type size_t = u64;
 pub type RedefinitionFlag = u32;
 
 #[allow(dead_code)]
-#[allow(clippy::useless_transmute)]
+#[allow(clippy::all)]
 mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
@@ -135,7 +135,6 @@ extern "C" {
         ic: ICVARC,
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
-    pub fn rb_str_bytesize(str: VALUE) -> VALUE;
 }
 
 // Renames
@@ -143,11 +142,13 @@ pub use rb_insn_name as raw_insn_name;
 pub use rb_insn_len as raw_insn_len;
 pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
+pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
 pub use rb_get_cfp_self as get_cfp_self;
 pub use rb_get_cfp_ep as get_cfp_ep;
 pub use rb_get_cfp_ep_level as get_cfp_ep_level;
+pub use rb_vm_base_ptr as get_cfp_bp;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -183,7 +184,9 @@ pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
 pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
 pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
-pub use rb_yarv_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_yjit_fix_div_fix as rb_fix_div_fix;
+pub use rb_yjit_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_yjit_fix_mul_fix as rb_fix_mul_fix;
 pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
@@ -242,6 +245,12 @@ pub struct VALUE(pub usize);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+// Given an ISEQ pointer, convert PC to insn_idx
+pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
+    let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    unsafe { pc.offset_from(pc_zero) }.try_into().ok()
+}
 
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
@@ -463,7 +472,7 @@ impl VALUE {
         us as *mut T
     }
 
-    /// For working with opague pointers and encoding null check.
+    /// For working with opaque pointers and encoding null check.
     /// Similar to [std::ptr::NonNull], but for `*const T`. `NonNull<T>`
     /// is for `*mut T` while our C functions are setup to use `*const T`.
     /// Casting from `NonNull<T>` to `*const T` is too noisy.
@@ -564,8 +573,20 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
 pub fn rust_str_to_sym(str: &str) -> VALUE {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-
     unsafe { rb_id2sym(rb_intern(c_ptr)) }
+}
+
+/// Produce an owned Rust String from a C char pointer
+pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
+    assert!(c_char_ptr != std::ptr::null());
+
+    use std::ffi::CStr;
+    let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
+
+    match c_str.to_str() {
+        Ok(rust_str) => Some(rust_str.to_string()),
+        Err(_) => None
+    }
 }
 
 /// A location in Rust code for integrating with debugging facilities defined in C.
@@ -654,6 +675,7 @@ mod manual_defs {
 
     pub const SIZEOF_VALUE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
+    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
@@ -672,7 +694,7 @@ mod manual_defs {
     pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
     // From internal/struct.h - in anonymous enum, so we can't easily import it
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
+    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3 |RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
 
     // From iseq.h - via a different constant, which seems to confuse bindgen
     pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER7 as usize;
@@ -695,9 +717,8 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_SELF: i32 = 24;
     pub const RUBY_OFFSET_CFP_EP: i32 = 32;
     pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
-    pub const RUBY_OFFSET_CFP_BP: i32 = 48; // field __bp__
-    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 56;
-    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 64;
+    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
+    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
 
     // Constants from rb_execution_context_t vm_core.h
     pub const RUBY_OFFSET_EC_CFP: i32 = 16;
@@ -713,3 +734,51 @@ mod manual_defs {
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
 }
 pub use manual_defs::*;
+
+/// Interned ID values for Ruby symbols and method names.
+/// See [crate::cruby::ID] and usages outside of YJIT.
+pub(crate) mod ids {
+    use std::sync::atomic::AtomicU64;
+    /// Globals to cache IDs on boot. Atomic to use with relaxed ordering
+    /// so reads can happen without `unsafe`. Initialization is done
+    /// single-threaded and release-acquire on [crate::yjit::YJIT_ENABLED]
+    /// makes sure we read the cached values after initialization is done.
+    macro_rules! def_ids {
+        ($(name: $ident:ident content: $str:literal)*) => {
+            $(
+                #[doc = concat!("[crate::cruby::ID] for `", stringify!($str), "`")]
+                pub static $ident: AtomicU64 = AtomicU64::new(0);
+            )*
+
+            pub(crate) fn init() {
+                $(
+                    let content = &$str;
+                    let ptr: *const u8 = content.as_ptr();
+
+                    // Lookup and cache each ID
+                    $ident.store(
+                        unsafe { $crate::cruby::rb_intern2(ptr.cast(), content.len() as _) },
+                        std::sync::atomic::Ordering::Relaxed
+                    );
+                )*
+
+            }
+        }
+    }
+
+    def_ids! {
+        name: NULL               content: b""
+        name: min                content: b"min"
+        name: max                content: b"max"
+        name: hash               content: b"hash"
+        name: respond_to_missing content: b"respond_to_missing?"
+    }
+}
+
+/// Get an CRuby `ID` to an interned string, e.g. a particular method name.
+macro_rules! ID {
+    ($id_name:ident) => {
+        $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+pub(crate) use ID;

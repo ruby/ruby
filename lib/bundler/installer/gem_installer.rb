@@ -16,13 +16,13 @@ module Bundler
       post_install_message = install
       Bundler.ui.debug "#{worker}:  #{spec.name} (#{spec.version}) from #{spec.loaded_from}"
       generate_executable_stubs
-      return true, post_install_message
+      [true, post_install_message]
     rescue Bundler::InstallHookError, Bundler::SecurityError, Bundler::APIResponseMismatchError
       raise
     rescue Errno::ENOSPC
-      return false, out_of_space_message
+      [false, out_of_space_message]
     rescue Bundler::BundlerError, Gem::InstallError, Bundler::APIResponseInvalidDependenciesError => e
-      return false, specific_failure_message(e)
+      [false, specific_failure_message(e)]
     end
 
     private

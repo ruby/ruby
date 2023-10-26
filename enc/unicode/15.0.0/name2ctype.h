@@ -5402,7 +5402,7 @@ static const OnigCodePoint CR_ASCII[] = {
 	0x0000, 0x007f,
 }; /* CR_ASCII */
 
-/* 'Punct' */
+/* 'Punct': [[:Punct:]] */
 static const OnigCodePoint CR_Punct[] = {
 	191,
 	0x0021, 0x0023,

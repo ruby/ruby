@@ -98,8 +98,39 @@ module ErrorHighlight
       end
     end
 
+    OPT_GETCONSTANT_PATH = (RUBY_VERSION.split(".").map {|s| s.to_i } <=> [3, 2]) >= 0
+    private_constant :OPT_GETCONSTANT_PATH
+
     def spot
       return nil unless @node
+
+      if OPT_GETCONSTANT_PATH && @node.type == :COLON2
+        # In Ruby 3.2 or later, a nested constant access (like `Foo::Bar::Baz`)
+        # is compiled to one instruction (opt_getconstant_path).
+        # @node points to the node of the whole `Foo::Bar::Baz` even if `Foo`
+        # or `Foo::Bar` causes NameError.
+        # So we try to spot the sub-node that causes the NameError by using
+        # `NameError#name`.
+        subnodes = []
+        node = @node
+        while node.type == :COLON2
+          node2, const = node.children
+          subnodes << node if const == @name
+          node = node2
+        end
+        if node.type == :CONST || node.type == :COLON3
+          if node.children.first == @name
+            subnodes << node
+          end
+
+          # If we found only one sub-node whose name is equal to @name, use it
+          return nil if subnodes.size != 1
+          @node = subnodes.first
+        else
+          # Do nothing; opt_getconstant_path is used only when the const base is
+          # NODE_CONST (`Foo`) or NODE_COLON3 (`::Foo`)
+        end
+      end
 
       case @node.type
 

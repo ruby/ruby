@@ -151,6 +151,7 @@ rb_ec_tag_state(const rb_execution_context_t *ec)
     enum ruby_tag_type state = tag->state;
     tag->state = TAG_NONE;
     rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
+    RBIMPL_ASSUME(state != TAG_NONE);
     return state;
 }
 
@@ -158,6 +159,7 @@ NORETURN(static inline void rb_ec_tag_jump(const rb_execution_context_t *ec, enu
 static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
+    RUBY_ASSERT(st != TAG_NONE);
     ec->tag->state = st;
     ruby_longjmp(ec->tag->buf, 1);
 }
@@ -167,7 +169,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
   [ISO/IEC 9899:1999] 7.13.1.1
 */
 #define EC_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
+    (UNLIKELY(ruby_setjmp(_tag.buf)) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
 #define EC_JUMP_TAG(ec, st) rb_ec_tag_jump(ec, st)
 

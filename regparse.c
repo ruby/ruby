@@ -142,7 +142,7 @@ static void
 bbuf_free(BBuf* bbuf)
 {
   if (IS_NOT_NULL(bbuf)) {
-    if (IS_NOT_NULL(bbuf->p)) xfree(bbuf->p);
+    xfree(bbuf->p);
     xfree(bbuf);
   }
 }
@@ -514,7 +514,7 @@ static int
 i_free_name_entry(UChar* key, NameEntry* e, void* arg ARG_UNUSED)
 {
   xfree(e->name);
-  if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+  xfree(e->back_refs);
   xfree(key);
   xfree(e);
   return ST_DELETE;
@@ -699,7 +699,7 @@ names_clear(regex_t* reg)
 	e->name_len   = 0;
 	e->back_num   = 0;
 	e->back_alloc = 0;
-	if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+	xfree(e->back_refs);
 	e->back_refs = (int* )NULL;
       }
     }
@@ -722,7 +722,7 @@ onig_names_free(regex_t* reg)
   if (r) return r;
 
   t = (NameTable* )reg->name_table;
-  if (IS_NOT_NULL(t)) xfree(t);
+  xfree(t);
   reg->name_table = NULL;
   return 0;
 }
@@ -1098,29 +1098,24 @@ onig_node_free(Node* node)
     {
       CClassNode* cc = NCCLASS(node);
 
-      if (cc->mbuf)
-	bbuf_free(cc->mbuf);
+      bbuf_free(cc->mbuf);
     }
     break;
 
   case NT_QTFR:
-    if (NQTFR(node)->target)
-      onig_node_free(NQTFR(node)->target);
+    onig_node_free(NQTFR(node)->target);
     break;
 
   case NT_ENCLOSE:
-    if (NENCLOSE(node)->target)
-      onig_node_free(NENCLOSE(node)->target);
+    onig_node_free(NENCLOSE(node)->target);
     break;
 
   case NT_BREF:
-    if (IS_NOT_NULL(NBREF(node)->back_dynamic))
-      xfree(NBREF(node)->back_dynamic);
+    xfree(NBREF(node)->back_dynamic);
     break;
 
   case NT_ANCHOR:
-    if (NANCHOR(node)->target)
-      onig_node_free(NANCHOR(node)->target);
+    onig_node_free(NANCHOR(node)->target);
     break;
   }
 

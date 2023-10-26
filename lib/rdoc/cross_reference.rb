@@ -223,4 +223,3 @@ class RDoc::CrossReference
   end
 
 end
-

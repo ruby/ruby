@@ -44,20 +44,18 @@ class Gem::Source
          Gem::Source::Vendor then
       -1
     when Gem::Source then
-      if !@uri
+      unless @uri
         return 0 unless other.uri
         return 1
       end
 
-      return -1 if !other.uri
+      return -1 unless other.uri
 
       # Returning 1 here ensures that when sorting a list of sources, the
       # original ordering of sources supplied by the user is preserved.
       return 1 unless @uri.to_s == other.uri.to_s
 
       0
-    else
-      nil
     end
   end
 
@@ -71,7 +69,7 @@ class Gem::Source
   # Returns a Set that can fetch specifications from this source.
 
   def dependency_resolver_set # :nodoc:
-    return Gem::Resolver::IndexSet.new self if "file" == uri.scheme
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
 
     fetch_uri = if uri.host == "rubygems.org"
       index_uri = uri.dup
@@ -102,7 +100,7 @@ class Gem::Source
 
   def cache_dir(uri)
     # Correct for windows paths
-    escaped_path = uri.path.sub(/^\/([a-z]):\//i, '/\\1-/')
+    escaped_path = uri.path.sub(%r{^/([a-z]):/}i, '/\\1-/')
     escaped_path.tap(&Gem::UNTAINT)
 
     File.join Gem.spec_cache_dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
@@ -137,7 +135,12 @@ class Gem::Source
 
     if File.exist? local_spec
       spec = Gem.read_binary local_spec
-      spec = Marshal.load(spec) rescue nil
+      Gem.load_safe_marshal
+      spec = begin
+               Gem::SafeMarshal.safe_load(spec)
+             rescue StandardError
+               nil
+             end
       return spec if spec
     end
 
@@ -155,8 +158,9 @@ class Gem::Source
       end
     end
 
+    Gem.load_safe_marshal
     # TODO: Investigate setting Gem::Specification#loaded_from to a URI
-    Marshal.load spec
+    Gem::SafeMarshal.safe_load spec
   end
 
   ##
@@ -186,8 +190,9 @@ class Gem::Source
 
     spec_dump = fetcher.cache_update_path spec_path, local_file, update_cache?
 
+    Gem.load_safe_marshal
     begin
-      Gem::NameTuple.from_list Marshal.load(spec_dump)
+      Gem::NameTuple.from_list Gem::SafeMarshal.safe_load(spec_dump)
     rescue ArgumentError
       if update_cache? && !retried
         FileUtils.rm local_file
@@ -229,7 +234,7 @@ class Gem::Source
   private
 
   def enforce_trailing_slash(uri)
-    uri.merge(uri.path.gsub(/\/+$/, "") + "/")
+    uri.merge(uri.path.gsub(%r{/+$}, "") + "/")
   end
 end
 

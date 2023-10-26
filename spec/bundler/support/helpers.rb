@@ -244,7 +244,7 @@ module Spec
       contents = args.pop
 
       if contents.nil?
-        File.open(bundled_app_gemfile, "r", &:read)
+        read_gemfile
       else
         create_file(args.pop || "Gemfile", contents)
       end
@@ -254,10 +254,22 @@ module Spec
       contents = args.pop
 
       if contents.nil?
-        File.open(bundled_app_lock, "r", &:read)
+        read_lockfile
       else
         create_file(args.pop || "Gemfile.lock", contents)
       end
+    end
+
+    def read_gemfile(file = "Gemfile")
+      read_bundled_app_file(file)
+    end
+
+    def read_lockfile(file = "Gemfile.lock")
+      read_bundled_app_file(file)
+    end
+
+    def read_bundled_app_file(file)
+      bundled_app(file).read
     end
 
     def strip_whitespace(str)
@@ -302,7 +314,7 @@ module Spec
     def install_gem(path, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      args = "--no-document --ignore-dependencies"
+      args = "--no-document --ignore-dependencies --verbose --local"
       args += " --default --install-dir #{system_gem_path}" if default
 
       gem_command "install #{args} '#{path}'"
@@ -414,14 +426,14 @@ module Spec
       end
     end
 
-    def cache_gems(*gems)
+    def cache_gems(*gems, gem_repo: gem_repo1)
       gems = gems.flatten
 
       FileUtils.rm_rf("#{bundled_app}/vendor/cache")
       FileUtils.mkdir_p("#{bundled_app}/vendor/cache")
 
       gems.each do |g|
-        path = "#{gem_repo1}/gems/#{g}.gem"
+        path = "#{gem_repo}/gems/#{g}.gem"
         raise "OMG `#{path}` does not exist!" unless File.exist?(path)
         FileUtils.cp(path, "#{bundled_app}/vendor/cache")
       end
@@ -483,7 +495,17 @@ module Spec
     end
 
     def next_ruby_minor
-      Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
+      ruby_major_minor.map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
+    end
+
+    def previous_ruby_minor
+      return "2.7" if ruby_major_minor == [3, 0]
+
+      ruby_major_minor.map.with_index {|s, i| i == 1 ? s - 1 : s }.join(".")
+    end
+
+    def ruby_major_minor
+      Gem.ruby_version.segments[0..1]
     end
 
     # versions not including

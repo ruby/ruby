@@ -244,6 +244,26 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal(res, exc.result)
   end
 
+  def test_stopiteration_rescue
+    e = [1].each
+    res = e.each {}
+    e.next
+    exc0 = assert_raise(StopIteration) { e.peek }
+    assert_include(exc0.backtrace.first, "test_enumerator.rb:#{__LINE__-1}:")
+    assert_nil(exc0.cause)
+    assert_equal(res, exc0.result)
+
+    exc1 = assert_raise(StopIteration) { e.next }
+    assert_include(exc1.backtrace.first, "test_enumerator.rb:#{__LINE__-1}:")
+    assert_same(exc0, exc1.cause)
+    assert_equal(res, exc1.result)
+
+    exc2 = assert_raise(StopIteration) { e.next }
+    assert_include(exc2.backtrace.first, "test_enumerator.rb:#{__LINE__-1}:")
+    assert_same(exc0, exc2.cause)
+    assert_equal(res, exc2.result)
+  end
+
   def test_next_values
     o = Object.new
     def o.each
@@ -987,5 +1007,15 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       Enumerator.product(1..3, foo: 1, bar: 2)
     }
+  end
+
+  def test_freeze
+    e = 3.times.freeze
+    assert_raise(FrozenError) { e.next }
+    assert_raise(FrozenError) { e.next_values }
+    assert_raise(FrozenError) { e.peek }
+    assert_raise(FrozenError) { e.peek_values }
+    assert_raise(FrozenError) { e.feed 1 }
+    assert_raise(FrozenError) { e.rewind }
   end
 end

@@ -177,34 +177,16 @@ describe "A lambda literal -> () { }" do
       result.should == [1, 2, 3, [4, 5], 6, [7, 8], 9, 10, 11, 12]
     end
 
-    ruby_version_is ''...'3.0' do
-      evaluate <<-ruby do
-          @a = -> (*, **k) { k }
-        ruby
+    evaluate <<-ruby do
+        @a = -> (*, **k) { k }
+      ruby
 
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
+      @a.().should == {}
+      @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-        suppress_keyword_warning do
-          h = mock("keyword splat")
-          h.should_receive(:to_hash).and_return({a: 1})
-          @a.(h).should == {a: 1}
-        end
-      end
-    end
-
-    ruby_version_is '3.0' do
-      evaluate <<-ruby do
-          @a = -> (*, **k) { k }
-        ruby
-
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-
-        h = mock("keyword splat")
-        h.should_not_receive(:to_hash)
-        @a.(h).should == {}
-      end
+      h = mock("keyword splat")
+      h.should_not_receive(:to_hash)
+      @a.(h).should == {}
     end
 
     evaluate <<-ruby do
@@ -514,34 +496,16 @@ describe "A lambda expression 'lambda { ... }'" do
       result.should == [1, 2, 3, [4, 5], 6, [7, 8], 9, 10, 11, 12]
     end
 
-    ruby_version_is ''...'3.0' do
-      evaluate <<-ruby do
-          @a = lambda { |*, **k| k }
-        ruby
+    evaluate <<-ruby do
+        @a = lambda { |*, **k| k }
+      ruby
 
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
+      @a.().should == {}
+      @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-        suppress_keyword_warning do
-          h = mock("keyword splat")
-          h.should_receive(:to_hash).and_return({a: 1})
-          @a.(h).should == {a: 1}
-        end
-      end
-    end
-
-    ruby_version_is '3.0' do
-      evaluate <<-ruby do
-          @a = lambda { |*, **k| k }
-        ruby
-
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-
-        h = mock("keyword splat")
-        h.should_not_receive(:to_hash)
-        @a.(h).should == {}
-      end
+      h = mock("keyword splat")
+      h.should_not_receive(:to_hash)
+      @a.(h).should == {}
     end
 
     evaluate <<-ruby do

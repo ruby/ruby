@@ -1,5 +1,5 @@
 name: Miscellaneous checks
-on: [push, pull_request]
+on: [push, pull_request, merge_group]
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -11,33 +11,48 @@ permissions:
 jobs:
   checks:
     permissions:
-      contents: write  # for Git to git push
+      contents: write # for Git to git push
+
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          makeup: true
+          # Skip overwriting MATZBOT_GITHUB_TOKEN
+          checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
+
       - name: Check if C-sources are US-ASCII
         run: |
-          ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
+          grep -r -n $'[^\t -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs'
-          ! git grep -n '^[	 ][	 ]*$' -- '*.md'
+          git grep -I -n $'[\t ]$' -- '*.rb' '*.[chy]' '*.rs' '*.yml' && exit 1 || :
+          git grep -n $'^[\t ][\t ]*$' -- '*.md' && exit 1 || :
+
       - name: Check for bash specific substitution in configure.ac
         run: |
-          ! git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac
+          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
+
       - name: Check for header macros
         run: |
-          ! for header in ruby/*.h; do \
-            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null || echo $header
-          done | grep -F .
+          fail=
+          for header in ruby/*.h; do
+            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null && continue
+            fail=1
+            echo $header
+          done
+          exit $fail
         working-directory: include
 
-      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache-${{ github.sha }}
-          restore-keys: |
-            downloaded-cache
+      - id: gems
+        run: true
+        if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Download previous gems list
         run: |
@@ -45,6 +60,7 @@ jobs:
           mkdir -p .downloaded-cache
           ln -s .downloaded-cache/$data .
           curl -O -R -z ./$data https://stdgems.org/$data
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Make default gems list
         run: |
@@ -63,39 +79,20 @@ jobs:
             f.puts gems
           end
         shell: ruby --disable=gems {0}
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Maintain updated gems list in NEWS
         run: |
-          #!ruby
-          require 'json'
-          news = File.read("NEWS.md")
-          prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
-          prevs = [prev, prev.sub(/\.\d+\z/, '')]
-          %W[default].each do |type|
-            last = JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
-              v = g['versions'].values_at(*prevs).compact.first
-              g = g['gem']
-              g = 'RubyGems' if g == 'rubygems'
-              [g, v] if v
-            end.to_h
-            changed = File.foreach("gems/#{type}_gems").filter_map do |l|
-              next if l.start_with?("#")
-              g, v = l.split(" ", 3)
-              [g, v] unless last[g] == v
-            end
-            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n+\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
-              changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
-            end or next
-            File.write("NEWS.md", news)
-          end
-        shell: ruby {0}
+          ruby tool/update-NEWS-gemlist.rb default
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Check diffs
         id: diff
         run: |
-          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
-        continue-on-error: true
+          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md ||
+          echo update=true >> $GITHUB_OUTPUT
+        if: ${{ steps.gems.outcome == 'success' }}
+
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
@@ -105,18 +102,14 @@ jobs:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-        if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
+        if: >-
+          ${{
+          github.repository == 'ruby/ruby' &&
+          !startsWith(github.event_name, 'pull') &&
+          steps.diff.outputs.update
+          }}
 
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+      - uses: ./.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}

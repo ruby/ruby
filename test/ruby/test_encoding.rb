@@ -106,7 +106,7 @@ class TestEncoding < Test::Unit::TestCase
   end
 
   def test_errinfo_after_autoload
-    assert_separately(%w[--disable=gems], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug9038 = '[ruby-core:57949] [Bug #9038]'
     begin;
       e = assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, bug9038) {

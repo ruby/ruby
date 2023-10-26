@@ -42,7 +42,8 @@ module Spec
     end
 
     def dev_gemfile
-      @dev_gemfile ||= tool_dir.join("dev_gems.rb")
+      name = RUBY_VERSION.start_with?("2.6") ? "dev26_gems.rb" : "dev_gems.rb"
+      @dev_gemfile ||= tool_dir.join(name)
     end
 
     def bindir
@@ -69,10 +70,6 @@ module Spec
 
     def spec_dir
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
-    end
-
-    def api_request_limit_hack_file
-      spec_dir.join("support/api_request_limit_hax.rb")
     end
 
     def man_dir
@@ -295,15 +292,15 @@ module Spec
     end
 
     def rubocop_gemfile_basename
-      source_root.join("tool/bundler/rubocop_gems.rb")
+      tool_dir.join(RUBY_VERSION.start_with?("2.6") ? "rubocop26_gems.rb" : "rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      source_root.join("tool/bundler/standard_gems.rb")
+      tool_dir.join(RUBY_VERSION.start_with?("2.6") ? "standard26_gems.rb" : "standard_gems.rb")
     end
 
     def tool_dir
-      source_root.join("tool/bundler")
+      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
     end
 
     def templates_dir

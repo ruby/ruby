@@ -100,12 +100,10 @@ describe "String#valid_encoding?" do
     str.force_encoding('UTF8-MAC').valid_encoding?.should be_true
   end
 
-  ruby_version_is '3.0' do
-    it "returns true for IBM720 encoding self is valid in" do
-      str = "\xE6\x9D\x94"
-      str.force_encoding('IBM720').valid_encoding?.should be_true
-      str.force_encoding('CP720').valid_encoding?.should be_true
-    end
+  it "returns true for IBM720 encoding self is valid in" do
+    str = "\xE6\x9D\x94"
+    str.force_encoding('IBM720').valid_encoding?.should be_true
+    str.force_encoding('CP720').valid_encoding?.should be_true
   end
 
   it "returns false if self is valid in one encoding, but invalid in the one it's tagged with" do

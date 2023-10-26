@@ -58,12 +58,8 @@ TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
 LIBTRANS=enc/libtrans.$(LIBEXT)
 UNICODE_HDR_DIR = --missing-unicode-header-dir--
 
-encs: all
-% if MODULE_TYPE == :static
-all: libenc libtrans
-% else
-all: enc trans
-%end
+encs all: <%= MODULE_TYPE == :static ? "lib" : "mod" %>encs
+modencs: enc trans
 libencs: libenc libtrans
 enc: $(ENCSOS)
 libenc: $(LIBENC)
@@ -234,6 +230,7 @@ enc/ascii.$(OBJEXT): internal/attr/noexcept.h
 enc/ascii.$(OBJEXT): internal/attr/noinline.h
 enc/ascii.$(OBJEXT): internal/attr/nonnull.h
 enc/ascii.$(OBJEXT): internal/attr/noreturn.h
+enc/ascii.$(OBJEXT): internal/attr/packed_struct.h
 enc/ascii.$(OBJEXT): internal/attr/pure.h
 enc/ascii.$(OBJEXT): internal/attr/restrict.h
 enc/ascii.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -302,7 +299,6 @@ enc/ascii.$(OBJEXT): internal/intern/enumerator.h
 enc/ascii.$(OBJEXT): internal/intern/error.h
 enc/ascii.$(OBJEXT): internal/intern/eval.h
 enc/ascii.$(OBJEXT): internal/intern/file.h
-enc/ascii.$(OBJEXT): internal/intern/gc.h
 enc/ascii.$(OBJEXT): internal/intern/hash.h
 enc/ascii.$(OBJEXT): internal/intern/io.h
 enc/ascii.$(OBJEXT): internal/intern/load.h
@@ -333,7 +329,6 @@ enc/ascii.$(OBJEXT): internal/memory.h
 enc/ascii.$(OBJEXT): internal/method.h
 enc/ascii.$(OBJEXT): internal/module.h
 enc/ascii.$(OBJEXT): internal/newobj.h
-enc/ascii.$(OBJEXT): internal/rgengc.h
 enc/ascii.$(OBJEXT): internal/scan_args.h
 enc/ascii.$(OBJEXT): internal/special_consts.h
 enc/ascii.$(OBJEXT): internal/static_assert.h
@@ -405,6 +400,7 @@ enc/big5.$(OBJEXT): internal/attr/noexcept.h
 enc/big5.$(OBJEXT): internal/attr/noinline.h
 enc/big5.$(OBJEXT): internal/attr/nonnull.h
 enc/big5.$(OBJEXT): internal/attr/noreturn.h
+enc/big5.$(OBJEXT): internal/attr/packed_struct.h
 enc/big5.$(OBJEXT): internal/attr/pure.h
 enc/big5.$(OBJEXT): internal/attr/restrict.h
 enc/big5.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -464,7 +460,6 @@ enc/big5.$(OBJEXT): internal/intern/enumerator.h
 enc/big5.$(OBJEXT): internal/intern/error.h
 enc/big5.$(OBJEXT): internal/intern/eval.h
 enc/big5.$(OBJEXT): internal/intern/file.h
-enc/big5.$(OBJEXT): internal/intern/gc.h
 enc/big5.$(OBJEXT): internal/intern/hash.h
 enc/big5.$(OBJEXT): internal/intern/io.h
 enc/big5.$(OBJEXT): internal/intern/load.h
@@ -495,7 +490,6 @@ enc/big5.$(OBJEXT): internal/memory.h
 enc/big5.$(OBJEXT): internal/method.h
 enc/big5.$(OBJEXT): internal/module.h
 enc/big5.$(OBJEXT): internal/newobj.h
-enc/big5.$(OBJEXT): internal/rgengc.h
 enc/big5.$(OBJEXT): internal/scan_args.h
 enc/big5.$(OBJEXT): internal/special_consts.h
 enc/big5.$(OBJEXT): internal/static_assert.h
@@ -568,6 +562,7 @@ enc/cesu_8.$(OBJEXT): internal/attr/noexcept.h
 enc/cesu_8.$(OBJEXT): internal/attr/noinline.h
 enc/cesu_8.$(OBJEXT): internal/attr/nonnull.h
 enc/cesu_8.$(OBJEXT): internal/attr/noreturn.h
+enc/cesu_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/cesu_8.$(OBJEXT): internal/attr/pure.h
 enc/cesu_8.$(OBJEXT): internal/attr/restrict.h
 enc/cesu_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -636,7 +631,6 @@ enc/cesu_8.$(OBJEXT): internal/intern/enumerator.h
 enc/cesu_8.$(OBJEXT): internal/intern/error.h
 enc/cesu_8.$(OBJEXT): internal/intern/eval.h
 enc/cesu_8.$(OBJEXT): internal/intern/file.h
-enc/cesu_8.$(OBJEXT): internal/intern/gc.h
 enc/cesu_8.$(OBJEXT): internal/intern/hash.h
 enc/cesu_8.$(OBJEXT): internal/intern/io.h
 enc/cesu_8.$(OBJEXT): internal/intern/load.h
@@ -667,7 +661,6 @@ enc/cesu_8.$(OBJEXT): internal/memory.h
 enc/cesu_8.$(OBJEXT): internal/method.h
 enc/cesu_8.$(OBJEXT): internal/module.h
 enc/cesu_8.$(OBJEXT): internal/newobj.h
-enc/cesu_8.$(OBJEXT): internal/rgengc.h
 enc/cesu_8.$(OBJEXT): internal/scan_args.h
 enc/cesu_8.$(OBJEXT): internal/special_consts.h
 enc/cesu_8.$(OBJEXT): internal/static_assert.h
@@ -739,6 +732,7 @@ enc/cp949.$(OBJEXT): internal/attr/noexcept.h
 enc/cp949.$(OBJEXT): internal/attr/noinline.h
 enc/cp949.$(OBJEXT): internal/attr/nonnull.h
 enc/cp949.$(OBJEXT): internal/attr/noreturn.h
+enc/cp949.$(OBJEXT): internal/attr/packed_struct.h
 enc/cp949.$(OBJEXT): internal/attr/pure.h
 enc/cp949.$(OBJEXT): internal/attr/restrict.h
 enc/cp949.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -798,7 +792,6 @@ enc/cp949.$(OBJEXT): internal/intern/enumerator.h
 enc/cp949.$(OBJEXT): internal/intern/error.h
 enc/cp949.$(OBJEXT): internal/intern/eval.h
 enc/cp949.$(OBJEXT): internal/intern/file.h
-enc/cp949.$(OBJEXT): internal/intern/gc.h
 enc/cp949.$(OBJEXT): internal/intern/hash.h
 enc/cp949.$(OBJEXT): internal/intern/io.h
 enc/cp949.$(OBJEXT): internal/intern/load.h
@@ -829,7 +822,6 @@ enc/cp949.$(OBJEXT): internal/memory.h
 enc/cp949.$(OBJEXT): internal/method.h
 enc/cp949.$(OBJEXT): internal/module.h
 enc/cp949.$(OBJEXT): internal/newobj.h
-enc/cp949.$(OBJEXT): internal/rgengc.h
 enc/cp949.$(OBJEXT): internal/scan_args.h
 enc/cp949.$(OBJEXT): internal/special_consts.h
 enc/cp949.$(OBJEXT): internal/static_assert.h
@@ -900,6 +892,7 @@ enc/emacs_mule.$(OBJEXT): internal/attr/noexcept.h
 enc/emacs_mule.$(OBJEXT): internal/attr/noinline.h
 enc/emacs_mule.$(OBJEXT): internal/attr/nonnull.h
 enc/emacs_mule.$(OBJEXT): internal/attr/noreturn.h
+enc/emacs_mule.$(OBJEXT): internal/attr/packed_struct.h
 enc/emacs_mule.$(OBJEXT): internal/attr/pure.h
 enc/emacs_mule.$(OBJEXT): internal/attr/restrict.h
 enc/emacs_mule.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -959,7 +952,6 @@ enc/emacs_mule.$(OBJEXT): internal/intern/enumerator.h
 enc/emacs_mule.$(OBJEXT): internal/intern/error.h
 enc/emacs_mule.$(OBJEXT): internal/intern/eval.h
 enc/emacs_mule.$(OBJEXT): internal/intern/file.h
-enc/emacs_mule.$(OBJEXT): internal/intern/gc.h
 enc/emacs_mule.$(OBJEXT): internal/intern/hash.h
 enc/emacs_mule.$(OBJEXT): internal/intern/io.h
 enc/emacs_mule.$(OBJEXT): internal/intern/load.h
@@ -990,7 +982,6 @@ enc/emacs_mule.$(OBJEXT): internal/memory.h
 enc/emacs_mule.$(OBJEXT): internal/method.h
 enc/emacs_mule.$(OBJEXT): internal/module.h
 enc/emacs_mule.$(OBJEXT): internal/newobj.h
-enc/emacs_mule.$(OBJEXT): internal/rgengc.h
 enc/emacs_mule.$(OBJEXT): internal/scan_args.h
 enc/emacs_mule.$(OBJEXT): internal/special_consts.h
 enc/emacs_mule.$(OBJEXT): internal/static_assert.h
@@ -1062,6 +1053,7 @@ enc/encdb.$(OBJEXT): internal/attr/noexcept.h
 enc/encdb.$(OBJEXT): internal/attr/noinline.h
 enc/encdb.$(OBJEXT): internal/attr/nonnull.h
 enc/encdb.$(OBJEXT): internal/attr/noreturn.h
+enc/encdb.$(OBJEXT): internal/attr/packed_struct.h
 enc/encdb.$(OBJEXT): internal/attr/pure.h
 enc/encdb.$(OBJEXT): internal/attr/restrict.h
 enc/encdb.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1130,7 +1122,6 @@ enc/encdb.$(OBJEXT): internal/intern/enumerator.h
 enc/encdb.$(OBJEXT): internal/intern/error.h
 enc/encdb.$(OBJEXT): internal/intern/eval.h
 enc/encdb.$(OBJEXT): internal/intern/file.h
-enc/encdb.$(OBJEXT): internal/intern/gc.h
 enc/encdb.$(OBJEXT): internal/intern/hash.h
 enc/encdb.$(OBJEXT): internal/intern/io.h
 enc/encdb.$(OBJEXT): internal/intern/load.h
@@ -1161,7 +1152,6 @@ enc/encdb.$(OBJEXT): internal/memory.h
 enc/encdb.$(OBJEXT): internal/method.h
 enc/encdb.$(OBJEXT): internal/module.h
 enc/encdb.$(OBJEXT): internal/newobj.h
-enc/encdb.$(OBJEXT): internal/rgengc.h
 enc/encdb.$(OBJEXT): internal/scan_args.h
 enc/encdb.$(OBJEXT): internal/special_consts.h
 enc/encdb.$(OBJEXT): internal/static_assert.h
@@ -1235,6 +1225,7 @@ enc/euc_jp.$(OBJEXT): internal/attr/noexcept.h
 enc/euc_jp.$(OBJEXT): internal/attr/noinline.h
 enc/euc_jp.$(OBJEXT): internal/attr/nonnull.h
 enc/euc_jp.$(OBJEXT): internal/attr/noreturn.h
+enc/euc_jp.$(OBJEXT): internal/attr/packed_struct.h
 enc/euc_jp.$(OBJEXT): internal/attr/pure.h
 enc/euc_jp.$(OBJEXT): internal/attr/restrict.h
 enc/euc_jp.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1294,7 +1285,6 @@ enc/euc_jp.$(OBJEXT): internal/intern/enumerator.h
 enc/euc_jp.$(OBJEXT): internal/intern/error.h
 enc/euc_jp.$(OBJEXT): internal/intern/eval.h
 enc/euc_jp.$(OBJEXT): internal/intern/file.h
-enc/euc_jp.$(OBJEXT): internal/intern/gc.h
 enc/euc_jp.$(OBJEXT): internal/intern/hash.h
 enc/euc_jp.$(OBJEXT): internal/intern/io.h
 enc/euc_jp.$(OBJEXT): internal/intern/load.h
@@ -1325,7 +1315,6 @@ enc/euc_jp.$(OBJEXT): internal/memory.h
 enc/euc_jp.$(OBJEXT): internal/method.h
 enc/euc_jp.$(OBJEXT): internal/module.h
 enc/euc_jp.$(OBJEXT): internal/newobj.h
-enc/euc_jp.$(OBJEXT): internal/rgengc.h
 enc/euc_jp.$(OBJEXT): internal/scan_args.h
 enc/euc_jp.$(OBJEXT): internal/special_consts.h
 enc/euc_jp.$(OBJEXT): internal/static_assert.h
@@ -1396,6 +1385,7 @@ enc/euc_kr.$(OBJEXT): internal/attr/noexcept.h
 enc/euc_kr.$(OBJEXT): internal/attr/noinline.h
 enc/euc_kr.$(OBJEXT): internal/attr/nonnull.h
 enc/euc_kr.$(OBJEXT): internal/attr/noreturn.h
+enc/euc_kr.$(OBJEXT): internal/attr/packed_struct.h
 enc/euc_kr.$(OBJEXT): internal/attr/pure.h
 enc/euc_kr.$(OBJEXT): internal/attr/restrict.h
 enc/euc_kr.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1455,7 +1445,6 @@ enc/euc_kr.$(OBJEXT): internal/intern/enumerator.h
 enc/euc_kr.$(OBJEXT): internal/intern/error.h
 enc/euc_kr.$(OBJEXT): internal/intern/eval.h
 enc/euc_kr.$(OBJEXT): internal/intern/file.h
-enc/euc_kr.$(OBJEXT): internal/intern/gc.h
 enc/euc_kr.$(OBJEXT): internal/intern/hash.h
 enc/euc_kr.$(OBJEXT): internal/intern/io.h
 enc/euc_kr.$(OBJEXT): internal/intern/load.h
@@ -1486,7 +1475,6 @@ enc/euc_kr.$(OBJEXT): internal/memory.h
 enc/euc_kr.$(OBJEXT): internal/method.h
 enc/euc_kr.$(OBJEXT): internal/module.h
 enc/euc_kr.$(OBJEXT): internal/newobj.h
-enc/euc_kr.$(OBJEXT): internal/rgengc.h
 enc/euc_kr.$(OBJEXT): internal/scan_args.h
 enc/euc_kr.$(OBJEXT): internal/special_consts.h
 enc/euc_kr.$(OBJEXT): internal/static_assert.h
@@ -1557,6 +1545,7 @@ enc/euc_tw.$(OBJEXT): internal/attr/noexcept.h
 enc/euc_tw.$(OBJEXT): internal/attr/noinline.h
 enc/euc_tw.$(OBJEXT): internal/attr/nonnull.h
 enc/euc_tw.$(OBJEXT): internal/attr/noreturn.h
+enc/euc_tw.$(OBJEXT): internal/attr/packed_struct.h
 enc/euc_tw.$(OBJEXT): internal/attr/pure.h
 enc/euc_tw.$(OBJEXT): internal/attr/restrict.h
 enc/euc_tw.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1616,7 +1605,6 @@ enc/euc_tw.$(OBJEXT): internal/intern/enumerator.h
 enc/euc_tw.$(OBJEXT): internal/intern/error.h
 enc/euc_tw.$(OBJEXT): internal/intern/eval.h
 enc/euc_tw.$(OBJEXT): internal/intern/file.h
-enc/euc_tw.$(OBJEXT): internal/intern/gc.h
 enc/euc_tw.$(OBJEXT): internal/intern/hash.h
 enc/euc_tw.$(OBJEXT): internal/intern/io.h
 enc/euc_tw.$(OBJEXT): internal/intern/load.h
@@ -1647,7 +1635,6 @@ enc/euc_tw.$(OBJEXT): internal/memory.h
 enc/euc_tw.$(OBJEXT): internal/method.h
 enc/euc_tw.$(OBJEXT): internal/module.h
 enc/euc_tw.$(OBJEXT): internal/newobj.h
-enc/euc_tw.$(OBJEXT): internal/rgengc.h
 enc/euc_tw.$(OBJEXT): internal/scan_args.h
 enc/euc_tw.$(OBJEXT): internal/special_consts.h
 enc/euc_tw.$(OBJEXT): internal/static_assert.h
@@ -1718,6 +1705,7 @@ enc/gb18030.$(OBJEXT): internal/attr/noexcept.h
 enc/gb18030.$(OBJEXT): internal/attr/noinline.h
 enc/gb18030.$(OBJEXT): internal/attr/nonnull.h
 enc/gb18030.$(OBJEXT): internal/attr/noreturn.h
+enc/gb18030.$(OBJEXT): internal/attr/packed_struct.h
 enc/gb18030.$(OBJEXT): internal/attr/pure.h
 enc/gb18030.$(OBJEXT): internal/attr/restrict.h
 enc/gb18030.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1777,7 +1765,6 @@ enc/gb18030.$(OBJEXT): internal/intern/enumerator.h
 enc/gb18030.$(OBJEXT): internal/intern/error.h
 enc/gb18030.$(OBJEXT): internal/intern/eval.h
 enc/gb18030.$(OBJEXT): internal/intern/file.h
-enc/gb18030.$(OBJEXT): internal/intern/gc.h
 enc/gb18030.$(OBJEXT): internal/intern/hash.h
 enc/gb18030.$(OBJEXT): internal/intern/io.h
 enc/gb18030.$(OBJEXT): internal/intern/load.h
@@ -1808,7 +1795,6 @@ enc/gb18030.$(OBJEXT): internal/memory.h
 enc/gb18030.$(OBJEXT): internal/method.h
 enc/gb18030.$(OBJEXT): internal/module.h
 enc/gb18030.$(OBJEXT): internal/newobj.h
-enc/gb18030.$(OBJEXT): internal/rgengc.h
 enc/gb18030.$(OBJEXT): internal/scan_args.h
 enc/gb18030.$(OBJEXT): internal/special_consts.h
 enc/gb18030.$(OBJEXT): internal/static_assert.h
@@ -1879,6 +1865,7 @@ enc/gb2312.$(OBJEXT): internal/attr/noexcept.h
 enc/gb2312.$(OBJEXT): internal/attr/noinline.h
 enc/gb2312.$(OBJEXT): internal/attr/nonnull.h
 enc/gb2312.$(OBJEXT): internal/attr/noreturn.h
+enc/gb2312.$(OBJEXT): internal/attr/packed_struct.h
 enc/gb2312.$(OBJEXT): internal/attr/pure.h
 enc/gb2312.$(OBJEXT): internal/attr/restrict.h
 enc/gb2312.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1938,7 +1925,6 @@ enc/gb2312.$(OBJEXT): internal/intern/enumerator.h
 enc/gb2312.$(OBJEXT): internal/intern/error.h
 enc/gb2312.$(OBJEXT): internal/intern/eval.h
 enc/gb2312.$(OBJEXT): internal/intern/file.h
-enc/gb2312.$(OBJEXT): internal/intern/gc.h
 enc/gb2312.$(OBJEXT): internal/intern/hash.h
 enc/gb2312.$(OBJEXT): internal/intern/io.h
 enc/gb2312.$(OBJEXT): internal/intern/load.h
@@ -1969,7 +1955,6 @@ enc/gb2312.$(OBJEXT): internal/memory.h
 enc/gb2312.$(OBJEXT): internal/method.h
 enc/gb2312.$(OBJEXT): internal/module.h
 enc/gb2312.$(OBJEXT): internal/newobj.h
-enc/gb2312.$(OBJEXT): internal/rgengc.h
 enc/gb2312.$(OBJEXT): internal/scan_args.h
 enc/gb2312.$(OBJEXT): internal/special_consts.h
 enc/gb2312.$(OBJEXT): internal/static_assert.h
@@ -2040,6 +2025,7 @@ enc/gbk.$(OBJEXT): internal/attr/noexcept.h
 enc/gbk.$(OBJEXT): internal/attr/noinline.h
 enc/gbk.$(OBJEXT): internal/attr/nonnull.h
 enc/gbk.$(OBJEXT): internal/attr/noreturn.h
+enc/gbk.$(OBJEXT): internal/attr/packed_struct.h
 enc/gbk.$(OBJEXT): internal/attr/pure.h
 enc/gbk.$(OBJEXT): internal/attr/restrict.h
 enc/gbk.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2099,7 +2085,6 @@ enc/gbk.$(OBJEXT): internal/intern/enumerator.h
 enc/gbk.$(OBJEXT): internal/intern/error.h
 enc/gbk.$(OBJEXT): internal/intern/eval.h
 enc/gbk.$(OBJEXT): internal/intern/file.h
-enc/gbk.$(OBJEXT): internal/intern/gc.h
 enc/gbk.$(OBJEXT): internal/intern/hash.h
 enc/gbk.$(OBJEXT): internal/intern/io.h
 enc/gbk.$(OBJEXT): internal/intern/load.h
@@ -2130,7 +2115,6 @@ enc/gbk.$(OBJEXT): internal/memory.h
 enc/gbk.$(OBJEXT): internal/method.h
 enc/gbk.$(OBJEXT): internal/module.h
 enc/gbk.$(OBJEXT): internal/newobj.h
-enc/gbk.$(OBJEXT): internal/rgengc.h
 enc/gbk.$(OBJEXT): internal/scan_args.h
 enc/gbk.$(OBJEXT): internal/special_consts.h
 enc/gbk.$(OBJEXT): internal/static_assert.h
@@ -2202,6 +2186,7 @@ enc/iso_8859_1.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_1.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2261,7 +2246,6 @@ enc/iso_8859_1.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_1.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/load.h
@@ -2292,7 +2276,6 @@ enc/iso_8859_1.$(OBJEXT): internal/memory.h
 enc/iso_8859_1.$(OBJEXT): internal/method.h
 enc/iso_8859_1.$(OBJEXT): internal/module.h
 enc/iso_8859_1.$(OBJEXT): internal/newobj.h
-enc/iso_8859_1.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_1.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_1.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_1.$(OBJEXT): internal/static_assert.h
@@ -2364,6 +2347,7 @@ enc/iso_8859_10.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_10.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2423,7 +2407,6 @@ enc/iso_8859_10.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_10.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/load.h
@@ -2454,7 +2437,6 @@ enc/iso_8859_10.$(OBJEXT): internal/memory.h
 enc/iso_8859_10.$(OBJEXT): internal/method.h
 enc/iso_8859_10.$(OBJEXT): internal/module.h
 enc/iso_8859_10.$(OBJEXT): internal/newobj.h
-enc/iso_8859_10.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_10.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_10.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_10.$(OBJEXT): internal/static_assert.h
@@ -2525,6 +2507,7 @@ enc/iso_8859_11.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_11.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2584,7 +2567,6 @@ enc/iso_8859_11.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_11.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/load.h
@@ -2615,7 +2597,6 @@ enc/iso_8859_11.$(OBJEXT): internal/memory.h
 enc/iso_8859_11.$(OBJEXT): internal/method.h
 enc/iso_8859_11.$(OBJEXT): internal/module.h
 enc/iso_8859_11.$(OBJEXT): internal/newobj.h
-enc/iso_8859_11.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_11.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_11.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_11.$(OBJEXT): internal/static_assert.h
@@ -2687,6 +2668,7 @@ enc/iso_8859_13.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_13.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2746,7 +2728,6 @@ enc/iso_8859_13.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_13.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/load.h
@@ -2777,7 +2758,6 @@ enc/iso_8859_13.$(OBJEXT): internal/memory.h
 enc/iso_8859_13.$(OBJEXT): internal/method.h
 enc/iso_8859_13.$(OBJEXT): internal/module.h
 enc/iso_8859_13.$(OBJEXT): internal/newobj.h
-enc/iso_8859_13.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_13.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_13.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_13.$(OBJEXT): internal/static_assert.h
@@ -2849,6 +2829,7 @@ enc/iso_8859_14.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_14.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2908,7 +2889,6 @@ enc/iso_8859_14.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_14.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/load.h
@@ -2939,7 +2919,6 @@ enc/iso_8859_14.$(OBJEXT): internal/memory.h
 enc/iso_8859_14.$(OBJEXT): internal/method.h
 enc/iso_8859_14.$(OBJEXT): internal/module.h
 enc/iso_8859_14.$(OBJEXT): internal/newobj.h
-enc/iso_8859_14.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_14.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_14.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_14.$(OBJEXT): internal/static_assert.h
@@ -3011,6 +2990,7 @@ enc/iso_8859_15.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_15.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3070,7 +3050,6 @@ enc/iso_8859_15.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_15.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/load.h
@@ -3101,7 +3080,6 @@ enc/iso_8859_15.$(OBJEXT): internal/memory.h
 enc/iso_8859_15.$(OBJEXT): internal/method.h
 enc/iso_8859_15.$(OBJEXT): internal/module.h
 enc/iso_8859_15.$(OBJEXT): internal/newobj.h
-enc/iso_8859_15.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_15.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_15.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_15.$(OBJEXT): internal/static_assert.h
@@ -3173,6 +3151,7 @@ enc/iso_8859_16.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_16.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3232,7 +3211,6 @@ enc/iso_8859_16.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_16.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/load.h
@@ -3263,7 +3241,6 @@ enc/iso_8859_16.$(OBJEXT): internal/memory.h
 enc/iso_8859_16.$(OBJEXT): internal/method.h
 enc/iso_8859_16.$(OBJEXT): internal/module.h
 enc/iso_8859_16.$(OBJEXT): internal/newobj.h
-enc/iso_8859_16.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_16.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_16.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_16.$(OBJEXT): internal/static_assert.h
@@ -3335,6 +3312,7 @@ enc/iso_8859_2.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_2.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3394,7 +3372,6 @@ enc/iso_8859_2.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_2.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/load.h
@@ -3425,7 +3402,6 @@ enc/iso_8859_2.$(OBJEXT): internal/memory.h
 enc/iso_8859_2.$(OBJEXT): internal/method.h
 enc/iso_8859_2.$(OBJEXT): internal/module.h
 enc/iso_8859_2.$(OBJEXT): internal/newobj.h
-enc/iso_8859_2.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_2.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_2.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_2.$(OBJEXT): internal/static_assert.h
@@ -3497,6 +3473,7 @@ enc/iso_8859_3.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_3.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3556,7 +3533,6 @@ enc/iso_8859_3.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_3.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/load.h
@@ -3587,7 +3563,6 @@ enc/iso_8859_3.$(OBJEXT): internal/memory.h
 enc/iso_8859_3.$(OBJEXT): internal/method.h
 enc/iso_8859_3.$(OBJEXT): internal/module.h
 enc/iso_8859_3.$(OBJEXT): internal/newobj.h
-enc/iso_8859_3.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_3.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_3.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_3.$(OBJEXT): internal/static_assert.h
@@ -3659,6 +3634,7 @@ enc/iso_8859_4.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_4.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3718,7 +3694,6 @@ enc/iso_8859_4.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_4.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/load.h
@@ -3749,7 +3724,6 @@ enc/iso_8859_4.$(OBJEXT): internal/memory.h
 enc/iso_8859_4.$(OBJEXT): internal/method.h
 enc/iso_8859_4.$(OBJEXT): internal/module.h
 enc/iso_8859_4.$(OBJEXT): internal/newobj.h
-enc/iso_8859_4.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_4.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_4.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_4.$(OBJEXT): internal/static_assert.h
@@ -3820,6 +3794,7 @@ enc/iso_8859_5.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_5.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3879,7 +3854,6 @@ enc/iso_8859_5.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_5.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/load.h
@@ -3910,7 +3884,6 @@ enc/iso_8859_5.$(OBJEXT): internal/memory.h
 enc/iso_8859_5.$(OBJEXT): internal/method.h
 enc/iso_8859_5.$(OBJEXT): internal/module.h
 enc/iso_8859_5.$(OBJEXT): internal/newobj.h
-enc/iso_8859_5.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_5.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_5.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_5.$(OBJEXT): internal/static_assert.h
@@ -3981,6 +3954,7 @@ enc/iso_8859_6.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_6.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4040,7 +4014,6 @@ enc/iso_8859_6.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_6.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/load.h
@@ -4071,7 +4044,6 @@ enc/iso_8859_6.$(OBJEXT): internal/memory.h
 enc/iso_8859_6.$(OBJEXT): internal/method.h
 enc/iso_8859_6.$(OBJEXT): internal/module.h
 enc/iso_8859_6.$(OBJEXT): internal/newobj.h
-enc/iso_8859_6.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_6.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_6.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_6.$(OBJEXT): internal/static_assert.h
@@ -4142,6 +4114,7 @@ enc/iso_8859_7.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_7.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4201,7 +4174,6 @@ enc/iso_8859_7.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_7.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/load.h
@@ -4232,7 +4204,6 @@ enc/iso_8859_7.$(OBJEXT): internal/memory.h
 enc/iso_8859_7.$(OBJEXT): internal/method.h
 enc/iso_8859_7.$(OBJEXT): internal/module.h
 enc/iso_8859_7.$(OBJEXT): internal/newobj.h
-enc/iso_8859_7.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_7.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_7.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_7.$(OBJEXT): internal/static_assert.h
@@ -4303,6 +4274,7 @@ enc/iso_8859_8.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4362,7 +4334,6 @@ enc/iso_8859_8.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_8.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/load.h
@@ -4393,7 +4364,6 @@ enc/iso_8859_8.$(OBJEXT): internal/memory.h
 enc/iso_8859_8.$(OBJEXT): internal/method.h
 enc/iso_8859_8.$(OBJEXT): internal/module.h
 enc/iso_8859_8.$(OBJEXT): internal/newobj.h
-enc/iso_8859_8.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_8.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_8.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_8.$(OBJEXT): internal/static_assert.h
@@ -4465,6 +4435,7 @@ enc/iso_8859_9.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_9.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4524,7 +4495,6 @@ enc/iso_8859_9.$(OBJEXT): internal/intern/enumerator.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/error.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/eval.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/file.h
-enc/iso_8859_9.$(OBJEXT): internal/intern/gc.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/hash.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/io.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/load.h
@@ -4555,7 +4525,6 @@ enc/iso_8859_9.$(OBJEXT): internal/memory.h
 enc/iso_8859_9.$(OBJEXT): internal/method.h
 enc/iso_8859_9.$(OBJEXT): internal/module.h
 enc/iso_8859_9.$(OBJEXT): internal/newobj.h
-enc/iso_8859_9.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_9.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_9.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_9.$(OBJEXT): internal/static_assert.h
@@ -4626,6 +4595,7 @@ enc/koi8_r.$(OBJEXT): internal/attr/noexcept.h
 enc/koi8_r.$(OBJEXT): internal/attr/noinline.h
 enc/koi8_r.$(OBJEXT): internal/attr/nonnull.h
 enc/koi8_r.$(OBJEXT): internal/attr/noreturn.h
+enc/koi8_r.$(OBJEXT): internal/attr/packed_struct.h
 enc/koi8_r.$(OBJEXT): internal/attr/pure.h
 enc/koi8_r.$(OBJEXT): internal/attr/restrict.h
 enc/koi8_r.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4685,7 +4655,6 @@ enc/koi8_r.$(OBJEXT): internal/intern/enumerator.h
 enc/koi8_r.$(OBJEXT): internal/intern/error.h
 enc/koi8_r.$(OBJEXT): internal/intern/eval.h
 enc/koi8_r.$(OBJEXT): internal/intern/file.h
-enc/koi8_r.$(OBJEXT): internal/intern/gc.h
 enc/koi8_r.$(OBJEXT): internal/intern/hash.h
 enc/koi8_r.$(OBJEXT): internal/intern/io.h
 enc/koi8_r.$(OBJEXT): internal/intern/load.h
@@ -4716,7 +4685,6 @@ enc/koi8_r.$(OBJEXT): internal/memory.h
 enc/koi8_r.$(OBJEXT): internal/method.h
 enc/koi8_r.$(OBJEXT): internal/module.h
 enc/koi8_r.$(OBJEXT): internal/newobj.h
-enc/koi8_r.$(OBJEXT): internal/rgengc.h
 enc/koi8_r.$(OBJEXT): internal/scan_args.h
 enc/koi8_r.$(OBJEXT): internal/special_consts.h
 enc/koi8_r.$(OBJEXT): internal/static_assert.h
@@ -4787,6 +4755,7 @@ enc/koi8_u.$(OBJEXT): internal/attr/noexcept.h
 enc/koi8_u.$(OBJEXT): internal/attr/noinline.h
 enc/koi8_u.$(OBJEXT): internal/attr/nonnull.h
 enc/koi8_u.$(OBJEXT): internal/attr/noreturn.h
+enc/koi8_u.$(OBJEXT): internal/attr/packed_struct.h
 enc/koi8_u.$(OBJEXT): internal/attr/pure.h
 enc/koi8_u.$(OBJEXT): internal/attr/restrict.h
 enc/koi8_u.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4846,7 +4815,6 @@ enc/koi8_u.$(OBJEXT): internal/intern/enumerator.h
 enc/koi8_u.$(OBJEXT): internal/intern/error.h
 enc/koi8_u.$(OBJEXT): internal/intern/eval.h
 enc/koi8_u.$(OBJEXT): internal/intern/file.h
-enc/koi8_u.$(OBJEXT): internal/intern/gc.h
 enc/koi8_u.$(OBJEXT): internal/intern/hash.h
 enc/koi8_u.$(OBJEXT): internal/intern/io.h
 enc/koi8_u.$(OBJEXT): internal/intern/load.h
@@ -4877,7 +4845,6 @@ enc/koi8_u.$(OBJEXT): internal/memory.h
 enc/koi8_u.$(OBJEXT): internal/method.h
 enc/koi8_u.$(OBJEXT): internal/module.h
 enc/koi8_u.$(OBJEXT): internal/newobj.h
-enc/koi8_u.$(OBJEXT): internal/rgengc.h
 enc/koi8_u.$(OBJEXT): internal/scan_args.h
 enc/koi8_u.$(OBJEXT): internal/special_consts.h
 enc/koi8_u.$(OBJEXT): internal/static_assert.h
@@ -4951,6 +4918,7 @@ enc/shift_jis.$(OBJEXT): internal/attr/noexcept.h
 enc/shift_jis.$(OBJEXT): internal/attr/noinline.h
 enc/shift_jis.$(OBJEXT): internal/attr/nonnull.h
 enc/shift_jis.$(OBJEXT): internal/attr/noreturn.h
+enc/shift_jis.$(OBJEXT): internal/attr/packed_struct.h
 enc/shift_jis.$(OBJEXT): internal/attr/pure.h
 enc/shift_jis.$(OBJEXT): internal/attr/restrict.h
 enc/shift_jis.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5010,7 +4978,6 @@ enc/shift_jis.$(OBJEXT): internal/intern/enumerator.h
 enc/shift_jis.$(OBJEXT): internal/intern/error.h
 enc/shift_jis.$(OBJEXT): internal/intern/eval.h
 enc/shift_jis.$(OBJEXT): internal/intern/file.h
-enc/shift_jis.$(OBJEXT): internal/intern/gc.h
 enc/shift_jis.$(OBJEXT): internal/intern/hash.h
 enc/shift_jis.$(OBJEXT): internal/intern/io.h
 enc/shift_jis.$(OBJEXT): internal/intern/load.h
@@ -5041,7 +5008,6 @@ enc/shift_jis.$(OBJEXT): internal/memory.h
 enc/shift_jis.$(OBJEXT): internal/method.h
 enc/shift_jis.$(OBJEXT): internal/module.h
 enc/shift_jis.$(OBJEXT): internal/newobj.h
-enc/shift_jis.$(OBJEXT): internal/rgengc.h
 enc/shift_jis.$(OBJEXT): internal/scan_args.h
 enc/shift_jis.$(OBJEXT): internal/special_consts.h
 enc/shift_jis.$(OBJEXT): internal/static_assert.h
@@ -5111,6 +5077,7 @@ enc/trans/big5.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/big5.$(OBJEXT): internal/attr/noinline.h
 enc/trans/big5.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/big5.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/big5.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/big5.$(OBJEXT): internal/attr/pure.h
 enc/trans/big5.$(OBJEXT): internal/attr/restrict.h
 enc/trans/big5.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5170,7 +5137,6 @@ enc/trans/big5.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/big5.$(OBJEXT): internal/intern/error.h
 enc/trans/big5.$(OBJEXT): internal/intern/eval.h
 enc/trans/big5.$(OBJEXT): internal/intern/file.h
-enc/trans/big5.$(OBJEXT): internal/intern/gc.h
 enc/trans/big5.$(OBJEXT): internal/intern/hash.h
 enc/trans/big5.$(OBJEXT): internal/intern/io.h
 enc/trans/big5.$(OBJEXT): internal/intern/load.h
@@ -5201,7 +5167,6 @@ enc/trans/big5.$(OBJEXT): internal/memory.h
 enc/trans/big5.$(OBJEXT): internal/method.h
 enc/trans/big5.$(OBJEXT): internal/module.h
 enc/trans/big5.$(OBJEXT): internal/newobj.h
-enc/trans/big5.$(OBJEXT): internal/rgengc.h
 enc/trans/big5.$(OBJEXT): internal/scan_args.h
 enc/trans/big5.$(OBJEXT): internal/special_consts.h
 enc/trans/big5.$(OBJEXT): internal/static_assert.h
@@ -5270,6 +5235,7 @@ enc/trans/cesu_8.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/noinline.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/cesu_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/pure.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/restrict.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5329,7 +5295,6 @@ enc/trans/cesu_8.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/error.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/eval.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/file.h
-enc/trans/cesu_8.$(OBJEXT): internal/intern/gc.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/hash.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/io.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/load.h
@@ -5360,7 +5325,6 @@ enc/trans/cesu_8.$(OBJEXT): internal/memory.h
 enc/trans/cesu_8.$(OBJEXT): internal/method.h
 enc/trans/cesu_8.$(OBJEXT): internal/module.h
 enc/trans/cesu_8.$(OBJEXT): internal/newobj.h
-enc/trans/cesu_8.$(OBJEXT): internal/rgengc.h
 enc/trans/cesu_8.$(OBJEXT): internal/scan_args.h
 enc/trans/cesu_8.$(OBJEXT): internal/special_consts.h
 enc/trans/cesu_8.$(OBJEXT): internal/static_assert.h
@@ -5429,6 +5393,7 @@ enc/trans/chinese.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/chinese.$(OBJEXT): internal/attr/noinline.h
 enc/trans/chinese.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/chinese.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/chinese.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/chinese.$(OBJEXT): internal/attr/pure.h
 enc/trans/chinese.$(OBJEXT): internal/attr/restrict.h
 enc/trans/chinese.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5488,7 +5453,6 @@ enc/trans/chinese.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/chinese.$(OBJEXT): internal/intern/error.h
 enc/trans/chinese.$(OBJEXT): internal/intern/eval.h
 enc/trans/chinese.$(OBJEXT): internal/intern/file.h
-enc/trans/chinese.$(OBJEXT): internal/intern/gc.h
 enc/trans/chinese.$(OBJEXT): internal/intern/hash.h
 enc/trans/chinese.$(OBJEXT): internal/intern/io.h
 enc/trans/chinese.$(OBJEXT): internal/intern/load.h
@@ -5519,7 +5483,6 @@ enc/trans/chinese.$(OBJEXT): internal/memory.h
 enc/trans/chinese.$(OBJEXT): internal/method.h
 enc/trans/chinese.$(OBJEXT): internal/module.h
 enc/trans/chinese.$(OBJEXT): internal/newobj.h
-enc/trans/chinese.$(OBJEXT): internal/rgengc.h
 enc/trans/chinese.$(OBJEXT): internal/scan_args.h
 enc/trans/chinese.$(OBJEXT): internal/special_consts.h
 enc/trans/chinese.$(OBJEXT): internal/static_assert.h
@@ -5588,6 +5551,7 @@ enc/trans/ebcdic.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/noinline.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/ebcdic.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/pure.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/restrict.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5647,7 +5611,6 @@ enc/trans/ebcdic.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/error.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/eval.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/file.h
-enc/trans/ebcdic.$(OBJEXT): internal/intern/gc.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/hash.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/io.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/load.h
@@ -5678,7 +5641,6 @@ enc/trans/ebcdic.$(OBJEXT): internal/memory.h
 enc/trans/ebcdic.$(OBJEXT): internal/method.h
 enc/trans/ebcdic.$(OBJEXT): internal/module.h
 enc/trans/ebcdic.$(OBJEXT): internal/newobj.h
-enc/trans/ebcdic.$(OBJEXT): internal/rgengc.h
 enc/trans/ebcdic.$(OBJEXT): internal/scan_args.h
 enc/trans/ebcdic.$(OBJEXT): internal/special_consts.h
 enc/trans/ebcdic.$(OBJEXT): internal/static_assert.h
@@ -5747,6 +5709,7 @@ enc/trans/emoji.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5806,7 +5769,6 @@ enc/trans/emoji.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/emoji.$(OBJEXT): internal/intern/error.h
 enc/trans/emoji.$(OBJEXT): internal/intern/eval.h
 enc/trans/emoji.$(OBJEXT): internal/intern/file.h
-enc/trans/emoji.$(OBJEXT): internal/intern/gc.h
 enc/trans/emoji.$(OBJEXT): internal/intern/hash.h
 enc/trans/emoji.$(OBJEXT): internal/intern/io.h
 enc/trans/emoji.$(OBJEXT): internal/intern/load.h
@@ -5837,7 +5799,6 @@ enc/trans/emoji.$(OBJEXT): internal/memory.h
 enc/trans/emoji.$(OBJEXT): internal/method.h
 enc/trans/emoji.$(OBJEXT): internal/module.h
 enc/trans/emoji.$(OBJEXT): internal/newobj.h
-enc/trans/emoji.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji.$(OBJEXT): internal/static_assert.h
@@ -5906,6 +5867,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5965,7 +5927,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/error.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/eval.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/file.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/gc.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/hash.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/io.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/load.h
@@ -5996,7 +5957,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/memory.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/method.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/module.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/static_assert.h
@@ -6065,6 +6025,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6124,7 +6085,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/error.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/eval.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/file.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/gc.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/hash.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/io.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/load.h
@@ -6155,7 +6115,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/memory.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/method.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/module.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/static_assert.h
@@ -6224,6 +6183,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6283,7 +6243,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/error.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/eval.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/file.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/gc.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/hash.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/io.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/load.h
@@ -6314,7 +6273,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/memory.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/method.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/module.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/static_assert.h
@@ -6383,6 +6341,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6442,7 +6401,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/error.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/eval.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/file.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/gc.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/hash.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/io.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/load.h
@@ -6473,7 +6431,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/memory.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/method.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/module.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/static_assert.h
@@ -6542,6 +6499,7 @@ enc/trans/escape.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/escape.$(OBJEXT): internal/attr/noinline.h
 enc/trans/escape.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/escape.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/escape.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/escape.$(OBJEXT): internal/attr/pure.h
 enc/trans/escape.$(OBJEXT): internal/attr/restrict.h
 enc/trans/escape.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6601,7 +6559,6 @@ enc/trans/escape.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/escape.$(OBJEXT): internal/intern/error.h
 enc/trans/escape.$(OBJEXT): internal/intern/eval.h
 enc/trans/escape.$(OBJEXT): internal/intern/file.h
-enc/trans/escape.$(OBJEXT): internal/intern/gc.h
 enc/trans/escape.$(OBJEXT): internal/intern/hash.h
 enc/trans/escape.$(OBJEXT): internal/intern/io.h
 enc/trans/escape.$(OBJEXT): internal/intern/load.h
@@ -6632,7 +6589,6 @@ enc/trans/escape.$(OBJEXT): internal/memory.h
 enc/trans/escape.$(OBJEXT): internal/method.h
 enc/trans/escape.$(OBJEXT): internal/module.h
 enc/trans/escape.$(OBJEXT): internal/newobj.h
-enc/trans/escape.$(OBJEXT): internal/rgengc.h
 enc/trans/escape.$(OBJEXT): internal/scan_args.h
 enc/trans/escape.$(OBJEXT): internal/special_consts.h
 enc/trans/escape.$(OBJEXT): internal/static_assert.h
@@ -6701,6 +6657,7 @@ enc/trans/gb18030.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/noinline.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/gb18030.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/pure.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/restrict.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6760,7 +6717,6 @@ enc/trans/gb18030.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/error.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/eval.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/file.h
-enc/trans/gb18030.$(OBJEXT): internal/intern/gc.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/hash.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/io.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/load.h
@@ -6791,7 +6747,6 @@ enc/trans/gb18030.$(OBJEXT): internal/memory.h
 enc/trans/gb18030.$(OBJEXT): internal/method.h
 enc/trans/gb18030.$(OBJEXT): internal/module.h
 enc/trans/gb18030.$(OBJEXT): internal/newobj.h
-enc/trans/gb18030.$(OBJEXT): internal/rgengc.h
 enc/trans/gb18030.$(OBJEXT): internal/scan_args.h
 enc/trans/gb18030.$(OBJEXT): internal/special_consts.h
 enc/trans/gb18030.$(OBJEXT): internal/static_assert.h
@@ -6860,6 +6815,7 @@ enc/trans/gbk.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/gbk.$(OBJEXT): internal/attr/noinline.h
 enc/trans/gbk.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/gbk.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/gbk.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/gbk.$(OBJEXT): internal/attr/pure.h
 enc/trans/gbk.$(OBJEXT): internal/attr/restrict.h
 enc/trans/gbk.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6919,7 +6875,6 @@ enc/trans/gbk.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/gbk.$(OBJEXT): internal/intern/error.h
 enc/trans/gbk.$(OBJEXT): internal/intern/eval.h
 enc/trans/gbk.$(OBJEXT): internal/intern/file.h
-enc/trans/gbk.$(OBJEXT): internal/intern/gc.h
 enc/trans/gbk.$(OBJEXT): internal/intern/hash.h
 enc/trans/gbk.$(OBJEXT): internal/intern/io.h
 enc/trans/gbk.$(OBJEXT): internal/intern/load.h
@@ -6950,7 +6905,6 @@ enc/trans/gbk.$(OBJEXT): internal/memory.h
 enc/trans/gbk.$(OBJEXT): internal/method.h
 enc/trans/gbk.$(OBJEXT): internal/module.h
 enc/trans/gbk.$(OBJEXT): internal/newobj.h
-enc/trans/gbk.$(OBJEXT): internal/rgengc.h
 enc/trans/gbk.$(OBJEXT): internal/scan_args.h
 enc/trans/gbk.$(OBJEXT): internal/special_consts.h
 enc/trans/gbk.$(OBJEXT): internal/static_assert.h
@@ -7019,6 +6973,7 @@ enc/trans/iso2022.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noinline.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/iso2022.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/pure.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/restrict.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7078,7 +7033,6 @@ enc/trans/iso2022.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/error.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/eval.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/file.h
-enc/trans/iso2022.$(OBJEXT): internal/intern/gc.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/hash.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/io.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/load.h
@@ -7109,7 +7063,6 @@ enc/trans/iso2022.$(OBJEXT): internal/memory.h
 enc/trans/iso2022.$(OBJEXT): internal/method.h
 enc/trans/iso2022.$(OBJEXT): internal/module.h
 enc/trans/iso2022.$(OBJEXT): internal/newobj.h
-enc/trans/iso2022.$(OBJEXT): internal/rgengc.h
 enc/trans/iso2022.$(OBJEXT): internal/scan_args.h
 enc/trans/iso2022.$(OBJEXT): internal/special_consts.h
 enc/trans/iso2022.$(OBJEXT): internal/static_assert.h
@@ -7178,6 +7131,7 @@ enc/trans/japanese.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/japanese.$(OBJEXT): internal/attr/noinline.h
 enc/trans/japanese.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/japanese.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/japanese.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/japanese.$(OBJEXT): internal/attr/pure.h
 enc/trans/japanese.$(OBJEXT): internal/attr/restrict.h
 enc/trans/japanese.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7237,7 +7191,6 @@ enc/trans/japanese.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/japanese.$(OBJEXT): internal/intern/error.h
 enc/trans/japanese.$(OBJEXT): internal/intern/eval.h
 enc/trans/japanese.$(OBJEXT): internal/intern/file.h
-enc/trans/japanese.$(OBJEXT): internal/intern/gc.h
 enc/trans/japanese.$(OBJEXT): internal/intern/hash.h
 enc/trans/japanese.$(OBJEXT): internal/intern/io.h
 enc/trans/japanese.$(OBJEXT): internal/intern/load.h
@@ -7268,7 +7221,6 @@ enc/trans/japanese.$(OBJEXT): internal/memory.h
 enc/trans/japanese.$(OBJEXT): internal/method.h
 enc/trans/japanese.$(OBJEXT): internal/module.h
 enc/trans/japanese.$(OBJEXT): internal/newobj.h
-enc/trans/japanese.$(OBJEXT): internal/rgengc.h
 enc/trans/japanese.$(OBJEXT): internal/scan_args.h
 enc/trans/japanese.$(OBJEXT): internal/special_consts.h
 enc/trans/japanese.$(OBJEXT): internal/static_assert.h
@@ -7337,6 +7289,7 @@ enc/trans/japanese_euc.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/noinline.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/japanese_euc.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/pure.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/restrict.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7396,7 +7349,6 @@ enc/trans/japanese_euc.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/error.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/eval.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/file.h
-enc/trans/japanese_euc.$(OBJEXT): internal/intern/gc.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/hash.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/io.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/load.h
@@ -7427,7 +7379,6 @@ enc/trans/japanese_euc.$(OBJEXT): internal/memory.h
 enc/trans/japanese_euc.$(OBJEXT): internal/method.h
 enc/trans/japanese_euc.$(OBJEXT): internal/module.h
 enc/trans/japanese_euc.$(OBJEXT): internal/newobj.h
-enc/trans/japanese_euc.$(OBJEXT): internal/rgengc.h
 enc/trans/japanese_euc.$(OBJEXT): internal/scan_args.h
 enc/trans/japanese_euc.$(OBJEXT): internal/special_consts.h
 enc/trans/japanese_euc.$(OBJEXT): internal/static_assert.h
@@ -7496,6 +7447,7 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/noinline.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/japanese_sjis.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/pure.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/restrict.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7555,7 +7507,6 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/error.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/eval.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/file.h
-enc/trans/japanese_sjis.$(OBJEXT): internal/intern/gc.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/hash.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/io.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/load.h
@@ -7586,7 +7537,6 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/memory.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/method.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/module.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/newobj.h
-enc/trans/japanese_sjis.$(OBJEXT): internal/rgengc.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/scan_args.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/special_consts.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/static_assert.h
@@ -7655,6 +7605,7 @@ enc/trans/korean.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/korean.$(OBJEXT): internal/attr/noinline.h
 enc/trans/korean.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/korean.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/korean.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/korean.$(OBJEXT): internal/attr/pure.h
 enc/trans/korean.$(OBJEXT): internal/attr/restrict.h
 enc/trans/korean.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7714,7 +7665,6 @@ enc/trans/korean.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/korean.$(OBJEXT): internal/intern/error.h
 enc/trans/korean.$(OBJEXT): internal/intern/eval.h
 enc/trans/korean.$(OBJEXT): internal/intern/file.h
-enc/trans/korean.$(OBJEXT): internal/intern/gc.h
 enc/trans/korean.$(OBJEXT): internal/intern/hash.h
 enc/trans/korean.$(OBJEXT): internal/intern/io.h
 enc/trans/korean.$(OBJEXT): internal/intern/load.h
@@ -7745,7 +7695,6 @@ enc/trans/korean.$(OBJEXT): internal/memory.h
 enc/trans/korean.$(OBJEXT): internal/method.h
 enc/trans/korean.$(OBJEXT): internal/module.h
 enc/trans/korean.$(OBJEXT): internal/newobj.h
-enc/trans/korean.$(OBJEXT): internal/rgengc.h
 enc/trans/korean.$(OBJEXT): internal/scan_args.h
 enc/trans/korean.$(OBJEXT): internal/special_consts.h
 enc/trans/korean.$(OBJEXT): internal/static_assert.h
@@ -7813,6 +7762,7 @@ enc/trans/newline.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/newline.$(OBJEXT): internal/attr/noinline.h
 enc/trans/newline.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/newline.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/newline.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/newline.$(OBJEXT): internal/attr/pure.h
 enc/trans/newline.$(OBJEXT): internal/attr/restrict.h
 enc/trans/newline.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7872,7 +7822,6 @@ enc/trans/newline.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/newline.$(OBJEXT): internal/intern/error.h
 enc/trans/newline.$(OBJEXT): internal/intern/eval.h
 enc/trans/newline.$(OBJEXT): internal/intern/file.h
-enc/trans/newline.$(OBJEXT): internal/intern/gc.h
 enc/trans/newline.$(OBJEXT): internal/intern/hash.h
 enc/trans/newline.$(OBJEXT): internal/intern/io.h
 enc/trans/newline.$(OBJEXT): internal/intern/load.h
@@ -7903,7 +7852,6 @@ enc/trans/newline.$(OBJEXT): internal/memory.h
 enc/trans/newline.$(OBJEXT): internal/method.h
 enc/trans/newline.$(OBJEXT): internal/module.h
 enc/trans/newline.$(OBJEXT): internal/newobj.h
-enc/trans/newline.$(OBJEXT): internal/rgengc.h
 enc/trans/newline.$(OBJEXT): internal/scan_args.h
 enc/trans/newline.$(OBJEXT): internal/special_consts.h
 enc/trans/newline.$(OBJEXT): internal/static_assert.h
@@ -7972,6 +7920,7 @@ enc/trans/single_byte.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/noinline.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/single_byte.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/pure.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/restrict.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8031,7 +7980,6 @@ enc/trans/single_byte.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/error.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/eval.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/file.h
-enc/trans/single_byte.$(OBJEXT): internal/intern/gc.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/hash.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/io.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/load.h
@@ -8062,7 +8010,6 @@ enc/trans/single_byte.$(OBJEXT): internal/memory.h
 enc/trans/single_byte.$(OBJEXT): internal/method.h
 enc/trans/single_byte.$(OBJEXT): internal/module.h
 enc/trans/single_byte.$(OBJEXT): internal/newobj.h
-enc/trans/single_byte.$(OBJEXT): internal/rgengc.h
 enc/trans/single_byte.$(OBJEXT): internal/scan_args.h
 enc/trans/single_byte.$(OBJEXT): internal/special_consts.h
 enc/trans/single_byte.$(OBJEXT): internal/static_assert.h
@@ -8131,6 +8078,7 @@ enc/trans/transdb.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/transdb.$(OBJEXT): internal/attr/noinline.h
 enc/trans/transdb.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/transdb.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/transdb.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/transdb.$(OBJEXT): internal/attr/pure.h
 enc/trans/transdb.$(OBJEXT): internal/attr/restrict.h
 enc/trans/transdb.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8190,7 +8138,6 @@ enc/trans/transdb.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/transdb.$(OBJEXT): internal/intern/error.h
 enc/trans/transdb.$(OBJEXT): internal/intern/eval.h
 enc/trans/transdb.$(OBJEXT): internal/intern/file.h
-enc/trans/transdb.$(OBJEXT): internal/intern/gc.h
 enc/trans/transdb.$(OBJEXT): internal/intern/hash.h
 enc/trans/transdb.$(OBJEXT): internal/intern/io.h
 enc/trans/transdb.$(OBJEXT): internal/intern/load.h
@@ -8221,7 +8168,6 @@ enc/trans/transdb.$(OBJEXT): internal/memory.h
 enc/trans/transdb.$(OBJEXT): internal/method.h
 enc/trans/transdb.$(OBJEXT): internal/module.h
 enc/trans/transdb.$(OBJEXT): internal/newobj.h
-enc/trans/transdb.$(OBJEXT): internal/rgengc.h
 enc/trans/transdb.$(OBJEXT): internal/scan_args.h
 enc/trans/transdb.$(OBJEXT): internal/special_consts.h
 enc/trans/transdb.$(OBJEXT): internal/static_assert.h
@@ -8291,6 +8237,7 @@ enc/trans/utf8_mac.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/noinline.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/utf8_mac.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/pure.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/restrict.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8350,7 +8297,6 @@ enc/trans/utf8_mac.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/error.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/eval.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/file.h
-enc/trans/utf8_mac.$(OBJEXT): internal/intern/gc.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/hash.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/io.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/load.h
@@ -8381,7 +8327,6 @@ enc/trans/utf8_mac.$(OBJEXT): internal/memory.h
 enc/trans/utf8_mac.$(OBJEXT): internal/method.h
 enc/trans/utf8_mac.$(OBJEXT): internal/module.h
 enc/trans/utf8_mac.$(OBJEXT): internal/newobj.h
-enc/trans/utf8_mac.$(OBJEXT): internal/rgengc.h
 enc/trans/utf8_mac.$(OBJEXT): internal/scan_args.h
 enc/trans/utf8_mac.$(OBJEXT): internal/special_consts.h
 enc/trans/utf8_mac.$(OBJEXT): internal/static_assert.h
@@ -8450,6 +8395,7 @@ enc/trans/utf_16_32.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/noinline.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/utf_16_32.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/pure.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/restrict.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8509,7 +8455,6 @@ enc/trans/utf_16_32.$(OBJEXT): internal/intern/enumerator.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/error.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/eval.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/file.h
-enc/trans/utf_16_32.$(OBJEXT): internal/intern/gc.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/hash.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/io.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/load.h
@@ -8540,7 +8485,6 @@ enc/trans/utf_16_32.$(OBJEXT): internal/memory.h
 enc/trans/utf_16_32.$(OBJEXT): internal/method.h
 enc/trans/utf_16_32.$(OBJEXT): internal/module.h
 enc/trans/utf_16_32.$(OBJEXT): internal/newobj.h
-enc/trans/utf_16_32.$(OBJEXT): internal/rgengc.h
 enc/trans/utf_16_32.$(OBJEXT): internal/scan_args.h
 enc/trans/utf_16_32.$(OBJEXT): internal/special_consts.h
 enc/trans/utf_16_32.$(OBJEXT): internal/static_assert.h
@@ -8612,6 +8556,7 @@ enc/unicode.$(OBJEXT): internal/attr/noexcept.h
 enc/unicode.$(OBJEXT): internal/attr/noinline.h
 enc/unicode.$(OBJEXT): internal/attr/nonnull.h
 enc/unicode.$(OBJEXT): internal/attr/noreturn.h
+enc/unicode.$(OBJEXT): internal/attr/packed_struct.h
 enc/unicode.$(OBJEXT): internal/attr/pure.h
 enc/unicode.$(OBJEXT): internal/attr/restrict.h
 enc/unicode.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8671,7 +8616,6 @@ enc/unicode.$(OBJEXT): internal/intern/enumerator.h
 enc/unicode.$(OBJEXT): internal/intern/error.h
 enc/unicode.$(OBJEXT): internal/intern/eval.h
 enc/unicode.$(OBJEXT): internal/intern/file.h
-enc/unicode.$(OBJEXT): internal/intern/gc.h
 enc/unicode.$(OBJEXT): internal/intern/hash.h
 enc/unicode.$(OBJEXT): internal/intern/io.h
 enc/unicode.$(OBJEXT): internal/intern/load.h
@@ -8702,7 +8646,6 @@ enc/unicode.$(OBJEXT): internal/memory.h
 enc/unicode.$(OBJEXT): internal/method.h
 enc/unicode.$(OBJEXT): internal/module.h
 enc/unicode.$(OBJEXT): internal/newobj.h
-enc/unicode.$(OBJEXT): internal/rgengc.h
 enc/unicode.$(OBJEXT): internal/scan_args.h
 enc/unicode.$(OBJEXT): internal/special_consts.h
 enc/unicode.$(OBJEXT): internal/static_assert.h
@@ -8774,6 +8717,7 @@ enc/us_ascii.$(OBJEXT): internal/attr/noexcept.h
 enc/us_ascii.$(OBJEXT): internal/attr/noinline.h
 enc/us_ascii.$(OBJEXT): internal/attr/nonnull.h
 enc/us_ascii.$(OBJEXT): internal/attr/noreturn.h
+enc/us_ascii.$(OBJEXT): internal/attr/packed_struct.h
 enc/us_ascii.$(OBJEXT): internal/attr/pure.h
 enc/us_ascii.$(OBJEXT): internal/attr/restrict.h
 enc/us_ascii.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8842,7 +8786,6 @@ enc/us_ascii.$(OBJEXT): internal/intern/enumerator.h
 enc/us_ascii.$(OBJEXT): internal/intern/error.h
 enc/us_ascii.$(OBJEXT): internal/intern/eval.h
 enc/us_ascii.$(OBJEXT): internal/intern/file.h
-enc/us_ascii.$(OBJEXT): internal/intern/gc.h
 enc/us_ascii.$(OBJEXT): internal/intern/hash.h
 enc/us_ascii.$(OBJEXT): internal/intern/io.h
 enc/us_ascii.$(OBJEXT): internal/intern/load.h
@@ -8873,7 +8816,6 @@ enc/us_ascii.$(OBJEXT): internal/memory.h
 enc/us_ascii.$(OBJEXT): internal/method.h
 enc/us_ascii.$(OBJEXT): internal/module.h
 enc/us_ascii.$(OBJEXT): internal/newobj.h
-enc/us_ascii.$(OBJEXT): internal/rgengc.h
 enc/us_ascii.$(OBJEXT): internal/scan_args.h
 enc/us_ascii.$(OBJEXT): internal/special_consts.h
 enc/us_ascii.$(OBJEXT): internal/static_assert.h
@@ -8946,6 +8888,7 @@ enc/utf_16be.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_16be.$(OBJEXT): internal/attr/noinline.h
 enc/utf_16be.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_16be.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_16be.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_16be.$(OBJEXT): internal/attr/pure.h
 enc/utf_16be.$(OBJEXT): internal/attr/restrict.h
 enc/utf_16be.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9005,7 +8948,6 @@ enc/utf_16be.$(OBJEXT): internal/intern/enumerator.h
 enc/utf_16be.$(OBJEXT): internal/intern/error.h
 enc/utf_16be.$(OBJEXT): internal/intern/eval.h
 enc/utf_16be.$(OBJEXT): internal/intern/file.h
-enc/utf_16be.$(OBJEXT): internal/intern/gc.h
 enc/utf_16be.$(OBJEXT): internal/intern/hash.h
 enc/utf_16be.$(OBJEXT): internal/intern/io.h
 enc/utf_16be.$(OBJEXT): internal/intern/load.h
@@ -9036,7 +8978,6 @@ enc/utf_16be.$(OBJEXT): internal/memory.h
 enc/utf_16be.$(OBJEXT): internal/method.h
 enc/utf_16be.$(OBJEXT): internal/module.h
 enc/utf_16be.$(OBJEXT): internal/newobj.h
-enc/utf_16be.$(OBJEXT): internal/rgengc.h
 enc/utf_16be.$(OBJEXT): internal/scan_args.h
 enc/utf_16be.$(OBJEXT): internal/special_consts.h
 enc/utf_16be.$(OBJEXT): internal/static_assert.h
@@ -9108,6 +9049,7 @@ enc/utf_16le.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_16le.$(OBJEXT): internal/attr/noinline.h
 enc/utf_16le.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_16le.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_16le.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_16le.$(OBJEXT): internal/attr/pure.h
 enc/utf_16le.$(OBJEXT): internal/attr/restrict.h
 enc/utf_16le.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9167,7 +9109,6 @@ enc/utf_16le.$(OBJEXT): internal/intern/enumerator.h
 enc/utf_16le.$(OBJEXT): internal/intern/error.h
 enc/utf_16le.$(OBJEXT): internal/intern/eval.h
 enc/utf_16le.$(OBJEXT): internal/intern/file.h
-enc/utf_16le.$(OBJEXT): internal/intern/gc.h
 enc/utf_16le.$(OBJEXT): internal/intern/hash.h
 enc/utf_16le.$(OBJEXT): internal/intern/io.h
 enc/utf_16le.$(OBJEXT): internal/intern/load.h
@@ -9198,7 +9139,6 @@ enc/utf_16le.$(OBJEXT): internal/memory.h
 enc/utf_16le.$(OBJEXT): internal/method.h
 enc/utf_16le.$(OBJEXT): internal/module.h
 enc/utf_16le.$(OBJEXT): internal/newobj.h
-enc/utf_16le.$(OBJEXT): internal/rgengc.h
 enc/utf_16le.$(OBJEXT): internal/scan_args.h
 enc/utf_16le.$(OBJEXT): internal/special_consts.h
 enc/utf_16le.$(OBJEXT): internal/static_assert.h
@@ -9270,6 +9210,7 @@ enc/utf_32be.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_32be.$(OBJEXT): internal/attr/noinline.h
 enc/utf_32be.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_32be.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_32be.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_32be.$(OBJEXT): internal/attr/pure.h
 enc/utf_32be.$(OBJEXT): internal/attr/restrict.h
 enc/utf_32be.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9329,7 +9270,6 @@ enc/utf_32be.$(OBJEXT): internal/intern/enumerator.h
 enc/utf_32be.$(OBJEXT): internal/intern/error.h
 enc/utf_32be.$(OBJEXT): internal/intern/eval.h
 enc/utf_32be.$(OBJEXT): internal/intern/file.h
-enc/utf_32be.$(OBJEXT): internal/intern/gc.h
 enc/utf_32be.$(OBJEXT): internal/intern/hash.h
 enc/utf_32be.$(OBJEXT): internal/intern/io.h
 enc/utf_32be.$(OBJEXT): internal/intern/load.h
@@ -9360,7 +9300,6 @@ enc/utf_32be.$(OBJEXT): internal/memory.h
 enc/utf_32be.$(OBJEXT): internal/method.h
 enc/utf_32be.$(OBJEXT): internal/module.h
 enc/utf_32be.$(OBJEXT): internal/newobj.h
-enc/utf_32be.$(OBJEXT): internal/rgengc.h
 enc/utf_32be.$(OBJEXT): internal/scan_args.h
 enc/utf_32be.$(OBJEXT): internal/special_consts.h
 enc/utf_32be.$(OBJEXT): internal/static_assert.h
@@ -9432,6 +9371,7 @@ enc/utf_32le.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_32le.$(OBJEXT): internal/attr/noinline.h
 enc/utf_32le.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_32le.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_32le.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_32le.$(OBJEXT): internal/attr/pure.h
 enc/utf_32le.$(OBJEXT): internal/attr/restrict.h
 enc/utf_32le.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9491,7 +9431,6 @@ enc/utf_32le.$(OBJEXT): internal/intern/enumerator.h
 enc/utf_32le.$(OBJEXT): internal/intern/error.h
 enc/utf_32le.$(OBJEXT): internal/intern/eval.h
 enc/utf_32le.$(OBJEXT): internal/intern/file.h
-enc/utf_32le.$(OBJEXT): internal/intern/gc.h
 enc/utf_32le.$(OBJEXT): internal/intern/hash.h
 enc/utf_32le.$(OBJEXT): internal/intern/io.h
 enc/utf_32le.$(OBJEXT): internal/intern/load.h
@@ -9522,7 +9461,6 @@ enc/utf_32le.$(OBJEXT): internal/memory.h
 enc/utf_32le.$(OBJEXT): internal/method.h
 enc/utf_32le.$(OBJEXT): internal/module.h
 enc/utf_32le.$(OBJEXT): internal/newobj.h
-enc/utf_32le.$(OBJEXT): internal/rgengc.h
 enc/utf_32le.$(OBJEXT): internal/scan_args.h
 enc/utf_32le.$(OBJEXT): internal/special_consts.h
 enc/utf_32le.$(OBJEXT): internal/static_assert.h
@@ -9594,6 +9532,7 @@ enc/utf_8.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_8.$(OBJEXT): internal/attr/noinline.h
 enc/utf_8.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_8.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_8.$(OBJEXT): internal/attr/pure.h
 enc/utf_8.$(OBJEXT): internal/attr/restrict.h
 enc/utf_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9662,7 +9601,6 @@ enc/utf_8.$(OBJEXT): internal/intern/enumerator.h
 enc/utf_8.$(OBJEXT): internal/intern/error.h
 enc/utf_8.$(OBJEXT): internal/intern/eval.h
 enc/utf_8.$(OBJEXT): internal/intern/file.h
-enc/utf_8.$(OBJEXT): internal/intern/gc.h
 enc/utf_8.$(OBJEXT): internal/intern/hash.h
 enc/utf_8.$(OBJEXT): internal/intern/io.h
 enc/utf_8.$(OBJEXT): internal/intern/load.h
@@ -9693,7 +9631,6 @@ enc/utf_8.$(OBJEXT): internal/memory.h
 enc/utf_8.$(OBJEXT): internal/method.h
 enc/utf_8.$(OBJEXT): internal/module.h
 enc/utf_8.$(OBJEXT): internal/newobj.h
-enc/utf_8.$(OBJEXT): internal/rgengc.h
 enc/utf_8.$(OBJEXT): internal/scan_args.h
 enc/utf_8.$(OBJEXT): internal/special_consts.h
 enc/utf_8.$(OBJEXT): internal/static_assert.h
@@ -9766,6 +9703,7 @@ enc/windows_1250.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1250.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1250.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1250.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1250.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1250.$(OBJEXT): internal/attr/pure.h
 enc/windows_1250.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1250.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9825,7 +9763,6 @@ enc/windows_1250.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_1250.$(OBJEXT): internal/intern/error.h
 enc/windows_1250.$(OBJEXT): internal/intern/eval.h
 enc/windows_1250.$(OBJEXT): internal/intern/file.h
-enc/windows_1250.$(OBJEXT): internal/intern/gc.h
 enc/windows_1250.$(OBJEXT): internal/intern/hash.h
 enc/windows_1250.$(OBJEXT): internal/intern/io.h
 enc/windows_1250.$(OBJEXT): internal/intern/load.h
@@ -9856,7 +9793,6 @@ enc/windows_1250.$(OBJEXT): internal/memory.h
 enc/windows_1250.$(OBJEXT): internal/method.h
 enc/windows_1250.$(OBJEXT): internal/module.h
 enc/windows_1250.$(OBJEXT): internal/newobj.h
-enc/windows_1250.$(OBJEXT): internal/rgengc.h
 enc/windows_1250.$(OBJEXT): internal/scan_args.h
 enc/windows_1250.$(OBJEXT): internal/special_consts.h
 enc/windows_1250.$(OBJEXT): internal/static_assert.h
@@ -9927,6 +9863,7 @@ enc/windows_1251.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1251.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1251.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1251.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1251.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1251.$(OBJEXT): internal/attr/pure.h
 enc/windows_1251.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1251.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9986,7 +9923,6 @@ enc/windows_1251.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_1251.$(OBJEXT): internal/intern/error.h
 enc/windows_1251.$(OBJEXT): internal/intern/eval.h
 enc/windows_1251.$(OBJEXT): internal/intern/file.h
-enc/windows_1251.$(OBJEXT): internal/intern/gc.h
 enc/windows_1251.$(OBJEXT): internal/intern/hash.h
 enc/windows_1251.$(OBJEXT): internal/intern/io.h
 enc/windows_1251.$(OBJEXT): internal/intern/load.h
@@ -10017,7 +9953,6 @@ enc/windows_1251.$(OBJEXT): internal/memory.h
 enc/windows_1251.$(OBJEXT): internal/method.h
 enc/windows_1251.$(OBJEXT): internal/module.h
 enc/windows_1251.$(OBJEXT): internal/newobj.h
-enc/windows_1251.$(OBJEXT): internal/rgengc.h
 enc/windows_1251.$(OBJEXT): internal/scan_args.h
 enc/windows_1251.$(OBJEXT): internal/special_consts.h
 enc/windows_1251.$(OBJEXT): internal/static_assert.h
@@ -10089,6 +10024,7 @@ enc/windows_1252.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1252.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1252.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1252.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1252.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1252.$(OBJEXT): internal/attr/pure.h
 enc/windows_1252.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1252.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10148,7 +10084,6 @@ enc/windows_1252.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_1252.$(OBJEXT): internal/intern/error.h
 enc/windows_1252.$(OBJEXT): internal/intern/eval.h
 enc/windows_1252.$(OBJEXT): internal/intern/file.h
-enc/windows_1252.$(OBJEXT): internal/intern/gc.h
 enc/windows_1252.$(OBJEXT): internal/intern/hash.h
 enc/windows_1252.$(OBJEXT): internal/intern/io.h
 enc/windows_1252.$(OBJEXT): internal/intern/load.h
@@ -10179,7 +10114,6 @@ enc/windows_1252.$(OBJEXT): internal/memory.h
 enc/windows_1252.$(OBJEXT): internal/method.h
 enc/windows_1252.$(OBJEXT): internal/module.h
 enc/windows_1252.$(OBJEXT): internal/newobj.h
-enc/windows_1252.$(OBJEXT): internal/rgengc.h
 enc/windows_1252.$(OBJEXT): internal/scan_args.h
 enc/windows_1252.$(OBJEXT): internal/special_consts.h
 enc/windows_1252.$(OBJEXT): internal/static_assert.h
@@ -10250,6 +10184,7 @@ enc/windows_1253.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1253.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1253.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1253.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1253.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1253.$(OBJEXT): internal/attr/pure.h
 enc/windows_1253.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1253.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10309,7 +10244,6 @@ enc/windows_1253.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_1253.$(OBJEXT): internal/intern/error.h
 enc/windows_1253.$(OBJEXT): internal/intern/eval.h
 enc/windows_1253.$(OBJEXT): internal/intern/file.h
-enc/windows_1253.$(OBJEXT): internal/intern/gc.h
 enc/windows_1253.$(OBJEXT): internal/intern/hash.h
 enc/windows_1253.$(OBJEXT): internal/intern/io.h
 enc/windows_1253.$(OBJEXT): internal/intern/load.h
@@ -10340,7 +10274,6 @@ enc/windows_1253.$(OBJEXT): internal/memory.h
 enc/windows_1253.$(OBJEXT): internal/method.h
 enc/windows_1253.$(OBJEXT): internal/module.h
 enc/windows_1253.$(OBJEXT): internal/newobj.h
-enc/windows_1253.$(OBJEXT): internal/rgengc.h
 enc/windows_1253.$(OBJEXT): internal/scan_args.h
 enc/windows_1253.$(OBJEXT): internal/special_consts.h
 enc/windows_1253.$(OBJEXT): internal/static_assert.h
@@ -10412,6 +10345,7 @@ enc/windows_1254.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1254.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1254.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1254.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1254.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1254.$(OBJEXT): internal/attr/pure.h
 enc/windows_1254.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1254.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10471,7 +10405,6 @@ enc/windows_1254.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_1254.$(OBJEXT): internal/intern/error.h
 enc/windows_1254.$(OBJEXT): internal/intern/eval.h
 enc/windows_1254.$(OBJEXT): internal/intern/file.h
-enc/windows_1254.$(OBJEXT): internal/intern/gc.h
 enc/windows_1254.$(OBJEXT): internal/intern/hash.h
 enc/windows_1254.$(OBJEXT): internal/intern/io.h
 enc/windows_1254.$(OBJEXT): internal/intern/load.h
@@ -10502,7 +10435,6 @@ enc/windows_1254.$(OBJEXT): internal/memory.h
 enc/windows_1254.$(OBJEXT): internal/method.h
 enc/windows_1254.$(OBJEXT): internal/module.h
 enc/windows_1254.$(OBJEXT): internal/newobj.h
-enc/windows_1254.$(OBJEXT): internal/rgengc.h
 enc/windows_1254.$(OBJEXT): internal/scan_args.h
 enc/windows_1254.$(OBJEXT): internal/special_consts.h
 enc/windows_1254.$(OBJEXT): internal/static_assert.h
@@ -10574,6 +10506,7 @@ enc/windows_1257.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1257.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1257.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1257.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1257.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1257.$(OBJEXT): internal/attr/pure.h
 enc/windows_1257.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1257.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10633,7 +10566,6 @@ enc/windows_1257.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_1257.$(OBJEXT): internal/intern/error.h
 enc/windows_1257.$(OBJEXT): internal/intern/eval.h
 enc/windows_1257.$(OBJEXT): internal/intern/file.h
-enc/windows_1257.$(OBJEXT): internal/intern/gc.h
 enc/windows_1257.$(OBJEXT): internal/intern/hash.h
 enc/windows_1257.$(OBJEXT): internal/intern/io.h
 enc/windows_1257.$(OBJEXT): internal/intern/load.h
@@ -10664,7 +10596,6 @@ enc/windows_1257.$(OBJEXT): internal/memory.h
 enc/windows_1257.$(OBJEXT): internal/method.h
 enc/windows_1257.$(OBJEXT): internal/module.h
 enc/windows_1257.$(OBJEXT): internal/newobj.h
-enc/windows_1257.$(OBJEXT): internal/rgengc.h
 enc/windows_1257.$(OBJEXT): internal/scan_args.h
 enc/windows_1257.$(OBJEXT): internal/special_consts.h
 enc/windows_1257.$(OBJEXT): internal/static_assert.h
@@ -10738,6 +10669,7 @@ enc/windows_31j.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_31j.$(OBJEXT): internal/attr/noinline.h
 enc/windows_31j.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_31j.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_31j.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_31j.$(OBJEXT): internal/attr/pure.h
 enc/windows_31j.$(OBJEXT): internal/attr/restrict.h
 enc/windows_31j.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10797,7 +10729,6 @@ enc/windows_31j.$(OBJEXT): internal/intern/enumerator.h
 enc/windows_31j.$(OBJEXT): internal/intern/error.h
 enc/windows_31j.$(OBJEXT): internal/intern/eval.h
 enc/windows_31j.$(OBJEXT): internal/intern/file.h
-enc/windows_31j.$(OBJEXT): internal/intern/gc.h
 enc/windows_31j.$(OBJEXT): internal/intern/hash.h
 enc/windows_31j.$(OBJEXT): internal/intern/io.h
 enc/windows_31j.$(OBJEXT): internal/intern/load.h
@@ -10828,7 +10759,6 @@ enc/windows_31j.$(OBJEXT): internal/memory.h
 enc/windows_31j.$(OBJEXT): internal/method.h
 enc/windows_31j.$(OBJEXT): internal/module.h
 enc/windows_31j.$(OBJEXT): internal/newobj.h
-enc/windows_31j.$(OBJEXT): internal/rgengc.h
 enc/windows_31j.$(OBJEXT): internal/scan_args.h
 enc/windows_31j.$(OBJEXT): internal/special_consts.h
 enc/windows_31j.$(OBJEXT): internal/static_assert.h

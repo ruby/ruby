@@ -1,4 +1,5 @@
 require_relative '../../enumerable/shared/enumeratorized'
+require_relative '../shared/iterable_and_tolerating_size_increasing'
 
 describe :keep_if, shared: true do
   it "deletes elements for which the block returns a false value" do
@@ -56,5 +57,39 @@ describe :keep_if, shared: true do
         -> { @frozen.send(@method) { false } }.should raise_error(FrozenError)
       end
     end
+
+    it "raises a FrozenError on a frozen array only during iteration if called without a block" do
+      enum = @frozen.send(@method)
+      -> { enum.each {} }.should raise_error(FrozenError)
+    end
   end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.send(@method) { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "only changes elements before error is raised, keeping the element which raised an error." do
+    a = [1, 2, 3, 4]
+    begin
+      a.send(@method) do |e|
+        case e
+        when 2 then false
+        when 3 then raise StandardError, 'Oops'
+        else true
+        end
+      end
+    rescue StandardError
+    end
+
+    a.should == [1, 3, 4]
+  end
+
+  @value_to_return = -> _ { true }
+  it_should_behave_like :array_iterable_and_tolerating_size_increasing
 end

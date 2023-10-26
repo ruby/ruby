@@ -91,24 +91,24 @@ To run all specs:
 make test-spec
 ```
 
-Extra arguments can be added via `MSPECOPT`.
+Extra arguments can be added via `SPECOPTS`.
 For instance, to show the help:
 
 ```bash
-make test-spec MSPECOPT=-h
+make test-spec SPECOPTS=-h
 ```
 
 You can also run the specs in parallel, which is currently experimental.
 It takes around 10s instead of 60s on a quad-core laptop.
 
 ```bash
-make test-spec MSPECOPT=-j
+make test-spec SPECOPTS=-j
 ```
 
 To run a specific test, add its path to the command:
 
 ```bash
-make test-spec MSPECOPT=spec/ruby/language/for_spec.rb
+make test-spec SPECOPTS=spec/ruby/language/for_spec.rb
 ```
 
 If ruby trunk is your current `ruby` in `$PATH`, you can also run `mspec` directly:

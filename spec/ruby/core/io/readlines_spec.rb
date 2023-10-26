@@ -117,14 +117,18 @@ describe "IO#readlines" do
       @io.readlines(chomp: true).should == IOSpecs.lines_without_newline_characters
     end
 
-    ruby_version_is "3.0" do
-      it "raises exception when options passed as Hash" do
-        -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
+    it "raises exception when options passed as Hash" do
+      -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
 
-        -> {
-          @io.readlines("\n", 1, { chomp: true })
-        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
-      end
+      -> {
+        @io.readlines("\n", 1, { chomp: true })
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+    end
+  end
+
+  describe "when passed arbitrary keyword argument" do
+    it "tolerates it" do
+      @io.readlines(chomp: true, foo: :bar).should == IOSpecs.lines_without_newline_characters
     end
   end
 end
@@ -176,13 +180,20 @@ describe "IO.readlines" do
       platform_is :windows do
         cmd = "|cmd.exe /C echo hello&echo line2"
       end
-      lines = IO.readlines(cmd)
+
+      lines = nil
+      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+        lines = IO.readlines(cmd)
+      end
       lines.should == ["hello\n", "line2\n"]
     end
 
     platform_is_not :windows do
       it "gets data from a fork when passed -" do
-        lines = IO.readlines("|-")
+        lines = nil
+        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+          lines = IO.readlines("|-")
+        end
 
         if lines # parent
           lines.should == ["hello\n", "from a fork\n"]
@@ -192,6 +203,16 @@ describe "IO.readlines" do
           exit!
         end
       end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation given a path with a pipe" do
+      cmd = "|echo ok"
+      -> {
+        IO.readlines(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
     end
   end
 

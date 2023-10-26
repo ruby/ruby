@@ -53,12 +53,12 @@ Gem::Specification.new do |s|
     "lib/json/pure/parser.rb",
     "lib/json/version.rb",
   ]
-  s.homepage = "http://flori.github.com/json"
+  s.homepage = "https://flori.github.io/json"
   s.metadata = {
     'bug_tracker_uri'   => 'https://github.com/flori/json/issues',
     'changelog_uri'     => 'https://github.com/flori/json/blob/master/CHANGES.md',
-    'documentation_uri' => 'http://flori.github.io/json/doc/index.html',
-    'homepage_uri'      => 'http://flori.github.io/json/',
+    'documentation_uri' => 'https://flori.github.io/json/doc/index.html',
+    'homepage_uri'      => s.homepage,
     'source_code_uri'   => 'https://github.com/flori/json',
     'wiki_uri'          => 'https://github.com/flori/json/wiki'
   }

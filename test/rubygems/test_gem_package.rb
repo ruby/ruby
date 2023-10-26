@@ -189,7 +189,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       File.symlink("code.rb", "lib/code_sym.rb")
       File.symlink("../lib/code.rb", "lib/code_sym2.rb")
     rescue Errno::EACCES => e
-      if win_platform?
+      if Gem.win_platform?
         pend "symlink - must be admin with no UAC on Windows"
       else
         raise e
@@ -205,7 +205,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     tar.rewind
 
-    files, symlinks = [], []
+    files = []
+    symlinks = []
 
     Gem::Package::TarReader.new tar do |tar_io|
       tar_io.each_entry do |entry|
@@ -286,8 +287,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -329,8 +330,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -392,8 +393,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -429,8 +430,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -441,11 +442,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = util_tar_gz {}
 
     gem = util_tar do |tar|
-      tar.add_file "data.tar.gz", 0644 do |io|
+      tar.add_file "data.tar.gz", 0o644 do |io|
         io.write data_tgz.string
       end
 
-      tar.add_file "metadata.gz", 0644 do |io|
+      tar.add_file "metadata.gz", 0o644 do |io|
         Zlib::GzipWriter.wrap io do |gzio|
           gzio.write @spec.to_yaml
         end
@@ -478,21 +479,21 @@ class TestGemPackage < Gem::Package::TarTestCase
     extracted = File.join @destination, "lib/code.rb"
     assert_path_exist extracted
 
-    mask = 0100666 & (~File.umask)
+    mask = 0o100666 & (~File.umask)
 
     assert_equal mask.to_s(8), File.stat(extracted).mode.to_s(8) unless
-      win_platform?
+      Gem.win_platform?
   end
 
   def test_extract_files_empty
     data_tgz = util_tar_gz {}
 
     gem = util_tar do |tar|
-      tar.add_file "data.tar.gz", 0644 do |io|
+      tar.add_file "data.tar.gz", 0o644 do |io|
         io.write data_tgz.string
       end
 
-      tar.add_file "metadata.gz", 0644 do |io|
+      tar.add_file "metadata.gz", 0o644 do |io|
         Zlib::GzipWriter.wrap io do |gzio|
           gzio.write @spec.to_yaml
         end
@@ -511,7 +512,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_file_permissions
-    pend "chmod not supported" if win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     gem_with_long_permissions = File.expand_path("packages/Bluebie-legs-0.6.2.gem", __dir__)
 
@@ -522,14 +523,14 @@ class TestGemPackage < Gem::Package::TarTestCase
     filepath = File.join @destination, "README.rdoc"
     assert_path_exist filepath
 
-    assert_equal 0104444, File.stat(filepath).mode
+    assert_equal 0o104444, File.stat(filepath).mode
   end
 
   def test_extract_tar_gz_absolute
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file "/absolute.rb", 0644 do |io|
+      tar.add_file "/absolute.rb", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -538,7 +539,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.extract_tar_gz tgz_io, @destination
     end
 
-    assert_equal("installing into parent path /absolute.rb of " +
+    assert_equal("installing into parent path /absolute.rb of " \
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -547,18 +548,18 @@ class TestGemPackage < Gem::Package::TarTestCase
     package.verify
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file "relative.rb", 0644 do |io|
+      tar.add_file "relative.rb", 0o644 do |io|
         io.write "hi"
       end
 
-      tar.mkdir       "lib", 0755
-      tar.add_symlink "lib/foo.rb", "../relative.rb", 0644
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/foo.rb", "../relative.rb", 0o644
     end
 
     begin
       package.extract_tar_gz tgz_io, @destination
     rescue Errno::EACCES => e
-      if win_platform?
+      if Gem.win_platform?
         pend "symlink - must be admin with no UAC on Windows"
       else
         raise e
@@ -573,13 +574,39 @@ class TestGemPackage < Gem::Package::TarTestCase
                  File.read(extracted)
   end
 
+  def test_extract_symlink_into_symlink_dir
+    package = Gem::Package.new @gem
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/link", "./inside.rb", 0o644
+      tar.add_file    "lib/inside.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
+
+    destination_subdir = File.join @destination, "subdir"
+    FileUtils.mkdir_p destination_subdir
+
+    destination_linkdir = File.join @destination, "linkdir"
+    File.symlink(destination_subdir, destination_linkdir)
+
+    package.extract_tar_gz tgz_io, destination_linkdir
+
+    extracted = File.join destination_subdir, "lib/link"
+    assert_path_exist extracted
+    assert_equal "./inside.rb",
+                 File.readlink(extracted)
+    assert_equal "hi",
+                 File.read(extracted)
+  end
+
   def test_extract_tar_gz_symlink_broken_relative_path
     package = Gem::Package.new @gem
     package.verify
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir       "lib", 0755
-      tar.add_symlink "lib/foo.rb", "../broken.rb", 0644
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/foo.rb", "../broken.rb", 0o644
     end
 
     ui = Gem::MockGemUi.new
@@ -598,9 +625,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir       "lib",               0755
-      tar.add_symlink "lib/link", "../..", 0644
-      tar.add_file    "lib/link/outside.txt", 0644 do |io|
+      tar.mkdir       "lib",               0o755
+      tar.add_symlink "lib/link", "../..", 0o644
+      tar.add_file    "lib/link/outside.txt", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -611,7 +638,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, "subdir"
     FileUtils.mkdir_p destination_subdir
 
-    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
 
     e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
@@ -619,7 +646,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " +
+    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " \
                 "#{destination_subdir} is not allowed", e.message)
 
     assert_path_not_exist File.join(@destination, "outside.txt")
@@ -642,11 +669,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     pend "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_symlink "link", destination_user_dir, 16877
-      tar.add_symlink "link/dir", ".", 16877
+      tar.add_symlink "link", destination_user_dir, 16_877
+      tar.add_symlink "link/dir", ".", 16_877
     end
 
-    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
 
     e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
@@ -654,7 +681,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " +
+    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " \
                 "#{destination_subdir} is not allowed", e.message)
 
     assert_path_exist destination_user_subdir
@@ -666,11 +693,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir    "lib",        0755
-      tar.add_file "lib/foo.rb", 0644 do |io|
+      tar.mkdir    "lib",        0o755
+      tar.add_file "lib/foo.rb", 0o644 do |io|
         io.write "hi"
       end
-      tar.mkdir    "lib/foo", 0755
+      tar.mkdir    "lib/foo", 0o755
     end
 
     package.extract_tar_gz tgz_io, @destination
@@ -686,7 +713,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file "./dot_slash.rb", 0644 do |io|
+      tar.add_file "./dot_slash.rb", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -701,7 +728,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file ".dot_file.rb", 0644 do |io|
+      tar.add_file ".dot_file.rb", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -717,7 +744,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package = Gem::Package.new @gem
 
       tgz_io = util_tar_gz do |tar|
-        tar.add_file "foo/file.rb", 0644 do |io|
+        tar.add_file "foo/file.rb", 0o644 do |io|
           io.write "hi"
         end
       end
@@ -748,7 +775,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.install_location "/absolute.rb", @destination
     end
 
-    assert_equal("installing into parent path /absolute.rb of " +
+    assert_equal("installing into parent path /absolute.rb of " \
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -789,7 +816,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     parent = File.expand_path File.join @destination, "../relative.rb"
 
-    assert_equal("installing into parent path #{parent} of " +
+    assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -804,13 +831,15 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     parent = File.expand_path File.join @destination, filename
 
-    assert_equal("installing into parent path #{parent} of " +
+    assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
   end
 
   def test_load_spec
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name() "metadata.gz" end
+    def entry.full_name
+      "metadata.gz"
+    end
 
     package = Gem::Package.new "nonexistent.gem"
 
@@ -831,7 +860,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_checksum_bad
     data_tgz = util_tar_gz do |tar|
-      tar.add_file "lib/code.rb", 0444 do |io|
+      tar.add_file "lib/code.rb", 0o444 do |io|
         io.write "# lib/code.rb"
       end
     end
@@ -841,11 +870,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     gem = util_tar do |tar|
       metadata_gz = Gem::Util.gzip @spec.to_yaml
 
-      tar.add_file "metadata.gz", 0444 do |io|
+      tar.add_file "metadata.gz", 0o444 do |io|
         io.write metadata_gz
       end
 
-      tar.add_file "data.tar.gz", 0444 do |io|
+      tar.add_file "data.tar.gz", 0o444 do |io|
         io.write data_tgz
       end
 
@@ -855,7 +884,7 @@ class TestGemPackage < Gem::Package::TarTestCase
           "metadata.gz" => "bogus",
         },
       }
-      tar.add_file "checksums.yaml.gz", 0444 do |io|
+      tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
           gz_io.write Psych.dump bogus_checksums
         end
@@ -878,7 +907,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_checksum_missing
     data_tgz = util_tar_gz do |tar|
-      tar.add_file "lib/code.rb", 0444 do |io|
+      tar.add_file "lib/code.rb", 0o444 do |io|
         io.write "# lib/code.rb"
       end
     end
@@ -888,7 +917,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     gem = util_tar do |tar|
       metadata_gz = Gem::Util.gzip @spec.to_yaml
 
-      tar.add_file "metadata.gz", 0444 do |io|
+      tar.add_file "metadata.gz", 0o444 do |io|
         io.write metadata_gz
       end
 
@@ -901,13 +930,13 @@ class TestGemPackage < Gem::Package::TarTestCase
         },
       }
 
-      tar.add_file "checksums.yaml.gz", 0444 do |io|
+      tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
           gz_io.write Psych.dump checksums
         end
       end
 
-      tar.add_file "data.tar.gz", 0444 do |io|
+      tar.add_file "data.tar.gz", 0o444 do |io|
         io.write data_tgz
       end
     end
@@ -926,7 +955,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     tf = Tempfile.open "corrupt" do |io|
       data = Gem::Util.gzip "a" * 10
       io.write \
-        tar_file_header("metadata.gz", "\000x", 0644, data.length, Time.now)
+        tar_file_header("metadata.gz", "\000x", 0o644, data.length, Time.now)
       io.write data
       io.rewind
 
@@ -941,6 +970,95 @@ class TestGemPackage < Gem::Package::TarTestCase
       io
     end
     tf.close!
+  end
+
+  def test_verify_corrupt_tar_metadata_entry
+    gem = tar_file_header("metadata.gz", "", 0, 999, Time.now)
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = nil
+    out_err = capture_output do
+      e = assert_raise Gem::Package::FormatError do
+        package.verify
+      end
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+    assert_equal(["", "Exception while verifying corrupt.gem\n"], out_err)
+  end
+
+  def test_verify_corrupt_tar_checksums_entry
+    gem = tar_file_header("checksums.yaml.gz", "", 0, 100, Time.now)
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = assert_raise Gem::Package::FormatError do
+      package.verify
+    end
+
+    assert_equal "not in gzip format in corrupt.gem", e.message
+  end
+
+  def test_verify_corrupt_tar_data_entry
+    gem = tar_file_header("data.tar.gz", "", 0, 100, Time.now)
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = nil
+    out_err = capture_output do
+      e = assert_raise Gem::Package::FormatError do
+        package.verify
+      end
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+    assert_equal(["", "Exception while verifying corrupt.gem\n"], out_err)
+  end
+
+  def test_corrupt_data_tar_gz
+    data_tgz = util_gzip tar_file_header("lib/code.rb", "", 0, 100, Time.now)
+    metadata_gz = util_gzip @spec.to_yaml
+
+    gem = util_tar do |tar|
+      tar.add_file "data.tar.gz", 0o444 do |io|
+        io.write data_tgz
+      end
+
+      tar.add_file "metadata.gz", 0o644 do |io|
+        io.write metadata_gz
+      end
+    end
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem.string
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = assert_raise Gem::Package::FormatError do
+      package.contents
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+
+    e = assert_raise Gem::Package::FormatError do
+      package.extract_files @destination
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
   end
 
   def test_verify_empty
@@ -962,8 +1080,8 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_match %r{^No such file or directory}, e.message
-    assert_match %r{nonexistent.gem$},           e.message
+    assert_match(/^No such file or directory/, e.message)
+    assert_match(/nonexistent.gem$/,           e.message)
   end
 
   def test_verify_duplicate_file
@@ -978,8 +1096,8 @@ class TestGemPackage < Gem::Package::TarTestCase
         build.add_metadata gem
         build.add_contents gem
 
-        gem.add_file_simple "a.sig", 0444, 0
-        gem.add_file_simple "a.sig", 0444, 0
+        gem.add_file_simple "a.sig", 0o444, 0
+        gem.add_file_simple "a.sig", 0o444, 0
       end
     end
 
@@ -1050,12 +1168,23 @@ class TestGemPackage < Gem::Package::TarTestCase
         # write bogus data.tar.gz to foil signature
         bogus_data = Gem::Util.gzip "hello"
         fake_signer = Class.new do
-          def digest_name; "SHA512"; end
-          def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
-          def key; "key"; end
-          def sign(*); "fake_sig"; end
+          def digest_name
+            "SHA512"
+          end
+
+          def digest_algorithm
+            OpenSSL::Digest(:SHA512).new
+          end
+
+          def key
+            "key"
+          end
+
+          def sign(*)
+            "fake_sig"
+          end
         end
-        gem.add_file_signed "data2.tar.gz", 0444, fake_signer.new do |io|
+        gem.add_file_signed "data2.tar.gz", 0o444, fake_signer.new do |io|
           io.write bogus_data
         end
 
@@ -1097,7 +1226,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_entry
     entry = Object.new
-    def entry.full_name() raise ArgumentError, "whatever" end
+    def entry.full_name
+      raise ArgumentError, "whatever"
+    end
 
     package = Gem::Package.new @gem
 
@@ -1124,11 +1255,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $good_name = vm
 
       entry = Object.new
-      def entry.full_name() $good_name end
+      def entry.full_name
+        $good_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 
@@ -1141,11 +1276,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $bad_name = vm
 
       entry = Object.new
-      def entry.full_name() $bad_name end
+      def entry.full_name
+        $bad_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 
@@ -1186,30 +1325,5 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new io
 
     assert_equal %w[lib/code.rb], package.contents
-  end
-
-  def util_tar
-    tar_io = StringIO.new
-
-    Gem::Package::TarWriter.new tar_io do |tar|
-      yield tar
-    end
-
-    tar_io.rewind
-
-    tar_io
-  end
-
-  def util_tar_gz(&block)
-    tar_io = util_tar(&block)
-
-    tgz_io = StringIO.new
-
-    # can't wrap TarWriter because it seeks
-    Zlib::GzipWriter.wrap tgz_io do |io|
-      io.write tar_io.string
-    end
-
-    StringIO.new tgz_io.string
   end
 end

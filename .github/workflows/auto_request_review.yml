@@ -13,7 +13,7 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
     steps:
       - name: Request review based on files changes and/or groups the author belongs to
-        uses: necojackarc/auto-request-review@5f91f424cabb3211c669e49e79da8363f7df395b # v0.10.0
+        uses: necojackarc/auto-request-review@6a51cebffe2c084705d9a7b394abd802e0119633 # v0.12.0
         with:
           # scope: public_repo
           token: ${{ secrets.MATZBOT_GITHUB_TOKEN }}

@@ -20,23 +20,31 @@ module Bundler
     end
 
     def full_name
-      if platform == Gem::Platform::RUBY
+      @full_name ||= if platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{platform}"
       end
     end
 
+    def lock_name
+      @lock_name ||= name_tuple.lock_name
+    end
+
+    def name_tuple
+      Gem::NameTuple.new(@name, @version, @platform)
+    end
+
     def ==(other)
-      identifier == other.identifier
+      full_name == other.full_name
     end
 
     def eql?(other)
-      identifier.eql?(other.identifier)
+      full_name.eql?(other.full_name)
     end
 
     def hash
-      identifier.hash
+      full_name.hash
     end
 
     ##
@@ -61,12 +69,7 @@ module Bundler
 
     def to_lock
       out = String.new
-
-      if platform == Gem::Platform::RUBY
-        out << "    #{name} (#{version})\n"
-      else
-        out << "    #{name} (#{version}-#{platform})\n"
-      end
+      out << "    #{lock_name}\n"
 
       dependencies.sort_by(&:to_s).uniq.each do |dep|
         next if dep.type == :development
@@ -89,7 +92,7 @@ module Bundler
 
         installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
 
-        specification = __materialize__(installable_candidates)
+        specification = __materialize__(installable_candidates, :fallback_to_non_installable => false)
         return specification unless specification.nil?
 
         if target_platform != platform
@@ -102,13 +105,18 @@ module Bundler
       __materialize__(candidates)
     end
 
-    def __materialize__(candidates)
+    # If in frozen mode, we fallback to a non-installable candidate because by
+    # doing this we avoid re-resolving and potentially end up changing the
+    # lock file, which is not allowed. In that case, we will give a proper error
+    # about the mismatch higher up the stack, right before trying to install the
+    # bad gem.
+    def __materialize__(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
       search = candidates.reverse.find do |spec|
         spec.is_a?(StubSpecification) ||
           (spec.matches_current_ruby? &&
             spec.matches_current_rubygems?)
       end
-      if search.nil? && Bundler.frozen_bundle?
+      if search.nil? && fallback_to_non_installable
         search = candidates.last
       else
         search.dependencies = dependencies if search && search.full_name == full_name && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
@@ -117,15 +125,7 @@ module Bundler
     end
 
     def to_s
-      @__to_s ||= if platform == Gem::Platform::RUBY
-        "#{name} (#{version})"
-      else
-        "#{name} (#{version}-#{platform})"
-      end
-    end
-
-    def identifier
-      @__identifier ||= [name, version, platform.to_s]
+      lock_name
     end
 
     def git_version

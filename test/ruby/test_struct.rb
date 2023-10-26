@@ -41,6 +41,14 @@ module TestStruct
     end
   end
 
+  def test_larger_than_largest_pool
+    count = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] / RbConfig::SIZEOF["void*"]) + 1
+    list = Array(0..count)
+    klass = @Struct.new(*list.map { |i| :"a_#{i}"})
+    struct = klass.new(*list)
+    assert_equal 0, struct.a_0
+  end
+
   def test_small_structs
     names = [:a, :b, :c, :d]
     1.upto(4) {|n|

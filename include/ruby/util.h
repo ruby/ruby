@@ -36,6 +36,15 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /** an approximation of ceil(n * log10(2)), up to 65536 at least */
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
 
+/** an approximation of decimal representation size for n-bytes */
+#define DECIMAL_SIZE_OF_BYTES(n) DECIMAL_SIZE_OF_BITS((n) * CHAR_BIT)
+
+/**
+ * An approximation of decimal representation size. `expr` may be a
+ * type name
+ */
+#define DECIMAL_SIZE_OF(expr) DECIMAL_SIZE_OF_BYTES(sizeof(expr))
+
 /**
  * Character to  number mapping  like `'a'`  -> `10`, `'b'`  -> `11`  etc.  For
  * punctuation etc.,  the value is  -1.  "36"  terminology comes from  the fact

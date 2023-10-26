@@ -52,6 +52,7 @@ path_to_class.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 path_to_class.o: $(hdrdir)/ruby/internal/attr/noinline.h
 path_to_class.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 path_to_class.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+path_to_class.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 path_to_class.o: $(hdrdir)/ruby/internal/attr/pure.h
 path_to_class.o: $(hdrdir)/ruby/internal/attr/restrict.h
 path_to_class.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ path_to_class.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/error.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/eval.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/file.h
-path_to_class.o: $(hdrdir)/ruby/internal/intern/gc.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/hash.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/io.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ path_to_class.o: $(hdrdir)/ruby/internal/memory.h
 path_to_class.o: $(hdrdir)/ruby/internal/method.h
 path_to_class.o: $(hdrdir)/ruby/internal/module.h
 path_to_class.o: $(hdrdir)/ruby/internal/newobj.h
-path_to_class.o: $(hdrdir)/ruby/internal/rgengc.h
 path_to_class.o: $(hdrdir)/ruby/internal/scan_args.h
 path_to_class.o: $(hdrdir)/ruby/internal/special_consts.h
 path_to_class.o: $(hdrdir)/ruby/internal/static_assert.h

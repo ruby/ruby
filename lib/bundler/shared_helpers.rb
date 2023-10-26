@@ -160,7 +160,7 @@ module Bundler
         " (was expecting #{old_deps.map(&:to_s)}, but the real spec has #{new_deps.map(&:to_s)})"
       raise APIResponseMismatchError,
         "Downloading #{spec.full_name} revealed dependencies not in the API or the lockfile (#{extra_deps.join(", ")})." \
-        "\nEither installing with `--full-index` or running `bundle update #{spec.name}` should fix the problem."
+        "\nRunning `bundle update #{spec.name}` should fix the problem."
     end
 
     def pretty_dependency(dep)
@@ -195,6 +195,21 @@ module Bundler
 
     def write_to_gemfile(gemfile_path, contents)
       filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
+    end
+
+    def relative_gemfile_path
+      relative_path_to(Bundler.default_gemfile)
+    end
+
+    def relative_lockfile_path
+      relative_path_to(Bundler.default_lockfile)
+    end
+
+    def relative_path_to(destination, from: pwd)
+      Pathname.new(destination).relative_path_from(from).to_s
+    rescue ArgumentError
+      # on Windows, if source and destination are on different drivers, there's no relative path from one to the other
+      destination
     end
 
     private
@@ -284,7 +299,7 @@ module Bundler
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
       Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
-      Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__)
+      Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__) unless RUBY_VERSION < "2.7"
     end
 
     def set_path
@@ -297,7 +312,7 @@ module Bundler
     def set_rubyopt
       rubyopt = [ENV["RUBYOPT"]].compact
       setup_require = "-r#{File.expand_path("setup", __dir__)}"
-      return if !rubyopt.empty? && rubyopt.first =~ /#{setup_require}/
+      return if !rubyopt.empty? && rubyopt.first =~ /#{Regexp.escape(setup_require)}/
       rubyopt.unshift setup_require
       Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")
     end

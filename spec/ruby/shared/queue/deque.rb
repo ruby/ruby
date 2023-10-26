@@ -37,6 +37,15 @@ describe :queue_deq, shared: true do
     q.send(@method).should == 1
   end
 
+  it "converts false-ish for non_blocking to boolean" do
+    q = @object.call
+    q << 1
+    q << 2
+
+    q.send(@method, false).should == 1
+    q.send(@method, nil).should == 2
+  end
+
   it "returns nil for a closed empty queue" do
     q = @object.call
     q.close
@@ -114,6 +123,12 @@ describe :queue_deq, shared: true do
           "can't set a timeout if non_block is enabled",
         )
       end
+
+      it "returns nil for a closed empty queue" do
+        q = @object.call
+        q.close
+        q.send(@method, timeout: 0).should == nil
+      end
     end
   end
 
@@ -142,6 +157,14 @@ describe :queue_deq, shared: true do
       q = @object.call
       q.close
       -> { q.send(@method, true) }.should raise_error(ThreadError)
+    end
+
+    it "converts true-ish non_blocking argument to true" do
+      q = @object.call
+
+      -> { q.send(@method, true) }.should raise_error(ThreadError)
+      -> { q.send(@method, 1) }.should raise_error(ThreadError)
+      -> { q.send(@method, "") }.should raise_error(ThreadError)
     end
   end
 end

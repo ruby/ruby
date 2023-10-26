@@ -4,7 +4,7 @@ class Reline::MacroTest < Reline::TestCase
   def setup
     Reline.send(:test_mode)
     @config = Reline::Config.new
-    @encoding = Reline::IOGate.encoding
+    @encoding = Reline.core.encoding
     @line_editor = Reline::LineEditor.new(@config, @encoding)
     @line_editor.instance_variable_set(:@screen_size, [24, 80])
     @output = @line_editor.output = File.open(IO::NULL, "w")

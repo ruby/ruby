@@ -103,4 +103,25 @@ describe "Exception#full_message" do
     exception.full_message.should include "intermediate exception"
     exception.full_message.should include "origin exception"
   end
+
+  ruby_version_is "3.2" do
+    it "relies on #detailed_message" do
+      e = RuntimeError.new("new error")
+      e.define_singleton_method(:detailed_message) { |**opt| "DETAILED MESSAGE" }
+
+      e.full_message.lines.first.should =~ /DETAILED MESSAGE/
+    end
+
+    it "passes all its own keyword arguments to #detailed_message" do
+      e = RuntimeError.new("new error")
+      opt_ = nil
+      e.define_singleton_method(:detailed_message) do |**opt|
+        opt_ = opt
+        "DETAILED MESSAGE"
+      end
+
+      e.full_message(foo: "bar")
+      opt_.should == { foo: "bar", highlight: Exception.to_tty? }
+    end
+  end
 end

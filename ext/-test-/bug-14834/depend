@@ -52,6 +52,7 @@ bug-14384.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bug-14384.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/pure.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ bug-14384.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bug-14384.o: $(hdrdir)/ruby/internal/intern/error.h
 bug-14384.o: $(hdrdir)/ruby/internal/intern/eval.h
 bug-14384.o: $(hdrdir)/ruby/internal/intern/file.h
-bug-14384.o: $(hdrdir)/ruby/internal/intern/gc.h
 bug-14384.o: $(hdrdir)/ruby/internal/intern/hash.h
 bug-14384.o: $(hdrdir)/ruby/internal/intern/io.h
 bug-14384.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ bug-14384.o: $(hdrdir)/ruby/internal/memory.h
 bug-14384.o: $(hdrdir)/ruby/internal/method.h
 bug-14384.o: $(hdrdir)/ruby/internal/module.h
 bug-14384.o: $(hdrdir)/ruby/internal/newobj.h
-bug-14384.o: $(hdrdir)/ruby/internal/rgengc.h
 bug-14384.o: $(hdrdir)/ruby/internal/scan_args.h
 bug-14384.o: $(hdrdir)/ruby/internal/special_consts.h
 bug-14384.o: $(hdrdir)/ruby/internal/static_assert.h

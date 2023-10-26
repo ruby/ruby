@@ -30,7 +30,41 @@
 #include "ruby/st.h"
 #include "vm_core.h"
 
-#define id_attached id__attached__
+/* Flags of T_CLASS
+ *
+ * 2:     RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *            The RCLASS_SUPERCLASSES contains the class as the last element.
+ *            This means that this class owns the RCLASS_SUPERCLASSES list.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the class.
+ * endif
+ */
+
+/* Flags of T_ICLASS
+ *
+ * 0:    RICLASS_IS_ORIGIN
+ * 3:    RICLASS_ORIGIN_SHARED_MTBL
+ *           The T_ICLASS does not own the method table.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID. This is set but not used.
+ * endif
+ */
+
+/* Flags of T_MODULE
+ *
+ * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
+ *           Module has not been initialized.
+ * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *           See RCLASS_SUPERCLASSES_INCLUDE_SELF in T_CLASS.
+ * 3:    RMODULE_IS_REFINEMENT
+ *           Module is used for refinements.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the module.
+ * endif
+ */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
@@ -195,22 +229,13 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    size_t alloc_size = sizeof(struct RClass);
-
-#if RCLASS_EXT_EMBEDDED
-    alloc_size += sizeof(rb_classext_t);
-#endif
+    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     flags &= T_MASK;
-    flags |= FL_PROMOTED1 /* start from age == 2 */;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
-    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
+    NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
-#if RCLASS_EXT_EMBEDDED
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
-#else
-    obj->ptr = ZALLOC(rb_classext_t);
-#endif
 
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
@@ -223,7 +248,7 @@ class_alloc(VALUE flags, VALUE klass)
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
-    RCLASS_ALLOCATOR(obj) = 0;
+    RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
     return (VALUE)obj;
 }
@@ -404,6 +429,31 @@ class_init_copy_check(VALUE clone, VALUE orig)
     }
 }
 
+struct cvc_table_copy_ctx {
+    VALUE clone;
+    struct rb_id_table * new_table;
+};
+
+static enum rb_id_table_iterator_result
+cvc_table_copy(ID id, VALUE val, void *data)
+{
+    struct cvc_table_copy_ctx *ctx = (struct cvc_table_copy_ctx *)data;
+    struct rb_cvar_class_tbl_entry * orig_entry;
+    orig_entry = (struct rb_cvar_class_tbl_entry *)val;
+
+    struct rb_cvar_class_tbl_entry *ent;
+
+    ent = ALLOC(struct rb_cvar_class_tbl_entry);
+    ent->class_value = ctx->clone;
+    ent->cref = orig_entry->cref;
+    ent->global_cvar_state = orig_entry->global_cvar_state;
+    rb_id_table_insert(ctx->new_table, id, (VALUE)ent);
+
+    RB_OBJ_WRITTEN(ctx->clone, Qundef, ent->cref);
+
+    return ID_TABLE_CONTINUE;
+}
+
 static void
 copy_tables(VALUE clone, VALUE orig)
 {
@@ -411,6 +461,17 @@ copy_tables(VALUE clone, VALUE orig)
         rb_free_const_table(RCLASS_CONST_TBL(clone));
         RCLASS_CONST_TBL(clone) = 0;
     }
+    if (RCLASS_CVC_TBL(orig)) {
+        struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(orig);
+        struct rb_id_table *rb_cvc_tbl_dup = rb_id_table_create(rb_id_table_size(rb_cvc_tbl));
+
+        struct cvc_table_copy_ctx ctx;
+        ctx.clone = clone;
+        ctx.new_table = rb_cvc_tbl_dup;
+        rb_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
+        RCLASS_CVC_TBL(clone) = rb_cvc_tbl_dup;
+    }
+    rb_id_table_free(RCLASS_M_TBL(clone));
     RCLASS_M_TBL(clone) = 0;
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         st_data_t id;
@@ -435,7 +496,7 @@ static bool ensure_origin(VALUE klass);
 /**
  * If this flag is set, that module is allocated but not initialized yet.
  */
-enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER5};
+enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER1};
 
 static inline bool
 RMODULE_UNINITIALIZED(VALUE module)
@@ -478,14 +539,14 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
-    FL_SET(clone, RCLASS_CLONED);
-    FL_SET(orig , RCLASS_CLONED);
+    RCLASS_EXT(clone)->cloned = true;
+    RCLASS_EXT(orig)->cloned = true;
 
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
-    RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(orig);
+    RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
         struct clone_method_arg arg;
@@ -521,7 +582,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             prev_clone_p = clone_p;
             RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
             RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
-            RCLASS_ALLOCATOR(clone_p) = RCLASS_ALLOCATOR(p);
+            RCLASS_SET_ALLOCATOR(clone_p, RCLASS_ALLOCATOR(p));
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
@@ -584,7 +645,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     // attached to an object other than `obj`. In which case `obj` does not have
     // a material singleton class attached yet and there is no singleton class
     // to clone.
-    if (!(FL_TEST(klass, FL_SINGLETON) && rb_attr_get(klass, id_attached) == obj)) {
+    if (!(FL_TEST(klass, FL_SINGLETON) && RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         // nothing to clone
         return klass;
     }
@@ -606,7 +667,6 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         }
 
         RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
-        RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(klass);
         rb_iv_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
@@ -637,7 +697,7 @@ void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-        rb_class_ivar_set(klass, id_attached, obj);
+        RCLASS_SET_ATTACHED_OBJECT(klass, obj);
     }
 }
 
@@ -651,13 +711,13 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
 static int
 rb_singleton_class_has_metaclass_p(VALUE sklass)
 {
-    return rb_attr_get(METACLASS_OF(sklass), id_attached) == sklass;
+    return RCLASS_ATTACHED_OBJECT(METACLASS_OF(sklass)) == sklass;
 }
 
 int
 rb_singleton_class_internal_p(VALUE sklass)
 {
-    return (RB_TYPE_P(rb_attr_get(sklass, id_attached), T_CLASS) &&
+    return (RB_TYPE_P(RCLASS_ATTACHED_OBJECT(sklass), T_CLASS) &&
             !rb_singleton_class_has_metaclass_p(sklass));
 }
 
@@ -896,7 +956,7 @@ rb_define_class_id(ID id, VALUE super)
  * \return the value \c Class#inherited's returns
  * \pre Each of \a super and \a klass must be a \c Class object.
  */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_class_inherited(VALUE super, VALUE klass)
 {
     ID inherited;
@@ -1646,7 +1706,7 @@ rb_class_attached_object(VALUE klass)
         rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
     }
 
-    return rb_attr_get(klass, id_attached);
+    return RCLASS_ATTACHED_OBJECT(klass);
 }
 
 static void
@@ -2175,7 +2235,7 @@ singleton_class_of(VALUE obj)
 
     klass = METACLASS_OF(obj);
     if (!(FL_TEST(klass, FL_SINGLETON) &&
-          rb_attr_get(klass, id_attached) == obj)) {
+          RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         klass = rb_make_metaclass(obj, klass);
     }
 
@@ -2214,7 +2274,7 @@ rb_singleton_class_get(VALUE obj)
     }
     klass = METACLASS_OF(obj);
     if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
-    if (rb_attr_get(klass, id_attached) != obj) return Qnil;
+    if (RCLASS_ATTACHED_OBJECT(klass) != obj) return Qnil;
     return klass;
 }
 
@@ -2278,7 +2338,7 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
     long i = 0, len = RARRAY_LEN(keys);

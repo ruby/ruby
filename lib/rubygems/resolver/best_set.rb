@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The BestSet chooses the best available method to query a remote index.
 #
@@ -60,7 +61,7 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   def replace_failed_api_set(error) # :nodoc:
     uri = error.original_uri
     uri = URI uri unless URI === uri
-    uri = uri + "."
+    uri += "."
 
     raise error unless api_set = @sets.find do |set|
       Gem::Resolver::APISet === set && set.dep_uri == uri

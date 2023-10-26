@@ -419,12 +419,15 @@ eoyml
   end
 
   def test_safe_dump_symbols
+    assert_equal Psych.dump(:foo), Psych.safe_dump(:foo, permitted_classes: [Symbol])
+    assert_equal Psych.dump(:foo), Psych.safe_dump(:foo, permitted_symbols: [:foo])
+
     error = assert_raise Psych::DisallowedClass do
-      Psych.safe_dump(:foo, permitted_classes: [Symbol])
+      Psych.safe_dump(:foo)
     end
     assert_equal "Tried to dump unspecified class: Symbol(:foo)", error.message
 
-    assert_match(/\A--- :foo\n(?:\.\.\.\n)?\z/, Psych.safe_dump(:foo, permitted_classes: [Symbol], permitted_symbols: [:foo]))
+    assert_match(/\A--- :foo\n(?:\.\.\.\n)?\z/, Psych.safe_dump(:foo, permitted_symbols: [:foo]))
   end
 
   def test_safe_dump_aliases

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "dependency"
 require_relative "exceptions"
 require_relative "util/list"
@@ -37,8 +38,6 @@ class Gem::Resolver
   ##
   # List of dependencies that could not be found in the configured sources.
 
-  attr_reader :missing
-
   attr_reader :stats
 
   ##
@@ -48,8 +47,7 @@ class Gem::Resolver
   attr_accessor :skip_gems
 
   ##
-  # When a missing dependency, don't stop. Just go on and record what was
-  # missing.
+  #
 
   attr_accessor :soft_missing
 
@@ -105,7 +103,6 @@ class Gem::Resolver
     @development         = false
     @development_shallow = false
     @ignore_dependencies = false
-    @missing             = []
     @skip_gems           = {}
     @soft_missing        = false
     @stats               = Gem::Resolver::Stats.new
@@ -114,7 +111,7 @@ class Gem::Resolver
   def explain(stage, *data) # :nodoc:
     return unless DEBUG_RESOLVER
 
-    d = data.map {|x| x.pretty_inspect }.join(", ")
+    d = data.map(&:pretty_inspect).join(", ")
     $stderr.printf "%10s %s\n", stage.to_s.upcase, d
   end
 
@@ -144,7 +141,7 @@ class Gem::Resolver
     activation_request =
       Gem::Resolver::ActivationRequest.new spec, dep, possible
 
-    return spec, activation_request
+    [spec, activation_request]
   end
 
   def requests(s, act, reqs=[]) # :nodoc:
@@ -186,8 +183,7 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    locking_dg = Molinillo::DependencyGraph.new
-    Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }, locking_dg).tsort.map(&:payload).compact
+    Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.map(&:payload).compact
   rescue Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
@@ -212,7 +208,7 @@ class Gem::Resolver
 
     matching_platform = select_local_platforms all
 
-    return matching_platform, all
+    [matching_platform, all]
   end
 
   ##
@@ -227,7 +223,6 @@ class Gem::Resolver
   def search_for(dependency)
     possibles, all = find_possible(dependency)
     if !@soft_missing && possibles.empty?
-      @missing << dependency
       exc = Gem::UnsatisfiableDependencyError.new dependency, all
       exc.errors = @set.errors
       raise exc
@@ -246,7 +241,7 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }.
+        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }. # rubocop:disable Performance/RegexpMatch
         map {|spec| ActivationRequest.new spec, dependency }.
         each {|activation_request| activation_requests << activation_request }
     end
@@ -274,7 +269,6 @@ class Gem::Resolver
   end
 
   def allow_missing?(dependency)
-    @missing << dependency
     @soft_missing
   end
 

@@ -1,0 +1,12 @@
+@ ProgramNode (location: (1,0)-(3,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,3))
+    └── body: (length: 2)
+        ├── @ RationalNode (location: (1,0)-(1,5))
+        │   └── numeric:
+        │       @ FloatNode (location: (1,0)-(1,4))
+        └── @ RationalNode (location: (3,0)-(3,3))
+            └── numeric:
+                @ IntegerNode (location: (3,0)-(3,2))
+                └── flags: decimal

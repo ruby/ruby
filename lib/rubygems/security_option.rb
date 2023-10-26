@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -28,7 +29,7 @@ module Gem::SecurityOption
       policy = Gem::Security::Policies[value]
       unless policy
         valid = Gem::Security::Policies.keys.sort
-        raise Gem::OptionParser::InvalidArgument, "#{value} (#{valid.join ', '} are valid)"
+        raise Gem::OptionParser::InvalidArgument, "#{value} (#{valid.join ", "} are valid)"
       end
       policy
     end

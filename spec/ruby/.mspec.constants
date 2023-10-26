@@ -204,6 +204,7 @@ UserArray
 UserCustomConstructorString
 UserDefined
 UserDefinedImmediate
+UserDefinedString
 UserDefinedWithIvar
 UserHash
 UserHashInitParams

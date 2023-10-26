@@ -596,6 +596,32 @@ module ModuleSpecs
     private :foo
   end
   EmptyFooMethod = m.instance_method(:foo)
+
+  # for undefined_instance_methods spec
+  module UndefinedInstanceMethods
+    module Super
+      def super_included_method; end
+    end
+
+    class Parent
+      def undefed_method; end
+      undef_method :undefed_method
+
+      def parent_method; end
+      def another_parent_method; end
+    end
+
+    class Child < Parent
+      include Super
+
+      undef_method :parent_method
+      undef_method :another_parent_method
+    end
+
+    class Grandchild < Child
+      undef_method :super_included_method
+    end
+  end
 end
 
 class Object

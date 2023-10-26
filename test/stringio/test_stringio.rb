@@ -14,6 +14,10 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_version
+    assert_kind_of(String, StringIO::VERSION)
+  end
+
   def test_initialize
     assert_kind_of StringIO, StringIO.new
     assert_kind_of StringIO, StringIO.new('str')
@@ -99,6 +103,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("def\n", stringio.gets("", chomp: true))
 
     assert_string("", Encoding::UTF_8, StringIO.new("\n").gets(chomp: true))
+
+    assert_equal("", StringIO.new("ab").gets("ab", chomp: true))
   end
 
   def test_gets_chomp_eol
@@ -725,6 +731,32 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(EOFError) { f.sysread(1) }
     f.rewind
     assert_equal Encoding::ASCII_8BIT, f.sysread(3).encoding
+  end
+
+  def test_pread
+    f = StringIO.new("pread")
+    f.read
+
+    assert_equal "pre".b, f.pread(3, 0)
+    assert_equal "read".b, f.pread(4, 1)
+    assert_equal Encoding::ASCII_8BIT, f.pread(4, 1).encoding
+
+    buf = "".b
+    f.pread(3, 0, buf)
+    assert_equal "pre".b, buf
+    f.pread(4, 1, buf)
+    assert_equal "read".b, buf
+
+    assert_raise(EOFError) { f.pread(1, 5) }
+    assert_raise(ArgumentError) { f.pread(-1, 0) }
+    assert_raise(Errno::EINVAL) { f.pread(3, -1) }
+
+    assert_equal "".b, StringIO.new("").pread(0, 0)
+    assert_equal "".b, StringIO.new("").pread(0, -10)
+
+    buf = "stale".b
+    assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
+    assert_equal "stale".b, buf
   end
 
   def test_size

@@ -71,7 +71,7 @@ describe "Module#refine" do
       Module.new do
         refine("foo") {}
       end
-    end.should raise_error(TypeError)
+    end.should raise_error(TypeError, "wrong argument type String (expected Class or Module)")
   end
 
   it "accepts a module as argument" do

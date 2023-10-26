@@ -46,10 +46,10 @@ VALUE rb_struct_new(VALUE klass, ...);
  *
  * @param[in]  name           Name of the class.
  * @param[in]  ...            Arbitrary number of  `const char*`, terminated by
- *                            zero.  Each of which are the name of fields.
+ *                            NULL.  Each of which are the name of fields.
  * @exception  rb_eNameError  `name` is not a constant name.
  * @exception  rb_eTypeError  `name` is already taken.
- * @exception  rb_eArgError    Duplicated field name.
+ * @exception  rb_eArgError   Duplicated field name.
  * @return     The defined class.
  * @post       Global toplevel constant `name` is defined.
  * @note       `name` is allowed  to be a null pointer.   This function creates
@@ -70,10 +70,10 @@ RBIMPL_ATTR_NONNULL((2))
  * @param[out]  space          Namespace that the defining class shall reside.
  * @param[in]   name           Name of the class.
  * @param[in]   ...            Arbitrary number of `const char*`, terminated by
- *                             zero.  Each of which are the name of fields.
+ *                             NULL.  Each of which are the name of fields.
  * @exception   rb_eNameError  `name` is not a constant name.
  * @exception   rb_eTypeError  `name` is already taken.
- * @exception   rb_eArgError    Duplicated field name.
+ * @exception   rb_eArgError   Duplicated field name.
  * @return      The defined class.
  * @post        `name` is a constant under `space`.
  * @note        In contrast to rb_struct_define(), it doesn't make any sense to
@@ -164,10 +164,10 @@ VALUE rb_struct_alloc_noinit(VALUE klass);
  * @param[in]  super          Superclass of the defining class.
  * @param[in]  func           Must be 0 for extension libraries.
  * @param[in]  ...            Arbitrary number of  `const char*`, terminated by
- *                            zero.  Each of which are the name of fields.
+ *                            NULL.  Each of which are the name of fields.
  * @exception  rb_eNameError  `name` is not a constant name.
  * @exception  rb_eTypeError  `name` is already taken.
- * @exception  rb_eArgError    Duplicated field name.
+ * @exception  rb_eArgError   Duplicated field name.
  * @return     The defined class.
  * @post       Global toplevel constant `name` is defined.
  * @note       `name` is allowed  to be a null pointer.   This function creates
@@ -187,16 +187,30 @@ RBIMPL_ATTR_NONNULL((2))
  * @param[in]   super          Superclass of the defining class.
  * @param[in]   alloc          Must be 0 for extension libraries.
  * @param[in]   ...            Arbitrary number of `const char*`, terminated by
- *                             zero.  Each of which are the name of fields.
+ *                             NULL.  Each of which are the name of fields.
  * @exception   rb_eNameError  `class_name` is not a constant name.
  * @exception   rb_eTypeError  `class_name` is already taken.
- * @exception   rb_eArgError    Duplicated field name.
+ * @exception   rb_eArgError   Duplicated field name.
  * @return      The defined class.
  * @post        `class_name` is a constant under `outer`.
  * @note        In contrast to  rb_struct_define_without_accessor(), it doesn't
  *              make any sense to pass a null name.
  */
 VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);
+
+/**
+ * Defines an anonymous data class.
+ *
+ * @endinternal
+ *
+ * @param[in]  super           Superclass  of the  defining  class.   Must be  a
+ *                             descendant of ::rb_cData, or 0 as ::rb_cData.
+ * @param[in]  ...             Arbitrary number of  `const char*`, terminated by
+ *                             NULL.  Each of which are the name of fields.
+ * @exception  rb_eArgError    Duplicated field name.
+ * @return     The defined class.
+ */
+VALUE rb_data_define(VALUE super, ...);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

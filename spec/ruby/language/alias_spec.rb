@@ -52,6 +52,15 @@ describe "The alias keyword" do
     @obj.a.should == 5
   end
 
+  it "works with an interpolated symbol with non-literal embedded expression on the left-hand side" do
+    @meta.class_eval do
+      eval %Q{
+        alias :"#{'a' + ''.to_s}" value
+      }
+    end
+    @obj.a.should == 5
+  end
+
   it "works with a simple symbol on the right-hand side" do
     @meta.class_eval do
       alias a :value
@@ -76,6 +85,15 @@ describe "The alias keyword" do
   it "works with an interpolated symbol on the right-hand side" do
     @meta.class_eval do
       alias a :"#{'value'}"
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with an interpolated symbol with non-literal embedded expression on the right-hand side" do
+    @meta.class_eval do
+      eval %Q{
+        alias a :"#{'value' + ''.to_s}"
+      }
     end
     @obj.a.should == 5
   end

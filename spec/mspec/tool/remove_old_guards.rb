@@ -46,6 +46,51 @@ def remove_guards(guard, keep)
   end
 end
 
+def remove_empty_files
+  each_spec_file do |file|
+    unless file.include?("fixtures/")
+      lines = File.readlines(file)
+      if lines.all? { |line| line.chomp.empty? or line.start_with?('require', '#') }
+        puts "Removing empty file #{file}"
+        File.delete(file)
+      end
+    end
+  end
+end
+
+def remove_unused_shared_specs
+  shared_groups = {}
+  # Dir["**/shared/**/*.rb"].each do |shared|
+  each_spec_file do |shared|
+    next if File.basename(shared) == 'constants.rb'
+    contents = File.binread(shared)
+    found = false
+    contents.scan(/^\s*describe (:[\w_?]+), shared: true do$/) {
+      shared_groups[$1] = 0
+      found = true
+    }
+    if !found and shared.include?('shared/') and !shared.include?('fixtures/') and !shared.end_with?('/constants.rb')
+      puts "no shared describe in #{shared} ?"
+    end
+  end
+
+  each_spec_file do |file|
+    contents = File.binread(file)
+    contents.scan(/(?:it_behaves_like|it_should_behave_like) (:[\w_?]+)[,\s]/) do
+      puts $1 unless shared_groups.key?($1)
+      shared_groups[$1] += 1
+    end
+  end
+
+  shared_groups.each_pair do |group, value|
+    if value == 0
+      puts "Shared describe #{group} seems unused"
+    elsif value == 1
+      puts "Shared describe #{group} seems used only once" if $VERBOSE
+    end
+  end
+end
+
 def search(regexp)
   each_spec_file do |file|
     contents = File.binread(file)
@@ -64,7 +109,11 @@ version = Regexp.escape(ARGV.fetch(0))
 version += "(?:\\.0)?" if version.count(".") < 2
 remove_guards(/ruby_version_is (["'])#{version}\1 do/, true)
 remove_guards(/ruby_version_is (["'])[0-9.]*\1 *... *(["'])#{version}\2 do/, false)
-remove_guards(/ruby_bug "#\d+", (["'])[0-9.]*\1 *... *(["'])#{version}\2 do/, true)
+remove_guards(/ruby_bug ["']#\d+["'], (["'])[0-9.]*\1 *... *(["'])#{version}\2 do/, true)
 
+remove_empty_files
+remove_unused_shared_specs
+
+puts "Search:"
 search(/(["'])#{version}\1/)
 search(/^\s*#.+#{version}/)

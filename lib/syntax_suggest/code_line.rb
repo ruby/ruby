@@ -48,12 +48,10 @@ module SyntaxSuggest
       strip_line = line.dup
       strip_line.lstrip!
 
-      if strip_line.empty?
-        @empty = true
-        @indent = 0
+      @indent = if (@empty = strip_line.empty?)
+        line.length - 1 # Newline removed from strip_line is not "whitespace"
       else
-        @empty = false
-        @indent = line.length - strip_line.length
+        line.length - strip_line.length
       end
 
       set_kw_end

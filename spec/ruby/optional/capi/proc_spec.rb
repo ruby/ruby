@@ -82,6 +82,59 @@ describe "C-API Proc function" do
     end
   end
 
+  describe "rb_proc_call_kw" do
+    it "passes keyword arguments to the proc" do
+      prc = proc { |*args, **kw| [args, kw] }
+
+      @p.rb_proc_call_kw(prc, [{}]).should == [[], {}]
+      @p.rb_proc_call_kw(prc, [{a: 1}]).should == [[], {a: 1}]
+      @p.rb_proc_call_kw(prc, [{b: 2}, {a: 1}]).should == [[{b: 2}], {a: 1}]
+      @p.rb_proc_call_kw(prc, [{b: 2}, {}]).should == [[{b: 2}], {}]
+    end
+
+    it "raises TypeError if the last argument is not a Hash" do
+      -> {
+        @p.rb_proc_call_kw(proc {}, [42])
+      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+    end
+  end
+
+  describe "rb_proc_call_with_block" do
+    it "calls the Proc and passes arguments and a block" do
+      prc = Proc.new { |a, b, &block| block.call(a * b) }
+      @p.rb_proc_call_with_block(prc, [6, 7], proc { |n| n * 2 }).should == 6 * 7 * 2
+    end
+
+    it "calls the Proc and passes arguments when a block is nil" do
+      prc = Proc.new { |a, b| a * b }
+      @p.rb_proc_call_with_block(prc, [6, 7], nil).should == 6 * 7
+    end
+  end
+
+  describe "rb_proc_call_with_block_kw" do
+    it "passes keyword arguments and a block to the proc" do
+      prc = proc { |*args, **kw, &block| [args, kw, block.call(42)] }
+      block = proc { |n| n }
+
+      @p.rb_proc_call_with_block_kw(prc, [{}], block).should == [[], {}, 42]
+      @p.rb_proc_call_with_block_kw(prc, [{a: 1}], block).should == [[], {a: 1}, 42]
+      @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {a: 1}], block).should == [[{b: 2}], {a: 1}, 42]
+      @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {}], block).should == [[{b: 2}], {}, 42]
+    end
+
+    it "raises TypeError if the last argument is not a Hash" do
+      -> {
+        @p.rb_proc_call_with_block_kw(proc {}, [42], proc {})
+      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+    end
+
+    it "passes keyword arguments to the proc when a block is nil" do
+      prc = proc { |*args, **kw| [args, kw] }
+
+      @p.rb_proc_call_with_block_kw(prc, [{}], nil).should == [[], {}]
+    end
+  end
+
   describe "rb_obj_is_proc" do
     it "returns true for Proc" do
       prc = Proc.new {|a,b| a * b }

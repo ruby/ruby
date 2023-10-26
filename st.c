@@ -103,7 +103,7 @@
 #ifdef NOT_RUBY
 #include "regint.h"
 #include "st.h"
-#else
+#elif defined RUBY_EXPORT
 #include "internal.h"
 #include "internal/bits.h"
 #include "internal/hash.h"
@@ -342,7 +342,7 @@ get_power2(st_index_t size)
     unsigned int n = ST_INDEX_BITS - nlz_intptr(size);
     if (n <= MAX_POWER2)
         return n < MINIMAL_POWER2 ? MINIMAL_POWER2 : n;
-#ifndef NOT_RUBY
+#ifdef RUBY
     /* Ran out of the table entries */
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
@@ -509,13 +509,9 @@ stat_col(void)
 }
 #endif
 
-/* Create and return table with TYPE which can hold at least SIZE
-   entries.  The real number of entries which the table can hold is
-   the nearest power of two for SIZE.  */
 st_table *
-st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
+st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type, st_index_t size)
 {
-    st_table *tab;
     int n;
 
 #ifdef HASH_LOG
@@ -536,11 +532,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     if (n < 0)
         return NULL;
 #endif
-    tab = (st_table *) malloc(sizeof (st_table));
-#ifndef RUBY
-    if (tab == NULL)
-        return NULL;
-#endif
+
     tab->type = type;
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
@@ -567,6 +559,36 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     make_tab_empty(tab);
     tab->rebuilds_num = 0;
     return tab;
+}
+
+/* Create and return table with TYPE which can hold at least SIZE
+   entries.  The real number of entries which the table can hold is
+   the nearest power of two for SIZE.  */
+st_table *
+st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
+{
+    st_table *tab = malloc(sizeof(st_table));
+#ifndef RUBY
+    if (tab == NULL)
+        return NULL;
+#endif
+
+#ifdef RUBY
+    st_init_existing_table_with_size(tab, type, size);
+#else
+    if (st_init_existing_table_with_size(tab, type, size) == NULL) {
+        free(tab);
+        return NULL;
+    }
+#endif
+
+    return tab;
+}
+
+size_t
+st_table_size(const struct st_table *tbl)
+{
+    return tbl->num_entries;
 }
 
 /* Create and return table with TYPE which can hold a minimal number
@@ -635,8 +657,7 @@ st_clear(st_table *tab)
 void
 st_free_table(st_table *tab)
 {
-    if (tab->bins != NULL)
-        free(tab->bins);
+    free(tab->bins);
     free(tab->entries);
     free(tab);
 }
@@ -755,8 +776,7 @@ rebuild_table(st_table *tab)
         tab->entry_power = new_tab->entry_power;
         tab->bin_power = new_tab->bin_power;
         tab->size_ind = new_tab->size_ind;
-        if (tab->bins != NULL)
-            free(tab->bins);
+        free(tab->bins);
         tab->bins = new_tab->bins;
         free(tab->entries);
         tab->entries = new_tab->entries;
@@ -768,7 +788,7 @@ rebuild_table(st_table *tab)
 }
 
 /* Return the next secondary hash index for table TAB using previous
-   index IND and PERTERB.  Finally modulo of the function becomes a
+   index IND and PERTURB.  Finally modulo of the function becomes a
    full *cycle linear congruential generator*, in other words it
    guarantees traversing all table bins in extreme case.
 
@@ -780,10 +800,10 @@ rebuild_table(st_table *tab)
 
    For our case a is 5, c is 1, and m is a power of two.  */
 static inline st_index_t
-secondary_hash(st_index_t ind, st_table *tab, st_index_t *perterb)
+secondary_hash(st_index_t ind, st_table *tab, st_index_t *perturb)
 {
-    *perterb >>= 11;
-    ind = (ind << 2) + ind + *perterb + 1;
+    *perturb >>= 11;
+    ind = (ind << 2) + ind + *perturb + 1;
     return hash_bin(ind, tab);
 }
 
@@ -826,7 +846,7 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #ifdef QUADRATIC_PROBE
     st_index_t d;
 #else
-    st_index_t peterb;
+    st_index_t perturb;
 #endif
     st_index_t bin;
     st_table_entry *entries = tab->entries;
@@ -835,7 +855,7 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #ifdef QUADRATIC_PROBE
     d = 1;
 #else
-    peterb = hash_value;
+    perturb = hash_value;
 #endif
     FOUND_BIN;
     for (;;) {
@@ -853,7 +873,7 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
         ind = hash_bin(ind + d, tab);
         d++;
 #else
-        ind = secondary_hash(ind, tab, &peterb);
+        ind = secondary_hash(ind, tab, &perturb);
 #endif
         COLLISION;
     }
@@ -872,7 +892,7 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #ifdef QUADRATIC_PROBE
     st_index_t d;
 #else
-    st_index_t peterb;
+    st_index_t perturb;
 #endif
     st_index_t bin;
     st_table_entry *entries = tab->entries;
@@ -881,7 +901,7 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #ifdef QUADRATIC_PROBE
     d = 1;
 #else
-    peterb = hash_value;
+    perturb = hash_value;
 #endif
     FOUND_BIN;
     for (;;) {
@@ -899,7 +919,7 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
         ind = hash_bin(ind + d, tab);
         d++;
 #else
-        ind = secondary_hash(ind, tab, &peterb);
+        ind = secondary_hash(ind, tab, &perturb);
 #endif
         COLLISION;
     }
@@ -916,7 +936,7 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
 #ifdef QUADRATIC_PROBE
     st_index_t d;
 #else
-    st_index_t peterb;
+    st_index_t perturb;
 #endif
     st_index_t bin;
 
@@ -924,7 +944,7 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
 #ifdef QUADRATIC_PROBE
     d = 1;
 #else
-    peterb = hash_value;
+    perturb = hash_value;
 #endif
     FOUND_BIN;
     for (;;) {
@@ -935,7 +955,7 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
         ind = hash_bin(ind + d, tab);
         d++;
 #else
-        ind = secondary_hash(ind, tab, &peterb);
+        ind = secondary_hash(ind, tab, &perturb);
 #endif
         COLLISION;
     }
@@ -960,7 +980,7 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
 #ifdef QUADRATIC_PROBE
     st_index_t d;
 #else
-    st_index_t peterb;
+    st_index_t perturb;
 #endif
     st_index_t entry_index;
     st_index_t first_deleted_bin_ind;
@@ -970,7 +990,7 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
 #ifdef QUADRATIC_PROBE
     d = 1;
 #else
-    peterb = curr_hash_value;
+    perturb = curr_hash_value;
 #endif
     FOUND_BIN;
     first_deleted_bin_ind = UNDEFINED_BIN_IND;
@@ -1000,7 +1020,7 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
         ind = hash_bin(ind + d, tab);
         d++;
 #else
-        ind = secondary_hash(ind, tab, &peterb);
+        ind = secondary_hash(ind, tab, &perturb);
 #endif
         COLLISION;
     }
@@ -1206,6 +1226,36 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     return 1;
 }
 
+/* Create a copy of old_tab into new_tab. */
+st_table *
+st_replace(st_table *new_tab, st_table *old_tab)
+{
+    *new_tab = *old_tab;
+    if (old_tab->bins == NULL)
+        new_tab->bins = NULL;
+    else {
+        new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
+#ifndef RUBY
+        if (new_tab->bins == NULL) {
+            return NULL;
+        }
+#endif
+    }
+    new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
+                                                 * sizeof(st_table_entry));
+#ifndef RUBY
+    if (new_tab->entries == NULL) {
+        return NULL;
+    }
+#endif
+    MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
+           get_allocated_entries(old_tab));
+    if (old_tab->bins != NULL)
+        MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+
+    return new_tab;
+}
+
 /* Create and return a copy of table OLD_TAB.  */
 st_table *
 st_copy(st_table *old_tab)
@@ -1217,30 +1267,12 @@ st_copy(st_table *old_tab)
     if (new_tab == NULL)
         return NULL;
 #endif
-    *new_tab = *old_tab;
-    if (old_tab->bins == NULL)
-        new_tab->bins = NULL;
-    else {
-        new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
-#ifndef RUBY
-        if (new_tab->bins == NULL) {
-            free(new_tab);
-            return NULL;
-        }
-#endif
-    }
-    new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
-                                                 * sizeof(st_table_entry));
-#ifndef RUBY
-    if (new_tab->entries == NULL) {
+
+    if (st_replace(new_tab, old_tab) == NULL) {
         st_free_table(new_tab);
         return NULL;
     }
-#endif
-    MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
-           get_allocated_entries(old_tab));
-    if (old_tab->bins != NULL)
-        MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+
     return new_tab;
 }
 
@@ -2039,6 +2071,7 @@ st_numhash(st_data_t n)
     return (st_index_t)((n>>s1|(n<<s2)) ^ (n>>s2));
 }
 
+#ifdef RUBY
 /* Expand TAB to be suitable for holding SIZ entries in total.
    Pre-existing entries remain not deleted inside of TAB, but its bins
    are cleared to expect future reconstruction. See rehash below. */
@@ -2055,10 +2088,8 @@ st_expand_table(st_table *tab, st_index_t siz)
     n = get_allocated_entries(tab);
     MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
     free(tab->entries);
-    if (tab->bins != NULL)
-        free(tab->bins);
-    if (tmp->bins != NULL)
-        free(tmp->bins);
+    free(tab->bins);
+    free(tmp->bins);
     tab->entry_power = tmp->entry_power;
     tab->bin_power = tmp->bin_power;
     tab->size_ind = tmp->size_ind;
@@ -2076,10 +2107,10 @@ st_rehash_linear(st_table *tab)
     int eq_p, rebuilt_p;
     st_index_t i, j;
     st_table_entry *p, *q;
-    if (tab->bins) {
-        free(tab->bins);
-        tab->bins = NULL;
-    }
+
+    free(tab->bins);
+    tab->bins = NULL;
+
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         p = &tab->entries[i];
         if (DELETED_ENTRY_P(p))
@@ -2120,7 +2151,7 @@ st_rehash_indexed(st_table *tab)
 #ifdef QUADRATIC_PROBE
         st_index_t d = 1;
 #else
-        st_index_t peterb = p->hash;
+        st_index_t perturb = p->hash;
 #endif
 
         if (DELETED_ENTRY_P(p))
@@ -2153,7 +2184,7 @@ st_rehash_indexed(st_table *tab)
                     ind = hash_bin(ind + d, tab);
                     d++;
 #else
-                    ind = secondary_hash(ind, tab, &peterb);
+                    ind = secondary_hash(ind, tab, &perturb);
 #endif
                 }
             }
@@ -2178,7 +2209,6 @@ st_rehash(st_table *tab)
     } while (rebuilt_p);
 }
 
-#ifdef RUBY
 static st_data_t
 st_stringify(VALUE key)
 {

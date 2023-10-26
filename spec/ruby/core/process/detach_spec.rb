@@ -44,11 +44,17 @@ describe "Process.detach" do
     end
 
     it "tolerates not existing child process pid" do
-      # ensure there is no child process with this hardcoded pid
-      # `kill 0 pid` for existing process returns "1" and raises Errno::ESRCH if process doesn't exist
-      -> {  Process.kill(0, 100500) }.should raise_error(Errno::ESRCH)
+      # Use a value that is close to the INT_MAX (pid usually is signed int).
+      # It should (at least) be greater than allowed pid limit value that depends on OS.
+      pid_not_existing = 2.pow(30)
 
-      thr = Process.detach(100500)
+      # Check that there is no a child process with this hardcoded pid.
+      # Command `kill 0 pid`:
+      # - returns "1" if a process exists and
+      # - raises Errno::ESRCH otherwise
+      -> {  Process.kill(0, pid_not_existing) }.should raise_error(Errno::ESRCH)
+
+      thr = Process.detach(pid_not_existing)
       thr.join
 
       thr.should be_kind_of(Thread)

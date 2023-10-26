@@ -90,7 +90,7 @@ class Bundler::Thor
       def snake_case(str)
         return str.downcase if str =~ /^[A-Z_]+$/
         str.gsub(/\B[A-Z]/, '_\&').squeeze("_") =~ /_*(.*)/
-        $+.downcase
+        Regexp.last_match(-1).downcase
       end
 
       # Receives a string and convert it to camel case. camel_case returns CamelCase.
@@ -130,9 +130,10 @@ class Bundler::Thor
       #
       def find_class_and_command_by_namespace(namespace, fallback = true)
         if namespace.include?(":") # look for a namespaced command
-          pieces  = namespace.split(":")
-          command = pieces.pop
-          klass   = Bundler::Thor::Util.find_by_namespace(pieces.join(":"))
+          *pieces, command  = namespace.split(":")
+          namespace = pieces.join(":")
+          namespace = "default" if namespace.empty?
+          klass = Bundler::Thor::Base.subclasses.detect { |thor| thor.namespace == namespace && thor.commands.keys.include?(command) }
         end
         unless klass # look for a Bundler::Thor::Group with the right name
           klass = Bundler::Thor::Util.find_by_namespace(namespace)
@@ -150,7 +151,7 @@ class Bundler::Thor
       # inside the sandbox to avoid namespacing conflicts.
       #
       def load_thorfile(path, content = nil, debug = false)
-        content ||= File.binread(path)
+        content ||= File.read(path)
 
         begin
           Bundler::Thor::Sandbox.class_eval(content, path)
@@ -189,7 +190,7 @@ class Bundler::Thor
       # Returns the root where thor files are located, depending on the OS.
       #
       def thor_root
-        File.join(user_home, ".thor").tr('\\', "/")
+        File.join(user_home, ".thor").tr("\\", "/")
       end
 
       # Returns the files in the thor root. On Windows thor_root will be something
@@ -236,7 +237,7 @@ class Bundler::Thor
                 # symlink points to 'ruby_install_name'
                 ruby = alternate_ruby if linked_ruby == ruby_name || linked_ruby == ruby
               end
-            rescue NotImplementedError # rubocop:disable HandleExceptions
+            rescue NotImplementedError # rubocop:disable Lint/HandleExceptions
               # just ignore on windows
             end
           end

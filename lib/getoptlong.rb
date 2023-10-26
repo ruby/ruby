@@ -352,7 +352,7 @@
 #
 # Command line:
 #
-# $ ruby fibonacci.rb --number 6 --verbose yes
+#   $ ruby fibonacci.rb --number 6 --verbose yes
 #
 # Output:
 #

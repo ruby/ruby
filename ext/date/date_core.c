@@ -2589,8 +2589,6 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *
  * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
- * Date.valid_date? is an alias for Date.valid_civil?.
- *
  * Related: Date.jd, Date.new.
  */
 static VALUE
@@ -2985,8 +2983,6 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
  *
  *   Date.gregorian_leap?(2000) # => true
  *   Date.gregorian_leap?(2001) # => false
- *
- * Date.leap? is an alias for Date.gregorian_leap?.
  *
  * Related: Date.julian_leap?.
  */
@@ -3492,8 +3488,6 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
  * when the argument is negative, counts backward from the end of the month.
  *
  * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
- *
- * Date.civil is an alias for Date.new.
  *
  * Related: Date.jd.
  */
@@ -4832,8 +4826,6 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
  *
- * Date._rfc822 is an alias for Date._rfc2822.
- *
  * Related: Date.rfc2822 (returns a \Date object).
  */
 static VALUE
@@ -4863,8 +4855,6 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  *
  * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
- *
- * Date.rfc822 is an alias for Date.rfc2822.
  *
  * Related: Date._rfc2822 (returns a hash).
  */
@@ -5346,7 +5336,6 @@ d_lite_yday(VALUE self)
  *
  *   Date.new(2001, 2, 3).mon # => 2
  *
- * Date#month is an alias for Date#mon.
  */
 static VALUE
 d_lite_mon(VALUE self)
@@ -5363,7 +5352,6 @@ d_lite_mon(VALUE self)
  *
  *   Date.new(2001, 2, 3).mday # => 3
  *
- * Date#day is an alias for Date#mday.
  */
 static VALUE
 d_lite_mday(VALUE self)
@@ -5613,7 +5601,6 @@ d_lite_hour(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6).min # => 5
  *
- * Date#minute is an alias for Date#min.
  */
 static VALUE
 d_lite_min(VALUE self)
@@ -5630,7 +5617,6 @@ d_lite_min(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6).sec # => 6
  *
- * Date#second is an alias for Date#sec.
  */
 static VALUE
 d_lite_sec(VALUE self)
@@ -5648,7 +5634,6 @@ d_lite_sec(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6.5).sec_fraction # => (1/2)
  *
- * Date#second_fraction is an alias for Date#sec_fraction.
  */
 static VALUE
 d_lite_sec_fraction(VALUE self)
@@ -6424,7 +6409,6 @@ d_lite_prev_day(int argc, VALUE *argv, VALUE self)
  *   d.to_s      # => "2001-02-03"
  *   d.next.to_s # => "2001-02-04"
  *
- * Date#succ is an alias for Date#next.
  */
 static VALUE
 d_lite_next(VALUE self)
@@ -7298,7 +7282,6 @@ strftimev(const char *fmt, VALUE self,
  *
  * See {asctime}[https://linux.die.net/man/3/asctime].
  *
- * Date#ctime is an alias for Date#asctime.
  */
 static VALUE
 d_lite_asctime(VALUE self)
@@ -7316,7 +7299,6 @@ d_lite_asctime(VALUE self)
  *
  *   Date.new(2001, 2, 3).iso8601 # => "2001-02-03"
  *
- * Date#xmlschema is an alias for Date#iso8601.
  */
 static VALUE
 d_lite_iso8601(VALUE self)
@@ -7349,7 +7331,6 @@ d_lite_rfc3339(VALUE self)
  *
  *   Date.new(2001, 2, 3).rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
  *
- * Date#rfc822 is an alias for Date#rfc2822.
  */
 static VALUE
 d_lite_rfc2822(VALUE self)
@@ -8745,8 +8726,8 @@ dt_lite_to_s(VALUE self)
  *
  *   DateTime.now.strftime # => "2022-07-01T11:03:19-05:00"
  *
- * For other formats, see
- * {Formats for Dates and Times}[doc/strftime_formatting.rdoc].
+ * For other formats,
+ * see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
  *
  */
 static VALUE

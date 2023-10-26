@@ -69,6 +69,16 @@ should be the Ruby version that the engine is compatible with.
 
     ruby "3.1.2"
 
+If you wish to derive your Ruby version from a version file (ie .ruby-version),
+you can use the `file` option instead.
+
+    ruby file: ".ruby-version"
+
+The version file should conform to any of the following formats:
+
+  - `3.1.2` (.ruby-version)
+  - `ruby 3.1.2` (.tool-versions, read: https://asdf-vm.com/manage/configuration.html#tool-versions)
+
 ### ENGINE
 
 Each application _may_ specify a Ruby engine. If an engine is specified, an
@@ -227,6 +237,10 @@ As with groups (above), you may specify one or more platforms:
 All operations involving groups ([`bundle install`](bundle-install.1.html), `Bundler.setup`,
 `Bundler.require`) behave exactly the same as if any groups not
 matching the current platform were explicitly excluded.
+
+The following platform values are deprecated and should be replaced with `windows`:
+
+  * `mswin`, `mswin64`, `mingw32`, `x64_mingw`
 
 ### FORCE_RUBY_PLATFORM
 
@@ -514,7 +528,7 @@ paths.
 
 The `gemspec` method supports optional `:path`, `:glob`, `:name`, and `:development_group`
 options, which control where bundler looks for the `.gemspec`, the glob it uses to look
-for the gemspec (defaults to: "{,*,*/*}.gemspec"), what named `.gemspec` it uses
+for the gemspec (defaults to: `{,*,*/*}.gemspec`), what named `.gemspec` it uses
 (if more than one is present), and which group development dependencies are included in.
 
 When a `gemspec` dependency encounters version conflicts during resolution, the

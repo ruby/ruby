@@ -1,0 +1,36 @@
+@ ProgramNode (location: (1,0)-(1,8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,8))
+    └── body: (length: 1)
+        └── @ IndexOperatorWriteNode (location: (1,0)-(1,8))
+            ├── receiver:
+            │   @ CallNode (location: (1,0)-(1,1))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (1,0)-(1,1) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: :a
+            ├── call_operator_loc: ∅
+            ├── opening_loc: (1,1)-(1,2) = "["
+            ├── arguments: ∅
+            ├── closing_loc: (1,2)-(1,3) = "]"
+            ├── block: ∅
+            ├── flags: ∅
+            ├── operator: :+
+            ├── operator_loc: (1,4)-(1,6) = "+="
+            └── value:
+                @ CallNode (location: (1,7)-(1,8))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (1,7)-(1,8) = "b"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: variable_call
+                └── name: :b

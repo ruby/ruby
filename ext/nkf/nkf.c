@@ -9,6 +9,7 @@
 
 #define RUBY_NKF_REVISION "$Revision$"
 #define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
+#define NKF_GEM_VERSION "0.1.3"
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
@@ -500,4 +501,6 @@ Init_nkf(void)
     rb_define_const(mNKF, "NKF_VERSION", rb_str_new2(NKF_VERSION));
     /* Release date of nkf */
     rb_define_const(mNKF, "NKF_RELEASE_DATE", rb_str_new2(NKF_RELEASE_DATE));
+    /* Version of nkf library */
+    rb_define_const(mNKF, "GEM_VERSION", rb_str_new_cstr(NKF_GEM_VERSION));
 }

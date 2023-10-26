@@ -1715,8 +1715,7 @@ rb_econv_close(rb_econv_t *ec)
     }
     for (i = 0; i < ec->num_trans; i++) {
         rb_transcoding_close(ec->elems[i].tc);
-        if (ec->elems[i].out_buf_start)
-            xfree(ec->elems[i].out_buf_start);
+        xfree(ec->elems[i].out_buf_start);
     }
     xfree(ec->in_buf_start);
     xfree(ec->elems);
@@ -2872,6 +2871,15 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 
 static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
 
+/*
+ *  call-seq:
+ *    encode(dst_encoding = Encoding.default_internal, **enc_opts) -> string
+ *    encode(dst_encoding, src_encoding, **enc_opts)   -> string
+ *
+ *  :include: doc/string/encode.rdoc
+ *
+ */
+
 static VALUE
 str_encode(int argc, VALUE *argv, VALUE str)
 {
@@ -3759,11 +3767,8 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_modify(output);
 
     if (NIL_P(output_bytesize_v)) {
-#if USE_RVARGC
         output_bytesize = rb_str_capacity(output);
-#else
-        output_bytesize = RSTRING_EMBED_LEN_MAX;
-#endif
+
         if (!NIL_P(input) && output_bytesize < RSTRING_LEN(input))
             output_bytesize = RSTRING_LEN(input);
     }

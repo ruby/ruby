@@ -413,7 +413,8 @@ f_lcm(VALUE x, VALUE y)
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
-    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0));
+    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0),
+            sizeof(struct RRational), 0);
 
     RATIONAL_SET_NUM((VALUE)obj, num);
     RATIONAL_SET_DEN((VALUE)obj, den);
@@ -1232,7 +1233,6 @@ nurat_negative_p(VALUE self)
  *     (1/2r).abs    #=> (1/2)
  *     (-1/2r).abs   #=> (1/2)
  *
- *  Rational#magnitude is an alias for Rational#abs.
  */
 
 VALUE
@@ -2104,9 +2104,12 @@ rb_float_denominator(VALUE self)
 
 /*
  * call-seq:
- *    nil.to_r  ->  (0/1)
+ *   to_r  ->  (0/1)
  *
- * Returns zero as a rational.
+ * Returns zero as a Rational:
+ *
+ *   nil.to_r # => (0/1)
+ *
  */
 static VALUE
 nilclass_to_r(VALUE self)
@@ -2116,10 +2119,14 @@ nilclass_to_r(VALUE self)
 
 /*
  * call-seq:
- *    nil.rationalize([eps])  ->  (0/1)
+ *   rationalize(eps = nil)  ->  (0/1)
  *
- * Returns zero as a rational.  The optional argument +eps+ is always
- * ignored.
+ * Returns zero as a Rational:
+ *
+ *   nil.rationalize # => (0/1)
+ *
+ * Argument +eps+ is ignored.
+ *
  */
 static VALUE
 nilclass_rationalize(int argc, VALUE *argv, VALUE self)

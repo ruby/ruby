@@ -45,7 +45,7 @@ REDMINE_BASE = 'https://bugs.ruby-lang.org'
 @query = {
   'f[]' => BACKPORT_CF_KEY,
   "op[#{BACKPORT_CF_KEY}]" => '~',
-  "v[#{BACKPORT_CF_KEY}][]" => "#{TARGET_VERSION}: REQUIRED",
+  "v[#{BACKPORT_CF_KEY}][]" => "\"#{TARGET_VERSION}: REQUIRED\"",
   'limit' => 40,
   'status_id' => STATUS_CLOSE,
   'sort' => 'updated_on'
@@ -422,7 +422,7 @@ eom
   },
 
   "done" => proc{|args|
-    raise CommandSyntaxError unless /\A(\d+)?(?: by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
+    raise CommandSyntaxError unless /\A(\d+)?(?: *by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
     notes = $3
     notes.strip! if notes
     rev = $2

@@ -18,6 +18,6 @@ when __FILE__
 when "-e"
   # No default directory
 else
-  dir = File.expand_path("..", $0)
+  dir = File.realdirpath("..", $0)
 end
 exit Test::Unit::AutoRunner.run(true, dir)

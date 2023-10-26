@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -45,7 +46,7 @@ class Gem::Uninstaller
   # Constructs an uninstaller that will uninstall +gem+
 
   def initialize(gem, options = {})
-    # TODO document the valid options
+    # TODO: document the valid options
     @gem                = gem
     @version            = options[:version] || Gem::Requirement.default
     @gem_home           = File.realpath(options[:install_dir] || Gem.dir)
@@ -98,9 +99,7 @@ class Gem::Uninstaller
       raise Gem::InstallError, "gem #{@gem.inspect} is not installed"
     end
 
-    default_specs, list = list.partition do |spec|
-      spec.default_gem?
-    end
+    default_specs, list = list.partition(&:default_gem?)
     warn_cannot_uninstall_default_gems(default_specs - list)
     @default_specs_matching_uninstall_params = default_specs
 
@@ -114,7 +113,7 @@ class Gem::Uninstaller
     if list.empty?
       return unless other_repo_specs.any?
 
-      other_repos = other_repo_specs.map {|spec| spec.base_dir }.uniq
+      other_repos = other_repo_specs.map(&:base_dir).uniq
 
       message = ["#{@gem} is not installed in GEM_HOME, try:"]
       message.concat other_repos.map {|repo|
@@ -126,7 +125,7 @@ class Gem::Uninstaller
       remove_all list
 
     elsif list.size > 1
-      gem_names = list.map {|gem| gem.full_name }
+      gem_names = list.map(&:full_name)
       gem_names << "All versions"
 
       say
@@ -134,7 +133,7 @@ class Gem::Uninstaller
 
       if index == list.size
         remove_all list
-      elsif index >= 0 && index < list.size
+      elsif index && index >= 0 && index < list.size
         uninstall_gem list[index]
       else
         say "Error: must enter a number [1-#{list.size + 1}]"
@@ -200,8 +199,8 @@ class Gem::Uninstaller
     executables = executables.map {|exec| formatted_program_filename exec }
 
     remove = if @force_executables.nil?
-      ask_yes_no("Remove executables:\n" +
-                 "\t#{executables.join ', '}\n\n" +
+      ask_yes_no("Remove executables:\n" \
+                 "\t#{executables.join ", "}\n\n" \
                  "in addition to the gem?",
                  true)
     else
@@ -242,7 +241,7 @@ class Gem::Uninstaller
     unless path_ok?(@gem_home, spec) ||
            (@user_install && path_ok?(Gem.user_dir, spec))
       e = Gem::GemNotInHomeException.new \
-            "Gem '#{spec.full_name}' is not installed in directory #{@gem_home}"
+        "Gem '#{spec.full_name}' is not installed in directory #{@gem_home}"
       e.spec = spec
 
       raise e
@@ -341,7 +340,7 @@ class Gem::Uninstaller
       s.name == spec.name && s.full_name != spec.full_name
     end
 
-    spec.dependent_gems(@check_dev).each do |dep_spec, dep, satlist|
+    spec.dependent_gems(@check_dev).each do |dep_spec, dep, _satlist|
       unless siblings.any? {|s| s.satisfies_requirement? dep }
         msg << "#{dep_spec.name}-#{dep_spec.version} depends on #{dep}"
       end
@@ -349,7 +348,7 @@ class Gem::Uninstaller
 
     msg << "If you remove this gem, these dependencies will not be met."
     msg << "Continue with Uninstall?"
-    return ask_yes_no(msg.join("\n"), false)
+    ask_yes_no(msg.join("\n"), false)
   end
 
   ##

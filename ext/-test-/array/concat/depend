@@ -52,6 +52,7 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/attr/noinline.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+to_ary_concat.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/attr/pure.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/attr/restrict.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/error.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/eval.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/file.h
-to_ary_concat.o: $(hdrdir)/ruby/internal/intern/gc.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/hash.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/io.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/memory.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/method.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/module.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/newobj.h
-to_ary_concat.o: $(hdrdir)/ruby/internal/rgengc.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/scan_args.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/special_consts.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -43,18 +43,16 @@ describe "Hash#transform_keys" do
     r.class.should == Hash
   end
 
-  ruby_version_is "3.0" do
-    it "allows a hash argument" do
-      @hash.transform_keys({ a: :A, b: :B, c: :C }).should == { A: 1, B: 2, C: 3 }
-    end
+  it "allows a hash argument" do
+    @hash.transform_keys({ a: :A, b: :B, c: :C }).should == { A: 1, B: 2, C: 3 }
+  end
 
-    it "allows a partial transformation of keys when using a hash argument" do
-      @hash.transform_keys({ a: :A, c: :C }).should == { A: 1, b: 2, C: 3 }
-    end
+  it "allows a partial transformation of keys when using a hash argument" do
+    @hash.transform_keys({ a: :A, c: :C }).should == { A: 1, b: 2, C: 3 }
+  end
 
-    it "allows a combination of hash and block argument" do
-      @hash.transform_keys({ a: :A }, &:to_s).should == { A: 1, 'b' => 2, 'c' => 3 }
-    end
+  it "allows a combination of hash and block argument" do
+    @hash.transform_keys({ a: :A }, &:to_s).should == { A: 1, 'b' => 2, 'c' => 3 }
   end
 end
 
@@ -111,11 +109,9 @@ describe "Hash#transform_keys!" do
     end
   end
 
-  ruby_version_is "3.0" do
-    it "allows a hash argument" do
-      @hash.transform_keys!({ a: :A, b: :B, c: :C, d: :D })
-      @hash.should == { A: 1, B: 2, C: 3, D: 4 }
-    end
+  it "allows a hash argument" do
+    @hash.transform_keys!({ a: :A, b: :B, c: :C, d: :D })
+    @hash.should == { A: 1, B: 2, C: 3, D: 4 }
   end
 
   describe "on frozen instance" do
@@ -132,10 +128,8 @@ describe "Hash#transform_keys!" do
       @hash.should == @initial_pairs
     end
 
-    ruby_version_is "3.0" do
-      it "raises a FrozenError on hash argument" do
-       ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
-      end
+    it "raises a FrozenError on hash argument" do
+     ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
     end
 
     context "when no block is given" do

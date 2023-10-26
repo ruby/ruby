@@ -123,6 +123,8 @@ class TestIseqLoad < Test::Unit::TestCase
     assert_equal false, test_break_ensure_def_method
     omit "failing due to exception entry sp mismatch"
     assert_iseq_roundtrip(src)
+  ensure
+    Object.undef_method(:test_break_ensure_def_method) rescue nil
   end
 
   def test_kwarg

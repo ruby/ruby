@@ -5,9 +5,14 @@ require "tmpdir"
 
 RSpec.describe Bundler do
   describe "#load_marshal" do
+    it "is a private method and raises an error" do
+      data = Marshal.dump(Bundler)
+      expect { Bundler.load_marshal(data) }.to raise_error(NoMethodError, /private method `load_marshal' called/)
+    end
+
     it "loads any data" do
       data = Marshal.dump(Bundler)
-      expect(Bundler.load_marshal(data)).to eq(Bundler)
+      expect(Bundler.send(:load_marshal, data)).to eq(Bundler)
     end
   end
 
@@ -18,9 +23,49 @@ RSpec.describe Bundler do
     end
 
     it "loads simple structure" do
-      simple_structure = { "name" => [:abc] }
+      simple_structure = { "name" => [:development] }
       data = Marshal.dump(simple_structure)
       expect(Bundler.safe_load_marshal(data)).to eq(simple_structure)
+    end
+
+    it "loads Gem::Specification" do
+      gem_spec = Gem::Specification.new do |s|
+        s.name = "bundler"
+        s.version = Gem::Version.new("2.4.7")
+        s.installed_by_version = Gem::Version.new("0")
+        s.authors = ["André Arko",
+                     "Samuel Giddins",
+                     "Colby Swandale",
+                     "Hiroshi Shibata",
+                     "David Rodríguez",
+                     "Grey Baker",
+                     "Stephanie Morillo",
+                     "Chris Morris",
+                     "James Wen",
+                     "Tim Moore",
+                     "André Medeiros",
+                     "Jessica Lynn Suttles",
+                     "Terence Lee",
+                     "Carl Lerche",
+                     "Yehuda Katz"]
+        s.date = Time.utc(2023, 2, 15)
+        s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
+        s.email = ["team@bundler.io"]
+        s.homepage = "https://bundler.io"
+        s.metadata = { "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
+                       "changelog_uri" => "https://github.com/rubygems/rubygems/blob/master/bundler/CHANGELOG.md",
+                       "homepage_uri" => "https://bundler.io/",
+                       "source_code_uri" => "https://github.com/rubygems/rubygems/tree/master/bundler" }
+        s.require_paths = ["lib"]
+        s.required_ruby_version = Gem::Requirement.new([">= 2.6.0"])
+        s.required_rubygems_version = Gem::Requirement.new([">= 3.0.1"])
+        s.rubygems_version = "3.4.7"
+        s.specification_version = 4
+        s.summary = "The best way to manage your application's dependencies"
+        s.license = false
+      end
+      data = Marshal.dump(gem_spec)
+      expect(Bundler.safe_load_marshal(data)).to eq(gem_spec)
     end
   end
 
@@ -31,7 +76,7 @@ RSpec.describe Bundler do
     context "with incorrect YAML file" do
       before do
         File.open(app_gemspec_path, "wb") do |f|
-          f.write strip_whitespace(<<-GEMSPEC)
+          f.write <<~GEMSPEC
             ---
               {:!00 ao=gu\g1= 7~f
           GEMSPEC
@@ -54,7 +99,7 @@ RSpec.describe Bundler do
         $VERBOSE = verbose
 
         File.open(app_gemspec_path, "wb") do |file|
-          file.puts <<-GEMSPEC.gsub(/^\s+/, "")
+          file.puts <<~GEMSPEC
             # -*- encoding: utf-8 -*-
             Gem::Specification.new do |gem|
               gem.author = "André the Giant"
@@ -102,7 +147,7 @@ RSpec.describe Bundler do
     context "with gemspec containing local variables" do
       before do
         File.open(app_gemspec_path, "wb") do |f|
-          f.write strip_whitespace(<<-GEMSPEC)
+          f.write <<~GEMSPEC
             must_not_leak = true
             Gem::Specification.new do |gem|
               gem.name = "leak check"

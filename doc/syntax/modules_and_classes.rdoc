@@ -40,9 +40,9 @@ functionality:
     remove_method :my_method
   end
 
-Reopening classes is a very powerful feature of Ruby, but it is best to only
-reopen classes you own.  Reopening classes you do not own may lead to naming
-conflicts or difficult to diagnose bugs.
+Reopening modules (or classes) is a very powerful feature of Ruby, but it is
+best to only reopen modules you own.  Reopening modules you do not own may lead
+to naming conflicts or difficult to diagnose bugs.
 
 == Nesting
 
@@ -258,6 +258,28 @@ There is a special class BasicObject which is designed as a blank class and
 includes a minimum of built-in methods.  You can use BasicObject to create an
 independent inheritance structure.  See the BasicObject documentation for
 further details.
+
+Just like modules, classes can also be reopened.  You can omit its superclass
+when you reopen a class.  Specifying a different superclass than the previous
+definition will raise an error.
+
+  class C
+  end
+
+  class D < C
+  end
+
+  # OK
+  class D < C
+  end
+
+  # OK
+  class D
+  end
+
+  # TypeError: superclass mismatch for class D
+  class D < String
+  end
 
 == Inheritance
 

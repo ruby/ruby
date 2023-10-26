@@ -1,4 +1,4 @@
-describe :net_ftp_gettextfile, shared: :true do
+describe :net_ftp_gettextfile, shared: true do
   before :each do
     @tmp_file = tmp("gettextfile")
 

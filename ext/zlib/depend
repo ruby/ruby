@@ -53,6 +53,7 @@ zlib.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 zlib.o: $(hdrdir)/ruby/internal/attr/noinline.h
 zlib.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 zlib.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+zlib.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 zlib.o: $(hdrdir)/ruby/internal/attr/pure.h
 zlib.o: $(hdrdir)/ruby/internal/attr/restrict.h
 zlib.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -121,7 +122,6 @@ zlib.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 zlib.o: $(hdrdir)/ruby/internal/intern/error.h
 zlib.o: $(hdrdir)/ruby/internal/intern/eval.h
 zlib.o: $(hdrdir)/ruby/internal/intern/file.h
-zlib.o: $(hdrdir)/ruby/internal/intern/gc.h
 zlib.o: $(hdrdir)/ruby/internal/intern/hash.h
 zlib.o: $(hdrdir)/ruby/internal/intern/io.h
 zlib.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -152,7 +152,6 @@ zlib.o: $(hdrdir)/ruby/internal/memory.h
 zlib.o: $(hdrdir)/ruby/internal/method.h
 zlib.o: $(hdrdir)/ruby/internal/module.h
 zlib.o: $(hdrdir)/ruby/internal/newobj.h
-zlib.o: $(hdrdir)/ruby/internal/rgengc.h
 zlib.o: $(hdrdir)/ruby/internal/scan_args.h
 zlib.o: $(hdrdir)/ruby/internal/special_consts.h
 zlib.o: $(hdrdir)/ruby/internal/static_assert.h

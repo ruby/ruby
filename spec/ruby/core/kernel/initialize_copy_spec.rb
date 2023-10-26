@@ -1,11 +1,18 @@
 require_relative '../../spec_helper'
 
 describe "Kernel#initialize_copy" do
+  it "returns self" do
+    obj = Object.new
+    obj.send(:initialize_copy, obj).should.equal?(obj)
+  end
+
   it "does nothing if the argument is the same as the receiver" do
     obj = Object.new
     obj.send(:initialize_copy, obj).should.equal?(obj)
-    obj.freeze
+
+    obj = Object.new.freeze
     obj.send(:initialize_copy, obj).should.equal?(obj)
+
     1.send(:initialize_copy, 1).should.equal?(1)
   end
 

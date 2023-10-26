@@ -63,6 +63,11 @@ unless bundle
   end
   if have_ffi_header && (have_library('ffi') || have_library('libffi'))
     have_libffi = true
+    checking_for("undefined FFI_GO_CLOSURES is used") do
+      if egrep_cpp(/warning: 'FFI_GO_CLOSURES' is not defined/, cpp_include(ffi_header), "2>&1")
+        $defs.push('-DFFI_GO_CLOSURES=0')
+      end
+    end
   end
 end
 

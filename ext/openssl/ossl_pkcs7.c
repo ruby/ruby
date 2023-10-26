@@ -65,7 +65,7 @@ const rb_data_type_t ossl_pkcs7_type = {
     {
 	0, ossl_pkcs7_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -79,7 +79,7 @@ static const rb_data_type_t ossl_pkcs7_signer_info_type = {
     {
 	0, ossl_pkcs7_signer_info_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -93,7 +93,7 @@ static const rb_data_type_t ossl_pkcs7_recip_info_type = {
     {
 	0, ossl_pkcs7_recip_info_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*

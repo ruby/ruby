@@ -12,7 +12,10 @@ if Bundler::SharedHelpers.in_bundle?
       Bundler.ui.error e.message
       Bundler.ui.warn e.backtrace.join("\n") if ENV["DEBUG"]
       if e.is_a?(Bundler::GemNotFound)
-        Bundler.ui.warn "Run `bundle install` to install missing gems."
+        suggested_cmd = "bundle install"
+        original_gemfile = Bundler.original_env["BUNDLE_GEMFILE"]
+        suggested_cmd += " --gemfile #{original_gemfile}" if original_gemfile
+        Bundler.ui.warn "Run `#{suggested_cmd}` to install missing gems."
       end
       exit e.status_code
     end

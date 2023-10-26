@@ -1,5 +1,7 @@
 == Recipes for Parsing \CSV
 
+These recipes are specific code examples for specific \CSV parsing tasks.
+
 For other recipes, see {Recipes for CSV}[./recipes_rdoc.html].
 
 All code snippets on this page assume that the following has been executed:
@@ -518,7 +520,7 @@ Apply multiple header converters by defining and registering a custom header con
 To capture unconverted field values, use option +:unconverted_fields+:
   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   parsed = CSV.parse(source, converters: :integer, unconverted_fields: true)
-  parsed # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+  parsed # => [["Name", "Value"], ["foo", 0], ["bar", 1], ["baz", 2]]
   parsed.each {|row| p row.unconverted_fields }
 Output:
   ["Name", "Value"]

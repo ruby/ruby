@@ -53,7 +53,7 @@ class Reline::Windows
   end
 
   if defined? JRUBY_VERSION
-    require 'Win32API'
+    require 'win32api'
   else
     class Win32API
       DLL = {}
@@ -291,7 +291,11 @@ class Reline::Windows
     end
   end
 
-  def self.getc
+  def self.with_raw_input
+    yield
+  end
+
+  def self.getc(_timeout_second)
     check_input_event
     @@output_buf.shift
   end

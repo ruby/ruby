@@ -86,7 +86,7 @@ static const rb_data_type_t ossl_ocsp_request_type = {
     {
 	0, ossl_ocsp_request_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -100,7 +100,7 @@ static const rb_data_type_t ossl_ocsp_response_type = {
     {
 	0, ossl_ocsp_response_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -114,7 +114,7 @@ static const rb_data_type_t ossl_ocsp_basicresp_type = {
     {
 	0, ossl_ocsp_basicresp_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -128,7 +128,7 @@ static const rb_data_type_t ossl_ocsp_singleresp_type = {
     {
 	0, ossl_ocsp_singleresp_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -142,7 +142,7 @@ static const rb_data_type_t ossl_ocsp_certid_type = {
     {
 	0, ossl_ocsp_certid_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -1701,7 +1701,7 @@ Init_ossl_ocsp(void)
      *   require 'net/http'
      *
      *   http_response =
-     *     Net::HTTP.start ocsp_uri.hostname, ocsp.port do |http|
+     *     Net::HTTP.start ocsp_uri.hostname, ocsp_uri.port do |http|
      *       http.post ocsp_uri.path, request.to_der,
      *                 'content-type' => 'application/ocsp-request'
      *   end

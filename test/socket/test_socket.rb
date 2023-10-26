@@ -340,6 +340,10 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_udp_server
+    # http://rubyci.s3.amazonaws.com/rhel_zlinux/ruby-master/log/20230312T023302Z.fail.html.gz
+    # Errno::EHOSTUNREACH: No route to host - recvmsg(2)
+    omit if 'rhel_zlinux' == ENV['RUBYCI_NICKNAME']
+
     begin
       ifaddrs = Socket.getifaddrs
     rescue NotImplementedError
@@ -443,13 +447,12 @@ class TestSocket < Test::Unit::TestCase
         omit "UDP server is no response: #{$!}"
       ensure
         if th
-          if skipped
-            Thread.kill th unless th.join(10)
-          else
+          unless skipped
             Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
-            unless th.join(10)
-              Thread.kill th
-              th.join(10)
+          end
+          unless th.join(10)
+            th.kill.join(10)
+            unless skipped
               raise "thread killed"
             end
           end
@@ -486,13 +489,14 @@ class TestSocket < Test::Unit::TestCase
         end while IO.select([r], nil, nil, 0.1).nil?
         n
       end
-      timeout = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
+      timeout = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 120 : 30) # for --jit-wait
       assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)
       assert(stamp.cmsg_is?(:SOCKET, type))
       w.close # stop th
       n = th.value
+      th = nil
       n > 1 and
         warn "UDP packet loss for #{type} over loopback, #{n} tries needed"
       t2 = Time.now.strftime("%Y-%m-%d")
@@ -501,6 +505,10 @@ class TestSocket < Test::Unit::TestCase
       t = stamp.timestamp
       assert_match(pat, t.strftime("%Y-%m-%d"))
       stamp
+    ensure
+      if th and !th.join(10)
+        th.kill.join(10)
+      end
     end
   end
 

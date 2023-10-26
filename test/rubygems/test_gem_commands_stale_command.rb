@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/stale_command"
 
@@ -28,7 +29,7 @@ class TestGemCommandsStaleCommand < Gem::TestCase
 
       filename = File.join(foo_bar.full_gem_path, file)
       FileUtils.mkdir_p File.dirname filename
-      FileUtils.touch(filename, :mtime => Time.now - 86400)
+      FileUtils.touch(filename, :mtime => Time.now - 86_400)
     end
 
     use_ui @stub_ui do

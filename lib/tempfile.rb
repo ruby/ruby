@@ -57,7 +57,7 @@ require 'tmpdir'
 # Note that Tempfile.create returns a File instance instead of a Tempfile, which
 # also avoids the overhead and complications of delegation.
 #
-#   Tempfile.open('foo') do |file|
+#   Tempfile.create('foo') do |file|
 #      # ...do something with file...
 #   end
 #
@@ -87,6 +87,8 @@ require 'tmpdir'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
+
+  VERSION = "0.1.3"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.

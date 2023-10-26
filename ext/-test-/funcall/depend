@@ -52,6 +52,7 @@ funcall.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 funcall.o: $(hdrdir)/ruby/internal/attr/noinline.h
 funcall.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 funcall.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+funcall.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 funcall.o: $(hdrdir)/ruby/internal/attr/pure.h
 funcall.o: $(hdrdir)/ruby/internal/attr/restrict.h
 funcall.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ funcall.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 funcall.o: $(hdrdir)/ruby/internal/intern/error.h
 funcall.o: $(hdrdir)/ruby/internal/intern/eval.h
 funcall.o: $(hdrdir)/ruby/internal/intern/file.h
-funcall.o: $(hdrdir)/ruby/internal/intern/gc.h
 funcall.o: $(hdrdir)/ruby/internal/intern/hash.h
 funcall.o: $(hdrdir)/ruby/internal/intern/io.h
 funcall.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ funcall.o: $(hdrdir)/ruby/internal/memory.h
 funcall.o: $(hdrdir)/ruby/internal/method.h
 funcall.o: $(hdrdir)/ruby/internal/module.h
 funcall.o: $(hdrdir)/ruby/internal/newobj.h
-funcall.o: $(hdrdir)/ruby/internal/rgengc.h
 funcall.o: $(hdrdir)/ruby/internal/scan_args.h
 funcall.o: $(hdrdir)/ruby/internal/special_consts.h
 funcall.o: $(hdrdir)/ruby/internal/static_assert.h

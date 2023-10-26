@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../command_manager"
 require_relative "../dependency_installer"
@@ -36,10 +37,10 @@ class Gem::Commands::UpdateCommand < Gem::Command
     end
 
     add_option("--system [VERSION]", Gem::Version,
-               "Update the RubyGems system software") do |value, options|
-      value = true unless value
+               "Update the RubyGems system software") do |value, opts|
+      value ||= true
 
-      options[:system] = value
+      opts[:system] = value
     end
 
     add_local_remote_options
@@ -119,7 +120,7 @@ command to remove old versions.
     updated = update_gems gems_to_update
 
     installed_names = highest_installed_gems.keys
-    updated_names = updated.map {|spec| spec.name }
+    updated_names = updated.map(&:name)
     not_updated_names = options[:args].uniq - updated_names
     not_installed_names = not_updated_names - installed_names
     up_to_date_names = not_updated_names - not_installed_names
@@ -127,10 +128,10 @@ command to remove old versions.
     if updated.empty?
       say "Nothing to update"
     else
-      say "Gems updated: #{updated_names.join(' ')}"
+      say "Gems updated: #{updated_names.join(" ")}"
     end
-    say "Gems already up-to-date: #{up_to_date_names.join(' ')}" unless up_to_date_names.empty?
-    say "Gems not currently installed: #{not_installed_names.join(' ')}" unless not_installed_names.empty?
+    say "Gems already up-to-date: #{up_to_date_names.join(" ")}" unless up_to_date_names.empty?
+    say "Gems not currently installed: #{not_installed_names.join(" ")}" unless not_installed_names.empty?
   end
 
   def fetch_remote_gems(spec) # :nodoc:
@@ -185,7 +186,9 @@ command to remove old versions.
         system Gem.ruby, "--disable-gems", "setup.rb", *args
       end
 
-      say "RubyGems system software updated" if installed unless options[:silent]
+      unless options[:silent]
+        say "RubyGems system software updated" if installed
+      end
     end
   end
 
@@ -230,7 +233,7 @@ command to remove old versions.
     highest_remote_tup = highest_remote_name_tuple(rubygems_update)
     target = highest_remote_tup ? highest_remote_tup.version : version
 
-    return target, requirement
+    [target, requirement]
   end
 
   def update_gem(name, version = Gem::Requirement.default)
@@ -300,7 +303,7 @@ command to remove old versions.
   def which_to_update(highest_installed_gems, gem_names)
     result = []
 
-    highest_installed_gems.each do |l_name, l_spec|
+    highest_installed_gems.each do |_l_name, l_spec|
       next if !gem_names.empty? &&
               gem_names.none? {|name| name == l_spec.name }
 

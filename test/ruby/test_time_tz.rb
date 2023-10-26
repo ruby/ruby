@@ -202,7 +202,7 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_europe_lisbon
     with_tz("Europe/Lisbon") {
-      assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
+      assert_include(%w"LMT CET", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
   end if has_lisbon_tz
 

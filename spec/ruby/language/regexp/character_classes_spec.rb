@@ -610,14 +610,12 @@ describe "Regexp with character classes" do
   end
 
   it "supports negated property condition" do
-    "a".match(/\P{L}/).should be_nil
-    "1".match(/\P{N}/).should be_nil
+    "a".match(eval("/\P{L}/")).should be_nil
+    "1".match(eval("/\P{N}/")).should be_nil
   end
 
-  ruby_bug "#17340", ''...'3.0' do
-    it "raises a RegexpError for an unterminated unicode property" do
-      -> { Regexp.new('\p{') }.should raise_error(RegexpError)
-    end
+  it "raises a RegexpError for an unterminated unicode property" do
+    -> { Regexp.new('\p{') }.should raise_error(RegexpError)
   end
 
   it "supports \\X (unicode 9.0 with UTR #51 workarounds)" do

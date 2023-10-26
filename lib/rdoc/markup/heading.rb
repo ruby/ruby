@@ -76,4 +76,3 @@ RDoc::Markup::Heading =
   end
 
 end
-

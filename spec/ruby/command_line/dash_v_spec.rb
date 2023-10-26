@@ -8,6 +8,6 @@ describe "The -v command line option" do
     it "prints version and ends" do
       ruby_exe(nil, args: '-v').should include(RUBY_DESCRIPTION)
     end unless (defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?) ||
-               (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?)
+               (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?)
   end
 end

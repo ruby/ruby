@@ -8,7 +8,7 @@ require 'irb/color'
 require_relative "helper"
 
 module TestIRB
-  class TestWorkSpace < TestCase
+  class WorkSpaceTest < TestCase
     def test_code_around_binding
       IRB.conf[:USE_COLORIZE] = false
       Tempfile.create('irb') do |f|
@@ -83,7 +83,6 @@ module TestIRB
 
 
     def test_toplevel_binding_local_variables
-      pend if RUBY_ENGINE == 'truffleruby'
       bug17623 = '[ruby-core:102468]'
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
       top_srcdir = "#{__dir__}/../.."

@@ -73,16 +73,8 @@ describe "String#upcase" do
     -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns a subclass instance for subclasses" do
-      StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns a String instance for subclasses" do
-      StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
-    end
+  it "returns a String instance for subclasses" do
+    StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
   end
 end
 

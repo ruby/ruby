@@ -11,6 +11,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/error.h"
 #include "internal/vm.h"
 #include "iseq.h"
@@ -56,8 +57,11 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
 
         ptrdiff_t n = pc - ISEQ_BODY(iseq)->iseq_encoded;
-        VM_ASSERT(n <= ISEQ_BODY(iseq)->iseq_size);
         VM_ASSERT(n >= 0);
+#if SIZEOF_PTRDIFF_T > SIZEOF_INT
+        VM_ASSERT(n <= (ptrdiff_t)UINT_MAX);
+#endif
+        VM_ASSERT((unsigned int)n <= ISEQ_BODY(iseq)->iseq_size);
         ASSUME(n >= 0);
         size_t pos = n; /* no overflow */
         if (LIKELY(pos)) {
@@ -67,7 +71,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 #if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
         else {
             /* SDR() is not possible; that causes infinite loop. */
-            rb_print_backtrace();
+            rb_print_backtrace(stderr);
             __builtin_trap();
         }
 #endif
@@ -165,7 +169,7 @@ location_memsize(const void *ptr)
 static const rb_data_type_t location_data_type = {
     "frame_info",
     {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 int
@@ -474,7 +478,7 @@ static void
 backtrace_free(void *ptr)
 {
    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-   if (bt->backtrace) ruby_xfree(bt->backtrace);
+   ruby_xfree(bt->backtrace);
    ruby_xfree(bt);
 }
 
@@ -518,7 +522,7 @@ backtrace_memsize(const void *ptr)
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
     {backtrace_mark, backtrace_free, backtrace_memsize, backtrace_update},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 int
@@ -640,7 +644,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                     const VALUE *pc = cfp->pc;
                     loc = &bt->backtrace[bt->backtrace_size++];
                     loc->type = LOCATION_TYPE_ISEQ;
-                    loc->iseq = iseq;
+                    RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
                     loc->pc = pc;
                     bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
                     if (do_yield) {
@@ -670,6 +674,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
             if (cfp->iseq && cfp->pc && (!skip_internal || !is_internal_location(cfp))) {
                 bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
+                RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
                     bt_yield_loc(loc - cfunc_counter, cfunc_counter, btobj);
                 }
@@ -682,7 +687,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     return btobj;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
     return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE, FALSE);
@@ -728,12 +733,12 @@ rb_backtrace_to_str_ary(VALUE self)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
 
     if (!bt->strary) {
-        bt->strary = backtrace_to_str_ary(self);
+        RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
     }
     return bt->strary;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
     const rb_backtrace_t *bt;
@@ -757,7 +762,7 @@ location_create(rb_backtrace_location_t *srcloc, void *btobj)
     obj = TypedData_Make_Struct(rb_cBacktraceLocation, struct valued_frame_info, &location_data_type, vloc);
 
     vloc->loc = srcloc;
-    vloc->btobj = (VALUE)btobj;
+    RB_OBJ_WRITE(obj, &vloc->btobj, (VALUE)btobj);
 
     return obj;
 }
@@ -780,7 +785,7 @@ rb_backtrace_to_location_ary(VALUE self)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
 
     if (!bt->locary) {
-        bt->locary = backtrace_to_location_ary(self);
+        RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
     }
     return bt->locary;
 }
@@ -797,7 +802,7 @@ backtrace_load_data(VALUE self, VALUE str)
 {
     rb_backtrace_t *bt;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    bt->strary = str;
+    RB_OBJ_WRITE(self, &bt->strary, str);
     return self;
 }
 
@@ -998,31 +1003,38 @@ vm_backtrace_print(FILE *fp)
                    &arg);
 }
 
+struct oldbt_bugreport_arg {
+    FILE *fp;
+    int count;
+};
+
 static void
 oldbt_bugreport(void *arg, VALUE file, int line, VALUE method)
 {
+    struct oldbt_bugreport_arg *p = arg;
+    FILE *fp = p->fp;
     const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
-    if (!*(int *)arg) {
-        fprintf(stderr, "-- Ruby level backtrace information "
+    if (!p->count) {
+        fprintf(fp, "-- Ruby level backtrace information "
                 "----------------------------------------\n");
-        *(int *)arg = 1;
+        p->count = 1;
     }
     if (NIL_P(method)) {
-        fprintf(stderr, "%s:%d:in unknown method\n", filename, line);
+        fprintf(fp, "%s:%d:in unknown method\n", filename, line);
     }
     else {
-        fprintf(stderr, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
+        fprintf(fp, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
     }
 }
 
 void
-rb_backtrace_print_as_bugreport(void)
+rb_backtrace_print_as_bugreport(FILE *fp)
 {
     struct oldbt_arg arg;
-    int i = 0;
+    struct oldbt_bugreport_arg barg = {fp, 0};
 
     arg.func = oldbt_bugreport;
-    arg.data = (int *)&i;
+    arg.data = &barg;
 
     backtrace_each(GET_EC(),
                    oldbt_init,
@@ -1578,7 +1590,17 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     int i;
     const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+    const rb_control_frame_t *top = cfp;
     const rb_callable_method_entry_t *cme;
+
+    // If this function is called inside a thread after thread creation, but
+    // before the CFP has been created, just return 0.  This can happen when
+    // sampling via signals.  Threads can be interrupted randomly by the
+    // signal, including during the time after the thread has been created, but
+    // before the CFP has been allocated
+    if (!cfp) {
+        return 0;
+    }
 
     // Skip dummy frame; see `rb_ec_partial_backtrace_object` for details
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
@@ -1599,7 +1621,18 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
                 buff[i] = (VALUE)cfp->iseq;
             }
 
-            if (lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+            if (lines) {
+                // The topmost frame may not have an updated PC because the JIT
+                // may not have set one.  The JIT compiler will update the PC
+                // before entering a new function (so that `caller` will work),
+                // so only the topmost frame could possibly have an out of date PC
+                if (cfp == top && cfp->jit_return) {
+                    lines[i] = 0;
+                }
+                else {
+                    lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+                }
+            }
 
             i++;
         }
@@ -1736,7 +1769,7 @@ rb_profile_frame_classpath(VALUE frame)
             klass = RBASIC(klass)->klass;
         }
         else if (FL_TEST(klass, FL_SINGLETON)) {
-            klass = rb_ivar_get(klass, id__attached__);
+            klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE))
                 return rb_sprintf("#<%s:%p>", rb_class2name(rb_obj_class(klass)), (void*)klass);
         }

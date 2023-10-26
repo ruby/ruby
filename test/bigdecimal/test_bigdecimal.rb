@@ -294,7 +294,11 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_allocate
-    assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
+    if RUBY_ENGINE == "truffleruby"
+      assert_raise_with_message(NoMethodError, /undefined.+allocate.+for BigDecimal/) { BigDecimal.allocate }
+    else
+      assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
+    end
   end
 
   def test_s_new
@@ -1411,9 +1415,13 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_equal('-123.45678 90123 45678 9', BigDecimal('-123.45678901234567890').to_s('5F'))
-    assert_equal('+123.45678901 23456789', BigDecimal('123.45678901234567890').to_s('+8F'))
-    assert_equal(' 123.4567890123456789', BigDecimal('123.45678901234567890').to_s(' F'))
+    assert_equal('0.0', BigDecimal('0').to_s)
+    assert_equal('-123 45678 90123.45678 90123 45678 9', BigDecimal('-1234567890123.45678901234567890').to_s('5F'))
+    assert_equal('+12345 67890123.45678901 23456789', BigDecimal('1234567890123.45678901234567890').to_s('+8F'))
+    assert_equal(' 1234567890123.4567890123456789', BigDecimal('1234567890123.45678901234567890').to_s(' F'))
+    assert_equal('100 000 000 000.000 000 000 01', BigDecimal('100000000000.00000000001').to_s('3F'))
+    assert_equal('0.0 0 0 0 0 0 0 0 0 0 0 0 1', BigDecimal('0.0000000000001').to_s('1F'))
+    assert_equal('+1000000 0000000.0', BigDecimal('10000000000000').to_s('+7F'))
     assert_equal('0.1234567890123456789e3', BigDecimal('123.45678901234567890').to_s)
     assert_equal('0.12345 67890 12345 6789e3', BigDecimal('123.45678901234567890').to_s(5))
   end
@@ -2254,6 +2262,23 @@ class TestBigDecimal < Test::Unit::TestCase
 
     minus_ullong_max = -LIMITS["ULLONG_MAX"]
     assert_equal(BigDecimal(minus_ullong_max.to_s), BigDecimal(minus_ullong_max), "[GH-200]")
+  end
+
+  def test_reminder_infinity_gh_187
+    # https://github.com/ruby/bigdecimal/issues/187
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      bd = BigDecimal("4.2")
+      assert_equal(bd.remainder(BigDecimal("+Infinity")), bd)
+      assert_equal(bd.remainder(BigDecimal("-Infinity")), bd)
+    end
+  end
+
+  def test_bsearch_for_bigdecimal
+    assert_raise(TypeError) {
+      (BigDecimal('0.5')..BigDecimal('2.25')).bsearch
+    }
   end
 
   def assert_no_memory_leak(code, *rest, **opt)
