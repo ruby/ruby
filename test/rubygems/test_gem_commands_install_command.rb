@@ -192,30 +192,23 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     pend "skipped on MS Windows (chmod has no effect)" if Gem.win_platform?
     pend "skipped in root privilege" if Process.uid.zero?
 
-    specs = spec_fetcher do |fetcher|
+    spec_fetcher do |fetcher|
       fetcher.gem "a", 2
     end
 
     @cmd.options[:user_install] = false
 
-    FileUtils.mv specs["a-2"].cache_file, @tempdir
-
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      orig_dir = Dir.pwd
-      begin
-        FileUtils.chmod 0o755, @userhome
-        FileUtils.chmod 0o555, @gemhome
+      FileUtils.chmod 0o755, @userhome
+      FileUtils.chmod 0o555, @gemhome
 
-        Dir.chdir @tempdir
-        assert_raise Gem::FilePermissionError do
-          @cmd.execute
-        end
-      ensure
-        Dir.chdir orig_dir
-        FileUtils.chmod 0o755, @gemhome
+      assert_raise Gem::FilePermissionError do
+        @cmd.execute
       end
+    ensure
+      FileUtils.chmod 0o755, @gemhome
     end
   end
 
