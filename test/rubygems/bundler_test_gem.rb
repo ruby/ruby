@@ -3,7 +3,7 @@
 require_relative "helper"
 
 class TestBundlerGem < Gem::TestCase
-  PROJECT_DIR = File.expand_path("../..", __dir__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path("../..", __dir__)
 
   def test_self_use_gemdeps
     with_local_bundler_at(Gem.dir) do
@@ -221,7 +221,7 @@ class TestBundlerGem < Gem::TestCase
 
   def test_use_gemdeps
     with_local_bundler_at(Gem.dir) do
-      gem_deps_file = "gem.deps.rb".tap(&Gem::UNTAINT)
+      gem_deps_file = "gem.deps.rb"
       spec = util_spec "a", 1
       install_specs spec
 
