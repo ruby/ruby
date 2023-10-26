@@ -101,6 +101,9 @@ module Prism
       assert_prism_eval("defined? $a")
       assert_prism_eval("defined? @@a")
       assert_prism_eval("defined? A")
+      assert_prism_eval("defined? ::A")
+      assert_prism_eval("defined? A::B")
+      assert_prism_eval("defined? A::B::C")
       assert_prism_eval("defined? yield")
       assert_prism_eval("defined? super")
 
