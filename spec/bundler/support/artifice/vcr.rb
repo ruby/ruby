@@ -3,8 +3,8 @@
 require "net/http"
 require_relative "../path"
 
-CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes"
-USED_CASSETTES_PATH = "#{Spec::Path.spec_dir}/support/artifice/used_cassettes.txt"
+CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes".freeze
+USED_CASSETTES_PATH = "#{Spec::Path.spec_dir}/support/artifice/used_cassettes.txt".freeze
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
 class BundlerVCRHTTP < Net::HTTP
