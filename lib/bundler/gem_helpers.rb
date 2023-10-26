@@ -48,6 +48,13 @@ module Bundler
     end
     module_function :select_best_platform_match
 
+    def force_ruby_platform(specs)
+      matching = specs.select {|spec| spec.match_platform(Gem::Platform::RUBY) && spec.force_ruby_platform! }
+
+      sort_best_platform_match(matching, Gem::Platform::RUBY)
+    end
+    module_function :force_ruby_platform
+
     def sort_best_platform_match(matching, platform)
       exact = matching.select {|spec| spec.platform == platform }
       return exact if exact.any?

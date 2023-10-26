@@ -200,9 +200,11 @@ module Bundler
 
     def specs_for_dependency(dep, platform)
       specs_for_name = lookup[dep.name]
-      target_platform = dep.force_ruby_platform ? Gem::Platform::RUBY : (platform || Bundler.local_platform)
-      matching_specs = GemHelpers.select_best_platform_match(specs_for_name, target_platform)
-      matching_specs.each {|s| s.force_ruby_platform = true } if dep.force_ruby_platform
+      matching_specs = if dep.force_ruby_platform
+        GemHelpers.force_ruby_platform(specs_for_name)
+      else
+        GemHelpers.select_best_platform_match(specs_for_name, platform || Bundler.local_platform)
+      end
       matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
       matching_specs
     end

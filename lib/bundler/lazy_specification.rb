@@ -133,6 +133,10 @@ module Bundler
       " #{source.revision[0..6]}"
     end
 
+    def force_ruby_platform!
+      @force_ruby_platform = true
+    end
+
     private
 
     def use_exact_resolved_specifications?
