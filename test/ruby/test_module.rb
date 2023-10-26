@@ -1728,6 +1728,8 @@ class TestModule < Test::Unit::TestCase
     assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
     c = Module.new.module_eval("class X\u{df} < Module; self; end")
     assert_match(/::X\u{df}:/, c.new.to_s)
+  ensure
+    Object.send(:remove_const, "C\u{df}")
   end
 
 
@@ -2868,6 +2870,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_invalid_attr
     %W[
+      foo=
       foo?
       @foo
       @@foo
@@ -3172,7 +3175,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_redefinition_mismatch
-    omit "Investigating trunk-mjit failure on ci.rvm.jp" if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    omit "Investigating trunk-rjit failure on ci.rvm.jp" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     m = Module.new
     m.module_eval "A = 1", __FILE__, line = __LINE__
     e = assert_raise_with_message(TypeError, /is not a module/) {
@@ -3274,6 +3277,62 @@ class TestModule < Test::Unit::TestCase
     assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
+  def test_iclass_memory_leak
+    # [Bug #19550]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        mod = Module.new
+        Class.new do
+          include mod
+        end
+      end
+      1_000.times(&code)
+    PREP
+      3_000_000.times(&code)
+    CODE
+  end
+
+  def test_complemented_method_entry_memory_leak
+    # [Bug #19894] [Bug #19896]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        $c = Class.new do
+          def foo; end
+        end
+
+        $m = Module.new do
+          refine $c do
+            def foo; end
+          end
+        end
+
+        Class.new do
+          using $m
+
+          def initialize
+            o = $c.new
+            o.method(:foo).unbind
+          end
+        end.new
+      end
+      1_000.times(&code)
+    PREP
+      300_000.times(&code)
+    CODE
+  end
+
+  def test_module_clone_memory_leak
+    # [Bug #19901]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        Module.new.clone
+      end
+      1_000.times(&code)
+    PREP
+      1_000_000.times(&code)
+    CODE
+  end
+
   private
 
   def assert_top_method_is_private(method)
@@ -3281,7 +3340,7 @@ class TestModule < Test::Unit::TestCase
       methods = singleton_class.private_instance_methods(false)
       assert_include(methods, :#{method}, ":#{method} should be private")
 
-      assert_raise_with_message(NoMethodError, "private method `#{method}' called for main:Object") {
+      assert_raise_with_message(NoMethodError, /^private method `#{method}' called for /) {
         recv = self
         recv.#{method}
       }

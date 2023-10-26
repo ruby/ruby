@@ -565,9 +565,10 @@ class RDoc::Options
 
     @op_dir ||= 'doc'
 
-    @rdoc_include << "." if @rdoc_include.empty?
     root = @root.to_s
-    @rdoc_include << root unless @rdoc_include.include?(root)
+    if @rdoc_include.empty? || !@rdoc_include.include?(root)
+      @rdoc_include << root
+    end
 
     @exclude = self.exclude
 

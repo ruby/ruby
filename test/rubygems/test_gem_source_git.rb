@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/source"
 
@@ -8,9 +9,9 @@ class TestGemSourceGit < Gem::TestCase
 
     @name, @version, @repository, @head = git_gem
 
-    @hash = Digest::SHA1.hexdigest @repository
+    @hash = OpenSSL::Digest::SHA1.hexdigest @repository
 
-    @source = Gem::Source::Git.new @name, @repository, "master", false
+    @source = Gem::Source::Git.new @name, @repository, nil, false
   end
 
   def test_base_dir
@@ -27,12 +28,13 @@ class TestGemSourceGit < Gem::TestCase
     assert_path_exist File.join @source.install_dir, "a.gemspec"
   end
 
-  def test_checkout_master
+  def test_checkout_default
     Dir.chdir @repository do
+      default_branch = Gem::Util.popen(@git, "branch", "--show-current").strip
       system @git, "checkout", "-q", "-b", "other"
       system @git, "mv",             "a.gemspec", "b.gemspec"
       system @git, "commit",   "-q", "-a", "-m", "rename gemspec"
-      system @git, "checkout", "-q", "master"
+      system @git, "checkout", "-q", default_branch
     end
 
     @source = Gem::Source::Git.new @name, @repository, "other", false
@@ -68,7 +70,7 @@ class TestGemSourceGit < Gem::TestCase
     # https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
     system(@git, *%W[config --global protocol.file.allow always])
 
-    source = Gem::Source::Git.new @name, @repository, "master", true
+    source = Gem::Source::Git.new @name, @repository, nil, true
 
     git_gem "b"
 
@@ -92,7 +94,7 @@ class TestGemSourceGit < Gem::TestCase
     assert_path_exist @source.repo_cache_dir
 
     Dir.chdir @source.repo_cache_dir do
-      assert_equal @head, Gem::Util.popen(@git, "rev-parse", "master").strip
+      assert_equal @head, Gem::Util.popen(@git, "rev-parse", "HEAD").strip
     end
   end
 
@@ -178,7 +180,7 @@ class TestGemSourceGit < Gem::TestCase
       system @git, "checkout", "--quiet", "-b", "other"
     end
 
-    master_head = @head
+    default_head = @head
 
     git_gem "a", 2
 
@@ -186,7 +188,7 @@ class TestGemSourceGit < Gem::TestCase
 
     source.cache
 
-    refute_equal master_head, source.rev_parse
+    refute_equal default_head, source.rev_parse
 
     source = Gem::Source::Git.new @name, @repository, "nonexistent", false
 
@@ -209,12 +211,12 @@ class TestGemSourceGit < Gem::TestCase
   end
 
   def test_spaceship
-    git       = Gem::Source::Git.new "a", "git/a", "master", false
+    git       = Gem::Source::Git.new "a", "git/a", nil, false
     remote    = Gem::Source.new @gem_repo
     installed = Gem::Source::Installed.new
     vendor    = Gem::Source::Vendor.new "vendor/foo"
 
-    assert_equal(0, git.<=>(git),       "git <=> git")
+    assert_equal(0, git.<=>(git),       "git <=> git") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(1, git.<=>(remote),    "git <=> remote")
     assert_equal(-1, remote.<=>(git), "remote <=> git")
@@ -227,7 +229,7 @@ class TestGemSourceGit < Gem::TestCase
   end
 
   def test_specs
-    source = Gem::Source::Git.new @name, @repository, "master", true
+    source = Gem::Source::Git.new @name, @repository, nil, true
 
     Dir.chdir "git/a" do
       FileUtils.mkdir "b"
@@ -250,7 +252,7 @@ class TestGemSourceGit < Gem::TestCase
       specs = source.specs
     end
 
-    assert_equal %w[a-1 b-1], specs.map {|spec| spec.full_name }
+    assert_equal %w[a-1 b-1], specs.map(&:full_name)
 
     a_spec = specs.shift
 
@@ -278,7 +280,7 @@ class TestGemSourceGit < Gem::TestCase
   end
 
   def test_specs_local
-    source = Gem::Source::Git.new @name, @repository, "master", true
+    source = Gem::Source::Git.new @name, @repository, nil, true
     source.remote = false
 
     capture_output do
@@ -294,13 +296,13 @@ class TestGemSourceGit < Gem::TestCase
     assert_equal @hash, @source.uri_hash
 
     source =
-      Gem::Source::Git.new "a", "http://git@example/repo.git", "master", false
+      Gem::Source::Git.new "a", "http://git@example/repo.git", nil, false
 
     assert_equal "291c4caac7feba8bb64c297987028acb3dde6cfe",
                  source.uri_hash
 
     source =
-      Gem::Source::Git.new "a", "HTTP://git@EXAMPLE/repo.git", "master", false
+      Gem::Source::Git.new "a", "HTTP://git@EXAMPLE/repo.git", nil, false
 
     assert_equal "291c4caac7feba8bb64c297987028acb3dde6cfe",
                  source.uri_hash

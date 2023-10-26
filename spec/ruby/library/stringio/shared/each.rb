@@ -36,7 +36,7 @@ describe :stringio_each_separator, shared: true do
     seen.should == ["2 1 2 1 2"]
   end
 
-  ruby_version_is ''..."3.2" do
+  version_is StringIO::VERSION, ""..."3.0.4" do #ruby_version_is ""..."3.2" do
     it "yields each paragraph with two separation characters when passed an empty String as separator" do
       seen = []
       io = StringIO.new("para1\n\npara2\n\n\npara3")
@@ -45,7 +45,7 @@ describe :stringio_each_separator, shared: true do
     end
   end
 
-  ruby_version_is "3.2" do
+  version_is StringIO::VERSION, "3.0.4" do #ruby_version_is "3.2" do
     it "yields each paragraph with all separation characters when passed an empty String as separator" do
       seen = []
       io = StringIO.new("para1\n\npara2\n\n\npara3")

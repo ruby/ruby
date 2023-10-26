@@ -84,9 +84,28 @@ describe "BasicObject#instance_eval" do
 
   end
 
+  ruby_version_is "3.3" do
+    it "uses the caller location as default location" do
+      f = Object.new
+      f.instance_eval("[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
+    end
+  end
+
   it "has access to receiver's instance variables" do
     BasicObjectSpecs::IVars.new.instance_eval { @secret }.should == 99
     BasicObjectSpecs::IVars.new.instance_eval("@secret").should == 99
+  end
+
+  it "raises TypeError for frozen objects when tries to set receiver's instance variables" do
+    -> { nil.instance_eval { @foo = 42 } }.should raise_error(FrozenError, "can't modify frozen NilClass: nil")
+    -> { true.instance_eval { @foo = 42 } }.should raise_error(FrozenError, "can't modify frozen TrueClass: true")
+    -> { false.instance_eval { @foo = 42 } }.should raise_error(FrozenError, "can't modify frozen FalseClass: false")
+    -> { 1.instance_eval { @foo = 42 } }.should raise_error(FrozenError, "can't modify frozen Integer: 1")
+    -> { :symbol.instance_eval { @foo = 42 } }.should raise_error(FrozenError, "can't modify frozen Symbol: :symbol")
+
+    obj = Object.new
+    obj.freeze
+    -> { obj.instance_eval { @foo = 42 } }.should raise_error(FrozenError)
   end
 
   it "treats block-local variables as local to the block" do
@@ -105,11 +124,6 @@ describe "BasicObject#instance_eval" do
     prc.call(false, prc).should == 1
   end
 
-  it "sets class variables in the receiver" do
-    BasicObjectSpecs::InstEvalCVar.class_variables.should include(:@@count)
-    BasicObjectSpecs::InstEvalCVar.send(:class_variable_get, :@@count).should == 2
-  end
-
   it "makes the receiver metaclass the scoped class when used with a string" do
     obj = Object.new
     obj.instance_eval %{
@@ -119,8 +133,52 @@ describe "BasicObject#instance_eval" do
     obj.singleton_class.const_get(:B).should be_an_instance_of(Class)
   end
 
-  it "gets constants in the receiver if a string given" do
-    BasicObjectSpecs::InstEvalOuter::Inner::X_BY_STR.should == 2
+  describe "constants lookup when a String given" do
+    it "looks in the receiver singleton class first" do
+      receiver = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverSingletonClass::ReceiverScope::Receiver.new
+      caller = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverSingletonClass::CallerScope::Caller.new
+
+      caller.get_constant_with_string(receiver).should == :singleton_class
+    end
+
+    ruby_version_is ""..."3.1" do
+      it "looks in the caller scope next" do
+        receiver = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverClass::ReceiverScope::Receiver.new
+        caller = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverClass::CallerScope::Caller.new
+
+        caller.get_constant_with_string(receiver).should == :Caller
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "looks in the receiver class next" do
+        receiver = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverClass::ReceiverScope::Receiver.new
+        caller = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverClass::CallerScope::Caller.new
+
+        caller.get_constant_with_string(receiver).should == :Receiver
+      end
+    end
+
+    it "looks in the caller class next" do
+      receiver = BasicObjectSpecs::InstEval::Constants::ConstantInCallerClass::ReceiverScope::Receiver.new
+      caller = BasicObjectSpecs::InstEval::Constants::ConstantInCallerClass::CallerScope::Caller.new
+
+      caller.get_constant_with_string(receiver).should == :Caller
+    end
+
+    it "looks in the caller outer scopes next" do
+      receiver = BasicObjectSpecs::InstEval::Constants::ConstantInCallerOuterScopes::ReceiverScope::Receiver.new
+      caller = BasicObjectSpecs::InstEval::Constants::ConstantInCallerOuterScopes::CallerScope::Caller.new
+
+      caller.get_constant_with_string(receiver).should == :CallerScope
+    end
+
+    it "looks in the receiver class hierarchy next" do
+      receiver = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverParentClass::ReceiverScope::Receiver.new
+      caller = BasicObjectSpecs::InstEval::Constants::ConstantInReceiverParentClass::CallerScope::Caller.new
+
+      caller.get_constant_with_string(receiver).should == :ReceiverParent
+    end
   end
 
   it "doesn't get constants in the receiver if a block given" do
@@ -136,17 +194,51 @@ describe "BasicObject#instance_eval" do
     end.should raise_error(TypeError)
   end
 
-quarantine! do # Not clean, leaves cvars lying around to break other specs
-  it "scopes class var accesses in the caller when called on an Integer" do
-    # Integer can take instance vars
-    Integer.class_eval "@@__tmp_instance_eval_spec = 1"
-    (defined? @@__tmp_instance_eval_spec).should be_nil
+  describe "class variables lookup" do
+    it "gets class variables in the caller class when called with a String" do
+      receiver = BasicObjectSpecs::InstEval::CVar::Get::ReceiverScope.new
+      caller = BasicObjectSpecs::InstEval::CVar::Get::CallerScope.new
 
-    @@__tmp_instance_eval_spec = 2
-    1.instance_eval { @@__tmp_instance_eval_spec }.should == 2
-    Integer.__send__(:remove_class_variable, :@@__tmp_instance_eval_spec)
+      caller.get_class_variable_with_string(receiver).should == :value_defined_in_caller_scope
+    end
+
+    it "gets class variables in the block definition scope when called with a block" do
+      receiver = BasicObjectSpecs::InstEval::CVar::Get::ReceiverScope.new
+      caller = BasicObjectSpecs::InstEval::CVar::Get::CallerScope.new
+      block = BasicObjectSpecs::InstEval::CVar::Get::BlockDefinitionScope.new.block
+
+      caller.get_class_variable_with_block(receiver, block).should == :value_defined_in_block_definition_scope
+    end
+
+    it "sets class variables in the caller class when called with a String" do
+      receiver = BasicObjectSpecs::InstEval::CVar::Set::ReceiverScope.new
+      caller = BasicObjectSpecs::InstEval::CVar::Set::CallerScope.new
+
+      caller.set_class_variable_with_string(receiver, 1)
+      BasicObjectSpecs::InstEval::CVar::Set::CallerScope.get_class_variable.should == 1
+    end
+
+    it "sets class variables in the block definition scope when called with a block" do
+      receiver = BasicObjectSpecs::InstEval::CVar::Set::ReceiverScope.new
+      caller = BasicObjectSpecs::InstEval::CVar::Set::CallerScope.new
+      block = BasicObjectSpecs::InstEval::CVar::Set::BlockDefinitionScope.new.block_to_assign(1)
+
+      caller.set_class_variable_with_block(receiver, block)
+      BasicObjectSpecs::InstEval::CVar::Set::BlockDefinitionScope.get_class_variable.should == 1
+    end
+
+    it "does not have access to class variables in the receiver class when called with a String" do
+      receiver = BasicObjectSpecs::InstEval::CVar::Get::ReceiverScope.new
+      caller = BasicObjectSpecs::InstEval::CVar::Get::CallerWithoutCVarScope.new
+      -> { caller.get_class_variable_with_string(receiver) }.should raise_error(NameError, /uninitialized class variable @@cvar/)
+    end
+
+    it "does not have access to class variables in the receiver's singleton class when called with a String" do
+      receiver = BasicObjectSpecs::InstEval::CVar::Get::ReceiverWithCVarDefinedInSingletonClass
+      caller = BasicObjectSpecs::InstEval::CVar::Get::CallerWithoutCVarScope.new
+      -> { caller.get_class_variable_with_string(receiver) }.should raise_error(NameError, /uninitialized class variable @@cvar/)
+    end
   end
-end
 
   it "raises a TypeError when defining methods on numerics" do
     -> do

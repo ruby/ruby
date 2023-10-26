@@ -42,7 +42,7 @@ comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *o
 %     end
     case <%= i.bin %>:
         return <%= attr_function %>(<%=
-          i.opes.map.with_index do |v, j|
+          i.operands.map.with_index do |v, j|
             if v[:type] == 'CALL_DATA' && i.has_attribute?('comptime_sp_inc')
               v = v.dup
               v[:type] = 'CALL_INFO'

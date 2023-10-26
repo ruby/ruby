@@ -17,7 +17,10 @@ module RubyVM::CEscape
 
   # generate comment, with escaps.
   def commentify str
-    return "/* #{str.b.gsub('*/', '*\\/').gsub('/*', '/\\*')} */"
+    unless str = str.dump[/\A"\K.*(?="\z)/]
+      raise Encoding::CompatibilityError, "must be ASCII-compatible (#{str.encoding})"
+    end
+    return "/* #{str.gsub('*/', '*\\/').gsub('/*', '/\\*')} */"
   end
 
   # Mimic gensym of CL.

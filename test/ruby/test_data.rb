@@ -97,6 +97,7 @@ class TestData < Test::Unit::TestCase
 
     # Missing arguments can be fixed in initialize
     assert_equal([[], {foo: 1}], klass.new(foo: 1).passed)
+    assert_equal([[], {foo: 42}], klass.new(42).passed)
 
     # Extra keyword arguments can be dropped in initialize
     assert_equal([[], {foo: 1, bar: 2, baz: 3}], klass.new(foo: 1, bar: 2, baz: 3).passed)
@@ -215,6 +216,22 @@ class TestData < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, "wrong number of arguments (given 1, expected 0)") do
       source.with({ bar: 2 })
     end
+  end
+
+  def test_with_initialize
+    oddclass = Data.define(:odd) do
+      def initialize(odd:)
+        raise ArgumentError, "Not odd" unless odd.odd?
+        super(odd: odd)
+      end
+    end
+    assert_raise_with_message(ArgumentError, "Not odd") {
+      oddclass.new(odd: 0)
+    }
+    odd = oddclass.new(odd: 1)
+    assert_raise_with_message(ArgumentError, "Not odd") {
+      odd.with(odd: 2)
+    }
   end
 
   def test_memberless

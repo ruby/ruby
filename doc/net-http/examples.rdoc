@@ -10,9 +10,10 @@ Many code examples here use these example websites:
 
 Some examples also assume these variables:
 
-  uri = URI('https://jsonplaceholder.typicode.com')
+  uri = URI('https://jsonplaceholder.typicode.com/')
   uri.freeze # Examples may not modify.
   hostname = uri.hostname # => "jsonplaceholder.typicode.com"
+  path = uri.path         # => "/"
   port = uri.port         # => 443
 
 So that example requests may be written as:

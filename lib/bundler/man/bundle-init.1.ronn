@@ -16,6 +16,8 @@ created [`Gemfile(5)`][Gemfile(5)].
 
 * `--gemspec`:
   Use the specified .gemspec to create the [`Gemfile(5)`][Gemfile(5)]
+* `--gemfile`:
+  Use the specified name for the gemfile instead of `Gemfile`
 
 ## FILES
 

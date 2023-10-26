@@ -1,3 +1,4 @@
+require_relative '../../spec_helper'
 
 describe "Process::Constants" do
   platform_is :darwin, :netbsd, :freebsd do

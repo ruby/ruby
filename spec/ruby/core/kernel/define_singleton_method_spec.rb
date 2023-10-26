@@ -111,4 +111,10 @@ describe "Kernel#define_singleton_method" do
       cls.foo.should == :ok
     }.should_not raise_error(NoMethodError)
   end
+
+  it "cannot define a singleton method with a frozen singleton class" do
+    o = Object.new
+    o.freeze
+    -> { o.define_singleton_method(:foo) { 1 } }.should raise_error(FrozenError)
+  end
 end

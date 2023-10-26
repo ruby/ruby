@@ -15,8 +15,7 @@ ENV["GEM_PATH"] = [File.realpath('.bundle'), File.realpath('../.bundle', __dir__
 colorize = Colorize.new
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
-dummy_rake_compiler_dir = File.realpath('../dummy-rake-compiler', __FILE__)
-rubylib = [File.expand_path(dummy_rake_compiler_dir), ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
+rubylib = [gem_dir+'/lib', ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
@@ -24,7 +23,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
   next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
-  puts "#{github_actions ? "##[group]" : "\n"}Testing the #{gem} gem"
+  # 93(bright yellow) is copied from .github/workflows/mingw.yml
+  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
   first_timeout = 600 # 10min
@@ -34,7 +34,16 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "typeprof"
 
   when "rbs"
-    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests"
+    # TODO: We should skip test file instead of test class/methods
+    skip_test_files = %w[
+    ]
+
+    skip_test_files.each do |file|
+      path = "#{gem_dir}/src/#{gem}/#{file}"
+      File.unlink(path) if File.exist?(path)
+    end
+
+    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests SKIP_RBS_VALIDATION=true"
     first_timeout *= 3
 
   when "debug"
@@ -42,6 +51,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     # acitvating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
     load_path = true
+
+  when "test-unit"
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
 
   when /\Anet-/
     toplib = gem.tr("-", "/")
@@ -76,7 +88,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     break
   end
 
-  print "##[endgroup]\n" if github_actions
+  print "::endgroup::\n" if github_actions
   unless $?.success?
 
     mesg = "Tests failed " +

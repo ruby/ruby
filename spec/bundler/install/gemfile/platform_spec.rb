@@ -225,6 +225,14 @@ RSpec.describe "bundle install across platforms" do
         empyrean (= 0.1.0)
         pry
 
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "coderay", "1.1.2"}
+        #{checksum_for_repo_gem gem_repo4, "empyrean", "0.1.0"}
+        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.23", "java"}
+        #{checksum_for_repo_gem gem_repo4, "method_source", "0.9.0"}
+        #{checksum_for_repo_gem gem_repo4, "pry", "0.11.3", "java"}
+        #{checksum_for_repo_gem gem_repo4, "spoon", "0.0.6"}
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -256,6 +264,15 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
+
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "coderay", "1.1.2"}
+        #{checksum_for_repo_gem gem_repo4, "empyrean", "0.1.0"}
+        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.23", "java"}
+        #{checksum_for_repo_gem gem_repo4, "method_source", "0.9.0"}
+        pry (0.11.3)
+        #{checksum_for_repo_gem gem_repo4, "pry", "0.11.3", "java"}
+        #{checksum_for_repo_gem gem_repo4, "spoon", "0.0.6"}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -289,6 +306,14 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
+
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "coderay", "1.1.2"}
+        #{checksum_for_repo_gem gem_repo4, "empyrean", "0.1.0"}
+        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.23", "java"}
+        #{checksum_for_repo_gem gem_repo4, "method_source", "0.9.0"}
+        #{checksum_for_repo_gem gem_repo4, "pry", "0.11.3", "java"}
+        #{checksum_for_repo_gem gem_repo4, "spoon", "0.0.6"}
 
       BUNDLED WITH
          1.16.1
@@ -399,6 +424,10 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         platform_specific
 
+      CHECKSUMS
+        #{checksum_for_repo_gem(gem_repo1, "platform_specific", "1.0")}
+        #{gem_no_checksum "platform_specific", "1.0", "java"}
+
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -459,7 +488,7 @@ RSpec.describe "bundle install with platform conditionals" do
           tzinfo (2.0.4)
 
       PLATFORMS
-        #{specific_local_platform}
+        #{local_platform}
 
       DEPENDENCIES
         activesupport
@@ -550,7 +579,7 @@ RSpec.describe "bundle install with platform conditionals" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
-      gem "rack", :platform => [:windows, :mingw, :mswin, :x64_mingw, :jruby]
+      gem "rack", :platform => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
     G
 
     bundle "install"
@@ -567,6 +596,8 @@ RSpec.describe "bundle install with platform conditionals" do
 
       DEPENDENCIES
         rack
+
+      CHECKSUMS
 
       BUNDLED WITH
          #{Bundler::VERSION}

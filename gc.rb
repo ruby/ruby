@@ -1,6 +1,6 @@
 # for gc.c
 
-#  The GC module provides an interface to Ruby's mark and
+#  The \GC module provides an interface to Ruby's mark and
 #  sweep garbage collection mechanism.
 #
 #  Some of the underlying methods are also available via the ObjectSpace
@@ -10,26 +10,31 @@
 #  GC::Profiler.
 module GC
 
-  #  call-seq:
-  #     GC.start                     -> nil
-  #     ObjectSpace.garbage_collect  -> nil
-  #     include GC; garbage_collect  -> nil
-  #     GC.start(full_mark: true, immediate_sweep: true)           -> nil
-  #     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
-  #     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+  # Initiates garbage collection, even if manually disabled.
   #
-  #  Initiates garbage collection, even if manually disabled.
+  # The +full_mark+ keyword argument determines whether or not to perform a
+  # major garbage collection cycle. When set to +true+, a major garbage
+  # collection cycle is ran, meaning all objects are marked. When set to
+  # +false+, a minor garbage collection cycle is ran, meaning only young
+  # objects are marked.
   #
-  #  This method is defined with keyword arguments that default to true:
+  # The +immediate_mark+ keyword argument determines whether or not to perform
+  # incremental marking. When set to +true+, marking is completed during the
+  # call to this method. When set to +false+, marking is performed in steps
+  # that is interleaved with future Ruby code execution, so marking might not
+  # be completed during this method call. Note that if +full_mark+ is +false+
+  # then marking will always be immediate, regardless of the value of
+  # +immediate_mark+.
   #
-  #     def GC.start(full_mark: true, immediate_sweep: true); end
+  # The +immedate_sweep+ keyword argument determines whether or not to defer
+  # sweeping (using lazy sweep). When set to +true+, sweeping is performed in
+  # steps that is interleaved with future Ruby code execution, so sweeping might
+  # not be completed during this method call. When set to +false+, sweeping is
+  # completed during the call to this method.
   #
-  #  Use full_mark: false to perform a minor \GC.
-  #  Use immediate_sweep: false to defer sweeping (use lazy sweep).
-  #
-  #  Note: These keyword arguments are implementation and version dependent. They
-  #  are not guaranteed to be future-compatible, and may be ignored if the
-  #  underlying implementation does not support them.
+  # Note: These keyword arguments are implementation and version dependent. They
+  # are not guaranteed to be future-compatible, and may be ignored if the
+  # underlying implementation does not support them.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
     Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
@@ -118,14 +123,14 @@ module GC
   #  [time]
   #    The total time spent in garbage collections (in milliseconds)
   #  [heap_allocated_pages]
-  #    The total number of `:heap_eden_pages` + `:heap_tomb_pages`
+  #    The total number of +:heap_eden_pages+ + +:heap_tomb_pages+
   #  [heap_sorted_length]
   #    The number of pages that can fit into the buffer that holds references to
   #    all pages
   #  [heap_allocatable_pages]
   #    The total number of pages the application could allocate without additional \GC
   #  [heap_available_slots]
-  #    The total number of slots in all `:heap_allocated_pages`
+  #    The total number of slots in all +:heap_allocated_pages+
   #  [heap_live_slots]
   #    The total number of slots which contain live objects
   #  [heap_free_slots]
@@ -149,7 +154,7 @@ module GC
   #  [malloc_increase_bytes]
   #    Amount of memory allocated on the heap for objects. Decreased by any \GC
   #  [malloc_increase_bytes_limit]
-  #    When `:malloc_increase_bytes` crosses this limit, \GC is triggered
+  #    When +:malloc_increase_bytes+ crosses this limit, \GC is triggered
   #  [minor_gc_count]
   #    The total number of minor garbage collections run since process start
   #  [major_gc_count]
@@ -164,16 +169,16 @@ module GC
   #  [remembered_wb_unprotected_objects]
   #    The total number of objects without write barriers
   #  [remembered_wb_unprotected_objects_limit]
-  #    When `:remembered_wb_unprotected_objects` crosses this limit,
+  #    When +:remembered_wb_unprotected_objects+ crosses this limit,
   #    major \GC is triggered
   #  [old_objects]
   #    Number of live, old objects which have survived at least 3 garbage collections
   #  [old_objects_limit]
-  #    When `:old_objects` crosses this limit, major \GC is triggered
+  #    When +:old_objects+ crosses this limit, major \GC is triggered
   #  [oldmalloc_increase_bytes]
   #    Amount of memory allocated on the heap for objects. Decreased by major \GC
   #  [oldmalloc_increase_bytes_limit]
-  #    When `:old_malloc_increase_bytes` crosses this limit, major \GC is triggered
+  #    When +:old_malloc_increase_bytes+ crosses this limit, major \GC is triggered
   #
   #  If the optional argument, hash, is given,
   #  it is overwritten and returned.
@@ -191,19 +196,18 @@ module GC
   #    GC.stat_heap(heap_name, hash) -> Hash
   #    GC.stat_heap(heap_name, :key) -> Numeric
   #
-  # Returns information for memory pools in the \GC.
+  # Returns information for heaps in the \GC.
   #
   # If the first optional argument, +heap_name+, is passed in and not +nil+, it
-  # returns a +Hash+ containing information about the particular memory pool.
-  # Otherwise, it will return a +Hash+ with memory pool names as keys and
-  # a +Hash+ containing information about the memory pool as values.
+  # returns a +Hash+ containing information about the particular heap.
+  # Otherwise, it will return a +Hash+ with heap names as keys and
+  # a +Hash+ containing information about the heap as values.
   #
   # If the second optional argument, +hash_or_key+, is given as +Hash+, it will
   # be overwritten and returned. This is intended to avoid the probe effect.
   #
   # If both optional arguments are passed in and the second optional argument is
-  # a symbol, it will return a +Numeric+ of the value for the particular memory
-  # pool.
+  # a symbol, it will return a +Numeric+ of the value for the particular heap.
   #
   # On CRuby, +heap_name+ is of the type +Integer+ but may be of type +String+
   # on other implementations.
@@ -214,6 +218,36 @@ module GC
   # If the optional argument, hash, is given, it is overwritten and returned.
   #
   # This method is only expected to work on CRuby.
+  #
+  # The hash includes the following keys about the internal information in
+  # the \GC:
+  #
+  # [slot_size]
+  #   The slot size of the heap in bytes.
+  # [heap_allocatable_pages]
+  #   The number of pages that can be allocated without triggering a new
+  #   garbage collection cycle.
+  # [heap_eden_pages]
+  #   The number of pages in the eden heap.
+  # [heap_eden_slots]
+  #   The total number of slots in all of the pages in the eden heap.
+  # [heap_tomb_pages]
+  #   The number of pages in the tomb heap. The tomb heap only contains pages
+  #   that do not have any live objects.
+  # [heap_tomb_slots]
+  #   The total number of slots in all of the pages in the tomb heap.
+  # [total_allocated_pages]
+  #   The total number of pages that have been allocated in the heap.
+  # [total_freed_pages]
+  #   The total number of pages that have been freed and released back to the
+  #   system in the heap.
+  # [force_major_gc_count]
+  #   The number of times major garbage collection cycles this heap has forced
+  #   to start due to running out of free slots.
+  # [force_incremental_marking_finish_count]
+  #   The number of times this heap has forced incremental marking to complete
+  #   due to running out of pooled slots.
+  #
   def self.stat_heap heap_name = nil, hash_or_key = nil
     Primitive.gc_stat_heap heap_name, hash_or_key
   end
@@ -282,7 +316,7 @@ module GC
   # Return measured \GC total time in nano seconds.
   def self.total_time
     Primitive.cexpr! %{
-      ULL2NUM(rb_objspace.profile.total_time_ns)
+      ULL2NUM(rb_objspace.profile.marking_time_ns + rb_objspace.profile.sweeping_time_ns)
     }
   end
 end

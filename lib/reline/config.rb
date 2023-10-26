@@ -93,7 +93,7 @@ class Reline::Config
   end
 
   def editing_mode_is?(*val)
-    (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
+    val.any?(@editing_mode_label)
   end
 
   def keymap
@@ -252,7 +252,7 @@ class Reline::Config
       end
       @skip_section = @if_stack.pop
     when 'include'
-      read(args)
+      read(File.expand_path(args))
     end
   end
 

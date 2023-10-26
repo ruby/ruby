@@ -205,4 +205,3 @@ class TestRDocMarkupDocument < RDoc::TestCase
   end
 
 end
-

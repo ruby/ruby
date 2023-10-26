@@ -169,7 +169,7 @@ class Bundler::Thor::Group
     # options are added to group_options hash. Options that already exists
     # in base_options are not added twice.
     #
-    def get_options_from_invocations(group_options, base_options) #:nodoc: # rubocop:disable MethodLength
+    def get_options_from_invocations(group_options, base_options) #:nodoc:
       invocations.each do |name, from_option|
         value = if from_option
           option = class_options[name]

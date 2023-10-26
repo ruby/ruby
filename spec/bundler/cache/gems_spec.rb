@@ -281,8 +281,26 @@ RSpec.describe "bundle cache" do
       build_gem "rack", "1.0.0",
         :path => bundled_app("vendor/cache"),
         :rubygems_version => "1.3.2"
+      # This test is only really valid if the checksum isn't saved. It otherwise can't be the same gem. Tested below.
+      bundled_app_lock.write remove_checksums_from_lockfile(bundled_app_lock.read, "rack (1.0.0)")
       simulate_new_machine
 
+      bundle :install
+      expect(cached_gem("rack-1.0.0")).to exist
+    end
+
+    it "raises an error when the gem file is altered and produces a different checksum" do
+      cached_gem("rack-1.0.0").rmtree
+      build_gem "rack", "1.0.0", :path => bundled_app("vendor/cache")
+      simulate_new_machine
+
+      bundle :install, :raise_on_error => false
+      expect(exitstatus).to eq(37)
+      expect(err).to include("Bundler found mismatched checksums.")
+      expect(err).to include("1. remove the gem at #{cached_gem("rack-1.0.0")}")
+
+      expect(cached_gem("rack-1.0.0")).to exist
+      cached_gem("rack-1.0.0").rmtree
       bundle :install
       expect(cached_gem("rack-1.0.0")).to exist
     end

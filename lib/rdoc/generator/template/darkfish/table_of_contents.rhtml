@@ -36,8 +36,9 @@
    unless table.empty? then %>
     <ul>
 <%- table.each do |item| -%>
-      <li><a href="<%= klass.path %>#<%= item.aref %>"><%= item.plain_html %></a>
-<%-   end -%>
+<%-   label = item.respond_to?(:label) ? item.label(klass) : item.aref -%>
+      <li><a href="<%= klass.path %>#<%= label %>"><%= item.plain_html %></a>
+<%- end -%>
     </ul>
 <%- end -%>
   </li>
@@ -46,9 +47,9 @@
 
 <h2 id="methods">Methods</h2>
 <ul>
-<%- @store.all_classes_and_modules.map do |mod|
+<%- @store.all_classes_and_modules.flat_map do |mod|
      mod.method_list
-   end.flatten.sort.each do |method| %>
+   end.sort.each do |method| %>
   <li class="method">
     <a href="<%= method.path %>"><%= h method.pretty_name %></a>
     &mdash;

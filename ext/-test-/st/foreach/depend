@@ -52,6 +52,7 @@ foreach.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 foreach.o: $(hdrdir)/ruby/internal/attr/noinline.h
 foreach.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 foreach.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+foreach.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 foreach.o: $(hdrdir)/ruby/internal/attr/pure.h
 foreach.o: $(hdrdir)/ruby/internal/attr/restrict.h
 foreach.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ foreach.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 foreach.o: $(hdrdir)/ruby/internal/intern/error.h
 foreach.o: $(hdrdir)/ruby/internal/intern/eval.h
 foreach.o: $(hdrdir)/ruby/internal/intern/file.h
-foreach.o: $(hdrdir)/ruby/internal/intern/gc.h
 foreach.o: $(hdrdir)/ruby/internal/intern/hash.h
 foreach.o: $(hdrdir)/ruby/internal/intern/io.h
 foreach.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ foreach.o: $(hdrdir)/ruby/internal/memory.h
 foreach.o: $(hdrdir)/ruby/internal/method.h
 foreach.o: $(hdrdir)/ruby/internal/module.h
 foreach.o: $(hdrdir)/ruby/internal/newobj.h
-foreach.o: $(hdrdir)/ruby/internal/rgengc.h
 foreach.o: $(hdrdir)/ruby/internal/scan_args.h
 foreach.o: $(hdrdir)/ruby/internal/special_consts.h
 foreach.o: $(hdrdir)/ruby/internal/static_assert.h

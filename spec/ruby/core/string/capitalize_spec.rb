@@ -78,18 +78,13 @@ describe "String#capitalize" do
     -> { "abc".capitalize(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(String)
+    StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
   end
 
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(String)
-      StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
-    end
+  it "returns a String in the same encoding as self" do
+    "h".encode("US-ASCII").capitalize.encoding.should == Encoding::US_ASCII
   end
 end
 

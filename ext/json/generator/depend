@@ -56,6 +56,7 @@ generator.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 generator.o: $(hdrdir)/ruby/internal/attr/noinline.h
 generator.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 generator.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+generator.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 generator.o: $(hdrdir)/ruby/internal/attr/pure.h
 generator.o: $(hdrdir)/ruby/internal/attr/restrict.h
 generator.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -125,7 +126,6 @@ generator.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 generator.o: $(hdrdir)/ruby/internal/intern/error.h
 generator.o: $(hdrdir)/ruby/internal/intern/eval.h
 generator.o: $(hdrdir)/ruby/internal/intern/file.h
-generator.o: $(hdrdir)/ruby/internal/intern/gc.h
 generator.o: $(hdrdir)/ruby/internal/intern/hash.h
 generator.o: $(hdrdir)/ruby/internal/intern/io.h
 generator.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -156,7 +156,6 @@ generator.o: $(hdrdir)/ruby/internal/memory.h
 generator.o: $(hdrdir)/ruby/internal/method.h
 generator.o: $(hdrdir)/ruby/internal/module.h
 generator.o: $(hdrdir)/ruby/internal/newobj.h
-generator.o: $(hdrdir)/ruby/internal/rgengc.h
 generator.o: $(hdrdir)/ruby/internal/scan_args.h
 generator.o: $(hdrdir)/ruby/internal/special_consts.h
 generator.o: $(hdrdir)/ruby/internal/static_assert.h

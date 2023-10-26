@@ -118,7 +118,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_autoload
-    100.times do
+    10.times do
       Object.autoload(:TestFiberSchedulerAutoload, File.expand_path("autoload.rb", __dir__))
 
       thread = Thread.new do

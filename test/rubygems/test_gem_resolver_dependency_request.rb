@@ -1,23 +1,18 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemResolverDependencyRequest < Gem::TestCase
-  def setup
-    super
-
-    @DR = Gem::Resolver::DependencyRequest
-  end
-
   def test_development_eh
     a_dep = dep "a", ">= 1"
 
-    a_dep_req = @DR.new a_dep, nil
+    a_dep_req = Gem::Resolver::DependencyRequest.new a_dep, nil
 
     refute a_dep_req.development?
 
     b_dep = dep "b", ">= 1", :development
 
-    b_dep_req = @DR.new b_dep, nil
+    b_dep_req = Gem::Resolver::DependencyRequest.new b_dep, nil
 
     assert b_dep_req.development?
   end
@@ -26,7 +21,7 @@ class TestGemResolverDependencyRequest < Gem::TestCase
     spec = util_spec "a", 1
     dependency = dep "a", ">= 1"
 
-    dr = @DR.new dependency, nil
+    dr = Gem::Resolver::DependencyRequest.new dependency, nil
 
     assert dr.match? spec
   end
@@ -35,12 +30,12 @@ class TestGemResolverDependencyRequest < Gem::TestCase
     spec = util_spec "a", "1.a"
 
     a_dep = dep "a", ">= 1"
-    a_dr = @DR.new a_dep, nil
+    a_dr = Gem::Resolver::DependencyRequest.new a_dep, nil
 
     refute a_dr.match? spec
 
     a_pre_dep = dep "a", ">= 1.a"
-    a_pre_dr = @DR.new a_pre_dep, nil
+    a_pre_dr = Gem::Resolver::DependencyRequest.new a_pre_dep, nil
 
     assert a_pre_dr.match? spec
   end
@@ -49,7 +44,7 @@ class TestGemResolverDependencyRequest < Gem::TestCase
     spec = util_spec "a", "2.a"
 
     a_dep = dep "a", ">= 1"
-    a_dr = @DR.new a_dep, nil
+    a_dr = Gem::Resolver::DependencyRequest.new a_dep, nil
 
     assert a_dr.match? spec, true
   end
@@ -58,7 +53,7 @@ class TestGemResolverDependencyRequest < Gem::TestCase
     spec = util_spec "a", 1
     dependency = dep "a", ">= 1"
 
-    dr = @DR.new dependency, nil
+    dr = Gem::Resolver::DependencyRequest.new dependency, nil
 
     assert dr.matches_spec? spec
   end
@@ -67,7 +62,7 @@ class TestGemResolverDependencyRequest < Gem::TestCase
     spec = util_spec "a", "1.a"
 
     dependency = dep "a", ">= 0"
-    dr = @DR.new dependency, nil
+    dr = Gem::Resolver::DependencyRequest.new dependency, nil
 
     assert dr.matches_spec? spec
   end
@@ -75,7 +70,7 @@ class TestGemResolverDependencyRequest < Gem::TestCase
   def test_requirement
     dependency = dep "a", ">= 1"
 
-    dr = @DR.new dependency, nil
+    dr = Gem::Resolver::DependencyRequest.new dependency, nil
 
     assert_equal dependency, dr.dependency
   end

@@ -1,14 +1,7 @@
 # frozen_string_literal: false
 #
 #   irb/inspector.rb - inspect methods
-#   	$Release Version: 0.9.6$
-#   	$Revision: 1.19 $
-#   	$Date: 2002/06/11 07:51:31 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:
@@ -42,6 +35,7 @@ module IRB # :nodoc:
   #     irb(main):001:0> "what?" #=> omg! what?
   #
   class Inspector
+    KERNEL_INSPECT = Object.instance_method(:inspect)
     # Default inspectors available to irb, this includes:
     #
     # +:pp+::       Using Kernel#pretty_inspect
@@ -100,9 +94,17 @@ module IRB # :nodoc:
     # Proc to call when the input is evaluated and output in irb.
     def inspect_value(v)
       @inspect.call(v)
-    rescue
-      puts "(Object doesn't support #inspect)"
-      ''
+    rescue => e
+      puts "An error occurred when inspecting the object: #{e.inspect}"
+
+      begin
+        puts "Result of Kernel#inspect: #{KERNEL_INSPECT.bind_call(v)}"
+        ''
+      rescue => e
+        puts "An error occurred when running Kernel#inspect: #{e.inspect}"
+        puts e.backtrace.join("\n")
+        ''
+      end
     end
   end
 

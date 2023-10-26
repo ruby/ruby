@@ -1,0 +1,46 @@
+@ ProgramNode (location: (1,0)-(3,12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,12))
+    └── body: (length: 3)
+        ├── @ IfNode (location: (1,0)-(1,13))
+        │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
+        │   ├── predicate:
+        │   │   @ FlipFlopNode (location: (1,3)-(1,7))
+        │   │   ├── left:
+        │   │   │   @ IntegerNode (location: (1,3)-(1,4))
+        │   │   │   └── flags: decimal
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (1,6)-(1,7))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (1,4)-(1,6) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (1,10)-(1,13) = "end"
+        ├── @ IfNode (location: (2,0)-(2,12))
+        │   ├── if_keyword_loc: (2,0)-(2,2) = "if"
+        │   ├── predicate:
+        │   │   @ FlipFlopNode (location: (2,3)-(2,6))
+        │   │   ├── left: ∅
+        │   │   ├── right:
+        │   │   │   @ IntegerNode (location: (2,5)-(2,6))
+        │   │   │   └── flags: decimal
+        │   │   ├── operator_loc: (2,3)-(2,5) = ".."
+        │   │   └── flags: ∅
+        │   ├── statements: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (2,9)-(2,12) = "end"
+        └── @ IfNode (location: (3,0)-(3,12))
+            ├── if_keyword_loc: (3,0)-(3,2) = "if"
+            ├── predicate:
+            │   @ FlipFlopNode (location: (3,3)-(3,6))
+            │   ├── left:
+            │   │   @ IntegerNode (location: (3,3)-(3,4))
+            │   │   └── flags: decimal
+            │   ├── right: ∅
+            │   ├── operator_loc: (3,4)-(3,6) = ".."
+            │   └── flags: ∅
+            ├── statements: ∅
+            ├── consequent: ∅
+            └── end_keyword_loc: (3,9)-(3,12) = "end"

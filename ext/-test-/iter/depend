@@ -52,6 +52,7 @@ break.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 break.o: $(hdrdir)/ruby/internal/attr/noinline.h
 break.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 break.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+break.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 break.o: $(hdrdir)/ruby/internal/attr/pure.h
 break.o: $(hdrdir)/ruby/internal/attr/restrict.h
 break.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ break.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 break.o: $(hdrdir)/ruby/internal/intern/error.h
 break.o: $(hdrdir)/ruby/internal/intern/eval.h
 break.o: $(hdrdir)/ruby/internal/intern/file.h
-break.o: $(hdrdir)/ruby/internal/intern/gc.h
 break.o: $(hdrdir)/ruby/internal/intern/hash.h
 break.o: $(hdrdir)/ruby/internal/intern/io.h
 break.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ break.o: $(hdrdir)/ruby/internal/memory.h
 break.o: $(hdrdir)/ruby/internal/method.h
 break.o: $(hdrdir)/ruby/internal/module.h
 break.o: $(hdrdir)/ruby/internal/newobj.h
-break.o: $(hdrdir)/ruby/internal/rgengc.h
 break.o: $(hdrdir)/ruby/internal/scan_args.h
 break.o: $(hdrdir)/ruby/internal/special_consts.h
 break.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -212,6 +211,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -271,7 +271,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -302,7 +301,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -372,6 +370,7 @@ yield.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 yield.o: $(hdrdir)/ruby/internal/attr/noinline.h
 yield.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 yield.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+yield.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 yield.o: $(hdrdir)/ruby/internal/attr/pure.h
 yield.o: $(hdrdir)/ruby/internal/attr/restrict.h
 yield.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -431,7 +430,6 @@ yield.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 yield.o: $(hdrdir)/ruby/internal/intern/error.h
 yield.o: $(hdrdir)/ruby/internal/intern/eval.h
 yield.o: $(hdrdir)/ruby/internal/intern/file.h
-yield.o: $(hdrdir)/ruby/internal/intern/gc.h
 yield.o: $(hdrdir)/ruby/internal/intern/hash.h
 yield.o: $(hdrdir)/ruby/internal/intern/io.h
 yield.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -462,7 +460,6 @@ yield.o: $(hdrdir)/ruby/internal/memory.h
 yield.o: $(hdrdir)/ruby/internal/method.h
 yield.o: $(hdrdir)/ruby/internal/module.h
 yield.o: $(hdrdir)/ruby/internal/newobj.h
-yield.o: $(hdrdir)/ruby/internal/rgengc.h
 yield.o: $(hdrdir)/ruby/internal/scan_args.h
 yield.o: $(hdrdir)/ruby/internal/special_consts.h
 yield.o: $(hdrdir)/ruby/internal/static_assert.h

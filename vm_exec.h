@@ -21,11 +21,7 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_ENTER_INSN(insn) \
     rb_vmdebug_debug_print_pre(ec, GET_CFP(), GET_PC());
 
-#if OPT_STACK_CACHING
-#define SC_REGS() , reg_a, reg_b
-#else
 #define SC_REGS()
-#endif
 
 #define DEBUG_END_INSN() \
   rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
@@ -39,10 +35,6 @@ typedef rb_iseq_t *ISEQ;
 
 #define throwdebug if(0)ruby_debug_printf
 /* #define throwdebug ruby_debug_printf */
-
-#ifndef USE_INSNS_COUNTER
-#define USE_INSNS_COUNTER 0
-#endif
 
 /************************************************/
 #if defined(DISPATCH_XXX)
@@ -80,8 +72,7 @@ error !
                         (reg_cfp->pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded), \
                         RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
                         rb_iseq_line_no(reg_cfp->iseq, reg_pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded)); \
-  } \
-  if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
+  }
 
 #define INSN_DISPATCH_SIG(insn)
 
@@ -165,12 +156,6 @@ default:                        \
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
-#ifdef MJIT_HEADER
-#define THROW_EXCEPTION(exc) do { \
-    ec->errinfo = (VALUE)(exc); \
-    EC_JUMP_TAG(ec, ec->tag->state); \
-} while (0)
-#else
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
@@ -179,7 +164,24 @@ default:                        \
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
-#endif
+
+// Run the interpreter from the JIT
+#define VM_EXEC(ec, val) do { \
+    if (val == Qundef) { \
+        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
+        val = vm_exec(ec); \
+    } \
+} while (0)
+
+// Run the JIT from the interpreter
+#define JIT_EXEC(ec, val) do { \
+    rb_jit_func_t func; \
+    if (val == Qundef && (func = jit_compile(ec))) { \
+        val = func(ec, ec->cfp); \
+        RESTORE_REGS(); /* fix cfp for tailcall */ \
+        if (ec->tag->state) THROW_EXCEPTION(val); \
+    } \
+} while (0)
 
 #define SCREG(r) (reg_##r)
 

@@ -54,10 +54,13 @@ closure_memsize(const void * ptr)
 }
 
 const rb_data_type_t closure_data_type = {
-    "fiddle/closure",
-    {0, dealloc, closure_memsize,},
-    0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    .wrap_struct_name = "fiddle/closure",
+    .function = {
+        .dmark = 0,
+        .dfree = dealloc,
+        .dsize = closure_memsize
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 struct callback_args {

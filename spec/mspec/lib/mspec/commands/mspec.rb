@@ -38,11 +38,6 @@ class MSpecMain < MSpecScript
 
     options.targets
 
-    options.on("--warnings", "Don't suppress warnings") do
-      config[:flags] << '-w'
-      ENV['OUTPUT_WARNINGS'] = '1'
-    end
-
     options.on("-j", "--multi", "Run multiple (possibly parallel) subprocesses") do
       config[:multi] = true
     end

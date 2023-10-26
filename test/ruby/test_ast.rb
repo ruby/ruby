@@ -214,6 +214,128 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def assert_parse(code, warning: '')
+    node = assert_warning(warning) {RubyVM::AbstractSyntaxTree.parse(code)}
+    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, node, code)
+  end
+
+  def assert_invalid_parse(msg, code)
+    assert_raise_with_message(SyntaxError, msg, code) do
+      RubyVM::AbstractSyntaxTree.parse(code)
+    end
+  end
+
+  def test_invalid_exit
+    [
+      "break",
+      "break true",
+      "next",
+      "next true",
+      "redo",
+    ].each do |code, *args|
+      msg = /Invalid #{code[/\A\w+/]}/
+      assert_parse("while false; #{code}; end")
+      assert_parse("until true; #{code}; end")
+      assert_parse("begin #{code}; end while false")
+      assert_parse("begin #{code}; end until true")
+      assert_parse("->{#{code}}")
+      assert_parse("->{class X; #{code}; end}")
+      assert_invalid_parse(msg, "#{code}")
+      assert_invalid_parse(msg, "def m; #{code}; end")
+      assert_invalid_parse(msg, "begin; #{code}; end")
+      assert_parse("END {#{code}}")
+
+      assert_parse("!defined?(#{code})")
+      assert_parse("def m; defined?(#{code}); end")
+      assert_parse("!begin; defined?(#{code}); end")
+
+      next if code.include?(" ")
+      assert_parse("!defined? #{code}")
+      assert_parse("def m; defined? #{code}; end")
+      assert_parse("!begin; defined? #{code}; end")
+    end
+  end
+
+  def test_invalid_retry
+    msg = /Invalid retry/
+    assert_invalid_parse(msg, "retry")
+    assert_invalid_parse(msg, "def m; retry; end")
+    assert_invalid_parse(msg, "begin retry; end")
+    assert_parse("begin rescue; retry; end")
+    assert_invalid_parse(msg, "begin rescue; else; retry; end")
+    assert_invalid_parse(msg, "begin rescue; ensure; retry; end")
+    assert_parse("nil rescue retry")
+    assert_invalid_parse(msg, "END {retry}")
+    assert_invalid_parse(msg, "begin rescue; END {retry}; end")
+
+    assert_parse("!defined?(retry)")
+    assert_parse("def m; defined?(retry); end")
+    assert_parse("!begin defined?(retry); end")
+    assert_parse("begin rescue; else; defined?(retry); end")
+    assert_parse("begin rescue; ensure; defined?(retry); end")
+    assert_parse("END {defined?(retry)}")
+    assert_parse("begin rescue; END {defined?(retry)}; end")
+    assert_parse("!defined? retry")
+
+    assert_parse("def m; defined? retry; end")
+    assert_parse("!begin defined? retry; end")
+    assert_parse("begin rescue; else; defined? retry; end")
+    assert_parse("begin rescue; ensure; defined? retry; end")
+    assert_parse("END {defined? retry}")
+    assert_parse("begin rescue; END {defined? retry}; end")
+
+    assert_parse("#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      def foo
+        begin
+          yield
+        rescue StandardError => e
+          begin
+            puts "hi"
+            retry
+          rescue
+            retry unless e
+            raise e
+          else
+            retry
+          ensure
+            retry
+          end
+        end
+      end
+    end;
+  end
+
+  def test_invalid_yield
+    msg = /Invalid yield/
+    assert_invalid_parse(msg, "yield")
+    assert_invalid_parse(msg, "class C; yield; end")
+    assert_invalid_parse(msg, "BEGIN {yield}")
+    assert_invalid_parse(msg, "END {yield}")
+    assert_invalid_parse(msg, "-> {yield}")
+
+    assert_invalid_parse(msg, "yield true")
+    assert_invalid_parse(msg, "class C; yield true; end")
+    assert_invalid_parse(msg, "BEGIN {yield true}")
+    assert_invalid_parse(msg, "END {yield true}")
+    assert_invalid_parse(msg, "-> {yield true}")
+
+    assert_parse("!defined?(yield)")
+    assert_parse("class C; defined?(yield); end")
+    assert_parse("BEGIN {defined?(yield)}")
+    assert_parse("END {defined?(yield)}")
+
+    assert_parse("!defined?(yield true)")
+    assert_parse("class C; defined?(yield true); end")
+    assert_parse("BEGIN {defined?(yield true)}")
+    assert_parse("END {defined?(yield true)}")
+
+    assert_parse("!defined? yield")
+    assert_parse("class C; defined? yield; end")
+    assert_parse("BEGIN {defined? yield}")
+    assert_parse("END {defined? yield}")
+  end
+
   def test_node_id_for_location
     exception = begin
                   raise
@@ -225,6 +347,12 @@ class TestAst < Test::Unit::TestCase
     node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
 
     assert_equal node.node_id, node_id
+  end
+
+  def test_node_id_for_backtrace_location_raises_argument_error
+    bug19262 = '[ruby-core:111435]'
+
+    assert_raise(TypeError, bug19262) { RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(1) }
   end
 
   def test_of_proc_and_method
@@ -616,6 +744,33 @@ dummy
 
     assert_equal("{ 1 + 2 }", node_proc.source)
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
+  end
+
+  def test_keep_tokens_for_parse
+    node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_tokens: true)
+    1.times do
+    end
+    __END__
+    dummy
+    END
+
+    expected = [
+      [:tINTEGER, "1"],
+      [:".", "."],
+      [:tIDENTIFIER, "times"],
+      [:tSP, " "],
+      [:keyword_do, "do"],
+      [:tIGNORED_NL, "\n"],
+      [:keyword_end, "end"],
+      [:nl, "\n"],
+    ]
+    assert_equal(expected, node.all_tokens.map { [_2, _3]})
+  end
+
+  def test_keep_tokens_unexpected_backslash
+    assert_raise_with_message(SyntaxError, /unexpected backslash/) do
+      RubyVM::AbstractSyntaxTree.parse("\\", keep_tokens: true)
+    end
   end
 
   def test_encoding_with_keep_script_lines
@@ -1042,10 +1197,23 @@ dummy
     EXP
   end
 
-  def assert_error_tolerant(src, expected)
+  def test_error_tolerant_unexpected_backslash
+    node = assert_error_tolerant("\\", <<~EXP, keep_tokens: true)
+      (SCOPE@1:0-1:1 tbl: [] args: nil body: (ERROR@1:0-1:1))
+    EXP
+    assert_equal([[0, :backslash, "\\", [1, 0, 1, 1]]], node.children.last.tokens)
+  end
+
+  def test_with_bom
+    assert_error_tolerant("\u{feff}nil", <<~EXP)
+      (SCOPE@1:0-1:3 tbl: [] args: nil body: (NIL@1:0-1:3))
+    EXP
+  end
+
+  def assert_error_tolerant(src, expected, keep_tokens: false)
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false
-      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true, keep_tokens: keep_tokens)
     ensure
       $VERBOSE = verbose_bak
     end
@@ -1053,5 +1221,6 @@ dummy
     str = ""
     PP.pp(node, str, 80)
     assert_equal(expected, str)
+    node
   end
 end

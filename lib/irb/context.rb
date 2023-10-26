@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"
@@ -134,8 +129,6 @@ module IRB
       else
         @io = input_method
       end
-      self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
-
       @extra_doc_dirs = IRB.conf[:EXTRA_DOC_DIRS]
 
       @echo = IRB.conf[:ECHO]
@@ -154,6 +147,24 @@ module IRB
       end
 
       @command_aliases = IRB.conf[:COMMAND_ALIASES]
+    end
+
+    def save_history=(val)
+      IRB.conf[:SAVE_HISTORY] = val
+    end
+
+    def save_history
+      IRB.conf[:SAVE_HISTORY]
+    end
+
+    # A copy of the default <code>IRB.conf[:HISTORY_FILE]</code>
+    def history_file
+      IRB.conf[:HISTORY_FILE]
+    end
+
+    # Set <code>IRB.conf[:HISTORY_FILE]</code> to the given +hist+.
+    def history_file=(hist)
+      IRB.conf[:HISTORY_FILE] = hist
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -218,8 +229,19 @@ module IRB
     #
     # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_c
-    # See IRB@Customizing+the+IRB+Prompt for more information.
-    attr_accessor :prompt_n
+
+    # TODO: Remove this when developing v2.0
+    def prompt_n
+      warn "IRB::Context#prompt_n is deprecated and will be removed in the next major release."
+      ""
+    end
+
+    # TODO: Remove this when developing v2.0
+    def prompt_n=(_)
+      warn "IRB::Context#prompt_n= is deprecated and will be removed in the next major release."
+      ""
+    end
+
     # Can be either the default <code>IRB.conf[:AUTO_INDENT]</code>, or the
     # mode set by #prompt_mode=
     #
@@ -334,6 +356,8 @@ module IRB
     # User-defined IRB command aliases
     attr_accessor :command_aliases
 
+    attr_accessor :with_debugger
+
     # Alias for #use_multiline
     alias use_multiline? use_multiline
     # Alias for #use_singleline
@@ -401,7 +425,6 @@ module IRB
       @prompt_i = pconf[:PROMPT_I]
       @prompt_s = pconf[:PROMPT_S]
       @prompt_c = pconf[:PROMPT_C]
-      @prompt_n = pconf[:PROMPT_N]
       @return_format = pconf[:RETURN]
       @return_format = "%s\n" if @return_format == nil
       if ai = pconf.include?(:AUTO_INDENT)
@@ -478,28 +501,31 @@ module IRB
       @inspect_mode
     end
 
-    def evaluate(line, line_no, exception: nil) # :nodoc:
+    def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
-      if exception
-        line_no -= 1
-        line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
-        @workspace.local_variable_set(:_, exception)
+      result = nil
+
+      if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
+        IRB.set_measure_callback
       end
 
-      # Transform a non-identifier alias (@, $) or keywords (next, break)
-      command, args = line.split(/\s/, 2)
-      if original = command_aliases[command.to_sym]
-        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
-        command = original
+      if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
+        last_proc = proc do
+          result = @workspace.evaluate(line, irb_path, line_no)
+        end
+        IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) do |chain, item|
+          _name, callback, arg = item
+          proc do
+            callback.(self, line, line_no, arg) do
+              chain.call
+            end
+          end
+        end.call
+      else
+        result = @workspace.evaluate(line, irb_path, line_no)
       end
 
-      # Hook command-specific transformation
-      command_class = ExtendCommandBundle.load_command(command)
-      if command_class&.respond_to?(:transform_args)
-        line = "#{command} #{command_class.transform_args(args)}"
-      end
-
-      set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
+      set_last_value(result)
     end
 
     def inspect_last_value # :nodoc:

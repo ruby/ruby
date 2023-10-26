@@ -111,6 +111,7 @@ FILES_NEED_VPATH = %w[
   ext/ripper/eventids1.c
   ext/ripper/eventids2table.c
   ext/ripper/ripper.c
+  ext/ripper/ripper_init.c
   golf_prelude.c
   id.c
   id.h
@@ -119,10 +120,8 @@ FILES_NEED_VPATH = %w[
   known_errors.inc
   lex.c
   miniprelude.c
-  mjit_sp_inc.inc
   newline.c
   node_name.inc
-  opt_sc.inc
   optinsn.inc
   optunifs.inc
   parse.c
@@ -150,6 +149,14 @@ FILES_NEED_VPATH = %w[
   enc/trans/single_byte.c
   enc/trans/utf8_mac.c
   enc/trans/utf_16_32.c
+
+  prism/api_node.c
+  prism/ast.h
+  prism/node.c
+  prism/prettyprint.c
+  prism/serialize.c
+  prism/token_type.c
+  prism/version.h
 ]
 
 # Multiple files with same filename.
@@ -167,13 +174,17 @@ FILES_SAME_NAME_TOP = %w[
   version.h
 ]
 
+# Files that may or may not exist on CI for some reason.
+# Windows build generally seems to have missing dependencies.
+UNSTABLE_FILES = %r{\Awin32/[^/]+\.o\z}
+
 # Other source files exist in the source directory.
 
 def in_makefile(target, source)
   target = target.to_s
   source = source.to_s
   case target
-  when %r{\A[^/]*\z}, %r{\Acoroutine/}
+  when %r{\A[^/]*\z}, %r{\Acoroutine/}, %r{\Aprism/}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
     when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
@@ -230,6 +241,10 @@ def in_makefile(target, source)
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["#{File.dirname(target)}/depend", target2, source2]
+  # Files that may or may not exist on CI for some reason.
+  # Windows build generally seems to have missing dependencies.
+  when UNSTABLE_FILES
+    warn "warning: ignoring: #{target}"
   else
     raise "unexpected target: #{target}"
   end
@@ -301,6 +316,7 @@ def read_make_deps(cwd)
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
       deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
+      next if /libyjit.o\z/ =~ target.to_s # skip YJIT Rust object (no corresponding C source)
       next if /\.bundle\// =~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
@@ -333,24 +349,25 @@ end
 #  raise ArgumentError, "can not find #{filename} (hint: #{hint0})"
 #end
 
-def read_single_cc_deps(path_i, cwd)
+def read_single_cc_deps(path_i, cwd, fn_o)
   files = {}
   compiler_wd = nil
   path_i.each_line {|line|
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
+
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
     next if /\.e?rb\z/ =~ dep
-    compiler_wd ||= dep
+    # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
+    if /\/\/\z/ =~ dep
+      compiler_wd = Pathname(dep.sub(%r{//\z}, ''))
+      next
+    end
+
     files[dep] = true
   }
-  # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
-  if %r{\A/.*//\z} =~ compiler_wd
-    files.delete compiler_wd
-    compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
-  elsif !(compiler_wd = yield)
-    raise "compiler working directory not found: #{path_i}"
-  end
+  compiler_wd ||= fn_o.to_s.start_with?("enc/") ? cwd : path_i.parent
+
   deps = []
   files.each_key {|dep|
     dep = Pathname(dep)
@@ -382,13 +399,7 @@ def read_cc_deps(cwd)
     end
     path_o = cwd + fn_o
     path_i = cwd + fn_i
-    deps[path_o] = read_single_cc_deps(path_i, cwd) do
-      if fn_o.to_s.start_with?("enc/")
-        cwd
-      else
-        path_i.parent
-      end
-    end
+    deps[path_o] = read_single_cc_deps(path_i, cwd, fn_o)
   }
   deps
 end
@@ -476,7 +487,7 @@ def compare_deps(make_deps, cc_deps, out=$stdout)
     }
   }
 
-  makefiles.keys.sort.each {|makefile|
+  makefiles.keys.compact.sort.each {|makefile|
     cc_lines = cc_lines_hash[makefile] || Hash.new(false)
     make_lines = make_lines_hash[makefile] || Hash.new(false)
     content = begin

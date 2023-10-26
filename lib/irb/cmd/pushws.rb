@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   change-ws.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require_relative "nop"
@@ -18,7 +12,7 @@ module IRB
 
   module ExtendCommand
     class Workspaces < Nop
-      category "IRB"
+      category "Workspace"
       description "Show workspaces."
 
       def execute(*obj)
@@ -27,7 +21,7 @@ module IRB
     end
 
     class PushWorkspace < Workspaces
-      category "IRB"
+      category "Workspace"
       description "Push an object to the workspace stack."
 
       def execute(*obj)
@@ -37,7 +31,7 @@ module IRB
     end
 
     class PopWorkspace < Workspaces
-      category "IRB"
+      category "Workspace"
       description "Pop a workspace from the workspace stack."
 
       def execute(*obj)

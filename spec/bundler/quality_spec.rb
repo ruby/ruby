@@ -40,7 +40,7 @@ RSpec.describe "The library itself" do
     "#{filename} has spaces on the EOL on lines #{failing_lines.join(", ")}"
   end
 
-  def check_for_straneous_quotes(filename)
+  def check_for_extraneous_quotes(filename)
     return if File.expand_path(filename) == __FILE__
 
     failing_lines = []
@@ -49,7 +49,7 @@ RSpec.describe "The library itself" do
     end
 
     return if failing_lines.empty?
-    "#{filename} has an straneous quote on lines #{failing_lines.join(", ")}"
+    "#{filename} has an extraneous quote on lines #{failing_lines.join(", ")}"
   end
 
   def check_for_expendable_words(filename)
@@ -96,12 +96,12 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "has no estraneous quotes" do
+  it "has no extraneous quotes" do
     exempt = /vendor|vcr_cassettes|LICENSE|rbreadline\.diff/
     error_messages = []
     tracked_files.each do |filename|
       next if filename&.match?(exempt)
-      error_messages << check_for_straneous_quotes(filename)
+      error_messages << check_for_extraneous_quotes(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
@@ -206,7 +206,6 @@ RSpec.describe "The library itself" do
       lib/bundler/deployment.rb
       lib/bundler/gem_tasks.rb
       lib/bundler/vlad.rb
-      lib/bundler/templates/gems.rb
     ]
     files_to_require = lib_tracked_files.grep(/\.rb$/) - exclusions
     files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }

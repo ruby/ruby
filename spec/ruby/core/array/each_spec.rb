@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/enumeratorize'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 require_relative '../enumerable/shared/enumeratorized'
 
 # Mutating the array while it is being iterated is discouraged as it can result in confusing behavior.
@@ -74,4 +75,8 @@ describe "Array#each" do
 
   it_behaves_like :enumeratorize, :each
   it_behaves_like :enumeratorized_with_origin_size, :each, [1,2,3]
+end
+
+describe "Array#each" do
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :each
 end

@@ -30,4 +30,3 @@ class TestRDocMarkupParagraph < RDoc::TestCase
   end
 
 end
-

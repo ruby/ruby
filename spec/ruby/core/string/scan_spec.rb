@@ -69,6 +69,12 @@ describe "String#scan" do
   it "does not raise any errors when passed a multi-byte string" do
     "あああaaaあああ".scan("あああ").should == ["あああ", "あああ"]
   end
+
+  it "returns Strings in the same encoding as self" do
+    "cruel world".encode("US-ASCII").scan(/\w+/).each do |s|
+      s.encoding.should == Encoding::US_ASCII
+    end
+  end
 end
 
 describe "String#scan with pattern and block" do
@@ -159,11 +165,9 @@ describe "String#scan with pattern and block" do
     end
   end
 
-  ruby_version_is '3.0' do
-    it "yields String instances for subclasses" do
-      a = []
-      StringSpecs::MyString.new("abc").scan(/./) { |s| a << s.class }
-      a.should == [String, String, String]
-    end
+  it "yields String instances for subclasses" do
+    a = []
+    StringSpecs::MyString.new("abc").scan(/./) { |s| a << s.class }
+    a.should == [String, String, String]
   end
 end

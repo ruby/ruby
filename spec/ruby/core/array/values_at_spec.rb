@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
+# Should be synchronized with core/struct/values_at_spec.rb
 describe "Array#values_at" do
   it "returns an array of elements at the indexes when passed indexes" do
     [1, 2, 3, 4, 5].values_at().should == []

@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH << File.join(__dir__, "../lib")
+require "lrama"
+
+Lrama::Command.new.run(ARGV.dup)

@@ -14,6 +14,13 @@ class TestRipper::Ripper < Test::Unit::TestCase
     @ripper = Ripper.new '1 + 1'
   end
 
+  def test_new
+    assert_separately(%w[-rripper], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nil EnvUtil.under_gc_stress {Ripper.new("")}.state
+    end;
+  end
+
   def test_column
     assert_nil @ripper.column
   end
@@ -139,6 +146,28 @@ end
     END
 
     assert_nothing_raised { Ripper.lex src }
+  end
+
+  def test_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      2_000_000.times do
+        Ripper.parse("")
+      end
+    end;
+
+    # [Bug #19835]
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.parse("class Foo")
+      end
+    end;
+
+    # [Bug #19836]
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.parse("-> {")
+      end
+    end;
   end
 
   class TestInput < self

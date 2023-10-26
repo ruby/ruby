@@ -2,7 +2,7 @@
 
 module Bundler
   class Injector
-    INJECTED_GEMS = "injected gems".freeze
+    INJECTED_GEMS = "injected gems"
 
     def self.inject(new_deps, options = {})
       injector = new(new_deps, options)
@@ -86,7 +86,7 @@ module Bundler
       segments = version.segments
       seg_end_index = version >= Gem::Version.new("1.0") ? 1 : 2
 
-      prerelease_suffix = version.to_s.gsub(version.release.to_s, "") if version.prerelease?
+      prerelease_suffix = version.to_s.delete_prefix(version.release.to_s) if version.prerelease?
       "#{version_prefix}#{segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
     end
 

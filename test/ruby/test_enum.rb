@@ -1334,4 +1334,16 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], @obj.filter_map { nil })
     assert_instance_of(Enumerator, @obj.filter_map)
   end
+
+  def test_ruby_svar
+    klass = Class.new do
+      include Enumerable
+      def each
+        %w(bar baz).each{|e| yield e}
+      end
+    end
+    svars = []
+    klass.new.grep(/(b.)/) { svars << $1 }
+    assert_equal(["ba", "ba"], svars)
+  end
 end

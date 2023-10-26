@@ -8,6 +8,9 @@ on:
       - '**.rdoc'
       - '**/.document'
   pull_request:
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  merge_group:
     paths-ignore:
       - 'doc/**'
       - '**/man'
@@ -26,80 +29,83 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ["check"] # "test-bundler-parallel", "test-bundled-gems"
-        os:
-          - macos-11
-          - macos-12
+        test_task: ['check']
+        configure: ['']
+        os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
       fail-fast: false
+
     env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
     runs-on: ${{ matrix.os }}
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          path: src
-      - uses: actions/cache@c17f4bf4666a8001b1a45c09eb7a485c41aa64c3 # v3.2.0
-        with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
       - name: Install libraries
-        run: |
-          brew upgrade
-          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline bison
-        working-directory: src
-      - name: Set ENV
-        run: |
-          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
-          echo "PATH="/usr/local/opt/bison/bin:$PATH"" >> $GITHUB_ENV
-      - run: ./autogen.sh
-        working-directory: src
+        uses: ./.github/actions/setup/macos
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
+
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - run: make incs
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
       - run: make
-      - run: make leaked-globals
-        if: ${{ matrix.test_task == 'check' }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
-        timeout-minutes: 40
+        timeout-minutes: 60
         env:
-          RUBY_TESTOPTS: "-q --tty=no"
+          RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
-          PRECHECK_BUNDLED_GEMS: "no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          PRECHECK_BUNDLED_GEMS: 'no'
+
       - name: make skipped tests
         run: |
           make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
         env:
-          GNUMAKEFLAGS: ""
-          RUBY_TESTOPTS: "-v --tty=no"
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
           TESTS: ${{ matrix.skipped_tests }}
-          PRECHECK_BUNDLED_GEMS: "no"
+          PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+
+      - uses: ./.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
+          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: macos-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:

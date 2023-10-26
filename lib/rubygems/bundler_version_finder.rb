@@ -21,7 +21,7 @@ module Gem::BundlerVersionFinder
   end
 
   def self.bundle_update_bundler_version
-    return unless File.basename($0) == "bundle".freeze
+    return unless File.basename($0) == "bundle"
     return unless "update".start_with?(ARGV.first || " ")
     bundler_version = nil
     update_index = nil
@@ -65,8 +65,8 @@ module Gem::BundlerVersionFinder
     return unless gemfile
 
     lockfile = case gemfile
-    when "gems.rb" then "gems.locked"
-    else "#{gemfile}.lock"
+               when "gems.rb" then "gems.locked"
+               else "#{gemfile}.lock"
     end.dup.tap(&Gem::UNTAINT)
 
     return unless File.file?(lockfile)

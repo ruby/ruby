@@ -477,7 +477,7 @@ class MSpecOptions
 
   def debug
     on("-d", "--debug",
-       "Set MSpec debugging flag for more verbose output") do
+       "Disable MSpec backtrace filtering") do
       $MSPEC_DEBUG = true
     end
   end

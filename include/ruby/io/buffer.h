@@ -56,13 +56,13 @@ enum rb_io_buffer_endian {
     RB_IO_BUFFER_LITTLE_ENDIAN = 4,
     RB_IO_BUFFER_BIG_ENDIAN = 8,
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     RB_IO_BUFFER_HOST_ENDIAN = RB_IO_BUFFER_LITTLE_ENDIAN,
-#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     RB_IO_BUFFER_HOST_ENDIAN = RB_IO_BUFFER_BIG_ENDIAN,
-#elif REG_DWORD == REG_DWORD_LITTLE_ENDIAN
+#elif defined(REG_DWORD) && REG_DWORD == REG_DWORD_LITTLE_ENDIAN
     RB_IO_BUFFER_HOST_ENDIAN = RB_IO_BUFFER_LITTLE_ENDIAN,
-#elif REG_DWORD == REG_DWORD_BIG_ENDIAN
+#elif defined(REG_DWORD) && REG_DWORD == REG_DWORD_BIG_ENDIAN
     RB_IO_BUFFER_HOST_ENDIAN = RB_IO_BUFFER_BIG_ENDIAN,
 #endif
 
@@ -75,7 +75,9 @@ VALUE rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer
 VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
 int rb_io_buffer_try_unlock(VALUE self);
+
 VALUE rb_io_buffer_free(VALUE self);
+VALUE rb_io_buffer_free_locked(VALUE self);
 
 int rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size);

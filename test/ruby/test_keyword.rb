@@ -447,6 +447,16 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(false, public_send(:yo, **{}).frozen?)
     assert_equal_not_same(kw, public_send(:yo, **kw))
     assert_equal_not_same(h, public_send(:yo, **h))
+
+    def self.yo(*a, **kw) = kw
+    assert_equal_not_same kw, yo(**kw)
+    assert_equal_not_same kw, yo(**kw, **kw)
+
+    singleton_class.send(:remove_method, :yo)
+    def self.yo(opts) = opts
+    assert_equal_not_same h, yo(*[], **h)
+    a = []
+    assert_equal_not_same h, yo(*a, **h)
   end
 
   def test_regular_kwsplat

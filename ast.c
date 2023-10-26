@@ -1,6 +1,6 @@
 /* indent-tabs-mode: nil */
 #include "internal.h"
-#include "internal/parse.h"
+#include "internal/ruby_parser.h"
 #include "internal/symbol.h"
 #include "internal/warnings.h"
 #include "iseq.h"
@@ -97,7 +97,7 @@ rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE
 
     StringValue(str);
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_string_path(vparser, Qnil, str, 1);
@@ -121,7 +121,7 @@ rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VAL
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
     if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_file_path(vparser, Qnil, f, 1);
@@ -149,7 +149,7 @@ rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, V
 
     array = rb_check_array_type(array);
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
@@ -184,8 +184,8 @@ node_find(VALUE self, const int node_id)
 
 extern VALUE rb_e_script;
 
-static VALUE
-script_lines(VALUE path)
+VALUE
+rb_script_lines_for(VALUE path, bool add)
 {
     VALUE hash, lines;
     ID script_lines;
@@ -193,15 +193,29 @@ script_lines(VALUE path)
     if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
     hash = rb_const_get_at(rb_cObject, script_lines);
     if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
-    lines = rb_hash_lookup(hash, path);
-    if (!RB_TYPE_P(lines, T_ARRAY)) return Qnil;
+    if (add) {
+        rb_hash_aset(hash, path, lines = rb_ary_new());
+    }
+    else if (!RB_TYPE_P((lines = rb_hash_lookup(hash, path)), T_ARRAY)) {
+        return Qnil;
+    }
     return lines;
+}
+static VALUE
+script_lines(VALUE path)
+{
+    return rb_script_lines_for(path, false);
 }
 
 static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
 {
     int node_id;
+
+    if (!rb_frame_info_p(location)) {
+        rb_raise(rb_eTypeError, "Thread::Backtrace::Location object expected");
+    }
+
     node_id = rb_get_node_id_from_frame_info(location);
     if (node_id == -1) {
         return Qnil;
@@ -317,14 +331,14 @@ rb_ary_new_from_node_args(rb_ast_t *ast, long n, ...)
 }
 
 static VALUE
-dump_block(rb_ast_t *ast, const NODE *node)
+dump_block(rb_ast_t *ast, const struct RNode_BLOCK *node)
 {
     VALUE ary = rb_ary_new();
     do {
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     } while (node->nd_next &&
         nd_type_p(node->nd_next, NODE_BLOCK) &&
-        (node = node->nd_next, 1));
+        (node = RNODE_BLOCK(node->nd_next), 1));
     if (node->nd_next) {
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_next));
     }
@@ -333,13 +347,13 @@ dump_block(rb_ast_t *ast, const NODE *node)
 }
 
 static VALUE
-dump_array(rb_ast_t *ast, const NODE *node)
+dump_array(rb_ast_t *ast, const struct RNode_LIST *node)
 {
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
 
     while (node->nd_next && nd_type_p(node->nd_next, NODE_LIST)) {
-        node = node->nd_next;
+        node = RNODE_LIST(node->nd_next);
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     }
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_next));
@@ -372,211 +386,229 @@ rest_arg(rb_ast_t *ast, const NODE *rest_arg)
 static VALUE
 node_children(rb_ast_t *ast, const NODE *node)
 {
-    char name[DECIMAL_SIZE_OF_BITS(sizeof(long) * CHAR_BIT) + 2]; /* including '$' */
+    char name[sizeof("$") + DECIMAL_SIZE_OF(long)];
 
     enum node_type type = nd_type(node);
     switch (type) {
       case NODE_BLOCK:
-        return dump_block(ast, node);
+        return dump_block(ast, RNODE_BLOCK(node));
       case NODE_IF:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_cond, node->nd_body, node->nd_else);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_IF(node)->nd_cond, RNODE_IF(node)->nd_body, RNODE_IF(node)->nd_else);
       case NODE_UNLESS:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_cond, node->nd_body, node->nd_else);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_UNLESS(node)->nd_cond, RNODE_UNLESS(node)->nd_body, RNODE_UNLESS(node)->nd_else);
       case NODE_CASE:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_CASE(node)->nd_head, RNODE_CASE(node)->nd_body);
       case NODE_CASE2:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_CASE2(node)->nd_head, RNODE_CASE2(node)->nd_body);
       case NODE_CASE3:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_CASE3(node)->nd_head, RNODE_CASE3(node)->nd_body);
       case NODE_WHEN:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_WHEN(node)->nd_head, RNODE_WHEN(node)->nd_body, RNODE_WHEN(node)->nd_next);
       case NODE_IN:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_IN(node)->nd_head, RNODE_IN(node)->nd_body, RNODE_IN(node)->nd_next);
       case NODE_WHILE:
       case NODE_UNTIL:
-        return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
-                           RBOOL(node->nd_state));
+        return rb_ary_push(rb_ary_new_from_node_args(ast, 2, RNODE_WHILE(node)->nd_cond, RNODE_WHILE(node)->nd_body),
+                           RBOOL(RNODE_WHILE(node)->nd_state));
       case NODE_ITER:
       case NODE_FOR:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_ITER(node)->nd_iter, RNODE_ITER(node)->nd_body);
       case NODE_FOR_MASGN:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_var);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_FOR_MASGN(node)->nd_var);
       case NODE_BREAK:
+        return rb_ary_new_from_node_args(ast, 1, RNODE_BREAK(node)->nd_stts);
       case NODE_NEXT:
+        return rb_ary_new_from_node_args(ast, 1, RNODE_NEXT(node)->nd_stts);
       case NODE_RETURN:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_stts);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_RETURN(node)->nd_stts);
       case NODE_REDO:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_RETRY:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_BEGIN:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_BEGIN(node)->nd_body);
       case NODE_RESCUE:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_resq, node->nd_else);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_RESCUE(node)->nd_head, RNODE_RESCUE(node)->nd_resq, RNODE_RESCUE(node)->nd_else);
       case NODE_RESBODY:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_args, node->nd_body, node->nd_head);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_head);
       case NODE_ENSURE:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_ensr);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_ENSURE(node)->nd_head, RNODE_ENSURE(node)->nd_ensr);
       case NODE_AND:
       case NODE_OR:
         {
             VALUE ary = rb_ary_new();
 
             while (1) {
-                rb_ary_push(ary, NEW_CHILD(ast, node->nd_1st));
-                if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
+                rb_ary_push(ary, NEW_CHILD(ast, RNODE_AND(node)->nd_1st));
+                if (!RNODE_AND(node)->nd_2nd || !nd_type_p(RNODE_AND(node)->nd_2nd, type))
                     break;
-                node = node->nd_2nd;
+                node = RNODE_AND(node)->nd_2nd;
             }
-            rb_ary_push(ary, NEW_CHILD(ast, node->nd_2nd));
+            rb_ary_push(ary, NEW_CHILD(ast, RNODE_AND(node)->nd_2nd));
             return ary;
         }
       case NODE_MASGN:
-        if (NODE_NAMED_REST_P(node->nd_args)) {
-            return rb_ary_new_from_node_args(ast, 3, node->nd_value, node->nd_head, node->nd_args);
+        if (NODE_NAMED_REST_P(RNODE_MASGN(node)->nd_args)) {
+            return rb_ary_new_from_node_args(ast, 3, RNODE_MASGN(node)->nd_value, RNODE_MASGN(node)->nd_head, RNODE_MASGN(node)->nd_args);
         }
         else {
-            return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_value),
-                                        NEW_CHILD(ast, node->nd_head),
+            return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_MASGN(node)->nd_value),
+                                        NEW_CHILD(ast, RNODE_MASGN(node)->nd_head),
                                         no_name_rest());
         }
       case NODE_LASGN:
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_LASGN(node)->nd_value)) {
+            return rb_ary_new_from_args(2, var_name(RNODE_LASGN(node)->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
+        }
+        return rb_ary_new_from_args(2, var_name(RNODE_LASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_LASGN(node)->nd_value));
       case NODE_DASGN:
+        if (NODE_REQUIRED_KEYWORD_P(RNODE_DASGN(node)->nd_value)) {
+            return rb_ary_new_from_args(2, var_name(RNODE_DASGN(node)->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
+        }
+        return rb_ary_new_from_args(2, var_name(RNODE_DASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_DASGN(node)->nd_value));
       case NODE_IASGN:
+        return rb_ary_new_from_args(2, var_name(RNODE_IASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_IASGN(node)->nd_value));
       case NODE_CVASGN:
+        return rb_ary_new_from_args(2, var_name(RNODE_CVASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_CVASGN(node)->nd_value));
       case NODE_GASGN:
-        if (NODE_REQUIRED_KEYWORD_P(node)) {
-            return rb_ary_new_from_args(2, var_name(node->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
-        }
-        return rb_ary_new_from_args(2, var_name(node->nd_vid), NEW_CHILD(ast, node->nd_value));
+        return rb_ary_new_from_args(2, var_name(RNODE_GASGN(node)->nd_vid), NEW_CHILD(ast, RNODE_GASGN(node)->nd_value));
       case NODE_CDECL:
-        if (node->nd_vid) {
-            return rb_ary_new_from_args(2, ID2SYM(node->nd_vid), NEW_CHILD(ast, node->nd_value));
+        if (RNODE_CDECL(node)->nd_vid) {
+            return rb_ary_new_from_args(2, ID2SYM(RNODE_CDECL(node)->nd_vid), NEW_CHILD(ast, RNODE_CDECL(node)->nd_value));
         }
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_else), ID2SYM(node->nd_else->nd_mid), NEW_CHILD(ast, node->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_CDECL(node)->nd_else), ID2SYM(RNODE_COLON2(RNODE_CDECL(node)->nd_else)->nd_mid), NEW_CHILD(ast, RNODE_CDECL(node)->nd_value));
       case NODE_OP_ASGN1:
-        return rb_ary_new_from_args(4, NEW_CHILD(ast, node->nd_recv),
-                                    ID2SYM(node->nd_mid),
-                                    NEW_CHILD(ast, node->nd_args->nd_head),
-                                    NEW_CHILD(ast, node->nd_args->nd_body));
+        return rb_ary_new_from_args(4, NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_recv),
+                                    ID2SYM(RNODE_OP_ASGN1(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_index),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_rvalue));
       case NODE_OP_ASGN2:
-        return rb_ary_new_from_args(5, NEW_CHILD(ast, node->nd_recv),
-                                    RBOOL(node->nd_next->nd_aid),
-                                    ID2SYM(node->nd_next->nd_vid),
-                                    ID2SYM(node->nd_next->nd_mid),
-                                    NEW_CHILD(ast, node->nd_value));
+        return rb_ary_new_from_args(5, NEW_CHILD(ast, RNODE_OP_ASGN2(node)->nd_recv),
+                                    RBOOL(RNODE_OP_ASGN2(node)->nd_aid),
+                                    ID2SYM(RNODE_OP_ASGN2(node)->nd_vid),
+                                    ID2SYM(RNODE_OP_ASGN2(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN2(node)->nd_value));
       case NODE_OP_ASGN_AND:
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_head), ID2SYM(idANDOP),
-                                    NEW_CHILD(ast, node->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_OP_ASGN_AND(node)->nd_head), ID2SYM(idANDOP),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN_AND(node)->nd_value));
       case NODE_OP_ASGN_OR:
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_head), ID2SYM(idOROP),
-                                    NEW_CHILD(ast, node->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_OP_ASGN_OR(node)->nd_head), ID2SYM(idOROP),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN_OR(node)->nd_value));
       case NODE_OP_CDECL:
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_head),
-                                    ID2SYM(node->nd_aid),
-                                    NEW_CHILD(ast, node->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_OP_CDECL(node)->nd_head),
+                                    ID2SYM(RNODE_OP_CDECL(node)->nd_aid),
+                                    NEW_CHILD(ast, RNODE_OP_CDECL(node)->nd_value));
       case NODE_CALL:
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_CALL(node)->nd_recv),
+                                    ID2SYM(RNODE_CALL(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_CALL(node)->nd_args));
       case NODE_OPCALL:
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_OPCALL(node)->nd_recv),
+                                    ID2SYM(RNODE_OPCALL(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_OPCALL(node)->nd_args));
       case NODE_QCALL:
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_recv),
-                                    ID2SYM(node->nd_mid),
-                                    NEW_CHILD(ast, node->nd_args));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_QCALL(node)->nd_recv),
+                                    ID2SYM(RNODE_QCALL(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_QCALL(node)->nd_args));
       case NODE_FCALL:
-        return rb_ary_new_from_args(2, ID2SYM(node->nd_mid),
-                                    NEW_CHILD(ast, node->nd_args));
+        return rb_ary_new_from_args(2, ID2SYM(RNODE_FCALL(node)->nd_mid),
+                                    NEW_CHILD(ast, RNODE_FCALL(node)->nd_args));
       case NODE_VCALL:
-        return rb_ary_new_from_args(1, ID2SYM(node->nd_mid));
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_VCALL(node)->nd_mid));
       case NODE_SUPER:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_args);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_SUPER(node)->nd_args);
       case NODE_ZSUPER:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_LIST:
-      case NODE_VALUES:
-        return dump_array(ast, node);
+        return dump_array(ast, RNODE_LIST(node));
       case NODE_ZLIST:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_HASH:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_head);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_HASH(node)->nd_head);
       case NODE_YIELD:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_head);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_YIELD(node)->nd_head);
       case NODE_LVAR:
+        return rb_ary_new_from_args(1, var_name(RNODE_LVAR(node)->nd_vid));
       case NODE_DVAR:
-        return rb_ary_new_from_args(1, var_name(node->nd_vid));
+        return rb_ary_new_from_args(1, var_name(RNODE_DVAR(node)->nd_vid));
       case NODE_IVAR:
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_IVAR(node)->nd_vid));
       case NODE_CONST:
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_CONST(node)->nd_vid));
       case NODE_CVAR:
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_CVAR(node)->nd_vid));
       case NODE_GVAR:
-        return rb_ary_new_from_args(1, ID2SYM(node->nd_vid));
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_GVAR(node)->nd_vid));
       case NODE_NTH_REF:
-        snprintf(name, sizeof(name), "$%ld", node->nd_nth);
+        snprintf(name, sizeof(name), "$%ld", RNODE_NTH_REF(node)->nd_nth);
         return rb_ary_new_from_args(1, ID2SYM(rb_intern(name)));
       case NODE_BACK_REF:
         name[0] = '$';
-        name[1] = (char)node->nd_nth;
+        name[1] = (char)RNODE_BACK_REF(node)->nd_nth;
         name[2] = '\0';
         return rb_ary_new_from_args(1, ID2SYM(rb_intern(name)));
       case NODE_MATCH2:
-        if (node->nd_args) {
-            return rb_ary_new_from_node_args(ast, 3, node->nd_recv, node->nd_value, node->nd_args);
+        if (RNODE_MATCH2(node)->nd_args) {
+            return rb_ary_new_from_node_args(ast, 3, RNODE_MATCH2(node)->nd_recv, RNODE_MATCH2(node)->nd_value, RNODE_MATCH2(node)->nd_args);
         }
-        return rb_ary_new_from_node_args(ast, 2, node->nd_recv, node->nd_value);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH2(node)->nd_recv, RNODE_MATCH2(node)->nd_value);
       case NODE_MATCH3:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_recv, node->nd_value);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH3(node)->nd_recv, RNODE_MATCH3(node)->nd_value);
       case NODE_MATCH:
       case NODE_LIT:
       case NODE_STR:
       case NODE_XSTR:
-        return rb_ary_new_from_args(1, node->nd_lit);
+        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
       case NODE_ONCE:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_ONCE(node)->nd_body);
       case NODE_DSTR:
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
         {
-            NODE *n = node->nd_next;
+            struct RNode_LIST *n = RNODE_DSTR(node)->nd_next;
             VALUE head = Qnil, next = Qnil;
             if (n) {
                 head = NEW_CHILD(ast, n->nd_head);
                 next = NEW_CHILD(ast, n->nd_next);
             }
-            return rb_ary_new_from_args(3, node->nd_lit, head, next);
+            return rb_ary_new_from_args(3, RNODE_DSTR(node)->nd_lit, head, next);
         }
       case NODE_EVSTR:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_EVSTR(node)->nd_body);
       case NODE_ARGSCAT:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_ARGSCAT(node)->nd_head, RNODE_ARGSCAT(node)->nd_body);
       case NODE_ARGSPUSH:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_ARGSPUSH(node)->nd_head, RNODE_ARGSPUSH(node)->nd_body);
       case NODE_SPLAT:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_head);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_SPLAT(node)->nd_head);
       case NODE_BLOCK_PASS:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_BLOCK_PASS(node)->nd_head, RNODE_BLOCK_PASS(node)->nd_body);
       case NODE_DEFN:
-        return rb_ary_new_from_args(2, ID2SYM(node->nd_mid), NEW_CHILD(ast, node->nd_defn));
+        return rb_ary_new_from_args(2, ID2SYM(RNODE_DEFN(node)->nd_mid), NEW_CHILD(ast, RNODE_DEFN(node)->nd_defn));
       case NODE_DEFS:
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_recv), ID2SYM(node->nd_mid), NEW_CHILD(ast, node->nd_defn));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_DEFS(node)->nd_recv), ID2SYM(RNODE_DEFS(node)->nd_mid), NEW_CHILD(ast, RNODE_DEFS(node)->nd_defn));
       case NODE_ALIAS:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_ALIAS(node)->nd_1st, RNODE_ALIAS(node)->nd_2nd);
       case NODE_VALIAS:
-        return rb_ary_new_from_args(2, ID2SYM(node->nd_alias), ID2SYM(node->nd_orig));
+        return rb_ary_new_from_args(2, ID2SYM(RNODE_VALIAS(node)->nd_alias), ID2SYM(RNODE_VALIAS(node)->nd_orig));
       case NODE_UNDEF:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_undef);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_UNDEF(node)->nd_undef);
       case NODE_CLASS:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_cpath, node->nd_super, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_CLASS(node)->nd_cpath, RNODE_CLASS(node)->nd_super, RNODE_CLASS(node)->nd_body);
       case NODE_MODULE:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_cpath, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_MODULE(node)->nd_cpath, RNODE_MODULE(node)->nd_body);
       case NODE_SCLASS:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_recv, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_SCLASS(node)->nd_recv, RNODE_SCLASS(node)->nd_body);
       case NODE_COLON2:
-        return rb_ary_new_from_args(2, NEW_CHILD(ast, node->nd_head), ID2SYM(node->nd_mid));
+        return rb_ary_new_from_args(2, NEW_CHILD(ast, RNODE_COLON2(node)->nd_head), ID2SYM(RNODE_COLON2(node)->nd_mid));
       case NODE_COLON3:
-        return rb_ary_new_from_args(1, ID2SYM(node->nd_mid));
+        return rb_ary_new_from_args(1, ID2SYM(RNODE_COLON3(node)->nd_mid));
       case NODE_DOT2:
       case NODE_DOT3:
       case NODE_FLIP2:
       case NODE_FLIP3:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_beg, node->nd_end);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_DOT2(node)->nd_beg, RNODE_DOT2(node)->nd_end);
       case NODE_SELF:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_NIL:
@@ -588,84 +620,84 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_ERRINFO:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_DEFINED:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_head);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_DEFINED(node)->nd_head);
       case NODE_POSTEXE:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_POSTEXE(node)->nd_body);
       case NODE_ATTRASGN:
-        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_recv), ID2SYM(node->nd_mid), NEW_CHILD(ast, node->nd_args));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, RNODE_ATTRASGN(node)->nd_recv), ID2SYM(RNODE_ATTRASGN(node)->nd_mid), NEW_CHILD(ast, RNODE_ATTRASGN(node)->nd_args));
       case NODE_LAMBDA:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_body);
+        return rb_ary_new_from_node_args(ast, 1, RNODE_LAMBDA(node)->nd_body);
       case NODE_OPT_ARG:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_body, node->nd_next);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_OPT_ARG(node)->nd_body, RNODE_OPT_ARG(node)->nd_next);
       case NODE_KW_ARG:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_body, node->nd_next);
+        return rb_ary_new_from_node_args(ast, 2, RNODE_KW_ARG(node)->nd_body, RNODE_KW_ARG(node)->nd_next);
       case NODE_POSTARG:
-        if (NODE_NAMED_REST_P(node->nd_1st)) {
-            return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
+        if (NODE_NAMED_REST_P(RNODE_POSTARG(node)->nd_1st)) {
+            return rb_ary_new_from_node_args(ast, 2, RNODE_POSTARG(node)->nd_1st, RNODE_POSTARG(node)->nd_2nd);
         }
         return rb_ary_new_from_args(2, no_name_rest(),
-                                    NEW_CHILD(ast, node->nd_2nd));
+                                    NEW_CHILD(ast, RNODE_POSTARG(node)->nd_2nd));
       case NODE_ARGS:
         {
-            struct rb_args_info *ainfo = node->nd_ainfo;
+            struct rb_args_info *ainfo = RNODE_ARGS(node)->nd_ainfo;
             return rb_ary_new_from_args(10,
                                         INT2NUM(ainfo->pre_args_num),
                                         NEW_CHILD(ast, ainfo->pre_init),
-                                        NEW_CHILD(ast, ainfo->opt_args),
+                                        NEW_CHILD(ast, (NODE *)ainfo->opt_args),
                                         var_name(ainfo->first_post_arg),
                                         INT2NUM(ainfo->post_args_num),
                                         NEW_CHILD(ast, ainfo->post_init),
                                         (ainfo->rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA
                                             ? ID2SYM(rb_intern("NODE_SPECIAL_EXCESSIVE_COMMA"))
                                             : var_name(ainfo->rest_arg)),
-                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_args)),
+                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, (NODE *)ainfo->kw_args)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_rest_arg)),
                                         var_name(ainfo->block_arg));
         }
       case NODE_SCOPE:
         {
-            rb_ast_id_table_t *tbl = node->nd_tbl;
+            rb_ast_id_table_t *tbl = RNODE_SCOPE(node)->nd_tbl;
             int i, size = tbl ? tbl->size : 0;
             VALUE locals = rb_ary_new_capa(size);
             for (i = 0; i < size; i++) {
                 rb_ary_push(locals, var_name(tbl->ids[i]));
             }
-            return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, node->nd_args), NEW_CHILD(ast, node->nd_body));
+            return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, (NODE *)RNODE_SCOPE(node)->nd_args), NEW_CHILD(ast, RNODE_SCOPE(node)->nd_body));
         }
       case NODE_ARYPTN:
         {
-            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            VALUE rest = rest_arg(ast, apinfo->rest_arg);
+            VALUE rest = rest_arg(ast, RNODE_ARYPTN(node)->rest_arg);
             return rb_ary_new_from_args(4,
-                                        NEW_CHILD(ast, node->nd_pconst),
-                                        NEW_CHILD(ast, apinfo->pre_args),
+                                        NEW_CHILD(ast, RNODE_ARYPTN(node)->nd_pconst),
+                                        NEW_CHILD(ast, RNODE_ARYPTN(node)->pre_args),
                                         rest,
-                                        NEW_CHILD(ast, apinfo->post_args));
+                                        NEW_CHILD(ast, RNODE_ARYPTN(node)->post_args));
         }
       case NODE_FNDPTN:
         {
-            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
-            VALUE pre_rest = rest_arg(ast, fpinfo->pre_rest_arg);
-            VALUE post_rest = rest_arg(ast, fpinfo->post_rest_arg);
+            VALUE pre_rest = rest_arg(ast, RNODE_FNDPTN(node)->pre_rest_arg);
+            VALUE post_rest = rest_arg(ast, RNODE_FNDPTN(node)->post_rest_arg);
             return rb_ary_new_from_args(4,
-                                        NEW_CHILD(ast, node->nd_pconst),
+                                        NEW_CHILD(ast, RNODE_FNDPTN(node)->nd_pconst),
                                         pre_rest,
-                                        NEW_CHILD(ast, fpinfo->args),
+                                        NEW_CHILD(ast, RNODE_FNDPTN(node)->args),
                                         post_rest);
         }
       case NODE_HSHPTN:
         {
-            VALUE kwrest = node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD ? ID2SYM(rb_intern("NODE_SPECIAL_NO_REST_KEYWORD")) :
-                                                                                 NEW_CHILD(ast, node->nd_pkwrestarg);
+            VALUE kwrest = RNODE_HSHPTN(node)->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD ? ID2SYM(rb_intern("NODE_SPECIAL_NO_REST_KEYWORD")) :
+                                                                                 NEW_CHILD(ast, RNODE_HSHPTN(node)->nd_pkwrestarg);
 
             return rb_ary_new_from_args(3,
-                                        NEW_CHILD(ast, node->nd_pconst),
-                                        NEW_CHILD(ast, node->nd_pkwargs),
+                                        NEW_CHILD(ast, RNODE_HSHPTN(node)->nd_pconst),
+                                        NEW_CHILD(ast, RNODE_HSHPTN(node)->nd_pkwargs),
                                         kwrest);
         }
       case NODE_ERROR:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:
+      case NODE_RIPPER:
+      case NODE_RIPPER_VALUES:
       case NODE_LAST:
         break;
     }

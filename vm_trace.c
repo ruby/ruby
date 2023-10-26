@@ -23,10 +23,11 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/hash.h"
 #include "internal/symbol.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/debug.h"
 #include "vm_core.h"
 #include "ruby/ractor.h"
@@ -66,6 +67,17 @@ rb_hook_list_mark(rb_hook_list_t *hooks)
     }
 }
 
+void
+rb_hook_list_mark_and_update(rb_hook_list_t *hooks)
+{
+    rb_event_hook_t *hook = hooks->hooks;
+
+    while (hook) {
+        rb_gc_mark_and_move(&hook->data);
+        hook = hook->next;
+    }
+}
+
 static void clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list);
 
 void
@@ -81,6 +93,7 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 /* ruby_vm_event_flags management */
 
 void rb_clear_attr_ccs(void);
+void rb_clear_bf_ccs(void);
 
 static void
 update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events)
@@ -90,6 +103,8 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     bool first_time_iseq_events_p = new_iseq_events & ~enabled_iseq_events;
     bool enable_c_call   = (prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL);
     bool enable_c_return = (prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN);
+    bool enable_call     = (prev_events & RUBY_EVENT_CALL)     == 0 && (new_events & RUBY_EVENT_CALL);
+    bool enable_return   = (prev_events & RUBY_EVENT_RETURN)   == 0 && (new_events & RUBY_EVENT_RETURN);
 
     // Modify ISEQs or CCs to enable tracing
     if (first_time_iseq_events_p) {
@@ -99,6 +114,9 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     // if c_call or c_return is activated
     else if (enable_c_call || enable_c_return) {
         rb_clear_attr_ccs();
+    }
+    else if (enable_call || enable_return) {
+        rb_clear_bf_ccs();
     }
 
     ruby_vm_event_flags = new_events;
@@ -114,7 +132,7 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         // Do this after event flags updates so other ractors see updated vm events
         // when they wake up.
         rb_yjit_tracing_invalidate_all();
-        rb_mjit_tracing_invalidate_all(new_iseq_events);
+        rb_rjit_tracing_invalidate_all(new_iseq_events);
     }
 }
 
@@ -390,7 +408,7 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_
 }
 
 // pop_p: Whether to pop the frame for the TracePoint when it throws.
-MJIT_FUNC_EXPORTED void
+void
 rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 {
     rb_execution_context_t *ec = trace_arg->ec;
@@ -492,66 +510,65 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
 /* (2-1) set_trace_func (old API) */
 
 /*
- *  call-seq:
- *     set_trace_func(proc)    -> proc
- *     set_trace_func(nil)     -> nil
+ * call-seq:
+ *    set_trace_func(proc)    -> proc
+ *    set_trace_func(nil)     -> nil
  *
- *  Establishes _proc_ as the handler for tracing, or disables
- *  tracing if the parameter is +nil+.
+ * Establishes _proc_ as the handler for tracing, or disables
+ * tracing if the parameter is +nil+.
  *
- *  *Note:* this method is obsolete, please use TracePoint instead.
+ * *Note:* this method is obsolete, please use TracePoint instead.
  *
- *  _proc_ takes up to six parameters:
+ * _proc_ takes up to six parameters:
  *
- *  *	an event name
- *  *	a filename
- *  *	a line number
- *  *	an object id
- *  *	a binding
- *  *	the name of a class
+ * * an event name string
+ * * a filename string
+ * * a line number
+ * * a method name symbol, or nil
+ * * a binding, or nil
+ * * the class, module, or nil
  *
- *  _proc_ is invoked whenever an event occurs.
+ * _proc_ is invoked whenever an event occurs.
  *
- *  Events are:
+ * Events are:
  *
- *  +c-call+:: call a C-language routine
- *  +c-return+:: return from a C-language routine
- *  +call+:: call a Ruby method
- *  +class+:: start a class or module definition
- *  +end+:: finish a class or module definition
- *  +line+:: execute code on a new line
- *  +raise+:: raise an exception
- *  +return+:: return from a Ruby method
+ * <code>"c-call"</code>:: call a C-language routine
+ * <code>"c-return"</code>:: return from a C-language routine
+ * <code>"call"</code>:: call a Ruby method
+ * <code>"class"</code>:: start a class or module definition
+ * <code>"end"</code>:: finish a class or module definition
+ * <code>"line"</code>:: execute code on a new line
+ * <code>"raise"</code>:: raise an exception
+ * <code>"return"</code>:: return from a Ruby method
  *
- *  Tracing is disabled within the context of _proc_.
+ * Tracing is disabled within the context of _proc_.
  *
- *      class Test
- *	def test
- *	  a = 1
- *	  b = 2
- *	end
- *      end
+ *   class Test
+ *     def test
+ *       a = 1
+ *       b = 2
+ *     end
+ *   end
  *
- *      set_trace_func proc { |event, file, line, id, binding, classname|
- *	   printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
- *      }
- *      t = Test.new
- *      t.test
+ *   set_trace_func proc { |event, file, line, id, binding, class_or_module|
+ *     printf "%8s %s:%-2d %16p %14p\n", event, file, line, id, class_or_module
+ *   }
+ *   t = Test.new
+ *   t.test
  *
- *	  line prog.rb:11               false
- *      c-call prog.rb:11        new    Class
- *      c-call prog.rb:11 initialize   Object
- *    c-return prog.rb:11 initialize   Object
- *    c-return prog.rb:11        new    Class
- *	  line prog.rb:12               false
- *  	  call prog.rb:2        test     Test
- *	  line prog.rb:3        test     Test
- *	  line prog.rb:4        test     Test
- *      return prog.rb:4        test     Test
+ * Produces:
  *
- * Note that for +c-call+ and +c-return+ events, the binding returned is the
- * binding of the nearest Ruby method calling the C method, since C methods
- * themselves do not have bindings.
+ *   c-return prog.rb:8   :set_trace_func         Kernel
+ *       line prog.rb:11              nil            nil
+ *     c-call prog.rb:11             :new          Class
+ *     c-call prog.rb:11      :initialize    BasicObject
+ *   c-return prog.rb:11      :initialize    BasicObject
+ *   c-return prog.rb:11             :new          Class
+ *       line prog.rb:12              nil            nil
+ *       call prog.rb:2             :test           Test
+ *       line prog.rb:3             :test           Test
+ *       line prog.rb:4             :test           Test
+ *     return prog.rb:5             :test           Test
  */
 
 static VALUE
@@ -663,6 +680,7 @@ get_event_id(rb_event_flag_t event)
         C(thread_end, THREAD_END);
         C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
+        C(rescue, RESCUE);
 #undef C
       default:
         return 0;
@@ -679,8 +697,8 @@ get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *
         *pathp = rb_iseq_path(iseq);
 
         if (event & (RUBY_EVENT_CLASS |
-                                RUBY_EVENT_CALL  |
-                                RUBY_EVENT_B_CALL)) {
+                     RUBY_EVENT_CALL  |
+                     RUBY_EVENT_B_CALL)) {
             *linep = FIX2INT(rb_iseq_first_lineno(iseq));
         }
         else {
@@ -713,7 +731,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
             klass = RBASIC(klass)->klass;
         }
         else if (FL_TEST(klass, FL_SINGLETON)) {
-            klass = rb_ivar_get(klass, id__attached__);
+            klass = RCLASS_ATTACHED_OBJECT(klass);
         }
     }
 
@@ -805,6 +823,7 @@ symbol2event_flag(VALUE v)
     C(thread_end, THREAD_END);
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
+    C(rescue, RESCUE);
 
     /* joke */
     C(a_call, A_CALL);
@@ -915,7 +934,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
         if (trace_arg->klass && trace_arg->id) {
             const rb_method_entry_t *me;
             VALUE iclass = Qnil;
-            me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->id, &iclass);
+            me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->called_id, &iclass);
             return rb_unnamed_parameters(rb_method_entry_arity(me));
         }
         break;
@@ -925,6 +944,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
       case RUBY_EVENT_CLASS:
       case RUBY_EVENT_END:
       case RUBY_EVENT_SCRIPT_COMPILED:
+      case RUBY_EVENT_RESCUE:
         rb_raise(rb_eRuntimeError, "not supported by this event");
         break;
     }
@@ -995,7 +1015,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RAISE)) {
+    if (trace_arg->event & (RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE)) {
         /* ok */
     }
     else {
@@ -1246,13 +1266,17 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     n += rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval, line, target_bmethod);
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
+    if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
+        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) {
+        rb_clear_bf_ccs();
+    }
 
     if (n == 0) {
         rb_raise(rb_eArgError, "can not enable any hooks");
     }
 
     rb_yjit_tracing_invalidate_all();
-    rb_mjit_tracing_invalidate_all(tp->events);
+    rb_rjit_tracing_invalidate_all(tp->events);
 
     ruby_vm_event_local_num++;
 
@@ -1691,7 +1715,7 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
       case PJRR_SUCCESS    : return 1;
       case PJRR_FULL       : return 0;
       case PJRR_INTERRUPTED: goto begin;
-      default: rb_bug("unreachable\n");
+      default: rb_bug("unreachable");
     }
 }
 
@@ -1720,7 +1744,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
       case PJRR_SUCCESS    : return 1;
       case PJRR_FULL       : return 0;
       case PJRR_INTERRUPTED: goto begin;
-      default: rb_bug("unreachable\n");
+      default: rb_bug("unreachable");
     }
 }
 

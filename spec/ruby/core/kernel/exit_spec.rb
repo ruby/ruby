@@ -10,6 +10,10 @@ describe "Kernel#exit" do
   it_behaves_like :process_exit, :exit, KernelSpecs::Method.new
 end
 
+describe "Kernel.exit" do
+  it_behaves_like :process_exit, :exit, Kernel
+end
+
 describe "Kernel#exit!" do
   it "is a private method" do
     Kernel.should have_private_instance_method(:exit!)
@@ -18,10 +22,6 @@ describe "Kernel#exit!" do
   it_behaves_like :process_exit!, :exit!, "self"
 end
 
-describe "Kernel.exit" do
-  it_behaves_like :process_exit, :exit, Kernel
-end
-
 describe "Kernel.exit!" do
-  it_behaves_like :process_exit!, :exit!, Kernel
+  it_behaves_like :process_exit!, :exit!, "Kernel"
 end

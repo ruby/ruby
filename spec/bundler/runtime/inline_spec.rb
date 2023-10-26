@@ -168,6 +168,54 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
+  it "installs subdependencies quietly if necessary when the install option is not set" do
+    build_repo4 do
+      build_gem "rack" do |s|
+        s.add_dependency "rackdep"
+      end
+
+      build_gem "rackdep", "1.0.0"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo4)}"
+        gem "rack"
+      end
+
+      require "rackdep"
+      puts RACKDEP
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
+  it "installs subdependencies quietly if necessary when the install option is not set, and multiple sources used" do
+    build_repo4 do
+      build_gem "rack" do |s|
+        s.add_dependency "rackdep"
+      end
+
+      build_gem "rackdep", "1.0.0"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo4)}" do
+          gem "rack"
+        end
+      end
+
+      require "rackdep"
+      puts RACKDEP
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
   it "installs quietly from git if necessary when the install option is not set" do
     build_git "foo", "1.0.0"
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
@@ -204,6 +252,113 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("two\nfour")
+    expect(err).to be_empty
+  end
+
+  it "doesn't reinstall already installed gems" do
+    system_gems "rack-1.0.0"
+
+    script <<-RUBY
+      require '#{entrypoint}'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "activesupport"
+        gem "rack"
+      end
+    RUBY
+
+    expect(out).to include("Installing activesupport")
+    expect(out).not_to include("Installing rack")
+    expect(err).to be_empty
+  end
+
+  it "installs gems in later gemfile calls" do
+    system_gems "rack-1.0.0"
+
+    script <<-RUBY
+      require '#{entrypoint}'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "activesupport"
+      end
+    RUBY
+
+    expect(out).to include("Installing activesupport")
+    expect(out).not_to include("Installing rack")
+    expect(err).to be_empty
+  end
+
+  it "doesn't reinstall already installed gems in later gemfile calls" do
+    system_gems "rack-1.0.0"
+
+    script <<-RUBY
+      require '#{entrypoint}'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "activesupport"
+      end
+
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+    RUBY
+
+    expect(out).to include("Installing activesupport")
+    expect(out).not_to include("Installing rack")
+    expect(err).to be_empty
+  end
+
+  it "installs gems with native extensions in later gemfile calls" do
+    system_gems "rack-1.0.0"
+
+    build_git "foo" do |s|
+      s.add_dependency "rake"
+      s.extensions << "Rakefile"
+      s.write "Rakefile", <<-RUBY
+        task :default do
+          path = File.expand_path("lib", __dir__)
+          FileUtils.mkdir_p(path)
+          File.open("\#{path}/foo.rb", "w") do |f|
+            f.puts "FOO = 'YES'"
+          end
+        end
+      RUBY
+    end
+
+    script <<-RUBY
+      require '#{entrypoint}'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      gemfile(true, ui: ui) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      end
+
+      require 'foo'
+      puts FOO
+      puts $:.grep(/ext/)
+    RUBY
+
+    expect(out).to include("YES")
+    expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     expect(err).to be_empty
   end
 
@@ -436,7 +591,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
-  it "when requiring fileutils after does not show redefinition warnings" do
+  it "when requiring fileutils after does not show redefinition warnings", :realworld do
     dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
     skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
 

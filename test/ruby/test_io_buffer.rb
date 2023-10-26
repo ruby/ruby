@@ -80,7 +80,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_invalid
-    assert_raise NoMethodError do
+    assert_raise TypeError do
       IO::Buffer.map("foobar")
     end
   end
@@ -102,11 +102,6 @@ class TestIOBuffer < Test::Unit::TestCase
     IO::Buffer.for(string) do |buffer|
       refute buffer.readonly?
 
-      # Cannot modify string as it's locked by the buffer:
-      assert_raise RuntimeError do
-        string[0] = "h"
-      end
-
       buffer.set_value(:U8, 0, "h".ord)
 
       # Buffer releases it's ownership of the string:
@@ -116,11 +111,35 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_string_mapped_buffer_locked
+    string = "Hello World"
+    IO::Buffer.for(string) do |buffer|
+      # Cannot modify string as it's locked by the buffer:
+      assert_raise RuntimeError do
+        string[0] = "h"
+      end
+    end
+  end
+
   def test_non_string
     not_string = Object.new
 
     assert_raise TypeError do
       IO::Buffer.for(not_string)
+    end
+  end
+
+  def test_string
+    result = IO::Buffer.string(12) do |buffer|
+      buffer.set_string("Hello World!")
+    end
+
+    assert_equal "Hello World!", result
+  end
+
+  def test_string_negative
+    assert_raise ArgumentError do
+      IO::Buffer.string(-1)
     end
   end
 
@@ -140,6 +159,24 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer.set_string(message)
     buffer.resize(2048)
     assert_equal message, buffer.get_string(0, message.bytesize)
+  end
+
+  def test_resize_zero_internal
+    buffer = IO::Buffer.new(1)
+
+    buffer.resize(0)
+    assert_equal 0, buffer.size
+
+    buffer.resize(1)
+    assert_equal 1, buffer.size
+  end
+
+  def test_resize_zero_external
+    buffer = IO::Buffer.for('1')
+
+    assert_raise IO::Buffer::AccessError do
+      buffer.resize(0)
+    end
   end
 
   def test_compare_same_size
@@ -219,6 +256,18 @@ class TestIOBuffer < Test::Unit::TestCase
 
     chunk = buffer.get_string(0, message.bytesize, Encoding::BINARY)
     assert_equal Encoding::BINARY, chunk.encoding
+
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
+      buffer.get_string(0, 129)
+    end
+
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
+      buffer.get_string(129)
+    end
+
+    assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
+      buffer.get_string(-1)
+    end
   end
 
   # We check that values are correctly round tripped.
@@ -329,21 +378,38 @@ class TestIOBuffer < Test::Unit::TestCase
     input.close
   end
 
-  def test_read
-    # This is currently a bug in IO:Buffer [#19084] which affects extended
-    # strings. On 32 bit machines, the example below becomes extended, so
-    # we omit this test until the bug is fixed.
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+  def hello_world_tempfile
     io = Tempfile.new
     io.write("Hello World")
     io.seek(0)
 
-    buffer = IO::Buffer.new(128)
-    buffer.read(io, 5)
-
-    assert_equal "Hello", buffer.get_string(0, 5)
+    yield io
   ensure
-    io.close! if io
+    io&.close!
+  end
+
+  def test_read
+    hello_world_tempfile do |io|
+      buffer = IO::Buffer.new(128)
+      buffer.read(io)
+      assert_equal "Hello", buffer.get_string(0, 5)
+    end
+  end
+
+  def test_read_with_with_length
+    hello_world_tempfile do |io|
+      buffer = IO::Buffer.new(128)
+      buffer.read(io, 5)
+      assert_equal "Hello", buffer.get_string(0, 5)
+    end
+  end
+
+  def test_read_with_with_offset
+    hello_world_tempfile do |io|
+      buffer = IO::Buffer.new(128)
+      buffer.read(io, nil, 6)
+      assert_equal "Hello", buffer.get_string(6, 5)
+    end
   end
 
   def test_write
@@ -351,7 +417,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("Hello")
-    buffer.write(io, 5)
+    buffer.write(io)
 
     io.seek(0)
     assert_equal "Hello", io.read(5)

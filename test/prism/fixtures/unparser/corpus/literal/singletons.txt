@@ -1,0 +1,4 @@
+false
+nil
+self
+true

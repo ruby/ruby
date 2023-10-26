@@ -51,4 +51,3 @@ class TestRDocMarkupIndentedParagraph < RDoc::TestCase
   end
 
 end
-

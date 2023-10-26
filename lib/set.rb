@@ -12,15 +12,11 @@
 
 
 ##
-# This library provides the Set class, which deals with a collection
-# of unordered values with no duplicates.  It is a hybrid of Array's
+# This library provides the Set class, which implements a collection
+# of unordered values with no duplicates. It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.
 #
 # The method `to_set` is added to Enumerable for convenience.
-#
-# Set implements a collection of unordered values with no duplicates.
-# This is a hybrid of Array's intuitive inter-operation facilities and
-# Hash's fast lookup.
 #
 # Set is easy to use with Enumerable objects (implementing `each`).
 # Most of the initializer methods and binary operators accept generic
@@ -156,7 +152,7 @@
 #   If the given object is not an element in the set,
 #   adds it and returns +self+; otherwise, returns +nil+.
 # - \#merge:
-#   Adds each given object to the set; returns +self+.
+#   Merges the elements of each given enumerable object to the set; returns +self+.
 # - \#replace:
 #   Replaces the contents of the set with the contents
 #   of a given enumerable.
@@ -220,6 +216,8 @@
 #   has been modified while an element in the set.
 #
 class Set
+  VERSION = "1.0.3"
+
   include Enumerable
 
   # Creates a new set containing the given objects.
@@ -507,7 +505,7 @@ class Set
   # the element as parameter.  Returns an enumerator if no block is
   # given.
   def each(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     @hash.each_key(&block)
     self
   end
@@ -582,7 +580,7 @@ class Set
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def reject!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     delete_if(&block)
     self if size != n
@@ -591,7 +589,7 @@ class Set
   # Equivalent to Set#keep_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def select!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     keep_if(&block)
     self if size != n
@@ -600,13 +598,15 @@ class Set
   # Equivalent to Set#select!
   alias filter! select!
 
-  # Merges the elements of the given enumerable object to the set and
+  # Merges the elements of the given enumerable objects to the set and
   # returns self.
-  def merge(enum)
-    if enum.instance_of?(self.class)
-      @hash.update(enum.instance_variable_get(:@hash))
-    else
-      do_with_enum(enum) { |o| add(o) }
+  def merge(*enums, **nil)
+    enums.each do |enum|
+      if enum.instance_of?(self.class)
+        @hash.update(enum.instance_variable_get(:@hash))
+      else
+        do_with_enum(enum) { |o| add(o) }
+      end
     end
 
     self

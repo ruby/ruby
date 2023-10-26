@@ -6,6 +6,9 @@ describe "Numeric#remainder" do
     @obj    = NumericSpecs::Subclass.new
     @result = mock("Numeric#% result")
     @other  = mock("Passed Object")
+    ruby_version_is "3.3" do
+      @other.should_receive(:coerce).with(@obj).and_return([@obj, @other])
+    end
   end
 
   it "returns the result of calling self#% with other if self is 0" do

@@ -145,7 +145,7 @@ RSpec.describe Object, "#ruby_exe" do
     stub_const 'RUBY_EXE', 'ruby_spec_exe -w -Q'
 
     @script = RubyExeSpecs.new
-    allow(@script).to receive(:`).and_return('OUTPUT')
+    allow(IO).to receive(:popen).and_return('OUTPUT')
 
     status_successful = double(Process::Status, exited?: true, exitstatus: 0)
     allow(Process).to receive(:last_status).and_return(status_successful)
@@ -155,7 +155,7 @@ RSpec.describe Object, "#ruby_exe" do
     code = "code"
     options = {}
     output = "output"
-    allow(@script).to receive(:`).and_return(output)
+    expect(IO).to receive(:popen).and_return(output)
 
     expect(@script.ruby_exe(code, options)).to eq output
   end
@@ -168,7 +168,7 @@ RSpec.describe Object, "#ruby_exe" do
     code = "code"
     options = {}
     expect(@script).to receive(:ruby_cmd).and_return("ruby_cmd")
-    expect(@script).to receive(:`).with("ruby_cmd")
+    expect(IO).to receive(:popen).with("ruby_cmd")
     @script.ruby_exe(code, options)
   end
 
@@ -227,7 +227,7 @@ RSpec.describe Object, "#ruby_exe" do
       expect(ENV).to receive(:[]=).with("ABC", "xyz")
       expect(ENV).to receive(:[]=).with("ABC", "123")
 
-      expect(@script).to receive(:`).and_raise(Exception)
+      expect(IO).to receive(:popen).and_raise(Exception)
       expect do
         @script.ruby_exe nil, :env => { :ABC => "xyz" }
       end.to raise_error(Exception)
@@ -248,7 +248,7 @@ RSpec.describe Object, "#ruby_exe" do
 
     it "does not raise exception when command ends with expected status" do
       output = "output"
-      allow(@script).to receive(:`).and_return(output)
+      expect(IO).to receive(:popen).and_return(output)
 
       expect(@script.ruby_exe("path", exit_status: 4)).to eq output
     end

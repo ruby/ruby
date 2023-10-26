@@ -308,20 +308,10 @@ describe "A class definition extending an object (sclass)" do
     -> { class TestClass < BasicObject.new; end }.should raise_error(TypeError, error_msg)
   end
 
-  ruby_version_is ""..."3.0" do
-    it "allows accessing the block of the original scope" do
-      suppress_warning do
-        ClassSpecs.sclass_with_block { 123 }.should == 123
-      end
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "does not allow accessing the block of the original scope" do
-      -> {
-        ClassSpecs.sclass_with_block { 123 }
-      }.should raise_error(SyntaxError)
-    end
+  it "does not allow accessing the block of the original scope" do
+    -> {
+      ClassSpecs.sclass_with_block { 123 }
+    }.should raise_error(SyntaxError)
   end
 
   it "can use return to cause the enclosing method to return" do

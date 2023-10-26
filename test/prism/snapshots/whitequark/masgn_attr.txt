@@ -1,0 +1,88 @@
+@ ProgramNode (location: (1,0)-(5,18))
+├── locals: [:foo]
+└── statements:
+    @ StatementsNode (location: (1,0)-(5,18))
+    └── body: (length: 3)
+        ├── @ MultiWriteNode (location: (1,0)-(1,17))
+        │   ├── targets: (length: 2)
+        │   │   ├── @ CallNode (location: (1,0)-(1,6))
+        │   │   │   ├── receiver:
+        │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
+        │   │   │   ├── call_operator_loc: (1,4)-(1,5) = "."
+        │   │   │   ├── message_loc: (1,5)-(1,6) = "A"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: ∅
+        │   │   │   └── name: :A=
+        │   │   └── @ LocalVariableTargetNode (location: (1,8)-(1,11))
+        │   │       ├── name: :foo
+        │   │       └── depth: 0
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (1,12)-(1,13) = "="
+        │   └── value:
+        │       @ LocalVariableReadNode (location: (1,14)-(1,17))
+        │       ├── name: :foo
+        │       └── depth: 0
+        ├── @ MultiWriteNode (location: (3,0)-(3,24))
+        │   ├── targets: (length: 2)
+        │   │   ├── @ CallNode (location: (3,0)-(3,6))
+        │   │   │   ├── receiver:
+        │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
+        │   │   │   ├── call_operator_loc: (3,4)-(3,5) = "."
+        │   │   │   ├── message_loc: (3,5)-(3,6) = "a"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: ∅
+        │   │   │   └── name: :a=
+        │   │   └── @ CallNode (location: (3,8)-(3,18))
+        │   │       ├── receiver:
+        │   │       │   @ SelfNode (location: (3,8)-(3,12))
+        │   │       ├── call_operator_loc: ∅
+        │   │       ├── message_loc: (3,12)-(3,18) = "[1, 2]"
+        │   │       ├── opening_loc: (3,12)-(3,13) = "["
+        │   │       ├── arguments:
+        │   │       │   @ ArgumentsNode (location: (3,13)-(3,17))
+        │   │       │   └── arguments: (length: 2)
+        │   │       │       ├── @ IntegerNode (location: (3,13)-(3,14))
+        │   │       │       │   └── flags: decimal
+        │   │       │       └── @ IntegerNode (location: (3,16)-(3,17))
+        │   │       │           └── flags: decimal
+        │   │       ├── closing_loc: (3,17)-(3,18) = "]"
+        │   │       ├── block: ∅
+        │   │       ├── flags: ∅
+        │   │       └── name: :[]=
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (3,19)-(3,20) = "="
+        │   └── value:
+        │       @ LocalVariableReadNode (location: (3,21)-(3,24))
+        │       ├── name: :foo
+        │       └── depth: 0
+        └── @ MultiWriteNode (location: (5,0)-(5,18))
+            ├── targets: (length: 2)
+            │   ├── @ CallNode (location: (5,0)-(5,7))
+            │   │   ├── receiver:
+            │   │   │   @ SelfNode (location: (5,0)-(5,4))
+            │   │   ├── call_operator_loc: (5,4)-(5,6) = "::"
+            │   │   ├── message_loc: (5,6)-(5,7) = "a"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: ∅
+            │   │   └── name: :a=
+            │   └── @ LocalVariableTargetNode (location: (5,9)-(5,12))
+            │       ├── name: :foo
+            │       └── depth: 0
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (5,13)-(5,14) = "="
+            └── value:
+                @ LocalVariableReadNode (location: (5,15)-(5,18))
+                ├── name: :foo
+                └── depth: 0

@@ -60,6 +60,19 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
     assert_operator(a_b_time, :<, a_c_time * 10, "fixed_length_secure_compare timing test failed")
     assert_operator(a_c_time, :<, a_b_time * 10, "fixed_length_secure_compare timing test failed")
   end
+
+  def test_error_data
+    # X509V3_EXT_nconf_nid() called from OpenSSL::X509::ExtensionFactory#create_ext is a function
+    # that uses ERR_raise_data() to append additional information about the error.
+    #
+    # The generated message should look like:
+    #     "subjectAltName = IP:not.a.valid.ip.address: bad ip address (value=not.a.valid.ip.address)"
+    #     "subjectAltName = IP:not.a.valid.ip.address: error in extension (name=subjectAltName, value=IP:not.a.valid.ip.address)"
+    ef = OpenSSL::X509::ExtensionFactory.new
+    assert_raise_with_message(OpenSSL::X509::ExtensionError, /value=(IP:)?not.a.valid.ip.address\)/) {
+      ef.create_ext("subjectAltName", "IP:not.a.valid.ip.address")
+    }
+  end
 end
 
 end

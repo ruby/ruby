@@ -11,4 +11,8 @@ yjit-static-lib:
 	$(ECHO) 'building Rust YJIT (release mode)'
 	$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 
-miniruby$(EXEEXT): $(YJIT_LIBS)
+# Assume GNU flavor LD and OBJCOPY. Works on FreeBSD 13, at least.
+$(YJIT_LIBOBJ): $(YJIT_LIBS)
+	$(ECHO) 'partial linking $(YJIT_LIBS) into $@'
+	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
+	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)

@@ -744,8 +744,6 @@ typedef struct {
 typedef struct {
   int lower;
   int upper;
-  long base_num;
-  long inner_num;
 } OnigRepeatRange;
 
 typedef void (*OnigWarnFunc)(const char* s);
@@ -845,6 +843,8 @@ ONIG_EXTERN
 void onig_free(OnigRegex);
 ONIG_EXTERN
 void onig_free_body(OnigRegex);
+ONIG_EXTERN
+int onig_reg_copy(OnigRegex* reg, OnigRegex orig_reg);
 ONIG_EXTERN
 OnigPosition onig_scan(OnigRegex reg, const OnigUChar* str, const OnigUChar* end, OnigRegion* region, OnigOptionType option, int (*scan_callback)(OnigPosition, OnigPosition, OnigRegion*, void*), void* callback_arg);
 ONIG_EXTERN

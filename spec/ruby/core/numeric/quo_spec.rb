@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/quo'
 
 describe "Numeric#quo" do
   it "returns the result of self divided by the given Integer as a Rational" do

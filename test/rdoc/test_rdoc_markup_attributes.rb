@@ -37,4 +37,3 @@ class TestRDocMarkupAttributes < RDoc::TestCase
   end
 
 end
-

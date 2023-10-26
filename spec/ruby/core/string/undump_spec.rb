@@ -389,7 +389,7 @@ describe "String#undump" do
     '"\\bv".force_encoding("UTF-16BE")'.undump.should == "\u0876".encode('utf-16be')
   end
 
-  it "keeps origin encoding" do
+  it "returns a String in the same encoding as self" do
     '"foo"'.encode("ISO-8859-1").undump.encoding.should == Encoding::ISO_8859_1
     '"foo"'.encode('windows-1251').undump.encoding.should == Encoding::Windows_1251
   end

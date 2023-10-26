@@ -211,7 +211,17 @@ RSpec.describe "bundle cache" do
   end
 
   context "with --all-platforms" do
-    it "puts the gems in vendor/cache even for other rubies" do
+    it "puts the gems in vendor/cache even for other rubies", :bundler => ">= 2.4.0" do
+      gemfile <<-D
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack', :platforms => [:ruby_20, :windows_20]
+      D
+
+      bundle "cache --all-platforms"
+      expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
+    end
+
+    it "puts the gems in vendor/cache even for legacy windows rubies", :bundler => ">= 2.4.0" do
       gemfile <<-D
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack', :platforms => [:ruby_20, :x64_mingw_20]
@@ -291,7 +301,7 @@ RSpec.describe "bundle cache" do
       G
       subject
       expect(exitstatus).to eq(16)
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       bundle "env"

@@ -5,23 +5,68 @@ ENV['TERM'] = 'xterm' # for some CI environments
 require 'reline'
 require 'test/unit'
 
+begin
+  require 'rbconfig'
+rescue LoadError
+end
+
+begin
+  # This should exist and available in load path when this file is mirrored to ruby/ruby and running at there
+  if File.exist?(File.expand_path('../../tool/lib/envutil.rb', __dir__))
+    require 'envutil'
+  end
+rescue LoadError
+end
+
 module Reline
   class <<self
-    def test_mode
-        remove_const('IOGate') if const_defined?('IOGate')
-        const_set('IOGate', Reline::GeneralIO)
-        if ENV['RELINE_TEST_ENCODING']
-          encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
-        else
-          encoding = Encoding::UTF_8
-        end
-        Reline::GeneralIO.reset(encoding: encoding)
-        send(:core).config.instance_variable_set(:@test_mode, true)
-        send(:core).config.reset
+    def test_mode(ansi: false)
+      @original_iogate = IOGate
+      remove_const('IOGate')
+      const_set('IOGate', ansi ? Reline::ANSI : Reline::GeneralIO)
+      if ENV['RELINE_TEST_ENCODING']
+        encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
+      else
+        encoding = Encoding::UTF_8
+      end
+      Reline::GeneralIO.reset(encoding: encoding) unless ansi
+      core.config.instance_variable_set(:@test_mode, true)
+      core.config.reset
     end
 
     def test_reset
+      remove_const('IOGate')
+      const_set('IOGate', @original_iogate)
+      Reline::GeneralIO.reset
       Reline.instance_variable_set(:@core, nil)
+    end
+
+    # Return a executable name to spawn Ruby process. In certain build configuration,
+    # "ruby" may not be available.
+    def test_rubybin
+      # When this test suite is running in ruby/ruby, prefer EnvUtil result over original implementation
+      if const_defined?(:EnvUtil)
+        return EnvUtil.rubybin
+      end
+
+      # The following is a simplified port of EnvUtil.rubybin in ruby/ruby
+      if ruby = ENV["RUBY"]
+        return ruby
+      end
+      ruby = "ruby"
+      exeext = RbConfig::CONFIG["EXEEXT"]
+      rubyexe = (ruby + exeext if exeext and !exeext.empty?)
+      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+        return File.expand_path(ruby)
+      end
+      if rubyexe and File.exist? rubyexe and File.executable? rubyexe
+        return File.expand_path(rubyexe)
+      end
+      if defined?(RbConfig.ruby)
+        RbConfig.ruby
+      else
+        "ruby"
+      end
     end
   end
 end
@@ -114,12 +159,13 @@ class Reline::TestCase < Test::Unit::TestCase
   end
 
   def assert_whole_lines(expected)
-    previous_line_index = @line_editor.instance_variable_get(:@previous_line_index)
-    if previous_line_index
-      lines = @line_editor.whole_lines(index: previous_line_index)
-    else
-      lines = @line_editor.whole_lines
+    assert_equal(expected, @line_editor.whole_lines)
+  end
+
+  def assert_key_binding(input, method_symbol, editing_modes = [:emacs, :vi_insert, :vi_command])
+    editing_modes.each do |editing_mode|
+      @config.editing_mode = editing_mode
+      assert_equal(method_symbol, @config.editing_mode.default_key_bindings[input.bytes])
     end
-    assert_equal(expected, lines)
   end
 end

@@ -1,5 +1,5 @@
 use_realpath = File.respond_to?(:realpath)
-root = File.dirname(__FILE__)
+root = __dir__
 dir = "fixtures/code"
 CODE_LOADING_DIR = use_realpath ? File.realpath(dir, root) : File.expand_path(dir, root)
 
@@ -12,10 +12,6 @@ else
       raise "shim Thread#report_on_exception used with true" if value
     end
   end
-end
-
-unless GC::INTERNAL_CONSTANTS[:RB_BUG_INSTEAD_OF_RB_MEMERROR]
-  MSpec.enable_feature :no_memory_error
 end
 
 unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb

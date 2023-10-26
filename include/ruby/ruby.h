@@ -43,7 +43,6 @@
 #include "ruby/internal/method.h"
 #include "ruby/internal/module.h"
 #include "ruby/internal/newobj.h"
-#include "ruby/internal/rgengc.h"
 #include "ruby/internal/scan_args.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/symbol.h"
@@ -270,6 +269,24 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 0)
  *              terminating NUL character.)
  */
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
+
+// TODO: doc
+
+#include <errno.h>
+
+int rb_errno(void);
+void rb_errno_set(int);
+int *rb_errno_ptr(void);
+
+static inline int *
+rb_orig_errno_ptr(void)
+{
+    return &errno;
+}
+
+#define rb_orig_errno errno
+#undef errno
+#define errno (*rb_errno_ptr())
 
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")

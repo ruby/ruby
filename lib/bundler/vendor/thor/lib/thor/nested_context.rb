@@ -13,10 +13,10 @@ class Bundler::Thor
     end
 
     def entered?
-      @depth > 0
+      @depth.positive?
     end
 
-    private
+  private
 
     def push
       @depth += 1

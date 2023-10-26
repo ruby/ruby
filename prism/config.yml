@@ -1,0 +1,2542 @@
+tokens:
+  - name: EOF
+    value: 1
+    comment: final token in the file
+  - name: MISSING
+    comment: "a token that was expected but not found"
+  - name: NOT_PROVIDED
+    comment: "a token that was not present but it is okay"
+  - name: AMPERSAND
+    comment: "&"
+  - name: AMPERSAND_AMPERSAND
+    comment: "&&"
+  - name: AMPERSAND_AMPERSAND_EQUAL
+    comment: "&&="
+  - name: AMPERSAND_DOT
+    comment: "&."
+  - name: AMPERSAND_EQUAL
+    comment: "&="
+  - name: BACKTICK
+    comment: "`"
+  - name: BACK_REFERENCE
+    comment: "a back reference"
+  - name: BANG
+    comment: "! or !@"
+  - name: BANG_EQUAL
+    comment: "!="
+  - name: BANG_TILDE
+    comment: "!~"
+  - name: BRACE_LEFT
+    comment: "{"
+  - name: BRACE_RIGHT
+    comment: "}"
+  - name: BRACKET_LEFT
+    comment: "["
+  - name: BRACKET_LEFT_ARRAY
+    comment: "[ for the beginning of an array"
+  - name: BRACKET_LEFT_RIGHT
+    comment: "[]"
+  - name: BRACKET_LEFT_RIGHT_EQUAL
+    comment: "[]="
+  - name: BRACKET_RIGHT
+    comment: "]"
+  - name: CARET
+    comment: "^"
+  - name: CARET_EQUAL
+    comment: "^="
+  - name: CHARACTER_LITERAL
+    comment: "a character literal"
+  - name: CLASS_VARIABLE
+    comment: "a class variable"
+  - name: COLON
+    comment: ":"
+  - name: COLON_COLON
+    comment: "::"
+  - name: COMMA
+    comment: ","
+  - name: COMMENT
+    comment: "a comment"
+  - name: CONSTANT
+    comment: "a constant"
+  - name: DOT
+    comment: "."
+  - name: DOT_DOT
+    comment: ".."
+  - name: DOT_DOT_DOT
+    comment: "..."
+  - name: EMBDOC_BEGIN
+    comment: "=begin"
+  - name: EMBDOC_END
+    comment: "=end"
+  - name: EMBDOC_LINE
+    comment: "a line inside of embedded documentation"
+  - name: EMBEXPR_BEGIN
+    comment: "#{"
+  - name: EMBEXPR_END
+    comment: "}"
+  - name: EMBVAR
+    comment: "#"
+  - name: EQUAL
+    comment: "="
+  - name: EQUAL_EQUAL
+    comment: "=="
+  - name: EQUAL_EQUAL_EQUAL
+    comment: "==="
+  - name: EQUAL_GREATER
+    comment: "=>"
+  - name: EQUAL_TILDE
+    comment: "=~"
+  - name: FLOAT
+    comment: "a floating point number"
+  - name: FLOAT_IMAGINARY
+    comment: "a floating pointer number with an imaginary suffix"
+  - name: FLOAT_RATIONAL
+    comment: "a floating pointer number with a rational suffix"
+  - name: FLOAT_RATIONAL_IMAGINARY
+    comment: "a floating pointer number with a rational and imaginary suffix"
+  - name: GLOBAL_VARIABLE
+    comment: "a global variable"
+  - name: GREATER
+    comment: ">"
+  - name: GREATER_EQUAL
+    comment: ">="
+  - name: GREATER_GREATER
+    comment: ">>"
+  - name: GREATER_GREATER_EQUAL
+    comment: ">>="
+  - name: HEREDOC_END
+    comment: "the end of a heredoc"
+  - name: HEREDOC_START
+    comment: "the start of a heredoc"
+  - name: IDENTIFIER
+    comment: "an identifier"
+  - name: IGNORED_NEWLINE
+    comment: "an ignored newline"
+  - name: INSTANCE_VARIABLE
+    comment: "an instance variable"
+  - name: INTEGER
+    comment: "an integer (any base)"
+  - name: INTEGER_IMAGINARY
+    comment: "an integer with an imaginary suffix"
+  - name: INTEGER_RATIONAL
+    comment: "an integer with a rational suffix"
+  - name: INTEGER_RATIONAL_IMAGINARY
+    comment: "an integer with a rational and imaginary suffix"
+  - name: KEYWORD_ALIAS
+    comment: "alias"
+  - name: KEYWORD_AND
+    comment: "and"
+  - name: KEYWORD_BEGIN
+    comment: "begin"
+  - name: KEYWORD_BEGIN_UPCASE
+    comment: "BEGIN"
+  - name: KEYWORD_BREAK
+    comment: "break"
+  - name: KEYWORD_CASE
+    comment: "case"
+  - name: KEYWORD_CLASS
+    comment: "class"
+  - name: KEYWORD_DEF
+    comment: "def"
+  - name: KEYWORD_DEFINED
+    comment: "defined?"
+  - name: KEYWORD_DO
+    comment: "do"
+  - name: KEYWORD_DO_LOOP
+    comment: "do keyword for a predicate in a while, until, or for loop"
+  - name: KEYWORD_ELSE
+    comment: "else"
+  - name: KEYWORD_ELSIF
+    comment: "elsif"
+  - name: KEYWORD_END
+    comment: "end"
+  - name: KEYWORD_END_UPCASE
+    comment: "END"
+  - name: KEYWORD_ENSURE
+    comment: "ensure"
+  - name: KEYWORD_FALSE
+    comment: "false"
+  - name: KEYWORD_FOR
+    comment: "for"
+  - name: KEYWORD_IF
+    comment: "if"
+  - name: KEYWORD_IF_MODIFIER
+    comment: "if in the modifier form"
+  - name: KEYWORD_IN
+    comment: "in"
+  - name: KEYWORD_MODULE
+    comment: "module"
+  - name: KEYWORD_NEXT
+    comment: "next"
+  - name: KEYWORD_NIL
+    comment: "nil"
+  - name: KEYWORD_NOT
+    comment: "not"
+  - name: KEYWORD_OR
+    comment: "or"
+  - name: KEYWORD_REDO
+    comment: "redo"
+  - name: KEYWORD_RESCUE
+    comment: "rescue"
+  - name: KEYWORD_RESCUE_MODIFIER
+    comment: "rescue in the modifier form"
+  - name: KEYWORD_RETRY
+    comment: "retry"
+  - name: KEYWORD_RETURN
+    comment: "return"
+  - name: KEYWORD_SELF
+    comment: "self"
+  - name: KEYWORD_SUPER
+    comment: "super"
+  - name: KEYWORD_THEN
+    comment: "then"
+  - name: KEYWORD_TRUE
+    comment: "true"
+  - name: KEYWORD_UNDEF
+    comment: "undef"
+  - name: KEYWORD_UNLESS
+    comment: "unless"
+  - name: KEYWORD_UNLESS_MODIFIER
+    comment: "unless in the modifier form"
+  - name: KEYWORD_UNTIL
+    comment: "until"
+  - name: KEYWORD_UNTIL_MODIFIER
+    comment: "until in the modifier form"
+  - name: KEYWORD_WHEN
+    comment: "when"
+  - name: KEYWORD_WHILE
+    comment: "while"
+  - name: KEYWORD_WHILE_MODIFIER
+    comment: "while in the modifier form"
+  - name: KEYWORD_YIELD
+    comment: "yield"
+  - name: KEYWORD___ENCODING__
+    comment: "__ENCODING__"
+  - name: KEYWORD___FILE__
+    comment: "__FILE__"
+  - name: KEYWORD___LINE__
+    comment: "__LINE__"
+  - name: LABEL
+    comment: "a label"
+  - name: LABEL_END
+    comment: "the end of a label"
+  - name: LAMBDA_BEGIN
+    comment: "{"
+  - name: LESS
+    comment: "<"
+  - name: LESS_EQUAL
+    comment: "<="
+  - name: LESS_EQUAL_GREATER
+    comment: "<=>"
+  - name: LESS_LESS
+    comment: "<<"
+  - name: LESS_LESS_EQUAL
+    comment: "<<="
+  - name: METHOD_NAME
+    comment: "a method name"
+  - name: MINUS
+    comment: "-"
+  - name: MINUS_EQUAL
+    comment: "-="
+  - name: MINUS_GREATER
+    comment: "->"
+  - name: NEWLINE
+    comment: "a newline character outside of other tokens"
+  - name: NUMBERED_REFERENCE
+    comment: "a numbered reference to a capture group in the previous regular expression match"
+  - name: PARENTHESIS_LEFT
+    comment: "("
+  - name: PARENTHESIS_LEFT_PARENTHESES
+    comment: "( for a parentheses node"
+  - name: PARENTHESIS_RIGHT
+    comment: ")"
+  - name: PERCENT
+    comment: "%"
+  - name: PERCENT_EQUAL
+    comment: "%="
+  - name: PERCENT_LOWER_I
+    comment: "%i"
+  - name: PERCENT_LOWER_W
+    comment: "%w"
+  - name: PERCENT_LOWER_X
+    comment: "%x"
+  - name: PERCENT_UPPER_I
+    comment: "%I"
+  - name: PERCENT_UPPER_W
+    comment: "%W"
+  - name: PIPE
+    comment: "|"
+  - name: PIPE_EQUAL
+    comment: "|="
+  - name: PIPE_PIPE
+    comment: "||"
+  - name: PIPE_PIPE_EQUAL
+    comment: "||="
+  - name: PLUS
+    comment: "+"
+  - name: PLUS_EQUAL
+    comment: "+="
+  - name: QUESTION_MARK
+    comment: "?"
+  - name: REGEXP_BEGIN
+    comment: "the beginning of a regular expression"
+  - name: REGEXP_END
+    comment: "the end of a regular expression"
+  - name: SEMICOLON
+    comment: ";"
+  - name: SLASH
+    comment: "/"
+  - name: SLASH_EQUAL
+    comment: "/="
+  - name: STAR
+    comment: "*"
+  - name: STAR_EQUAL
+    comment: "*="
+  - name: STAR_STAR
+    comment: "**"
+  - name: STAR_STAR_EQUAL
+    comment: "**="
+  - name: STRING_BEGIN
+    comment: "the beginning of a string"
+  - name: STRING_CONTENT
+    comment: "the contents of a string"
+  - name: STRING_END
+    comment: "the end of a string"
+  - name: SYMBOL_BEGIN
+    comment: "the beginning of a symbol"
+  - name: TILDE
+    comment: "~ or ~@"
+  - name: UAMPERSAND
+    comment: "unary &"
+  - name: UCOLON_COLON
+    comment: "unary ::"
+  - name: UDOT_DOT
+    comment: "unary .."
+  - name: UDOT_DOT_DOT
+    comment: "unary ..."
+  - name: UMINUS
+    comment: "-@"
+  - name: UMINUS_NUM
+    comment: "-@ for a number"
+  - name: UPLUS
+    comment: "+@"
+  - name: USTAR
+    comment: "unary *"
+  - name: USTAR_STAR
+    comment: "unary **"
+  - name: WORDS_SEP
+    comment: "a separator between words in a list"
+  - name: __END__
+    comment: "marker for the point in the file at which the parser should stop"
+flags:
+  - name: CallNodeFlags
+    values:
+      - name: SAFE_NAVIGATION
+        comment: "&. operator"
+      - name: VARIABLE_CALL
+        comment: "a call that could have been a local variable"
+  - name: IntegerBaseFlags
+    values:
+      - name: BINARY
+        comment: "0b prefix"
+      - name: OCTAL
+        comment: "0o or 0 prefix"
+      - name: DECIMAL
+        comment: "0d or no prefix"
+      - name: HEXADECIMAL
+        comment: "0x prefix"
+  - name: LoopFlags
+    values:
+      - name: BEGIN_MODIFIER
+        comment: "a loop after a begin statement, so the body is executed first before the condition"
+  - name: RangeFlags
+    values:
+      - name: EXCLUDE_END
+        comment: "... operator"
+  - name: RegularExpressionFlags
+    values:
+      - name: IGNORE_CASE
+        comment: "i - ignores the case of characters when matching"
+      - name: EXTENDED
+        comment: "x - ignores whitespace and allows comments in regular expressions"
+      - name: MULTI_LINE
+        comment: "m - allows $ to match the end of lines within strings"
+      - name: ONCE
+        comment: "o - only interpolates values into the regular expression once"
+      - name: EUC_JP
+        comment: "e - forces the EUC-JP encoding"
+      - name: ASCII_8BIT
+        comment: "n - forces the ASCII-8BIT encoding"
+      - name: WINDOWS_31J
+        comment: "s - forces the Windows-31J encoding"
+      - name: UTF_8
+        comment: "u - forces the UTF-8 encoding"
+  - name: StringFlags
+    values:
+      - name: FROZEN
+        comment: "frozen by virtue of a `frozen_string_literal` comment"
+nodes:
+  - name: AliasGlobalVariableNode
+    fields:
+      - name: new_name
+        type: node
+      - name: old_name
+        type: node
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `alias` keyword to alias a global variable.
+
+          alias $foo $bar
+          ^^^^^^^^^^^^^^^
+  - name: AliasMethodNode
+    fields:
+      - name: new_name
+        type: node
+      - name: old_name
+        type: node
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `alias` keyword to alias a method.
+
+          alias foo bar
+          ^^^^^^^^^^^^^
+  - name: AlternationPatternNode
+    fields:
+      - name: left
+        type: node
+      - name: right
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents an alternation pattern in pattern matching.
+
+          foo => bar | baz
+                 ^^^^^^^^^
+  - name: AndNode
+    fields:
+      - name: left
+        type: node
+      - name: right
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the `&&` operator or the `and` keyword.
+
+          left and right
+          ^^^^^^^^^^^^^^
+  - name: ArgumentsNode
+    fields:
+      - name: arguments
+        type: node[]
+    comment: |
+      Represents a set of arguments to a method or a keyword.
+
+          return foo, bar, baz
+                 ^^^^^^^^^^^^^
+  - name: ArrayNode
+    fields:
+      - name: elements
+        type: node[]
+      - name: opening_loc
+        type: location?
+      - name: closing_loc
+        type: location?
+    comment: |
+      Represents an array literal. This can be a regular array using brackets or
+      a special array using % like %w or %i.
+
+          [1, 2, 3]
+          ^^^^^^^^^
+  - name: ArrayPatternNode
+    fields:
+      - name: constant
+        type: node?
+      - name: requireds
+        type: node[]
+      - name: rest
+        type: node?
+      - name: posts
+        type: node[]
+      - name: opening_loc
+        type: location?
+      - name: closing_loc
+        type: location?
+    comment: |
+      Represents an array pattern in pattern matching.
+
+          foo in 1, 2
+          ^^^^^^^^^^^
+
+          foo in [1, 2]
+          ^^^^^^^^^^^^^
+
+          foo in *1
+          ^^^^^^^^^
+
+          foo in Bar[]
+          ^^^^^^^^^^^^
+
+          foo in Bar[1, 2, 3]
+          ^^^^^^^^^^^^^^^^^^^
+  - name: AssocNode
+    fields:
+      - name: key
+        type: node
+      - name: value
+        type: node?
+      - name: operator_loc
+        type: location?
+    comment: |
+      Represents a hash key/value pair.
+
+          { a => b }
+            ^^^^^^
+  - name: AssocSplatNode
+    fields:
+      - name: value
+        type: node?
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents a splat in a hash literal.
+
+          { **foo }
+            ^^^^^
+  - name: BackReferenceReadNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents reading a reference to a field in the previous match.
+
+          $'
+          ^^
+  - name: BeginNode
+    fields:
+      - name: begin_keyword_loc
+        type: location?
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: rescue_clause
+        type: node?
+        kind: RescueNode
+      - name: else_clause
+        type: node?
+        kind: ElseNode
+      - name: ensure_clause
+        type: node?
+        kind: EnsureNode
+      - name: end_keyword_loc
+        type: location?
+    newline: false
+    comment: |
+      Represents a begin statement.
+
+          begin
+            foo
+          end
+          ^^^^^
+  - name: BlockArgumentNode
+    fields:
+      - name: expression
+        type: node?
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents block method arguments.
+
+          bar(&args)
+          ^^^^^^^^^^
+  - name: BlockLocalVariableNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents a block local variable.
+
+          a { |; b| }
+                 ^
+  - name: BlockNode
+    fields:
+      - name: locals
+        type: constant[]
+      - name: parameters
+        type: node?
+        kind: BlockParametersNode
+      - name: body
+        type: node?
+      - name: opening_loc
+        type: location
+      - name: closing_loc
+        type: location
+    comment: |
+      Represents a block of ruby code.
+
+      [1, 2, 3].each { |i| puts x }
+                     ^^^^^^^^^^^^^^
+  - name: BlockParameterNode
+    fields:
+      - name: name
+        type: constant?
+      - name: name_loc
+        type: location?
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents a block parameter to a method, block, or lambda definition.
+
+          def a(&b)
+                ^^
+          end
+  - name: BlockParametersNode
+    fields:
+      - name: parameters
+        type: node?
+        kind: ParametersNode
+      - name: locals
+        type: node[]
+      - name: opening_loc
+        type: location?
+      - name: closing_loc
+        type: location?
+    comment: |
+      Represents a block's parameters declaration.
+
+          -> (a, b = 1; local) { }
+             ^^^^^^^^^^^^^^^^^
+
+          foo do |a, b = 1; local|
+                 ^^^^^^^^^^^^^^^^^
+          end
+  - name: BreakNode
+    fields:
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `break` keyword.
+
+          break foo
+          ^^^^^^^^^
+  - name: CallAndWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: constant
+      - name: write_name
+        type: constant
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator on a call.
+
+          foo.bar &&= value
+          ^^^^^^^^^^^^^^^^^
+  - name: CallNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: name
+        type: constant
+    comment: |
+      Represents a method call, in all of the various forms that can take.
+
+          foo
+          ^^^
+
+          foo()
+          ^^^^^
+
+          +foo
+          ^^^^
+
+          foo + bar
+          ^^^^^^^^^
+
+          foo.bar
+          ^^^^^^^
+
+          foo&.bar
+          ^^^^^^^^
+  - name: CallOperatorWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: constant
+      - name: write_name
+        type: constant
+      - name: operator
+        type: constant
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of an assignment operator on a call.
+
+          foo.bar += baz
+          ^^^^^^^^^^^^^^
+  - name: CallOrWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: constant
+      - name: write_name
+        type: constant
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator on a call.
+
+          foo.bar ||= value
+          ^^^^^^^^^^^^^^^^^
+  - name: CapturePatternNode
+    fields:
+      - name: value
+        type: node
+      - name: target
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents assigning to a local variable in pattern matching.
+
+          foo => [bar => baz]
+                 ^^^^^^^^^^^^
+  - name: CaseNode
+    fields:
+      - name: predicate
+        type: node?
+      - name: conditions
+        type: node[]
+      - name: consequent
+        type: node?
+        kind: ElseNode
+      - name: case_keyword_loc
+        type: location
+      - name: end_keyword_loc
+        type: location
+    comment: |
+      Represents the use of a case statement.
+
+      case true
+      ^^^^^^^^^
+      when false
+      end
+  - name: ClassNode
+    fields:
+      - name: locals
+        type: constant[]
+      - name: class_keyword_loc
+        type: location
+      - name: constant_path
+        type: node
+      - name: inheritance_operator_loc
+        type: location?
+      - name: superclass
+        type: node?
+      - name: body
+        type: node?
+      - name: end_keyword_loc
+        type: location
+      - name: name
+        type: constant
+    comment: |
+      Represents a class declaration involving the `class` keyword.
+
+          class Foo end
+          ^^^^^^^^^^^^^
+  - name: ClassVariableAndWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator for assignment to a class variable.
+
+          @@target &&= value
+          ^^^^^^^^^^^^^^^^
+  - name: ClassVariableOperatorWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator
+        type: constant
+    comment: |
+      Represents assigning to a class variable using an operator that isn't `=`.
+
+          @@target += value
+          ^^^^^^^^^^^^^^^^^
+  - name: ClassVariableOrWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator for assignment to a class variable.
+
+          @@target ||= value
+          ^^^^^^^^^^^^^^^^^^
+  - name: ClassVariableReadNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents referencing a class variable.
+
+          @@foo
+          ^^^^^
+  - name: ClassVariableTargetNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents writing to a class variable in a context that doesn't have an explicit value.
+
+          @@foo, @@bar = baz
+          ^^^^^  ^^^^^
+  - name: ClassVariableWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location?
+    comment: |
+      Represents writing to a class variable.
+
+          @@foo = 1
+          ^^^^^^^^^
+  - name: ConstantAndWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator for assignment to a constant.
+
+          Target &&= value
+          ^^^^^^^^^^^^^^^^
+  - name: ConstantOperatorWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator
+        type: constant
+    comment: |
+      Represents assigning to a constant using an operator that isn't `=`.
+
+          Target += value
+          ^^^^^^^^^^^^^^^
+  - name: ConstantOrWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator for assignment to a constant.
+
+          Target ||= value
+          ^^^^^^^^^^^^^^^^
+  - name: ConstantPathAndWriteNode
+    fields:
+      - name: target
+        type: node
+        kind: ConstantPathNode
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator for assignment to a constant path.
+
+          Parent::Child &&= value
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  - name: ConstantPathNode
+    fields:
+      - name: parent
+        type: node?
+      - name: child
+        type: node
+      - name: delimiter_loc
+        type: location
+    comment: |
+      Represents accessing a constant through a path of `::` operators.
+
+          Foo::Bar
+          ^^^^^^^^
+  - name: ConstantPathOperatorWriteNode
+    fields:
+      - name: target
+        type: node
+        kind: ConstantPathNode
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator
+        type: constant
+    comment: |
+      Represents assigning to a constant path using an operator that isn't `=`.
+
+          Parent::Child += value
+          ^^^^^^^^^^^^^^^^^^^^^^
+  - name: ConstantPathOrWriteNode
+    fields:
+      - name: target
+        type: node
+        kind: ConstantPathNode
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator for assignment to a constant path.
+
+          Parent::Child ||= value
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  - name: ConstantPathTargetNode
+    fields:
+      - name: parent
+        type: node?
+      - name: child
+        type: node
+      - name: delimiter_loc
+        type: location
+    comment: |
+      Represents writing to a constant path in a context that doesn't have an explicit value.
+
+          Foo::Foo, Bar::Bar = baz
+          ^^^^^^^^  ^^^^^^^^
+  - name: ConstantPathWriteNode
+    fields:
+      - name: target
+        type: node
+        kind: ConstantPathNode
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents writing to a constant path.
+
+          ::Foo = 1
+          ^^^^^^^^^
+
+          Foo::Bar = 1
+          ^^^^^^^^^^^^
+
+          ::Foo::Bar = 1
+          ^^^^^^^^^^^^^^
+  - name: ConstantReadNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents referencing a constant.
+
+          Foo
+          ^^^
+  - name: ConstantTargetNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents writing to a constant in a context that doesn't have an explicit value.
+
+          Foo, Bar = baz
+          ^^^  ^^^
+  - name: ConstantWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents writing to a constant.
+
+          Foo = 1
+          ^^^^^^^
+  - name: DefNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: receiver
+        type: node?
+      - name: parameters
+        type: node?
+        kind: ParametersNode
+      - name: body
+        type: node?
+      - name: locals
+        type: constant[]
+      - name: def_keyword_loc
+        type: location
+      - name: operator_loc
+        type: location?
+      - name: lparen_loc
+        type: location?
+      - name: rparen_loc
+        type: location?
+      - name: equal_loc
+        type: location?
+      - name: end_keyword_loc
+        type: location?
+    comment: |
+      Represents a method definition.
+
+          def method
+          end
+          ^^^^^^^^^^
+  - name: DefinedNode
+    fields:
+      - name: lparen_loc
+        type: location?
+      - name: value
+        type: node
+      - name: rparen_loc
+        type: location?
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `defined?` keyword.
+
+          defined?(a)
+          ^^^^^^^^^^^
+  - name: ElseNode
+    fields:
+      - name: else_keyword_loc
+        type: location
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: end_keyword_loc
+        type: location?
+    comment: |
+      Represents an `else` clause in a `case`, `if`, or `unless` statement.
+
+          if a then b else c end
+                      ^^^^^^^^^^
+  - name: EmbeddedStatementsNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: closing_loc
+        type: location
+    comment: |
+      Represents an interpolated set of statements.
+
+          "foo #{bar}"
+               ^^^^^^
+  - name: EmbeddedVariableNode
+    fields:
+      - name: operator_loc
+        type: location
+      - name: variable
+        type: node
+    comment: |
+      Represents an interpolated variable.
+
+          "foo #@bar"
+               ^^^^^
+  - name: EnsureNode
+    fields:
+      - name: ensure_keyword_loc
+        type: location
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: end_keyword_loc
+        type: location
+    comment: |
+      Represents an `ensure` clause in a `begin` statement.
+
+          begin
+            foo
+          ensure
+          ^^^^^^
+            bar
+          end
+  - name: FalseNode
+    comment: |
+      Represents the use of the literal `false` keyword.
+
+          false
+          ^^^^^
+  - name: FindPatternNode
+    fields:
+      - name: constant
+        type: node?
+      - name: left
+        type: node
+      - name: requireds
+        type: node[]
+      - name: right
+        type: node
+      - name: opening_loc
+        type: location?
+      - name: closing_loc
+        type: location?
+    comment: |
+      Represents a find pattern in pattern matching.
+
+          foo in *bar, baz, *qux
+          ^^^^^^^^^^^^^^^^^^^^^^
+
+          foo in [*bar, baz, *qux]
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+
+          foo in Foo(*bar, baz, *qux)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  - name: FlipFlopNode
+    fields:
+      - name: left
+        type: node?
+      - name: right
+        type: node?
+      - name: operator_loc
+        type: location
+      - name: flags
+        type: flags
+        kind: RangeFlags
+    comment: |
+      Represents the use of the `..` or `...` operators to create flip flops.
+
+          baz if foo .. bar
+                 ^^^^^^^^^^
+  - name: FloatNode
+    comment: |
+      Represents a floating point number literal.
+
+          1.0
+          ^^^
+  - name: ForNode
+    fields:
+      - name: index
+        type: node
+      - name: collection
+        type: node
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: for_keyword_loc
+        type: location
+      - name: in_keyword_loc
+        type: location
+      - name: do_keyword_loc
+        type: location?
+      - name: end_keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `for` keyword.
+
+          for i in a end
+          ^^^^^^^^^^^^^^
+  - name: ForwardingArgumentsNode
+    comment: |
+      Represents forwarding all arguments to this method to another method.
+
+          def foo(...)
+            bar(...)
+            ^^^^^^^^
+          end
+  - name: ForwardingParameterNode
+    comment: |
+      Represents the use of the forwarding parameter in a method, block, or lambda declaration.
+
+          def foo(...)
+                  ^^^
+          end
+  - name: ForwardingSuperNode
+    fields:
+      - name: block
+        type: node?
+        kind: BlockNode
+    comment: |
+      Represents the use of the `super` keyword without parentheses or arguments.
+
+          super
+          ^^^^^
+  - name: GlobalVariableAndWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator for assignment to a global variable.
+
+          $target &&= value
+          ^^^^^^^^^^^^^^^^^
+  - name: GlobalVariableOperatorWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator
+        type: constant
+    comment: |
+      Represents assigning to a global variable using an operator that isn't `=`.
+
+          $target += value
+          ^^^^^^^^^^^^^^^^
+  - name: GlobalVariableOrWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator for assignment to a global variable.
+
+          $target ||= value
+          ^^^^^^^^^^^^^^^^^
+  - name: GlobalVariableReadNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents referencing a global variable.
+
+          $foo
+          ^^^^
+  - name: GlobalVariableTargetNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents writing to a global variable in a context that doesn't have an explicit value.
+
+          $foo, $bar = baz
+          ^^^^  ^^^^
+  - name: GlobalVariableWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents writing to a global variable.
+
+          $foo = 1
+          ^^^^^^^^
+  - name: HashNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: elements
+        type: node[]
+      - name: closing_loc
+        type: location
+    comment: |
+      Represents a hash literal.
+
+          { a => b }
+          ^^^^^^^^^^
+  - name: HashPatternNode
+    fields:
+      - name: constant
+        type: node?
+      - name: assocs
+        type: node[]
+      - name: kwrest
+        type: node?
+      - name: opening_loc
+        type: location?
+      - name: closing_loc
+        type: location?
+    comment: |
+      Represents a hash pattern in pattern matching.
+
+          foo => { a: 1, b: 2 }
+                 ^^^^^^^^^^^^^^
+
+          foo => { a: 1, b: 2, **c }
+                 ^^^^^^^^^^^^^^^^^^^
+  - name: IfNode
+    fields:
+      - name: if_keyword_loc
+        type: location?
+      - name: predicate
+        type: node
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: consequent
+        type: node?
+      - name: end_keyword_loc
+        type: location?
+    newline: predicate
+    comment: |
+      Represents the use of the `if` keyword, either in the block form or the modifier form.
+
+          bar if foo
+          ^^^^^^^^^^
+
+          if foo then bar end
+          ^^^^^^^^^^^^^^^^^^^
+  - name: ImaginaryNode
+    fields:
+      - name: numeric
+        type: node
+    comment: |
+      Represents an imaginary number literal.
+
+          1.0i
+          ^^^^
+  - name: ImplicitNode
+    fields:
+      - name: value
+        type: node
+    comment: |
+      Represents a node that is implicitly being added to the tree but doesn't
+      correspond directly to a node in the source.
+
+          { foo: }
+            ^^^^
+
+          { Foo: }
+            ^^^^
+  - name: InNode
+    fields:
+      - name: pattern
+        type: node
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: in_loc
+        type: location
+      - name: then_loc
+        type: location?
+    comment: |
+      Represents the use of the `in` keyword in a case statement.
+
+          case a; in b then c end
+                  ^^^^^^^^^^^
+  - name: IndexAndWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator on a call to the `[]` method.
+
+          foo.bar[baz] &&= value
+          ^^^^^^^^^^^^^^^^^^^^^^
+  - name: IndexOperatorWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: operator
+        type: constant
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of an assignment operator on a call to `[]`.
+
+          foo.bar[baz] += value
+          ^^^^^^^^^^^^^^^^^^^^^
+  - name: IndexOrWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator on a call to `[]`.
+
+          foo.bar[baz] ||= value
+          ^^^^^^^^^^^^^^^^^^^^^^
+  - name: InstanceVariableAndWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator for assignment to an instance variable.
+
+          @target &&= value
+          ^^^^^^^^^^^^^^^^^
+  - name: InstanceVariableOperatorWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator
+        type: constant
+    comment: |
+      Represents assigning to an instance variable using an operator that isn't `=`.
+
+          @target += value
+          ^^^^^^^^^^^^^^^^
+  - name: InstanceVariableOrWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator for assignment to an instance variable.
+
+          @target ||= value
+          ^^^^^^^^^^^^^^^^^
+  - name: InstanceVariableReadNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents referencing an instance variable.
+
+          @foo
+          ^^^^
+  - name: InstanceVariableTargetNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents writing to an instance variable in a context that doesn't have an explicit value.
+
+          @foo, @bar = baz
+          ^^^^  ^^^^
+  - name: InstanceVariableWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents writing to an instance variable.
+
+          @foo = 1
+          ^^^^^^^^
+  - name: IntegerNode
+    fields:
+      - name: flags
+        type: flags
+        kind: IntegerBaseFlags
+    comment: |
+      Represents an integer number literal.
+
+          1
+          ^
+  - name: InterpolatedMatchLastLineNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    newline: parts
+    comment: |
+      Represents a regular expression literal that contains interpolation that
+      is being used in the predicate of a conditional to implicitly match
+      against the last line read by an IO object.
+
+          if /foo #{bar} baz/ then end
+             ^^^^^^^^^^^^^^^^
+  - name: InterpolatedRegularExpressionNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    newline: parts
+    comment: |
+      Represents a regular expression literal that contains interpolation.
+
+          /foo #{bar} baz/
+          ^^^^^^^^^^^^^^^^
+  - name: InterpolatedStringNode
+    fields:
+      - name: opening_loc
+        type: location?
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location?
+    newline: parts
+    comment: |
+      Represents a string literal that contains interpolation.
+
+          "foo #{bar} baz"
+          ^^^^^^^^^^^^^^^^
+  - name: InterpolatedSymbolNode
+    fields:
+      - name: opening_loc
+        type: location?
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location?
+    newline: parts
+    comment: |
+      Represents a symbol literal that contains interpolation.
+
+          :"foo #{bar} baz"
+          ^^^^^^^^^^^^^^^^^
+  - name: InterpolatedXStringNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location
+    newline: parts
+    comment: |
+      Represents an xstring literal that contains interpolation.
+
+          `foo #{bar} baz`
+          ^^^^^^^^^^^^^^^^
+  - name: KeywordHashNode
+    fields:
+      - name: elements
+        type: node[]
+    comment: |
+      Represents a hash literal without opening and closing braces.
+
+          foo(a: b)
+              ^^^^
+  - name: KeywordParameterNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node?
+    comment: |
+      Represents a keyword parameter to a method, block, or lambda definition.
+
+          def a(b:)
+                ^^
+          end
+
+          def a(b: 1)
+                ^^^^
+          end
+  - name: KeywordRestParameterNode
+    fields:
+      - name: name
+        type: constant?
+      - name: name_loc
+        type: location?
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents a keyword rest parameter to a method, block, or lambda definition.
+
+          def a(**b)
+                ^^^
+          end
+  - name: LambdaNode
+    fields:
+      - name: locals
+        type: constant[]
+      - name: operator_loc
+        type: location
+      - name: opening_loc
+        type: location
+      - name: closing_loc
+        type: location
+      - name: parameters
+        type: node?
+        kind: BlockParametersNode
+      - name: body
+        type: node?
+    comment: |
+      Represents using a lambda literal (not the lambda method call).
+
+          ->(value) { value * 2 }
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  - name: LocalVariableAndWriteNode
+    fields:
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: name
+        type: constant
+      - name: depth
+        type: uint32
+    comment: |
+      Represents the use of the `&&=` operator for assignment to a local variable.
+
+          target &&= value
+          ^^^^^^^^^^^^^^^^
+  - name: LocalVariableOperatorWriteNode
+    fields:
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: name
+        type: constant
+      - name: operator
+        type: constant
+      - name: depth
+        type: uint32
+    comment: |
+      Represents assigning to a local variable using an operator that isn't `=`.
+
+          target += value
+          ^^^^^^^^^^^^^^^
+  - name: LocalVariableOrWriteNode
+    fields:
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+      - name: name
+        type: constant
+      - name: depth
+        type: uint32
+    comment: |
+      Represents the use of the `||=` operator for assignment to a local variable.
+
+          target ||= value
+          ^^^^^^^^^^^^^^^^
+  - name: LocalVariableReadNode
+    fields:
+      - name: name
+        type: constant
+      - name: depth
+        type: uint32
+    comment: |
+      Represents reading a local variable. Note that this requires that a local
+      variable of the same name has already been written to in the same scope,
+      otherwise it is parsed as a method call.
+
+          foo
+          ^^^
+  - name: LocalVariableTargetNode
+    fields:
+      - name: name
+        type: constant
+      - name: depth
+        type: uint32
+    comment: |
+      Represents writing to a local variable in a context that doesn't have an explicit value.
+
+          foo, bar = baz
+          ^^^  ^^^
+  - name: LocalVariableWriteNode
+    fields:
+      - name: name
+        type: constant
+      - name: depth
+        type: uint32
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents writing to a local variable.
+
+          foo = 1
+          ^^^^^^^
+  - name: MatchLastLineNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: content_loc
+        type: location
+      - name: closing_loc
+        type: location
+      - name: unescaped
+        type: string
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    comment: |
+      Represents a regular expression literal used in the predicate of a
+      conditional to implicitly match against the last line read by an IO
+      object.
+
+          if /foo/i then end
+             ^^^^^^
+  - name: MatchPredicateNode
+    fields:
+      - name: value
+        type: node
+      - name: pattern
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the modifier `in` operator.
+
+          foo in bar
+          ^^^^^^^^^^
+  - name: MatchRequiredNode
+    fields:
+      - name: value
+        type: node
+      - name: pattern
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the `=>` operator.
+
+          foo => bar
+          ^^^^^^^^^^
+  - name: MatchWriteNode
+    fields:
+      - name: call
+        type: node
+        kind: CallNode
+      - name: locals
+        type: constant[]
+    comment: |
+      Represents writing local variables using a regular expression match with
+      named capture groups.
+
+          /(?<foo>bar)/ =~ baz
+          ^^^^^^^^^^^^^^^^^^^^
+  - name: MissingNode
+    comment: |
+      Represents a node that is missing from the source and results in a syntax
+      error.
+  - name: ModuleNode
+    fields:
+      - name: locals
+        type: constant[]
+      - name: module_keyword_loc
+        type: location
+      - name: constant_path
+        type: node
+      - name: body
+        type: node?
+      - name: end_keyword_loc
+        type: location
+      - name: name
+        type: constant
+    comment: |
+      Represents a module declaration involving the `module` keyword.
+
+          module Foo end
+          ^^^^^^^^^^^^^^
+  - name: MultiTargetNode
+    fields:
+      - name: targets
+        type: node[]
+      - name: lparen_loc
+        type: location?
+      - name: rparen_loc
+        type: location?
+    comment: |
+      Represents a multi-target expression.
+
+          a, b, c = 1, 2, 3
+          ^^^^^^^
+  - name: MultiWriteNode
+    fields:
+      - name: targets
+        type: node[]
+      - name: lparen_loc
+        type: location?
+      - name: rparen_loc
+        type: location?
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents a write to a multi-target expression.
+
+          a, b, c = 1, 2, 3
+          ^^^^^^^^^^^^^^^^^
+  - name: NextNode
+    fields:
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `next` keyword.
+
+          next 1
+          ^^^^^^
+  - name: NilNode
+    comment: |
+      Represents the use of the `nil` keyword.
+
+          nil
+          ^^^
+  - name: NoKeywordsParameterNode
+    fields:
+      - name: operator_loc
+        type: location
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of `**nil` inside method arguments.
+
+          def a(**nil)
+                ^^^^^
+          end
+  - name: NumberedReferenceReadNode
+    fields:
+      - name: number
+        type: uint32
+    comment: |
+      Represents reading a numbered reference to a capture in the previous match.
+
+          $1
+          ^^
+  - name: OptionalParameterNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents an optional parameter to a method, block, or lambda definition.
+
+          def a(b = 1)
+                ^^^^^
+          end
+  - name: OrNode
+    fields:
+      - name: left
+        type: node
+      - name: right
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the `||` operator or the `or` keyword.
+
+          left or right
+          ^^^^^^^^^^^^^
+  - name: ParametersNode
+    fields:
+      - name: requireds
+        type: node[]
+      - name: optionals
+        type: node[]
+      - name: rest
+        type: node?
+        kind: RestParameterNode
+      - name: posts
+        type: node[]
+      - name: keywords
+        type: node[]
+      - name: keyword_rest
+        type: node?
+      - name: block
+        type: node?
+        kind: BlockParameterNode
+    comment: |
+      Represents the list of parameters on a method, block, or lambda definition.
+
+          def a(b, c, d)
+                ^^^^^^^
+          end
+  - name: ParenthesesNode
+    fields:
+      - name: body
+        type: node?
+      - name: opening_loc
+        type: location
+      - name: closing_loc
+        type: location
+    newline: false
+    comment: |
+      Represents a parenthesized expression
+
+          (10 + 34)
+          ^^^^^^^^^
+  - name: PinnedExpressionNode
+    fields:
+      - name: expression
+        type: node
+      - name: operator_loc
+        type: location
+      - name: lparen_loc
+        type: location
+      - name: rparen_loc
+        type: location
+    comment: |
+      Represents the use of the `^` operator for pinning an expression in a
+      pattern matching expression.
+
+          foo in ^(bar)
+                 ^^^^^^
+  - name: PinnedVariableNode
+    fields:
+      - name: variable
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the `^` operator for pinning a variable in a pattern
+      matching expression.
+
+          foo in ^bar
+                 ^^^^
+  - name: PostExecutionNode
+    fields:
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: keyword_loc
+        type: location
+      - name: opening_loc
+        type: location
+      - name: closing_loc
+        type: location
+    comment: |
+      Represents the use of the `END` keyword.
+
+          END { foo }
+          ^^^^^^^^^^^
+  - name: PreExecutionNode
+    fields:
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: keyword_loc
+        type: location
+      - name: opening_loc
+        type: location
+      - name: closing_loc
+        type: location
+    comment: |
+      Represents the use of the `BEGIN` keyword.
+
+          BEGIN { foo }
+          ^^^^^^^^^^^^^
+  - name: ProgramNode
+    fields:
+      - name: locals
+        type: constant[]
+      - name: statements
+        type: node
+        kind: StatementsNode
+    comment: The top level node of any parse tree.
+  - name: RangeNode
+    fields:
+      - name: left
+        type: node?
+      - name: right
+        type: node?
+      - name: operator_loc
+        type: location
+      - name: flags
+        type: flags
+        kind: RangeFlags
+    comment: |
+      Represents the use of the `..` or `...` operators.
+
+          1..2
+          ^^^^
+
+          c if a =~ /left/ ... b =~ /right/
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  - name: RationalNode
+    fields:
+      - name: numeric
+        type: node
+    comment: |
+      Represents a rational number literal.
+
+          1.0r
+          ^^^^
+  - name: RedoNode
+    comment: |
+      Represents the use of the `redo` keyword.
+
+          redo
+          ^^^^
+  - name: RegularExpressionNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: content_loc
+        type: location
+      - name: closing_loc
+        type: location
+      - name: unescaped
+        type: string
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    comment: |
+      Represents a regular expression literal with no interpolation.
+
+          /foo/i
+          ^^^^^^
+  - name: RequiredDestructuredParameterNode
+    fields:
+      - name: parameters
+        type: node[]
+      - name: opening_loc
+        type: location
+      - name: closing_loc
+        type: location
+    comment: |
+      Represents a destructured required parameter node.
+
+          def foo((bar, baz))
+                  ^^^^^^^^^^
+          end
+  - name: RequiredParameterNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents a required parameter to a method, block, or lambda definition.
+
+          def a(b)
+                ^
+          end
+  - name: RescueModifierNode
+    fields:
+      - name: expression
+        type: node
+      - name: keyword_loc
+        type: location
+      - name: rescue_expression
+        type: node
+    newline: expression
+    comment: |
+      Represents an expression modified with a rescue.
+
+        foo rescue nil
+        ^^^^^^^^^^^^^^
+  - name: RescueNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: exceptions
+        type: node[]
+      - name: operator_loc
+        type: location?
+      - name: reference
+        type: node?
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: consequent
+        type: node?
+        kind: RescueNode
+    comment: |
+      Represents a rescue statement.
+
+          begin
+          rescue Foo, *splat, Bar => ex
+          ^^^^^^
+            foo
+          end
+
+      `Foo, *splat, Bar` are in the `exceptions` field.
+      `ex` is in the `exception` field.
+  - name: RestParameterNode
+    fields:
+      - name: name
+        type: constant?
+      - name: name_loc
+        type: location?
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents a rest parameter to a method, block, or lambda definition.
+
+          def a(*b)
+                ^^
+          end
+  - name: RetryNode
+    comment: |
+      Represents the use of the `retry` keyword.
+
+          retry
+          ^^^^^
+  - name: ReturnNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+    comment: |
+      Represents the use of the `return` keyword.
+
+          return 1
+          ^^^^^^^^
+  - name: SelfNode
+    comment: |
+      Represents the `self` keyword.
+
+          self
+          ^^^^
+  - name: SingletonClassNode
+    fields:
+      - name: locals
+        type: constant[]
+      - name: class_keyword_loc
+        type: location
+      - name: operator_loc
+        type: location
+      - name: expression
+        type: node
+      - name: body
+        type: node?
+      - name: end_keyword_loc
+        type: location
+    comment: |
+      Represents a singleton class declaration involving the `class` keyword.
+
+          class << self end
+          ^^^^^^^^^^^^^^^^^
+  - name: SourceEncodingNode
+    comment: |
+      Represents the use of the `__ENCODING__` keyword.
+
+          __ENCODING__
+          ^^^^^^^^^^^^
+  - name: SourceFileNode
+    fields:
+      - name: filepath
+        type: string
+    comment: |
+      Represents the use of the `__FILE__` keyword.
+
+          __FILE__
+          ^^^^^^^^
+  - name: SourceLineNode
+    comment: |
+      Represents the use of the `__LINE__` keyword.
+
+          __LINE__
+          ^^^^^^^^
+  - name: SplatNode
+    fields:
+      - name: operator_loc
+        type: location
+      - name: expression
+        type: node?
+    comment: |
+      Represents the use of the splat operator.
+
+          [*a]
+           ^^
+  - name: StatementsNode
+    fields:
+      - name: body
+        type: node[]
+    comment: |
+      Represents a set of statements contained within some scope.
+
+          foo; bar; baz
+          ^^^^^^^^^^^^^
+  - name: StringConcatNode
+    fields:
+      - name: left
+        type: node
+      - name: right
+        type: node
+    comment: |
+      Represents the use of compile-time string concatenation.
+
+          "foo" "bar"
+          ^^^^^^^^^^^
+  - name: StringNode
+    fields:
+      - name: flags
+        type: flags
+        kind: StringFlags
+      - name: opening_loc
+        type: location?
+      - name: content_loc
+        type: location
+      - name: closing_loc
+        type: location?
+      - name: unescaped
+        type: string
+    comment: |
+      Represents a string literal, a string contained within a `%w` list, or
+      plain string content within an interpolated string.
+
+          "foo"
+          ^^^^^
+
+          %w[foo]
+             ^^^
+
+          "foo #{bar} baz"
+           ^^^^      ^^^^
+  - name: SuperNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: lparen_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: rparen_loc
+        type: location?
+      - name: block
+        type: node?
+    comment: |
+      Represents the use of the `super` keyword with parentheses or arguments.
+
+          super()
+          ^^^^^^^
+
+          super foo, bar
+          ^^^^^^^^^^^^^^
+  - name: SymbolNode
+    fields:
+      - name: opening_loc
+        type: location?
+      - name: value_loc
+        type: location?
+      - name: closing_loc
+        type: location?
+      - name: unescaped
+        type: string
+    comment: |
+      Represents a symbol literal or a symbol contained within a `%i` list.
+
+          :foo
+          ^^^^
+
+          %i[foo]
+             ^^^
+  - name: TrueNode
+    comment: |
+      Represents the use of the literal `true` keyword.
+
+          true
+          ^^^^
+  - name: UndefNode
+    fields:
+      - name: names
+        type: node[]
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `undef` keyword.
+
+          undef :foo, :bar, :baz
+          ^^^^^^^^^^^^^^^^^^^^^^
+  - name: UnlessNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: predicate
+        type: node
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: consequent
+        type: node?
+        kind: ElseNode
+      - name: end_keyword_loc
+        type: location?
+    newline: predicate
+    comment: |
+      Represents the use of the `unless` keyword, either in the block form or the modifier form.
+
+          bar unless foo
+          ^^^^^^^^^^^^^^
+
+          unless foo then bar end
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  - name: UntilNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: closing_loc
+        type: location?
+      - name: predicate
+        type: node
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: flags
+        type: flags
+        kind: LoopFlags
+    newline: predicate
+    comment: |
+      Represents the use of the `until` keyword, either in the block form or the modifier form.
+
+          bar until foo
+          ^^^^^^^^^^^^^
+
+          until foo do bar end
+          ^^^^^^^^^^^^^^^^^^^^
+  - name: WhenNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: conditions
+        type: node[]
+      - name: statements
+        type: node?
+        kind: StatementsNode
+    comment: |
+      Represents the use of the `when` keyword within a case statement.
+
+          case true
+          when true
+          ^^^^^^^^^
+          end
+  - name: WhileNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: closing_loc
+        type: location?
+      - name: predicate
+        type: node
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: flags
+        type: flags
+        kind: LoopFlags
+    newline: predicate
+    comment: |
+      Represents the use of the `while` keyword, either in the block form or the modifier form.
+
+          bar while foo
+          ^^^^^^^^^^^^^
+
+          while foo do bar end
+          ^^^^^^^^^^^^^^^^^^^^
+  - name: XStringNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: content_loc
+        type: location
+      - name: closing_loc
+        type: location
+      - name: unescaped
+        type: string
+    comment: |
+      Represents an xstring literal with no interpolation.
+
+          `foo`
+          ^^^^^
+  - name: YieldNode
+    fields:
+      - name: keyword_loc
+        type: location
+      - name: lparen_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: rparen_loc
+        type: location?
+    comment: |
+      Represents the use of the `yield` keyword.
+
+          yield 1
+          ^^^^^^^

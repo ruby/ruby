@@ -17,6 +17,7 @@ struct rb_iseq_struct;          /* in vm_core.h */
 /* compile.c */
 int rb_dvar_defined(ID, const struct rb_iseq_struct *);
 int rb_local_defined(ID, const struct rb_iseq_struct *);
+int rb_insn_len(VALUE insn);
 const char *rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 int rb_iseq_cdhash_cmp(VALUE val, VALUE lit);
@@ -27,9 +28,7 @@ int rb_vm_insn_addr2insn(const void *);
 int rb_vm_insn_decode(const VALUE encoded);
 extern bool ruby_vm_keep_script_lines;
 
-MJIT_SYMBOL_EXPORT_BEGIN
 /* iseq.c (export) */
 rb_event_flag_t rb_iseq_event_flags(const struct rb_iseq_struct *iseq, size_t pos);
-MJIT_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_COMPILE_H */

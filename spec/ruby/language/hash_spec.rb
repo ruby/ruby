@@ -127,11 +127,24 @@ describe "Hash literal" do
     {a: 1, **h, c: 4}.should == {a: 1, b: 2, c: 4}
   end
 
-  it "expands an '**{}' element with the last key/value pair taking precedence" do
+  it "expands an '**{}' or '**obj' element with the last key/value pair taking precedence" do
     -> {
       @h = eval "{a: 1, **{a: 2, b: 3, c: 1}, c: 3}"
     }.should complain(/key :a is duplicated|duplicated key/)
     @h.should == {a: 2, b: 3, c: 3}
+
+    -> {
+      h = {a: 2, b: 3, c: 1}
+      @h = eval "{a: 1, **h, c: 3}"
+    }.should_not complain
+    @h.should == {a: 2, b: 3, c: 3}
+  end
+
+  it "expands an '**{}' and warns when finding an additional duplicate key afterwards" do
+    -> {
+      @h = eval "{d: 1, **{a: 2, b: 3, c: 1}, c: 3}"
+    }.should complain(/key :c is duplicated|duplicated key/)
+    @h.should == {a: 2, b: 3, c: 3, d: 1}
   end
 
   it "merges multiple nested '**obj' in Hash literals" do
@@ -177,6 +190,22 @@ describe "Hash literal" do
     utf8_hash.keys.first.should == usascii_hash.keys.first
     usascii_hash.keys.first.encoding.should == Encoding::US_ASCII
   end
+
+  it "raises an EncodingError at parse time when Symbol key with invalid bytes" do
+    ScratchPad.record []
+    -> {
+      eval 'ScratchPad << 1; {:"\xC3" => 1}'
+    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xC3"')
+    ScratchPad.recorded.should == []
+  end
+
+  it "raises an EncodingError at parse time when Symbol key with invalid bytes and 'key: value' syntax used" do
+    ScratchPad.record []
+    -> {
+      eval 'ScratchPad << 1; {"\xC3": 1}'
+    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xC3"')
+    ScratchPad.recorded.should == []
+  end
 end
 
 describe "The ** operator" do
@@ -191,30 +220,15 @@ describe "The ** operator" do
     h.should == { one: 1, two: 2 }
   end
 
-  ruby_version_is ""..."3.0" do
-    it "makes a caller-side copy when calling a method taking a positional Hash" do
-      def m(h)
-        h.delete(:one); h
-      end
-
-      h = { one: 1, two: 2 }
-      m(**h).should == { two: 2 }
-      m(**h).should_not.equal?(h)
-      h.should == { one: 1, two: 2 }
+  it "does not copy when calling a method taking a positional Hash" do
+    def m(h)
+      h.delete(:one); h
     end
-  end
 
-  ruby_version_is "3.0" do
-    it "does not copy when calling a method taking a positional Hash" do
-      def m(h)
-        h.delete(:one); h
-      end
-
-      h = { one: 1, two: 2 }
-      m(**h).should == { two: 2 }
-      m(**h).should.equal?(h)
-      h.should == { two: 2 }
-    end
+    h = { one: 1, two: 2 }
+    m(**h).should == { two: 2 }
+    m(**h).should.equal?(h)
+    h.should == { two: 2 }
   end
 
   ruby_version_is "3.1" do

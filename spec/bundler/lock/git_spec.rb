@@ -28,9 +28,36 @@ RSpec.describe "bundle lock with git gems" do
       gem 'foo', :git => "#{lib_path("foo-1.0")}", :branch => "bad"
     G
 
-    bundle "lock --update foo", :raise_on_error => false
+    bundle "lock --update foo", :env => { "LANG" => "en" }, :raise_on_error => false
 
     expect(err).to include("Revision bad does not exist in the repository")
+  end
+
+  it "prints a proper error when installing a Gemfile with a locked ref that does not exist" do
+    lockfile <<~L
+      GIT
+        remote: #{lib_path("foo-1.0")}
+        revision: #{"a" * 40}
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install", :raise_on_error => false
+
+    expect(err).to include("Revision #{"a" * 40} does not exist in the repository")
   end
 
   it "locks a git source to the current ref" do

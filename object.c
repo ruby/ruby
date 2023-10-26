@@ -42,6 +42,18 @@
 #include "builtin.h"
 #include "shape.h"
 
+/* Flags of RObject
+ *
+ * 1:    ROBJECT_EMBED
+ *           The object has its instance variables embedded (the array of
+ *           instance variables directly follow the object, rather than being
+ *           on a separately allocated buffer).
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the object.
+ * endif
+ */
+
 /*!
  * \addtogroup object
  * \{
@@ -106,13 +118,19 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
     return obj;
 }
 
-/**
- *  call-seq:
- *     obj === other   -> true or false
+/*
+ * call-seq:
+ *   true === other -> true or false
+ *   false === other -> true or false
+ *   nil === other -> true or false
  *
- *  Case Equality -- For class Object, effectively the same as calling
- *  <code>#==</code>, but typically overridden by descendants to provide
- *  meaningful semantics in +case+ statements.
+ * Returns +true+ or +false+.
+ *
+ * Like Object#==, if +object+ is an instance of Object
+ * (and not an instance of one of its many subclasses).
+ *
+ * This method is commonly overridden by those subclasses,
+ * to provide meaningful semantics in +case+ statements.
  */
 #define case_equal rb_equal
     /* The default implementation of #=== is
@@ -185,7 +203,7 @@ rb_eql(VALUE obj1, VALUE obj2)
  * \private
  *++
  */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_equal(VALUE obj1, VALUE obj2)
 {
     return RBOOL(obj1 == obj2);
@@ -203,7 +221,7 @@ VALUE rb_obj_hash(VALUE obj);
  *++
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_not(VALUE obj)
 {
     return RBOOL(!RTEST(obj));
@@ -219,7 +237,7 @@ rb_obj_not(VALUE obj)
  *++
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_not_equal(VALUE obj1, VALUE obj2)
 {
     VALUE result = rb_funcall(obj1, id_eq, 1, obj2);
@@ -266,7 +284,7 @@ rb_obj_singleton_class(VALUE obj)
 }
 
 /*! \private */
-MJIT_FUNC_EXPORTED void
+void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
@@ -274,8 +292,8 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
-    if (rb_shape_id(src_shape) == OBJ_TOO_COMPLEX_SHAPE_ID) {
-        struct rb_id_table * table = rb_id_table_create(rb_id_table_size(ROBJECT_IV_HASH(obj)));
+    if (rb_shape_obj_too_complex(obj)) {
+        st_table * table = rb_st_init_numtable_with_size(rb_st_table_size(ROBJECT_IV_HASH(obj)));
 
         rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
         rb_shape_set_too_complex(dest);
@@ -445,11 +463,16 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
         if (RB_OBJ_FROZEN(obj)) {
-            rb_shape_transition_shape_frozen(clone);
+            rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
+            if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+                rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+            }
+            else {
+                rb_shape_set_shape(clone, next_shape);
+            }
         }
         break;
-      case Qtrue:
-        {
+      case Qtrue: {
         static VALUE freeze_true_hash;
         if (!freeze_true_hash) {
             freeze_true_hash = rb_hash_new();
@@ -462,11 +485,18 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         RBASIC(clone)->flags |= FL_FREEZE;
-        rb_shape_transition_shape_frozen(clone);
-        break;
+        rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
+        // If we're out of shapes, but we want to freeze, then we need to
+        // evacuate this clone to a hash
+        if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+            rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
         }
-      case Qfalse:
-        {
+        else {
+            rb_shape_set_shape(clone, next_shape);
+        }
+        break;
+      }
+      case Qfalse: {
         static VALUE freeze_false_hash;
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
@@ -479,7 +509,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         argv[1] = freeze_false_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         break;
-        }
+      }
       default:
         rb_bug("invalid kwfreeze passed to mutable_obj_clone");
     }
@@ -569,12 +599,6 @@ VALUE
 rb_obj_size(VALUE self, VALUE args, VALUE obj)
 {
     return LONG2FIX(1);
-}
-
-static VALUE
-block_given_p(rb_execution_context_t *ec, VALUE self)
-{
-    return RBOOL(rb_block_given_p());
 }
 
 /**
@@ -1259,17 +1283,47 @@ rb_obj_frozen_p(VALUE obj)
 /*
  * Document-class: NilClass
  *
- *  The class of the singleton object <code>nil</code>.
+ * The class of the singleton object +nil+.
+ *
+ * Several of its methods act as operators:
+ *
+ * - #&
+ * - #|
+ * - #===
+ * - #=~
+ * - #^
+ *
+ * Others act as converters, carrying the concept of _nullity_
+ * to other classes:
+ *
+ * - #rationalize
+ * - #to_a
+ * - #to_c
+ * - #to_h
+ * - #to_r
+ * - #to_s
+ *
+ * Another method provides inspection:
+ *
+ * - #inspect
+ *
+ * Finally, there is this query method:
+ *
+ * - #nil?
+ *
  */
 
 /*
- *  call-seq:
- *     nil.to_s    -> ""
+ * call-seq:
+ *   to_s -> ''
  *
- *  Always returns the empty string.
+ * Returns an empty String:
+ *
+ *   nil.to_s # => ""
+ *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_nil_to_s(VALUE obj)
 {
     return rb_cNilClass_to_s;
@@ -1278,12 +1332,13 @@ rb_nil_to_s(VALUE obj)
 /*
  * Document-method: to_a
  *
- *  call-seq:
- *     nil.to_a    -> []
+ * call-seq:
+ *   to_a -> []
  *
- *  Always returns an empty array.
+ * Returns an empty Array.
  *
- *     nil.to_a   #=> []
+ *   nil.to_a # => []
+ *
  */
 
 static VALUE
@@ -1295,12 +1350,13 @@ nil_to_a(VALUE obj)
 /*
  * Document-method: to_h
  *
- *  call-seq:
- *     nil.to_h    -> {}
+ * call-seq:
+ *   to_h -> {}
  *
- *  Always returns an empty hash.
+ * Returns an empty Hash.
  *
- *     nil.to_h   #=> {}
+ *   nil.to_h   #=> {}
+ *
  */
 
 static VALUE
@@ -1310,10 +1366,13 @@ nil_to_h(VALUE obj)
 }
 
 /*
- *  call-seq:
- *    nil.inspect  -> "nil"
+ * call-seq:
+ *   inspect -> 'nil'
  *
- *  Always returns the string "nil".
+ * Returns string <tt>'nil'</tt>:
+ *
+ *   nil.inspect # => "nil"
+ *
  */
 
 static VALUE
@@ -1323,12 +1382,17 @@ nil_inspect(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     nil =~ other  -> nil
+ * call-seq:
+ *   nil =~ object -> nil
  *
- *  Dummy pattern matching -- always returns nil.
+ * Returns +nil+.
  *
- *  This method makes it possible to `while gets =~ /re/ do`.
+ * This method makes it useful to write:
+ *
+ *   while gets =~ /re/
+ *     # ...
+ *   end
+ *
  */
 
 static VALUE
@@ -1337,24 +1401,38 @@ nil_match(VALUE obj1, VALUE obj2)
     return Qnil;
 }
 
-/***********************************************************************
+/*
  *  Document-class: TrueClass
  *
- *  The global value <code>true</code> is the only instance of class
- *  TrueClass and represents a logically true value in
- *  boolean expressions. The class provides operators allowing
- *  <code>true</code> to be used in logical expressions.
+ * The class of the singleton object +true+.
+ *
+ * Several of its methods act as operators:
+ *
+ * - #&
+ * - #|
+ * - #===
+ * - #^
+ *
+ * One other method:
+ *
+ * - #to_s and its alias #inspect.
+ *
  */
 
 
 /*
  * call-seq:
- *   true.to_s   ->  "true"
+ *   true.to_s -> 'true'
  *
- * The string representation of <code>true</code> is "true".
+ * Returns string <tt>'true'</tt>:
+ *
+ *   true.to_s # => "true"
+ *
+ * TrueClass#inspect is an alias for TrueClass#to_s.
+ *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_true_to_s(VALUE obj)
 {
     return rb_cTrueClass_to_s;
@@ -1363,10 +1441,14 @@ rb_true_to_s(VALUE obj)
 
 /*
  *  call-seq:
- *     true & obj    -> true or false
+ *    true & object -> true or false
  *
- *  And---Returns <code>false</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>true</code> otherwise.
+ *  Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
+ *
+ *  true & Object.new # => true
+ *  true & false      # => false
+ *  true & nil        # => false
+ *
  */
 
 static VALUE
@@ -1377,18 +1459,21 @@ true_and(VALUE obj, VALUE obj2)
 
 /*
  *  call-seq:
- *     true | obj   -> true
+ *    true | object -> true
  *
- *  Or---Returns <code>true</code>. As <i>obj</i> is an argument to
- *  a method call, it is always evaluated; there is no short-circuit
- *  evaluation in this case.
+ *  Returns +true+:
  *
- *     true |  puts("or")
- *     true || puts("logical or")
+ *    true | Object.new # => true
+ *    true | false      # => true
+ *    true | nil        # => true
  *
- *  <em>produces:</em>
+ *  Argument +object+ is evaluated.
+ *  This is different from +true+ with the short-circuit operator,
+ *  whose operand is evaluated only if necessary:
  *
- *     or
+ *    true | raise # => Raises RuntimeError.
+ *    true || raise # => true
+ *
  */
 
 static VALUE
@@ -1400,11 +1485,14 @@ true_or(VALUE obj, VALUE obj2)
 
 /*
  *  call-seq:
- *     true ^ obj   -> !obj
+ *    true ^ object -> !object
  *
- *  Exclusive Or---Returns <code>true</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>false</code>
- *  otherwise.
+ *  Returns +true+ if +object+ is +false+ or +nil+, +false+ otherwise:
+ *
+ *    true ^ Object.new # => false
+ *    true ^ false      # => true
+ *    true ^ nil        # => true
+ *
  */
 
 static VALUE
@@ -1431,22 +1519,27 @@ true_xor(VALUE obj, VALUE obj2)
  * The string representation of <code>false</code> is "false".
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_false_to_s(VALUE obj)
 {
     return rb_cFalseClass_to_s;
 }
 
 /*
- *  call-seq:
- *     false & obj   -> false
- *     nil & obj     -> false
+ * call-seq:
+ *   false & object -> false
+ *   nil & object   -> false
  *
- *  And---Returns <code>false</code>. <i>obj</i> is always
- *  evaluated as it is the argument to a method call---there is no
- *  short-circuit evaluation in this case.
+ * Returns +false+:
+ *
+ *   false & true       # => false
+ *   false & Object.new # => false
+ *
+ * Argument +object+ is evaluated:
+ *
+ *   false & raise # Raises RuntimeError.
+ *
  */
-
 static VALUE
 false_and(VALUE obj, VALUE obj2)
 {
@@ -1455,24 +1548,30 @@ false_and(VALUE obj, VALUE obj2)
 
 
 /*
- *  call-seq:
- *     false | obj   ->   true or false
- *     nil   | obj   ->   true or false
+ * call-seq:
+ *   false | object -> true or false
+ *   nil   | object -> true or false
  *
- *  Or---Returns <code>false</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>; <code>true</code> otherwise.
+ * Returns +false+ if +object+ is +nil+ or +false+, +true+ otherwise:
+ *
+ *   nil | nil        # => false
+ *   nil | false      # => false
+ *   nil | Object.new # => true
+ *
  */
 
 #define false_or true_and
 
 /*
- *  call-seq:
- *     false ^ obj    -> true or false
- *     nil   ^ obj    -> true or false
+ * call-seq:
+ *   false ^ object -> true or false
+ *   nil ^ object   -> true or false
  *
- *  Exclusive Or---If <i>obj</i> is <code>nil</code> or
- *  <code>false</code>, returns <code>false</code>; otherwise, returns
- *  <code>true</code>.
+ * Returns +false+ if +object+ is +nil+ or +false+, +true+ otherwise:
+ *
+ *   nil ^ nil        # => false
+ *   nil ^ false      # => false
+ *   nil ^ Object.new # => true
  *
  */
 
@@ -1480,9 +1579,10 @@ false_and(VALUE obj, VALUE obj2)
 
 /*
  * call-seq:
- *   nil.nil?               -> true
+ *   nil.nil?  -> true
  *
- * Only the object <i>nil</i> responds <code>true</code> to <code>nil?</code>.
+ * Returns +true+.
+ * For all other objects, method <tt>nil?</tt> returns +false+.
  */
 
 static VALUE
@@ -1502,7 +1602,7 @@ rb_true(VALUE obj)
  */
 
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
@@ -1587,7 +1687,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  * show information on the thing we're attached to as well.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_mod_to_s(VALUE klass)
 {
     ID id_defined_at;
@@ -1595,7 +1695,7 @@ rb_mod_to_s(VALUE klass)
 
     if (FL_TEST(klass, FL_SINGLETON)) {
         VALUE s = rb_usascii_str_new2("#<Class:");
-        VALUE v = rb_ivar_get(klass, id__attached__);
+        VALUE v = RCLASS_ATTACHED_OBJECT(klass);
 
         if (CLASS_OR_MODULE_P(v)) {
             rb_str_append(s, rb_inspect(v));
@@ -2078,6 +2178,10 @@ rb_class_superclass(VALUE klass)
     if (!super) {
         if (klass == rb_cBasicObject) return Qnil;
         rb_raise(rb_eTypeError, "uninitialized class");
+    }
+
+    if (!RCLASS_SUPERCLASS_DEPTH(klass)) {
+        return Qnil;
     }
     else {
         super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
@@ -3057,7 +3161,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 }
 
 /*! \private */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 {
     VALUE v;
@@ -3222,121 +3326,17 @@ rb_opts_exception_p(VALUE opts, int default_value)
     return default_value;
 }
 
-#define opts_exception_p(opts) rb_opts_exception_p((opts), TRUE)
-
-/*
- *  call-seq:
- *    Integer(object, base = 0, exception: true) -> integer or nil
- *
- *  Returns an integer converted from +object+.
- *
- *  Tries to convert +object+ to an integer
- *  using +to_int+ first and +to_i+ second;
- *  see below for exceptions.
- *
- *  With a non-zero +base+, +object+ must be a string or convertible
- *  to a string.
- *
- *  ==== numeric objects
- *
- *  With integer argument +object+ given, returns +object+:
- *
- *    Integer(1)                # => 1
- *    Integer(-1)               # => -1
- *
- *  With floating-point argument +object+ given,
- *  returns +object+ truncated to an intger:
- *
- *    Integer(1.9)              # => 1  # Rounds toward zero.
- *    Integer(-1.9)             # => -1 # Rounds toward zero.
- *
- *  ==== string objects
- *
- *  With string argument +object+ and zero +base+ given,
- *  returns +object+ converted to an integer in base 10:
- *
- *    Integer('100')    # => 100
- *    Integer('-100')   # => -100
- *
- *  With +base+ zero, string +object+ may contain leading characters
- *  to specify the actual base (radix indicator):
- *
- *    Integer('0100')  # => 64  # Leading '0' specifies base 8.
- *    Integer('0b100') # => 4   # Leading '0b', specifies base 2.
- *    Integer('0x100') # => 256 # Leading '0x' specifies base 16.
- *
- *  With a positive +base+ (in range 2..36) given, returns +object+
- *  converted to an integer in the given base:
- *
- *    Integer('100', 2)   # => 4
- *    Integer('100', 8)   # => 64
- *    Integer('-100', 16) # => -256
- *
- *  With a negative +base+ (in range -36..-2) given, returns +object+
- *  converted to an integer in the radix indicator if exists or
- *  +-base+:
- *
- *    Integer('0x100', -2)   # => 256
- *    Integer('100', -2)     # => 4
- *    Integer('0b100', -8)   # => 4
- *    Integer('100', -8)     # => 64
- *    Integer('0o100', -10)  # => 64
- *    Integer('100', -10)    # => 100
- *
- *  +base+ -1 is equal the -10 case.
- *
- *  When converting strings, surrounding whitespace and embedded underscores
- *  are allowed and ignored:
- *
- *    Integer(' 100 ')      # => 100
- *    Integer('-1_0_0', 16) # => -256
- *
- *  ==== other classes
- *
- *  Examples with +object+ of various other classes:
- *
- *    Integer(Rational(9, 10)) # => 0  # Rounds toward zero.
- *    Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
- *    Integer(Time.now)        # => 1650974042
- *
- *  ==== keywords
- *
- *  With optional keyword argument +exception+ given as +true+ (the default):
- *
- *  - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
- *  - Raises TypeError if +object+ is +nil+.
- *  - Raise ArgumentError if +object+ is an invalid string.
- *
- *  With +exception+ given as +false+, an exception of any kind is suppressed
- *  and +nil+ is returned.
- *
- */
+static VALUE
+rb_f_integer1(rb_execution_context_t *ec, VALUE obj, VALUE arg)
+{
+    return rb_convert_to_integer(arg, 0, TRUE);
+}
 
 static VALUE
-rb_f_integer(int argc, VALUE *argv, VALUE obj)
+rb_f_integer(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE base, VALUE exception)
 {
-    VALUE arg = Qnil, opts = Qnil;
-    int base = 0;
-
-    if (argc > 1) {
-        int narg = 1;
-        VALUE vbase = rb_check_to_int(argv[1]);
-        if (!NIL_P(vbase)) {
-            base = NUM2INT(vbase);
-            narg = 2;
-        }
-        if (argc > narg) {
-            VALUE hash = rb_check_hash_type(argv[argc-1]);
-            if (!NIL_P(hash)) {
-                opts = rb_extract_keywords(&hash);
-                if (!hash) --argc;
-            }
-        }
-    }
-    rb_check_arity(argc, 1, 2);
-    arg = argv[0];
-
-    return rb_convert_to_integer(arg, base, opts_exception_p(opts));
+    int exc = rb_bool_expected(exception, "exception", TRUE);
+    return rb_convert_to_integer(arg, NUM2INT(base), exc);
 }
 
 static double
@@ -3929,9 +3929,6 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *
  *  For details on +format_string+, see
  *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
- *
- *  Kernel#format is an alias for Kernel#sprintf.
- *
  */
 
 static VALUE
@@ -4157,7 +4154,7 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *    and frozen state.
  *  - #define_singleton_method: Defines a singleton method in +self+
  *    for the given symbol method-name and block or proc.
- *  - #display: Prints +self+ to the given \IO stream or <tt>$stdout</tt>.
+ *  - #display: Prints +self+ to the given IO stream or <tt>$stdout</tt>.
  *  - #dup: Returns a shallow unfrozen copy of +self+.
  *  - #enum_for (aliased as #to_enum): Returns an Enumerator for +self+
  *    using the using the given method, arguments, and block.
@@ -4171,27 +4168,6 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  - #send: Calls the given method in +self+ with the given argument.
  *  - #to_s: Returns a string representation of +self+.
  *
- */
-
-/*!
- *--
- * \private
- * Initializes the world of objects and classes.
- *
- * At first, the function bootstraps the class hierarchy.
- * It initializes the most fundamental classes and their metaclasses.
- * - \c BasicObject
- * - \c Object
- * - \c Module
- * - \c Class
- * After the bootstrap step, the class hierarchy becomes as the following
- * diagram.
- *
- * \image html boottime-classes.png
- *
- * Then, the function defines classes, modules and methods as usual.
- * \ingroup class
- *++
  */
 
 void
@@ -4409,8 +4385,6 @@ InitVM_Object(void)
     rb_define_global_function("sprintf", f_sprintf, -1);
     rb_define_global_function("format", f_sprintf, -1);
 
-    rb_define_global_function("Integer", rb_f_integer, -1);
-
     rb_define_global_function("String", rb_f_string, 1);
     rb_define_global_function("Array", rb_f_array, 1);
     rb_define_global_function("Hash", rb_f_hash, 1);
@@ -4446,6 +4420,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */
     rb_define_method(rb_cModule, "include?", rb_mod_include_p, 1); /* in class.c */
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);  /* in variable.c */
+    rb_define_method(rb_cModule, "set_temporary_name", rb_mod_set_temporary_name, 1);  /* in variable.c */
     rb_define_method(rb_cModule, "ancestors", rb_mod_ancestors, 0); /* in class.c */
 
     rb_define_method(rb_cModule, "attr", rb_mod_attr, -1);

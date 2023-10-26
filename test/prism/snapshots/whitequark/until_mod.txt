@@ -1,0 +1,33 @@
+@ ProgramNode (location: (1,0)-(1,14))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,14))
+    └── body: (length: 1)
+        └── @ UntilNode (location: (1,0)-(1,14))
+            ├── keyword_loc: (1,5)-(1,10) = "until"
+            ├── closing_loc: ∅
+            ├── predicate:
+            │   @ CallNode (location: (1,11)-(1,14))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (1,11)-(1,14) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: :foo
+            ├── statements:
+            │   @ StatementsNode (location: (1,0)-(1,4))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (1,0)-(1,4))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (1,0)-(1,4) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: :meth
+            └── flags: ∅

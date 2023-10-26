@@ -7,16 +7,8 @@ describe "String#dump" do
     "foo".freeze.dump.should_not.frozen?
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns a subclass instance" do
-      StringSpecs::MyString.new.dump.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns a String instance" do
-      StringSpecs::MyString.new.dump.should be_an_instance_of(String)
-    end
+  it "returns a String instance" do
+    StringSpecs::MyString.new.dump.should be_an_instance_of(String)
   end
 
   it "wraps string with \"" do
@@ -350,7 +342,7 @@ describe "String#dump" do
     ].should be_computed_by(:dump)
   end
 
-  it "returns a string with multi-byte UTF-8 characters replaced by \\u{} notation with upper-case hex digits" do
+  it "returns a string with multi-byte UTF-8 characters less than or equal 0xFFFF replaced by \\uXXXX notation with upper-case hex digits" do
     [ [0200.chr('utf-8'), '"\u0080"'],
       [0201.chr('utf-8'), '"\u0081"'],
       [0202.chr('utf-8'), '"\u0082"'],
@@ -382,7 +374,13 @@ describe "String#dump" do
       [0235.chr('utf-8'), '"\u009D"'],
       [0236.chr('utf-8'), '"\u009E"'],
       [0237.chr('utf-8'), '"\u009F"'],
+      [0177777.chr('utf-8'), '"\uFFFF"'],
     ].should be_computed_by(:dump)
+  end
+
+  it "returns a string with multi-byte UTF-8 characters greater than 0xFFFF replaced by \\u{XXXXXX} notation with upper-case hex digits" do
+    0x10000.chr('utf-8').dump.should == '"\u{10000}"'
+    0x10FFFF.chr('utf-8').dump.should == '"\u{10FFFF}"'
   end
 
   it "includes .force_encoding(name) if the encoding isn't ASCII compatible" do
@@ -390,7 +388,7 @@ describe "String#dump" do
     "\u{876}".encode('utf-16le').dump.should.end_with?(".force_encoding(\"UTF-16LE\")")
   end
 
-  it "keeps origin encoding" do
+  it "returns a String in the same encoding as self" do
     "foo".encode("ISO-8859-1").dump.encoding.should == Encoding::ISO_8859_1
     "foo".encode('windows-1251').dump.encoding.should == Encoding::Windows_1251
     1.chr.dump.encoding.should == Encoding::US_ASCII

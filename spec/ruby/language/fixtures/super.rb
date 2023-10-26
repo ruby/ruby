@@ -556,6 +556,20 @@ module SuperSpecs
     end
   end
 
+  module ZSuperInBlock
+    class A
+      def m(arg:)
+        arg
+      end
+    end
+
+    class B < A
+      def m(arg:)
+        proc { super }.call
+      end
+    end
+  end
+
   module Keywords
     class Arguments
       def foo(**args)

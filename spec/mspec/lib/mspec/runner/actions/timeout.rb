@@ -3,6 +3,8 @@ class TimeoutAction
     @timeout = timeout
     @queue = Queue.new
     @started = now
+    @fail = false
+    @error_message = "took longer than the configured timeout of #{@timeout}s"
   end
 
   def register
@@ -37,15 +39,25 @@ class TimeoutAction
             elapsed = now - @started
             if elapsed > @timeout
               if @current_state
-                STDERR.puts "\nExample took longer than the configured timeout of #{@timeout}s:"
+                STDERR.puts "\nExample #{@error_message}:"
                 STDERR.puts "#{@current_state.description}"
               else
-                STDERR.puts "\nSome code outside an example took longer than the configured timeout of #{@timeout}s"
+                STDERR.puts "\nSome code outside an example #{@error_message}"
               end
               STDERR.flush
 
               show_backtraces
-              exit 2
+              if MSpec.subprocesses.empty?
+                exit 2
+              else
+                # Do not exit but signal the subprocess so we can get their output
+                MSpec.subprocesses.each do |pid|
+                  Process.kill :SIGTERM, pid
+                end
+                @fail = true
+                @current_state = nil
+                break # stop this thread, will fail in #after
+              end
             end
           end
         end
@@ -65,6 +77,11 @@ class TimeoutAction
     @queue << -> do
       @current_state = nil
     end
+
+    if @fail
+      STDERR.puts "\n\nThe last example #{@error_message}. See above for the subprocess stacktrace."
+      exit 2
+    end
   end
 
   def finish
@@ -73,19 +90,38 @@ class TimeoutAction
   end
 
   private def show_backtraces
-    if RUBY_ENGINE == 'truffleruby'
-      STDERR.puts 'Java stacktraces:'
-      Process.kill :SIGQUIT, Process.pid
-      sleep 1
-    end
+    java_stacktraces = -> pid {
+      if RUBY_ENGINE == 'truffleruby' || RUBY_ENGINE == 'jruby'
+        STDERR.puts 'Java stacktraces:'
+        Process.kill :SIGQUIT, pid
+        sleep 1
+      end
+    }
 
-    STDERR.puts "\nRuby backtraces:"
-    if defined?(Truffle::Debug.show_backtraces)
-      Truffle::Debug.show_backtraces
+    if MSpec.subprocesses.empty?
+      java_stacktraces.call Process.pid
+
+      STDERR.puts "\nRuby backtraces:"
+      if defined?(Truffle::Debug.show_backtraces)
+        Truffle::Debug.show_backtraces
+      else
+        Thread.list.each do |thread|
+          unless thread == Thread.current
+            STDERR.puts thread.inspect, thread.backtrace, ''
+          end
+        end
+      end
     else
-      Thread.list.each do |thread|
-        unless thread == Thread.current
-          STDERR.puts thread.inspect, thread.backtrace, ''
+      MSpec.subprocesses.each do |pid|
+        STDERR.puts "\nFor subprocess #{pid}"
+        java_stacktraces.call pid
+
+        if RUBY_ENGINE == 'truffleruby'
+          STDERR.puts "\nRuby backtraces:"
+          Process.kill :SIGALRM, pid
+          sleep 1
+        else
+          STDERR.puts "Don't know how to print backtraces of a subprocess on #{RUBY_ENGINE}"
         end
       end
     end

@@ -159,24 +159,7 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is ""..."3.0" do
-    it "uses the filename of the binding if none is provided" do
-      eval("__FILE__").should == "(eval)"
-      suppress_warning {eval("__FILE__", binding)}.should == __FILE__
-      eval("__FILE__", binding, "success").should == "success"
-      suppress_warning {eval("eval '__FILE__', binding")}.should == "(eval)"
-      suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
-      suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
-    end
-
-    it 'uses the given binding file and line for __FILE__ and __LINE__' do
-      suppress_warning {
-        eval("[__FILE__, __LINE__]", binding).should == [__FILE__, __LINE__]
-      }
-    end
-  end
-
-  ruby_version_is "3.0" do
+  ruby_version_is ""..."3.3" do
     it "uses (eval) filename if none is provided" do
       eval("__FILE__").should == "(eval)"
       eval("__FILE__", binding).should == "(eval)"
@@ -192,6 +175,21 @@ describe "Kernel#eval" do
     end
   end
 
+  ruby_version_is "3.3" do
+    it "uses (eval at __FILE__:__LINE__) if none is provided" do
+      eval("__FILE__").should == "(eval at #{__FILE__}:#{__LINE__})"
+      eval("__FILE__", binding).should == "(eval at #{__FILE__}:#{__LINE__})"
+      eval("__FILE__", binding, "success").should == "success"
+      eval("eval '__FILE__', binding").should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
+      eval("eval '__FILE__', binding", binding).should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
+      eval("eval '__FILE__', binding", binding, 'success').should == "(eval at success:1)"
+      eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
+    end
+
+    it 'uses (eval at __FILE__:__LINE__) for __FILE__ and 1 for __LINE__ with a binding argument' do
+      eval("[__FILE__, __LINE__]", binding).should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
+    end
+  end
   # Found via Rubinius bug github:#149
   it "does not alter the value of __FILE__ in the binding" do
     first_time =  EvalSpecs.call_eval
@@ -226,6 +224,20 @@ describe "Kernel#eval" do
 
   it "returns from the scope calling #eval when evaluating 'return'" do
     -> { eval("return :eval") }.call.should == :eval
+  end
+
+  it "returns from the method calling #eval when evaluating 'return'" do
+    def eval_return(n)
+      eval("return n*2")
+    end
+    -> { eval_return(3) }.call.should == 6
+  end
+
+  it "returns from the method calling #eval when evaluating 'return' in BEGIN" do
+    def eval_return(n)
+      eval("BEGIN {return n*3}")
+    end
+    -> { eval_return(4) }.call.should == 12
   end
 
   it "unwinds through a Proc-style closure and returns from a lambda-style closure in the closure chain" do

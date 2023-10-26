@@ -12,10 +12,10 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/compilers.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/sanitizers.h"
@@ -434,7 +434,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ZSUPER);
                 COUNT_NODE(NODE_LIST);
                 COUNT_NODE(NODE_ZLIST);
-                COUNT_NODE(NODE_VALUES);
                 COUNT_NODE(NODE_HASH);
                 COUNT_NODE(NODE_RETURN);
                 COUNT_NODE(NODE_YIELD);
@@ -493,6 +492,8 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ARYPTN);
                 COUNT_NODE(NODE_FNDPTN);
                 COUNT_NODE(NODE_HSHPTN);
+                COUNT_NODE(NODE_RIPPER);
+                COUNT_NODE(NODE_RIPPER_VALUES);
                 COUNT_NODE(NODE_ERROR);
 #undef COUNT_NODE
               case NODE_LAST: break;
@@ -954,7 +955,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
  *
  * You need to <code>require 'objspace'</code> to use this extension module.
  *
- * Generally, you *SHOULD NOT* use this library if you do not know
+ * Generally, you *SHOULD* *NOT* use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
  * profiler developers and MRI developers who need to know about MRI
  * memory usage.

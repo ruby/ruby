@@ -52,6 +52,7 @@ scan_args.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 scan_args.o: $(hdrdir)/ruby/internal/attr/noinline.h
 scan_args.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 scan_args.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+scan_args.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 scan_args.o: $(hdrdir)/ruby/internal/attr/pure.h
 scan_args.o: $(hdrdir)/ruby/internal/attr/restrict.h
 scan_args.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ scan_args.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/error.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/eval.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/file.h
-scan_args.o: $(hdrdir)/ruby/internal/intern/gc.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/hash.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/io.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ scan_args.o: $(hdrdir)/ruby/internal/memory.h
 scan_args.o: $(hdrdir)/ruby/internal/method.h
 scan_args.o: $(hdrdir)/ruby/internal/module.h
 scan_args.o: $(hdrdir)/ruby/internal/newobj.h
-scan_args.o: $(hdrdir)/ruby/internal/rgengc.h
 scan_args.o: $(hdrdir)/ruby/internal/scan_args.h
 scan_args.o: $(hdrdir)/ruby/internal/special_consts.h
 scan_args.o: $(hdrdir)/ruby/internal/static_assert.h

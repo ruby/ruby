@@ -156,6 +156,7 @@ module Bundler
       dependency listed in the gemspec file to the newly created Gemfile.
     D
     method_option "gemspec", :type => :string, :banner => "Use the specified .gemspec to create the Gemfile"
+    method_option "gemfile", :type => :string, :banner => "Use the specified name for the gemfile instead of 'Gemfile'"
     def init
       require_relative "cli/init"
       Init.new(options.dup).run
@@ -509,6 +510,7 @@ module Bundler
     subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
+    method_option "path", :type => :string, :lazy_default => "", :banner => "Open relative path of the gem source."
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run
@@ -769,7 +771,7 @@ module Bundler
 
     def self.deprecated_ext_value?(arguments)
       index = arguments.index("--ext")
-      next_argument = arguments[index+1]
+      next_argument = arguments[index + 1]
 
       # it is ok when --ext is followed with valid extension value
       # for example `bundle gem hello --ext c`

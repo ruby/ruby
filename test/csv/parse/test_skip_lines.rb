@@ -4,7 +4,7 @@ require_relative "../helper"
 
 class TestCSVParseSkipLines < Test::Unit::TestCase
   extend DifferentOFS
-  include Helper
+  include CSVHelper
 
   def test_default
     csv = CSV.new("a,b,c\n")
@@ -114,5 +114,13 @@ class TestCSVParseSkipLines < Test::Unit::TestCase
     assert_equal([["a", "b"]],
                  CSV.parse("a,b\r\n,\r\n",
                            :skip_lines => /^,+$/))
+  end
+
+  def test_crlf_strip_no_last_crlf
+    assert_equal([["a"], ["b"]],
+                 CSV.parse("a\r\nb",
+                           row_sep: "\r\n",
+                           skip_lines: /^ *$/,
+                           strip: true))
   end
 end

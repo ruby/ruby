@@ -100,8 +100,17 @@ RSpec.describe "Resolving" do
   end
 
   it "raises an exception if a child dependency is not resolved" do
-    @index = a_unresovable_child_index
+    @index = a_unresolvable_child_index
     dep "chef_app_error"
+    expect do
+      resolve
+    end.to raise_error(Bundler::SolveFailure)
+  end
+
+  it "does not try to re-resolve including prereleases if gems involved don't have prereleases" do
+    @index = a_unresolvable_child_index
+    dep "chef_app_error"
+    expect(Bundler.ui).not_to receive(:debug).with("Retrying resolution...", any_args)
     expect do
       resolve
     end.to raise_error(Bundler::SolveFailure)
@@ -300,5 +309,74 @@ RSpec.describe "Resolving" do
         should_conservative_resolve_and_include [:minor, :strict], [], %w[foo-1.4.3 bar-2.2.3]
       end
     end
+  end
+
+  it "handles versions that redundantly depend on themselves" do
+    @index = build_index do
+      gem "rack", "3.0.0"
+
+      gem "standalone_migrations", "7.1.0" do
+        dep "rack", "~> 2.0"
+      end
+
+      gem "standalone_migrations", "2.0.4" do
+        dep "standalone_migrations", ">= 0"
+      end
+
+      gem "standalone_migrations", "1.0.13" do
+        dep "rack", ">= 0"
+      end
+    end
+
+    dep "rack", "~> 3.0"
+    dep "standalone_migrations"
+
+    should_resolve_as %w[rack-3.0.0 standalone_migrations-2.0.4]
+  end
+
+  it "ignores versions that incorrectly depend on themselves" do
+    @index = build_index do
+      gem "rack", "3.0.0"
+
+      gem "standalone_migrations", "7.1.0" do
+        dep "rack", "~> 2.0"
+      end
+
+      gem "standalone_migrations", "2.0.4" do
+        dep "standalone_migrations", ">= 2.0.5"
+      end
+
+      gem "standalone_migrations", "1.0.13" do
+        dep "rack", ">= 0"
+      end
+    end
+
+    dep "rack", "~> 3.0"
+    dep "standalone_migrations"
+
+    should_resolve_as %w[rack-3.0.0 standalone_migrations-1.0.13]
+  end
+
+  it "does not ignore versions that incorrectly depend on themselves when dependency_api is not available" do
+    @index = build_index do
+      gem "rack", "3.0.0"
+
+      gem "standalone_migrations", "7.1.0" do
+        dep "rack", "~> 2.0"
+      end
+
+      gem "standalone_migrations", "2.0.4" do
+        dep "standalone_migrations", ">= 2.0.5"
+      end
+
+      gem "standalone_migrations", "1.0.13" do
+        dep "rack", ">= 0"
+      end
+    end
+
+    dep "rack", "~> 3.0"
+    dep "standalone_migrations"
+
+    should_resolve_without_dependency_api %w[rack-3.0.0 standalone_migrations-2.0.4]
   end
 end

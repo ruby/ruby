@@ -15,12 +15,14 @@ module Bundler
     class Package
       attr_reader :name, :platforms, :dependency, :locked_version
 
-      def initialize(name, platforms, locked_specs, unlock, dependency: nil)
+      def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, dependency: nil)
         @name = name
         @platforms = platforms
         @locked_version = locked_specs[name].first&.version
         @unlock = unlock
         @dependency = dependency || Dependency.new(name, @locked_version)
+        @top_level = !dependency.nil?
+        @prerelease = @dependency.prerelease? || @locked_version&.prerelease? || prerelease ? :consider_first : :ignore
       end
 
       def to_s
@@ -29,6 +31,10 @@ module Bundler
 
       def root?
         false
+      end
+
+      def top_level?
+        @top_level
       end
 
       def meta?
@@ -47,8 +53,16 @@ module Bundler
         @unlock.empty? || @unlock.include?(name)
       end
 
+      def ignores_prereleases?
+        @prerelease == :ignore
+      end
+
       def prerelease_specified?
-        @dependency.prerelease?
+        @prerelease == :consider_first
+      end
+
+      def consider_prereleases!
+        @prerelease = :consider_last
       end
 
       def force_ruby_platform?

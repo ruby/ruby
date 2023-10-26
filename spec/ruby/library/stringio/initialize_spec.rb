@@ -163,6 +163,91 @@ describe "StringIO#initialize when passed [Object]" do
   end
 end
 
+# NOTE: Synchronise with core/io/new_spec.rb (core/io/shared/new.rb)
+describe "StringIO#initialize when passed keyword arguments" do
+  it "sets the mode based on the passed :mode option" do
+    io = StringIO.new("example", "r")
+    io.closed_read?.should be_false
+    io.closed_write?.should be_true
+  end
+
+  it "accepts a mode argument set to nil with a valid :mode option" do
+    @io = StringIO.new('', nil, mode: "w")
+    @io.write("foo").should == 3
+  end
+
+  it "accepts a mode argument with a :mode option set to nil" do
+    @io = StringIO.new('', "w", mode: nil)
+    @io.write("foo").should == 3
+  end
+
+  it "sets binmode from :binmode option" do
+    @io = StringIO.new('', 'w', binmode: true)
+    @io.external_encoding.to_s.should == "ASCII-8BIT" # #binmode? isn't implemented in StringIO
+  end
+
+  it "does not set binmode from false :binmode" do
+    @io = StringIO.new('', 'w', binmode: false)
+    @io.external_encoding.to_s.should == "UTF-8" # #binmode? isn't implemented in StringIO
+  end
+end
+
+# NOTE: Synchronise with core/io/new_spec.rb (core/io/shared/new.rb)
+describe "StringIO#initialize when passed keyword arguments and error happens" do
+  it "raises an error if passed encodings two ways" do
+    -> {
+      @io = StringIO.new('', 'w:ISO-8859-1', encoding: 'ISO-8859-1')
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', 'w:ISO-8859-1', external_encoding: 'ISO-8859-1')
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', 'w:ISO-8859-1:UTF-8', internal_encoding: 'ISO-8859-1')
+    }.should raise_error(ArgumentError)
+  end
+
+  it "raises an error if passed matching binary/text mode two ways" do
+    -> {
+      @io = StringIO.new('', "wb", binmode: true)
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', "wt", textmode: true)
+    }.should raise_error(ArgumentError)
+
+    -> {
+      @io = StringIO.new('', "wb", textmode: false)
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', "wt", binmode: false)
+    }.should raise_error(ArgumentError)
+  end
+
+  it "raises an error if passed conflicting binary/text mode two ways" do
+    -> {
+      @io = StringIO.new('', "wb", binmode: false)
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', "wt", textmode: false)
+    }.should raise_error(ArgumentError)
+
+    -> {
+      @io = StringIO.new('', "wb", textmode: true)
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', "wt", binmode: true)
+    }.should raise_error(ArgumentError)
+  end
+
+  it "raises an error when trying to set both binmode and textmode" do
+    -> {
+      @io = StringIO.new('', "w", textmode: true, binmode: true)
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = StringIO.new('', File::Constants::WRONLY, textmode: true, binmode: true)
+    }.should raise_error(ArgumentError)
+  end
+end
+
 describe "StringIO#initialize when passed no arguments" do
   before :each do
     @io = StringIO.allocate
@@ -209,14 +294,9 @@ describe "StringIO#initialize sets" do
     io.string.encoding.should == Encoding::EUC_JP
   end
 
-  guard_not -> { # [Bug #16497]
-    stringio_version = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
-    version_is(stringio_version, "0.0.3"..."0.1.1")
-  } do
-    it "the #external_encoding to the encoding of the String when passed a String" do
-      s = ''.force_encoding(Encoding::EUC_JP)
-      io = StringIO.new(s)
-      io.external_encoding.should == Encoding::EUC_JP
-    end
+  it "the #external_encoding to the encoding of the String when passed a String" do
+    s = ''.force_encoding(Encoding::EUC_JP)
+    io = StringIO.new(s)
+    io.external_encoding.should == Encoding::EUC_JP
   end
 end

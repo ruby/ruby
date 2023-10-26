@@ -1,0 +1,1 @@
+def self.return; end

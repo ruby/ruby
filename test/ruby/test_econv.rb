@@ -931,7 +931,7 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_default_external
     Encoding.list.grep(->(enc) {/\AISO-8859-\d+\z/i =~ enc.name}) do |enc|
-      assert_separately(%W[--disable=gems -d - #{enc.name}], <<-EOS, ignore_stderr: true)
+      assert_separately(%W[-d - #{enc.name}], <<-EOS, ignore_stderr: true)
     Encoding.default_external = ext = ARGV[0]
     Encoding.default_internal = int ='utf-8'
     assert_nothing_raised do

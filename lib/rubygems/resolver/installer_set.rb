@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A set of gems for installation sourced from remote sources and local .gem
 # files
@@ -147,6 +148,8 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       res << Gem::Resolver::InstalledSpecification.new(self, gemspec)
     end unless @ignore_installed
 
+    matching_local = []
+
     if consider_local?
       matching_local = @local.values.select do |spec, _|
         req.match? spec
@@ -160,14 +163,15 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
         if local_spec = @local_source.find_gem(name, dep.requirement)
           res << Gem::Resolver::IndexSpecification.new(
             self, local_spec.name, local_spec.version,
-            @local_source, local_spec.platform)
+            @local_source, local_spec.platform
+          )
         end
       rescue Gem::Package::FormatError
         # ignore
       end
     end
 
-    res.concat @remote_set.find_all req if consider_remote?
+    res.concat @remote_set.find_all req if consider_remote? && matching_local.empty?
 
     res
   end
@@ -183,11 +187,9 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def inspect # :nodoc:
-    always_install = @always_install.map {|s| s.full_name }
+    always_install = @always_install.map(&:full_name)
 
-    "#<%s domain: %s specs: %p always install: %p>" % [
-      self.class, @domain, @specs.keys, always_install
-    ]
+    format("#<%s domain: %s specs: %p always install: %p>", self.class, @domain, @specs.keys, always_install)
   end
 
   ##
@@ -261,7 +263,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       unless rrgv.satisfied_by? Gem.rubygems_version
         rg_version = Gem::VERSION
         raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.full_name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " +
+          "#{spec.full_name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " \
           "Try 'gem update --system' to update RubyGems itself."
       end
     end

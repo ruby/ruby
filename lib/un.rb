@@ -412,6 +412,9 @@ def help
 end
 
 module UN # :nodoc:
+
+  VERSION = "0.2.1"
+
   module_function
   def help(argv, output: $stdout)
     all = argv.empty?

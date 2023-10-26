@@ -143,7 +143,7 @@ class Bundler::Thor
 
     # Configuration values that are shared between invocations.
     def _shared_configuration #:nodoc:
-      {:invocations => @_invocations}
+      {invocations: @_invocations}
     end
 
     # This method simply retrieves the class and command to be invoked.

@@ -51,6 +51,7 @@ bad_version.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bad_version.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/pure.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +111,6 @@ bad_version.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/error.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/eval.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/file.h
-bad_version.o: $(hdrdir)/ruby/internal/intern/gc.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/hash.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/io.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +141,6 @@ bad_version.o: $(hdrdir)/ruby/internal/memory.h
 bad_version.o: $(hdrdir)/ruby/internal/method.h
 bad_version.o: $(hdrdir)/ruby/internal/module.h
 bad_version.o: $(hdrdir)/ruby/internal/newobj.h
-bad_version.o: $(hdrdir)/ruby/internal/rgengc.h
 bad_version.o: $(hdrdir)/ruby/internal/scan_args.h
 bad_version.o: $(hdrdir)/ruby/internal/special_consts.h
 bad_version.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -212,6 +211,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -271,7 +271,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -302,7 +301,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -371,6 +369,7 @@ loop.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 loop.o: $(hdrdir)/ruby/internal/attr/noinline.h
 loop.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 loop.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+loop.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 loop.o: $(hdrdir)/ruby/internal/attr/pure.h
 loop.o: $(hdrdir)/ruby/internal/attr/restrict.h
 loop.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -430,7 +429,6 @@ loop.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 loop.o: $(hdrdir)/ruby/internal/intern/error.h
 loop.o: $(hdrdir)/ruby/internal/intern/eval.h
 loop.o: $(hdrdir)/ruby/internal/intern/file.h
-loop.o: $(hdrdir)/ruby/internal/intern/gc.h
 loop.o: $(hdrdir)/ruby/internal/intern/hash.h
 loop.o: $(hdrdir)/ruby/internal/intern/io.h
 loop.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -461,7 +459,6 @@ loop.o: $(hdrdir)/ruby/internal/memory.h
 loop.o: $(hdrdir)/ruby/internal/method.h
 loop.o: $(hdrdir)/ruby/internal/module.h
 loop.o: $(hdrdir)/ruby/internal/newobj.h
-loop.o: $(hdrdir)/ruby/internal/rgengc.h
 loop.o: $(hdrdir)/ruby/internal/scan_args.h
 loop.o: $(hdrdir)/ruby/internal/special_consts.h
 loop.o: $(hdrdir)/ruby/internal/static_assert.h

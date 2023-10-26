@@ -6,5 +6,5 @@ describe "Process.exit" do
 end
 
 describe "Process.exit!" do
-  it_behaves_like :process_exit!, :exit!, Process
+  it_behaves_like :process_exit!, :exit!, "Process"
 end

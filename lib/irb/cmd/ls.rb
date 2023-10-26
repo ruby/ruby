@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "reline"
+require "stringio"
 require_relative "nop"
+require_relative "../pager"
 require_relative "../color"
 
 module IRB
@@ -33,26 +35,42 @@ module IRB
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
-        nil
+        o.print_result
       end
 
       def dump_methods(o, klass, obj)
         singleton_class = begin obj.singleton_class; rescue TypeError; nil end
-        maps = class_method_map((singleton_class || klass).ancestors)
+        dumped_mods = Array.new
+        ancestors = klass.ancestors
+        ancestors = ancestors.reject { |c| c >= Object } if klass < Object
+        singleton_ancestors = (singleton_class&.ancestors || []).reject { |c| c >= Class }
+
+        # singleton_class' ancestors should be at the front
+        maps = class_method_map(singleton_ancestors, dumped_mods) + class_method_map(ancestors, dumped_mods)
         maps.each do |mod, methods|
           name = mod == singleton_class ? "#{klass}.methods" : "#{mod}#methods"
           o.dump(name, methods)
         end
       end
 
-      def class_method_map(classes)
-        dumped = Array.new
-        classes.reject { |mod| mod >= Object }.map do |mod|
-          methods = mod.public_instance_methods(false).select do |m|
-            dumped.push(m) unless dumped.include?(m)
+      def class_method_map(classes, dumped_mods)
+        dumped_methods = Array.new
+        classes.map do |mod|
+          next if dumped_mods.include? mod
+
+          dumped_mods << mod
+
+          methods = mod.public_instance_methods(false).select do |method|
+            if dumped_methods.include? method
+              false
+            else
+              dumped_methods << method
+              true
+            end
           end
+
           [mod, methods]
-        end.reverse
+        end.compact
       end
 
       class Output
@@ -61,6 +79,11 @@ module IRB
         def initialize(grep: nil)
           @grep = grep
           @line_width = screen_width - MARGIN.length # right padding
+          @io = StringIO.new
+        end
+
+        def print_result
+          Pager.page_content(@io.string)
         end
 
         def dump(name, strs)
@@ -69,12 +92,12 @@ module IRB
           return if strs.empty?
 
           # Attempt a single line
-          print "#{Color.colorize(name, [:BOLD, :BLUE])}: "
+          @io.print "#{Color.colorize(name, [:BOLD, :BLUE])}: "
           if fits_on_line?(strs, cols: strs.size, offset: "#{name}: ".length)
-            puts strs.join(MARGIN)
+            @io.puts strs.join(MARGIN)
             return
           end
-          puts
+          @io.puts
 
           # Dump with the largest # of columns that fits on a line
           cols = strs.size
@@ -83,7 +106,7 @@ module IRB
           end
           widths = col_widths(strs, cols: cols)
           strs.each_slice(cols) do |ss|
-            puts ss.map.with_index { |s, i| "#{MARGIN}%-#{widths[i]}s" % s }.join
+            @io.puts ss.map.with_index { |s, i| "#{MARGIN}%-#{widths[i]}s" % s }.join
           end
         end
 

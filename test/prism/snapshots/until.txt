@@ -1,0 +1,103 @@
+@ ProgramNode (location: (1,0)-(11,21))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(11,21))
+    └── body: (length: 6)
+        ├── @ UntilNode (location: (1,0)-(1,18))
+        │   ├── keyword_loc: (1,0)-(1,5) = "until"
+        │   ├── closing_loc: (1,15)-(1,18) = "end"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (1,6)-(1,10))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (1,12)-(1,13))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (1,12)-(1,13))
+        │   │           └── flags: decimal
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (3,0)-(3,12))
+        │   ├── keyword_loc: (3,2)-(3,7) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (3,8)-(3,12))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (3,0)-(3,1))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (3,0)-(3,1))
+        │   │           └── flags: decimal
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (5,0)-(5,16))
+        │   ├── keyword_loc: (5,6)-(5,11) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (5,12)-(5,16))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (5,0)-(5,5))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (5,0)-(5,5))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (5,0)-(5,5) = "break"
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (7,0)-(7,15))
+        │   ├── keyword_loc: (7,5)-(7,10) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (7,11)-(7,15))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (7,0)-(7,4))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NextNode (location: (7,0)-(7,4))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (7,0)-(7,4) = "next"
+        │   └── flags: ∅
+        ├── @ UntilNode (location: (9,0)-(9,17))
+        │   ├── keyword_loc: (9,7)-(9,12) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (9,13)-(9,17))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (9,0)-(9,6))
+        │   │   └── body: (length: 1)
+        │   │       └── @ ReturnNode (location: (9,0)-(9,6))
+        │   │           ├── keyword_loc: (9,0)-(9,6) = "return"
+        │   │           └── arguments: ∅
+        │   └── flags: ∅
+        └── @ UntilNode (location: (11,0)-(11,21))
+            ├── keyword_loc: (11,11)-(11,16) = "until"
+            ├── closing_loc: ∅
+            ├── predicate:
+            │   @ CallNode (location: (11,17)-(11,21))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (11,17)-(11,21) = "bar?"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: ∅
+            │   └── name: :bar?
+            ├── statements:
+            │   @ StatementsNode (location: (11,0)-(11,10))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (11,0)-(11,10))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (11,0)-(11,3) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (11,4)-(11,10))
+            │           │   └── arguments: (length: 2)
+            │           │       ├── @ SymbolNode (location: (11,4)-(11,6))
+            │           │       │   ├── opening_loc: (11,4)-(11,5) = ":"
+            │           │       │   ├── value_loc: (11,5)-(11,6) = "a"
+            │           │       │   ├── closing_loc: ∅
+            │           │       │   └── unescaped: "a"
+            │           │       └── @ SymbolNode (location: (11,8)-(11,10))
+            │           │           ├── opening_loc: (11,8)-(11,9) = ":"
+            │           │           ├── value_loc: (11,9)-(11,10) = "b"
+            │           │           ├── closing_loc: ∅
+            │           │           └── unescaped: "b"
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: ∅
+            │           └── name: :foo
+            └── flags: ∅

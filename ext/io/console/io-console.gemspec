@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.6.0"
+_VERSION = "0.6.1.dev"
 
 Gem::Specification.new do |s|
   s.name = "io-console"
@@ -13,6 +13,7 @@ Gem::Specification.new do |s|
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
   s.files = %w[
+    .document
     LICENSE.txt
     README.md
     ext/io/console/console.c

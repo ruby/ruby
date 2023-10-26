@@ -5,7 +5,7 @@ require_relative '../shared/partially_closable_sockets'
 describe "UNIXSocket#pair" do
   platform_is_not :windows do
 
-    it_should_behave_like "partially closable sockets"
+    it_should_behave_like :partially_closable_sockets
 
     before :each do
       @s1, @s2 = UNIXSocket.pair

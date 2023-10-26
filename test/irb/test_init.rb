@@ -5,7 +5,7 @@ require "fileutils"
 require_relative "helper"
 
 module TestIRB
-  class TestInit < TestCase
+  class InitTest < TestCase
     def setup
       # IRBRC is for RVM...
       @backup_env = %w[HOME XDG_CONFIG_HOME IRBRC].each_with_object({}) do |env, hash|

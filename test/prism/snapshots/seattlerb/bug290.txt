@@ -1,0 +1,24 @@
+@ ProgramNode (location: (1,0)-(3,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,3))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (1,0)-(3,3))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (2,2)-(2,5))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (2,2)-(2,5))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (2,2)-(2,5) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: :foo
+            ├── rescue_clause: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause: ∅
+            └── end_keyword_loc: (3,0)-(3,3) = "end"

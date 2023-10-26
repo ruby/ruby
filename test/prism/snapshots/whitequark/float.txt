@@ -1,0 +1,7 @@
+@ ProgramNode (location: (1,0)-(3,4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,4))
+    └── body: (length: 2)
+        ├── @ FloatNode (location: (1,0)-(1,5))
+        └── @ FloatNode (location: (3,0)-(3,4))

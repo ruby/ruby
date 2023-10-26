@@ -31,6 +31,28 @@ ruby_version_is '3.1' do
       ModuleSpecs::Parent.subclasses.should == ModuleSpecs::Parent.subclasses.uniq
     end
 
+    it "works when creating subclasses concurrently" do
+      t = 16
+      n = 1000
+      go = false
+      superclass = Class.new
+
+      threads = t.times.map do
+        Thread.new do
+          Thread.pass until go
+          n.times.map do
+            Class.new(superclass)
+          end
+        end
+      end
+
+      go = true
+      classes = threads.map(&:value)
+
+      superclass.subclasses.size.should == t * n
+      superclass.subclasses.each { |c| c.should be_kind_of(Class) }
+    end
+
     def assert_subclasses(mod,subclasses)
       mod.subclasses.sort_by(&:inspect).should == subclasses.sort_by(&:inspect)
     end

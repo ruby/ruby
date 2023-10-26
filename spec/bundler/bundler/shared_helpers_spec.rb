@@ -242,12 +242,14 @@ RSpec.describe Bundler::SharedHelpers do
     shared_examples_for "ENV['RUBYOPT'] gets set correctly" do
       it "ensures -rbundler/setup is at the beginning of ENV['RUBYOPT']" do
         subject.set_bundle_environment
-        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{source_lib_dir}/bundler/setup")
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{install_path}/bundler/setup")
       end
     end
 
     shared_examples_for "ENV['BUNDLER_SETUP'] gets set correctly" do
       it "ensures bundler/setup is set in ENV['BUNDLER_SETUP']" do
+        skip "Does not play well with DidYouMean being a bundled gem instead of a default gem in Ruby 2.6" if RUBY_VERSION < "2.7"
+
         subject.set_bundle_environment
         expect(ENV["BUNDLER_SETUP"]).to eq("#{source_lib_dir}/bundler/setup")
       end
@@ -288,7 +290,7 @@ RSpec.describe Bundler::SharedHelpers do
       if Gem.respond_to?(:path_separator)
         allow(Gem).to receive(:path_separator).and_return(":")
       else
-        stub_const("File::PATH_SEPARATOR", ":".freeze)
+        stub_const("File::PATH_SEPARATOR", ":")
       end
       allow(Bundler).to receive(:bundle_path) { Pathname.new("so:me/dir/bin") }
       expect { subject.send(:validate_bundle_path) }.to raise_error(
@@ -365,20 +367,41 @@ RSpec.describe Bundler::SharedHelpers do
       end
     end
 
-    context "ENV['RUBYOPT'] does not exist" do
-      before { ENV.delete("RUBYOPT") }
+    context "when bundler install path is standard" do
+      let(:install_path) { source_lib_dir }
 
-      it_behaves_like "ENV['RUBYOPT'] gets set correctly"
+      context "ENV['RUBYOPT'] does not exist" do
+        before { ENV.delete("RUBYOPT") }
+
+        it_behaves_like "ENV['RUBYOPT'] gets set correctly"
+      end
+
+      context "ENV['RUBYOPT'] exists without -rbundler/setup" do
+        before { ENV["RUBYOPT"] = "-I/some_app_path/lib" }
+
+        it_behaves_like "ENV['RUBYOPT'] gets set correctly"
+      end
+
+      context "ENV['RUBYOPT'] exists and contains -rbundler/setup" do
+        before { ENV["RUBYOPT"] = "-rbundler/setup" }
+
+        it_behaves_like "ENV['RUBYOPT'] gets set correctly"
+      end
     end
 
-    context "ENV['RUBYOPT'] exists without -rbundler/setup" do
-      before { ENV["RUBYOPT"] = "-I/some_app_path/lib" }
+    context "when bundler install path contains special characters" do
+      let(:install_path) { "/opt/ruby3.3.0-preview2/lib/ruby/3.3.0+0" }
 
-      it_behaves_like "ENV['RUBYOPT'] gets set correctly"
-    end
+      before do
+        ENV["RUBYOPT"] = "-r#{install_path}/bundler/setup"
+        allow(File).to receive(:expand_path).and_return("#{install_path}/bundler/setup")
+        allow(Gem).to  receive(:bin_path).and_return("#{install_path}/bundler/setup")
+      end
 
-    context "ENV['RUBYOPT'] exists and contains -rbundler/setup" do
-      before { ENV["RUBYOPT"] = "-rbundler/setup" }
+      it "ensures -rbundler/setup is not duplicated" do
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"].split(" ").grep(%r{-r.*/bundler/setup}).length).to eq(1)
+      end
 
       it_behaves_like "ENV['RUBYOPT'] gets set correctly"
     end

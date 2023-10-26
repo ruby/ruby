@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/dependency"
 
@@ -105,8 +106,13 @@ class TestGemDependency < Gem::TestCase
 
   def test_equals_tilde_object
     o = Object.new
-    def o.name    ; "a" end
-    def o.version ; "0" end
+    def o.name
+      "a"
+    end
+
+    def o.version
+      "0"
+    end
 
     assert_match dep("a"), o
   end

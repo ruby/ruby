@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/spec_fetcher"
 
@@ -40,12 +41,12 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_initialize_unwritable_home_dir
     pend "chmod not supported" if Gem.win_platform?
 
-    FileUtils.chmod 0000, Gem.user_home
+    FileUtils.chmod 0o000, Gem.user_home
 
     begin
       assert Gem::SpecFetcher.new
     ensure
-      FileUtils.chmod 0755, Gem.user_home
+      FileUtils.chmod 0o755, Gem.user_home
     end
   end
 
@@ -108,9 +109,7 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_spec_for_dependency_platform
     util_set_arch "i386-linux"
 
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     dep = Gem::Dependency.new "pl", 1
     specs_and_sources, _ = @sf.spec_for_dependency dep
@@ -126,9 +125,7 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_spec_for_dependency_mismatched_platform
     util_set_arch "hrpa-989"
 
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     dep = Gem::Dependency.new "pl", 1
     specs_and_sources, errors = @sf.spec_for_dependency dep

@@ -139,23 +139,6 @@ RBIMPL_ATTR_NOALIAS()
 int rb_char_to_option_kcode(int c, int *option, int *kcode);
 
 /**
- * Creates a new encoding, using the passed one as a template.
- *
- * @param[in]  name          Name of the creating encoding.
- * @param[in]  src           Template.
- * @exception  rb_eArgError  Duplicated or malformed `name`.
- * @return     Replicated new encoding's index.
- * @post       Encoding named `name` is created as a copy of `src`, whose index
- *             is the return value.
- *
- * @internal
- *
- * `name` can be `NULL`,  but that just raises an exception.   OTOH it seems no
- * sanity check is done against `src`...?
- */
-int rb_enc_replicate(const char *name, rb_encoding *src);
-
-/**
  * Creates a new "dummy" encoding.  Roughly speaking, an encoding is dummy when
  * it is  stateful.  Notable  example of  dummy encoding  are those  defined in
  * ISO/IEC 2022

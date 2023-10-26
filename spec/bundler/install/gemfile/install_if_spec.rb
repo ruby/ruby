@@ -37,6 +37,12 @@ RSpec.describe "bundle install with install_if conditionals" do
         rack
         thin
 
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo1, "activesupport", "2.3.5"}
+        #{gem_no_checksum "foo", "1.0"}
+        #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
+        #{gem_no_checksum "thin", "1.0"}
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L

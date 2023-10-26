@@ -1,0 +1,62 @@
+prelude: |
+  class A0
+    def method_missing(m); m end
+  end
+  class A1
+    def method_missing(m, a) a; end
+  end
+  class S
+    def method_missing(m, *a) a; end
+  end
+  class B
+    def method_missing(m, kw: 1) kw end
+  end
+  class SB
+    def method_missing(m, *a, kw: 1) kw end
+  end
+
+  t0 = 0.times.to_a
+  t1 = 1.times.to_a
+  t10 = 10.times.to_a
+  t200 = 200.times.to_a
+  kw = {kw: 2}
+
+  a0 = A0.new
+  a1 = A1.new
+  s = S.new
+  b = B.new
+  sb = SB.new
+benchmark:
+  method_missing_simple_0: |
+    a0.()
+  method_missing_simple_1: |
+    a1.x(1)
+  method_missing_simple_0_splat: |
+    a0.(*t0)
+  method_missing_simple_1_splat: |
+    a1.(*t1)
+  method_missing_no_splat: |
+    s.()
+  method_missing_0_splat: |
+    s.(*t0)
+  method_missing_1_splat: |
+    s.(*t1)
+  method_missing_10_splat: |
+    s.(*t10)
+  method_missing_200_splat: |
+    s.(*t200)
+  method_missing_kw: |
+    b.(kw: 1)
+  method_missing_no_kw: |
+    b.()
+  method_missing_kw_splat: |
+    b.(**kw)
+  method_missing_0_splat_kw: |
+    sb.(*t0, **kw)
+  method_missing_1_splat_kw: |
+    sb.(*t1, **kw)
+  method_missing_10_splat_kw: |
+    sb.(*t10, **kw)
+  method_missing_200_splat_kw: |
+    sb.(*t200, **kw)
+loop_count: 1000000

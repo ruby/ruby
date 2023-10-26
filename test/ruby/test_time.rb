@@ -54,7 +54,8 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, "+09:99") }
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, "+09:99") }
 
-    assert_equal([0, 0, 0, 2, 1, 2000], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a[0, 6])
+    assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], Time.new(2000, 1, 1, 0, 0, 0, "-00:00").to_a)
+    assert_equal([0, 0, 0, 2, 1, 2000, 0, 2, false, "UTC"], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a)
   end
 
   def test_new_from_string
@@ -74,6 +75,7 @@ class TestTime < Test::Unit::TestCase
       Time.new("2020-12-25 00 +09:00")
     }
 
+    assert_equal(Time.new(2021), Time.new("2021"))
     assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
 
     assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
@@ -98,11 +100,17 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /two digits sec.*:9\b/) {
       Time.new("2020-12-25 00:56:9 +0900")
     }
+    assert_raise_with_message(ArgumentError, /sec out of range/) {
+      Time.new("2020-12-25 00:56:64 +0900")
+    }
     assert_raise_with_message(ArgumentError, /two digits min.*:056\b/) {
       Time.new("2020-12-25 00:056:17 +0900")
     }
     assert_raise_with_message(ArgumentError, /two digits min.*:5\b/) {
       Time.new("2020-12-25 00:5:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /min out of range/) {
+      Time.new("2020-12-25 00:64:17 +0900")
     }
     assert_raise_with_message(ArgumentError, /two digits hour.*\b000\b/) {
       Time.new("2020-12-25 000:56:17 +0900")
@@ -110,14 +118,38 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /two digits hour.*\b0\b/) {
       Time.new("2020-12-25 0:56:17 +0900")
     }
+    assert_raise_with_message(ArgumentError, /hour out of range/) {
+      Time.new("2020-12-25 33:56:17 +0900")
+    }
     assert_raise_with_message(ArgumentError, /two digits mday.*\b025\b/) {
       Time.new("2020-12-025 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b5\b/) {
+      Time.new("2020-12-5 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /mday out of range/) {
+      Time.new("2020-12-33 00:56:17 +0900")
     }
     assert_raise_with_message(ArgumentError, /two digits mon.*\b012\b/) {
       Time.new("2020-012-25 00:56:17 +0900")
     }
     assert_raise_with_message(ArgumentError, /two digits mon.*\b1\b/) {
       Time.new("2020-1-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /mon out of range/) {
+      Time.new("2020-17-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12-02")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(" 2020-12-02 00:00:00")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new("2020-12-02 00:00:00 ")
     }
   end
 
@@ -406,7 +438,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone_gc
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       ENV["TZ"] = "JST-9"
       s = Marshal.dump(Time.now)
       t = Marshal.load(s)
@@ -1384,11 +1416,8 @@ class TestTime < Test::Unit::TestCase
       else
         RbConfig::SIZEOF["void*"] # Same size as VALUE
       end
-    expect =
-      GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] +
-        sizeof_timew +
-        RbConfig::SIZEOF["void*"] * 4 + 5 + # vtm
-        1 # tzmode, tm_got
+    sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
+    expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
     assert_equal expect, ObjectSpace.memsize_of(t)
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
@@ -1406,5 +1435,9 @@ class TestTime < Test::Unit::TestCase
       {year: 2022, month: 10, sec: 30},
       t.deconstruct_keys(%i[year month sec nonexistent])
     )
+  end
+
+  def test_parse_zero_bigint
+    assert_equal 0, Time.new("2020-10-28T16:48:07.000Z").nsec, '[Bug #19390]'
   end
 end

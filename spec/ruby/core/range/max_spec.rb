@@ -50,17 +50,15 @@ describe "Range#max" do
     -> { eval("(1..)").max }.should raise_error(RangeError)
   end
 
-  ruby_version_is "3.0" do
-    it "returns the end point for beginless ranges" do
-      (..1).max.should == 1
-      (..1.0).max.should == 1.0
-    end
+  it "returns the end point for beginless ranges" do
+    (..1).max.should == 1
+    (..1.0).max.should == 1.0
+  end
 
-    it "raises for an exclusive beginless range" do
-      -> {
-        (...1).max
-      }.should raise_error(TypeError, 'cannot exclude end value with non Integer begin value')
-    end
+  it "raises for an exclusive beginless range" do
+    -> {
+      (...1).max
+    }.should raise_error(TypeError, 'cannot exclude end value with non Integer begin value')
   end
 end
 

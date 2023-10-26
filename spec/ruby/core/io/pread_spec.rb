@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 require_relative '../../spec_helper'
 
-platform_is_not :windows do
+guard -> { platform_is_not :windows or ruby_version_is "3.3" } do
   describe "IO#pread" do
     before :each do
       @fname = tmp("io_pread.txt")

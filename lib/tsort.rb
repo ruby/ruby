@@ -122,6 +122,9 @@
 #
 
 module TSort
+
+  VERSION = "0.1.1"
+
   class Cyclic < StandardError
   end
 

@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#include "gc.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/thread.h"
 #include "internal/sanitizers.h"
@@ -29,7 +29,7 @@ static VALUE me2counter = Qnil;
  *  Returns true if coverage measurement is supported for the given mode.
  *
  *  The mode should be one of the following symbols:
- *  +:lines+, +:branches+, +:methods+, +:eval+.
+ *  +:lines+, +:oneshot_lines+, +:branches+, +:methods+, +:eval+.
  *
  *  Example:
  *
@@ -43,6 +43,7 @@ rb_coverage_supported(VALUE self, VALUE _mode)
 
     return RBOOL(
         mode == rb_intern("lines") ||
+        mode == rb_intern("oneshot_lines") ||
         mode == rb_intern("branches") ||
         mode == rb_intern("methods") ||
         mode == rb_intern("eval")

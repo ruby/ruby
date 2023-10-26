@@ -52,6 +52,7 @@ gc_hook.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/noinline.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+gc_hook.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/pure.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/restrict.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ gc_hook.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/error.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/eval.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/file.h
-gc_hook.o: $(hdrdir)/ruby/internal/intern/gc.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/hash.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/io.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ gc_hook.o: $(hdrdir)/ruby/internal/memory.h
 gc_hook.o: $(hdrdir)/ruby/internal/method.h
 gc_hook.o: $(hdrdir)/ruby/internal/module.h
 gc_hook.o: $(hdrdir)/ruby/internal/newobj.h
-gc_hook.o: $(hdrdir)/ruby/internal/rgengc.h
 gc_hook.o: $(hdrdir)/ruby/internal/scan_args.h
 gc_hook.o: $(hdrdir)/ruby/internal/special_consts.h
 gc_hook.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -212,6 +211,7 @@ tracepoint.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/noinline.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+tracepoint.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/pure.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/restrict.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -271,7 +271,6 @@ tracepoint.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/error.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/eval.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/file.h
-tracepoint.o: $(hdrdir)/ruby/internal/intern/gc.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/hash.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/io.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -302,7 +301,6 @@ tracepoint.o: $(hdrdir)/ruby/internal/memory.h
 tracepoint.o: $(hdrdir)/ruby/internal/method.h
 tracepoint.o: $(hdrdir)/ruby/internal/module.h
 tracepoint.o: $(hdrdir)/ruby/internal/newobj.h
-tracepoint.o: $(hdrdir)/ruby/internal/rgengc.h
 tracepoint.o: $(hdrdir)/ruby/internal/scan_args.h
 tracepoint.o: $(hdrdir)/ruby/internal/special_consts.h
 tracepoint.o: $(hdrdir)/ruby/internal/static_assert.h

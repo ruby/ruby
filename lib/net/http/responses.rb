@@ -85,6 +85,8 @@ module Net
   #
   # A +Continue+ response indicates that the server has received the request headers.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/100].
@@ -99,6 +101,8 @@ module Net
   #
   # The <tt>Switching Protocol<tt> response indicates that the server has received
   # a request to switch protocols, and has agreed to do so.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -115,6 +119,8 @@ module Net
   # The +Processing+ response indicates that the server has received
   # and is processing the request, but no response is available yet.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {RFC 2518}[https://www.rfc-editor.org/rfc/rfc2518#section-10.1].
@@ -129,6 +135,8 @@ module Net
   # The <tt>Early Hints</tt> indicates that the server has received
   # and is processing the request, and contains certain headers;
   # the final response is not available yet.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -145,6 +153,8 @@ module Net
   # The +OK+ response indicates that the server has received
   # a request and has responded successfully.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200].
@@ -160,6 +170,8 @@ module Net
   # The +Created+ response indicates that the server has received
   # and has fulfilled a request to create a new resource.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201].
@@ -174,6 +186,8 @@ module Net
   #
   # The +Accepted+ response indicates that the server has received
   # and is processing a request, but the processing has not yet been completed.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -192,6 +206,8 @@ module Net
   # that received a 200 OK response from its origin,
   # and is returning a modified version of the origin's response.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/203].
@@ -206,6 +222,8 @@ module Net
   #
   # The <tt>No Content</tt> response indicates that the server
   # successfully processed the request, and is not returning any content.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -223,6 +241,8 @@ module Net
   # successfully processed the request,
   # asks that the client reset its document view, and is not returning any content.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/205].
@@ -239,6 +259,8 @@ module Net
   # only part of the resource (byte serving)
   # due to a Range header in the request.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206].
@@ -254,6 +276,8 @@ module Net
   # The <tt>Multi-Status (WebDAV)</tt> response indicates that the server
   # has received the request,
   # and that the message body can contain a number of separate response codes.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -272,6 +296,8 @@ module Net
   # in a preceding part of the (multi-status) response,
   # and are not being included again.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {RFC 5842}[https://www.rfc-editor.org/rfc/rfc5842.html#section-7.1].
@@ -287,6 +313,8 @@ module Net
   # for the resource, and the response is a representation of the result
   # of one or more instance-manipulations applied to the current instance.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {RFC 3229}[https://www.rfc-editor.org/rfc/rfc3229.html#section-10.4.1].
@@ -300,6 +328,8 @@ module Net
   #
   # The <tt>Multiple Choices</tt> response indicates that the server
   # offers multiple options for the resource from which the client may choose.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -317,6 +347,8 @@ module Net
   # The <tt>Moved Permanently</tt> response indicates that links or records
   # returning this response should be updated to use the given URL.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301].
@@ -331,6 +363,8 @@ module Net
   #
   # The <tt>Found</tt> response indicates that the client
   # should look at (browse to) another URL.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -347,6 +381,8 @@ module Net
   #
   # The response to the request can be found under another URI using the GET method.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303].
@@ -361,6 +397,8 @@ module Net
   #
   # Indicates that the resource has not been modified since the version
   # specified by the request headers.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -377,6 +415,8 @@ module Net
   # The requested resource is available only through a proxy,
   # whose address is provided in the response.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-305-use-proxy].
@@ -390,6 +430,8 @@ module Net
   #
   # The request should be repeated with another URI;
   # however, future requests should still use the original URI.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -405,6 +447,8 @@ module Net
   #
   # This and all future requests should be directed to the given URI.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308].
@@ -418,6 +462,8 @@ module Net
   # Response class for <tt>Bad Request</tt> responses (status code 400).
   #
   # The server cannot or will not process the request due to an apparent client error.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -433,6 +479,8 @@ module Net
   #
   # Authentication is required, but either was not provided or failed.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401].
@@ -446,6 +494,8 @@ module Net
   # Response class for <tt>Payment Required</tt> responses (status code 402).
   #
   # Reserved for future use.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -462,6 +512,8 @@ module Net
   # The request contained valid data and was understood by the server,
   # but the server is refusing action.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403].
@@ -476,6 +528,8 @@ module Net
   #
   # The requested resource could not be found but may be available in the future.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404].
@@ -489,6 +543,8 @@ module Net
   # Response class for <tt>Method Not Allowed</tt> responses (status code 405).
   #
   # The request method is not supported for the requested resource.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -505,6 +561,8 @@ module Net
   # The requested resource is capable of generating only content
   # that not acceptable according to the Accept headers sent in the request.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406].
@@ -519,6 +577,8 @@ module Net
   #
   # The client must first authenticate itself with the proxy.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/407].
@@ -532,6 +592,8 @@ module Net
   # Response class for <tt>Request Timeout</tt> responses (status code 408).
   #
   # The server timed out waiting for the request.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -548,6 +610,8 @@ module Net
   #
   # The request could not be processed because of conflict in the current state of the resource.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409].
@@ -562,6 +626,8 @@ module Net
   #
   # The resource requested was previously in use but is no longer available
   # and will not be available again.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -578,6 +644,8 @@ module Net
   # The request did not specify the length of its content,
   # which is required by the requested resource.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/411].
@@ -593,6 +661,8 @@ module Net
   # The server does not meet one of the preconditions
   # specified in the request headers.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412].
@@ -606,6 +676,8 @@ module Net
   # Response class for <tt>Payload Too Large</tt> responses (status code 413).
   #
   # The request is larger than the server is willing or able to process.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -621,6 +693,8 @@ module Net
   # Response class for <tt>URI Too Long</tt> responses (status code 414).
   #
   # The URI provided was too long for the server to process.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -638,6 +712,8 @@ module Net
   #
   # The request entity has a media type which the server or resource does not support.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415].
@@ -651,6 +727,8 @@ module Net
   # Response class for <tt>Range Not Satisfiable</tt> responses (status code 416).
   #
   # The request entity has a media type which the server or resource does not support.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -666,6 +744,8 @@ module Net
   # Response class for <tt>Expectation Failed</tt> responses (status code 417).
   #
   # The server cannot meet the requirements of the Expect request-header field.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -686,6 +766,8 @@ module Net
   #
   # The request was directed at a server that is not able to produce a response.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-421-misdirected-request].
@@ -698,6 +780,8 @@ module Net
   # Response class for <tt>Unprocessable Entity</tt> responses (status code 422).
   #
   # The request was well-formed but had semantic errors.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -713,6 +797,8 @@ module Net
   #
   # The requested resource is locked.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {RFC 4918}[https://www.rfc-editor.org/rfc/rfc4918#section-11.3].
@@ -726,6 +812,8 @@ module Net
   #
   # The request failed because it depended on another request and that request failed.
   # See {424 Failed Dependency (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#424].
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -743,6 +831,8 @@ module Net
   #
   # The client should switch to the protocol given in the Upgrade header field.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/426].
@@ -757,6 +847,8 @@ module Net
   #
   # The origin server requires the request to be conditional.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/428].
@@ -770,6 +862,8 @@ module Net
   # Response class for <tt>Too Many Requests</tt> responses (status code 429).
   #
   # The user has sent too many requests in a given amount of time.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -786,6 +880,8 @@ module Net
   # An individual header field is too large,
   # or all the header fields collectively, are too large.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/431].
@@ -800,6 +896,8 @@ module Net
   #
   # A server operator has received a legal demand to deny access to a resource or to a set of resources
   # that includes the requested resource.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -819,6 +917,8 @@ module Net
   #
   # An unexpected condition was encountered and no more specific message is suitable.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500].
@@ -833,6 +933,8 @@ module Net
   #
   # The server either does not recognize the request method,
   # or it lacks the ability to fulfil the request.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -849,6 +951,8 @@ module Net
   # The server was acting as a gateway or proxy
   # and received an invalid response from the upstream server.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502].
@@ -863,6 +967,8 @@ module Net
   #
   # The server cannot handle the request
   # (because it is overloaded or down for maintenance).
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -879,6 +985,8 @@ module Net
   # The server was acting as a gateway or proxy
   # and did not receive a timely response from the upstream server.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504].
@@ -894,6 +1002,8 @@ module Net
   #
   # The server does not support the HTTP version used in the request.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/505].
@@ -907,6 +1017,8 @@ module Net
   # Response class for <tt>Variant Also Negotiates</tt> responses (status code 506).
   #
   # Transparent content negotiation for the request results in a circular reference.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -922,6 +1034,8 @@ module Net
   #
   # The server is unable to store the representation needed to complete the request.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/507].
@@ -935,6 +1049,8 @@ module Net
   # Response class for <tt>Loop Detected (WebDAV)</tt> responses (status code 508).
   #
   # The server detected an infinite loop while processing the request.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
@@ -951,6 +1067,8 @@ module Net
   #
   # Further extensions to the request are required for the server to fulfill it.
   #
+  # :include: doc/net-http/included_getters.rdoc
+  #
   # References:
   #
   # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/510].
@@ -964,6 +1082,8 @@ module Net
   # Response class for <tt>Network Authentication Required</tt> responses (status code 511).
   #
   # The client needs to authenticate to gain network access.
+  #
+  # :include: doc/net-http/included_getters.rdoc
   #
   # References:
   #
