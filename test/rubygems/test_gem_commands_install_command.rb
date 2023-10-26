@@ -193,7 +193,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     pend "skipped in root privilege" if Process.uid.zero?
 
     spec_fetcher do |fetcher|
-      fetcher.gem "a", 2
+      fetcher.download "a", 2
     end
 
     @cmd.options[:user_install] = false
@@ -204,12 +204,14 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
       FileUtils.chmod 0o755, @userhome
       FileUtils.chmod 0o555, @gemhome
 
-      assert_raise Gem::FilePermissionError do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     ensure
       FileUtils.chmod 0o755, @gemhome
     end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map(&:full_name).sort
   end
 
   def test_execute_local_missing
