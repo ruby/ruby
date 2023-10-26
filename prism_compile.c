@@ -807,8 +807,8 @@ pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_
     switch (PM_NODE_TYPE(node)) {
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
-        for (size_t index = 0; index < cast->targets.size; index++) {
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->targets.nodes[index], ret, scope_node, pushed, false);
+        for (size_t index = 0; index < cast->lefts.size; index++) {
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->lefts.nodes[index], ret, scope_node, pushed, false);
         }
         break;
       }
@@ -2651,19 +2651,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
-        for (size_t index = 0; index < cast->targets.size; index++) {
-            PM_COMPILE(cast->targets.nodes[index]);
+        for (size_t index = 0; index < cast->lefts.size; index++) {
+            PM_COMPILE(cast->lefts.nodes[index]);
         }
         return;
       }
       case PM_MULTI_WRITE_NODE: {
         pm_multi_write_node_t *multi_write_node = (pm_multi_write_node_t *)node;
-        pm_node_list_t node_list = multi_write_node->targets;
+        pm_node_list_t *node_list = &multi_write_node->lefts;
 
         // pre-process the left hand side of multi-assignments.
         uint8_t pushed = 0;
-        for (size_t index = 0; index < node_list.size; index++) {
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, node_list.nodes[index], ret, scope_node, pushed, false);
+        for (size_t index = 0; index < node_list->size; index++) {
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, node_list->nodes[index], ret, scope_node, pushed, false);
         }
 
         PM_COMPILE_NOT_POPPED(multi_write_node->value);
@@ -2672,13 +2672,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int flag = 0x00;
 
         PM_DUP_UNLESS_POPPED;
-        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(multi_write_node->targets.size), INT2FIX(flag));
+        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(node_list->size), INT2FIX(flag));
 
-        for (size_t index = 0; index < node_list.size; index++) {
-            pm_node_t *considered_node = node_list.nodes[index];
+        for (size_t index = 0; index < node_list->size; index++) {
+            pm_node_t *considered_node = node_list->nodes[index];
 
             if (PM_NODE_TYPE_P(considered_node, PM_CONSTANT_PATH_TARGET_NODE) && pushed > 0) {
-                pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *)considered_node;
+                pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *) considered_node;
                 ID name = pm_constant_id_lookup(scope_node, ((pm_constant_read_node_t * ) cast->child)->name);
 
                 pushed -= 2;
@@ -2686,7 +2686,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(pushed));
                 ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(name));
             } else {
-                PM_COMPILE(node_list.nodes[index]);
+                PM_COMPILE(node_list->nodes[index]);
             }
         }
 
