@@ -154,7 +154,7 @@ enum feature_flag_bits {
     SEP \
     X(parsetree_with_comment) \
     SEP \
-    X(prism) \
+    X(prism_parsetree) \
     SEP \
     X(insns) \
     SEP \
@@ -169,7 +169,7 @@ enum dump_flag_bits {
                                 DUMP_BIT(parsetree_with_comment)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-                      DUMP_BIT(prism) | DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
+                      DUMP_BIT(prism_parsetree) | DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
 };
 
 static inline void
@@ -356,7 +356,7 @@ usage(const char *name, int help, int highlight, int columns)
 
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
-        M("--dump={insns|parsetree|prism|...}[,...]",     "",
+        M("--dump={insns|parsetree|prism_parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
         M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
           "enable or disable features. see below for available features"),
@@ -375,7 +375,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
         M("parsetree(+error-tolerant)","", "AST"),
         M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
-        M("prism", "", "Prism AST with comments"),
+        M("prism_parsetree", "", "Prism AST with comments"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -2335,7 +2335,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
-    if (dump & (DUMP_BIT(prism))) {
+    if (dump & (DUMP_BIT(prism_parsetree))) {
         pm_parser_t parser;
         if (opt->e_script) {
             size_t len = RSTRING_LEN(opt->e_script);
