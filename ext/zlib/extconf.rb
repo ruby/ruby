@@ -127,7 +127,9 @@ if have_zlib
     have_func('crc32_combine', 'zlib.h')
     have_func('adler32_combine', 'zlib.h')
     have_type('z_crc_t', 'zlib.h')
-    if have_func('crc32_z', 'zlib.h') && have_func('adler32_z', 'zlib.h')
+    if (have_type('z_size_t', 'zlib.h') &&
+        have_func('crc32_z', 'zlib.h') &&
+        have_func('adler32_z', 'zlib.h'))
       $defs << "-DHAVE_ZLIB_SIZE_T_FUNCS"
     end
   end
