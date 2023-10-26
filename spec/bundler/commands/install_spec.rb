@@ -792,6 +792,41 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when gem home does not have the writable bit set, yet it's still writable", :permissions do
+    let(:gem_home) { bundled_app("vendor/#{Bundler.ruby_scope}") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      bundle "config set --local path vendor"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod("-w", gem_home)
+
+      begin
+        bundle "install --redownload"
+      ensure
+        FileUtils.chmod("+w", gem_home)
+      end
+
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+    end
+  end
+
   describe "when bundle cache path does not have write access", :permissions do
     let(:cache_path) { bundled_app("vendor/#{Bundler.ruby_scope}/cache") }
 
