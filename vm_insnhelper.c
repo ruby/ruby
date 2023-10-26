@@ -1286,8 +1286,6 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-
         if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
             st_table *table = NULL;
             switch (BUILTIN_TYPE(obj)) {
@@ -1314,14 +1312,22 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             }
         }
         else {
-            if (rb_shape_get_iv_index(shape, id, &index)) {
+            shape_id_t previous_cached_id = cached_id;
+            if (rb_shape_get_iv_index_with_hint(shape_id, id, &index, &cached_id)) {
                 // This fills in the cache with the shared cache object.
                 // "ent" is the shared cache object
-                fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
+                if (cached_id != previous_cached_id) {
+                    fill_ivar_cache(iseq, ic, cc, is_attr, index, cached_id);
+                }
 
-                // We fetched the ivar list above
-                val = ivar_list[index];
-                RUBY_ASSERT(!UNDEF_P(val));
+                if (index == ATTR_INDEX_NOT_SET) {
+                    val = default_value;
+                }
+                else {
+                    // We fetched the ivar list above
+                    val = ivar_list[index];
+                    RUBY_ASSERT(!UNDEF_P(val));
+                }
             }
             else {
                 if (is_attr) {
