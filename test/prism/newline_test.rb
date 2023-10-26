@@ -6,8 +6,10 @@ return unless defined?(RubyVM::InstructionSequence)
 
 module Prism
   class NewlineTest < TestCase
-    base = File.dirname(__dir__)
-    Dir["{lib,test}/**/*.rb", base: base].each do |relative|
+    base = File.expand_path("../", __FILE__)
+    filepaths = Dir["*.rb", base: base] - %w[unescape_test.rb]
+
+    filepaths.each do |relative|
       define_method("test_newline_flags_#{relative}") do
         assert_newlines(base, relative)
       end
@@ -82,7 +84,7 @@ module Prism
 
       while node = queue.shift
         queue.concat(node.compact_child_nodes)
-        newlines << result.source.line(node.location.start_offset) if node&.newline?
+        newlines << (result.source.line(node.location.start_offset) + 1) if node&.newline?
       end
 
       newlines.sort
