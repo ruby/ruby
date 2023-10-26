@@ -89,7 +89,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing activesupport")
     err_lines = err.split("\n")
-    err_lines.reject! {|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
+    err_lines.reject! {|line| line =~ /\.rb:\d+: warning: / }
     expect(err_lines).to be_empty
   end
 
@@ -594,8 +594,6 @@ RSpec.describe "bundler/inline#gemfile" do
   it "when requiring fileutils after does not show redefinition warnings", :realworld do
     dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
     skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
-
-    skip "pathname does not install cleanly on this ruby" if RUBY_VERSION < "2.7.0"
 
     Dir.mkdir tmp("path_without_gemfile")
 

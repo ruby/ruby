@@ -369,7 +369,7 @@ RSpec.describe "gemcutter's dependency API" do
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => env_for_missing_prerelease_default_gem_activation
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing"
       source "#{source_uri}"
       source "#{source_uri}/extra"
       gem "back_deps"
@@ -388,7 +388,7 @@ RSpec.describe "gemcutter's dependency API" do
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => env_for_missing_prerelease_default_gem_activation
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing"
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"

@@ -416,7 +416,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    install_gemfile <<-G, :artifice => "compact_index_extra_missing", :env => env_for_missing_prerelease_default_gem_activation
+    install_gemfile <<-G, :artifice => "compact_index_extra_missing"
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -436,7 +436,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       FileUtils.rm_rf Dir[gem_repo4("gems/foo-*.gem")]
     end
 
-    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing", :env => env_for_missing_prerelease_default_gem_activation
+    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing"
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
