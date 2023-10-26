@@ -248,8 +248,6 @@ RSpec.describe Bundler::SharedHelpers do
 
     shared_examples_for "ENV['BUNDLER_SETUP'] gets set correctly" do
       it "ensures bundler/setup is set in ENV['BUNDLER_SETUP']" do
-        skip "Does not play well with DidYouMean being a bundled gem instead of a default gem in Ruby 2.6" if RUBY_VERSION < "2.7"
-
         subject.set_bundle_environment
         expect(ENV["BUNDLER_SETUP"]).to eq("#{source_lib_dir}/bundler/setup")
       end

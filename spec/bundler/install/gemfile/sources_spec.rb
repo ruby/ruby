@@ -1582,11 +1582,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
     G
 
-    simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-      ruby <<~R, :raise_on_error => false
-        require 'bundler/setup'
-      R
-    end
+    ruby <<~R, :raise_on_error => false
+      require 'bundler/setup'
+    R
 
     expect(last_command).to be_failure
     expect(err).to include("Could not find gem 'example' in locally installed gems.")

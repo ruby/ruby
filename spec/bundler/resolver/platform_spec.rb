@@ -82,7 +82,7 @@ RSpec.describe "Resolving platform craziness" do
     should_resolve_as %w[foo-1.0.0-x64-mingw32]
   end
 
-  describe "on a linux platform", :rubygems => ">= 3.1.0.pre.1" do
+  describe "on a linux platform" do
     # Ruby's platform is *-linux => platform's libc is glibc, so not musl
     # Ruby's platform is *-linux-musl => platform's libc is musl, so not glibc
     # Gem's platform is *-linux => gem is glibc + maybe musl compatible
