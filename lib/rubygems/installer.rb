@@ -390,7 +390,7 @@ class Gem::Installer
       specs = []
 
       Gem::Util.glob_files_in_dir("*.gemspec", File.join(gem_home, "specifications")).each do |path|
-        spec = Gem::Specification.load path.tap(&Gem::UNTAINT)
+        spec = Gem::Specification.load path
         specs << spec if spec
       end
 
@@ -489,7 +489,6 @@ class Gem::Installer
     ensure_writable_dir @bin_dir
 
     spec.executables.each do |filename|
-      filename.tap(&Gem::UNTAINT)
       bin_path = File.join gem_dir, spec.bindir, filename
       next unless File.exist? bin_path
 
@@ -631,7 +630,6 @@ class Gem::Installer
 
   def ensure_loadable_spec
     ruby = spec.to_ruby_for_cache
-    ruby.tap(&Gem::UNTAINT)
 
     begin
       eval ruby

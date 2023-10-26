@@ -295,7 +295,6 @@ class Gem::TestCase < Test::Unit::TestCase
     FileUtils.mkdir_p @tmp
 
     @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
-    @tempdir.tap(&Gem::UNTAINT)
 
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
@@ -345,7 +344,6 @@ class Gem::TestCase < Test::Unit::TestCase
                       File.expand_path(s)
                     end
       if expand_path != s
-        expand_path.tap(&Gem::UNTAINT)
         if s.instance_variable_defined?(:@gem_prelude_index)
           expand_path.instance_variable_set(:@gem_prelude_index, expand_path)
         end
@@ -606,7 +604,7 @@ class Gem::TestCase < Test::Unit::TestCase
         end
       end
 
-      gem = File.join(@tempdir, File.basename(gem)).tap(&Gem::UNTAINT)
+      gem = File.join(@tempdir, File.basename(gem))
     end
 
     Gem::Installer.at(gem, options.merge({ :wrappers => true })).install
@@ -645,7 +643,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # Reads a Marshal file at +path+
 
   def read_cache(path)
-    File.open path.dup.tap(&Gem::UNTAINT), "rb" do |io|
+    File.open path.dup, "rb" do |io|
       Marshal.load io.read
     end
   end

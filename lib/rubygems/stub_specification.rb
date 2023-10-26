@@ -69,7 +69,6 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def initialize(filename, base_dir, gems_dir, default_gem)
     super()
-    filename.tap(&Gem::UNTAINT)
 
     self.loaded_from = filename
     @data            = nil
