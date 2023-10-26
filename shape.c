@@ -38,6 +38,7 @@
 #define SINGLE_CHILD(x) (rb_shape_t *)((uintptr_t)x & SINGLE_CHILD_MASK)
 #define ANCESTOR_CACHE_THRESHOLD 10
 #define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
+#define ANCESTOR_SEARCH_MAX_DEPTH 2
 
 static ID id_frozen;
 static ID id_t_object;
@@ -721,6 +722,62 @@ rb_shape_t *
 rb_shape_transition_shape_capa(rb_shape_t* shape)
 {
     return rb_shape_transition_shape_capa_create(shape, rb_malloc_grow_capa(shape->capacity, sizeof(VALUE)));
+}
+
+// Same as rb_shape_get_iv_index, but uses a provided valid shape id and index
+// to return a result faster if branches of the shape tree are closely related.
+bool
+rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint)
+{
+    attr_index_t index_hint = *value;
+    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *initial_shape = shape;
+
+    if (*shape_id_hint == INVALID_SHAPE_ID) {
+        *shape_id_hint = shape_id;
+        return rb_shape_get_iv_index(shape, id, value);
+    }
+
+    rb_shape_t * shape_hint = rb_shape_get_shape_by_id(*shape_id_hint);
+
+    // We assume it's likely shape_id_hint and shape_id have a close common
+    // ancestor, so we check up to ANCESTOR_SEARCH_MAX_DEPTH ancestors before
+    // eventually using the index, as in case of a match it will be faster.
+    // However if the shape doesn't have an index, we walk the entire tree.
+    int depth = INT_MAX;
+    if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+        depth = ANCESTOR_SEARCH_MAX_DEPTH;
+    }
+
+    while (depth > 0 && shape->next_iv_index > index_hint) {
+        while (shape_hint->next_iv_index > shape->next_iv_index) {
+            shape_hint = rb_shape_get_parent(shape_hint);
+        }
+
+        if (shape_hint == shape) {
+            // We've found a common ancestor so use the index hint
+            *value = index_hint;
+            *shape_id_hint = rb_shape_id(shape);
+            return true;
+        }
+        if (shape->edge_name == id) {
+            // We found the matching id before a common ancestor
+            *value = shape->next_iv_index - 1;
+            *shape_id_hint = rb_shape_id(shape);
+            return true;
+        }
+
+        shape = rb_shape_get_parent(shape);
+        depth--;
+    }
+
+    // If the original shape had an index but its ancestor doesn't
+    // we switch back to the original one as it will be faster.
+    if (!shape->ancestor_index && initial_shape->ancestor_index) {
+        shape = initial_shape;
+    }
+    *shape_id_hint = shape_id;
+    return rb_shape_get_iv_index(shape, id, value);
 }
 
 bool
