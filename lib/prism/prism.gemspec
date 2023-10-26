@@ -108,7 +108,9 @@ Gem::Specification.new do |spec|
     "src/prism.c",
     "prism.gemspec",
     "sig/prism.rbs",
-    "rbi/prism.rbi"
+    "sig/prism_static.rbs",
+    "rbi/prism.rbi",
+    "rbi/prism_static.rbi"
   ]
 
   spec.extensions = ["ext/prism/extconf.rb"]
