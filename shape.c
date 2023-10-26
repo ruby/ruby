@@ -19,12 +19,19 @@
 #define SHAPE_DEBUG (VM_CHECK_MODE > 0)
 #endif
 
+#if SIZEOF_SHAPE_T == 4
+#define SHAPE_BUFFER_SIZE 0x80000
+#else
+#define SHAPE_BUFFER_SIZE 0x8000
+#endif
+
 #define SINGLE_CHILD_TAG 0x1
 #define TAG_SINGLE_CHILD(x) (struct rb_id_table *)((uintptr_t)x | SINGLE_CHILD_TAG)
 #define SINGLE_CHILD_MASK (~((uintptr_t)SINGLE_CHILD_TAG))
 #define SINGLE_CHILD_P(x) (((uintptr_t)x) & SINGLE_CHILD_TAG)
 #define SINGLE_CHILD(x) (rb_shape_t *)((uintptr_t)x & SINGLE_CHILD_MASK)
 #define ANCESTOR_CACHE_THRESHOLD 10
+#define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 
 static ID id_frozen;
 static ID id_t_object;
