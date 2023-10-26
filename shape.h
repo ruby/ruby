@@ -11,7 +11,6 @@ typedef uint32_t attr_index_t;
 typedef uint32_t shape_id_t;
 typedef uint32_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 32
-# define SHAPE_BUFFER_SIZE 0x80000
 
 #else
 
@@ -21,7 +20,6 @@ typedef uint16_t attr_index_t;
 typedef uint16_t shape_id_t;
 typedef uint16_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 16
-# define SHAPE_BUFFER_SIZE 0x8000
 
 #endif
 
@@ -34,7 +32,6 @@ typedef uint16_t redblack_id_t;
 
 # define SHAPE_MAX_VARIATIONS 8
 
-# define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
 
