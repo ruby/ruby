@@ -156,6 +156,7 @@ module Test
           runner.status $stderr
         end if runner.info_signal
 
+        interrupt = nil
         start_time = Time.now
 
         result = ""
@@ -170,7 +171,8 @@ module Test
           time = Time.now - start_time
           runner.record self.class, self.__name__, self._assertions, time, nil
           @passed = true
-        rescue *PASSTHROUGH_EXCEPTIONS
+        rescue *PASSTHROUGH_EXCEPTIONS => e
+          interrupt = true if e.is_a?(Interrupt)
           raise
         rescue Exception => e
           @passed = Test::Unit::PendedError === e
@@ -185,7 +187,9 @@ module Test
               raise
             rescue Exception => e
               @passed = false
-              runner.record self.class, self.__name__, self._assertions, time, e
+              unless interrupt
+                runner.record self.class, self.__name__, self._assertions, time, e
+              end
               result = runner.puke self.class, self.__name__, e
             end
           end

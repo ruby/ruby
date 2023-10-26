@@ -46,7 +46,7 @@ module Test
         th = Thread.new do
           begin
             while buf = (self.verbose ? i.gets : i.readpartial(1024))
-              _report "p", buf or break
+              _report "p", buf unless @need_exit
             end
           rescue IOError
           end
