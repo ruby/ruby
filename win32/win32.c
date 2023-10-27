@@ -559,8 +559,9 @@ rb_w32_home_dir(void)
         }
     }
 
-    /* allocate buffer */
-    buffer = ALLOC_N(WCHAR, buffer_len);
+    /* can't use xmalloc here, since it's called too early from init_env() */
+    buffer = malloc(sizeof(WCHAR) * buffer_len);
+    if (buffer == NULL) return NULL;
 
     switch (home_type) {
       case ENV_HOME:
@@ -576,10 +577,10 @@ rb_w32_home_dir(void)
       default:
         if (!get_special_folder(CSIDL_PROFILE, buffer, buffer_len) &&
             !get_special_folder(CSIDL_PERSONAL, buffer, buffer_len)) {
-            xfree(buffer);
+            free(buffer);
             return NULL;
         }
-        REALLOC_N(buffer, WCHAR, lstrlenW(buffer) + 1);
+        buffer = realloc(buffer, sizeof(WCHAR) * (lstrlenW(buffer) + 1));
         break;
     }
 
@@ -593,54 +594,24 @@ rb_w32_home_dir(void)
 static void
 init_env(void)
 {
-    static const WCHAR TMPDIR[] = L"TMPDIR";
-    struct {WCHAR name[6], eq, val[ENV_MAX];} wk;
-    DWORD len;
-    BOOL f;
-#define env wk.val
-#define set_env_val(vname) do { \
-        typedef char wk_name_offset[(numberof(wk.name) - (numberof(vname) - 1)) * 2 + 1]; \
-        WCHAR *const buf = wk.name + sizeof(wk_name_offset) / 2; \
-        MEMCPY(buf, vname, WCHAR, numberof(vname) - 1); \
-        _wputenv(buf); \
-    } while (0)
-
-    wk.eq = L'=';
+    WCHAR env[ENV_MAX];
 
     if (!GetEnvironmentVariableW(L"HOME", env, numberof(env))) {
-        f = FALSE;
-        if (GetEnvironmentVariableW(L"USERPROFILE", env, numberof(env))) {
-            f = TRUE;
-        }
-        else {
-            if (GetEnvironmentVariableW(L"HOMEDRIVE", env, numberof(env)))
-                len = lstrlenW(env);
-            else
-                len = 0;
-
-            if (GetEnvironmentVariableW(L"HOMEPATH", env + len, numberof(env) - len) || len) {
-                f = TRUE;
-            }
-            else if (get_special_folder(CSIDL_PROFILE, env, numberof(env))) {
-                f = TRUE;
-            }
-            else if (get_special_folder(CSIDL_PERSONAL, env, numberof(env))) {
-                f = TRUE;
-            }
-        }
-        if (f) {
-            regulate_path(env);
-            set_env_val(L"HOME");
+        WCHAR *whome = rb_w32_home_dir();
+        if (whome) {
+            _wputenv_s(L"HOME", whome);
+            free(whome);
         }
     }
 
     if (!GetEnvironmentVariableW(L"USER", env, numberof(env))) {
+        DWORD len;
         if (!GetEnvironmentVariableW(L"USERNAME", env, numberof(env)) &&
             !GetUserNameW(env, (len = numberof(env), &len))) {
             NTLoginName = "<Unknown>";
         }
         else {
-            set_env_val(L"USER");
+            _wputenv_s(L"USER", env);
             NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
         }
     }
@@ -648,15 +619,12 @@ init_env(void)
         NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
     }
 
-    if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
+    if (!GetEnvironmentVariableW(L"TMPDIR", env, numberof(env)) &&
         !GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
         !GetEnvironmentVariableW(L"TEMP", env, numberof(env)) &&
         rb_w32_system_tmpdir(env, numberof(env))) {
-        set_env_val(TMPDIR);
+        _wputenv_s(L"TMPDIR", env);
     }
-
-#undef env
-#undef set_env_val
 }
 
 static void init_stdhandle(void);
