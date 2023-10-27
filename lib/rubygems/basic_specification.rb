@@ -131,9 +131,9 @@ class Gem::BasicSpecification
 
   def full_name
     if platform == Gem::Platform::RUBY || platform.nil?
-      +"#{name}-#{version}"
+      "#{name}-#{version}"
     else
-      +"#{name}-#{version}-#{platform}"
+      "#{name}-#{version}-#{platform}"
     end
   end
 
