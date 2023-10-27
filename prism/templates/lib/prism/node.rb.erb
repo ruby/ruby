@@ -32,7 +32,10 @@ module Prism
   end
   <%- nodes.each do |node| -%>
 
-  <%= "#{node.comment.split("\n").map { |line| line.empty? ? "#" : "# #{line}" }.join("\n  ")}\n  " if node.comment %>class <%= node.name -%> < Node
+  <%- node.comment.each_line do |line| -%>
+  #<%= line.prepend(" ").rstrip %>
+  <%- end -%>
+  class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>
     # attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
