@@ -2,13 +2,10 @@
 BEGIN {
   require 'rubygems'
   date = nil
-  if ENV.key?('GITHUB_OUTPUT')
-    output = File.open(ENV['GITHUB_OUTPUT'], 'w')
-  else
-    output = STDERR
-  end
 }
 END {
+  # STDOUT is not usable in inplace edit mode
+  output = $-i ? STDOUT : STDERR
   output.print date.strftime("latest_date=%F") if date
 }
 unless /^[^#]/ !~ (gem = $F[0])
