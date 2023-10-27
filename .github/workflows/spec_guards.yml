@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - uses: ruby/setup-ruby@cd48c8e22733480b66887b42bfeb6c0b88ea1a56 # v1.158.0
+      - uses: ruby/setup-ruby@54a18e26dbbb1eabc604f317ade9a5788dddef81 # v1.159.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
