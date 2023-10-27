@@ -461,64 +461,60 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
     *variation_created = false;
 
-    if (GET_SHAPE_TREE()->next_shape_id <= MAX_SHAPE_ID) {
-        RB_VM_LOCK_ENTER();
-        {
-            // If the current shape has children
-            if (shape->edges) {
-                // Check if it only has one child
-                if (SINGLE_CHILD_P(shape->edges)) {
-                    rb_shape_t * child = SINGLE_CHILD(shape->edges);
-                    // If the one child has a matching edge name, then great,
-                    // we found what we want.
-                    if (child->edge_name == id) {
-                        res = child;
-                    }
-                    else {
-                        // Otherwise we're going to have to create a new shape
-                        // and insert it as a child node, so create an id
-                        // table and insert the existing child
-                        shape->edges = rb_id_table_create(2);
-                        rb_id_table_insert(shape->edges, child->edge_name, (VALUE)child);
-                    }
-                }
-                else {
-                    // If it has more than one child, do a hash lookup to find it.
-                    VALUE lookup_result;
-                    if (rb_id_table_lookup(shape->edges, id, &lookup_result)) {
-                        res = (rb_shape_t *)lookup_result;
-                    }
-                }
-
-                // If the shape we were looking for above was found,
-                // then `res` will be set to the child.  If it isn't set, then
-                // we know we need a new child shape, and that we must insert
-                // it in to the table.
-                if (!res) {
-                    if (new_variations_allowed) {
-                        *variation_created = true;
-                        rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
-                        rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
-                        res = new_shape;
-                    }
-                    else {
-                        res = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
-                    }
+    RB_VM_LOCK_ENTER();
+    {
+        // If the current shape has children
+        if (shape->edges) {
+            // Check if it only has one child
+            if (SINGLE_CHILD_P(shape->edges)) {
+                rb_shape_t * child = SINGLE_CHILD(shape->edges);
+                // If the one child has a matching edge name, then great,
+                // we found what we want.
+                if (child->edge_name == id) {
+                    res = child;
                 }
             }
             else {
-                // If the shape didn't have any outgoing edges, then create
-                // the new outgoing edge and tag the pointer.
+                // If it has more than one child, do a hash lookup to find it.
+                VALUE lookup_result;
+                if (rb_id_table_lookup(shape->edges, id, &lookup_result)) {
+                    res = (rb_shape_t *)lookup_result;
+                }
+            }
+        }
+
+        // If we didn't find the shape we're looking for we create it.
+        if (!res) {
+            // If we're not allowed to create a new variation, of if we're out of shapes
+            // we return TOO_COMPLEX_SHAPE.
+            if (!new_variations_allowed || GET_SHAPE_TREE()->next_shape_id > MAX_SHAPE_ID) {
+                res = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
+            }
+            else {
                 rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
-                shape->edges = TAG_SINGLE_CHILD(new_shape);
+
+                if (!shape->edges) {
+                    // If the shape had no edge yet, we can directly set the new child
+                    shape->edges = TAG_SINGLE_CHILD(new_shape);
+                }
+                else {
+                    // If the edge was single child we need to allocate a table.
+                    if (SINGLE_CHILD_P(shape->edges)) {
+                        rb_shape_t * old_child = SINGLE_CHILD(shape->edges);
+                        shape->edges = rb_id_table_create(2);
+                        rb_id_table_insert(shape->edges, old_child->edge_name, (VALUE)old_child);
+                    }
+
+                    rb_id_table_insert(shape->edges, new_shape->edge_name, (VALUE)new_shape);
+                    *variation_created = true;
+                }
+
                 res = new_shape;
             }
         }
-        RB_VM_LOCK_LEAVE();
     }
-    else {
-        res = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
-    }
+    RB_VM_LOCK_LEAVE();
+
     return res;
 }
 

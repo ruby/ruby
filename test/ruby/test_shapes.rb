@@ -207,6 +207,25 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_run_out_of_shape
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        def initialize
+          @a = 1
+        end
+      end
+      # Try to run out of shapes
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+        A.new
+      end
+    end;
+  end
+
   def test_use_all_shapes_module
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
