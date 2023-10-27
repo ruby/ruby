@@ -39,7 +39,7 @@ static inline void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_newline_list_line_column(&parser->newline_list, location->start);
     pm_line_column_t end = pm_newline_list_line_column(&parser->newline_list, location->end);
-    pm_buffer_append_format(output_buffer, "(%d,%d)-(%d,%d)", start.line + 1, start.column, end.line + 1, end.column);
+    pm_buffer_append_format(output_buffer, "(%lu,%lu)-(%lu,%lu)", (unsigned long) (start.line + 1), (unsigned long) start.column, (unsigned long) (end.line + 1), (unsigned long) end.column);
 }
 
 static inline void
@@ -95,7 +95,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 prettyprint_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>));
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
             <%- when Prism::NodeListField -%>
-                pm_buffer_append_format(output_buffer, " (length: %d)\n", cast-><%= field.name %>.size);
+                pm_buffer_append_format(output_buffer, " (length: %lu)\n", (unsigned long) (cast-><%= field.name %>.size));
 
                 size_t last_index = cast-><%= field.name %>.size;
                 for (uint32_t index = 0; index < last_index; index++) {
