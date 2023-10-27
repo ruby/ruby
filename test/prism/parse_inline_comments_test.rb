@@ -2,8 +2,6 @@
 
 require_relative "test_helper"
 
-return if Prism::BACKEND == :FFI
-
 module Prism
   class ParseInlineCommentsTest < TestCase
     def test_parse_inline_comments

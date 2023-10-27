@@ -15689,14 +15689,18 @@ pm_parse(pm_parser_t *parser) {
     return parse_program(parser);
 }
 
-PRISM_EXPORTED_FUNCTION void
-pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+static inline void
+pm_serialize_header(pm_buffer_t *buffer) {
     pm_buffer_append_string(buffer, "PRISM", 5);
     pm_buffer_append_byte(buffer, PRISM_VERSION_MAJOR);
     pm_buffer_append_byte(buffer, PRISM_VERSION_MINOR);
     pm_buffer_append_byte(buffer, PRISM_VERSION_PATCH);
     pm_buffer_append_byte(buffer, PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0);
+}
 
+PRISM_EXPORTED_FUNCTION void
+pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
+    pm_serialize_header(buffer);
     pm_serialize_content(parser, node, buffer);
     pm_buffer_append_string(buffer, "\0", 1);
 }
@@ -15710,7 +15714,27 @@ pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, cons
     if (metadata) pm_parser_metadata(&parser, metadata);
 
     pm_node_t *node = pm_parse(&parser);
-    pm_serialize(&parser, node, buffer);
+
+    pm_serialize_header(buffer);
+    pm_serialize_content(&parser, node, buffer);
+    pm_buffer_append_byte(buffer, '\0');
+
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+}
+
+// Parse and serialize the inline comments in the given source to the given
+// buffer.
+PRISM_EXPORTED_FUNCTION void
+pm_parse_serialize_inline_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, source, size, NULL);
+    if (metadata) pm_parser_metadata(&parser, metadata);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_serialize_header(buffer);
+    pm_serialize_encoding(&parser.encoding, buffer);
+    pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);

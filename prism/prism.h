@@ -30,6 +30,10 @@
 
 void pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
 
+void pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer);
+
+void pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer);
+
 void pm_parser_metadata(pm_parser_t *parser, const char *metadata);
 
 // The prism version and the serialization format.
@@ -60,6 +64,10 @@ PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, 
 
 // Parse the given source to the AST and serialize the AST to the given buffer.
 PRISM_EXPORTED_FUNCTION void pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
+
+// Parse and serialize the inline comments in the given source to the given
+// buffer.
+PRISM_EXPORTED_FUNCTION void pm_parse_serialize_inline_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
 
 // Lex the given source and serialize to the given buffer.
 PRISM_EXPORTED_FUNCTION void pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer);

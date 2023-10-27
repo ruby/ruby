@@ -136,7 +136,7 @@ pm_serialize_comment(pm_parser_t *parser, pm_comment_t *comment, pm_buffer_t *bu
     pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(comment->end - comment->start));
 }
 
-static void
+void
 pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
     pm_buffer_append_varint(buffer, pm_sizet_to_u32(pm_list_size(list)));
 
@@ -189,7 +189,7 @@ pm_serialize_diagnostic_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *
     }
 }
 
-static void
+void
 pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
     size_t encoding_length = strlen(encoding->name);
     pm_buffer_append_varint(buffer, pm_sizet_to_u32(encoding_length));
