@@ -30,7 +30,9 @@ Gem::Specification.new do |s|
   }
 
   s.required_ruby_version     = ">= 3.0.0"
-  s.required_rubygems_version = ">= 3.1.2"
+
+  # It should match the RubyGems version shipped with `required_ruby_version` above
+  s.required_rubygems_version = ">= 3.2.3"
 
   s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
