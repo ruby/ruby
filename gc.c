@@ -8281,7 +8281,7 @@ gc_update_weak_references(rb_objspace_t *objspace)
     size_t retained_weak_references_count = 0;
     VALUE **ptr_ptr;
     rb_darray_foreach(objspace->weak_references, i, ptr_ptr) {
-        if (!ptr_ptr) continue;
+        if (!*ptr_ptr) continue;
 
         VALUE obj = **ptr_ptr;
 
