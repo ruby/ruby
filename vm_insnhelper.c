@@ -4333,6 +4333,19 @@ vm_call_opt_struct_aset(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 NOINLINE(static VALUE vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling,
                                         const struct rb_callinfo *ci, const struct rb_callcache *cc));
 
+#define VM_CALL_METHOD_ATTR(var, func, nohook) \
+    if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
+                        vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef); \
+        var = func; \
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id, \
+                        vm_ci_mid(ci), vm_cc_cme(cc)->owner, (var)); \
+    } \
+    else { \
+        nohook; \
+        var = func; \
+    }
+
 static VALUE
 vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling,
                   const struct rb_callinfo *ci, const struct rb_callcache *cc)
@@ -4347,34 +4360,32 @@ vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb
       case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
         CC_SET_FASTPATH(cc, vm_call_opt_block_call, TRUE);
         return vm_call_opt_block_call(ec, cfp, calling);
-      case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
+      case OPTIMIZED_METHOD_TYPE_STRUCT_AREF: {
         CALLER_SETUP_ARG(cfp, calling, ci, 0);
         rb_check_arity(calling->argc, 0, 0);
-        CC_SET_FASTPATH(cc, vm_call_opt_struct_aref, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE));
-        return vm_call_opt_struct_aref(ec, cfp, calling);
 
-      case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
+        VALUE v;
+        VM_CALL_METHOD_ATTR(v,
+                            vm_call_opt_struct_aref(ec, cfp, calling),
+                            set_vm_cc_ivar(cc); \
+                            CC_SET_FASTPATH(cc, vm_call_opt_struct_aref, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)))
+        return v;
+      }
+      case OPTIMIZED_METHOD_TYPE_STRUCT_ASET: {
         CALLER_SETUP_ARG(cfp, calling, ci, 1);
         rb_check_arity(calling->argc, 1, 1);
-        CC_SET_FASTPATH(cc, vm_call_opt_struct_aset, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE));
-        return vm_call_opt_struct_aset(ec, cfp, calling);
+
+        VALUE v;
+        VM_CALL_METHOD_ATTR(v,
+                            vm_call_opt_struct_aset(ec, cfp, calling),
+                            set_vm_cc_ivar(cc); \
+                            CC_SET_FASTPATH(cc, vm_call_opt_struct_aset, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)))
+        return v;
+      }
       default:
         rb_bug("vm_call_method: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimized.type);
     }
 }
-
-#define VM_CALL_METHOD_ATTR(var, func, nohook) \
-    if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
-        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
-                        vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef); \
-        var = func; \
-        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id, \
-                        vm_ci_mid(ci), vm_cc_cme(cc)->owner, (var)); \
-    } \
-    else { \
-        nohook; \
-        var = func; \
-    }
 
 static VALUE
 vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
