@@ -622,21 +622,24 @@ init_env(void)
 
     if (!GetEnvironmentVariableW(L"HOME", env, numberof(env))) {
         f = FALSE;
-        if (GetEnvironmentVariableW(L"HOMEDRIVE", env, numberof(env)))
-            len = lstrlenW(env);
-        else
-            len = 0;
-        if (GetEnvironmentVariableW(L"HOMEPATH", env + len, numberof(env) - len) || len) {
+        if (GetEnvironmentVariableW(L"USERPROFILE", env, numberof(env))) {
             f = TRUE;
         }
-        else if (GetEnvironmentVariableW(L"USERPROFILE", env, numberof(env))) {
-            f = TRUE;
-        }
-        else if (get_special_folder(CSIDL_PROFILE, env, numberof(env))) {
-            f = TRUE;
-        }
-        else if (get_special_folder(CSIDL_PERSONAL, env, numberof(env))) {
-            f = TRUE;
+        else {
+            if (GetEnvironmentVariableW(L"HOMEDRIVE", env, numberof(env)))
+                len = lstrlenW(env);
+            else
+                len = 0;
+
+            if (GetEnvironmentVariableW(L"HOMEPATH", env + len, numberof(env) - len) || len) {
+                f = TRUE;
+            }
+            else if (get_special_folder(CSIDL_PROFILE, env, numberof(env))) {
+                f = TRUE;
+            }
+            else if (get_special_folder(CSIDL_PERSONAL, env, numberof(env))) {
+                f = TRUE;
+            }
         }
         if (f) {
             regulate_path(env);
