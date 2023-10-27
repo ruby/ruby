@@ -155,6 +155,11 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(data, p7.decrypt(@rsa1024))
   end
 
+  def test_empty_signed_data_ruby_bug_19974
+    data = "-----BEGIN PKCS7-----\nMAsGCSqGSIb3DQEHAg==\n-----END PKCS7-----\n"
+    assert_raise(ArgumentError) { OpenSSL::PKCS7.new(data) }
+  end
+
   def test_graceful_parsing_failure #[ruby-core:43250]
     contents = File.read(__FILE__)
     assert_raise(ArgumentError) { OpenSSL::PKCS7.new(contents) }

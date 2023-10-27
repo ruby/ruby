@@ -346,6 +346,8 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
     if (!p7)
         ossl_raise(rb_eArgError, "Could not parse the PKCS7");
+    if (!p7->d.ptr)
+        ossl_raise(rb_eArgError, "No content in PKCS7");
 
     RTYPEDDATA_DATA(self) = p7;
     PKCS7_free(p7_orig);
