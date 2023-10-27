@@ -67,7 +67,7 @@ module Gem::BundlerVersionFinder
     lockfile = case gemfile
                when "gems.rb" then "gems.locked"
                else "#{gemfile}.lock"
-    end.dup
+    end
 
     return unless File.file?(lockfile)
 
