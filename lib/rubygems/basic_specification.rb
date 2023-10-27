@@ -293,7 +293,7 @@ class Gem::BasicSpecification
       "lib" # default value for require_paths for bundler/inline
     end
 
-    "#{full_gem_path}/#{dirs}".dup
+    "#{full_gem_path}/#{dirs}"
   end
 
   ##

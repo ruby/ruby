@@ -188,7 +188,7 @@ class Gem::ConfigFile
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
-    user_config = load_file config_file_name.dup
+    user_config = load_file config_file_name
 
     environment_config = (ENV["GEMRC"] || "").
       split(File::PATH_SEPARATOR).inject({}) do |result, file|
