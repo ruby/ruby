@@ -332,7 +332,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
         if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
             free(wpath);
-            xfree(whome);
+            free(whome);
             rb_raise(rb_eArgError, "non-absolute home");
         }
 
@@ -411,7 +411,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
                 free(wpath);
                 free(wdir);
-                xfree(whome);
+                free(whome);
                 rb_raise(rb_eArgError, "non-absolute home");
             }
 
@@ -572,7 +572,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     xfree(buffer);
     free(wpath);
     free(wdir);
-    xfree(whome);
+    free(whome);
 
     if (wfullpath != wfullpath_buffer)
         xfree(wfullpath);
