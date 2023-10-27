@@ -1485,5 +1485,15 @@ class TestEnv < Test::Unit::TestCase
     ensure
       ENV["test"] = test
     end
+
+    def test_utf8_empty
+      key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
+      ENV[key] = "x"
+      assert_equal "x", ENV[key]
+      ENV[key] = ""
+      assert_equal "", ENV[key]
+      ENV[key] = nil
+      assert_nil ENV[key]
+    end
   end
 end
