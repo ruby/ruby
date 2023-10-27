@@ -5102,6 +5102,8 @@ ruby_setenv(const char *name, const char *value)
 
     ENV_LOCK();
     {
+        /* Use _wputenv_s() instead of SetEnvironmentVariableW() to make sure
+         * special variables like "TZ" are interpret by libc. */
         failed = _wputenv_s(wname, wvalue);
     }
     ENV_UNLOCK();
@@ -5111,7 +5113,7 @@ ruby_setenv(const char *name, const char *value)
      * variable from the system area. */
     if (!value || !*value) {
         /* putenv() doesn't handle empty value */
-        if (!SetEnvironmentVariable(name, value) &&
+        if (!SetEnvironmentVariableW(wname, value ? wvalue : NULL) &&
             GetLastError() != ERROR_ENVVAR_NOT_FOUND) goto fail;
     }
     if (failed) {
