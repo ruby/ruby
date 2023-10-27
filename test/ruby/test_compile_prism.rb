@@ -93,6 +93,7 @@ module Prism
       assert_prism_eval("defined? self")
       assert_prism_eval("defined? true")
       assert_prism_eval("defined? false")
+      assert_prism_eval("defined? [A, B, C]")
       assert_prism_eval("defined? 'str'")
       assert_prism_eval("defined? a && b")
       assert_prism_eval("defined? a || b")
