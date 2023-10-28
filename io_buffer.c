@@ -1103,8 +1103,11 @@ rb_io_buffer_free(VALUE self)
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length)
 {
+    if (offset > data->size) {
+        rb_raise(rb_eArgError, "Specified offset exceeds buffer size!");
+    }
     if (offset + length > data->size) {
-        rb_raise(rb_eArgError, "Specified offset+length exceeds data size!");
+        rb_raise(rb_eArgError, "Specified offset+length exceeds buffer size!");
     }
 }
 
