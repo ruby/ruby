@@ -116,7 +116,7 @@ matrix:
     # - name: arm32-linux
     # - name: arm64-linux
     - name: ppc64le-linux
-    - name: s390x-linux
+    # - name: s390x-linux
   fast_finish: true
 
 before_script:
