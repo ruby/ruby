@@ -6,8 +6,9 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the  file for
 # details.
 
-# Note we only manage non-amd64 free pipelines.
-# https://docs.travis-ci.com/user/billing-overview/
+# When you see Travis CI issues, or you are interested in understanding how to
+# manage, please check the link below.
+# https://github.com/ruby/ruby/wiki/CI-Servers#travis-ci
 
 # We enable Travis on the specific branches or forked repositories here.
 if: (repo = ruby/ruby AND (branch = master OR branch =~ /^ruby_\d_\d$/)) OR repo != ruby/ruby OR commit_message !~ /\[DOC\]/
@@ -24,13 +25,13 @@ git:
 env:
   global:
     - NPROC="$(nproc)"
-    # JOBS and SETARCH are overridden when necessary; see below.
     - JOBS=-j$((1+${NPROC}))
+    # SETARCH are overridden when necessary. See below.
     - SETARCH=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
-    # -g0 disables backtraces when SEGV.  Do not set that.
+    # -g0 disables backtraces when SEGV. Do not set that.
     - debugflags=-ggdb3
     - RUBY_TESTOPTS="$JOBS -q --tty=no"
 
@@ -52,17 +53,14 @@ env:
         openssl
         zlib1g-dev
       - gcc-11 --version
-
   - &arm64-linux
     name: arm64-linux
     arch: arm64
     <<: *gcc-11
-
   - &ppc64le-linux
     name: ppc64le-linux
     arch: ppc64le
     <<: *gcc-11
-
   - &s390x-linux
     name: s390x-linux
     arch: s390x
@@ -72,7 +70,6 @@ env:
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
       - DFLTCC=0
-
   - &arm32-linux
     name: arm32-linux
     arch: arm64
@@ -105,7 +102,6 @@ env:
 
 matrix:
   include:
-    # Build every commit (Allowed Failures):
     - <<: *arm32-linux
     # Comment out as the 2nd arm64 pipeline is unstable.
     # - <<: *arm64-linux
@@ -115,6 +111,8 @@ matrix:
     # Allow failures for the unstable jobs.
     # - name: arm32-linux
     # - name: arm64-linux
+    # FIXME: TestRDocGeneratorJsonIndex#test_generate fails randomly.
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/612380961#L2900
     - name: ppc64le-linux
     # - name: s390x-linux
   fast_finish: true
@@ -136,9 +134,9 @@ script:
 notifications:
   webhooks:
     urls:
-      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # ruby-lang slack: ruby/simpler-alerts-bot (travis)
+      # ruby-lang slack: ruby/simpler-alerts-bot (travis)
+      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk=
     on_success: never
     on_failure: always
-
   email:
     - jaruga@ruby-lang.org
