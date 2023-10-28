@@ -30,8 +30,6 @@ env:
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
-    # -O1 is faster than -O3 in our tests.
-    - optflags=-O1
     # -g0 disables backtraces when SEGV.  Do not set that.
     - debugflags=-ggdb3
     - RUBY_TESTOPTS="$JOBS -q --tty=no"
@@ -82,6 +80,12 @@ env:
     compiler: arm-linux-gnueabihf-gcc
     env:
       - SETARCH='setarch linux32 --verbose --32bit'
+      # Still keep the -O1 for only arm32, while we want to test with the
+      # default optflags -O3.
+      # Because bootstraptest/test_ractor.rb fails with segfualt with the
+      # default -O3.
+      # https://bugs.ruby-lang.org/issues/19981
+      - optflags=-O1
     before_install:
       - sudo dpkg --add-architecture armhf
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
