@@ -106,7 +106,7 @@ jobs:
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
           message="Update bundled gems list"
-          if [ -z "${gem}" ]; then
+          if [ -z "${gems}" ]; then
             git commit --message="${message} at ${GITHUB_SHA:0:30} [ci skip]"
           else
             git commit --message="${message} as of ${TODAY}"
