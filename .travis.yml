@@ -110,7 +110,7 @@ matrix:
     - <<: *s390x-linux
   allow_failures:
     # Allow failures for the unstable jobs.
-    # - name: arm32-linux
+    - name: arm32-linux
     # - name: arm64-linux
     - name: ppc64le-linux
     - name: s390x-linux
