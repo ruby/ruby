@@ -303,15 +303,20 @@ module IRB
         return nil if result.nil? or pointer.nil? or pointer < 0
 
         name = doc_namespace.call(result[pointer])
+        show_easter_egg = name&.match?(/\ARubyVM/) && !ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
 
         options = {}
         options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
         driver = RDoc::RI::Driver.new(options)
 
         if key.match?(dialog.name)
-          begin
-            driver.display_names([name])
-          rescue RDoc::RI::Driver::NotFoundError
+          if show_easter_egg
+            IRB.__send__(:easter_egg)
+          else
+            begin
+              driver.display_names([name])
+            rescue RDoc::RI::Driver::NotFoundError
+            end
           end
         end
 
@@ -374,8 +379,15 @@ module IRB
         formatter.width = width
         dialog.trap_key = alt_d
         mod_key = RUBY_PLATFORM.match?(/darwin/) ? "Option" : "Alt"
-        message = "Press #{mod_key}+d to read the full document"
-        contents = [message] + doc.accept(formatter).split("\n")
+        if show_easter_egg
+          type = STDOUT.external_encoding == Encoding::UTF_8 ? :unicode : :ascii
+          contents = IRB.send(:easter_egg_logo, type).split("\n")
+          message = "Press #{mod_key}+d to see more"
+          contents[0][0, message.size] = message
+        else
+          message = "Press #{mod_key}+d to read the full document"
+          contents = [message] + doc.accept(formatter).split("\n")
+        end
         contents = contents.take(preferred_dialog_height)
 
         y = cursor_pos_to_render.y
