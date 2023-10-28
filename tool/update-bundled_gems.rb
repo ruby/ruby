@@ -2,10 +2,11 @@
 BEGIN {
   require 'rubygems'
   date = nil
-}
-END {
   # STDOUT is not usable in inplace edit mode
   output = $-i ? STDOUT : STDERR
+}
+output = STDERR if ARGF.file == STDIN
+END {
   output.print date.strftime("latest_date=%F") if date
 }
 unless /^[^#]/ !~ (gem = $F[0])
