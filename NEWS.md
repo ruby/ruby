@@ -140,6 +140,7 @@ The following bundled gem is promoted from default gems.
 The following bundled gems are updated.
 
 * minitest 5.20.0
+* rake 13.1.0
 * test-unit 3.6.1
 * rexml 3.2.6
 * rss 0.3.0
