@@ -117,6 +117,7 @@ The following default gems are updated.
 * bundler 2.5.0.dev
 * csv 3.2.8
 * erb 4.0.3
+* etc 1.4.3.dev.1
 * fiddle 1.1.2
 * fileutils 1.7.1
 * io-console 0.6.1.dev
