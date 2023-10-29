@@ -911,7 +911,7 @@ static rb_node_xstr_t *rb_node_xstr_new(struct parser_params *p, VALUE nd_lit, c
 static rb_node_dxstr_t *rb_node_dxstr_new(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_evstr_t *rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_once_t *rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_args_t *rb_node_args_new(struct parser_params *p, struct rb_args_info *nd_ainfo, const YYLTYPE *loc);
+static rb_node_args_t *rb_node_args_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, long nd_plen, const YYLTYPE *loc);
 static rb_node_opt_arg_t *rb_node_opt_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_kw_arg_t *rb_node_kw_arg_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
@@ -1012,7 +1012,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_DXSTR(s,l,n,loc) (NODE *)rb_node_dxstr_new(p,s,l,n,loc)
 #define NEW_EVSTR(n,loc) (NODE *)rb_node_evstr_new(p,n,loc)
 #define NEW_ONCE(b,loc) (NODE *)rb_node_once_new(p,b,loc)
-#define NEW_ARGS(a,loc) rb_node_args_new(p,a,loc)
+#define NEW_ARGS(loc) rb_node_args_new(p,loc)
 #define NEW_ARGS_AUX(r,b,loc) rb_node_args_aux_new(p,r,b,loc)
 #define NEW_OPT_ARG(v,loc) rb_node_opt_arg_new(p,v,loc)
 #define NEW_KW_ARG(v,loc) rb_node_kw_arg_new(p,v,loc)
@@ -4784,7 +4784,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
                     {
                         p->ctxt.in_argdef = 0;
                     /*%%%*/
-                        if (!args_info_empty_p($1->nd_ainfo))
+                        if (!args_info_empty_p(&$1->nd_ainfo))
                             p->max_numparam = ORDINAL_PARAM;
                     /*% %*/
                         $$ = $1;
@@ -6148,7 +6148,7 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
                         add_forwarding_args(p);
                         $$ = new_args_tail(p, Qnone, $1, arg_FWD_BLOCK, &@1);
                     /*%%%*/
-                        $$->nd_ainfo->forwarding = 1;
+                        $$->nd_ainfo.forwarding = 1;
                     /*% %*/
                     }
                 ;
@@ -11945,10 +11945,10 @@ rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 }
 
 static rb_node_args_t *
-rb_node_args_new(struct parser_params *p, struct rb_args_info *nd_ainfo, const YYLTYPE *loc)
+rb_node_args_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_args_t *n = NODE_NEWNODE(NODE_ARGS, rb_node_args_t, loc);
-    n->nd_ainfo = nd_ainfo;
+    MEMZERO(&n->nd_ainfo, struct rb_args_info, 1);
 
     return n;
 }
@@ -14317,7 +14317,7 @@ args_info_empty_p(struct rb_args_info *args)
 static rb_node_args_t *
 new_args(struct parser_params *p, rb_node_args_aux_t *pre_args, rb_node_opt_arg_t *opt_args, ID rest_arg, rb_node_args_aux_t *post_args, rb_node_args_t *tail, const YYLTYPE *loc)
 {
-    struct rb_args_info *args = tail->nd_ainfo;
+    struct rb_args_info *args = &tail->nd_ainfo;
 
     if (args->forwarding) {
         if (rest_arg) {
@@ -14352,9 +14352,8 @@ new_args(struct parser_params *p, rb_node_args_aux_t *pre_args, rb_node_opt_arg_
 static rb_node_args_t *
 new_args_tail(struct parser_params *p, rb_node_kw_arg_t *kw_args, ID kw_rest_arg, ID block, const YYLTYPE *kw_rest_loc)
 {
-    rb_node_args_t *node = NEW_ARGS(0, &NULL_LOC);
-    struct rb_args_info *args = ZALLOC(struct rb_args_info);
-    node->nd_ainfo = args;
+    rb_node_args_t *node = NEW_ARGS(&NULL_LOC);
+    struct rb_args_info *args = &node->nd_ainfo;
     if (p->error_p) return node;
 
     args->block_arg      = block;
@@ -14416,7 +14415,7 @@ args_with_numbered(struct parser_params *p, rb_node_args_t *args, int max_numpar
             args = new_args_tail(p, 0, 0, 0, 0);
             nd_set_loc(RNODE(args), &loc);
         }
-        args->nd_ainfo->pre_args_num = max_numparam;
+        args->nd_ainfo.pre_args_num = max_numparam;
     }
     return args;
 }

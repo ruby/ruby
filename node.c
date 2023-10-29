@@ -173,8 +173,7 @@ static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_ARGS:
-        xfree(RNODE_ARGS(node)->nd_ainfo);
+      default:
         break;
     }
 }

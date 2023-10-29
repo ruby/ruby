@@ -1995,7 +1995,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        struct rb_args_info *args = RNODE_ARGS(node_args)->nd_ainfo;
+        struct rb_args_info *args = &RNODE_ARGS(node_args)->nd_ainfo;
         ID rest_id = 0;
         int last_comma = 0;
         ID block_id = 0;
@@ -8377,7 +8377,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     };
     rb_node_args_t args_node;
     rb_node_init(RNODE(&args_node), NODE_ARGS);
-    args_node.nd_ainfo = &args;
+    args_node.nd_ainfo = args;
 
     // local table without non-mandatory parameters
     const int skip_local_size = ISEQ_BODY(iseq)->param.size - ISEQ_BODY(iseq)->param.lead_num;

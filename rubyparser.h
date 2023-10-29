@@ -667,10 +667,31 @@ typedef struct RNode_ONCE {
     struct RNode *nd_body;
 } rb_node_once_t;
 
+struct rb_args_info {
+    NODE *pre_init;
+    NODE *post_init;
+
+    int pre_args_num;  /* count of mandatory pre-arguments */
+    int post_args_num; /* count of mandatory post-arguments */
+
+    ID first_post_arg;
+
+    ID rest_arg;
+    ID block_arg;
+
+    struct RNode_KW_ARG *kw_args;
+    NODE *kw_rest_arg;
+
+    struct RNode_OPT_ARG *opt_args;
+    unsigned int no_kwarg: 1;
+    unsigned int ruby2_keywords: 1;
+    unsigned int forwarding: 1;
+};
+
 typedef struct RNode_ARGS {
     NODE node;
 
-    struct rb_args_info *nd_ainfo;
+    struct rb_args_info nd_ainfo;
 } rb_node_args_t;
 
 typedef struct RNode_ARGS_AUX {
@@ -1060,27 +1081,6 @@ typedef struct RNode_RIPPER_VALUES {
     rb_node_set_type(n, t)
 #define nd_init_type(n,t) \
     (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
-
-struct rb_args_info {
-    NODE *pre_init;
-    NODE *post_init;
-
-    int pre_args_num;  /* count of mandatory pre-arguments */
-    int post_args_num; /* count of mandatory post-arguments */
-
-    ID first_post_arg;
-
-    ID rest_arg;
-    ID block_arg;
-
-    struct RNode_KW_ARG *kw_args;
-    NODE *kw_rest_arg;
-
-    struct RNode_OPT_ARG *opt_args;
-    unsigned int no_kwarg: 1;
-    unsigned int ruby2_keywords: 1;
-    unsigned int forwarding: 1;
-};
 
 typedef struct node_buffer_struct node_buffer_t;
 /* T_IMEMO/ast */

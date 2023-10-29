@@ -639,7 +639,7 @@ node_children(rb_ast_t *ast, const NODE *node)
                                     NEW_CHILD(ast, RNODE_POSTARG(node)->nd_2nd));
       case NODE_ARGS:
         {
-            struct rb_args_info *ainfo = RNODE_ARGS(node)->nd_ainfo;
+            struct rb_args_info *ainfo = &RNODE_ARGS(node)->nd_ainfo;
             return rb_ary_new_from_args(10,
                                         INT2NUM(ainfo->pre_args_num),
                                         NEW_CHILD(ast, ainfo->pre_init),
