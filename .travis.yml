@@ -33,7 +33,8 @@ env:
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
     # -g0 disables backtraces when SEGV. Do not set that.
     - debugflags=-ggdb3
-    - RUBY_TESTOPTS="$JOBS -q --tty=no"
+    # --show-skip is to print pending tests.
+    - RUBY_TESTOPTS="$JOBS -q --show-skip"
 
 .org.ruby-lang.ci.matrix-definitions:
   - &gcc-11
