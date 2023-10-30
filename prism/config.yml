@@ -777,10 +777,10 @@ nodes:
     comment: |
       Represents the use of a case statement.
 
-      case true
-      ^^^^^^^^^
-      when false
-      end
+          case true
+          when false
+          end
+          ^^^^^^^^^^
   - name: ClassNode
     fields:
       - name: locals
@@ -818,7 +818,7 @@ nodes:
       Represents the use of the `&&=` operator for assignment to a class variable.
 
           @@target &&= value
-          ^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^^
   - name: ClassVariableOperatorWriteNode
     fields:
       - name: name
@@ -1183,13 +1183,13 @@ nodes:
       Represents a find pattern in pattern matching.
 
           foo in *bar, baz, *qux
-          ^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^
 
           foo in [*bar, baz, *qux]
-          ^^^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^^^
 
           foo in Foo(*bar, baz, *qux)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     fields:
       - name: left
@@ -1240,7 +1240,7 @@ nodes:
 
           def foo(...)
             bar(...)
-            ^^^^^^^^
+                ^^^
           end
   - name: ForwardingParameterNode
     comment: |
@@ -2237,8 +2237,8 @@ nodes:
 
           begin
           rescue Foo, *splat, Bar => ex
-          ^^^^^^
             foo
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           end
 
       `Foo, *splat, Bar` are in the `exceptions` field.
