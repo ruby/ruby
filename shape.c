@@ -695,8 +695,9 @@ rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
     ID edge_name = rb_make_temporary_id(new_capacity);
     bool dont_care;
     rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true);
-    RUBY_ASSERT(rb_shape_id(new_shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
-    new_shape->capacity = (uint32_t)new_capacity;
+    if (rb_shape_id(new_shape) != OBJ_TOO_COMPLEX_SHAPE_ID) {
+        new_shape->capacity = (uint32_t)new_capacity;
+    }
     return new_shape;
 }
 
@@ -819,12 +820,18 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
 rb_shape_t *
 rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 {
+    RUBY_ASSERT(rb_shape_id(initial_shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_id(dest_shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
+
     rb_shape_t * midway_shape;
 
     RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
     if (dest_shape->type != initial_shape->type) {
         midway_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_parent(dest_shape));
+        if (UNLIKELY(rb_shape_id(midway_shape) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
+            return midway_shape;
+        }
     }
     else {
         midway_shape = initial_shape;
@@ -837,7 +844,9 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
             midway_shape = rb_shape_transition_shape_capa(midway_shape);
         }
 
-        midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+        if (LIKELY(rb_shape_id(midway_shape) != OBJ_TOO_COMPLEX_SHAPE_ID)) {
+            midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+        }
         break;
       case SHAPE_ROOT:
       case SHAPE_FROZEN:

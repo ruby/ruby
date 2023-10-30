@@ -226,6 +226,32 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_run_out_of_shape_rb_obj_copy_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        def initialize
+          init # Avoid right sizing
+        end
+
+        def init
+          @a = @b = @c = @d = @e = @f = 1
+        end
+      end
+
+      a = A.new
+
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 1
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      a.dup
+    end;
+  end
+
   def test_use_all_shapes_module
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
