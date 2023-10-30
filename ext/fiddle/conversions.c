@@ -200,7 +200,6 @@ rb_fiddle_int_to_ffi_type(int type)
             return rb_ffi_type_of(char);
         } else if (sizeof(bool) == sizeof(short)) {
             return rb_ffi_type_of(short);
-            return INT2NUM(TYPE_USHORT);
         } else if (sizeof(bool) == sizeof(int)) {
             return rb_ffi_type_of(int);
         } else if (sizeof(bool) == sizeof(long)) {
