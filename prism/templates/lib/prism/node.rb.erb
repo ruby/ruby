@@ -32,8 +32,8 @@ module Prism
   end
   <%- nodes.each do |node| -%>
 
-  <%- node.comment.each_line do |line| -%>
-  #<%= line.prepend(" ").rstrip %>
+  <%- node.each_comment_line do |line| -%>
+  #<%= line %>
   <%- end -%>
   class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>

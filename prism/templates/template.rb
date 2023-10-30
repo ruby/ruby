@@ -255,6 +255,10 @@ module Prism
       @comment = config.fetch("comment")
     end
 
+    def each_comment_line
+      comment.each_line { |line| yield line.prepend(" ").rstrip }
+    end
+
     def semantic_fields
       @semantic_fields ||= @fields.select(&:semantic_field?)
     end
