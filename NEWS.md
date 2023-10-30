@@ -108,7 +108,7 @@ Note: We're only listing outstanding class updates.
 
 The following default gem is added.
 
-* prism 0.15.1
+* prism 0.16.0
 
 The following default gems are updated.
 
