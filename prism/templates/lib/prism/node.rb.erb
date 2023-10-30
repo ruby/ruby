@@ -4,11 +4,11 @@ module Prism
   class Node
     attr_reader :location
 
-    def newline?
+    def newline? # :nodoc:
       @newline ? true : false
     end
 
-    def set_newline_flag(newline_marked)
+    def set_newline_flag(newline_marked) # :nodoc:
       line = location.start_line
       unless newline_marked[line]
         newline_marked[line] = true
@@ -55,12 +55,12 @@ module Prism
     end
     <%- if node.newline == false -%>
 
-    def set_newline_flag(newline_marked)
+    def set_newline_flag(newline_marked) # :nodoc:
       # Never mark <%= node.name %> with a newline flag, mark children instead
     end
     <%- elsif node.newline.is_a?(String) -%>
 
-    def set_newline_flag(newline_marked)
+    def set_newline_flag(newline_marked) # :nodoc:
       <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
       <%- case field -%>
       <%- when Prism::NodeField, Prism::OptionalNodeField -%>
@@ -163,6 +163,7 @@ module Prism
     <%- end -%>
     <%- end -%>
 
+    # def inspect(inspector: NodeInspector) -> String
     def inspect(inspector = NodeInspector.new)
       inspector << inspector.header(self)
       <%- node.fields.each_with_index do |field, index| -%>
