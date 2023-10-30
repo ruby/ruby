@@ -2962,7 +2962,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_constant_id_t constant_id = locals.ids[i];
             ID local;
             if (constant_id & TEMP_CONSTANT_IDENTIFIER) {
-                // local = rb_make_temporary_id(i);
+                local = rb_make_temporary_id(i);
             } else {
                 local = pm_constant_id_lookup(scope_node, constant_id);
             }
