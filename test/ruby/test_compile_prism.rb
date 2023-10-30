@@ -771,6 +771,11 @@ module Prism
       )
     end
 
+    def test_ForwardingSuperNode
+      assert_prism_eval("class Forwarding; def to_s; super; end; end")
+      assert_prism_eval("class Forwarding; def eval(code); super { code }; end; end")
+    end
+
     def test_KeywordHashNode
       assert_prism_eval("[a: [:b, :c]]")
     end
