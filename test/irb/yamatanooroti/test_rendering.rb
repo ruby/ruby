@@ -204,8 +204,10 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
   end
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
-    omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1')
-    write_irbrc <<~'LINES'
+    rdoc_dir = File.join(@tmpdir, 'rdoc')
+    system("bundle exec rdoc -r -o #{rdoc_dir}")
+    write_irbrc <<~LINES
+      IRB.conf[:EXTRA_DOC_DIRS] = ['#{rdoc_dir}']
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
         :PROMPT_S => "%03n> ",
@@ -214,8 +216,8 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       IRB.conf[:PROMPT_MODE] = :MY_PROMPT
       puts 'start IRB'
     LINES
-    start_terminal(4, 19, %W{ruby -I/home/aycabta/ruby/reline/lib -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("Str\C-i")
+    start_terminal(4, 19, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("IR\C-i")
     close
 
     # This is because on macOS we display different shortcut for displaying the full doc
@@ -223,23 +225,25 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     if RUBY_PLATFORM =~ /darwin/
       assert_screen(<<~EOC)
         start IRB
-        001> String
-             StringPress O
-             StructString
+        001> IRB
+             IRBPress Opti
+                IRB
       EOC
     else
       assert_screen(<<~EOC)
         start IRB
-        001> String
-             StringPress A
-             StructString
+        001> IRB
+             IRBPress Alt+
+                IRB
       EOC
     end
   end
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_left
-    omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1')
-    write_irbrc <<~'LINES'
+    rdoc_dir = File.join(@tmpdir, 'rdoc')
+    system("bundle exec rdoc -r -o #{rdoc_dir}")
+    write_irbrc <<~LINES
+      IRB.conf[:EXTRA_DOC_DIRS] = ['#{rdoc_dir}']
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
         :PROMPT_S => "%03n> ",
@@ -249,13 +253,13 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       puts 'start IRB'
     LINES
     start_terminal(4, 12, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("Str\C-i")
+    write("IR\C-i")
     close
     assert_screen(<<~EOC)
       start IRB
-      001> String
-      PressString
-      StrinStruct
+      001> IRB
+      PressIRB
+      IRB
     EOC
   end
 
