@@ -1,4 +1,5 @@
 #include <fiddle.h>
+#include <stdbool.h>
 #include <ruby/thread.h>
 
 int ruby_thread_has_gvl_p(void); /* from internal.h */
