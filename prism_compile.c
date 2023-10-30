@@ -36,6 +36,9 @@
 #define PM_DUP_UNLESS_POPPED \
     if (!popped) PM_DUP;
 
+#define PM_PUTSELF \
+    ADD_INSN(ret, &dummy_line_node, putself);
+
 #define PM_PUTNIL \
     ADD_INSN(ret, &dummy_line_node, putnil);
 
@@ -1436,7 +1439,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         struct rb_callinfo_kwarg *kw_arg = NULL;
 
         if (call_node->receiver == NULL) {
-            ADD_INSN(ret, &dummy_line_node, putself);
+            PM_PUTSELF;
         } else {
             PM_COMPILE_NOT_POPPED(call_node->receiver);
         }
@@ -2245,7 +2248,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
         ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
+        return;
+      }
+      case PM_FORWARDING_SUPER_NODE: {
+        pm_forwarding_super_node_t *forwarding_super_node = (pm_forwarding_super_node_t *) node;
+        const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+        const rb_iseq_t *block = NULL;
+        PM_PUTSELF;
+        int flag = VM_CALL_ZSUPER | VM_CALL_SUPER | VM_CALL_FCALL;
 
+        if (forwarding_super_node->block) {
+            pm_scope_node_t next_scope_node;
+            pm_scope_node_init((pm_node_t *)forwarding_super_node->block, &next_scope_node, scope_node, parser);
+            block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
+        }
+
+        ADD_INSN2(ret, &dummy_line_node, invokesuper, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
+        PM_POP_IF_POPPED;
         return;
       }
       case PM_GLOBAL_VARIABLE_AND_WRITE_NODE: {
@@ -2608,7 +2628,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_INTERPOLATED_X_STRING_NODE: {
         pm_interpolated_x_string_node_t *interp_x_string_node = (pm_interpolated_x_string_node_t *) node;
-        ADD_INSN(ret, &dummy_line_node, putself);
+        PM_PUTSELF;
         pm_interpolated_node_compile(interp_x_string_node->parts, iseq, dummy_line_node, ret, src, false, scope_node, parser);
 
         size_t parts_size = interp_x_string_node->parts.size;
@@ -3280,7 +3300,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_SELF_NODE:
         if (!popped) {
-            ADD_INSN(ret, &dummy_line_node, putself);
+            PM_PUTSELF;
         }
         return;
       case PM_SINGLETON_CLASS_NODE: {
@@ -3447,7 +3467,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_X_STRING_NODE: {
         pm_x_string_node_t *xstring_node = (pm_x_string_node_t *) node;
-        ADD_INSN(ret, &dummy_line_node, putself);
+        PM_PUTSELF;
         ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&xstring_node->unescaped, parser));
         ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
 
