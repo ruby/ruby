@@ -111,9 +111,7 @@ matrix:
     # Allow failures for the unstable jobs.
     # - name: arm32-linux
     # - name: arm64-linux
-    # FIXME: TestRDocGeneratorJsonIndex#test_generate fails randomly.
-    # https://app.travis-ci.com/github/ruby/ruby/jobs/612380961#L2900
-    - name: ppc64le-linux
+    # - name: ppc64le-linux
     # - name: s390x-linux
   fast_finish: true
 
