@@ -1106,6 +1106,11 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             scope->locals = cast->locals;
             break;
         }
+        case PM_STATEMENTS_NODE: {
+            pm_statements_node_t *cast = (pm_statements_node_t *) node;
+            scope->body = (pm_node_t *)cast;
+            break;
+        }
         default:
             assert(false && "unreachable");
             break;
@@ -3033,6 +3038,27 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_POST_EXECUTION_NODE: {
+        const rb_iseq_t *child_iseq;
+        const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init(node, &next_scope_node, scope_node, parser);
+
+        child_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
+
+        int is_index = ISEQ_BODY(iseq)->ise_size++;
+
+        ADD_INSN2(ret, &dummy_line_node, once, child_iseq, INT2FIX(is_index));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)child_iseq);
+
+        PM_POP_IF_POPPED;
+
+        ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+
+        return;
+      }
       case PM_PROGRAM_NODE: {
         rb_bug("Should not ever enter a program node directly");
 
@@ -3198,15 +3224,32 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_LABEL(ret, start);
 
             if (scope_node->body) {
-                if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+                switch (PM_NODE_TYPE(scope_node->ast_node)) {
+                  case PM_POST_EXECUTION_NODE: {
+                    pm_post_execution_node_t *post_execution_node = (pm_post_execution_node_t *)scope_node->ast_node;
+
+                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+                    // We create another ScopeNode from the statements within the PostExecutionNode
+                    pm_scope_node_t next_scope_node;
+                    pm_scope_node_init((pm_node_t *)post_execution_node->statements, &next_scope_node, scope_node, parser);
+
+                    const rb_iseq_t *block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(ISEQ_BODY(iseq)->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
+
+                    ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, id_core_set_postexe, INT2FIX(0), block);
+                    break;
+                  }
+                  case PM_FOR_NODE: {
                     pm_for_node_t *for_node = (pm_for_node_t *)scope_node->ast_node;
 
                     ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
                     pm_compile_node(iseq, for_node->index, ret, src, popped, scope_node);
                     ADD_INSN(ret, &dummy_line_node, nop);
+                  }
+                  default: {
+                    pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
+                  }
                 }
-
-                pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
             }
             else {
                 PM_PUTNIL;
