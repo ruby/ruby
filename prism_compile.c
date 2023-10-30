@@ -48,6 +48,17 @@
 #define PM_SWAP_UNLESS_POPPED \
     if (!popped) PM_SWAP;
 
+/**
+ * We're using the top most bit of a pm_constant_id_t as a tag to represent an
+ * anonymous local. When a child iseq is created and needs access to a value
+ * that has yet to be defined, or is defined by the parent node's iseq. This can
+ * be added to it's local table and then handled accordingly when compiling the
+ * scope node associated with the child iseq.
+ *
+ * See the compilation process for PM_FOR_NODE: as an example, where the
+ * variable referenced inside the StatementsNode is defined as part of the top
+ * level ForLoop node.
+*/
 #define TEMP_CONSTANT_IDENTIFIER ((pm_constant_id_t)(1 << 31))
 
 rb_iseq_t *
@@ -2951,7 +2962,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_constant_id_t constant_id = locals.ids[i];
             ID local;
             if (constant_id & TEMP_CONSTANT_IDENTIFIER) {
-                local = rb_make_temporary_id(i);
+                // local = rb_make_temporary_id(i);
             } else {
                 local = pm_constant_id_lookup(scope_node, constant_id);
             }
