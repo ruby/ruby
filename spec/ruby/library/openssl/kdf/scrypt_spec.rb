@@ -2,6 +2,8 @@ require_relative '../../../spec_helper'
 require 'openssl'
 
 describe "OpenSSL::KDF.scrypt" do
+  break unless defined?(OpenSSL::KDF.scrypt)
+
   before :each do
     @defaults = {
       salt: "\x00".b * 16,
