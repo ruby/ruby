@@ -275,7 +275,7 @@ static VALUE encoding_spec_rb_enc_raise(VALUE self, VALUE encoding, VALUE except
   rb_encoding *e = rb_to_encoding(encoding);
   const char *f = RSTRING_PTR(format);
 
-  rb_enc_raise(e, exception_class, f);
+  rb_enc_raise(e, exception_class, "%s", f);
 }
 
 static VALUE encoding_spec_rb_uv_to_utf8(VALUE self, VALUE buf, VALUE num) {
