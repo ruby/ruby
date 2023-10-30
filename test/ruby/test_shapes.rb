@@ -184,6 +184,32 @@ class TestShapes < Test::Unit::TestCase
     assert_empty obj.instance_variables
   end
 
+  def test_too_complex_geniv
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class TooComplex < Hash
+        attr_reader :very_unique
+      end
+
+      obj = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        obj.instance_variable_set(:"@a#{i}", 1)
+        i += 1
+      end
+
+      (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", 1)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:@very_unique, 3)
+      tc.instance_variable_set(:@very_unique2, 4)
+      assert_equal 3, tc.instance_variable_get(:@very_unique)
+      assert_equal 4, tc.instance_variable_get(:@very_unique2)
+    end;
+  end
+
   def test_use_all_shapes_then_freeze
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
