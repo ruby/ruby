@@ -1483,6 +1483,11 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 
     attr_index_t index;
     // The returned shape will have `id` in its iv_table
+    if (rb_shape_obj_too_complex(obj)) {
+        rb_complex_ivar_set(obj, id, val);
+        return;
+    }
+
     rb_shape_t *shape = rb_shape_get_shape(obj);
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
         rb_complex_ivar_set(obj, id, val);
@@ -1498,6 +1503,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
             rb_evict_ivars_to_hash(obj, shape);
             rb_complex_ivar_set(obj, id, val);
             rb_shape_set_shape(obj, next_shape);
+            FL_SET_RAW(obj, FL_EXIVAR);
             return;
         }
         shape = next_shape;
