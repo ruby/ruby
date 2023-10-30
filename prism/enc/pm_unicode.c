@@ -2285,7 +2285,7 @@ pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
-static bool
+bool
 pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
