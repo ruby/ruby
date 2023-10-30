@@ -1856,7 +1856,7 @@ class TestRegexp < Test::Unit::TestCase
       assert_nil(/a*(?>a*)ab/ =~ "a" * 1000000 + "b")
     end;
   end
-    
+
   def test_match_cache_positive_look_ahead
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
@@ -1874,7 +1874,7 @@ class TestRegexp < Test::Unit::TestCase
        assert_equal(/(?:(?=a*)a)*/ =~ "a" * 1000000, 0)
     end;
   end
-    
+
   def test_match_cache_negative_look_ahead
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
