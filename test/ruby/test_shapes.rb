@@ -226,6 +226,26 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_run_out_of_shape_generic_ivar_set
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class TooComplex < Hash
+      end
+
+      # Try to run out of shapes
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:@a, 1)
+      tc.instance_variable_set(:@b, 2)
+    end;
+  end
+
   def test_run_out_of_shape_rb_obj_copy_ivar
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
