@@ -57,8 +57,34 @@ module Prism
 
     # A directive in the pack template language.
     class Directive
-      attr_reader :version, :variant, :source, :type, :signed, :endian, :size, :length_type, :length
+      # A symbol representing the version of Ruby.
+      attr_reader :version
 
+      # A symbol representing whether or not we are packing or unpacking.
+      attr_reader :variant
+
+      # A byteslice of the source string that this directive represents.
+      attr_reader :source
+
+      # The type of the directive.
+      attr_reader :type
+
+      # The type of signedness of the directive.
+      attr_reader :signed
+
+      # The type of endianness of the directive.
+      attr_reader :endian
+
+      # The size of the directive.
+      attr_reader :size
+
+      # The length type of this directive (used for integers).
+      attr_reader :length_type
+
+      # The length of this directive (used for integers).
+      attr_reader :length
+
+      # Initialize a new directive with the given values.
       def initialize(version, variant, source, type, signed, endian, size, length_type, length)
         @version = version
         @variant = variant
@@ -71,6 +97,7 @@ module Prism
         @length = length
       end
 
+      # The descriptions of the various types of endianness.
       ENDIAN_DESCRIPTIONS = {
         AGNOSTIC_ENDIAN: "agnostic",
         LITTLE_ENDIAN: "little-endian (VAX)",
@@ -79,12 +106,14 @@ module Prism
         ENDIAN_NA: "n/a"
       }
 
+      # The descriptions of the various types of signedness.
       SIGNED_DESCRIPTIONS = {
         UNSIGNED: "unsigned",
         SIGNED: "signed",
         SIGNED_NA: "n/a"
       }
 
+      # The descriptions of the various types of sizes.
       SIZE_DESCRIPTIONS = {
         SIZE_SHORT: "short",
         SIZE_INT: "int-width",
@@ -97,6 +126,7 @@ module Prism
         SIZE_P: "pointer-width"
       }
 
+      # Provide a human-readable description of the directive.
       def describe
         case type
         when SPACE
@@ -161,15 +191,21 @@ module Prism
       end
     end
 
-    # A class used to describe what a pack template does.
+    # The result of parsing a pack template.
     class Format
-      attr_reader :directives, :encoding
+      # A list of the directives in the template.
+      attr_reader :directives
 
+      # The encoding of the template.
+      attr_reader :encoding
+
+      # Create a new Format with the given directives and encoding.
       def initialize(directives, encoding)
         @directives = directives
         @encoding = encoding
       end
 
+      # Provide a human-readable description of the format.
       def describe
         source_width = directives.map { |d| d.source.inspect.length }.max
         directive_lines = directives.map do |directive|
