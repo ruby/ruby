@@ -9,7 +9,7 @@ require "ffi"
 module Prism
   BACKEND = :FFI
 
-  module LibRubyParser
+  module LibRubyParser # :nodoc:
     extend FFI::Library
 
     # Define the library that we will be pulling functions from. Note that this
@@ -95,7 +95,7 @@ module Prism
 
     # This object represents a pm_buffer_t. We only use it as an opaque pointer,
     # so it doesn't need to know the fields of pm_buffer_t.
-    class PrismBuffer
+    class PrismBuffer # :nodoc:
       SIZEOF = LibRubyParser.pm_buffer_sizeof
 
       attr_reader :pointer
@@ -133,7 +133,7 @@ module Prism
 
     # This object represents a pm_string_t. We only use it as an opaque pointer,
     # so it doesn't have to be an FFI::Struct.
-    class PrismString
+    class PrismString # :nodoc:
       SIZEOF = LibRubyParser.pm_string_sizeof
 
       attr_reader :pointer
@@ -168,6 +168,7 @@ module Prism
       end
     end
 
+    # Dump the given source into a serialized format.
     def self.dump_internal(source, source_size, filepath)
       PrismBuffer.with do |buffer|
         metadata = [filepath.bytesize, filepath.b, 0].pack("LA*L") if filepath
