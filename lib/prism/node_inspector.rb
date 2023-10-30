@@ -3,7 +3,7 @@
 module Prism
   # This object is responsible for generating the output for the inspect method
   # implementations of child nodes.
-  class NodeInspector
+  class NodeInspector # :nodoc:
     attr_reader :prefix, :output
 
     def initialize(prefix = "")

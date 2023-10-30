@@ -2,6 +2,8 @@ module Prism
   # This represents a node in the tree. It is the parent class of all of the
   # various node types.
   class Node
+    # A Location instance that represents the location of this node in the
+    # source.
     attr_reader :location
 
     def newline? # :nodoc:

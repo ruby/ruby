@@ -12,11 +12,21 @@ if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset
 end
 
 module Prism
+  # A module responsible for deserializing parse results.
   module Serialize
+    # The major version of prism that we are expecting to find in the serialized
+    # strings.
     MAJOR_VERSION = 0
+
+    # The minor version of prism that we are expecting to find in the serialized
+    # strings.
     MINOR_VERSION = 16
+
+    # The patch version of prism that we are expecting to find in the serialized
+    # strings.
     PATCH_VERSION = 0
 
+    # Deserialize the AST represented by the given string into a parse result.
     def self.load(input, serialized)
       input = input.dup
       source = Source.new(input)
@@ -27,11 +37,13 @@ module Prism
       result
     end
 
+    # Deserialize the tokens represented by the given string into a parse
+    # result.
     def self.load_tokens(source, serialized)
       Loader.new(source, serialized).load_tokens_result
     end
 
-    class Loader
+    class Loader # :nodoc:
       attr_reader :encoding, :input, :serialized, :io
       attr_reader :constant_pool_offset, :constant_pool, :source
 
@@ -272,6 +284,7 @@ module Prism
       end
     end
 
+    # The token types that can be indexed by their enum values.
     TOKEN_TYPES = [
       nil,
       <%- tokens.each do |token| -%>

@@ -3,7 +3,7 @@
 # Here we are reopening the prism module to provide methods on nodes that aren't
 # templated and are meant as convenience methods.
 module Prism
-  module RegularExpressionOptions
+  module RegularExpressionOptions # :nodoc:
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
     def options

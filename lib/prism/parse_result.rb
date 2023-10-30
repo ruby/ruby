@@ -58,6 +58,8 @@ module Prism
 
     private
 
+    # Find all of the newlines in the source code and return their byte offsets
+    # from the start of the string an array.
     def compute_offsets(code)
       offsets = [0]
       code.b.scan("\n") { offsets << $~.end(0) }

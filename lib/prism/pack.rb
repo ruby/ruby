@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Prism
+  # A parser for the pack template language.
   module Pack
     %i[
       SPACE
@@ -54,6 +55,7 @@ module Prism
       const_set(const, const)
     end
 
+    # A directive in the pack template language.
     class Directive
       attr_reader :version, :variant, :source, :type, :signed, :endian, :size, :length_type, :length
 
@@ -70,37 +72,37 @@ module Prism
       end
 
       ENDIAN_DESCRIPTIONS = {
-        AGNOSTIC_ENDIAN: 'agnostic',
-        LITTLE_ENDIAN: 'little-endian (VAX)',
-        BIG_ENDIAN: 'big-endian (network)',
-        NATIVE_ENDIAN: 'native-endian',
-        ENDIAN_NA: 'n/a'
+        AGNOSTIC_ENDIAN: "agnostic",
+        LITTLE_ENDIAN: "little-endian (VAX)",
+        BIG_ENDIAN: "big-endian (network)",
+        NATIVE_ENDIAN: "native-endian",
+        ENDIAN_NA: "n/a"
       }
 
       SIGNED_DESCRIPTIONS = {
-        UNSIGNED: 'unsigned',
-        SIGNED: 'signed',
-        SIGNED_NA: 'n/a'
+        UNSIGNED: "unsigned",
+        SIGNED: "signed",
+        SIGNED_NA: "n/a"
       }
 
       SIZE_DESCRIPTIONS = {
-        SIZE_SHORT: 'short',
-        SIZE_INT: 'int-width',
-        SIZE_LONG: 'long',
-        SIZE_LONG_LONG: 'long long',
-        SIZE_8: '8-bit',
-        SIZE_16: '16-bit',
-        SIZE_32: '32-bit',
-        SIZE_64: '64-bit',
-        SIZE_P: 'pointer-width'
+        SIZE_SHORT: "short",
+        SIZE_INT: "int-width",
+        SIZE_LONG: "long",
+        SIZE_LONG_LONG: "long long",
+        SIZE_8: "8-bit",
+        SIZE_16: "16-bit",
+        SIZE_32: "32-bit",
+        SIZE_64: "64-bit",
+        SIZE_P: "pointer-width"
       }
 
       def describe
         case type
         when SPACE
-          'whitespace'
+          "whitespace"
         when COMMENT
-          'comment'
+          "comment"
         when INTEGER
           if size == SIZE_8
             base = "#{SIGNED_DESCRIPTIONS[signed]} #{SIZE_DESCRIPTIONS[size]} integer"
@@ -115,50 +117,51 @@ module Prism
               base
             end
           when LENGTH_MAX
-            base + ', as many as possible'
+            base + ", as many as possible"
           end
         when UTF8
-          'UTF-8 character'
+          "UTF-8 character"
         when BER
-          'BER-compressed integer'
+          "BER-compressed integer"
         when FLOAT
           "#{SIZE_DESCRIPTIONS[size]} #{ENDIAN_DESCRIPTIONS[endian]} float"
         when STRING_SPACE_PADDED
-          'arbitrary binary string (space padded)'
+          "arbitrary binary string (space padded)"
         when STRING_NULL_PADDED
-          'arbitrary binary string (null padded, count is width)'
+          "arbitrary binary string (null padded, count is width)"
         when STRING_NULL_TERMINATED
-          'arbitrary binary string (null padded, count is width), except that null is added with *'
+          "arbitrary binary string (null padded, count is width), except that null is added with *"
         when STRING_MSB
-          'bit string (MSB first)'
+          "bit string (MSB first)"
         when STRING_LSB
-          'bit string (LSB first)'
+          "bit string (LSB first)"
         when STRING_HEX_HIGH
-          'hex string (high nibble first)'
+          "hex string (high nibble first)"
         when STRING_HEX_LOW
-          'hex string (low nibble first)'
+          "hex string (low nibble first)"
         when STRING_UU
-          'UU-encoded string'
+          "UU-encoded string"
         when STRING_MIME
-          'quoted printable, MIME encoding'
+          "quoted printable, MIME encoding"
         when STRING_BASE64
-          'base64 encoded string'
+          "base64 encoded string"
         when STRING_FIXED
-          'pointer to a structure (fixed-length string)'
+          "pointer to a structure (fixed-length string)"
         when STRING_POINTER
-          'pointer to a null-terminated string'
+          "pointer to a null-terminated string"
         when MOVE
-          'move to absolute position'
+          "move to absolute position"
         when BACK
-          'back up a byte'
+          "back up a byte"
         when NULL
-          'null byte'
+          "null byte"
         else
           raise
         end
       end
     end
 
+    # A class used to describe what a pack template does.
     class Format
       attr_reader :directives, :encoding
 
@@ -178,7 +181,7 @@ module Prism
           "  #{source.ljust(source_width)}  #{directive.describe}"
         end
 
-        (['Directives:'] + directive_lines + ['Encoding:', "  #{encoding}"]).join("\n")
+        (["Directives:"] + directive_lines + ["Encoding:", "  #{encoding}"]).join("\n")
       end
     end
   end
