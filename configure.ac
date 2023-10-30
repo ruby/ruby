@@ -426,7 +426,7 @@ AS_CASE(["$build_os"],
     # default spec.
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
-    CC_WRAPPER=""
+    CC_WRAPPER="" CC_NO_WRAPPER="$CC"
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
 	   grep -e '^ld: warning: ignoring duplicate libraries:' \
@@ -1094,12 +1094,18 @@ main()
 		])
 		POSTLINK=""
 		AC_CHECK_PROGS(codesign, codesign)
-		AC_CHECK_PROGS(dsymutil, dsymutil)
+		dsymutils=
+		AS_CASE("$CC_NO_WRAPPER", [gcc*-1[[3-9]]], [
+		    dsymutils=${CC_NO_WRAPPER@%:@gcc}
+		    dsymutils=dsymutil${dsymutils%-1*}
+		    dsymutils="$dsymutils-19 $dsymutils-18 $dsymutils-17"
+		])
+		AC_CHECK_PROGS(dsymutil, $dsymutils dsymutil)
 		AS_IF([test -n "$codesign"], [
 		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@; }${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "$dsymutil"], [
-		    POSTLINK="$dsymutil \$@${POSTLINK:+; $POSTLINK}"
+		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "${POSTLINK}"], [
 		    LINK_SO="$LINK_SO
