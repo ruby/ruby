@@ -1,7 +1,7 @@
 #include "prism/extension.h"
 
-// NOTE: this file should contain only bindings.
-// All non-trivial logic should be in librubyparser so it can be shared its the various callers.
+// NOTE: this file should contain only bindings. All non-trivial logic should be
+// in librubyparser so it can be shared its the various callers.
 
 VALUE rb_cPrism;
 VALUE rb_cPrismNode;
@@ -19,9 +19,11 @@ VALUE rb_cPrismParseResult;
 /* IO of Ruby code                                                            */
 /******************************************************************************/
 
-// Check if the given VALUE is a string. If it's nil, then return NULL. If it's
-// not a string, then raise a type error. Otherwise return the VALUE as a C
-// string.
+/**
+ * Check if the given VALUE is a string. If it's nil, then return NULL. If it's
+ * not a string, then raise a type error. Otherwise return the VALUE as a C
+ * string.
+ */
 static const char *
 check_string(VALUE value) {
     // If the value is nil, then we don't need to do anything.
@@ -38,7 +40,9 @@ check_string(VALUE value) {
     return RSTRING_PTR(value);
 }
 
-// Load the contents and size of the given string into the given pm_string_t.
+/**
+ * Load the contents and size of the given string into the given pm_string_t.
+ */
 static void
 input_load_string(pm_string_t *input, VALUE string) {
     // Check if the string is a string. If it's not, then raise a type error.
@@ -53,7 +57,9 @@ input_load_string(pm_string_t *input, VALUE string) {
 /* Serializing the AST                                                        */
 /******************************************************************************/
 
-// Dump the AST corresponding to the given input to a string.
+/**
+ * Dump the AST corresponding to the given input to a string.
+ */
 static VALUE
 dump_input(pm_string_t *input, const char *filepath) {
     pm_buffer_t buffer;
@@ -75,7 +81,12 @@ dump_input(pm_string_t *input, const char *filepath) {
     return result;
 }
 
-// Dump the AST corresponding to the given string to a string.
+/**
+ * call-seq:
+ *   Prism::dump(source, filepath = nil) -> dumped
+ *  
+ * Dump the AST corresponding to the given string to a string.
+ */
 static VALUE
 dump(int argc, VALUE *argv, VALUE self) {
     VALUE string;
@@ -101,7 +112,12 @@ dump(int argc, VALUE *argv, VALUE self) {
     return value;
 }
 
-// Dump the AST corresponding to the given file to a string.
+/**
+ * call-seq:
+ *   Prism::dump_file(filepath) -> dumped
+ *  
+ * Dump the AST corresponding to the given file to a string.
+ */
 static VALUE
 dump_file(VALUE self, VALUE filepath) {
     pm_string_t input;
@@ -119,7 +135,9 @@ dump_file(VALUE self, VALUE filepath) {
 /* Extracting values for the parse result                                     */
 /******************************************************************************/
 
-// Extract the comments out of the parser into an array.
+/**
+ * Extract the comments out of the parser into an array.
+ */
 static VALUE
 parser_comments(pm_parser_t *parser, VALUE source) {
     VALUE comments = rb_ary_new();
@@ -154,7 +172,9 @@ parser_comments(pm_parser_t *parser, VALUE source) {
     return comments;
 }
 
-// Extract the magic comments out of the parser into an array.
+/**
+ * Extract the magic comments out of the parser into an array.
+ */
 static VALUE
 parser_magic_comments(pm_parser_t *parser, VALUE source) {
     VALUE magic_comments = rb_ary_new();
@@ -183,7 +203,9 @@ parser_magic_comments(pm_parser_t *parser, VALUE source) {
     return magic_comments;
 }
 
-// Extract the errors out of the parser into an array.
+/**
+ * Extract the errors out of the parser into an array.
+ */
 static VALUE
 parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     VALUE errors = rb_ary_new();
@@ -207,7 +229,9 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     return errors;
 }
 
-// Extract the warnings out of the parser into an array.
+/**
+ * Extract the warnings out of the parser into an array.
+ */
 static VALUE
 parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     VALUE warnings = rb_ary_new();
@@ -235,18 +259,22 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
 /* Lexing Ruby code                                                           */
 /******************************************************************************/
 
-// This struct gets stored in the parser and passed in to the lex callback any
-// time a new token is found. We use it to store the necessary information to
-// initialize a Token instance.
+/**
+ * This struct gets stored in the parser and passed in to the lex callback any
+ * time a new token is found. We use it to store the necessary information to
+ * initialize a Token instance.
+ */
 typedef struct {
     VALUE source;
     VALUE tokens;
     rb_encoding *encoding;
 } parse_lex_data_t;
 
-// This is passed as a callback to the parser. It gets called every time a new
-// token is found. Once found, we initialize a new instance of Token and push it
-// onto the tokens array.
+/**
+ * This is passed as a callback to the parser. It gets called every time a new
+ * token is found. Once found, we initialize a new instance of Token and push it
+ * onto the tokens array.
+ */
 static void
 parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
@@ -258,9 +286,11 @@ parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     rb_ary_push(parse_lex_data->tokens, yields);
 }
 
-// This is called whenever the encoding changes based on the magic comment at
-// the top of the file. We use it to update the encoding that we are using to
-// create tokens.
+/**
+ * This is called whenever the encoding changes based on the magic comment at
+ * the top of the file. We use it to update the encoding that we are using to
+ * create tokens.
+ */
 static void
 parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
@@ -281,8 +311,10 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     }
 }
 
-// Parse the given input and return a ParseResult containing just the tokens or
-// the nodes and tokens.
+/**
+ * Parse the given input and return a ParseResult containing just the tokens or
+ * the nodes and tokens.
+ */
 static VALUE
 parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
     pm_parser_t parser;
@@ -338,7 +370,12 @@ parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
     return rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
 }
 
-// Return an array of tokens corresponding to the given string.
+/**
+ * call-seq:
+ *   Prism::lex(source, filepath = nil) -> Array
+ *  
+ * Return an array of Token instances corresponding to the given string.
+ */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
     VALUE string;
@@ -351,7 +388,12 @@ lex(int argc, VALUE *argv, VALUE self) {
     return parse_lex_input(&input, check_string(filepath), false);
 }
 
-// Return an array of tokens corresponding to the given file.
+/**
+ * call-seq:
+ *   Prism::lex_file(filepath) -> Array
+ *  
+ * Return an array of Token instances corresponding to the given file.
+ */
 static VALUE
 lex_file(VALUE self, VALUE filepath) {
     pm_string_t input;
@@ -369,7 +411,9 @@ lex_file(VALUE self, VALUE filepath) {
 /* Parsing Ruby code                                                          */
 /******************************************************************************/
 
-// Parse the given input and return a ParseResult instance.
+/**
+ * Parse the given input and return a ParseResult instance.
+ */
 static VALUE
 parse_input(pm_string_t *input, const char *filepath) {
     pm_parser_t parser;
@@ -396,25 +440,12 @@ parse_input(pm_string_t *input, const char *filepath) {
     return result;
 }
 
-// Parse the given input and return an array of Comment objects.
-static VALUE
-parse_input_comments(pm_string_t *input, const char *filepath) {
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
-
-    pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
-
-    VALUE source = pm_source_new(&parser, encoding);
-    VALUE comments = parser_comments(&parser, source);
-
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
-
-    return comments;
-}
-
-// Parse the given string and return a ParseResult instance.
+/**
+ * call-seq:
+ *   Prism::parse(source, filepath = nil) -> ParseResult
+ *
+ * Parse the given string and return a ParseResult instance.
+ */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
     VALUE string;
@@ -440,7 +471,12 @@ parse(int argc, VALUE *argv, VALUE self) {
     return value;
 }
 
-// Parse the given file and return a ParseResult instance.
+/**
+ * call-seq:
+ *   Prism::parse_file(filepath) -> ParseResult
+ *
+ * Parse the given file and return a ParseResult instance.
+ */
 static VALUE
 parse_file(VALUE self, VALUE filepath) {
     pm_string_t input;
@@ -454,7 +490,32 @@ parse_file(VALUE self, VALUE filepath) {
     return value;
 }
 
-// Parse the given string and return an array of Comment objects.
+/**
+ * Parse the given input and return an array of Comment objects.
+ */
+static VALUE
+parse_input_comments(pm_string_t *input, const char *filepath) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+
+    pm_node_t *node = pm_parse(&parser);
+    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+
+    VALUE source = pm_source_new(&parser, encoding);
+    VALUE comments = parser_comments(&parser, source);
+
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+
+    return comments;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_comments(source, filepath = nil) -> Array
+ *
+ * Parse the given string and return an array of Comment objects.
+ */
 static VALUE
 parse_comments(int argc, VALUE *argv, VALUE self) {
     VALUE string;
@@ -467,7 +528,12 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
     return parse_input_comments(&input, check_string(filepath));
 }
 
-// Parse the given file and return an array of Comment objects.
+/**
+ * call-seq:
+ *   Prism::parse_file_comments(filepath) -> Array
+ *
+ * Parse the given file and return an array of Comment objects.
+ */
 static VALUE
 parse_file_comments(VALUE self, VALUE filepath) {
     pm_string_t input;
@@ -481,7 +547,18 @@ parse_file_comments(VALUE self, VALUE filepath) {
     return value;
 }
 
-// Parse the given string and return a ParseResult instance.
+/**
+ * call-seq:
+ *   Prism::parse_lex(source, filepath = nil) -> ParseResult
+ *
+ * Parse the given string and return a ParseResult instance that contains a
+ * 2-element array, where the first element is the AST and the second element is
+ * an array of Token instances.
+ *
+ * This API is only meant to be used in the case where you need both the AST and
+ * the tokens. If you only need one or the other, use either Prism::parse or
+ * Prism::lex.
+ */
 static VALUE
 parse_lex(int argc, VALUE *argv, VALUE self) {
     VALUE string;
@@ -497,7 +574,18 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
     return value;
 }
 
-// Parse and lex the given file and return a ParseResult instance.
+/**
+ * call-seq:
+ *   Prism::parse_lex_file(filepath) -> ParseResult
+ *
+ * Parse the given file and return a ParseResult instance that contains a
+ * 2-element array, where the first element is the AST and the second element is
+ * an array of Token instances.
+ *
+ * This API is only meant to be used in the case where you need both the AST and
+ * the tokens. If you only need one or the other, use either Prism::parse_file
+ * or Prism::lex_file.
+ */
 static VALUE
 parse_lex_file(VALUE self, VALUE filepath) {
     pm_string_t input;
@@ -515,9 +603,14 @@ parse_lex_file(VALUE self, VALUE filepath) {
 /* Utility functions exposed to make testing easier                           */
 /******************************************************************************/
 
-// Returns an array of strings corresponding to the named capture groups in the
-// given source string. If prism was unable to parse the regular expression, this
-// function returns nil.
+/**
+ * call-seq:
+ *   Debug::named_captures(source) -> Array
+ *
+ * Returns an array of strings corresponding to the named capture groups in the
+ * given source string. If prism was unable to parse the regular expression,
+ * this function returns nil.
+ */
 static VALUE
 named_captures(VALUE self, VALUE source) {
     pm_string_list_t string_list;
@@ -538,7 +631,12 @@ named_captures(VALUE self, VALUE source) {
     return names;
 }
 
-// Return a hash of information about the given source string's memory usage.
+/**
+ * call-seq:
+ *   Debug::memsize(source) -> { length: xx, memsize: xx, node_count: xx }
+ *
+ * Return a hash of information about the given source string's memory usage.
+ */
 static VALUE
 memsize(VALUE self, VALUE string) {
     pm_parser_t parser;
@@ -559,8 +657,13 @@ memsize(VALUE self, VALUE string) {
     return result;
 }
 
-// Parse the file, but do nothing with the result. This is used to profile the
-// parser for memory and speed.
+/**
+ * call-seq:
+ *   Debug::profile_file(filepath) -> nil
+ *
+ * Parse the file, but do nothing with the result. This is used to profile the
+ * parser for memory and speed.
+ */
 static VALUE
 profile_file(VALUE self, VALUE filepath) {
     pm_string_t input;
@@ -580,8 +683,13 @@ profile_file(VALUE self, VALUE filepath) {
     return Qnil;
 }
 
-// Parse the file and serialize the result. This is mostly used to test this
-// path since it is used by client libraries.
+/**
+ * call-seq:
+ *   Debug::parse_serialize_file_metadata(filepath, metadata) -> dumped
+ *
+ * Parse the file and serialize the result. This is mostly used to test this
+ * path since it is used by client libraries.
+ */
 static VALUE
 parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
     pm_string_t input;
@@ -599,8 +707,13 @@ parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
     return result;
 }
 
-// Inspect the AST that represents the given source using the prism pretty print
-// as opposed to the Ruby implementation.
+/**
+ * call-seq:
+ *   Debug::inspect_node(source) -> inspected
+ *
+ * Inspect the AST that represents the given source using the prism pretty print
+ * as opposed to the Ruby implementation.
+ */
 static VALUE
 inspect_node(VALUE self, VALUE source) {
     pm_string_t input;
@@ -628,6 +741,9 @@ inspect_node(VALUE self, VALUE source) {
 /* Initialization of the extension                                            */
 /******************************************************************************/
 
+/**
+ * The init function that Ruby calls when loading this extension.
+ */
 RUBY_FUNC_EXPORTED void
 Init_prism(void) {
     // Make sure that the prism library version matches the expected version.
@@ -654,10 +770,17 @@ Init_prism(void) {
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
     rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cObject);
 
-    // Define the version string here so that we can use the constants defined
-    // in prism.h.
+    /**
+     * The version of the prism library.
+     */
     rb_define_const(rb_cPrism, "VERSION", rb_str_new2(EXPECTED_PRISM_VERSION));
-    rb_define_const(rb_cPrism, "BACKEND", ID2SYM(rb_intern("CExtension")));
+
+    /**
+     * The backend of the parser that prism is using to parse Ruby code. This
+     * can be either :CEXT or :FFI. On runtimes that support C extensions, we
+     * default to :CEXT. Otherwise we use :FFI.
+     */
+    rb_define_const(rb_cPrism, "BACKEND", ID2SYM(rb_intern("CEXT")));
 
     // First, the functions that have to do with lexing and parsing.
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
