@@ -1484,6 +1484,11 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     attr_index_t index;
     // The returned shape will have `id` in its iv_table
     rb_shape_t *shape = rb_shape_get_shape(obj);
+    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        rb_complex_ivar_set(obj, id, val);
+        return;
+    }
+
     bool found = rb_shape_get_iv_index(shape, id, &index);
     rb_shape_t *next_shape = shape;
     if (!found) {
