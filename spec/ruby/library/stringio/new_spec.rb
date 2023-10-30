@@ -2,7 +2,9 @@ require_relative '../../spec_helper'
 require 'stringio'
 
 describe "StringIO.new" do
-  it "warns when called with a block" do
-    -> { eval("StringIO.new {}") }.should complain(/StringIO::new\(\) does not take block; use StringIO::open\(\) instead/)
+  it "does not use the given block and warns to use StringIO::open" do
+    -> {
+      StringIO.new { raise }
+    }.should complain(/warning: StringIO::new\(\) does not take block; use StringIO::open\(\) instead/)
   end
 end

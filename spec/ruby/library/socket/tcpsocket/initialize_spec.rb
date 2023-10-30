@@ -4,6 +4,27 @@ require_relative 'shared/new'
 
 describe 'TCPSocket#initialize' do
   it_behaves_like :tcpsocket_new, :new
+
+  describe "with a running server" do
+    before :each do
+      @server = SocketSpecs::SpecTCPServer.new
+      @hostname = @server.hostname
+    end
+
+    after :each do
+      if @socket
+        @socket.write "QUIT"
+        @socket.close
+      end
+      @server.shutdown
+    end
+
+    it "does not use the given block and warns to use TCPSocket::open" do
+      -> {
+        @socket = TCPSocket.new(@hostname, @server.port, nil) { raise }
+      }.should complain(/warning: TCPSocket::new\(\) does not take block; use TCPSocket::open\(\) instead/)
+    end
+  end
 end
 
 describe 'TCPSocket#initialize' do

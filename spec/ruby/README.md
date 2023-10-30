@@ -128,6 +128,12 @@ MSpec can automatically add new top-level constants in this file with:
 
     $ CHECK_LEAKS=save mspec ../mspec/bin/mspec file
 
+### Running Specs on S390x CPU Architecture
+
+Run the specs with `DFLTCC=0` if you see failing specs related to the zlib library on s390x CPU architecture. The failures can happen with the zlib library applying the patch madler/zlib#410 to enable the deflate algorithm producing a different compressed byte stream.
+
+    $ DFLTCC=0 ../mspec/bin/mspec
+
 ### Contributing and Writing Specs
 
 See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md) for documentation about contributing and writing specs (guards, matchers, etc).

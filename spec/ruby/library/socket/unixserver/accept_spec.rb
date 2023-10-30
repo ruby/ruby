@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-platform_is_not :windows do
+with_feature :unix_socket do
   describe "UNIXServer#accept" do
     before :each do
       @path = SocketSpecs.socket_path
