@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.15.1"
+  spec.version = "0.16.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
     "docs/javascript.md",
     "docs/mapping.md",
     "docs/prism.png",
+    "docs/releasing.md",
     "docs/ripper.md",
     "docs/ruby_api.md",
     "docs/serialization.md",
