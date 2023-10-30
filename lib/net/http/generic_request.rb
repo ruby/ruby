@@ -102,6 +102,31 @@ class Net::HTTPGenericRequest
     "\#<#{self.class} #{@method}>"
   end
 
+  # Returns a string representation of the request with the details for pp:
+  #
+  #   require 'pp'
+  #   post = Net::HTTP::Post.new(uri)
+  #   post.inspect # => "#<Net::HTTP::Post POST>"
+  #   post.pretty_inspect
+  #   # => #<Net::HTTP::Post
+  #         POST
+  #         path="/"
+  #         headers={"accept-encoding" => ["gzip;q=1.0,deflate;q=0.6,identity;q=0.3"],
+  #          "accept" => ["*/*"],
+  #          "user-agent" => ["Ruby"],
+  #          "host" => ["www.ruby-lang.org"]}>
+  #
+  def pretty_print(q)
+    q.object_group(self) {
+      q.breakable
+      q.text @method
+      q.breakable
+      q.text "path="; q.pp @path
+      q.breakable
+      q.text "headers="; q.pp to_hash
+    }
+  end
+
   ##
   # Don't automatically decode response content-encoding if the user indicates
   # they want to handle it.
