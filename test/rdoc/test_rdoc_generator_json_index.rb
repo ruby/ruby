@@ -104,6 +104,17 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     orig_file = Pathname(File.join srcdir, 'generator/template/json_index/js/navigation.js')
     generated_file = Pathname(File.join @tmpdir, 'js/navigation.js')
 
+    # This fails randomly on Travis ppc64le.
+    # https://github.com/ruby/rdoc/issues/1048
+    if orig_file.mtime.inspect != generated_file.mtime.inspect &&
+      ENV['TRAVIS'] && ENV['TRAVIS_CPU_ARCH'] == 'ppc64le'
+      pend <<~EOC
+        Unstable test in Travis ppc64le
+        orig_file.mtime.inspect: #{orig_file.mtime.inspect}
+        generated_file.mtime.inspect: #{generated_file.mtime.inspect}
+      EOC
+    end
+
     # This is dirty hack on JRuby
     assert_equal orig_file.mtime.inspect, generated_file.mtime.inspect,
       '.js files should be the same timestamp of original'
