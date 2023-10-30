@@ -326,9 +326,18 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
+        if (UNLIKELY(rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
+            st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
+
+            rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
+            rb_shape_set_too_complex(dest);
+            ROBJECT(dest)->as.heap.ivptr = (VALUE *)table;
+
+            return;
+        }
     }
 
-    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity);
+    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity || rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID);
     if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
         rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
         dest_buf = ROBJECT_IVPTR(dest);

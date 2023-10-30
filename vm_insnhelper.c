@@ -1382,18 +1382,20 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
         {
             rb_ivar_set(obj, id, val);
             shape_id_t next_shape_id = rb_shape_get_shape_id(obj);
-            rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
-            attr_index_t index;
+            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+                rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
+                attr_index_t index;
 
-            if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
-                if (index >= MAX_IVARS) {
-                    rb_raise(rb_eArgError, "too many instance variables");
+                if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
+                    if (index >= MAX_IVARS) {
+                        rb_raise(rb_eArgError, "too many instance variables");
+                    }
+
+                    populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
                 }
-
-                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-            }
-            else {
-                rb_bug("didn't find the id");
+                else {
+                    rb_bug("didn't find the id");
+                }
             }
 
             return val;
