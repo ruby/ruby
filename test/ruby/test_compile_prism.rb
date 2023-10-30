@@ -640,6 +640,12 @@ module Prism
       assert_equal ruby_eval, prism_eval
     end
 
+    def test_PostExecutionNode
+      assert_prism_eval("END { 1 }")
+      assert_prism_eval("END { @b }; @b = 1")
+      assert_prism_eval("END { @b; 0 }; @b = 1")
+    end
+
     def test_ProgramNode
       assert_prism_eval("")
       assert_prism_eval("1")
