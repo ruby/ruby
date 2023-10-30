@@ -1424,7 +1424,8 @@ rb_complex_ivar_set(VALUE obj, ID id, VALUE val)
         break;
       default:
         if (!rb_gen_ivtbl_get(obj, 0, (struct gen_ivtbl **)&table)) {
-            rb_bug("Object should have a gen_iv entry");
+            table = st_init_numtable();
+            st_insert(generic_ivtbl(obj, id, false), (st_data_t)obj, (st_data_t)table);
         }
     }
 
@@ -1500,7 +1501,9 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
         index = shape->next_iv_index;
         next_shape = rb_shape_get_next(shape, obj, id);
         if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(obj, shape);
+            if (shape->next_iv_index > 0) {
+                rb_evict_ivars_to_hash(obj, shape);
+            }
             rb_complex_ivar_set(obj, id, val);
             rb_shape_set_shape(obj, next_shape);
             FL_SET_RAW(obj, FL_EXIVAR);
