@@ -421,13 +421,16 @@ AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
 AS_CASE(["$build_os"],
-  [darwin1*.*], [
+  [darwin*], [
+    # gcc 13 warns duplicate -l options, which are added by the
+    # default spec.
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
     CC_WRAPPER=""
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
-	   grep '^ld: warning: text-based stub file' >/dev/null], [
+	   grep -e '^ld: warning: ignoring duplicate libraries:' \
+	        -e '^ld: warning: text-based stub file' >/dev/null], [
 	CC_WRAPPER=`cd -P "${tooldir}" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
