@@ -398,7 +398,7 @@ parse_input(pm_string_t *input, const char *filepath) {
 
 // Parse the given input and return an array of Comment objects.
 static VALUE
-parse_input_inline_comments(pm_string_t *input, const char *filepath) {
+parse_input_comments(pm_string_t *input, const char *filepath) {
     pm_parser_t parser;
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
 
@@ -406,20 +406,7 @@ parse_input_inline_comments(pm_string_t *input, const char *filepath) {
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
 
     VALUE source = pm_source_new(&parser, encoding);
-    VALUE comments = rb_ary_new();
-
-    for (pm_comment_t *comment = (pm_comment_t *) parser.comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
-        if (comment->type != PM_COMMENT_INLINE) continue;
-
-        VALUE location_argv[] = {
-            source,
-            LONG2FIX(comment->start - parser.start),
-            LONG2FIX(comment->end - comment->start)
-        };
-
-        VALUE comment_argv[] = { ID2SYM(rb_intern("inline")), rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
-        rb_ary_push(comments, rb_class_new_instance(2, comment_argv, rb_cPrismComment));
-    }
+    VALUE comments = parser_comments(&parser, source);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -469,7 +456,7 @@ parse_file(VALUE self, VALUE filepath) {
 
 // Parse the given string and return an array of Comment objects.
 static VALUE
-parse_inline_comments(int argc, VALUE *argv, VALUE self) {
+parse_comments(int argc, VALUE *argv, VALUE self) {
     VALUE string;
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
@@ -477,18 +464,18 @@ parse_inline_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     input_load_string(&input, string);
 
-    return parse_input_inline_comments(&input, check_string(filepath));
+    return parse_input_comments(&input, check_string(filepath));
 }
 
 // Parse the given file and return an array of Comment objects.
 static VALUE
-parse_file_inline_comments(VALUE self, VALUE filepath) {
+parse_file_comments(VALUE self, VALUE filepath) {
     pm_string_t input;
 
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = parse_input_inline_comments(&input, checked);
+    VALUE value = parse_input_comments(&input, checked);
     pm_string_free(&input);
 
     return value;
@@ -679,8 +666,8 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, 1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, 1);
-    rb_define_singleton_method(rb_cPrism, "parse_inline_comments", parse_inline_comments, -1);
-    rb_define_singleton_method(rb_cPrism, "parse_file_inline_comments", parse_file_inline_comments, 1);
+    rb_define_singleton_method(rb_cPrism, "parse_comments", parse_comments, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, 1);
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, 1);
 

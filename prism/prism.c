@@ -15723,10 +15723,9 @@ pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, cons
     pm_parser_free(&parser);
 }
 
-// Parse and serialize the inline comments in the given source to the given
-// buffer.
+// Parse and serialize the comments in the given source to the given buffer.
 PRISM_EXPORTED_FUNCTION void
-pm_parse_serialize_inline_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
+pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
     pm_parser_t parser;
     pm_parser_init(&parser, source, size, NULL);
     if (metadata) pm_parser_metadata(&parser, metadata);
