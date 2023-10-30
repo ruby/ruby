@@ -968,7 +968,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-static VALUE rb_translate_prism(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, LINK_ANCHOR *const ret);
+static VALUE rb_translate_prism(pm_parser_t *parser, rb_iseq_t *iseq, pm_scope_node_t *scope_node, LINK_ANCHOR *const ret);
 
 VALUE
 rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser)
@@ -976,24 +976,7 @@ rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_par
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
 
-    ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
-    rb_encoding *encoding = rb_enc_find(parser->encoding.name);
-
-    for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
-        pm_constant_t *constant = &parser->constant_pool.constants[index];
-        constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
-    }
-
-    st_table *index_lookup_table = st_init_numtable();
-    pm_constant_id_list_t *locals = &scope_node->locals;
-    for (size_t i = 0; i < locals->size; i++) {
-        st_insert(index_lookup_table, locals->ids[i], i);
-    }
-
-    scope_node->constants = (void *)constants;
-    scope_node->index_lookup_table = index_lookup_table;
-    CHECK(rb_translate_prism(iseq, scope_node, ret));
-    free(constants);
+    CHECK(rb_translate_prism(parser, iseq, scope_node, ret));
 
     CHECK(iseq_setup_insn(iseq, ret));
     return iseq_setup(iseq, ret);
