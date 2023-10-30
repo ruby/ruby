@@ -321,12 +321,13 @@ module Prism
       end
     end
 
-    attr_reader :name, :human, :values
+    attr_reader :name, :human, :values, :comment
 
     def initialize(config)
       @name = config.fetch("name")
       @human = @name.gsub(/(?<=.)[A-Z]/, "_\\0").downcase
       @values = config.fetch("values").map { |flag| Flag.new(flag) }
+      @comment = config.fetch("comment")
     end
   end
 

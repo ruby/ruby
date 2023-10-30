@@ -105,7 +105,9 @@ typedef struct pm_<%= node.human %> {
 <%- end -%>
 <%- flags.each do |flag| -%>
 
-// <%= flag.name %>
+/**
+ * <%= flag.comment %>
+ */
 typedef enum pm_<%= flag.human %> {
     <%- flag.values.each_with_index do |value, index| -%>
     PM_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,

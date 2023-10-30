@@ -234,6 +234,7 @@ module Prism
   <%- end -%>
   <%- flags.each_with_index do |flag, flag_index| -%>
 
+  # <%= flag.comment %>
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>

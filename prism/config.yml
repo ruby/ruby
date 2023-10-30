@@ -333,12 +333,14 @@ flags:
     values:
       - name: KEYWORD_SPLAT
         comment: "if arguments contain keyword splat"
+    comment: Flags for arguments nodes.
   - name: CallNodeFlags
     values:
       - name: SAFE_NAVIGATION
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+    comment: Flags for call nodes.
   - name: IntegerBaseFlags
     values:
       - name: BINARY
@@ -349,14 +351,17 @@ flags:
         comment: "0d or no prefix"
       - name: HEXADECIMAL
         comment: "0x prefix"
+    comment: Flags for integer nodes that correspond to the base of the integer.
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
         comment: "a loop after a begin statement, so the body is executed first before the condition"
+    comment: Flags for while and until loop nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
         comment: "... operator"
+    comment: Flags for range and flip-flop nodes.
   - name: RegularExpressionFlags
     values:
       - name: IGNORE_CASE
@@ -375,10 +380,12 @@ flags:
         comment: "s - forces the Windows-31J encoding"
       - name: UTF_8
         comment: "u - forces the UTF-8 encoding"
+    comment: Flags for regular expression and match last line nodes.
   - name: StringFlags
     values:
       - name: FROZEN
         comment: "frozen by virtue of a `frozen_string_literal` comment"
+    comment: Flags for string nodes.
 nodes:
   - name: AliasGlobalVariableNode
     fields:
