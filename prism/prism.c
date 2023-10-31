@@ -713,13 +713,6 @@ typedef struct {
     pm_node_t *block;
 } pm_arguments_t;
 
-#define PM_EMPTY_ARGUMENTS ((pm_arguments_t) {              \
-    .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE, \
-    .arguments = NULL,                                      \
-    .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE, \
-    .block = NULL,                                          \
-})
-
 // Check that we're not about to attempt to attach a brace block to a call that
 // has arguments without parentheses.
 static void
@@ -12833,7 +12826,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 (binding_power <= PM_BINDING_POWER_ASSIGNMENT && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
                 (pm_accepts_block_stack_p(parser) && match2(parser, PM_TOKEN_KEYWORD_DO, PM_TOKEN_BRACE_LEFT))
             ) {
-                pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+                pm_arguments_t arguments = { 0 };
                 parse_arguments_list(parser, &arguments, true);
                 return (pm_node_t *) pm_call_node_fcall_create(parser, &constant, &arguments);
             }
@@ -12925,7 +12918,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 // we need to check if there are arguments following the
                 // identifier.
                 pm_call_node_t *call = (pm_call_node_t *) node;
-                pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+                pm_arguments_t arguments = { 0 };
 
                 if (parse_arguments_list(parser, &arguments, true)) {
                     // Since we found arguments, we need to turn off the
@@ -12957,7 +12950,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                     (binding_power <= PM_BINDING_POWER_ASSIGNMENT && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
                     (pm_accepts_block_stack_p(parser) && match2(parser, PM_TOKEN_KEYWORD_DO, PM_TOKEN_BRACE_LEFT))
                 ) {
-                    pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+                    pm_arguments_t arguments = { 0 };
                     parse_arguments_list(parser, &arguments, true);
 
                     pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
@@ -13355,7 +13348,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
 
             pm_token_t keyword = parser->previous;
-            pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+            pm_arguments_t arguments = { 0 };
 
             if (
                 token_begins_expression_p(parser->current.type) ||
@@ -13391,7 +13384,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
 
             pm_token_t keyword = parser->previous;
-            pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+            pm_arguments_t arguments = { 0 };
             parse_arguments_list(parser, &arguments, true);
 
             if (
@@ -13408,7 +13401,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
 
             pm_token_t keyword = parser->previous;
-            pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+            pm_arguments_t arguments = { 0 };
             parse_arguments_list(parser, &arguments, false);
 
             return (pm_node_t *) pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
@@ -13889,7 +13882,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
 
             pm_token_t message = parser->previous;
-            pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+            pm_arguments_t arguments = { 0 };
             pm_node_t *receiver = NULL;
 
             accept1(parser, PM_TOKEN_NEWLINE);
@@ -15259,7 +15252,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
         case PM_TOKEN_DOT: {
             parser_lex(parser);
             pm_token_t operator = parser->previous;
-            pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+            pm_arguments_t arguments = { 0 };
 
             // This if statement handles the foo.() syntax.
             if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
@@ -15385,7 +15378,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         // If we have parentheses, then this is a method call. That would
                         // look like Foo::Bar().
                         pm_token_t message = parser->previous;
-                        pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+                        pm_arguments_t arguments = { 0 };
 
                         parse_arguments_list(parser, &arguments, true);
                         path = (pm_node_t *) pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
@@ -15411,7 +15404,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 
                     // If we have an identifier following a '::' operator, then it is for
                     // sure a method call.
-                    pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+                    pm_arguments_t arguments = { 0 };
                     parse_arguments_list(parser, &arguments, true);
                     pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
 
@@ -15425,7 +15418,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_TOKEN_PARENTHESIS_LEFT: {
                     // If we have a parenthesis following a '::' operator, then it is the
                     // method call shorthand. That would look like Foo::(bar).
-                    pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+                    pm_arguments_t arguments = { 0 };
                     parse_arguments_list(parser, &arguments, true);
 
                     return (pm_node_t *) pm_call_node_shorthand_create(parser, node, &delimiter, &arguments);
@@ -15447,7 +15440,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
         case PM_TOKEN_BRACKET_LEFT: {
             parser_lex(parser);
 
-            pm_arguments_t arguments = PM_EMPTY_ARGUMENTS;
+            pm_arguments_t arguments = { 0 };
             arguments.opening_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
 
             if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
