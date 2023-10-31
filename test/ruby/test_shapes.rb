@@ -287,6 +287,9 @@ class TestShapes < Test::Unit::TestCase
       tc = TooComplex.new
       tc.instance_variable_set(:@a, 1)
       tc.instance_variable_set(:@b, 2)
+
+      tc.remove_instance_variable(:@a)
+      assert_nil(tc.instance_variable_get(:@a))
     end;
   end
 

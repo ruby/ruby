@@ -2217,7 +2217,15 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
         break;
       }
       default: {
-        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        if (rb_shape_obj_too_complex(obj)) {
+            struct gen_ivtbl *ivtbl;
+            if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+                st_delete(ivtbl->as.complex.table, (st_data_t *)&id, (st_data_t *)&val);
+            }
+        }
+        else {
+            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        }
         break;
       }
     }
