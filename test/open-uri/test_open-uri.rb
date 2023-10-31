@@ -534,6 +534,15 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_redirect_auth_success_r1
+    with_http {|srv, dr, url|
+      setup_redirect_auth(srv, url)
+      URI.open("#{url}/r1/", :http_basic_authentication=>['user', 'pass'], :http_basic_authentication_follow_redirect=>true) {|f|
+        assert_equal("r2", f.read)
+      }
+    }
+  end
+
   def test_redirect_auth_failure_r2
     log_tester = lambda {|server_log|
       assert_equal(1, server_log.length)
