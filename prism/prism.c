@@ -9738,6 +9738,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // expression.
             if (
                 (call->call_operator_loc.start == NULL) &&
+                (call->message_loc.start != NULL) &&
                 (call->message_loc.start[0] == '[') &&
                 (call->message_loc.end[-1] == ']') &&
                 (call->block == NULL)
