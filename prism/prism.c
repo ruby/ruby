@@ -4240,7 +4240,7 @@ pm_regular_expression_node_create_unescaped(pm_parser_t *parser, const pm_token_
 // Allocate a new initialize a new RegularExpressionNode node.
 static inline pm_regular_expression_node_t *
 pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
-    return pm_regular_expression_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
+    return pm_regular_expression_node_create_unescaped(parser, opening, content, closing, &PM_STRING_EMPTY);
 }
 
 // Allocate a new RequiredParameterNode node.
@@ -4588,7 +4588,7 @@ pm_string_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, 
 // Allocate a new StringNode node.
 static pm_string_node_t *
 pm_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
-    return pm_string_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
+    return pm_string_node_create_unescaped(parser, opening, content, closing, &PM_STRING_EMPTY);
 }
 
 // Allocate a new StringNode node and create it using the current string on the
@@ -4596,7 +4596,7 @@ pm_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_t
 static pm_string_node_t *
 pm_string_node_create_current_string(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
     pm_string_node_t *node = pm_string_node_create_unescaped(parser, opening, content, closing, &parser->current_string);
-    parser->current_string = PM_EMPTY_STRING;
+    parser->current_string = PM_STRING_EMPTY;
     return node;
 }
 
@@ -4663,14 +4663,14 @@ pm_symbol_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, 
 // Allocate and initialize a new SymbolNode node.
 static inline pm_symbol_node_t *
 pm_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
-    return pm_symbol_node_create_unescaped(parser, opening, value, closing, &PM_EMPTY_STRING);
+    return pm_symbol_node_create_unescaped(parser, opening, value, closing, &PM_STRING_EMPTY);
 }
 
 // Allocate and initialize a new SymbolNode node with the current string.
 static pm_symbol_node_t *
 pm_symbol_node_create_current_string(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing) {
     pm_symbol_node_t *node = pm_symbol_node_create_unescaped(parser, opening, value, closing, &parser->current_string);
-    parser->current_string = PM_EMPTY_STRING;
+    parser->current_string = PM_STRING_EMPTY;
     return node;
 }
 
@@ -5047,7 +5047,7 @@ pm_xstring_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening,
 // Allocate and initialize a new XStringNode node.
 static inline pm_x_string_node_t *
 pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing) {
-    return pm_xstring_node_create_unescaped(parser, opening, content, closing, &PM_EMPTY_STRING);
+    return pm_xstring_node_create_unescaped(parser, opening, content, closing, &PM_STRING_EMPTY);
 }
 
 // Allocate a new YieldNode node.
@@ -12428,7 +12428,7 @@ parse_strings(pm_parser_t *parser) {
             // start with a single string content node.
             pm_string_t unescaped;
             if (match1(parser, PM_TOKEN_EOF)) {
-                unescaped = PM_EMPTY_STRING;
+                unescaped = PM_STRING_EMPTY;
             } else {
                 unescaped = parser->current_string;
             }
@@ -12996,9 +12996,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 pm_token_t content = parse_strings_empty_content(parser->previous.start);
 
                 if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
-                    node = (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_EMPTY_STRING);
+                    node = (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_STRING_EMPTY);
                 } else {
-                    node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_EMPTY_STRING);
+                    node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_STRING_EMPTY);
                 }
 
                 node->location.end = opening.end;
@@ -15706,7 +15706,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .constant_pool = PM_CONSTANT_POOL_EMPTY,
         .newline_list = PM_NEWLINE_LIST_EMPTY,
         .integer_base = 0,
-        .current_string = PM_EMPTY_STRING,
+        .current_string = PM_STRING_EMPTY,
         .command_start = true,
         .recovering = false,
         .encoding_changed = false,
@@ -15886,7 +15886,7 @@ pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buf
 #undef PM_CASE_KEYWORD
 #undef PM_CASE_OPERATOR
 #undef PM_CASE_WRITABLE
-#undef PM_EMPTY_STRING
+#undef PM_STRING_EMPTY
 #undef PM_LOCATION_NODE_BASE_VALUE
 #undef PM_LOCATION_NODE_VALUE
 #undef PM_LOCATION_NULL_VALUE

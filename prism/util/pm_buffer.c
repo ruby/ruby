@@ -1,12 +1,16 @@
 #include "prism/util/pm_buffer.h"
 
-// Return the size of the pm_buffer_t struct.
+/**
+ * Return the size of the pm_buffer_t struct.
+ */
 size_t
 pm_buffer_sizeof(void) {
     return sizeof(pm_buffer_t);
 }
 
-// Initialize a pm_buffer_t with the given capacity.
+/**
+ * Initialize a pm_buffer_t with the given capacity.
+ */
 bool
 pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity) {
     buffer->length = 0;
@@ -16,25 +20,33 @@ pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity) {
     return buffer->value != NULL;
 }
 
-// Initialize a pm_buffer_t with its default values.
+/**
+ * Initialize a pm_buffer_t with its default values.
+ */
 bool
 pm_buffer_init(pm_buffer_t *buffer) {
     return pm_buffer_init_capacity(buffer, 1024);
 }
 
-// Return the value of the buffer.
+/**
+ * Return the value of the buffer.
+ */
 char *
 pm_buffer_value(pm_buffer_t *buffer) {
     return buffer->value;
 }
 
-// Return the length of the buffer.
+/**
+ * Return the length of the buffer.
+ */
 size_t
 pm_buffer_length(pm_buffer_t *buffer) {
     return buffer->length;
 }
 
-// Append the given amount of space to the buffer.
+/**
+ * Append the given amount of space to the buffer.
+ */
 static inline void
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     size_t next_length = buffer->length + length;
@@ -54,7 +66,9 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     buffer->length = next_length;
 }
 
-// Append a generic pointer to memory to the buffer.
+/**
+ * Append a generic pointer to memory to the buffer.
+ */
 static inline void
 pm_buffer_append(pm_buffer_t *buffer, const void *source, size_t length) {
     size_t cursor = buffer->length;
@@ -62,7 +76,9 @@ pm_buffer_append(pm_buffer_t *buffer, const void *source, size_t length) {
     memcpy(buffer->value + cursor, source, length);
 }
 
-// Append the given amount of space as zeroes to the buffer.
+/**
+ * Append the given amount of space as zeroes to the buffer.
+ */
 void
 pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
     size_t cursor = buffer->length;
@@ -70,7 +86,9 @@ pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
     memset(buffer->value + cursor, 0, length);
 }
 
-// Append a formatted string to the buffer.
+/**
+ * Append a formatted string to the buffer.
+ */
 void
 pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
     va_list arguments;
@@ -91,26 +109,34 @@ pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
     buffer->length--;
 }
 
-// Append a string to the buffer.
+/**
+ * Append a string to the buffer.
+ */
 void
 pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length) {
     pm_buffer_append(buffer, value, length);
 }
 
-// Append a list of bytes to the buffer.
+/**
+ * Append a list of bytes to the buffer.
+ */
 void
 pm_buffer_append_bytes(pm_buffer_t *buffer, const uint8_t *value, size_t length) {
     pm_buffer_append(buffer, (const char *) value, length);
 }
 
-// Append a single byte to the buffer.
+/**
+ * Append a single byte to the buffer.
+ */
 void
 pm_buffer_append_byte(pm_buffer_t *buffer, uint8_t value) {
     const void *source = &value;
     pm_buffer_append(buffer, source, sizeof(uint8_t));
 }
 
-// Append a 32-bit unsigned integer to the buffer as a variable-length integer.
+/**
+ * Append a 32-bit unsigned integer to the buffer as a variable-length integer.
+ */
 void
 pm_buffer_append_varint(pm_buffer_t *buffer, uint32_t value) {
     if (value < 128) {
@@ -125,7 +151,9 @@ pm_buffer_append_varint(pm_buffer_t *buffer, uint32_t value) {
     }
 }
 
-// Concatenate one buffer onto another.
+/**
+ * Concatenate one buffer onto another.
+ */
 void
 pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source) {
     if (source->length > 0) {
@@ -133,7 +161,9 @@ pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source) {
     }
 }
 
-// Free the internal memory associated with the buffer.
+/**
+ * Free the memory associated with the buffer.
+ */
 void
 pm_buffer_free(pm_buffer_t *buffer) {
     free(buffer->value);
