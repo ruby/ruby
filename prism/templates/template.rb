@@ -298,14 +298,6 @@ module Prism
       @value = config["value"]
       @comment = config.fetch("comment")
     end
-
-    def declaration
-      output = []
-      output << "PM_TOKEN_#{name}"
-      output << " = #{value}" if value
-      output << ", // #{comment}"
-      output.join
-    end
   end
 
   # Represents a set of flags that should be internally represented with an enum.

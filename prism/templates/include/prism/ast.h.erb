@@ -14,9 +14,10 @@
  */
 typedef enum pm_token_type {
 <%- tokens.each do |token| -%>
-    <%= token.declaration %>
-<%- end -%>
+    /** <%= token.comment %> */
+    PM_TOKEN_<%= token.name %><% " = #{token.value}" if token.value %>,
 
+<%- end -%>
     /** The maximum token value. */
     PM_TOKEN_MAXIMUM,
 } pm_token_type_t;
@@ -69,9 +70,10 @@ typedef struct pm_node_list {
  */
 enum pm_node_type {
 <%- nodes.each_with_index do |node, index| -%>
+    /** <%= node.name %> */
     <%= node.type %> = <%= index + 1 %>,
-<%- end -%>
 
+<%- end -%>
     /** A special kind of node used for compilation. */
     PM_SCOPE_NODE
 };
@@ -153,7 +155,9 @@ typedef struct pm_<%= node.human %> {
  */
 typedef enum pm_<%= flag.human %> {
     <%- flag.values.each_with_index do |value, index| -%>
-    PM_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,
+<%= "\n" if index > 0 -%>
+    /** <%= value.comment %> */
+    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << index %>,
     <%- end -%>
 } pm_<%= flag.human %>_t;
 <%- end -%>
