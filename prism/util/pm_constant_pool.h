@@ -69,9 +69,6 @@ typedef struct {
     uint32_t capacity;
 } pm_constant_pool_t;
 
-// Define an empty constant pool.
-#define PM_CONSTANT_POOL_EMPTY ((pm_constant_pool_t) { .buckets = NULL, .constants = NULL, .size = 0, .capacity = 0 })
-
 // Initialize a new constant pool with a given capacity.
 bool pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity);
 
