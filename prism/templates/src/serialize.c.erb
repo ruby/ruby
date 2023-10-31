@@ -47,7 +47,7 @@ pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffe
     }
 }
 
-void
+static void
 pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
 
@@ -136,6 +136,9 @@ pm_serialize_comment(pm_parser_t *parser, pm_comment_t *comment, pm_buffer_t *bu
     pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(comment->end - comment->start));
 }
 
+/**
+ * Serialize the given list of comments to the given buffer.
+ */
 void
 pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
     pm_buffer_append_varint(buffer, pm_sizet_to_u32(pm_list_size(list)));
@@ -189,6 +192,9 @@ pm_serialize_diagnostic_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *
     }
 }
 
+/**
+ * Serialize the name of the encoding to the buffer.
+ */
 void
 pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
     size_t encoding_length = strlen(encoding->name);
@@ -197,6 +203,9 @@ pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
 }
 
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+/**
+ * Serialize the encoding, metadata, nodes, and constant pool.
+ */
 void
 pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_serialize_encoding(&parser->encoding, buffer);
@@ -274,6 +283,9 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     pm_buffer_append_varint(buffer, parser->lex_state);
 }
 
+/**
+ * Lex the given source and serialize to the given buffer.
+ */
 PRISM_EXPORTED_FUNCTION void
 pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer) {
     pm_parser_t parser;
@@ -300,8 +312,10 @@ pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_bu
     pm_parser_free(&parser);
 }
 
-// Parse and serialize both the AST and the tokens represented by the given
-// source to the given buffer.
+/**
+ * Parse and serialize both the AST and the tokens represented by the given
+ * source to the given buffer.
+ */
 PRISM_EXPORTED_FUNCTION void
 pm_parse_lex_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
     pm_parser_t parser;

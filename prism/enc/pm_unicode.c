@@ -2183,7 +2183,7 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
  * codepoint is in the list.
  */
 static bool
-pm_unicode_codepoint_match(pm_unicode_codepoint_t codepoint, size_t size, const pm_unicode_codepoint_t codepoints[size]) {
+pm_unicode_codepoint_match(pm_unicode_codepoint_t codepoint, const pm_unicode_codepoint_t *codepoints, size_t size) {
     size_t start = 0;
     size_t end = size;
 
@@ -2300,7 +2300,7 @@ pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
     if (codepoint <= 0xFF) {
         return (pm_encoding_unicode_table[(uint8_t) codepoint] & PRISM_ENCODING_ALPHABETIC_BIT) ? width : 0;
     } else {
-        return pm_unicode_codepoint_match(codepoint, UNICODE_ALPHA_CODEPOINTS_LENGTH, unicode_alpha_codepoints) ? width : 0;
+        return pm_unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
@@ -2320,7 +2320,7 @@ pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
     if (codepoint <= 0xFF) {
         return (pm_encoding_unicode_table[(uint8_t) codepoint] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
     } else {
-        return pm_unicode_codepoint_match(codepoint, UNICODE_ALNUM_CODEPOINTS_LENGTH, unicode_alnum_codepoints) ? width : 0;
+        return pm_unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
@@ -2340,7 +2340,7 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     if (codepoint <= 0xFF) {
         return (pm_encoding_unicode_table[(uint8_t) codepoint] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     } else {
-        return pm_unicode_codepoint_match(codepoint, UNICODE_ISUPPER_CODEPOINTS_LENGTH, unicode_isupper_codepoints) ? true : false;
+        return pm_unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
     }
 }
 
