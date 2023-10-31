@@ -243,7 +243,11 @@ typedef enum {
     PM_COMMENT___END__
 } pm_comment_type_t;
 
-// This is a node in the linked list of comments that we've found while parsing.
+/**
+ * This is a node in the linked list of comments that we've found while parsing.
+ *
+ * @extends pm_list_node_t
+ */
 typedef struct pm_comment {
     pm_list_node_t node;
     const uint8_t *start;
@@ -251,8 +255,12 @@ typedef struct pm_comment {
     pm_comment_type_t type;
 } pm_comment_t;
 
-// This is a node in the linked list of magic comments that we've found while
-// parsing.
+/**
+ * This is a node in the linked list of magic comments that we've found while
+ * parsing.
+ *
+ * @extends pm_list_node_t
+ */
 typedef struct {
     pm_list_node_t node;
     const uint8_t *key_start;
