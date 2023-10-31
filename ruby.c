@@ -1793,8 +1793,7 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         rb_rjit_init(&opt->rjit);
 #endif
 #if USE_YJIT
-    if (opt->yjit)
-        rb_yjit_init();
+    rb_yjit_init(opt->yjit);
 #endif
 
     ruby_set_script_name(opt->script_name);
