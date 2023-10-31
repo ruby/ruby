@@ -171,7 +171,12 @@ class RbInspector(LLDBInterface):
 
             elif rval.is_type("RUBY_T_HASH"):
                 self.result.write("T_HASH: %s" % flaginfo)
-                self._append_expression("*(struct RHash *) %0#x" % val.GetValueAsUnsigned())
+                ptr = val.GetValueAsUnsigned()
+                self._append_expression("*(struct RHash *) %0#x" % ptr)
+                if rval.flags & self.ruby_globals["RUBY_FL_USER3"]:
+                    self._append_expression("*(struct st_table *) (%0#x + sizeof(struct RHash))" % ptr)
+                else:
+                    self._append_expression("*(struct ar_table *) (%0#x + sizeof(struct RHash))" % ptr)
 
             elif rval.is_type("RUBY_T_BIGNUM"):
                 sign = '-'
