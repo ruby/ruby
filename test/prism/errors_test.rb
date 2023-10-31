@@ -746,7 +746,7 @@ module Prism
           [],
           nil,
           [RequiredParameterNode(:a)],
-          [KeywordParameterNode(:b, Location(), nil)],
+          [OptionalKeywordParameterNode(:b, Location())],
           nil,
           nil
         ),
@@ -774,7 +774,7 @@ module Prism
           [],
           nil,
           [],
-          [KeywordParameterNode(:b, Location(), nil)],
+          [OptionalKeywordParameterNode(:b, Location())],
           KeywordRestParameterNode(:rest, Location(), Location()),
           nil
         ),
@@ -824,7 +824,7 @@ module Prism
           [],
           nil,
           [RequiredParameterNode(:a)],
-          [KeywordParameterNode(:b, Location(), nil)],
+          [OptionalKeywordParameterNode(:b, Location())],
           KeywordRestParameterNode(:args, Location(), Location()),
           nil
         ),
@@ -854,7 +854,7 @@ module Prism
           [],
           nil,
           [RequiredParameterNode(:a)],
-          [KeywordParameterNode(:b, Location(), nil)],
+          [OptionalKeywordParameterNode(:b, Location())],
           KeywordRestParameterNode(:args, Location(), Location()),
           nil
         ),
@@ -884,7 +884,7 @@ module Prism
           [],
           nil,
           [RequiredParameterNode(:a)],
-          [KeywordParameterNode(:b, Location(), nil)],
+          [OptionalKeywordParameterNode(:b, Location())],
           KeywordRestParameterNode(:args, Location(), Location()),
           nil
         ),

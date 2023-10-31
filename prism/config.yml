@@ -1692,24 +1692,6 @@ nodes:
 
           foo(a: b)
               ^^^^
-  - name: KeywordParameterNode
-    fields:
-      - name: name
-        type: constant
-      - name: name_loc
-        type: location
-      - name: value
-        type: node?
-    comment: |
-      Represents a keyword parameter to a method, block, or lambda definition.
-
-          def a(b:)
-                ^^
-          end
-
-          def a(b: 1)
-                ^^^^
-          end
   - name: KeywordRestParameterNode
     fields:
       - name: name
@@ -1997,6 +1979,18 @@ nodes:
 
           $1
           ^^
+  - name: OptionalKeywordParameterNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+    comment: |
+      Represents an optional keyword parameter to a method, block, or lambda definition.
+
+          def a(b: )
+                ^^
+          end
   - name: OptionalParameterNode
     fields:
       - name: name
@@ -2184,6 +2178,20 @@ nodes:
 
           /foo/i
           ^^^^^^
+  - name: RequiredKeywordParameterNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents a required keyword parameter to a method, block, or lambda definition.
+
+          def a(b: 1)
+                ^^^^
+          end
   - name: RequiredParameterNode
     fields:
       - name: name

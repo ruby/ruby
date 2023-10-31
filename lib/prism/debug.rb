@@ -114,8 +114,8 @@ module Prism
                   AnonymousLocal
                 end
               end,
-              *params.keywords.reject(&:value).map(&:name),
-              *params.keywords.select(&:value).map(&:name)
+              *params.keywords.select { |kw| kw.is_a? OptionalKeywordParameterNode }.map(&:name),
+              *params.keywords.select { |kw| kw.is_a? RequiredKeywordParameterNode }.map(&:name),
             ]
 
             sorted << AnonymousLocal if params.keywords.any?
