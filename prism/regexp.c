@@ -4,11 +4,22 @@
  * This is the parser that is going to handle parsing regular expressions.
  */
 typedef struct {
+    /** A pointer to the start of the source that we are parsing. */
     const uint8_t *start;
+
+    /** A pointer to the current position in the source. */
     const uint8_t *cursor;
+
+    /** A pointer to the end of the source that we are parsing. */
     const uint8_t *end;
+
+    /** A list of named captures that we've found. */
     pm_string_list_t *named_captures;
+
+    /** Whether the encoding has changed from the default. */
     bool encoding_changed;
+
+    /** The encoding of the source. */
     pm_encoding_t *encoding;
 } pm_regexp_parser_t;
 
@@ -318,6 +329,7 @@ typedef enum {
  * This is the set of options that are configurable on the regular expression.
  */
 typedef struct {
+    /** The current state of each option. */
     uint8_t values[PRISM_REGEXP_OPTION_STATE_SLOTS];
 } pm_regexp_options_t;
 

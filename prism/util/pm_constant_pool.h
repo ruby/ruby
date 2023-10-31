@@ -1,8 +1,12 @@
-// The constant pool is a data structure that stores a set of strings. Each
-// string is assigned a unique id, which can be used to compare strings for
-// equality. This comparison ends up being much faster than strcmp, since it
-// only requires a single integer comparison.
-
+/**
+ * @file pm_constant_pool.h
+ *
+ * A data structure that stores a set of strings.
+ * 
+ * Each string is assigned a unique id, which can be used to compare strings for
+ * equality. This comparison ends up being much faster than strcmp, since it
+ * only requires a single integer comparison.
+ */
 #ifndef PRISM_CONSTANT_POOL_H
 #define PRISM_CONSTANT_POOL_H
 
@@ -14,12 +18,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * A constant id is a unique identifier for a constant in the constant pool.
+ */
 typedef uint32_t pm_constant_id_t;
 
+/**
+ * A list of constant IDs. Usually used to represent a set of locals.
+ */
 typedef struct {
-    pm_constant_id_t *ids;
+    /** The number of constant ids in the list. */
     size_t size;
+
+    /** The number of constant ids that have been allocated in the list. */
     size_t capacity;
+
+    /** The constant ids in the list. */
+    pm_constant_id_t *ids;
 } pm_constant_id_list_t;
 
 /**

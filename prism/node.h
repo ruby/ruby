@@ -1,3 +1,8 @@
+/**
+ * @file node.h
+ *
+ * Functions related to nodes in the AST.
+ */
 #ifndef PRISM_NODE_H
 #define PRISM_NODE_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file pm_encoding.h
+ *
+ * The encoding interface and implementations used by the parser.
+ */
 #ifndef PRISM_ENCODING_H
 #define PRISM_ENCODING_H
 
@@ -55,10 +60,22 @@ typedef struct {
     bool multibyte;
 } pm_encoding_t;
 
-// These bits define the location of each bit of metadata within the various
-// lookup tables that are used to determine the properties of a character.
+/**
+ * All of the lookup tables use the first bit of each embedded byte to indicate
+ * whether the codepoint is alphabetical.
+ */
 #define PRISM_ENCODING_ALPHABETIC_BIT 1 << 0
+
+/**
+ * All of the lookup tables use the second bit of each embedded byte to indicate
+ * whether the codepoint is alphanumeric.
+ */
 #define PRISM_ENCODING_ALPHANUMERIC_BIT 1 << 1
+
+/**
+ * All of the lookup tables use the third bit of each embedded byte to indicate
+ * whether the codepoint is uppercase.
+ */
 #define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
 
 /**

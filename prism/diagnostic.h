@@ -1,3 +1,8 @@
+/**
+ * @file diagnostic.h
+ *
+ * A list of diagnostics generated during parsing.
+ */
 #ifndef PRISM_DIAGNOSTIC_H
 #define PRISM_DIAGNOSTIC_H
 
@@ -9,14 +14,21 @@
 #include <assert.h>
 
 /**
- * This struct represents a diagnostic found during parsing.
+ * This struct represents a diagnostic generated during parsing.
  *
  * @extends pm_list_node_t
  */
 typedef struct {
+    /** The embedded base node. */
     pm_list_node_t node;
+
+    /** A pointer to the start of the source that generated the diagnostic. */
     const uint8_t *start;
+
+    /** A pointer to the end of the source that generated the diagnostic. */
     const uint8_t *end;
+
+    /** The message associated with the diagnostic. */
     const char *message;
 } pm_diagnostic_t;
 

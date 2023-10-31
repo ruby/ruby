@@ -1,3 +1,8 @@
+/**
+ * @file prettyprint.h
+ *
+ * An AST node pretty-printer.
+ */
 #ifndef PRISM_PRETTYPRINT_H
 #define PRISM_PRETTYPRINT_H
 

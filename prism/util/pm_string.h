@@ -1,3 +1,8 @@
+/**
+ * @file pm_string.h
+ *
+ * A generic string type that can have various ownership semantics.
+ */
 #ifndef PRISM_STRING_H
 #define PRISM_STRING_H
 
