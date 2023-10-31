@@ -15701,7 +15701,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .lex_callback = NULL,
         .filepath_string = filepath_string,
         .constant_pool = PM_CONSTANT_POOL_EMPTY,
-        .newline_list = PM_NEWLINE_LIST_EMPTY,
+        .newline_list = { 0 },
         .integer_base = 0,
         .current_string = PM_STRING_EMPTY,
         .command_start = true,
