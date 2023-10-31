@@ -26,16 +26,18 @@
  *
  * For example, if we want to store a list of integers, we can do the following:
  *
- *     typedef struct {
- *         pm_list_node_t node;
- *         int value;
- *     } pm_int_node_t;
+ * ```c
+ * typedef struct {
+ *     pm_list_node_t node;
+ *     int value;
+ * } pm_int_node_t;
  *
- *     pm_list_t list = { 0 };
- *     pm_int_node_t *node = malloc(sizeof(pm_int_node_t));
- *     node->value = 5;
+ * pm_list_t list = { 0 };
+ * pm_int_node_t *node = malloc(sizeof(pm_int_node_t));
+ * node->value = 5;
  *
- *     pm_list_append(&list, &node->node);
+ * pm_list_append(&list, &node->node);
+ * ```
  *
  * The pm_list_t struct is used to represent the overall linked list. It
  * contains a pointer to the head and tail of the list. This allows for easy

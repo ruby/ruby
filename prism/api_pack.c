@@ -167,7 +167,7 @@ pack_encoding_to_ruby(pm_pack_encoding encoding) {
 /**
  * call-seq:
  *   Pack::parse(version, variant, source) -> Format
- *  
+ *
  * Parse the given source and return a format object.
  */
 static VALUE

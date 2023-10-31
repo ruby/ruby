@@ -52,7 +52,7 @@ pm_encoding_gbk_isupper_char(const uint8_t *b, ptrdiff_t n) {
 }
 
 /** GBK encoding */
-const pm_encoding_t pm_encoding_gbk = {
+pm_encoding_t pm_encoding_gbk = {
     .name = "gbk",
     .char_width = pm_encoding_gbk_char_width,
     .alnum_char = pm_encoding_gbk_alnum_char,

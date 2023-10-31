@@ -84,7 +84,7 @@ dump_input(pm_string_t *input, const char *filepath) {
 /**
  * call-seq:
  *   Prism::dump(source, filepath = nil) -> dumped
- *  
+ *
  * Dump the AST corresponding to the given string to a string.
  */
 static VALUE
@@ -115,7 +115,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 /**
  * call-seq:
  *   Prism::dump_file(filepath) -> dumped
- *  
+ *
  * Dump the AST corresponding to the given file to a string.
  */
 static VALUE
@@ -373,7 +373,7 @@ parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
 /**
  * call-seq:
  *   Prism::lex(source, filepath = nil) -> Array
- *  
+ *
  * Return an array of Token instances corresponding to the given string.
  */
 static VALUE
@@ -391,7 +391,7 @@ lex(int argc, VALUE *argv, VALUE self) {
 /**
  * call-seq:
  *   Prism::lex_file(filepath) -> Array
- *  
+ *
  * Return an array of Token instances corresponding to the given file.
  */
 static VALUE

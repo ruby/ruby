@@ -81,7 +81,8 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        *string = PM_STRING_EMPTY;
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
     }
 
@@ -127,7 +128,8 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        *string = PM_STRING_EMPTY;
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
     }
 

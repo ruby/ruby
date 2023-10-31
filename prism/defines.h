@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/** 
+/**
  * By default, we compile with -fvisibility=hidden. When this is enabled, we
  * need to mark certain functions as being publically-visible. This macro does
  * that in a compiler-agnostic way.

@@ -543,7 +543,7 @@ PRISM_ENCODING_TABLE(windows_1252)
 #undef PRISM_ENCODING_TABLE
 
 /** ASCII encoding */
-const pm_encoding_t pm_encoding_ascii = {
+pm_encoding_t pm_encoding_ascii = {
     .name = "ascii",
     .char_width = pm_encoding_ascii_char_width,
     .alnum_char = pm_encoding_ascii_alnum_char,
@@ -553,7 +553,7 @@ const pm_encoding_t pm_encoding_ascii = {
 };
 
 /** ASCII-8BIT encoding */
-const pm_encoding_t pm_encoding_ascii_8bit = {
+pm_encoding_t pm_encoding_ascii_8bit = {
     .name = "ascii-8bit",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_ascii_alnum_char,
@@ -563,7 +563,7 @@ const pm_encoding_t pm_encoding_ascii_8bit = {
 };
 
 /** ISO-8859-1 */
-const pm_encoding_t pm_encoding_iso_8859_1 = {
+pm_encoding_t pm_encoding_iso_8859_1 = {
     .name = "iso-8859-1",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_1_alnum_char,
@@ -573,7 +573,7 @@ const pm_encoding_t pm_encoding_iso_8859_1 = {
 };
 
 /** ISO-8859-2 */
-const pm_encoding_t pm_encoding_iso_8859_2 = {
+pm_encoding_t pm_encoding_iso_8859_2 = {
     .name = "iso-8859-2",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_2_alnum_char,
@@ -583,7 +583,7 @@ const pm_encoding_t pm_encoding_iso_8859_2 = {
 };
 
 /** ISO-8859-3 */
-const pm_encoding_t pm_encoding_iso_8859_3 = {
+pm_encoding_t pm_encoding_iso_8859_3 = {
     .name = "iso-8859-3",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_3_alnum_char,
@@ -593,7 +593,7 @@ const pm_encoding_t pm_encoding_iso_8859_3 = {
 };
 
 /** ISO-8859-4 */
-const pm_encoding_t pm_encoding_iso_8859_4 = {
+pm_encoding_t pm_encoding_iso_8859_4 = {
     .name = "iso-8859-4",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_4_alnum_char,
@@ -603,7 +603,7 @@ const pm_encoding_t pm_encoding_iso_8859_4 = {
 };
 
 /** ISO-8859-5 */
-const pm_encoding_t pm_encoding_iso_8859_5 = {
+pm_encoding_t pm_encoding_iso_8859_5 = {
     .name = "iso-8859-5",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_5_alnum_char,
@@ -613,7 +613,7 @@ const pm_encoding_t pm_encoding_iso_8859_5 = {
 };
 
 /** ISO-8859-6 */
-const pm_encoding_t pm_encoding_iso_8859_6 = {
+pm_encoding_t pm_encoding_iso_8859_6 = {
     .name = "iso-8859-6",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_6_alnum_char,
@@ -623,7 +623,7 @@ const pm_encoding_t pm_encoding_iso_8859_6 = {
 };
 
 /** ISO-8859-7 */
-const pm_encoding_t pm_encoding_iso_8859_7 = {
+pm_encoding_t pm_encoding_iso_8859_7 = {
     .name = "iso-8859-7",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_7_alnum_char,
@@ -633,7 +633,7 @@ const pm_encoding_t pm_encoding_iso_8859_7 = {
 };
 
 /** ISO-8859-8 */
-const pm_encoding_t pm_encoding_iso_8859_8 = {
+pm_encoding_t pm_encoding_iso_8859_8 = {
     .name = "iso-8859-8",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_8_alnum_char,
@@ -643,7 +643,7 @@ const pm_encoding_t pm_encoding_iso_8859_8 = {
 };
 
 /** ISO-8859-9 */
-const pm_encoding_t pm_encoding_iso_8859_9 = {
+pm_encoding_t pm_encoding_iso_8859_9 = {
     .name = "iso-8859-9",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_9_alnum_char,
@@ -653,7 +653,7 @@ const pm_encoding_t pm_encoding_iso_8859_9 = {
 };
 
 /** ISO-8859-10 */
-const pm_encoding_t pm_encoding_iso_8859_10 = {
+pm_encoding_t pm_encoding_iso_8859_10 = {
     .name = "iso-8859-10",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_10_alnum_char,
@@ -663,7 +663,7 @@ const pm_encoding_t pm_encoding_iso_8859_10 = {
 };
 
 /** ISO-8859-11 */
-const pm_encoding_t pm_encoding_iso_8859_11 = {
+pm_encoding_t pm_encoding_iso_8859_11 = {
     .name = "iso-8859-11",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_11_alnum_char,
@@ -673,7 +673,7 @@ const pm_encoding_t pm_encoding_iso_8859_11 = {
 };
 
 /** ISO-8859-13 */
-const pm_encoding_t pm_encoding_iso_8859_13 = {
+pm_encoding_t pm_encoding_iso_8859_13 = {
     .name = "iso-8859-13",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_13_alnum_char,
@@ -683,7 +683,7 @@ const pm_encoding_t pm_encoding_iso_8859_13 = {
 };
 
 /** ISO-8859-14 */
-const pm_encoding_t pm_encoding_iso_8859_14 = {
+pm_encoding_t pm_encoding_iso_8859_14 = {
     .name = "iso-8859-14",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_14_alnum_char,
@@ -693,7 +693,7 @@ const pm_encoding_t pm_encoding_iso_8859_14 = {
 };
 
 /** ISO-8859-15 */
-const pm_encoding_t pm_encoding_iso_8859_15 = {
+pm_encoding_t pm_encoding_iso_8859_15 = {
     .name = "iso-8859-15",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_15_alnum_char,
@@ -703,7 +703,7 @@ const pm_encoding_t pm_encoding_iso_8859_15 = {
 };
 
 /** ISO-8859-16 */
-const pm_encoding_t pm_encoding_iso_8859_16 = {
+pm_encoding_t pm_encoding_iso_8859_16 = {
     .name = "iso-8859-16",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_iso_8859_16_alnum_char,
@@ -713,7 +713,7 @@ const pm_encoding_t pm_encoding_iso_8859_16 = {
 };
 
 /** KOI8-R */
-const pm_encoding_t pm_encoding_koi8_r = {
+pm_encoding_t pm_encoding_koi8_r = {
     .name = "koi8-r",
     .char_width = pm_encoding_koi8_r_char_width,
     .alnum_char = pm_encoding_koi8_r_alnum_char,
@@ -723,7 +723,7 @@ const pm_encoding_t pm_encoding_koi8_r = {
 };
 
 /** Windows-1251 */
-const pm_encoding_t pm_encoding_windows_1251 = {
+pm_encoding_t pm_encoding_windows_1251 = {
     .name = "windows-1251",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_windows_1251_alnum_char,
@@ -733,7 +733,7 @@ const pm_encoding_t pm_encoding_windows_1251 = {
 };
 
 /** Windows-1252 */
-const pm_encoding_t pm_encoding_windows_1252 = {
+pm_encoding_t pm_encoding_windows_1252 = {
     .name = "windows-1252",
     .char_width = pm_encoding_single_char_width,
     .alnum_char = pm_encoding_windows_1252_alnum_char,

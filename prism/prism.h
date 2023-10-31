@@ -207,15 +207,15 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  * visible.
  *
  * @section parsing Parsing
- * 
+ *
  * In order to parse Ruby code, the structures and functions that you're going
  * to want to use and be aware of are:
  *
- * * pm_parser_t - the main parser structure
- * * pm_parser_init - initialize a parser
- * * pm_parse - parse and return the root node
- * * pm_node_destroy - deallocate the root node returned by `pm_parse`
- * * pm_parser_free - free the internal memory of the parser
+ * * `pm_parser_t` - the main parser structure
+ * * `pm_parser_init` - initialize a parser
+ * * `pm_parse` - parse and return the root node
+ * * `pm_node_destroy` - deallocate the root node returned by `pm_parse`
+ * * `pm_parser_free` - free the internal memory of the parser
  *
  * Putting all of this together would look something like:
  *
@@ -244,10 +244,10 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  * parse Ruby code. The structures and functions that you're going to want to
  * use and be aware of are:
  *
- * * pm_buffer_t - a small buffer object that will hold the serialized AST
- * * pm_buffer_free - free the memory associated with the buffer
- * * pm_serialize - serialize the AST into a buffer
- * * pm_parse_serialize - parse and serialize the AST into a buffer
+ * * `pm_buffer_t` - a small buffer object that will hold the serialized AST
+ * * `pm_buffer_free` - free the memory associated with the buffer
+ * * `pm_serialize` - serialize the AST into a buffer
+ * * `pm_parse_serialize` - parse and serialize the AST into a buffer
  *
  * Putting all of this together would look something like:
  *
