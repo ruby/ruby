@@ -2207,7 +2207,7 @@ pm_unicode_codepoint_match(pm_unicode_codepoint_t codepoint, const pm_unicode_co
 
 /**
  * A state transition table for decoding UTF-8.
- * 
+ *
  * Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -2349,7 +2349,7 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 #undef UNICODE_ISUPPER_CODEPOINTS_LENGTH
 
 /** UTF-8 */
-const pm_encoding_t pm_encoding_utf_8 = {
+pm_encoding_t pm_encoding_utf_8 = {
     .name = "utf-8",
     .char_width = pm_encoding_utf_8_char_width,
     .alnum_char = pm_encoding_utf_8_alnum_char,
@@ -2359,7 +2359,7 @@ const pm_encoding_t pm_encoding_utf_8 = {
 };
 
 /** UTF8-mac */
-const pm_encoding_t pm_encoding_utf8_mac = {
+pm_encoding_t pm_encoding_utf8_mac = {
     .name = "utf8-mac",
     .char_width = pm_encoding_utf_8_char_width,
     .alnum_char = pm_encoding_utf_8_alnum_char,

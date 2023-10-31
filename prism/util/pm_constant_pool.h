@@ -2,7 +2,7 @@
  * @file pm_constant_pool.h
  *
  * A data structure that stores a set of strings.
- * 
+ *
  * Each string is assigned a unique id, which can be used to compare strings for
  * equality. This comparison ends up being much faster than strcmp, since it
  * only requires a single integer comparison.

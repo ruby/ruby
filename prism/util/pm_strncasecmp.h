@@ -20,7 +20,7 @@
  * Note that this is effectively our own implementation of strncasecmp, but it's
  * not available on all of the platforms we want to support so we're rolling it
  * here.
- * 
+ *
  * @param string1 The first string to compare.
  * @param string2 The second string to compare
  * @param length The maximum number of characters to compare.
