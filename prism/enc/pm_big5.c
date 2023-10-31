@@ -42,7 +42,8 @@ pm_encoding_big5_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
-pm_encoding_t pm_encoding_big5 = {
+/** Big5 encoding */
+const pm_encoding_t pm_encoding_big5 = {
     .name = "big5",
     .char_width = pm_encoding_big5_char_width,
     .alnum_char = pm_encoding_big5_alnum_char,
