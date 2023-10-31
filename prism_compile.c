@@ -2258,7 +2258,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_FORWARDING_SUPER_NODE: {
         pm_forwarding_super_node_t *forwarding_super_node = (pm_forwarding_super_node_t *) node;
-        const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
         const rb_iseq_t *block = NULL;
         PM_PUTSELF;
         int flag = VM_CALL_ZSUPER | VM_CALL_SUPER | VM_CALL_FCALL;
