@@ -49,6 +49,4 @@
 #   define snprintf _snprintf
 #endif
 
-int pm_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length);
-
 #endif

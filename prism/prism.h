@@ -5,6 +5,7 @@
 #include "prism/util/pm_buffer.h"
 #include "prism/util/pm_char.h"
 #include "prism/util/pm_memchr.h"
+#include "prism/util/pm_strncasecmp.h"
 #include "prism/util/pm_strpbrk.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"

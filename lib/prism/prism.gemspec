@@ -57,6 +57,7 @@ Gem::Specification.new do |spec|
     "include/prism/util/pm_memchr.h",
     "include/prism/util/pm_newline_list.h",
     "include/prism/util/pm_state_stack.h",
+    "include/prism/util/pm_strncasecmp.h",
     "include/prism/util/pm_string.h",
     "include/prism/util/pm_string_list.h",
     "include/prism/util/pm_strpbrk.h",
