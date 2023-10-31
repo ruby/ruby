@@ -48,7 +48,8 @@ pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
-pm_encoding_t pm_encoding_euc_jp = {
+/** EUC-JP encoding */
+const pm_encoding_t pm_encoding_euc_jp = {
     .name = "euc-jp",
     .char_width = pm_encoding_euc_jp_char_width,
     .alnum_char = pm_encoding_euc_jp_alnum_char,
