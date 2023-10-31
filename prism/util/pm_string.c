@@ -1,19 +1,16 @@
 #include "prism/util/pm_string.h"
 
-// The following headers are necessary to read files using demand paging.
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
+/**
+ * Returns the size of the pm_string_t struct. This is necessary to allocate the
+ * correct amount of memory in the FFI backend.
+ */
+PRISM_EXPORTED_FUNCTION size_t
+pm_string_sizeof(void) {
+    return sizeof(pm_string_t);
+}
 
 /**
  * Initialize a shared string that is based on initial input.
- *
- * @memberof pm_string_t
  */
 void
 pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end) {
@@ -28,8 +25,6 @@ pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *
 
 /**
  * Initialize an owned string that is responsible for freeing allocated memory.
- *
- * @memberof pm_string_t
  */
 void
 pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) {
@@ -42,8 +37,6 @@ pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) {
 
 /**
  * Initialize a constant string that doesn't own its memory source.
- *
- * @memberof pm_string_t
  */
 void
 pm_string_constant_init(pm_string_t *string, const char *source, size_t length) {
@@ -64,8 +57,6 @@ pm_string_constant_init(pm_string_t *string, const char *source, size_t length) 
  * for large files). This means that if we're on windows we'll use
  * `MapViewOfFile`, on POSIX systems that have access to `mmap` we'll use
  * `mmap`, and on other POSIX systems we'll use `read`.
- *
- * @memberof pm_string_t
  */
 bool
 pm_string_mapped_init(pm_string_t *string, const char *filepath) {
@@ -90,7 +81,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        *string = PM_EMPTY_STRING;
+        *string = PM_STRING_EMPTY;
         return true;
     }
 
@@ -136,7 +127,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        *string = PM_EMPTY_STRING;
+        *string = PM_STRING_EMPTY;
         return true;
     }
 
@@ -154,8 +145,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
 /**
  * Returns the memory size associated with the string.
- *
- * @memberof pm_string_t
  */
 size_t
 pm_string_memsize(const pm_string_t *string) {
@@ -169,8 +158,6 @@ pm_string_memsize(const pm_string_t *string) {
 /**
  * Ensure the string is owned. If it is not, then reinitialize it as owned and
  * copy over the previous source.
- *
- * @memberof pm_string_t
  */
 void
 pm_string_ensure_owned(pm_string_t *string) {
@@ -188,8 +175,6 @@ pm_string_ensure_owned(pm_string_t *string) {
 
 /**
  * Returns the length associated with the string.
- *
- * @memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION size_t
 pm_string_length(const pm_string_t *string) {
@@ -198,8 +183,6 @@ pm_string_length(const pm_string_t *string) {
 
 /**
  * Returns the start pointer associated with the string.
- *
- * @memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION const uint8_t *
 pm_string_source(const pm_string_t *string) {
@@ -208,8 +191,6 @@ pm_string_source(const pm_string_t *string) {
 
 /**
  * Free the associated memory of the given string.
- *
- * @memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION void
 pm_string_free(pm_string_t *string) {
@@ -224,13 +205,4 @@ pm_string_free(pm_string_t *string) {
         munmap(memory, string->length);
 #endif
     }
-}
-
-/**
- * Returns the size of the pm_string_t struct. This is necessary to allocate the
- * correct amount of memory in the FFI backend.
- */
-PRISM_EXPORTED_FUNCTION size_t
-pm_string_sizeof(void) {
-    return sizeof(pm_string_t);
 }
