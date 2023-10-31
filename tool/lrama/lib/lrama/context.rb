@@ -170,7 +170,7 @@ module Lrama
       return a
     end
 
-    # Mapping from rule number to lenght of RHS.
+    # Mapping from rule number to length of RHS.
     # Dummy rule is appended as the first element whose value is 0
     # because 0 means error in yydefact.
     def yyr2
@@ -214,7 +214,7 @@ module Lrama
       (rule_id + 1) * -1
     end
 
-    # Symbol number is assinged to term first then nterm.
+    # Symbol number is assigned to term first then nterm.
     # This method calculates sequence_number for nterm.
     def nterm_number_to_sequence_number(nterm_number)
       nterm_number - @states.terms.count
@@ -259,7 +259,7 @@ module Lrama
           actions[conflict.symbol.number] = ErrorActionNumber
         end
 
-        # If default_reduction_rule, replase default_reduction_rule in
+        # If default_reduction_rule, replace default_reduction_rule in
         # actions with zero.
         if state.default_reduction_rule
           actions.map! do |e|
@@ -272,7 +272,7 @@ module Lrama
         end
 
         # If no default_reduction_rule, default behavior is an
-        # error then replase ErrorActionNumber with zero.
+        # error then replace ErrorActionNumber with zero.
         if !state.default_reduction_rule
           actions.map! do |e|
             if e == ErrorActionNumber

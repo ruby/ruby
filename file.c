@@ -1773,7 +1773,7 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
  *
  * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
-  *  File.chardev?($stdin)     # => true
+ *   File.chardev?($stdin)     # => true
  *   File.chardev?('t.txt')     # => false
  *
  */
@@ -6531,7 +6531,7 @@ const char ruby_null_device[] =
  *  \Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
- *  === About the Examples
+ *  == About the Examples
  *
  *  Many examples here use these variables:
  *

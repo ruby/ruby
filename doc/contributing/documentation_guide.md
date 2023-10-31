@@ -20,9 +20,11 @@ build directory:
 make html
 ```
 
+If you don't have a build directory, follow the [quick start
+guide](building_ruby.md#label-Quick+start+guide) up to step 4.
+
 Then you can preview your changes by opening
 `{build folder}/.ext/html/index.html` file in your browser.
-
 
 ## Goal
 
@@ -216,16 +218,21 @@ may not render them properly.
 In particular, avoid building tables with HTML tags
 (<tt><table></tt>, etc.).
 
-Alternatives are:
-
-- The GFM (GitHub Flavored Markdown) table extension,
-  which is enabled by default. See
-  {GFM tables extension}[https://github.github.com/gfm/#tables-extension-].
+Alternatives:
 
 - A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
-  using spaces and punctuation to format the text.
-  Note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
-  will not be honored.
+  using spaces and punctuation to format the text;
+  note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
+  will not be honored:
+
+    - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
+    - Corresponding {output}[rdoc-ref:File@Read-2FWrite+Mode].
+
+- (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
+  using special formatting for the text:
+
+    - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
+    - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
 
 ## Documenting Classes and Modules
 

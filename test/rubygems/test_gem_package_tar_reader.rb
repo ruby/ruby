@@ -25,6 +25,21 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     io.close!
   end
 
+  def test_each_with_not_a_tar
+    text = "Hello, world!!?\n" * 256 # 4 KiB
+    io = TempIO.new text
+
+    Gem::Package::TarReader.new io do |tar|
+      assert_raise Gem::Package::TarInvalidError do
+        tar.each do
+          flunk "TarInvalidError was expected to occur, but an entry was found"
+        end
+      end
+    end
+  ensure
+    io.close!
+  end
+
   def test_rewind
     content = ("a".."z").to_a.join(" ")
 

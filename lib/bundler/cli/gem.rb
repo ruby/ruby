@@ -137,10 +137,13 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
+        config[:ci_config_path] = ".github "
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
+        config[:ci_config_path] = ".gitlab-ci.yml "
       when "circle"
         templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
+        config[:ci_config_path] = ".circleci "
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
@@ -233,9 +236,7 @@ module Bundler
       end
 
       if use_git
-        Dir.chdir(target) do
-          `git add .`
-        end
+        IO.popen(%w[git add .], { :chdir => target }, &:read)
       end
 
       # Open gemspec in editor

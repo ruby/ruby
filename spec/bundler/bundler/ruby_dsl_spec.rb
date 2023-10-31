@@ -65,6 +65,15 @@ RSpec.describe Bundler::RubyDsl do
       it_behaves_like "it stores the ruby version"
     end
 
+    context "with a preview version" do
+      let(:ruby_version) { "3.3.0-preview2" }
+
+      it "stores the version" do
+        expect(subject.versions).to eq(Array("3.3.0.preview2"))
+        expect(subject.gem_version.version).to eq("3.3.0.preview2")
+      end
+    end
+
     context "with two requirements in the same string" do
       let(:ruby_version) { ">= 2.0.0, < 3.0" }
       it "raises an error" do

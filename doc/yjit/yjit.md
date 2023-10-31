@@ -87,7 +87,7 @@ The YJIT `ruby` binary can be built with either GCC or Clang. It can be built ei
 # Configure in release mode for maximum performance, build and install
 ./autogen.sh
 ./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
-make -j install
+make -j && make install
 ```
 
 or
@@ -96,7 +96,7 @@ or
 # Configure in lower-performance dev (debug) mode for development, build and install
 ./autogen.sh
 ./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
-make -j install
+make -j && make install
 ```
 
 Dev mode includes extended YJIT statistics, but can be slow. For only statistics you can configure in stats mode:
@@ -105,7 +105,7 @@ Dev mode includes extended YJIT statistics, but can be slow. For only statistics
 # Configure in extended-stats mode without slow runtime checks, build and install
 ./autogen.sh
 ./configure --enable-yjit=stats --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
-make -j install
+make -j && make install
 ```
 
 On macOS, you may need to specify where to find some libraries:
@@ -117,7 +117,7 @@ brew install openssl libyaml
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
 ./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
-make -j install
+make -j && make install
 ```
 
 Typically configure will choose the default C compiler. To specify the C compiler, use
@@ -165,12 +165,14 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
+- `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
+compiled, lower values mean less code is compiled (default 200000)
 - `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB in Ruby 3.2, 128 MiB in Ruby 3.3+)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
-- `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost) 
-- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
+- `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
+- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
-- `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
+- `--yjit-perf`: Enable frame pointers and profiling with the `perf` tool
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.
@@ -240,6 +242,7 @@ Running code GC adds overhead, but it could be still faster than recovering from
 
 This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase. You should ideally start by profiling your application using a tool such as [stackprof](https://github.com/tmm1/stackprof) so that you can determine which methods make up most of the execution time. You can then refactor the specific methods that make up the largest fractions of the execution time. We do not recommend modifying your entire codebase based on the current limitations of YJIT.
 
+- Avoid using `OpenStruct`
 - Avoid redefining basic integer operations (i.e. +, -, <, >, etc.)
 - Avoid redefining the meaning of `nil`, equality, etc.
 - Avoid allocating objects in the hot parts of your code
@@ -247,7 +250,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
   - Avoid classes that wrap objects if you can
   - Avoid methods that just call another method, trivial one liner methods
 - Try to write code so that the same variables always have the same type
-- Use while loops if you can, instead of C methods like `Array#each`
+- Use `while` loops if you can, instead of C methods like `Array#each`
   - This is not idiomatic Ruby, but could help in hot methods
 - CRuby method calls are costly. Avoid things such as methods that only return a value from a hash or return a constant.
 
@@ -425,3 +428,30 @@ While in your i386 shell, install Cargo and Homebrew, then hack away!
 2. Cargo will install in $HOME/.cargo by default, and I don't know a good way to change architectures after install
 
 If you use Fish shell you can [read this link](https://tenderlovemaking.com/2022/01/07/homebrew-rosetta-and-ruby.html) for information on making the dev environment easier.
+
+## Profiling with Linux perf
+
+`--yjit-perf` allows you to profile JIT-ed methods along with other native functions using Linux perf.
+When you run Ruby with `perf record`, perf looks up `/tmp/perf-{pid}.map` to resolve symbols in JIT code,
+and this option lets YJIT write method symbols into that file as well as enabling frame pointers.
+
+Here's an example way to use this option with [Firefox Profiler](https://profiler.firefox.com)
+(See also: [Profiling with Linux perf](https://profiler.firefox.com/docs/#/./guide-perf-profiling)):
+
+```bash
+# Compile the interpreter with frame pointers enabled
+./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc cflags=-fno-omit-frame-pointer
+make -j && make install
+
+# [Optional] Allow running perf without sudo
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
+# Profile Ruby with --yjit-perf
+cd ../yjit-bench
+perf record --call-graph fp -- ruby --yjit-perf -Iharness-perf benchmarks/liquid-render/benchmark.rb
+
+# View results on Firefox Profiler https://profiler.firefox.com.
+# Create /tmp/test.perf as below and upload it using "Load a profile from file".
+perf script --fields +pid > /tmp/test.perf
+```

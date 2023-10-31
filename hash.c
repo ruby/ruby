@@ -685,9 +685,8 @@ ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
     return ar_find_entry_hint(hash, hint, key);
 }
 
-//old one
 static inline void
-ar_free_and_clear_table(VALUE hash)
+hash_ar_free_and_clear_table(VALUE hash)
 {
     RHASH_AR_TABLE_CLEAR(hash);
 
@@ -715,7 +714,7 @@ ar_try_convert_table(VALUE hash)
         st_add_direct(new_tab, pair->key, pair->val);
     }
 
-    ar_free_and_clear_table(hash);
+    hash_ar_free_and_clear_table(hash);
     RHASH_ST_TABLE_SET(hash, new_tab);
 }
 
@@ -742,7 +741,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
             ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
             st_add_direct(new_tab, pair->key, pair->val);
         }
-        ar_free_and_clear_table(hash);
+        hash_ar_free_and_clear_table(hash);
     }
 
     RHASH_ST_TABLE_SET(hash, new_tab);
@@ -1161,7 +1160,7 @@ ar_clear(VALUE hash)
 }
 
 static void
-st_free_and_clear_table(VALUE hash)
+hash_st_free(VALUE hash)
 {
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
@@ -1169,8 +1168,22 @@ st_free_and_clear_table(VALUE hash)
 
     free(tab->bins);
     free(tab->entries);
+}
+
+static void
+hash_st_free_and_clear_table(VALUE hash)
+{
+    hash_st_free(hash);
 
     RHASH_ST_CLEAR(hash);
+}
+
+void
+rb_hash_free(VALUE hash)
+{
+    if (RHASH_ST_TABLE_P(hash)) {
+        hash_st_free(hash);
+    }
 }
 
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
@@ -1962,7 +1975,8 @@ rb_hash_rehash(VALUE hash)
     if (RHASH_AR_TABLE_P(hash)) {
         tmp = hash_alloc(0);
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
-        ar_free_and_clear_table(hash);
+
+        hash_ar_free_and_clear_table(hash);
         ar_copy(hash, tmp);
     }
     else if (RHASH_ST_TABLE_P(hash)) {
@@ -1974,6 +1988,7 @@ rb_hash_rehash(VALUE hash)
 
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
+        hash_st_free(hash);
         RHASH_ST_TABLE_SET(hash, tbl);
         RHASH_ST_CLEAR(tmp);
     }
@@ -2906,10 +2921,10 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     COPY_DEFAULT(hash, hash2);
 
     if (RHASH_AR_TABLE_P(hash)) {
-        ar_free_and_clear_table(hash);
+        hash_ar_free_and_clear_table(hash);
     }
     else {
-        st_free_and_clear_table(hash);
+        hash_st_free_and_clear_table(hash);
     }
 
     hash_copy(hash, hash2);
@@ -6812,7 +6827,7 @@ static const rb_data_type_t env_data_type = {
  *      alias eql? ==
  *
  *      def hash
- *        @author.hash ^ @title.hash # XOR
+ *        [self.class, @author, @title].hash
  *      end
  *    end
  *
@@ -6984,7 +6999,7 @@ static const rb_data_type_t env_data_type = {
  *  - #key: Returns the key for the first-found entry with a given value.
  *  - #keys: Returns an array containing all keys in +self+.
  *  - #rassoc: Returns a 2-element array consisting of the key and value
-      of the first-found entry having a given value.
+ *    of the first-found entry having a given value.
  *  - #values: Returns an array containing all values in +self+/
  *  - #values_at: Returns an array containing values for given keys.
  *

@@ -25,6 +25,7 @@
 .Op Fl - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
 .Op Fl -dump Ns = Ns Ar target
 .Op Fl -verbose
+.Op Fl -crash-report Ns = Ns Ar template
 .Op Fl -
 .Op Ar program_file
 .Op Ar argument ...
@@ -469,6 +470,12 @@ variable to true.
 If this switch is given, and no script arguments (script file or
 .Fl e
 options) are present, Ruby quits immediately.
+.Pp
+.It Fl -crash-report Ns = Ns Ar template
+Sets the template of path name to save crash report.
+See
+.Ev RUBY_CRASH_REPORT
+environment variable for details.
 .El
 .Pp
 .Sh ENVIRONMENT
@@ -645,6 +652,61 @@ Machine stack size used at fiber creation.
 default: 262144 or 524288
 .Pp
 .El
+.Sh CRASH REPORT ENVIRONMENT
+.Pp
+.Bl -tag -compact -width "RUBY_CRASH_REPORT"
+.It Ev RUBY_CRASH_REPORT
+The template of path name to save crash report.
+default: none
+.El
+.Ss Naming crash report files
+The template can contain
+.Li \fB%\fP
+specifiers which are substituted by the following values when a crash
+report file is created:
+.Pp
+.Bl -hang -compact -width "%NNN"
+.It Li \fB%%\fP
+A single
+.Li \fB%\fP
+character.
+.It Li \fB%e\fP
+Basename of executable.
+.It Li \fB%E\fP
+Pathname of executable,
+with slashes (\fB/\fP) replaced by exclamation marks (\fB!\fP).
+.It Li \fB%f\fP
+Basename of the program name,
+.Li "$0" .
+.It Li \fB%F\fP
+Pathname of the program name,
+.Li "$0",
+with slashes (\fB/\fP) replaced by exclamation marks (\fB!\fP).
+.It Li \fB%p\fP
+PID of dumped process.
+.It Li \fB%t\fP
+Time of dump, expressed as seconds since the
+Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+.It Li \fB%NNN\fP
+A character code in octal.
+.El
+.Pp
+A single
+.Li \fB%\fP
+at the end of the template is dropped from the core filename, as is
+the combination of a
+.Li \fB%\fP
+followed by any character other than those listed above.  All other
+characters in the template become a literal part of the core filename.
+The template may include \(aq/\(aq characters, which are interpreted
+as delimiters for directory names.
+.Ss Piping crash reports to a program
+If the first character of this file is a pipe symbol (\fB|\fP),
+then the remainder of the line is interpreted as the command-line for
+a program (or script) that is to be executed.
+.Pp
+The pipe template is split on spaces into an argument list before the
+template parameters are expanded.
 .Sh SEE ALSO
 .Bl -hang -compact -width "https://www.ruby-toolbox.com/"
 .It Lk https://www.ruby-lang.org/

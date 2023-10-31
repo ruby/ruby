@@ -292,7 +292,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
-    if (rb_shape_id(src_shape) == OBJ_TOO_COMPLEX_SHAPE_ID) {
+    if (rb_shape_obj_too_complex(obj)) {
         st_table * table = rb_st_init_numtable_with_size(rb_st_table_size(ROBJECT_IV_HASH(obj)));
 
         rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
@@ -463,7 +463,13 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
         if (RB_OBJ_FROZEN(obj)) {
-            rb_shape_transition_shape_frozen(clone);
+            rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
+            if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+                rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+            }
+            else {
+                rb_shape_set_shape(clone, next_shape);
+            }
         }
         break;
       case Qtrue: {
@@ -479,7 +485,15 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         RBASIC(clone)->flags |= FL_FREEZE;
-        rb_shape_transition_shape_frozen(clone);
+        rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
+        // If we're out of shapes, but we want to freeze, then we need to
+        // evacuate this clone to a hash
+        if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+            rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+        }
+        else {
+            rb_shape_set_shape(clone, next_shape);
+        }
         break;
       }
       case Qfalse: {

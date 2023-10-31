@@ -81,7 +81,7 @@ module Bundler
                   :HTTPRequestURITooLong, :HTTPUnauthorized, :HTTPUnprocessableEntity,
                   :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
     FAIL_ERRORS = begin
-      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError]
+      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError, SecurityError]
       fail_errors << Gem::Requirement::BadRequirementError
       fail_errors.concat(NET_ERRORS.map {|e| Net.const_get(e) })
     end.freeze
@@ -139,7 +139,9 @@ module Bundler
 
       fetch_specs(gem_names).each do |name, version, platform, dependencies, metadata|
         spec = if dependencies
-          EndpointSpecification.new(name, version, platform, self, dependencies, metadata)
+          EndpointSpecification.new(name, version, platform, self, dependencies, metadata).tap do |es|
+            source.checksum_store.replace(es, es.checksum)
+          end
         else
           RemoteSpecification.new(name, version, platform, self)
         end

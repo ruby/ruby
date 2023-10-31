@@ -16,20 +16,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
+          # Skip overwriting MATZBOT_GITHUB_TOKEN
+          checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
       - name: Check if C-sources are US-ASCII
         run: |
-          grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+          grep -r -n $'[^\t -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
 
       - name: Check for trailing spaces
         run: |
-          git grep -I -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs' && exit 1 || :
-          git grep -n '^[	 ][	 ]*$' -- '*.md' && exit 1 || :
+          git grep -I -n $'[\t ]$' -- '*.rb' '*.[chy]' '*.rs' '*.yml' && exit 1 || :
+          git grep -n $'^[\t ][\t ]*$' -- '*.md' && exit 1 || :
 
       - name: Check for bash specific substitution in configure.ac
         run: |
@@ -85,8 +89,8 @@ jobs:
       - name: Check diffs
         id: diff
         run: |
-          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
-        continue-on-error: true
+          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md ||
+          echo update=true >> $GITHUB_OUTPUT
         if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Commit
@@ -98,9 +102,14 @@ jobs:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-        if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
+        if: >-
+          ${{
+          github.repository == 'ruby/ruby' &&
+          !startsWith(github.event_name, 'pull') &&
+          steps.diff.outputs.update
+          }}
 
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}

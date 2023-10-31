@@ -40,11 +40,11 @@ module Bundler
 
         out << "\n## Gemfile\n"
         gemfiles.each do |gemfile|
-          out << "\n### #{Pathname.new(gemfile).relative_path_from(SharedHelpers.pwd)}\n\n"
+          out << "\n### #{SharedHelpers.relative_path_to(gemfile)}\n\n"
           out << "```ruby\n" << read_file(gemfile).chomp << "\n```\n"
         end
 
-        out << "\n### #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}\n\n"
+        out << "\n### #{SharedHelpers.relative_path_to(Bundler.default_lockfile)}\n\n"
         out << "```\n" << read_file(Bundler.default_lockfile).chomp << "\n```\n"
       end
 

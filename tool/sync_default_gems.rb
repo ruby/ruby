@@ -53,6 +53,7 @@ module SyncDefaultGems
     pathname: "ruby/pathname",
     pp: "ruby/pp",
     prettyprint: "ruby/prettyprint",
+    prism: ["ruby/prism", "main"],
     pstore: "ruby/pstore",
     psych: 'ruby/psych',
     rdoc: 'ruby/rdoc',
@@ -79,7 +80,6 @@ module SyncDefaultGems
     weakref: "ruby/weakref",
     win32ole: "ruby/win32ole",
     yaml: "ruby/yaml",
-    yarp: ["ruby/yarp", "main"],
     zlib: 'ruby/zlib',
   }.transform_keys(&:to_s)
 
@@ -397,32 +397,26 @@ module SyncDefaultGems
       rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
-    when "yarp"
-      # We don't want to remove yarp_init.c, so we temporarily move it
-      # out of the yarp dir, wipe the yarp dir, and then put it back
-      mv("yarp/yarp_init.c", ".")
-      mv("yarp/yarp_compiler.c", ".")
-      mv("test/yarp/compiler_test.rb", ".")
-      rm_rf(%w[test/yarp yarp])
+    when "prism"
+      rm_rf(%w[test/prism prism])
 
-      # Run the YARP templating scripts
-      cp_r("#{upstream}/ext/yarp", "yarp")
+      cp_r("#{upstream}/ext/prism", "prism")
       cp_r("#{upstream}/lib/.", "lib")
-      cp_r("#{upstream}/test/yarp", "test")
-      cp_r("#{upstream}/src/.", "yarp")
+      cp_r("#{upstream}/test/prism", "test")
+      cp_r("#{upstream}/src/.", "prism")
 
-      cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
-      cp_r("#{upstream}/include/yarp/.", "yarp")
-      cp_r("#{upstream}/include/yarp.h", "yarp")
+      cp_r("#{upstream}/prism.gemspec", "lib/prism")
+      cp_r("#{upstream}/include/prism/.", "prism")
+      cp_r("#{upstream}/include/prism.h", "prism")
 
-      cp_r("#{upstream}/config.yml", "yarp/")
-      cp_r("#{upstream}/templates", "yarp/")
-      rm_rf("yarp/templates/java")
+      cp_r("#{upstream}/config.yml", "prism/")
+      cp_r("#{upstream}/templates", "prism/")
+      rm_rf("prism/templates/javascript")
+      rm_rf("prism/templates/java")
+      rm_rf("prism/templates/rbi")
+      rm_rf("prism/templates/sig")
 
-      rm("yarp/extconf.rb")
-      mv("yarp_init.c", "yarp/")
-      mv("yarp_compiler.c", "yarp/")
-      mv("compiler_test.rb", "test/yarp/")
+      rm("prism/extconf.rb")
     else
       sync_lib gem, upstream
     end
@@ -458,7 +452,11 @@ module SyncDefaultGems
     log.delete!("\r")
     log << "\n" if !log.end_with?("\n")
     repo_url = "https://github.com/#{repo}"
-    subject, log = log.split(/\n(?:[ \t]*(?:\n|\z))/, 2)
+
+    # Split the subject from the log message according to git conventions.
+    # SPECIAL TREAT: when the first line ends with a dot `.` (which is not
+    # obeying the conventions too), takes only that line.
+    subject, log = log.split(/\A.+\.\K\n(?=\S)|\n(?:[ \t]*(?:\n|\z))/, 2)
     conv = proc do |s|
       mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?|close[sd]?|resolve[sd]?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
         "#{repo_url}/pull/"

@@ -11,7 +11,7 @@
 module RubyVM::YJIT
   # Check if YJIT is enabled
   def self.enabled?
-    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
+    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
   end
 
   # Check if --yjit-stats is used.
@@ -29,9 +29,9 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Resume YJIT compilation after paused on startup with --yjit-pause
-  def self.resume
-    Primitive.rb_yjit_resume
+  # Enable YJIT compilation.
+  def self.enable
+    Primitive.rb_yjit_enable
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -245,6 +245,44 @@ module RubyVM::YJIT
       $stderr.puts("YJIT exit locations dumped to `#{filename}`.")
     end
 
+    # Print a summary of reasons for adverse performance events (e.g. exits)
+    def _print_stats_reasons(stats, out) # :nodoc:
+      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')
+      print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
+      print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
+      print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
+      %w[
+        branchif
+        branchnil
+        branchunless
+        definedivar
+        expandarray
+        jump
+        leave
+        objtostring
+        opt_aref
+        opt_aref_with
+        opt_aset
+        opt_case_dispatch
+        opt_div
+        opt_getconstant_path
+        opt_minus
+        opt_mod
+        opt_mult
+        opt_plus
+        setlocal
+      ].each do |insn|
+        print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
+      end
+      print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
+      print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
+    end
+
     # Format and print out counters
     def _print_stats(out: $stderr) # :nodoc:
       stats = runtime_stats(context: true)
@@ -252,23 +290,7 @@ module RubyVM::YJIT
 
       out.puts("***YJIT: Printing YJIT statistics on exit***")
 
-      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
-      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
-      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
-      print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
-      print_counters(stats, out: out, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')
-      print_counters(stats, out: out, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')
-      print_counters(stats, out: out, prefix: 'leave_', prompt: 'leave exit reasons: ')
-      print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
-      print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
-      print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
-      print_counters(stats, out: out, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
-      print_counters(stats, out: out, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
-      print_counters(stats, out: out, prefix: 'opt_aref_with_', prompt: 'opt_aref_with exit reasons: ')
-      print_counters(stats, out: out, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
-      print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
-      print_counters(stats, out: out, prefix: 'opt_getconstant_path_', prompt: 'opt_getconstant_path exit reasons: ')
-      print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
+      _print_stats_reasons(stats, out)
 
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
@@ -278,7 +300,7 @@ module RubyVM::YJIT
       out.puts "num_send:              " + format_number(13, stats[:num_send])
       out.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
       out.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
-      out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:num_send_megamorphic], stats[:num_send])
+      out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:send_megamorphic], stats[:num_send])
       out.puts "num_send_dynamic:      " + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
         out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
@@ -299,7 +321,9 @@ module RubyVM::YJIT
       out.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
       out.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       out.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
+      out.puts "live_iseq_count:       " + format_number(13, stats[:live_iseq_count])
       out.puts "compiled_iseq_entry:   " + format_number(13, stats[:compiled_iseq_entry])
+      out.puts "cold_iseq_entry:       " + format_number_pct(13, stats[:cold_iseq_entry], stats[:compiled_iseq_entry] + stats[:cold_iseq_entry])
       out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
       out.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
       out.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
@@ -381,15 +405,19 @@ module RubyVM::YJIT
       total
     end
 
-    def print_counters(counters, out:, prefix:, prompt:) # :nodoc:
-      out.puts(prompt)
+    def print_counters(counters, out:, prefix:, prompt:, optional: false) # :nodoc:
       counters = counters.filter { |key, _| key.start_with?(prefix) }
       counters.filter! { |_, value| value != 0 }
       counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
 
       if counters.empty?
-        out.puts("    (all relevant counters are zero)")
+        unless optional
+          out.puts(prompt)
+          out.puts("    (all relevant counters are zero)")
+        end
         return
+      else
+        out.puts(prompt)
       end
 
       counters = counters.to_a

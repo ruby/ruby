@@ -39,6 +39,7 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
+  autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)

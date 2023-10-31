@@ -675,7 +675,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 }
                 break;
             }
-      case FUNsio:
+          case FUNsio:
             {
                 const unsigned char *char_start;
                 size_t char_len;

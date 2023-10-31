@@ -798,13 +798,6 @@ rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
     cfp->sp = sp;
 }
 
-rb_iseq_t *
-rb_cfp_get_iseq(struct rb_control_frame_struct *cfp)
-{
-    // TODO(alan) could assert frame type here to make sure that it's a ruby frame with an iseq.
-    return (rb_iseq_t*)cfp->iseq;
-}
-
 VALUE
 rb_get_cfp_self(struct rb_control_frame_struct *cfp)
 {
@@ -1178,20 +1171,15 @@ VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq)
 VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_resume(rb_execution_context_t *ec, VALUE self);
+VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
 
-// Can raise RuntimeError
+// Initialize the GC hooks
 void
-rb_yjit_init(void)
+rb_yjit_init_gc_hooks(void)
 {
-    // Call the Rust initialization code
-    void rb_yjit_init_rust(void);
-    rb_yjit_init_rust();
-
-    // Initialize the GC hooks. Do this second as some code depend on Rust initialization.
     struct yjit_root_struct *root;
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
     rb_gc_register_mark_object(yjit_root);

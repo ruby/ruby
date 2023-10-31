@@ -19,6 +19,7 @@ module Bundler
       add_sources
       add_platforms
       add_dependencies
+      add_checksums
       add_locked_ruby_version
       add_bundled_with
 
@@ -63,6 +64,13 @@ module Bundler
         out << dep.to_lock << "\n"
         handled << dep.name
       end
+    end
+
+    def add_checksums
+      checksums = definition.resolve.map do |spec|
+        spec.source.checksum_store.to_lock(spec)
+      end
+      add_section("CHECKSUMS", checksums)
     end
 
     def add_locked_ruby_version

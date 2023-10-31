@@ -8,9 +8,10 @@ RSpec.describe "real world edgecases", :realworld => true do
       require "bundler/source/rubygems/remote"
       require "bundler/fetcher"
       rubygem = Bundler.ui.silence do
-        source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
-        fetcher = Bundler::Fetcher.new(source)
-        index = fetcher.specs([#{name.dump}], nil)
+        remote = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
+        source = Bundler::Source::Rubygems.new
+        fetcher = Bundler::Fetcher.new(remote)
+        index = fetcher.specs([#{name.dump}], source)
         requirement = Gem::Requirement.create(#{requirement.dump})
         index.search(#{name.dump}).select {|spec| requirement.satisfied_by?(spec.version) }.last
       end
@@ -323,7 +324,7 @@ RSpec.describe "real world edgecases", :realworld => true do
     if Bundler.feature_flag.bundler_3_mode?
       # Conflicts on bundler version, so we count attempts differently
       bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }, :raise_on_error => false
-      expect(out.split("\n").grep(/backtracking to/).count).to eq(16)
+      expect(out.split("\n").grep(/backtracking to/).count).to eq(8)
     else
       bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
       expect(out).to include("Solution found after 7 attempts")

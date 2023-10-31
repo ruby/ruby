@@ -85,11 +85,15 @@
  *   puts e.next   # => 3
  *   puts e.next   # raises StopIteration
  *
- * +next+, +next_values+, +peek+ and +peek_values+ are the only methods
- * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+).
+ * +next+, +next_values+, +peek+, and +peek_values+ are the only methods
+ * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+ internally).
  *
  * These methods do not affect other internal enumeration methods,
  * unless the underlying iteration method itself has side-effect, e.g. IO#each_line.
+ *
+ * FrozenError will be raised if these methods are called against a frozen enumerator.
+ * Since +rewind+ and +feed+ also change state for external iteration,
+ * these methods may raise FrozenError too.
  *
  * External iteration differs *significantly* from internal iteration
  * due to using a Fiber:
@@ -869,6 +873,8 @@ enumerator_next_values(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE vs;
 
+    rb_check_frozen(obj);
+
     if (!UNDEF_P(e->lookahead)) {
         vs = e->lookahead;
         e->lookahead = Qundef;
@@ -929,6 +935,8 @@ static VALUE
 enumerator_peek_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     if (UNDEF_P(e->lookahead)) {
         e->lookahead = get_next_values(obj, e);
@@ -1054,6 +1062,8 @@ enumerator_feed(VALUE obj, VALUE v)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
+    rb_check_frozen(obj);
+
     if (!UNDEF_P(e->feedvalue)) {
         rb_raise(rb_eTypeError, "feed value already set");
     }
@@ -1075,6 +1085,8 @@ static VALUE
 enumerator_rewind(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     rb_check_funcall(e->obj, id_rewind, 0, 0);
 

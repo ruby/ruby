@@ -1,0 +1,59 @@
+@ ProgramNode (location: (1,0)-(1,42))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,42))
+    └── body: (length: 1)
+        └── @ BeginNode (location: (1,0)-(1,42))
+            ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
+            ├── statements:
+            │   @ StatementsNode (location: (1,7)-(1,11))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (1,7)-(1,11))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (1,7)-(1,11) = "meth"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block: ∅
+            │           ├── flags: variable_call
+            │           └── name: :meth
+            ├── rescue_clause:
+            │   @ RescueNode (location: (1,13)-(1,24))
+            │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
+            │   ├── exceptions: (length: 0)
+            │   ├── operator_loc: ∅
+            │   ├── reference: ∅
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (1,21)-(1,24))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (1,21)-(1,24))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (1,21)-(1,24) = "baz"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: :baz
+            │   └── consequent: ∅
+            ├── else_clause: ∅
+            ├── ensure_clause:
+            │   @ EnsureNode (location: (1,26)-(1,42))
+            │   ├── ensure_keyword_loc: (1,26)-(1,32) = "ensure"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (1,34)-(1,37))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (1,34)-(1,37))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (1,34)-(1,37) = "bar"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block: ∅
+            │   │           ├── flags: variable_call
+            │   │           └── name: :bar
+            │   └── end_keyword_loc: (1,39)-(1,42) = "end"
+            └── end_keyword_loc: (1,39)-(1,42) = "end"

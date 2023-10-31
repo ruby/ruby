@@ -175,7 +175,7 @@
 # [dingus]: http://daringfireball.net/projects/markdown/dingus
 # [GFM]: https://github.github.com/gfm/
 # [pegmarkdown]: https://github.com/jgm/peg-markdown
-# [PHPE]: http://michelf.com/projects/php-markdown/extra/#def-list
+# [PHPE]: https://michelf.ca/projects/php-markdown/extra/#def-list
 # [syntax]: http://daringfireball.net/projects/markdown/syntax
 #--
 # Last updated to jgm/peg-markdown commit 8f8fc22ef0

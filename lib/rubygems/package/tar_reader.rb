@@ -52,7 +52,14 @@ class Gem::Package::TarReader
     return enum_for __method__ unless block_given?
 
     until @io.eof? do
-      header = Gem::Package::TarHeader.from @io
+      begin
+        header = Gem::Package::TarHeader.from @io
+      rescue ArgumentError => e
+        # Specialize only exceptions from Gem::Package::TarHeader.strict_oct
+        raise e unless e.message.match?(/ is not an octal string$/)
+        raise Gem::Package::TarInvalidError, e.message
+      end
+
       return if header.empty?
       entry = Gem::Package::TarReader::Entry.new header, @io
       yield entry

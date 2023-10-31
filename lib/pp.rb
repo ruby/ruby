@@ -46,6 +46,7 @@ require 'prettyprint'
 #
 # To define a customized pretty printing function for your classes,
 # redefine method <code>#pretty_print(pp)</code> in the class.
+# Note that <code>require 'pp'</code> is needed before redefining <code>#pretty_print(pp)</code>.
 #
 # <code>#pretty_print</code> takes the +pp+ argument, which is an instance of the PP class.
 # The method uses #text, #breakable, #nest, #group and #pp to print the
@@ -631,10 +632,6 @@ end
 
 module Kernel
   # Returns a pretty printed object as a string.
-  #
-  # In order to use this method you must first require the PP module:
-  #
-  #   require 'pp'
   #
   # See the PP module for more information.
   def pretty_inspect

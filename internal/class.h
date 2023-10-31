@@ -85,7 +85,12 @@ struct RClass {
 // Assert that classes can be embedded in size_pools[2] (which has 160B slot size)
 STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
 
-#define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
+struct RClass_and_rb_classext_t {
+    struct RClass rclass;
+    rb_classext_t classext;
+};
+
+#define RCLASS_EXT(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_IVPTR(c) (RCLASS_EXT(c)->iv_ptr)

@@ -68,7 +68,7 @@ jobs:
 
     steps:
       - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@52b8784594ec115fd17094752708121dc5dabb47 # v1.154.0
+        uses: ruby/setup-ruby@54a18e26dbbb1eabc604f317ade9a5788dddef81 # v1.159.0
         with:
           ruby-version: ${{ matrix.base_ruby }}
 
@@ -99,7 +99,7 @@ jobs:
           $result
         working-directory:
 
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -153,7 +153,7 @@ jobs:
         with:
           label: ${{ matrix.msystem }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:

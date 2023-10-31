@@ -999,7 +999,7 @@ num_negative_p(VALUE num)
  *  - #/: Returns the quotient of +self+ and the given value.
  *  - #ceil: Returns the smallest number greater than or equal to +self+.
  *  - #coerce: Returns a 2-element array containing the given value converted to a \Float
-      and +self+
+ *    and +self+
  *  - #divmod: Returns a 2-element array containing the quotient and remainder
  *    results of dividing +self+ by the given value.
  *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
@@ -1683,12 +1683,12 @@ rb_dbl_cmp(double a, double b)
  *  Examples:
  *
  *    2.0 <=> 2              # => 0
-      2.0 <=> 2.0            # => 0
-      2.0 <=> Rational(2, 1) # => 0
-      2.0 <=> Complex(2, 0)  # => 0
-      2.0 <=> 1.9            # => 1
-      2.0 <=> 2.1            # => -1
-      2.0 <=> 'foo'          # => nil
+ *    2.0 <=> 2.0            # => 0
+ *    2.0 <=> Rational(2, 1) # => 0
+ *    2.0 <=> Complex(2, 0)  # => 0
+ *    2.0 <=> 1.9            # => 1
+ *    2.0 <=> 2.1            # => -1
+ *    2.0 <=> 'foo'          # => nil
  *
  *  This is the basis for the tests in the Comparable module.
  *
@@ -2834,7 +2834,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
         }
         if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
         result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
-        if (!excl || RTEST(rb_funcall(rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step)), cmp, 1, to))) {
+        if (!excl || RTEST(rb_funcall(to, cmp, 1, rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step))))) {
             result = rb_funcall(result, '+', 1, INT2FIX(1));
         }
         return result;
@@ -2960,11 +2960,11 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  The generated sequence:
  *
  *  - Begins with +self+.
- *  - Continues at intervals of +step+ (which may not be zero).
- *  - Ends with the last number that is within or equal to +limit+;
- *    that is, less than or equal to +limit+ if +step+ is positive,
- *    greater than or equal to +limit+ if +step+ is negative.
- *    If +limit+ is not given, the sequence is of infinite length.
+ *  - Continues at intervals of +by+ (which may not be zero).
+ *  - Ends with the last number that is within or equal to +to+;
+ *    that is, less than or equal to +to+ if +by+ is positive,
+ *    greater than or equal to +to+ if +by+ is negative.
+ *    If +to+ is +nil+, the sequence is of infinite length.
  *
  *  If a block is given, calls the block with each number in the sequence;
  *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
@@ -3006,7 +3006,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  <b>Positional Arguments</b>
  *
- *  With optional positional arguments +limit+ and +step+,
+ *  With optional positional arguments +to+ and +by+,
  *  their values (or defaults) determine the step and limit:
  *
  *    squares = []

@@ -1,9 +1,0 @@
-prelude: |
-  r = (1..)
-
-benchmark:
-  '10**1': r.bsearch { |x| x >= 10 }
-  '10**2': r.bsearch { |x| x >= 100 }
-  '10**3': r.bsearch { |x| x >= 1000 }
-  '10**4': r.bsearch { |x| x >= 10000 }
-  '10**5': r.bsearch { |x| x >= 100000 }

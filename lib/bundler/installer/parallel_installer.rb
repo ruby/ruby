@@ -91,36 +91,10 @@ module Bundler
         install_serially
       end
 
-      check_for_unmet_dependencies
-
       handle_error if failed_specs.any?
       @specs
     ensure
       worker_pool&.stop
-    end
-
-    def check_for_unmet_dependencies
-      unmet_dependencies = @specs.map do |s|
-        [
-          s,
-          s.dependencies.reject {|dep| @specs.any? {|spec| dep.matches_spec?(spec.spec) } },
-        ]
-      end.reject {|a| a.last.empty? }
-      return if unmet_dependencies.empty?
-
-      warning = []
-      warning << "Your lockfile doesn't include a valid resolution."
-      warning << "You can fix this by regenerating your lockfile or manually editing the bad locked gems to a version that satisfies all dependencies."
-      warning << "The unmet dependencies are:"
-
-      unmet_dependencies.each do |spec, unmet_spec_dependencies|
-        unmet_spec_dependencies.each do |unmet_spec_dependency|
-          found = @specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }
-          warning << "* #{unmet_spec_dependency}, dependency of #{spec.full_name}, unsatisfied by #{found.full_name}"
-        end
-      end
-
-      Bundler.ui.warn(warning.join("\n"))
     end
 
     private

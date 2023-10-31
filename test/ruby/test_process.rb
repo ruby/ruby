@@ -715,6 +715,10 @@ class TestProcess < Test::Unit::TestCase
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
+        sleep 0.2 # wait for the child to return to opening "fifo".
+        # On arm64-darwin22, often deadlocks while the child is
+        # opening "fifo".  Not sure to where "ok" line being written
+        # at the next has gone.
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
@@ -2772,7 +2776,7 @@ EOS
 
       # Number of pages freed should cause equal increase in number of allocatable pages.
       assert_equal(total_pages_before, GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages))
-      assert_equal(0, GC.stat(:heap_tomb_pages), GC.stat)
+      assert_equal(0, GC.stat(:heap_tomb_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
     end;
   end

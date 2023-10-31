@@ -1,0 +1,56 @@
+@ ProgramNode (location: (1,0)-(6,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(6,3))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (1,0)-(6,3))
+            ├── predicate:
+            │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── opening_loc: (1,5)-(1,6) = ":"
+            │   ├── value_loc: (1,6)-(1,7) = "a"
+            │   ├── closing_loc: ∅
+            │   └── unescaped: "a"
+            ├── conditions: (length: 2)
+            │   ├── @ InNode (location: (2,0)-(3,4))
+            │   │   ├── pattern:
+            │   │   │   @ ConstantPathNode (location: (2,3)-(2,7))
+            │   │   │   ├── parent:
+            │   │   │   │   @ ConstantReadNode (location: (2,3)-(2,4))
+            │   │   │   │   └── name: :A
+            │   │   │   ├── child:
+            │   │   │   │   @ ConstantReadNode (location: (2,6)-(2,7))
+            │   │   │   │   └── name: :B
+            │   │   │   └── delimiter_loc: (2,4)-(2,6) = "::"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (3,2)-(3,4))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ SymbolNode (location: (3,2)-(3,4))
+            │   │   │           ├── opening_loc: (3,2)-(3,3) = ":"
+            │   │   │           ├── value_loc: (3,3)-(3,4) = "C"
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           └── unescaped: "C"
+            │   │   ├── in_loc: (2,0)-(2,2) = "in"
+            │   │   └── then_loc: ∅
+            │   └── @ InNode (location: (4,0)-(5,4))
+            │       ├── pattern:
+            │       │   @ ConstantPathNode (location: (4,3)-(4,7))
+            │       │   ├── parent:
+            │       │   │   @ ConstantReadNode (location: (4,3)-(4,4))
+            │       │   │   └── name: :D
+            │       │   ├── child:
+            │       │   │   @ ConstantReadNode (location: (4,6)-(4,7))
+            │       │   │   └── name: :E
+            │       │   └── delimiter_loc: (4,4)-(4,6) = "::"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (5,2)-(5,4))
+            │       │   └── body: (length: 1)
+            │       │       └── @ SymbolNode (location: (5,2)-(5,4))
+            │       │           ├── opening_loc: (5,2)-(5,3) = ":"
+            │       │           ├── value_loc: (5,3)-(5,4) = "F"
+            │       │           ├── closing_loc: ∅
+            │       │           └── unescaped: "F"
+            │       ├── in_loc: (4,0)-(4,2) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (6,0)-(6,3) = "end"

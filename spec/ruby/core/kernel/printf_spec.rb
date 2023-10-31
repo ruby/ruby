@@ -31,6 +31,13 @@ describe "Kernel.printf" do
     object.should_receive(:write).with("string")
     Kernel.printf(object, "%s", "string")
   end
+
+  it "calls #to_str to convert the format object to a String" do
+    object = mock('format string')
+    object.should_receive(:to_str).and_return("to_str: %i")
+    $stdout.should_receive(:write).with("to_str: 42")
+    Kernel.printf($stdout, object, 42)
+  end
 end
 
 describe "Kernel.printf" do

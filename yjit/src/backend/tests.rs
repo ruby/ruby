@@ -303,25 +303,6 @@ fn test_draining_iterator() {
 }
 
 #[test]
-fn test_lookback_iterator() {
-    let mut asm = Assembler::new();
-
-    let _ = asm.load(Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-
-    let iter = asm.into_lookback_iter();
-
-    while let Some((index, insn)) = iter.next_unmapped() {
-        if index > 0 {
-            let opnd_iter = iter.get_previous().unwrap().opnd_iter();
-            assert_eq!(opnd_iter.take(1).next(), Some(&Opnd::None));
-            assert!(matches!(insn, Insn::Store { .. }));
-        }
-    }
-}
-
-#[test]
 fn test_cmp_8_bit() {
     let (mut asm, mut cb) = setup_asm();
     let reg = Assembler::get_alloc_regs()[0];

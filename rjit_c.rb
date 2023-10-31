@@ -171,9 +171,9 @@ module RubyVM::RJIT # :nodoc: all
       me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
     end
 
-    def rb_shape_transition_shape_capa(shape, new_capacity)
+    def rb_shape_transition_shape_capa(shape)
       _shape = shape.to_i
-      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_transition_shape_capa((rb_shape_t *)NUM2SIZET(_shape), NUM2UINT(new_capacity)))'
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_transition_shape_capa((rb_shape_t *)NUM2SIZET(_shape)))'
       rb_shape_t.new(shape_addr)
     end
 
@@ -1037,6 +1037,7 @@ module RubyVM::RJIT # :nodoc: all
     @rb_callinfo_kwarg ||= CType::Struct.new(
       "rb_callinfo_kwarg", Primitive.cexpr!("SIZEOF(struct rb_callinfo_kwarg)"),
       keyword_len: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo_kwarg *)NULL)), keyword_len)")],
+      references: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo_kwarg *)NULL)), references)")],
       keywords: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo_kwarg *)NULL)), keywords)")],
     )
   end
@@ -1269,9 +1270,9 @@ module RubyVM::RJIT # :nodoc: all
       "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
       type: [CType::BitField.new(4, 0), 0],
       iseq_overload: [CType::BitField.new(1, 4), 4],
-      alias_count: [CType::BitField.new(27, 5), 5],
-      complemented_count: [CType::BitField.new(28, 0), 32],
-      no_redef_warning: [CType::BitField.new(1, 4), 60],
+      no_redef_warning: [CType::BitField.new(1, 5), 5],
+      aliased: [CType::BitField.new(1, 6), 6],
+      reference_count: [CType::BitField.new(28, 0), 32],
       body: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_method_definition_struct *)NULL)->body)"),
         iseq: self.rb_method_iseq_t,
@@ -1482,6 +1483,7 @@ module RubyVM::RJIT # :nodoc: all
       type: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), type)")],
       size_pool_index: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), size_pool_index)")],
       parent_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), parent_id)")],
+      ancestor_index: [CType::Pointer.new { self.redblack_node_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), ancestor_index)")],
     )
   end
 
@@ -1638,6 +1640,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C._Bool
     CType::Bool.new
+  end
+
+  def C.redblack_node_t
+    CType::Stub.new(:redblack_node_t)
   end
 
   def C.ccan_list_node

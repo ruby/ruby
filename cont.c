@@ -71,8 +71,6 @@ static VALUE rb_cFiberPool;
 #define FIBER_POOL_ALLOCATION_FREE
 #endif
 
-#define jit_cont_enabled (rb_rjit_enabled || rb_yjit_enabled_p())
-
 enum context_type {
     CONTINUATION_CONTEXT = 0,
     FIBER_CONTEXT = 1
@@ -1062,10 +1060,8 @@ cont_free(void *ptr)
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (jit_cont_enabled) {
-        VM_ASSERT(cont->jit_cont != NULL);
-        jit_cont_free(cont->jit_cont);
-    }
+    VM_ASSERT(cont->jit_cont != NULL);
+    jit_cont_free(cont->jit_cont);
     /* free rb_cont_t or rb_fiber_t */
     ruby_xfree(ptr);
     RUBY_FREE_LEAVE("cont");
@@ -1311,9 +1307,6 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
 void
 rb_jit_cont_finish(void)
 {
-    if (!jit_cont_enabled)
-        return;
-
     struct rb_jit_cont *cont, *next;
     for (cont = first_jit_cont; cont != NULL; cont = next) {
         next = cont->next;
@@ -1326,9 +1319,8 @@ static void
 cont_init_jit_cont(rb_context_t *cont)
 {
     VM_ASSERT(cont->jit_cont == NULL);
-    if (jit_cont_enabled) {
-        cont->jit_cont = jit_cont_new(&(cont->saved_ec));
-    }
+    // We always allocate this since YJIT may be enabled later
+    cont->jit_cont = jit_cont_new(&(cont->saved_ec));
 }
 
 struct rb_execution_context_struct *
@@ -1375,15 +1367,11 @@ rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
     return fiber->blocking;
 }
 
-// Start working with jit_cont.
+// Initialize the jit_cont_lock
 void
 rb_jit_cont_init(void)
 {
-    if (!jit_cont_enabled)
-        return;
-
     rb_native_mutex_initialize(&jit_cont_lock);
-    cont_init_jit_cont(&GET_EC()->fiber_ptr->cont);
 }
 
 #if 0
@@ -2564,10 +2552,6 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // When rb_threadptr_root_fiber_setup is called for the first time, rb_rjit_enabled and
-    // rb_yjit_enabled_p() are still false. So this does nothing and rb_jit_cont_init() that is
-    // called later will take care of it. However, you still have to call cont_init_jit_cont()
-    // here for other Ractors, which are not initialized by rb_jit_cont_init().
     cont_init_jit_cont(&fiber->cont);
 }
 

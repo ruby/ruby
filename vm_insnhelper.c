@@ -3811,7 +3811,7 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
         VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
         cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
-        if (me->def->alias_count + me->def->complemented_count == 0) {
+        if (me->def->reference_count == 1) {
             RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
         }
         else {
@@ -5493,7 +5493,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
-    if (id == rb_intern("initialize") && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
+    if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
 
         RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
     }
@@ -5844,6 +5844,27 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
     rb_yjit_constant_ic_update(iseq, ic, pos);
     rb_rjit_constant_ic_update(iseq, ic, pos);
+}
+
+VALUE
+rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
+{
+    VALUE val;
+    const ID *segments = ic->segments;
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+    } else {
+        ruby_vm_constant_cache_misses++;
+        val = vm_get_ev_const_chain(ec, segments);
+        vm_ic_track_const_chain(GET_CFP(), ic, segments);
+        // Undo the PC increment to get the address to this instruction
+        // INSN_ATTR(width) == 2
+        vm_ic_update(GET_ISEQ(), ic, val, GET_EP(), GET_PC() - 2);
+    }
+    return val;
 }
 
 static VALUE

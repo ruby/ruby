@@ -25,9 +25,11 @@
 #endif
 
 // Expose these as declarations since we are building YJIT.
-bool rb_yjit_enabled_p(void);
-bool rb_yjit_compile_new_iseqs(void);
-bool rb_yjit_threshold_hit(const rb_iseq_t *const iseq, unsigned long total_calls);
+extern uint64_t rb_yjit_call_threshold;
+extern uint64_t rb_yjit_cold_threshold;
+extern uint64_t rb_yjit_live_iseq_count;
+extern bool rb_yjit_enabled_p;
+void rb_yjit_incr_counter(const char *counter_name);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
 void rb_yjit_collect_binding_alloc(void);
@@ -42,14 +44,14 @@ void rb_yjit_iseq_free(void *payload);
 void rb_yjit_before_ractor_spawn(void);
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
+void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
 
 #else
 // !USE_YJIT
 // In these builds, YJIT could never be turned on. Provide dummy implementations.
 
-static inline bool rb_yjit_enabled_p(void) { return false; }
-static inline bool rb_yjit_compile_new_iseqs(void) { return false; }
-static inline bool rb_yjit_threshold_hit(const rb_iseq_t *const iseq, unsigned long total_calls) { return false; }
+#define rb_yjit_enabled_p false
+static inline void rb_yjit_incr_counter(const char *counter_name) {}
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
 static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
 static inline void rb_yjit_collect_binding_alloc(void) {}

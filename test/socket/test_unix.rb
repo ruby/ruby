@@ -152,7 +152,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     lock = Thread::Mutex.new
     nr = 0
     x = 2
-    y = 1000
+    y = 400
     begin
       s1.send_io(nil)
     rescue NotImplementedError

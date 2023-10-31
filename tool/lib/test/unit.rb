@@ -267,7 +267,7 @@ module Test
             r.close_on_exec = true
             w.close_on_exec = true
             @jobserver = [r, w]
-            options[:parallel] ||= 1
+            options[:parallel] ||= 256 # number of tokens to acquire first
           end
         end
         @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
@@ -661,10 +661,18 @@ module Test
         @ios          = [] # Array of worker IOs
         @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
-          [@tasks.size, @options[:parallel]].min.times {launch_worker}
-
           while true
-            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0) + @worker_timeout, 1].max
+            newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
+            if newjobs > 0
+              if @jobserver
+                t = @jobserver[0].read_nonblock(newjobs, exception: false)
+                @job_tokens << t if String === t
+                newjobs = @job_tokens.size + 1 - @workers.size
+              end
+              newjobs.times {launch_worker}
+            end
+
+            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0), 0].max + @worker_timeout
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
@@ -678,15 +686,9 @@ module Test
             }
               break
             end
-            break if @tasks.empty? and @workers.empty?
-            if @jobserver and @job_tokens and !@tasks.empty? and
-               ((newjobs = [@tasks.size, @options[:parallel]].min) > @workers.size or
-                !@workers.any? {|x| x.status == :ready})
-              t = @jobserver[0].read_nonblock(newjobs, exception: false)
-              if String === t
-                @job_tokens << t
-                t.size.times {launch_worker}
-              end
+            if @tasks.empty?
+              break if @workers.empty?
+              next # wait for all workers to finish
             end
           end
         rescue Interrupt => ex
@@ -946,7 +948,7 @@ module Test
       end
 
       def _prepare_run(suites, type)
-        options[:job_status] ||= :replace if @tty && !@verbose
+        options[:job_status] ||= @tty ? :replace : :normal unless @verbose
         case options[:color]
         when :always
           color = true
@@ -962,11 +964,14 @@ module Test
         @output = Output.new(self) unless @options[:testing]
         filter = options[:filter]
         type = "#{type}_methods"
-        total = if filter
-                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
-                else
-                  suites.inject(0) {|n, suite| n + suite.send(type).size}
-                end
+        total = suites.sum {|suite|
+          methods = suite.send(type)
+          if filter
+            methods.count {|method| filter === "#{suite}##{method}"}
+          else
+            methods.size
+          end
+        }
         @test_count = 0
         @total_tests = total.to_s(10)
       end
@@ -1060,7 +1065,7 @@ module Test
             runner.add_status(" = #$1")
           when /\A\.+\z/
             runner.succeed
-          when /\A\.*[EFS][EFS.]*\z/
+          when /\A\.*[EFST][EFST.]*\z/
             runner.failed(s)
           else
             $stdout.print(s)
@@ -1545,7 +1550,7 @@ module Test
           _start_method(inst)
           inst._assertions = 0
 
-          print "#{suite}##{method} = " if @verbose
+          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if @verbose
 
           start_time = Time.now if @verbose
           result =

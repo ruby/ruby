@@ -23,6 +23,9 @@ module TestIRB
       save_encodings
       IRB.instance_variable_get(:@CONF).clear
       @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
+      STDIN.singleton_class.define_method :tty? do
+        false
+      end
     end
 
     def teardown
@@ -31,6 +34,7 @@ module TestIRB
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       restore_encodings
+      STDIN.singleton_class.remove_method :tty?
     end
 
     def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
@@ -449,7 +453,7 @@ module TestIRB
         "show_source IRB.conf\n",
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_method
@@ -457,7 +461,7 @@ module TestIRB
         "p show_source('IRB.conf')\n",
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_string
@@ -465,7 +469,7 @@ module TestIRB
         "show_source 'IRB.conf'\n",
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_alias
@@ -474,7 +478,7 @@ module TestIRB
         conf: { COMMAND_ALIASES: { :'$' => :show_source } }
       )
       assert_empty err
-      assert_match(%r[/irb\.rb], out)
+      assert_match(%r[/irb\/init\.rb], out)
     end
 
     def test_show_source_end_finder
@@ -665,16 +669,6 @@ module TestIRB
 
 
   class ShowCmdsTest < CommandTestCase
-    def setup
-      STDIN.singleton_class.define_method :tty? do
-        false
-      end
-    end
-
-    def teardown
-      STDIN.singleton_class.remove_method :tty?
-    end
-
     def test_show_cmds
       out, err = execute_lines(
         "show_cmds\n"
@@ -687,16 +681,6 @@ module TestIRB
   end
 
   class LsTest < CommandTestCase
-    def setup
-      STDIN.singleton_class.define_method :tty? do
-        false
-      end
-    end
-
-    def teardown
-      STDIN.singleton_class.remove_method :tty?
-    end
-
     def test_ls
       out, err = execute_lines(
         "class P\n",

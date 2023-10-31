@@ -67,20 +67,28 @@ jobs:
         run: |
           ::- find needed tools
           set NEEDS=
-          for %%I in (patch.exe) do if "%%~$PATH:I" == "" (
-            echo NEEDS=%NEEDS% %%I
+          for %%I in (%NEEDED_TOOLS%) do if "%%~$PATH:I" == "" (
+            call set NEEDS=%%NEEDS%% %%~nI
           ) else (
             echo %%I: %%~$PATH:I
           )
-          echo needs=%NEEDS% >> %GITHUB_OUTPUT%
+          echo.needs=%NEEDS%>>%GITHUB_OUTPUT%
+          if "%NEEDS%" == "" (
+            echo [debug] All needed tools found
+          ) else (
+            echo [warning^]Needs%NEEDS%
+          )
+        env:
+          NEEDED_TOOLS: >-
+            patch.exe
 
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
           update: true
           install: >-
-            ${{ steps.find-patch.outputs.needs }}
-        if: ${{ steps.find-patch.outputs.needs != '' }}
+            ${{ steps.find-tools.outputs.needs }}
+        if: ${{ steps.find-tools.outputs.needs != '' }}
 
       - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
@@ -108,7 +116,7 @@ jobs:
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
 
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -182,7 +190,7 @@ jobs:
         with:
           label: VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:

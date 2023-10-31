@@ -24,6 +24,10 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
   config = Hash.new
   config[:SSLTmpDhCallback] = proc { DRbTests::TEST_KEY_DH1024 }
+  if RUBY_PLATFORM.match?(/openbsd/)
+    config[:SSLMinVersion] = OpenSSL::SSL::TLS1_2_VERSION
+    config[:SSLMaxVersion] = OpenSSL::SSL::TLS1_2_VERSION
+  end
   config[:SSLVerifyMode] = OpenSSL::SSL::VERIFY_PEER
   config[:SSLVerifyCallback] = lambda{|ok,x509_store|
     true

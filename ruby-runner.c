@@ -25,12 +25,24 @@ insert_env_path(const char *envname, const char *paths, size_t size, int prepend
         char *e = malloc(size+n+1);
         size_t pos = 0;
         if (prepend) {
+            if (size == n || (size < n && env[size] == PATH_SEP)) {
+                if (strncmp(paths, env, size) == 0) {
+                    free(e);
+                    return;
+                }
+            }
             memcpy(e, paths, pos = size-1);
             e[pos++] = PATH_SEP;
         }
         memcpy(e+pos, env, n);
         pos += n;
         if (!prepend) {
+            if (size == n || (size < n && env[n-size-1] == PATH_SEP)) {
+                if (strncmp(paths, &env[n-size], size) == 0) {
+                    free(e);
+                    return;
+                }
+            }
             e[pos++] = PATH_SEP;
             memcpy(e+pos, paths, size-1);
             pos += size-1;

@@ -252,7 +252,7 @@ describe "The alias keyword" do
 
   it "on top level defines the alias on Object" do
     # because it defines on the default definee / current module
-    ruby_exe("def foo; end; alias bla foo; print method(:bla).owner", escape: true).should == "Object"
+    ruby_exe("def foo; end; alias bla foo; print method(:bla).owner").should == "Object"
   end
 
   it "raises a NameError when passed a missing name" do

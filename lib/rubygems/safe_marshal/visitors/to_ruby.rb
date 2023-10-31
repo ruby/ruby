@@ -7,7 +7,7 @@ module Gem::SafeMarshal
     class ToRuby < Visitor
       def initialize(permitted_classes:, permitted_symbols:, permitted_ivars:)
         @permitted_classes = permitted_classes
-        @permitted_symbols = permitted_symbols | permitted_classes | ["E"]
+        @permitted_symbols = ["E"].concat(permitted_symbols).concat(permitted_classes)
         @permitted_ivars = permitted_ivars
 
         @objects = []
@@ -15,6 +15,7 @@ module Gem::SafeMarshal
         @class_cache = {}
 
         @stack = ["root"]
+        @stack_idx = 1
       end
 
       def inspect # :nodoc:
@@ -23,39 +24,61 @@ module Gem::SafeMarshal
       end
 
       def visit(target)
-        depth = @stack.size
+        stack_idx = @stack_idx
         super
       ensure
-        @stack.slice!(depth.pred..)
+        @stack_idx = stack_idx - 1
       end
 
       private
 
+      def push_stack(element)
+        @stack[@stack_idx] = element
+        @stack_idx += 1
+      end
+
       def visit_Gem_SafeMarshal_Elements_Array(a)
-        register_object([]).replace(a.elements.each_with_index.map do |e, i|
-          @stack << "[#{i}]"
-          visit(e)
-        end)
+        array = register_object([])
+
+        elements = a.elements
+        size = elements.size
+        idx = 0
+        # not idiomatic, but there's a huge number of IMEMOs allocated here, so we avoid the block
+        # because this is such a hot path when doing a bundle install with the full index
+        until idx == size
+          push_stack idx
+          array << visit(elements[idx])
+          idx += 1
+        end
+
+        array
       end
 
       def visit_Gem_SafeMarshal_Elements_Symbol(s)
         name = s.name
-        raise UnpermittedSymbolError.new(symbol: name, stack: @stack.dup) unless @permitted_symbols.include?(name)
+        raise UnpermittedSymbolError.new(symbol: name, stack: formatted_stack) unless @permitted_symbols.include?(name)
         visit_symbol_type(s)
       end
 
       def map_ivars(klass, ivars)
+        stack_idx = @stack_idx
         ivars.map.with_index do |(k, v), i|
-          @stack << "ivar_#{i}"
+          @stack_idx = stack_idx
+
+          push_stack "ivar_"
+          push_stack i
           k = resolve_ivar(klass, k)
-          @stack[-1] = k
+
+          @stack_idx = stack_idx
+          push_stack k
+
           next k, visit(v)
         end
       end
 
       def visit_Gem_SafeMarshal_Elements_WithIvars(e)
         object_offset = @objects.size
-        @stack << "object"
+        push_stack "object"
         object = visit(e.object)
         ivars = map_ivars(object.class, e.ivars)
 
@@ -76,12 +99,18 @@ module Gem::SafeMarshal
 
             s = e.object.binary_string
 
-            marshal_string = "\x04\bIu:\tTime#{(s.size + 5).chr}#{s.b}".b
-
-            marshal_string << (internal.size + 5).chr
+            marshal_string = "\x04\bIu:\tTime".b
+            marshal_string.concat(s.size + 5)
+            marshal_string << s
+            marshal_string.concat(internal.size + 5)
 
             internal.each do |k, v|
-              marshal_string << ":#{(k.size + 5).chr}#{k}#{Marshal.dump(v)[2..-1]}"
+              marshal_string.concat(":")
+              marshal_string.concat(k.size + 5)
+              marshal_string.concat(k.to_s)
+              dumped = Marshal.dump(v)
+              dumped[0, 2] = ""
+              marshal_string.concat(dumped)
             end
 
             object = @objects[object_offset] = Marshal.load(marshal_string)
@@ -108,7 +137,7 @@ module Gem::SafeMarshal
             true
           end
 
-          object.replace ::String.new(object, encoding: enc)
+          object.force_encoding(enc) if enc
         end
 
         ivars.each do |k, v|
@@ -121,9 +150,9 @@ module Gem::SafeMarshal
         hash = register_object({})
 
         o.pairs.each_with_index do |(k, v), i|
-          @stack << i
+          push_stack i
           k = visit(k)
-          @stack << k
+          push_stack k
           hash[k] = visit(v)
         end
 
@@ -132,7 +161,7 @@ module Gem::SafeMarshal
 
       def visit_Gem_SafeMarshal_Elements_HashWithDefaultValue(o)
         hash = visit_Gem_SafeMarshal_Elements_Hash(o)
-        @stack << :default
+        push_stack :default
         hash.default = visit(o.default)
         hash
       end
@@ -159,7 +188,7 @@ module Gem::SafeMarshal
         idx = @objects.size
         object = register_object(call_method(compat || klass, :allocate))
 
-        @stack << :data
+        push_stack :data
         ret = call_method(object, :marshal_load, visit(o.data))
 
         if compat
@@ -186,7 +215,7 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_String(s)
-        register_object(s.str)
+        register_object(+s.str)
       end
 
       def visit_Gem_SafeMarshal_Elements_Float(f)
@@ -221,7 +250,7 @@ module Gem::SafeMarshal
       def resolve_class(n)
         @class_cache[n] ||= begin
           to_s = resolve_symbol_name(n)
-          raise UnpermittedClassError.new(name: to_s, stack: @stack.dup) unless @permitted_classes.include?(to_s)
+          raise UnpermittedClassError.new(name: to_s, stack: formatted_stack) unless @permitted_classes.include?(to_s)
           visit_symbol_type(n)
           begin
             ::Object.const_get(to_s)
@@ -238,16 +267,17 @@ module Gem::SafeMarshal
           Rational(num, den)
         end
       end
+      private_constant :RationalCompat
 
       COMPAT_CLASSES = {}.tap do |h|
         h[Rational] = RationalCompat
-      end.freeze
+      end.compare_by_identity.freeze
       private_constant :COMPAT_CLASSES
 
       def resolve_ivar(klass, name)
         to_s = resolve_symbol_name(name)
 
-        raise UnpermittedIvarError.new(symbol: to_s, klass: klass, stack: @stack.dup) unless @permitted_ivars.fetch(klass.name, [].freeze).include?(to_s)
+        raise UnpermittedIvarError.new(symbol: to_s, klass: klass, stack: formatted_stack) unless @permitted_ivars.fetch(klass.name, [].freeze).include?(to_s)
 
         visit_symbol_type(name)
       end
@@ -263,14 +293,28 @@ module Gem::SafeMarshal
         end
       end
 
-      def resolve_symbol_name(element)
-        case element
-        when Elements::Symbol
-          element.name
-        when Elements::SymbolLink
-          visit_Gem_SafeMarshal_Elements_SymbolLink(element).to_s
-        else
-          raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{@stack.join(".")}"
+      # This is a hot method, so avoid respond_to? checks on every invocation
+      if :read.respond_to?(:name)
+        def resolve_symbol_name(element)
+          case element
+          when Elements::Symbol
+            element.name
+          when Elements::SymbolLink
+            visit_Gem_SafeMarshal_Elements_SymbolLink(element).name
+          else
+            raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
+          end
+        end
+      else
+        def resolve_symbol_name(element)
+          case element
+          when Elements::Symbol
+            element.name
+          when Elements::SymbolLink
+            visit_Gem_SafeMarshal_Elements_SymbolLink(element).to_s
+          else
+            raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
+          end
         end
       end
 
@@ -285,6 +329,22 @@ module Gem::SafeMarshal
         raise unless e.receiver == receiver
 
         raise MethodCallError, "Unable to call #{method.inspect} on #{receiver.inspect}, perhaps it is a class using marshal compat, which is not visible in ruby? #{e}"
+      end
+
+      def formatted_stack
+        formatted = []
+        @stack[0, @stack_idx].each do |e|
+          if e.is_a?(Integer)
+            if formatted.last == "ivar_"
+              formatted[-1] = "ivar_#{e}"
+            else
+              formatted << "[#{e}]"
+            end
+          else
+            formatted << e
+          end
+        end
+        formatted
       end
 
       class Error < StandardError

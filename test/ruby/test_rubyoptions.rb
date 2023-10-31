@@ -156,7 +156,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?\[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -368,7 +368,25 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_syntax_check
-    assert_in_out_err(%w(-c -e a=1+1 -e !a), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e a=1+1 -e !a), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e break), "", [], ["-e:1: Invalid break", :*])
+    assert_in_out_err(%w(-cw -e next), "", [], ["-e:1: Invalid next", :*])
+    assert_in_out_err(%w(-cw -e redo), "", [], ["-e:1: Invalid redo", :*])
+    assert_in_out_err(%w(-cw -e retry), "", [], ["-e:1: Invalid retry", :*])
+    assert_in_out_err(%w(-cw -e yield), "", [], ["-e:1: Invalid yield", :*])
+    assert_in_out_err(%w(-cw -e begin -e break -e end), "", [], ["-e:2: Invalid break", :*])
+    assert_in_out_err(%w(-cw -e begin -e next -e end), "", [], ["-e:2: Invalid next", :*])
+    assert_in_out_err(%w(-cw -e begin -e redo -e end), "", [], ["-e:2: Invalid redo", :*])
+    assert_in_out_err(%w(-cw -e begin -e retry -e end), "", [], ["-e:2: Invalid retry", :*])
+    assert_in_out_err(%w(-cw -e begin -e yield -e end), "", [], ["-e:2: Invalid yield", :*])
+    assert_in_out_err(%w(-cw -e !defined?(break)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(next)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(redo)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(retry)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-cw -e !defined?(yield)), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-n -cw -e break), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-n -cw -e next), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-n -cw -e redo), "", ["Syntax OK"], [])
   end
 
   def test_invalid_option
@@ -793,29 +811,32 @@ class TestRubyOptions < Test::Unit::TestCase
         )?
       )x,
     ]
+
+    KILL_SELF = "Process.kill :SEGV, $$"
   end
 
-  def assert_segv(args, message=nil)
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
+    env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if self.class.yjit_enabled?
-    args.unshift({'RUBY_ON_BUG' => nil})
+    env.update({'RUBY_ON_BUG' => nil})
+    args.unshift(env)
 
     test_stdin = ""
-    opt = SEGVTest::ExecOptions.dup
-    list = SEGVTest::ExpectedStderrList
 
-    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT", **opt)
+    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT",
+                      **SEGVTest::ExecOptions, **opt)
   end
 
   def test_segv_test
-    assert_segv(["--disable-gems", "-e", "Process.kill :SEGV, $$"])
+    assert_segv(["--disable-gems", "-e", SEGVTest::KILL_SELF])
   end
 
   def test_segv_loaded_features
     bug7402 = '[ruby-core:49573]'
 
-    status = assert_segv(['-e', 'END {Process.kill :SEGV, $$}',
+    status = assert_segv(['-e', "END {#{SEGVTest::KILL_SELF}}",
                           '-e', 'class Bogus; def to_str; exit true; end; end',
                           '-e', '$".clear',
                           '-e', '$".unshift Bogus.new',
@@ -829,8 +850,68 @@ class TestRubyOptions < Test::Unit::TestCase
     Tempfile.create(["test_ruby_test_bug7597", ".rb"]) {|t|
       t.write "f" * 100
       t.flush
-      assert_segv(["--disable-gems", "-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path], bug7597)
+      assert_segv(["--disable-gems", "-e", "$0=ARGV[0]; #{SEGVTest::KILL_SELF}", t.path], bug7597)
     }
+  end
+
+  def assert_crash_report(path, cmd = nil)
+    Dir.mktmpdir("ruby_crash_report") do |dir|
+      list = SEGVTest::ExpectedStderrList
+      if cmd
+        FileUtils.mkpath(File.join(dir, File.dirname(cmd)))
+        File.write(File.join(dir, cmd), SEGVTest::KILL_SELF+"\n")
+        c = Regexp.quote(cmd)
+        list = list.map {|re| Regexp.new(re.source.gsub(/^\s*(\(\?:)?\K-e(?=:)/) {c}, re.options)}
+      else
+        cmd = ['-e', SEGVTest::KILL_SELF]
+      end
+      status = assert_segv([{"RUBY_CRASH_REPORT"=>path}, *cmd], list: [], chdir: dir)
+      reports = Dir.glob("*.log", File::FNM_DOTMATCH, base: dir)
+      assert_equal(1, reports.size)
+      assert_pattern_list(list, File.read(File.join(dir, reports.first)))
+      break status, reports.first
+    end
+  end
+
+  def test_crash_report
+    assert_crash_report("%e.%f.%p.log") do |status, report|
+      assert_equal("#{File.basename(EnvUtil.rubybin)}.-e.#{status.pid}.log", report)
+    end
+  end
+
+  def test_crash_report_script
+    assert_crash_report("%e.%f.%p.log", "bug.rb") do |status, report|
+      assert_equal("#{File.basename(EnvUtil.rubybin)}.bug.rb.#{status.pid}.log", report)
+    end
+  end
+
+  def test_crash_report_executable_path
+    omit if EnvUtil.rubybin.size > 245
+    assert_crash_report("%E.%p.log") do |status, report|
+      assert_equal("#{EnvUtil.rubybin.tr('/', '!')}.#{status.pid}.log", report)
+    end
+  end
+
+  def test_crash_report_script_path
+    assert_crash_report("%F.%p.log", "test/bug.rb") do |status, report|
+      assert_equal("test!bug.rb.#{status.pid}.log", report)
+    end
+  end
+
+  def test_crash_report_pipe
+    if File.executable?(echo = "/bin/echo")
+    elsif /mswin|ming/ =~ RUBY_PLATFORM
+      echo = "echo"
+    else
+      omit "/bin/echo not found"
+    end
+    env = {"RUBY_CRASH_REPORT"=>"| #{echo} %e:%f:%p", "RUBY_ON_BUG"=>nil}
+    assert_in_out_err([env], SEGVTest::KILL_SELF,
+                      encoding: "ASCII-8BIT",
+                      **SEGVTest::ExecOptions) do |stdout, stderr, status|
+      assert_empty(stderr)
+      assert_equal(["#{File.basename(EnvUtil.rubybin)}:-:#{status.pid}"], stdout)
+    end
   end
 
   def test_DATA

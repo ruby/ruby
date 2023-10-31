@@ -335,6 +335,12 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn(/duplicated/) {r = eval("a.f(**{k: a.add(1), j: a.add(2), k: a.add(3), k: a.add(4)})")}
     assert_equal(4, r)
     assert_equal([1, 2, 3, 4], a)
+    a.clear
+    r = nil
+    _z = {}
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), **_z, k: a.add(2))")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a)
   end
 
   def test_keyword_empty_splat

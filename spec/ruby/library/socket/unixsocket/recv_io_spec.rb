@@ -1,9 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#recv_io" do
-
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#recv_io" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -41,9 +40,7 @@ describe "UNIXSocket#recv_io" do
       @io.should be_an_instance_of(File)
     end
   end
-end
 
-with_feature :unix_socket do
   describe 'UNIXSocket#recv_io' do
     before do
       @file = File.open('/dev/null', 'w')

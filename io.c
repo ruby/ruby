@@ -170,6 +170,7 @@ off_t __syscall(quad_t number, ...);
 #define open	rb_w32_uopen
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
+#include "win32/file.h"
 #endif
 
 VALUE rb_cIO;
@@ -2869,8 +2870,15 @@ rb_io_descriptor(VALUE io)
         return fptr->fd;
     }
     else {
-        return RB_NUM2INT(rb_funcall(io, id_fileno, 0));
+        VALUE fileno = rb_check_funcall(io, id_fileno, 0, NULL);
+        if (!UNDEF_P(fileno)) {
+            return RB_NUM2INT(fileno);
+        }
     }
+
+    rb_raise(rb_eTypeError, "expected IO or #fileno, %"PRIsVALUE" given", rb_obj_class(io));
+
+    UNREACHABLE_RETURN(-1);
 }
 
 int
@@ -4356,22 +4364,28 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
     return lineno;
 }
 
-/*
- *  call-seq:
- *    readline(sep = $/, chomp: false)   -> string
- *    readline(limit, chomp: false)      -> string
- *    readline(sep, limit, chomp: false) -> string
- *
- *  Reads a line as with IO#gets, but raises EOFError if already at end-of-stream.
- *
- *  Optional keyword argument +chomp+ specifies whether line separators
- *  are to be omitted.
- */
-
+/* :nodoc: */
 static VALUE
-rb_io_readline(int argc, VALUE *argv, VALUE io)
+io_readline(rb_execution_context_t *ec, VALUE io, VALUE sep, VALUE lim, VALUE chomp)
 {
-    VALUE line = rb_io_gets_m(argc, argv, io);
+    if (NIL_P(lim)) {
+        // If sep is specified, but it's not a string and not nil, then assume
+        // it's the limit (it should be an integer)
+        if (!NIL_P(sep) && NIL_P(rb_check_string_type(sep))) {
+            // If the user has specified a non-nil / non-string value
+            // for the separator, we assume it's the limit and set the
+            // separator to default: rb_rs.
+            lim = sep;
+            sep = rb_rs;
+        }
+    }
+
+    if (!NIL_P(sep)) {
+        StringValue(sep);
+    }
+
+    VALUE line = rb_io_getline_1(sep, NIL_P(lim) ? -1L : NUM2LONG(lim), RTEST(chomp), io);
+    rb_lastline_set_up(line, 1);
 
     if (NIL_P(line)) {
         rb_eof_error();
@@ -5574,12 +5588,9 @@ clear_codeconv(rb_io_t *fptr)
     clear_writeconv(fptr);
 }
 
-void
-rb_io_fptr_finalize_internal(void *ptr)
+static void
+rb_io_fptr_cleanup_all(rb_io_t *fptr)
 {
-    rb_io_t *fptr = ptr;
-
-    if (!ptr) return;
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
         rb_io_fptr_cleanup(fptr, TRUE);
@@ -5587,7 +5598,14 @@ rb_io_fptr_finalize_internal(void *ptr)
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
-    free(fptr);
+}
+
+void
+rb_io_fptr_finalize_internal(void *ptr)
+{
+    if (!ptr) return;
+    rb_io_fptr_cleanup_all(ptr);
+    free(ptr);
 }
 
 #undef rb_io_fptr_finalize
@@ -7949,6 +7967,60 @@ popen_finish(VALUE port, VALUE klass)
         return rb_ensure(rb_yield, port, pipe_close, port);
     }
     return port;
+}
+
+#if defined(HAVE_WORKING_FORK) && !defined(__EMSCRIPTEN__)
+struct popen_writer_arg {
+    char *const *argv;
+    struct popen_arg popen;
+};
+
+static int
+exec_popen_writer(void *arg, char *errmsg, size_t buflen)
+{
+    struct popen_writer_arg *pw = arg;
+    pw->popen.modef = FMODE_WRITABLE;
+    popen_redirect(&pw->popen);
+    execv(pw->argv[0], pw->argv);
+    strlcpy(errmsg, strerror(errno), buflen);
+    return -1;
+}
+#endif
+
+FILE *
+ruby_popen_writer(char *const *argv, rb_pid_t *pid)
+{
+#if (defined(HAVE_WORKING_FORK) && !defined(__EMSCRIPTEN__)) || defined(_WIN32)
+# ifdef HAVE_WORKING_FORK
+    struct popen_writer_arg pw;
+    int *const write_pair = pw.popen.pair;
+# else
+    int write_pair[2];
+# endif
+
+    int result = rb_cloexec_pipe(write_pair);
+    *pid = -1;
+    if (result == 0) {
+# ifdef HAVE_WORKING_FORK
+        pw.argv = argv;
+        int status;
+        char errmsg[80] = {'\0'};
+        *pid = rb_fork_async_signal_safe(&status, exec_popen_writer, &pw, Qnil, errmsg, sizeof(errmsg));
+# else
+        *pid = rb_w32_uspawn_process(P_NOWAIT, argv[0], argv, write_pair[0], -1, -1, 0);
+        const char *errmsg = (*pid < 0) ? strerror(errno) : NULL;
+# endif
+        close(write_pair[0]);
+        if (*pid < 0) {
+            close(write_pair[1]);
+            fprintf(stderr, "ruby_popen_writer(%s): %s\n", argv[0], errmsg);
+        }
+        else {
+            return fdopen(write_pair[1], "w");
+        }
+    }
+#endif
+    return NULL;
 }
 
 static void
@@ -10467,11 +10539,9 @@ rb_f_backquote(VALUE obj, VALUE str)
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
-    rb_obj_hide(port);
     result = read_all(fptr, remain_size(fptr), Qnil);
     rb_io_close(port);
-    RFILE(port)->fptr = NULL;
-    rb_io_fptr_finalize(fptr);
+    rb_io_fptr_cleanup_all(fptr);
     RB_GC_GUARD(port);
 
     return result;
@@ -14996,7 +15066,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      # => 41
  *      f.close
  *
- *  - When a stream is read, <tt>#.</tt> is set to the line number for that stream:
+ *  - When a stream is read, <tt>$.</tt> is set to the line number for that stream:
  *
  *      f0 = File.new('t.txt')
  *      f1 = File.new('t.dat')
@@ -15363,7 +15433,6 @@ Init_IO(void)
     rb_define_method(rb_cIO, "read", io_read, -1);
     rb_define_method(rb_cIO, "write", io_write_m, -1);
     rb_define_method(rb_cIO, "gets", rb_io_gets_m, -1);
-    rb_define_method(rb_cIO, "readline", rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc", rb_io_getc, 0);
     rb_define_method(rb_cIO, "getbyte", rb_io_getbyte, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
