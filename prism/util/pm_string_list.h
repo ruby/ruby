@@ -22,13 +22,6 @@ typedef struct {
 } pm_string_list_t;
 
 /**
- * Initialize a pm_string_list_t with its default values.
- *
- * @param string_list The string list to initialize.
- */
-PRISM_EXPORTED_FUNCTION void pm_string_list_init(pm_string_list_t *string_list);
-
-/**
  * Append a pm_string_t to the given string list.
  *
  * @param string_list The string list to append to.
