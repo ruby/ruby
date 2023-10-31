@@ -15589,29 +15589,31 @@ pm_metadata_read_u32(const char *ptr) {
     }
 }
 
-// Process any additional metadata being passed into a call to the parser via
-// the pm_parse_serialize function. Since the source of these calls will be from
-// Ruby implementation internals we assume it is from a trusted source.
-//
-// Currently, this is only passing in variable scoping surrounding an eval, but
-// eventually it will be extended to hold any additional metadata.  This data
-// is serialized to reduce the calling complexity for a foreign function call
-// vs a foreign runtime making a bindable in-memory version of a C structure.
-//
-// metadata is assumed to be a valid pointer pointing to well-formed data. The
-// format is described below:
-//
-// ```text
-// [
-//   filepath_size: uint32_t,
-//   filepath: char*,
-//   scopes_count: uint32_t,
-//   [
-//     locals_count: uint32_t,
-//     [local_size: uint32_t, local: char*]*
-//   ]*
-// ]
-// ```
+/**
+ * Process any additional metadata being passed into a call to the parser via
+ * the pm_parse_serialize function. Since the source of these calls will be from
+ * Ruby implementation internals we assume it is from a trusted source.
+ *
+ * Currently, this is only passing in variable scoping surrounding an eval, but
+ * eventually it will be extended to hold any additional metadata.  This data
+ * is serialized to reduce the calling complexity for a foreign function call
+ * vs a foreign runtime making a bindable in-memory version of a C structure.
+ *
+ * metadata is assumed to be a valid pointer pointing to well-formed data. The
+ * format is described below:
+ *
+ * ```text
+ * [
+ *   filepath_size: uint32_t,
+ *   filepath: char*,
+ *   scopes_count: uint32_t,
+ *   [
+ *     locals_count: uint32_t,
+ *     [local_size: uint32_t, local: char*]*
+ *   ]*
+ * ]
+ * ```
+ */
 void
 pm_parser_metadata(pm_parser_t *parser, const char *metadata) {
     uint32_t filepath_size = pm_metadata_read_u32(metadata);
