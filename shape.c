@@ -539,7 +539,7 @@ move_iv(VALUE obj, ID id, attr_index_t from, attr_index_t to)
       default: {
         struct gen_ivtbl *ivtbl;
         rb_gen_ivtbl_get(obj, id, &ivtbl);
-        ivtbl->ivptr[to] = ivtbl->ivptr[from];
+        ivtbl->as.shape.ivptr[to] = ivtbl->as.shape.ivptr[from];
         break;
       }
     }
@@ -570,7 +570,7 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
               default: {
                 struct gen_ivtbl *ivtbl;
                 rb_gen_ivtbl_get(obj, id, &ivtbl);
-                *removed = ivtbl->ivptr[index];
+                *removed = ivtbl->as.shape.ivptr[index];
                 break;
               }
             }

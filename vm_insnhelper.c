@@ -1227,7 +1227,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = ivtbl->shape_id;
 #endif
-            ivar_list = ivtbl->ivptr;
+            ivar_list = ivtbl->as.shape.ivptr;
         }
         else {
             return default_value;
@@ -1456,7 +1456,7 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    VALUE *ptr = ivtbl->ivptr;
+    VALUE *ptr = ivtbl->as.shape.ivptr;
 
     RB_OBJ_WRITE(obj, &ptr[index], val);
 

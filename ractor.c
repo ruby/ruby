@@ -2758,8 +2758,8 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         struct gen_ivtbl *ivtbl;
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
-        for (uint32_t i = 0; i < ivtbl->numiv; i++) {
-            VALUE val = ivtbl->ivptr[i];
+        for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
+            VALUE val = ivtbl->as.shape.ivptr[i];
             if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
         }
     }
@@ -3229,9 +3229,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         struct gen_ivtbl *ivtbl;
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
-        for (uint32_t i = 0; i < ivtbl->numiv; i++) {
-            if (!UNDEF_P(ivtbl->ivptr[i])) {
-                CHECK_AND_REPLACE(ivtbl->ivptr[i]);
+        for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
+            if (!UNDEF_P(ivtbl->as.shape.ivptr[i])) {
+                CHECK_AND_REPLACE(ivtbl->as.shape.ivptr[i]);
             }
         }
     }
