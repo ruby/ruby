@@ -233,7 +233,7 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
-  def test_run_out_of_shape
+  def test_run_out_of_shape_for_object
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class A
@@ -249,6 +249,23 @@ class TestShapes < Test::Unit::TestCase
         i += 1
         A.new
       end
+    end;
+  end
+
+  def test_run_out_of_shape_for_class
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      c = Class.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        c.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      c.instance_variable_set(:@a, 1)
+      assert_equal(1, c.instance_variable_get(:@a))
+      c.remove_instance_variable(:@a)
+      assert_nil(c.instance_variable_get(:@a))
     end;
   end
 

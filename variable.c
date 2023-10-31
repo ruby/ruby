@@ -2198,7 +2198,12 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        if (rb_shape_obj_too_complex(obj)) {
+            st_delete(RCLASS_IV_HASH(obj), (st_data_t *)&id, (st_data_t *)&val);
+        }
+        else {
+            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        }
         break;
       case T_OBJECT: {
         if (rb_shape_obj_too_complex(obj)) {
