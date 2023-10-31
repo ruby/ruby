@@ -14706,10 +14706,9 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
 // match write node.
 static pm_node_t *
 parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call) {
-    pm_string_list_t named_captures;
-    pm_string_list_init(&named_captures);
-
+    pm_string_list_t named_captures = { 0 };
     pm_node_t *result;
+
     if (pm_regexp_named_capture_group_names(pm_string_source(content), pm_string_length(content), &named_captures, parser->encoding_changed, &parser->encoding) && (named_captures.length > 0)) {
         pm_match_write_node_t *match = pm_match_write_node_create(parser, call);
 
@@ -14718,14 +14717,12 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
             pm_constant_id_t local;
 
             if (content->type == PM_STRING_SHARED) {
-                // If the unescaped string is a slice of the source,
-                // then we can copy the names directly. The pointers
-                // will line up.
+                // If the unescaped string is a slice of the source, then we can
+                // copy the names directly. The pointers will line up.
                 local = pm_parser_local_add_location(parser, name->source, name->source + name->length);
             } else {
-                // Otherwise, the name is a slice of the malloc-ed
-                // owned string, in which case we need to copy it
-                // out into a new string.
+                // Otherwise, the name is a slice of the malloc-ed owned string,
+                // in which case we need to copy it out into a new string.
                 size_t length = pm_string_length(name);
 
                 void *memory = malloc(length);
