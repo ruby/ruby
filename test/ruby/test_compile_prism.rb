@@ -790,6 +790,13 @@ module Prism
       assert_prism_eval("[a: [:b, :c]]")
     end
 
+    def test_SuperNode
+      assert_prism_eval("def to_s; super 1; end")
+      assert_prism_eval("def to_s; super(); end")
+      assert_prism_eval("def to_s; super('a', :b, [1,2,3]); end")
+      assert_prism_eval("def to_s; super(1, 2, 3, &:foo); end")
+    end
+
     ############################################################################
     # Methods / parameters                                                     #
     ############################################################################
