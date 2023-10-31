@@ -1,7 +1,7 @@
 #ifndef PRISM_DEFINES_H
 #define PRISM_DEFINES_H
 
-// This file should be included first by any *.h or *.c in prism
+// This file should be included first by any *.h or *.c in prism.
 
 #include <ctype.h>
 #include <stdarg.h>
