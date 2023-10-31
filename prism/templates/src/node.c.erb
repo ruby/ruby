@@ -1,13 +1,6 @@
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
 #include "prism/node.h"
 
-// Clear the node but preserves the location.
-void pm_node_clear(pm_node_t *node) {
-    pm_location_t location = node->location;
-    memset(node, 0, sizeof(pm_node_t));
-    node->location = location;
-}
-
 static void
 pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize);
 
