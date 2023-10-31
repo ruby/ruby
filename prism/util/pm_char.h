@@ -1,3 +1,8 @@
+/**
+ * @file pm_char.h
+ *
+ * Functions for working with characters and strings.
+ */
 #ifndef PRISM_CHAR_H
 #define PRISM_CHAR_H
 

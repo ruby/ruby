@@ -1,3 +1,8 @@
+/**
+ * @file pm_string_list.h
+ *
+ * A list of strings.
+ */
 #ifndef PRISM_STRING_LIST_H
 #define PRISM_STRING_LIST_H
 

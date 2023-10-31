@@ -1,3 +1,8 @@
+/**
+ * @file parser.h
+ *
+ * The parser used to parse Ruby source.
+ */
 #ifndef PRISM_PARSER_H
 #define PRISM_PARSER_H
 
@@ -84,6 +89,7 @@ typedef enum {
  * are found as part of a string.
  */
 typedef struct pm_lex_mode {
+    /** The type of this lex mode. */
     enum {
         /** This state is used when any given token is being lexed. */
         PM_LEX_DEFAULT,
@@ -122,6 +128,7 @@ typedef struct pm_lex_mode {
         PM_LEX_STRING
     } mode;
 
+    /** The data associated with this type of lex mode. */
     union {
         struct {
             /** This keeps track of the nesting level of the list. */
@@ -240,8 +247,9 @@ typedef struct pm_lex_mode {
  */
 #define PM_LEX_STACK_SIZE 4
 
-// A forward declaration since our error handler struct accepts a parser for
-// each of its function calls.
+/**
+ * The parser used to parse Ruby source.
+ */
 typedef struct pm_parser pm_parser_t;
 
 /**
@@ -343,7 +351,10 @@ typedef enum {
 
 /** This is a node in a linked list of contexts. */
 typedef struct pm_context_node {
+    /** The context that this node represents. */
     pm_context_t context;
+
+    /** A pointer to the previous context in the linked list. */
     struct pm_context_node *prev;
 } pm_context_node_t;
 
@@ -360,9 +371,16 @@ typedef enum {
  * @extends pm_list_node_t
  */
 typedef struct pm_comment {
+    /** The embedded base node. */
     pm_list_node_t node;
+
+    /** A pointer to the start of the comment in the source. */
     const uint8_t *start;
+
+    /** A pointer to the end of the comment in the source. */
     const uint8_t *end;
+
+    /** The type of comment that we've found. */
     pm_comment_type_t type;
 } pm_comment_t;
 
@@ -373,10 +391,19 @@ typedef struct pm_comment {
  * @extends pm_list_node_t
  */
 typedef struct {
+    /** The embedded base node. */
     pm_list_node_t node;
+
+    /** A pointer to the start of the key in the source. */
     const uint8_t *key_start;
+
+    /** A pointer to the start of the value in the source. */
     const uint8_t *value_start;
+
+    /** The length of the key in the source. */
     uint32_t key_length;
+
+    /** The length of the value in the source. */
     uint32_t value_length;
 } pm_magic_comment_t;
 
@@ -493,6 +520,7 @@ struct pm_parser {
      */
     pm_state_stack_t accepts_block_stack;
 
+    /** A stack of lex modes. */
     struct {
         /** The current mode of the lexer. */
         pm_lex_mode_t *current;

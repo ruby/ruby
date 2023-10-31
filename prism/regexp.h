@@ -1,3 +1,8 @@
+/**
+ * @file regexp.h
+ *
+ * A regular expression parser.
+ */
 #ifndef PRISM_REGEXP_H
 #define PRISM_REGEXP_H
 

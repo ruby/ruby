@@ -1,3 +1,8 @@
+/**
+ * @file pm_memchr.h
+ *
+ * A custom memchr implementation.
+ */
 #ifndef PRISM_MEMCHR_H
 #define PRISM_MEMCHR_H
 

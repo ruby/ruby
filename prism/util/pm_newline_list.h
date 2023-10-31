@@ -1,11 +1,16 @@
-// When compiling the syntax tree, it's necessary to know the line and column
-// of many nodes. This is necessary to support things like error messages,
-// tracepoints, etc.
-//
-// It's possible that we could store the start line, start column, end line, and
-// end column on every node in addition to the offsets that we already store,
-// but that would be quite a lot of memory overhead.
-
+/**
+ * @file pm_newline_list.h
+ *
+ * A list of byte offsets of newlines in a string.
+ *
+ * When compiling the syntax tree, it's necessary to know the line and column
+ * of many nodes. This is necessary to support things like error messages,
+ * tracepoints, etc.
+ *
+ * It's possible that we could store the start line, start column, end line, and
+ * end column on every node in addition to the offsets that we already store,
+ * but that would be quite a lot of memory overhead.
+ */
 #ifndef PRISM_NEWLINE_LIST_H
 #define PRISM_NEWLINE_LIST_H
 

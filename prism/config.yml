@@ -59,11 +59,11 @@ tokens:
   - name: CONSTANT
     comment: "a constant"
   - name: DOT
-    comment: "."
+    comment: "the . call operator"
   - name: DOT_DOT
-    comment: ".."
+    comment: "the .. range operator"
   - name: DOT_DOT_DOT
-    comment: "..."
+    comment: "the ... range operator or forwarding parameter"
   - name: EMBDOC_BEGIN
     comment: "=begin"
   - name: EMBDOC_END
@@ -311,9 +311,9 @@ tokens:
   - name: UCOLON_COLON
     comment: "unary ::"
   - name: UDOT_DOT
-    comment: "unary .."
+    comment: "unary .. operator"
   - name: UDOT_DOT_DOT
-    comment: "unary ..."
+    comment: "unary ... operator"
   - name: UMINUS
     comment: "-@"
   - name: UMINUS_NUM

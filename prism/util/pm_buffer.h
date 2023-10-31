@@ -1,3 +1,8 @@
+/**
+ * @file pm_buffer.h
+ *
+ * A wrapper around a contiguous block of allocated memory.
+ */
 #ifndef PRISM_BUFFER_H
 #define PRISM_BUFFER_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file pm_state_stack.h
+ *
+ * A stack of boolean values.
+ */
 #ifndef PRISM_STATE_STACK_H
 #define PRISM_STATE_STACK_H
 
@@ -30,6 +35,7 @@ void pm_state_stack_pop(pm_state_stack_t *stack);
  * Returns the value at the top of the stack.
  *
  * @param stack The stack to get the value from.
+ * @return The value at the top of the stack.
  */
 bool pm_state_stack_p(pm_state_stack_t *stack);
 

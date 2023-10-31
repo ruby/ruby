@@ -1,3 +1,8 @@
+/**
+ * @file ast.h
+ *
+ * The abstract syntax tree.
+ */
 #ifndef PRISM_AST_H
 #define PRISM_AST_H
 
@@ -78,18 +83,37 @@ enum pm_node_type {
     PM_SCOPE_NODE
 };
 
+/**
+ * This is the type of node embedded in the node struct. We explicitly control
+ * the size of it here to avoid having the variable-width enum.
+ */
 typedef uint16_t pm_node_type_t;
+
+/**
+ * These are the flags embedded in the node struct. We explicitly control the
+ * size of it here to avoid having the variable-width enum.
+ */
 typedef uint16_t pm_node_flags_t;
 
-// We store the flags enum in every node in the tree. Some flags are common to
-// all nodes (the ones listed below). Others are specific to certain node types.
+/**
+ * We store the flags enum in every node in the tree. Some flags are common to
+ * all nodes (the ones listed below). Others are specific to certain node types.
+ */
 #define PM_NODE_FLAG_BITS (sizeof(pm_node_flags_t) * 8)
+
 static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = (1 << (PM_NODE_FLAG_BITS - 1));
 static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = (1 << (PM_NODE_FLAG_BITS - 2));
 static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS - 1)) | (1 << (PM_NODE_FLAG_BITS - 2));
 
-// For easy access, we define some macros to check node type
-#define PM_NODE_TYPE(node) ((enum pm_node_type)node->type)
+/**
+ * Cast the type to an enum to allow the compiler to provide exhaustiveness
+ * checking.
+ */
+#define PM_NODE_TYPE(node) ((enum pm_node_type) node->type)
+
+/**
+ * Return true if the type of the given node matches the given type.
+ */
 #define PM_NODE_TYPE_P(node, type) (PM_NODE_TYPE(node) == (type))
 
 /**
@@ -132,8 +156,11 @@ typedef struct pm_node {
  * @extends pm_node_t
  */
 typedef struct pm_<%= node.human %> {
+    /** The embedded base node. */
     pm_node_t base;
 <%- node.fields.grep_v(Prism::FlagsField).each do |field| -%>
+
+    /** <%= node.name %>#<%= field.name %> */
     <%= case field
     when Prism::NodeField, Prism::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
     when Prism::NodeListField then "struct pm_node_list #{field.name}"
@@ -162,6 +189,12 @@ typedef enum pm_<%= flag.human %> {
 } pm_<%= flag.human %>_t;
 <%- end -%>
 
+/**
+ * When we're serializing to Java, we want to skip serializing the location
+ * fields as they won't be used by JRuby or TruffleRuby. This boolean allows us
+ * to specify that through the environment. It will never be true except for in
+ * those build systems.
+ */
 #define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS %>
 
 #endif

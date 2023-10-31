@@ -1,3 +1,8 @@
+/**
+ * @file pm_strncasecmp.h
+ *
+ * A custom strncasecmp implementation.
+ */
 #ifndef PRISM_STRNCASECMP_H
 #define PRISM_STRNCASECMP_H
 

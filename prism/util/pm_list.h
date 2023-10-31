@@ -1,3 +1,8 @@
+/**
+ * @file pm_list.h
+ *
+ * An abstract linked list.
+ */
 #ifndef PRISM_LIST_H
 #define PRISM_LIST_H
 

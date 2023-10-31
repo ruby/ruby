@@ -1,3 +1,8 @@
+/**
+ * @file pm_strpbrk.h
+ *
+ * A custom strpbrk implementation.
+ */
 #ifndef PRISM_STRPBRK_H
 #define PRISM_STRPBRK_H
 
