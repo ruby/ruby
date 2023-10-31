@@ -8,7 +8,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-// This struct represents a diagnostic found during parsing.
+/**
+ * This struct represents a diagnostic found during parsing.
+ *
+ * @extends pm_list_node_t
+ */
 typedef struct {
     pm_list_node_t node;
     const uint8_t *start;

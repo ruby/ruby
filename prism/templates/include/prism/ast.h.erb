@@ -61,7 +61,10 @@ static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS
 #define PM_NODE_TYPE(node) ((enum pm_node_type)node->type)
 #define PM_NODE_TYPE_P(node, type) (PM_NODE_TYPE(node) == (type))
 
-// This is the overall tagged union representing a node in the syntax tree.
+/**
+ * This is the base structure that represents a node in the syntax tree. It is
+ * embedded into every node type.
+ */
 typedef struct pm_node {
     // This represents the type of the node. It somewhat maps to the nodes that
     // existed in the original grammar and ripper, but it's not a 1:1 mapping.
@@ -76,16 +79,20 @@ typedef struct pm_node {
 } pm_node_t;
 <%- nodes.each do |node| -%>
 
-// <%= node.name %>
-//
-// Type: <%= node.type %>
+/**
+ * <%= node.name %>
+ *
+ * Type: <%= node.type %>
 <%- if (node_flags = node.fields.find { |field| field.is_a? Prism::FlagsField }) -%>
-// Flags:
+ * Flags:
 <%- found = flags.find { |flag| flag.name == node_flags.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
 <%- found.values.each do |value| -%>
-//    PM_<%= found.human.upcase %>_<%= value.name %>
+ *    PM_<%= found.human.upcase %>_<%= value.name %>
 <%- end -%>
 <%- end -%>
+ *
+ * @extends pm_node_t
+ */
 typedef struct pm_<%= node.human %> {
     pm_node_t base;
 <%- node.fields.grep_v(Prism::FlagsField).each do |field| -%>
