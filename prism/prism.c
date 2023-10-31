@@ -945,7 +945,7 @@ pm_arguments_node_create(pm_parser_t *parser) {
             .type = PM_ARGUMENTS_NODE,
             .location = PM_LOCATION_NULL_VALUE(parser)
         },
-        .arguments = PM_EMPTY_NODE_LIST
+        .arguments = { 0 }
     };
 
     return node;
@@ -981,7 +981,7 @@ pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening) {
         },
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
-        .elements = PM_EMPTY_NODE_LIST
+        .elements = { 0 }
     };
 
     return node;
@@ -1034,8 +1034,8 @@ pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *node
         },
         .constant = NULL,
         .rest = NULL,
-        .requireds = PM_EMPTY_NODE_LIST,
-        .posts = PM_EMPTY_NODE_LIST,
+        .requireds = { 0 },
+        .posts = { 0 },
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
@@ -1071,8 +1071,8 @@ pm_array_pattern_node_rest_create(pm_parser_t *parser, pm_node_t *rest) {
         },
         .constant = NULL,
         .rest = rest,
-        .requireds = PM_EMPTY_NODE_LIST,
-        .posts = PM_EMPTY_NODE_LIST,
+        .requireds = { 0 },
+        .posts = { 0 },
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
@@ -1098,8 +1098,8 @@ pm_array_pattern_node_constant_create(pm_parser_t *parser, pm_node_t *constant, 
         .rest = NULL,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .requireds = PM_EMPTY_NODE_LIST,
-        .posts = PM_EMPTY_NODE_LIST
+        .requireds = { 0 },
+        .posts = { 0 }
     };
 
     return node;
@@ -1123,8 +1123,8 @@ pm_array_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *openin
         .rest = NULL,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .requireds = PM_EMPTY_NODE_LIST,
-        .posts = PM_EMPTY_NODE_LIST
+        .requireds = { 0 },
+        .posts = { 0 }
     };
 
     return node;
@@ -1362,7 +1362,7 @@ pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *param
         .parameters = parameters,
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .locals = PM_EMPTY_NODE_LIST
+        .locals = { 0 }
     };
 
     return node;
@@ -1923,7 +1923,7 @@ pm_case_node_create(pm_parser_t *parser, const pm_token_t *case_keyword, pm_node
         .consequent = consequent,
         .case_keyword_loc = PM_LOCATION_TOKEN_VALUE(case_keyword),
         .end_keyword_loc = PM_LOCATION_TOKEN_VALUE(end_keyword),
-        .conditions = PM_EMPTY_NODE_LIST
+        .conditions = { 0 }
     };
 
     return node;
@@ -2498,7 +2498,7 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
         .constant = NULL,
         .left = left,
         .right = right,
-        .requireds = PM_EMPTY_NODE_LIST,
+        .requireds = { 0 },
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
@@ -2689,7 +2689,7 @@ pm_hash_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening
         .constant = NULL,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
-        .elements = PM_EMPTY_NODE_LIST,
+        .elements = { 0 },
         .rest = NULL
     };
 
@@ -2727,7 +2727,7 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
             },
         },
         .constant = NULL,
-        .elements = PM_EMPTY_NODE_LIST,
+        .elements = { 0 },
         .rest = rest,
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
@@ -2880,7 +2880,7 @@ pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening) {
         },
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_NULL_VALUE(parser),
-        .elements = PM_EMPTY_NODE_LIST
+        .elements = { 0 }
     };
 
     return node;
@@ -3272,7 +3272,7 @@ pm_interpolated_regular_expression_node_create(pm_parser_t *parser, const pm_tok
         },
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(opening),
-        .parts = PM_EMPTY_NODE_LIST
+        .parts = { 0 }
     };
 
     return node;
@@ -3311,8 +3311,12 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
         },
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
-        .parts = parts == NULL ? PM_EMPTY_NODE_LIST : *parts
+        .parts = { 0 }
     };
+
+    if (parts != NULL) {
+        node->parts = *parts;
+    }
 
     return node;
 }
@@ -3350,8 +3354,12 @@ pm_interpolated_symbol_node_create(pm_parser_t *parser, const pm_token_t *openin
         },
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
-        .parts = parts == NULL ? PM_EMPTY_NODE_LIST : *parts
+        .parts = { 0 }
     };
+
+    if (parts != NULL) {
+        node->parts = *parts;
+    }
 
     return node;
 }
@@ -3381,7 +3389,7 @@ pm_interpolated_xstring_node_create(pm_parser_t *parser, const pm_token_t *openi
         },
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
-        .parts = PM_EMPTY_NODE_LIST
+        .parts = { 0 }
     };
 
     return node;
@@ -3409,7 +3417,7 @@ pm_keyword_hash_node_create(pm_parser_t *parser) {
             .type = PM_KEYWORD_HASH_NODE,
             .location = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
         },
-        .elements = PM_EMPTY_NODE_LIST
+        .elements = { 0 }
     };
 
     return node;
@@ -3752,9 +3760,9 @@ pm_multi_target_node_create(pm_parser_t *parser) {
             .type = PM_MULTI_TARGET_NODE,
             .location = { .start = NULL, .end = NULL }
         },
-        .lefts = PM_EMPTY_NODE_LIST,
+        .lefts = { 0 },
         .rest = NULL,
-        .rights = PM_EMPTY_NODE_LIST,
+        .rights = { 0 },
         .lparen_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .rparen_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
@@ -3961,10 +3969,10 @@ pm_parameters_node_create(pm_parser_t *parser) {
         .rest = NULL,
         .keyword_rest = NULL,
         .block = NULL,
-        .requireds = PM_EMPTY_NODE_LIST,
-        .optionals = PM_EMPTY_NODE_LIST,
-        .posts = PM_EMPTY_NODE_LIST,
-        .keywords = PM_EMPTY_NODE_LIST
+        .requireds = { 0 },
+        .optionals = { 0 },
+        .posts = { 0 },
+        .keywords = { 0 }
     };
 
     return node;
@@ -4295,7 +4303,7 @@ pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
         .reference = NULL,
         .statements = NULL,
         .consequent = NULL,
-        .exceptions = PM_EMPTY_NODE_LIST
+        .exceptions = { 0 }
     };
 
     return node;
@@ -4503,7 +4511,7 @@ pm_statements_node_create(pm_parser_t *parser) {
             .type = PM_STATEMENTS_NODE,
             .location = PM_LOCATION_NULL_VALUE(parser)
         },
-        .body = PM_EMPTY_NODE_LIST
+        .body = { 0 }
     };
 
     return node;
@@ -4812,7 +4820,7 @@ pm_undef_node_create(pm_parser_t *parser, const pm_token_t *token) {
             .location = PM_LOCATION_TOKEN_VALUE(token),
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(token),
-        .names = PM_EMPTY_NODE_LIST
+        .names = { 0 }
     };
 
     return node;
@@ -4952,7 +4960,7 @@ pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .statements = NULL,
-        .conditions = PM_EMPTY_NODE_LIST
+        .conditions = { 0 }
     };
 
     return node;
@@ -11418,7 +11426,7 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
 
         // Create a node_list first. We'll use this to check if it should be an
         // InterpolatedSymbolNode or a SymbolNode.
-        pm_node_list_t node_list = PM_EMPTY_NODE_LIST;
+        pm_node_list_t node_list = { 0 };
         if (part) pm_node_list_append(&node_list, part);
 
         while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
@@ -11861,7 +11869,7 @@ parse_pattern_keyword_rest(pm_parser_t *parser) {
 // Parse a hash pattern.
 static pm_hash_pattern_node_t *
 parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
-    pm_node_list_t assocs = PM_EMPTY_NODE_LIST;
+    pm_node_list_t assocs = { 0 };
     pm_node_t *rest = NULL;
 
     switch (PM_NODE_TYPE(first_assoc)) {
@@ -12308,7 +12316,7 @@ parse_pattern(pm_parser_t *parser, bool top_pattern, pm_diagnostic_id_t diag_id)
         // If we have a comma, then we are now parsing either an array pattern or a
         // find pattern. We need to parse all of the patterns, put them into a big
         // list, and then determine which type of node we have.
-        pm_node_list_t nodes = PM_EMPTY_NODE_LIST;
+        pm_node_list_t nodes = { 0 };
         pm_node_list_append(&nodes, node);
 
         // Gather up all of the patterns into the list.
@@ -12448,7 +12456,7 @@ parse_strings(pm_parser_t *parser) {
             // In that case we need to switch to an interpolated string to
             // be able to contain all of the parts.
             if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                pm_node_list_t parts = PM_EMPTY_NODE_LIST;
+                pm_node_list_t parts = { 0 };
 
                 pm_token_t delimiters = not_provided(parser);
                 pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &delimiters, &content, &delimiters, &unescaped);
@@ -12485,7 +12493,7 @@ parse_strings(pm_parser_t *parser) {
             } else {
                 // If we get here, then we have interpolation so we'll need
                 // to create a string or symbol node with interpolation.
-                pm_node_list_t parts = PM_EMPTY_NODE_LIST;
+                pm_node_list_t parts = { 0 };
                 pm_token_t string_opening = not_provided(parser);
                 pm_token_t string_closing = not_provided(parser);
 
@@ -12509,7 +12517,7 @@ parse_strings(pm_parser_t *parser) {
             // If we get here, then the first part of the string is not plain
             // string content, in which case we need to parse the string as an
             // interpolated string.
-            pm_node_list_t parts = PM_EMPTY_NODE_LIST;
+            pm_node_list_t parts = { 0 };
             pm_node_t *part;
 
             while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
@@ -13035,7 +13043,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 // If we get here, then we have multiple parts in the heredoc,
                 // so we'll need to create an interpolated string node to hold
                 // them all.
-                pm_node_list_t parts = PM_EMPTY_NODE_LIST;
+                pm_node_list_t parts = { 0 };
                 pm_node_list_append(&parts, part);
 
                 while (!match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
