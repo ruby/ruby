@@ -15069,7 +15069,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
                 }
 
-                if (!interpolated) {
+                if (!interpolated && total_length > 0) {
                     void *memory = malloc(total_length);
                     if (!memory) abort();
 
