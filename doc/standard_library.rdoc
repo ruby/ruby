@@ -61,6 +61,7 @@ OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
+Prism:: A portable, error-tolerant Ruby parser
 PStore:: Implements a file based persistence mechanism based on a Hash
 Readline:: Wrapper for Readline extencion and Reline
 Reline:: GNU Readline and Editline by pure Ruby implementation.
