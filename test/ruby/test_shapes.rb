@@ -278,12 +278,14 @@ class TestShapes < Test::Unit::TestCase
   def test_run_out_of_shape_for_class_cvar
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      c = Class.new
       i = 0
       while RubyVM::Shape.shapes_available > 0
+        c = Class.new
         c.class_variable_set(:"@@i#{i}", 1)
         i += 1
       end
+
+      c = Class.new
 
       c.class_variable_set(:@@a, 1)
       assert_equal(1, c.class_variable_get(:@@a))
