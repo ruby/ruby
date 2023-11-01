@@ -260,7 +260,7 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
-        │   │   │   └── @ OptionalKeywordParameterNode (location: (31,6)-(31,8))
+        │   │   │   └── @ RequiredKeywordParameterNode (location: (31,6)-(31,8))
         │   │   │       ├── name: :b
         │   │   │       └── name_loc: (31,6)-(31,8) = "b:"
         │   │   ├── keyword_rest: ∅
@@ -290,7 +290,7 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
-        │   │   │   └── @ OptionalKeywordParameterNode (location: (35,6)-(35,8))
+        │   │   │   └── @ RequiredKeywordParameterNode (location: (35,6)-(35,8))
         │   │   │       ├── name: :b
         │   │   │       └── name_loc: (35,6)-(35,8) = "b:"
         │   │   ├── keyword_rest: ∅
@@ -426,10 +426,10 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
-        │   │   │   ├── @ OptionalKeywordParameterNode (location: (53,6)-(53,8))
+        │   │   │   ├── @ RequiredKeywordParameterNode (location: (53,6)-(53,8))
         │   │   │   │   ├── name: :b
         │   │   │   │   └── name_loc: (53,6)-(53,8) = "b:"
-        │   │   │   └── @ RequiredKeywordParameterNode (location: (53,10)-(53,14))
+        │   │   │   └── @ OptionalKeywordParameterNode (location: (53,10)-(53,14))
         │   │   │       ├── name: :c
         │   │   │       ├── name_loc: (53,10)-(53,12) = "c:"
         │   │   │       └── value:
@@ -456,10 +456,10 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
-        │   │   │   ├── @ OptionalKeywordParameterNode (location: (56,6)-(56,8))
+        │   │   │   ├── @ RequiredKeywordParameterNode (location: (56,6)-(56,8))
         │   │   │   │   ├── name: :b
         │   │   │   │   └── name_loc: (56,6)-(56,8) = "b:"
-        │   │   │   └── @ RequiredKeywordParameterNode (location: (56,10)-(56,14))
+        │   │   │   └── @ OptionalKeywordParameterNode (location: (56,10)-(56,14))
         │   │   │       ├── name: :c
         │   │   │       ├── name_loc: (56,10)-(56,12) = "c:"
         │   │   │       └── value:
@@ -486,13 +486,13 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
-        │   │   │   ├── @ RequiredKeywordParameterNode (location: (59,6)-(60,3))
+        │   │   │   ├── @ OptionalKeywordParameterNode (location: (59,6)-(60,3))
         │   │   │   │   ├── name: :b
         │   │   │   │   ├── name_loc: (59,6)-(59,8) = "b:"
         │   │   │   │   └── value:
         │   │   │   │       @ IntegerNode (location: (60,2)-(60,3))
         │   │   │   │       └── flags: decimal
-        │   │   │   └── @ OptionalKeywordParameterNode (location: (60,5)-(60,7))
+        │   │   │   └── @ RequiredKeywordParameterNode (location: (60,5)-(60,7))
         │   │   │       ├── name: :c
         │   │   │       └── name_loc: (60,5)-(60,7) = "c:"
         │   │   ├── keyword_rest: ∅
@@ -1307,7 +1307,7 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
-        │   │   │   └── @ RequiredKeywordParameterNode (location: (142,8)-(142,19))
+        │   │   │   └── @ OptionalKeywordParameterNode (location: (142,8)-(142,19))
         │   │   │       ├── name: :a
         │   │   │       ├── name_loc: (142,8)-(142,10) = "a:"
         │   │   │       └── value:
@@ -1347,7 +1347,7 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
-        │   │   │   └── @ RequiredKeywordParameterNode (location: (145,8)-(145,18))
+        │   │   │   └── @ OptionalKeywordParameterNode (location: (145,8)-(145,18))
         │   │   │       ├── name: :a
         │   │   │       ├── name_loc: (145,8)-(145,10) = "a:"
         │   │   │       └── value:
@@ -1385,7 +1385,7 @@
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
-        │   │   │   └── @ RequiredKeywordParameterNode (location: (148,8)-(148,17))
+        │   │   │   └── @ OptionalKeywordParameterNode (location: (148,8)-(148,17))
         │   │   │       ├── name: :a
         │   │   │       ├── name_loc: (148,8)-(148,10) = "a:"
         │   │   │       └── value:

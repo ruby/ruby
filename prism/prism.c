@@ -3326,14 +3326,14 @@ pm_keyword_hash_node_elements_append(pm_keyword_hash_node_t *hash, pm_node_t *el
     hash->base.location.end = element->location.end;
 }
 
-// Allocate a new OptionalKeywordParameterNode node.
-static pm_optional_keyword_parameter_node_t *
-pm_optional_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    pm_optional_keyword_parameter_node_t *node = PM_ALLOC_NODE(parser, pm_optional_keyword_parameter_node_t);
+// Allocate a new RequiredKeywordParameterNode node.
+static pm_required_keyword_parameter_node_t *
+pm_required_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t *name) {
+    pm_required_keyword_parameter_node_t *node = PM_ALLOC_NODE(parser, pm_required_keyword_parameter_node_t);
 
-    *node = (pm_optional_keyword_parameter_node_t) {
+    *node = (pm_required_keyword_parameter_node_t) {
         {
-            .type = PM_OPTIONAL_KEYWORD_PARAMETER_NODE,
+            .type = PM_REQUIRED_KEYWORD_PARAMETER_NODE,
             .location = {
                 .start = name->start,
                 .end = name->end
@@ -3346,14 +3346,14 @@ pm_optional_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t 
     return node;
 }
 
-// Allocate a new RequiredKeywordParameterNode node.
-static pm_required_keyword_parameter_node_t *
-pm_required_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, pm_node_t *value) {
-    pm_required_keyword_parameter_node_t *node = PM_ALLOC_NODE(parser, pm_required_keyword_parameter_node_t);
+// Allocate a new OptionalKeywordParameterNode node.
+static pm_optional_keyword_parameter_node_t *
+pm_optional_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, pm_node_t *value) {
+    pm_optional_keyword_parameter_node_t *node = PM_ALLOC_NODE(parser, pm_optional_keyword_parameter_node_t);
 
-    *node = (pm_required_keyword_parameter_node_t) {
+    *node = (pm_optional_keyword_parameter_node_t) {
         {
-            .type = PM_REQUIRED_KEYWORD_PARAMETER_NODE,
+            .type = PM_OPTIONAL_KEYWORD_PARAMETER_NODE,
             .location = {
                 .start = name->start,
                 .end = value->location.end
@@ -10502,7 +10502,7 @@ parse_parameters(
                     case PM_TOKEN_COMMA:
                     case PM_TOKEN_PARENTHESIS_RIGHT:
                     case PM_TOKEN_PIPE: {
-                        pm_node_t *param = (pm_node_t *) pm_optional_keyword_parameter_node_create(parser, &name);
+                        pm_node_t *param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name);
                         pm_parameters_node_keywords_append(params, param);
                         break;
                     }
@@ -10513,7 +10513,7 @@ parse_parameters(
                             break;
                         }
 
-                        pm_node_t *param = (pm_node_t *) pm_optional_keyword_parameter_node_create(parser, &name);
+                        pm_node_t *param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name);
                         pm_parameters_node_keywords_append(params, param);
                         break;
                     }
@@ -10524,10 +10524,10 @@ parse_parameters(
                             context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
                             pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_PARAMETER_NO_DEFAULT_KW);
                             context_pop(parser);
-                            param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name, value);
+                            param = (pm_node_t *) pm_optional_keyword_parameter_node_create(parser, &name, value);
                         }
                         else {
-                            param = (pm_node_t *) pm_optional_keyword_parameter_node_create(parser, &name);
+                            param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name);
                         }
 
                         pm_parameters_node_keywords_append(params, param);

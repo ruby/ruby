@@ -144,10 +144,10 @@
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ OptionalKeywordParameterNode (location: (17,13)-(17,15))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (17,13)-(17,15))
         │   │   │   │   │   ├── name: :c
         │   │   │   │   │   └── name_loc: (17,13)-(17,15) = "c:"
-        │   │   │   │   └── @ OptionalKeywordParameterNode (location: (17,17)-(17,19))
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (17,17)-(17,19))
         │   │   │   │       ├── name: :d
         │   │   │   │       └── name_loc: (17,17)-(17,19) = "d:"
         │   │   │   ├── keyword_rest: ∅
@@ -192,10 +192,10 @@
         │   │   │   │   └── operator_loc: (19,14)-(19,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ OptionalKeywordParameterNode (location: (19,18)-(19,20))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (19,18)-(19,20))
         │   │   │   │   │   ├── name: :d
         │   │   │   │   │   └── name_loc: (19,18)-(19,20) = "d:"
-        │   │   │   │   └── @ OptionalKeywordParameterNode (location: (19,22)-(19,24))
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (19,22)-(19,24))
         │   │   │   │       ├── name: :e
         │   │   │   │       └── name_loc: (19,22)-(19,24) = "e:"
         │   │   │   ├── keyword_rest:
@@ -244,10 +244,10 @@
         │   │   │   │   └── operator_loc: (21,14)-(21,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ OptionalKeywordParameterNode (location: (21,18)-(21,20))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (21,18)-(21,20))
         │   │   │   │   │   ├── name: :d
         │   │   │   │   │   └── name_loc: (21,18)-(21,20) = "d:"
-        │   │   │   │   └── @ OptionalKeywordParameterNode (location: (21,22)-(21,24))
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (21,22)-(21,24))
         │   │   │   │       ├── name: :e
         │   │   │   │       └── name_loc: (21,22)-(21,24) = "e:"
         │   │   │   ├── keyword_rest:

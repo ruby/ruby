@@ -1985,11 +1985,13 @@ nodes:
         type: constant
       - name: name_loc
         type: location
+      - name: value
+        type: node
     comment: |
       Represents an optional keyword parameter to a method, block, or lambda definition.
 
-          def a(b: )
-                ^^
+          def a(b: 1)
+                ^^^^
           end
   - name: OptionalParameterNode
     fields:
@@ -2184,13 +2186,11 @@ nodes:
         type: constant
       - name: name_loc
         type: location
-      - name: value
-        type: node
     comment: |
       Represents a required keyword parameter to a method, block, or lambda definition.
 
-          def a(b: 1)
-                ^^^^
+          def a(b: )
+                ^^
           end
   - name: RequiredParameterNode
     fields:

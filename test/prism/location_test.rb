@@ -600,7 +600,7 @@ module Prism
     end
 
     def test_OptionalKeywordParameterNode
-      assert_location(OptionalKeywordParameterNode, "def foo(bar:); end", 8...12) do |node|
+      assert_location(OptionalKeywordParameterNode, "def foo(bar: nil); end", 8...16) do |node|
         node.parameters.keywords.first
       end
     end
@@ -670,7 +670,7 @@ module Prism
     end
 
     def test_RequiredKeywordParameterNode
-      assert_location(RequiredKeywordParameterNode, "def foo(bar: nil); end", 8...16) do |node|
+      assert_location(RequiredKeywordParameterNode, "def foo(bar:); end", 8...12) do |node|
         node.parameters.keywords.first
       end
     end
