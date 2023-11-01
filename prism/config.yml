@@ -2214,8 +2214,8 @@ nodes:
     comment: |
       Represents an expression modified with a rescue.
 
-        foo rescue nil
-        ^^^^^^^^^^^^^^
+          foo rescue nil
+          ^^^^^^^^^^^^^^
   - name: RescueNode
     fields:
       - name: keyword_loc
