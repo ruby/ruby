@@ -3228,6 +3228,7 @@ compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 compile.$(OBJEXT): $(top_srcdir)/prism_compile.c
 compile.$(OBJEXT): {$(VPATH)}assert.h
@@ -8280,6 +8281,7 @@ iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 iseq.$(OBJEXT): {$(VPATH)}assert.h
 iseq.$(OBJEXT): {$(VPATH)}atomic.h
@@ -11347,6 +11349,7 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/api_node.$(OBJEXT): {$(VPATH)}assert.h
 prism/api_node.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -11539,6 +11542,7 @@ prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}assert.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -11843,6 +11847,7 @@ prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/extension.$(OBJEXT): {$(VPATH)}assert.h
 prism/extension.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -12068,6 +12073,7 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/version.h
 prism/prism.$(OBJEXT): {$(VPATH)}config.h
@@ -12105,6 +12111,7 @@ prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/serialize.$(OBJEXT): {$(VPATH)}config.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/ast.h
@@ -12164,6 +12171,7 @@ prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/util/pm_string_list.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
+prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
@@ -12197,6 +12205,7 @@ prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism_init.c
 prism_init.$(OBJEXT): {$(VPATH)}assert.h
@@ -15328,6 +15337,7 @@ ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 ruby.$(OBJEXT): {$(VPATH)}assert.h
 ruby.$(OBJEXT): {$(VPATH)}atomic.h
