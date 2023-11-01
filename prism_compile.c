@@ -3165,15 +3165,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_SCOPE_NODE: {
         pm_scope_node_t *scope_node = (pm_scope_node_t *)node;
-        pm_constant_id_list_t locals = scope_node->locals;
+        pm_constant_id_list_t *locals = &scope_node->locals;
 
-        pm_parameters_node_t *parameters_node = (pm_parameters_node_t *)scope_node->parameters;
-        pm_node_list_t optionals_list = PM_EMPTY_NODE_LIST;
+        pm_parameters_node_t *parameters_node = (pm_parameters_node_t *) scope_node->parameters;
+        pm_node_list_t *optionals_list = NULL;
 
-        if (parameters_node) {
-            optionals_list = parameters_node->optionals;
+        if (parameters_node != NULL) {
+            optionals_list = &parameters_node->optionals;
             ISEQ_BODY(iseq)->param.lead_num = (int) parameters_node->requireds.size;
-            ISEQ_BODY(iseq)->param.opt_num = (int) optionals_list.size;
+            ISEQ_BODY(iseq)->param.opt_num = (int) optionals_list->size;
         } else if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
             ISEQ_BODY(iseq)->param.lead_num = 1;
             ISEQ_BODY(iseq)->param.opt_num = 0;
@@ -3182,17 +3182,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ISEQ_BODY(iseq)->param.opt_num = 0;
         }
 
-        size_t size = locals.size;
+        size_t size = locals->size;
 
         // Index lookup table buffer size is only the number of the locals
         st_table *index_lookup_table = st_init_numtable();
 
         VALUE idtmp = 0;
         rb_ast_id_table_t *tbl = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + size * sizeof(ID));
-        tbl->size = (int)size;
+        tbl->size = (int) size;
 
         for (size_t i = 0; i < size; i++) {
-            pm_constant_id_t constant_id = locals.ids[i];
+            pm_constant_id_t constant_id = locals->ids[i];
             ID local;
             if (constant_id & TEMP_CONSTANT_IDENTIFIER) {
                 local = rb_make_temporary_id(i);
@@ -3206,27 +3206,27 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         scope_node->index_lookup_table = index_lookup_table;
 
         // TODO: Set all the other nums (good comment by lead_num illustrating what they are)
-        ISEQ_BODY(iseq)->param.size = (unsigned int)size;
+        ISEQ_BODY(iseq)->param.size = (unsigned int) size;
 
-        if (optionals_list.size) {
-            LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list.size + 1);
+        if (optionals_list != NULL) {
+            LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list->size + 1);
             LABEL *label;
 
             // TODO: Should we make an api for NEW_LABEL where you can pass
             // a pointer to the label it should fill out?  We already
             // have a list of labels allocated above so it seems wasteful
             // to do the copies.
-            for (size_t i = 0; i < optionals_list.size; i++) {
+            for (size_t i = 0; i < optionals_list->size; i++) {
                 label = NEW_LABEL(lineno);
                 opt_table[i] = label;
                 ADD_LABEL(ret, label);
-                pm_node_t *optional_node = optionals_list.nodes[i];
+                pm_node_t *optional_node = optionals_list->nodes[i];
                 PM_COMPILE_NOT_POPPED(optional_node);
             }
 
             // Set the last label
             label = NEW_LABEL(lineno);
-            opt_table[optionals_list.size] = label;
+            opt_table[optionals_list->size] = label;
             ADD_LABEL(ret, label);
 
             ISEQ_BODY(iseq)->param.flags.has_opt = TRUE;
