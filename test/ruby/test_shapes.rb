@@ -252,7 +252,7 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
-  def test_run_out_of_shape_for_class
+  def test_run_out_of_shape_for_class_ivar
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       i = 0
@@ -271,6 +271,28 @@ class TestShapes < Test::Unit::TestCase
 
       assert_raise(NameError) do
         c.remove_instance_variable(:@a)
+      end
+    end;
+  end
+
+  def test_run_out_of_shape_for_class_cvar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      c = Class.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        c.class_variable_set(:"@@i#{i}", 1)
+        i += 1
+      end
+
+      c.class_variable_set(:@@a, 1)
+      assert_equal(1, c.class_variable_get(:@@a))
+
+      c.class_eval { remove_class_variable(:@@a) }
+      assert_false(c.class_variable_defined?(:@@a))
+
+      assert_raise(NameError) do
+        c.class_eval { remove_class_variable(:@@a) }
       end
     end;
   end

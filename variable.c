@@ -1372,25 +1372,42 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     rb_check_frozen(obj);
 
     VALUE val = undef;
-    rb_shape_t * shape = rb_shape_get_shape(obj);
+    rb_shape_t *shape = rb_shape_get_shape(obj);
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
+    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+    }
 
-        RB_VM_LOCK_ENTER();
-        {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+    if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
+        if (!rb_shape_obj_too_complex(obj)) {
+            rb_evict_ivars_to_hash(obj, shape);
         }
-        RB_VM_LOCK_LEAVE();
 
-        break;
-      default: {
-        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        st_table *table = NULL;
+        switch (BUILTIN_TYPE(obj)) {
+          case T_CLASS:
+          case T_MODULE:
+            table = RCLASS_IV_HASH(obj);
+            break;
 
-        break;
-      }
+          case T_OBJECT:
+            table = ROBJECT_IV_HASH(obj);
+            break;
+
+          default: {
+            struct gen_ivtbl *ivtbl;
+            if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+                table = ivtbl->as.complex.table;
+            }
+            break;
+          }
+        }
+
+        if (table) {
+            if (!st_delete(table, (st_data_t *)&id, (st_data_t *)&val)) {
+                val = undef;
+            }
+        }
     }
 
     return val;
@@ -2181,60 +2198,18 @@ check_id_type(VALUE obj, VALUE *pname,
 VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
-    VALUE val = Qundef;
     const ID id = id_for_var(obj, name, an, instance);
 
     // Frozen check comes here because it's expected that we raise a
     // NameError (from the id_for_var check) before we raise a FrozenError
     rb_check_frozen(obj);
 
-    if (!id) {
-        goto not_defined;
+    if (id) {
+        VALUE val = rb_ivar_delete(obj, id, Qundef);
+
+        if (val != Qundef) return val;
     }
 
-    rb_shape_t * shape = rb_shape_get_shape(obj);
-
-    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-    }
-
-    if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
-        if (!rb_shape_obj_too_complex(obj)) {
-            rb_evict_ivars_to_hash(obj, shape);
-        }
-
-        st_table *table = NULL;
-        switch (BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            table = RCLASS_IV_HASH(obj);
-            break;
-
-          case T_OBJECT:
-            table = ROBJECT_IV_HASH(obj);
-            break;
-
-          default: {
-            struct gen_ivtbl *ivtbl;
-            if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-                table = ivtbl->as.complex.table;
-            }
-            break;
-          }
-        }
-
-        if (table) {
-            if (!st_delete(table, (st_data_t *)&id, (st_data_t *)&val)) {
-                val = Qundef;
-            }
-        }
-    }
-
-    if (val != Qundef) {
-        return val;
-    }
-
-  not_defined:
     rb_name_err_raise("instance variable %1$s not defined",
                       obj, name);
     UNREACHABLE_RETURN(Qnil);
