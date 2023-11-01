@@ -2925,42 +2925,53 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
-        for (size_t index = 0; index < cast->lefts.size; index++) {
-            PM_COMPILE(cast->lefts.nodes[index]);
+
+        if (cast->lefts.size) {
+            int flag = (int) (bool) cast->rights.size;
+            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->lefts.size), INT2FIX(flag));
+            for (size_t index = 0; index < cast->lefts.size; index++) {
+                PM_COMPILE_NOT_POPPED(cast->lefts.nodes[index]);
+            }
+        }
+
+        if (cast->rights.size) {
+            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->rights.size), INT2FIX(2));
+            for (size_t index = 0; index < cast->rights.size; index++) {
+                PM_COMPILE_NOT_POPPED(cast->rights.nodes[index]);
+            }
         }
         return;
       }
       case PM_MULTI_WRITE_NODE: {
         pm_multi_write_node_t *multi_write_node = (pm_multi_write_node_t *)node;
-        pm_node_list_t *node_list = &multi_write_node->lefts;
+        pm_node_list_t *lefts = &multi_write_node->lefts;
+        pm_node_list_t *rights = &multi_write_node->rights;
 
         // pre-process the left hand side of multi-assignments.
         uint8_t pushed = 0;
-        for (size_t index = 0; index < node_list->size; index++) {
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, node_list->nodes[index], ret, scope_node, pushed, false);
+        for (size_t index = 0; index < lefts->size; index++) {
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, lefts->nodes[index], ret, scope_node, pushed, false);
         }
 
         PM_COMPILE_NOT_POPPED(multi_write_node->value);
-
-        // TODO: int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
-        int flag = 0x00;
-
         PM_DUP_UNLESS_POPPED;
-        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(node_list->size), INT2FIX(flag));
 
-        for (size_t index = 0; index < node_list->size; index++) {
-            pm_node_t *considered_node = node_list->nodes[index];
+        if (lefts->size) {
+            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(lefts->size), INT2FIX((int) (bool) rights->size));
+            for (size_t index = 0; index < lefts->size; index++) {
+                pm_node_t *considered_node = lefts->nodes[index];
 
-            if (PM_NODE_TYPE_P(considered_node, PM_CONSTANT_PATH_TARGET_NODE) && pushed > 0) {
-                pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *) considered_node;
-                ID name = pm_constant_id_lookup(scope_node, ((pm_constant_read_node_t * ) cast->child)->name);
+                if (PM_NODE_TYPE_P(considered_node, PM_CONSTANT_PATH_TARGET_NODE) && pushed > 0) {
+                    pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *) considered_node;
+                    ID name = pm_constant_id_lookup(scope_node, ((pm_constant_read_node_t * ) cast->child)->name);
 
-                pushed -= 2;
+                    pushed -= 2;
 
-                ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(pushed));
-                ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(name));
-            } else {
-                PM_COMPILE(node_list->nodes[index]);
+                    ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(pushed));
+                    ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(name));
+                } else {
+                    PM_COMPILE(lefts->nodes[index]);
+                }
             }
         }
 
@@ -2968,6 +2979,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(pushed));
             for (uint8_t index = 0; index < pushed; index++) {
                 PM_POP;
+            }
+        }
+
+        if (multi_write_node->rest) {
+            RUBY_ASSERT(PM_NODE_TYPE_P(multi_write_node->rest, PM_SPLAT_NODE));
+
+            pm_splat_node_t *rest_splat = ((pm_splat_node_t *)multi_write_node->rest);
+            if (rest_splat->expression) {
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(1));
+                PM_COMPILE(rest_splat->expression);
+            }
+        }
+
+        if (rights->size) {
+            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(rights->size), INT2FIX(2));
+            for (size_t index = 0; index < rights->size; index++) {
+                PM_COMPILE(rights->nodes[index]);
             }
         }
 
