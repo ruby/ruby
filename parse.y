@@ -1607,8 +1607,6 @@ static int dvar_defined(struct parser_params*, ID);
 static int dvar_defined_ref(struct parser_params*, ID, ID**);
 static int dvar_curr(struct parser_params*,ID);
 
-static int lvar_defined(struct parser_params*, ID);
-
 static NODE *numparam_push(struct parser_params *p);
 static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 
@@ -1801,10 +1799,6 @@ rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
 
 #endif /* RIPPER */
 
-static NODE *add_block_exit(struct parser_params *p, NODE *node);
-static rb_node_exits_t *init_block_exit(struct parser_params *p);
-static rb_node_exits_t *allow_block_exit(struct parser_params *p);
-static void restore_block_exit(struct parser_params *p, rb_node_exits_t *exits);
 static void clear_block_exit(struct parser_params *p, bool error);
 
 static void
@@ -7119,11 +7113,7 @@ none		: /* none */
 # undef yylval
 # define yylval  (*p->lval)
 
-static int regx_options(struct parser_params*);
-static int tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**,rb_encoding**);
 static void tokaddmbc(struct parser_params *p, int c, rb_encoding *enc);
-static enum yytokentype parse_string(struct parser_params*,rb_strterm_literal_t*);
-static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t*);
 
 #ifndef RIPPER
 # define set_yylval_node(x) {				\
@@ -14032,8 +14022,6 @@ ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const Y
     args = list_append(p, args, const_decl_path(p, dest));
     return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);
 }
-
-static int is_static_content(NODE *node);
 
 static VALUE
 shareable_literal_value(struct parser_params *p, NODE *node)
