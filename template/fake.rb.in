@@ -24,8 +24,8 @@ File.read(File.join(arg['srcdir'], 'version.c')).
   scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |n, s, v|
   version[n] = arg[v] || src.value(v) || (s ? v : 0)
 end
-arg['RUBY_DESCRIPTION_PRE'] = src.value('description_pre')
-arg['RUBY_DESCRIPTION_POST'] = src.value('description_post')
+arg['RUBY_DESCRIPTION_WITH_RJIT'] = src.value('description_with_rjit') || 'description_with_rjit'
+arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit') || 'description_with_yjit'
 %>baseruby="<%=arg['BASERUBY']%>"
 _\
 =begin
@@ -41,18 +41,22 @@ class Object
   CROSS_COMPILING = RUBY_PLATFORM
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%=v.inspect%>
+  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>case
+    when RubyVM.const_defined?(:RJIT) && RubyVM::RJIT.enabled?
+      <%=arg['RUBY_DESCRIPTION_WITH_RJIT'].inspect%>
+    when RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
+      <%=arg['RUBY_DESCRIPTION_WITH_YJIT'].inspect%>
+    else
+      <%=v.inspect%>
+    end.then do |v|
+      if defined?(GC::MMTk) && GC::MMTk.enabled?
+        insertion_point = v.rindex('[') || v.length
+        (v[...insertion_point] + "+MMTK(#{GC::MMTk.plan_name}) " + v[insertion_point...]).freeze
+      else
+        v
+      end
+    end<%else%><%=v.inspect%><%end%>
 % }
-  options = []
-  if RubyVM.const_defined?(:RJIT) && RubyVM::RJIT.enabled?
-    options << ' +RJIT'
-  elsif RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
-    options << ' +YJIT'
-  end
-  if defined?(GC::MMTk.enabled?) && GC::MMTk.enabled?
-    options << " +MMTk(#{GC::MMTk.plan_name})"
-  end
-  RUBY_DESCRIPTION = (<%=arg['RUBY_DESCRIPTION_PRE'].inspect%> + options.join('') + <%=arg['RUBY_DESCRIPTION_POST'].inspect%>).freeze
 end
 builddir = File.dirname(File.expand_path(__FILE__))
 libpathenv = libpathenv = "<%=arg['LIBPATHENV']%>"
