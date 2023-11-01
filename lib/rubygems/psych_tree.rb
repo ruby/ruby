@@ -14,6 +14,10 @@ module Gem
         @emitter.scalar str, nil, nil, false, true, quote
       end
 
+      def visit_Hash(o)
+        super(o.dup.delete_if {|_, v| v.nil? })
+      end
+
       # Noop this out so there are no anchors
       def register(target, obj)
       end
