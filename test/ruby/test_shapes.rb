@@ -265,8 +265,13 @@ class TestShapes < Test::Unit::TestCase
       c = Class.new
       c.instance_variable_set(:@a, 1)
       assert_equal(1, c.instance_variable_get(:@a))
+
       c.remove_instance_variable(:@a)
       assert_nil(c.instance_variable_get(:@a))
+
+      assert_raise(NameError) do
+        c.remove_instance_variable(:@a)
+      end
     end;
   end
 
@@ -290,6 +295,10 @@ class TestShapes < Test::Unit::TestCase
 
       tc.remove_instance_variable(:@a)
       assert_nil(tc.instance_variable_get(:@a))
+
+      assert_raise(NameError) do
+        tc.remove_instance_variable(:@a)
+      end
     end;
   end
 
