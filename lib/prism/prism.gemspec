@@ -30,7 +30,6 @@ Gem::Specification.new do |spec|
     "docs/heredocs.md",
     "docs/javascript.md",
     "docs/mapping.md",
-    "docs/prism.png",
     "docs/releasing.md",
     "docs/ripper.md",
     "docs/ruby_api.md",
