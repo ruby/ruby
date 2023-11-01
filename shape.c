@@ -585,6 +585,10 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
             if (new_parent) {
                 bool dont_care;
                 rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
+                if (UNLIKELY(new_parent->type == SHAPE_OBJ_TOO_COMPLEX)) {
+                    return new_parent;
+                }
+
                 new_child->capacity = shape->capacity;
                 if (new_child->type == SHAPE_IVAR) {
                     move_iv(obj, id, shape->next_iv_index - 1, new_child->next_iv_index - 1);
@@ -601,13 +605,22 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
     }
 }
 
-void
+bool
 rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed)
 {
+    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        return false;
+    }
+
     rb_shape_t * new_shape = remove_shape_recursive(obj, id, shape, removed);
     if (new_shape) {
+        if (UNLIKELY(new_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+            return false;
+        }
+
         rb_shape_set_shape(obj, new_shape);
     }
+    return true;
 }
 
 rb_shape_t *
