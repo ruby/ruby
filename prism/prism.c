@@ -15359,21 +15359,32 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
 
         for (size_t index = 0; index < named_captures.length; index++) {
             pm_string_t *name = &named_captures.strings[index];
-            pm_constant_id_t local;
 
+            const uint8_t *source = pm_string_source(name);
+            size_t length = pm_string_length(name);
+
+            pm_constant_id_t local;
             if (content->type == PM_STRING_SHARED) {
                 // If the unescaped string is a slice of the source, then we can
                 // copy the names directly. The pointers will line up.
-                local = pm_parser_local_add_location(parser, name->source, name->source + name->length);
+                local = pm_parser_local_add_location(parser, source, source + length);
+
+                if (token_is_numbered_parameter(source, source + length)) {
+                    pm_parser_err(parser, source, source + length, PM_ERR_PARAMETER_NUMBERED_RESERVED);
+                }
             } else {
                 // Otherwise, the name is a slice of the malloc-ed owned string,
                 // in which case we need to copy it out into a new string.
-                size_t length = pm_string_length(name);
-
                 void *memory = malloc(length);
-                memcpy(memory, pm_string_source(name), length);
+                if (memory == NULL) abort();
 
+                memcpy(memory, source, length);
                 local = pm_parser_local_add_owned(parser, (const uint8_t *) memory, length);
+
+                if (token_is_numbered_parameter(source, source + length)) {
+                    const pm_location_t *location = &call->receiver->location;
+                    pm_parser_err_location(parser, location, PM_ERR_PARAMETER_NUMBERED_RESERVED);
+                }
             }
 
             pm_constant_id_list_append(&match->locals, local);
