@@ -2729,7 +2729,12 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
-# if ((MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || \
+/* The first condition is needed because MAC_OS_X_VERSION_10_6
+    is not defined on 10.5, and while __POWERPC__ takes care of ppc/ppc64,
+    i386 will be broken without this. Note, 10.5 is supported with GCC upstream,
+    so it has C++17 and everything needed to build modern Ruby. */
+# if (!defined(MAC_OS_X_VERSION_10_6) || \
+      (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || \
       defined(__POWERPC__) /* never defined for PowerPC platforms */)
     const bool no_pthread_threadid_np = true;
 #   define NO_PTHREAD_MACH_THREAD_NP 1
