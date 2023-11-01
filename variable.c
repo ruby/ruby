@@ -2198,37 +2198,38 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        if (rb_shape_obj_too_complex(obj)) {
+        if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
+            if (!rb_shape_obj_too_complex(obj)) {
+                rb_evict_ivars_to_hash(obj, shape);
+            }
             if (!st_delete(RCLASS_IV_HASH(obj), (st_data_t *)&id, (st_data_t *)&val)) {
                 val = Qundef;
             }
         }
-        else {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
-        }
         break;
       case T_OBJECT: {
-        if (rb_shape_obj_too_complex(obj)) {
+        if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
+            if (!rb_shape_obj_too_complex(obj)) {
+                rb_evict_ivars_to_hash(obj, shape);
+            }
             if (rb_st_lookup(ROBJECT_IV_HASH(obj), (st_data_t)id, (st_data_t *)&val)) {
                 rb_st_delete(ROBJECT_IV_HASH(obj), (st_data_t *)&id, 0);
             }
         }
-        else {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
-        }
         break;
       }
       default: {
-        if (rb_shape_obj_too_complex(obj)) {
+        if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
+            if (!rb_shape_obj_too_complex(obj)) {
+                rb_evict_ivars_to_hash(obj, shape);
+            }
+
             struct gen_ivtbl *ivtbl;
             if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
                 if (!st_delete(ivtbl->as.complex.table, (st_data_t *)&id, (st_data_t *)&val)) {
                     val = Qundef;
                 }
             }
-        }
-        else {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
         }
         break;
       }
