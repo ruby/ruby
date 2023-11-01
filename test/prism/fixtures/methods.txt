@@ -166,3 +166,5 @@ end
 
 foo = 1
 def foo.bar; end
+
+def f(*); [*]; end

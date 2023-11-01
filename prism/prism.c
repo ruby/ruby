@@ -12467,7 +12467,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             bool parsed_bare_hash = false;
 
             while (!match2(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_EOF)) {
-                // Handle the case where we don't have a comma and we have a newline followed by a right bracket.
+                // Handle the case where we don't have a comma and we have a
+                // newline followed by a right bracket.
                 if (accept1(parser, PM_TOKEN_NEWLINE) && match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
                     break;
                 }
@@ -12476,16 +12477,25 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                     expect1(parser, PM_TOKEN_COMMA, PM_ERR_ARRAY_SEPARATOR);
                 }
 
-                // If we have a right bracket immediately following a comma, this is
-                // allowed since it's a trailing comma. In this case we can break out of
-                // the loop.
+                // If we have a right bracket immediately following a comma,
+                // this is allowed since it's a trailing comma. In this case we
+                // can break out of the loop.
                 if (match1(parser, PM_TOKEN_BRACKET_RIGHT)) break;
 
                 pm_node_t *element;
 
                 if (accept1(parser, PM_TOKEN_USTAR)) {
                     pm_token_t operator = parser->previous;
-                    pm_node_t *expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_ARRAY_EXPRESSION_AFTER_STAR);
+                    pm_node_t *expression = NULL;
+
+                    if (match3(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_EOF)) {
+                        if (pm_parser_local_depth(parser, &parser->previous) == -1) {
+                            pm_parser_err_token(parser, &operator, PM_ERR_ARGUMENT_NO_FORWARDING_STAR);
+                        }
+                    } else {
+                        expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_ARRAY_EXPRESSION_AFTER_STAR);
+                    }
+
                     element = (pm_node_t *) pm_splat_node_create(parser, &operator, expression);
                 } else if (match2(parser, PM_TOKEN_LABEL, PM_TOKEN_USTAR_STAR)) {
                     if (parsed_bare_hash) {
