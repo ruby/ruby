@@ -330,8 +330,33 @@ module Prism
       assert_prism_eval("pit, pit1 = 1")
     end
 
+    def test_MultiTargetNode
+      assert_prism_eval("a, (b, c) = [1, 2, 3]")
+      assert_prism_eval("a, (b, c) = [1, 2, 3]; a")
+      assert_prism_eval("a, (b, c) = [1, 2, 3]; b")
+      assert_prism_eval("a, (b, c) = [1, 2, 3]; c")
+      assert_prism_eval("a, (b, c) = [1, [2, 3]]; c")
+      assert_prism_eval("(a, (b, c, d, e), f, g), h = [1, [2, 3]], 4, 5, [6, 7]; c")
+    end
+
     def test_MultiWriteNode
-      assert_prism_eval("foo, bar = [1,2]")
+      assert_prism_eval("foo, bar = [1, 2]")
+      assert_prism_eval("foo, *, bar = [1, 2]")
+      assert_prism_eval("foo, bar = 1, 2")
+      assert_prism_eval("foo, *, bar = 1, 2")
+      assert_prism_eval("foo, *, bar = 1, 2, 3, 4")
+      assert_prism_eval("a, b, *, d = 1, 2, 3, 4")
+      assert_prism_eval("a, b, *, d = 1, 2")
+      assert_prism_eval("(a, b), *, c = [1, 3], 4, 5")
+      assert_prism_eval("(a, b), *, c = [1, 3], 4, 5; a")
+      assert_prism_eval("(a, b), *, c = [1, 3], 4, 5; b")
+      assert_prism_eval("(a, b), *, c = [1, 3], 4, 5; c")
+      assert_prism_eval("a, *, (c, d) = [1, 3], 4, 5; a")
+      assert_prism_eval("a, *, (c, d) = [1, 3], 4, 5; c")
+      assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]")
+      assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]; b")
+      assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]; d")
+      assert_prism_eval("((a, *, b), *, (c, *, (d, *, e, f, g))), *, ((h, i, *, j), *, (k, l, m, *, n, o, p), q, r) = 1; a")
     end
 
     ############################################################################
