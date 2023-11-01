@@ -2194,47 +2194,40 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 
     rb_shape_t * shape = rb_shape_get_shape(obj);
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
+    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
-            if (!rb_shape_obj_too_complex(obj)) {
-                rb_evict_ivars_to_hash(obj, shape);
-            }
+    }
 
-            if (!st_delete(RCLASS_IV_HASH(obj), (st_data_t *)&id, (st_data_t *)&val)) {
-                val = Qundef;
-            }
+    if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
+        if (!rb_shape_obj_too_complex(obj)) {
+            rb_evict_ivars_to_hash(obj, shape);
         }
-        break;
-      case T_OBJECT: {
-        if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
-            if (!rb_shape_obj_too_complex(obj)) {
-                rb_evict_ivars_to_hash(obj, shape);
-            }
 
-            if (!st_delete(ROBJECT_IV_HASH(obj), (st_data_t *)&id, (st_data_t *)&val)) {
-                val = Qundef;
-            }
-        }
-        break;
-      }
-      default: {
-        if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
-            if (!rb_shape_obj_too_complex(obj)) {
-                rb_evict_ivars_to_hash(obj, shape);
-            }
+        st_table *table = NULL;
+        switch (BUILTIN_TYPE(obj)) {
+          case T_CLASS:
+          case T_MODULE:
+            table = RCLASS_IV_HASH(obj);
+            break;
 
+          case T_OBJECT:
+            table = ROBJECT_IV_HASH(obj);
+            break;
+
+          default: {
             struct gen_ivtbl *ivtbl;
             if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-                if (!st_delete(ivtbl->as.complex.table, (st_data_t *)&id, (st_data_t *)&val)) {
-                    val = Qundef;
-                }
+                table = ivtbl->as.complex.table;
+            }
+            break;
+          }
+        }
+
+        if (table) {
+            if (!st_delete(table, (st_data_t *)&id, (st_data_t *)&val)) {
+                val = Qundef;
             }
         }
-        break;
-      }
     }
 
     if (val != Qundef) {
