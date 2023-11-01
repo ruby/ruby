@@ -8633,13 +8633,16 @@ parser_lex(pm_parser_t *parser) {
                     if (!lex_state_beg_p(parser) && match(parser, '=')) {
                         lex_state_set(parser, PM_LEX_STATE_BEG);
                         LEX(PM_TOKEN_PERCENT_EQUAL);
-                    }
-                    else if(
+                    } else if (
                         lex_state_beg_p(parser) ||
                         (lex_state_p(parser, PM_LEX_STATE_FITEM) && (peek(parser) == 's')) ||
                         lex_state_spcarg_p(parser, space_seen)
                     ) {
                         if (!parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end)) {
+                            if (*parser->current.end >= 0x80) {
+                                pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
+                            }
+
                             lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
 
                             size_t eol_length = match_eol(parser);
