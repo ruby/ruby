@@ -12,8 +12,8 @@
 #define NEW_CHILD_ISEQ(node, name, type, line_no) \
     pm_new_child_iseq(iseq, (node), parser, rb_fstring(name), iseq, (type), (line_no))
 
-#define PM_COMPILE(node) \
-    pm_compile_node(iseq, (node), ret, src, popped, scope_node)
+#define PM_COMPILE(_ret, node) \
+    pm_compile_node(iseq, (node), _ret, src, popped, scope_node)
 
 #define PM_COMPILE_POPPED(node) \
     pm_compile_node(iseq, (node), ret, src, true, scope_node)
@@ -436,7 +436,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
     ADD_INSNL(ret, &dummy_line_node, branchif, lend);
 
     if (flip_flop_node->left) {
-        PM_COMPILE(flip_flop_node->left);
+        PM_COMPILE(ret, flip_flop_node->left);
     }
     else {
         PM_PUTNIL;
@@ -451,7 +451,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
 
     ADD_LABEL(ret, lend);
     if (flip_flop_node->right) {
-        PM_COMPILE(flip_flop_node->right);
+        PM_COMPILE(ret, flip_flop_node->right);
     }
     else {
         PM_PUTNIL;
@@ -740,7 +740,7 @@ pm_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const pm_node_t *
         pm_node_t *parent = ((pm_constant_path_node_t *)constant_path_node)->parent;
         if (parent) {
             /* Bar::Foo */
-            PM_COMPILE(parent);
+            PM_COMPILE(ret, parent);
             return VM_DEFINECLASS_FLAG_SCOPED;
         }
         else {
@@ -1195,7 +1195,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
           }
           pm_compile_defined_expr0(iseq, constant_path_node->parent, ret, src, popped, scope_node, dummy_line_node, lineno, true, lfinish);
           ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
-          PM_COMPILE(constant_path_node->parent);
+          PM_COMPILE(ret, constant_path_node->parent);
         } else {
           ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
         }
@@ -1317,8 +1317,8 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                             case PM_ASSOC_NODE: {
                                 pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
 
-                                PM_COMPILE(assoc->key);
-                                PM_COMPILE(assoc->value);
+                                PM_COMPILE(ret, assoc->key);
+                                PM_COMPILE(ret, assoc->value);
                                 cur_hash_size++;
 
                                 // If we're at the last keyword arg, or the last assoc node of this "set",
@@ -1349,7 +1349,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                                 }
 
                                 pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-                                PM_COMPILE(assoc_splat->value);
+                                PM_COMPILE(ret, assoc_splat->value);
 
                                 *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
 
@@ -1379,7 +1379,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                       for (size_t i = 0; i < len; i++) {
                           pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
                           (*kw_arg)->keywords[i] = pm_static_literal_value(assoc->key, scope_node, parser);
-                          PM_COMPILE(assoc->value);
+                          PM_COMPILE(ret, assoc->value);
                       }
                   }
                   break;
@@ -1388,7 +1388,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   *flags |= VM_CALL_ARGS_SPLAT;
                   pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
                   if (splat_node->expression) {
-                      PM_COMPILE(splat_node->expression);
+                      PM_COMPILE(ret, splat_node->expression);
                   }
 
                   if (!popped) {
@@ -1482,7 +1482,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
 
         PM_POP_UNLESS_POPPED;
-        PM_COMPILE(and_node->right);
+        PM_COMPILE(ret, and_node->right);
         ADD_LABEL(ret, end_label);
         return;
       }
@@ -1490,7 +1490,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_arguments_node_t *arguments_node = (pm_arguments_node_t *) node;
         pm_node_list_t node_list = arguments_node->arguments;
         for (size_t index = 0; index < node_list.size; index++) {
-            PM_COMPILE(node_list.nodes[index]);
+            PM_COMPILE(ret, node_list.nodes[index]);
         }
         return;
       }
@@ -1519,7 +1519,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_node_list_t *elements = &cast->elements;
 
             for (size_t index = 0; index < elements->size; index++) {
-                PM_COMPILE(elements->nodes[index]);
+                PM_COMPILE(ret, elements->nodes[index]);
             }
 
             if (!popped) {
@@ -1531,16 +1531,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_ASSOC_NODE: {
         pm_assoc_node_t *assoc_node = (pm_assoc_node_t *) node;
-        PM_COMPILE(assoc_node->key);
+        PM_COMPILE(ret, assoc_node->key);
         if (assoc_node->value) {
-            PM_COMPILE(assoc_node->value);
+            PM_COMPILE(ret, assoc_node->value);
         }
         return;
       }
       case PM_ASSOC_SPLAT_NODE: {
         pm_assoc_splat_node_t *assoc_splat_node = (pm_assoc_splat_node_t *)node;
 
-        PM_COMPILE(assoc_splat_node->value);
+        PM_COMPILE(ret, assoc_splat_node->value);
         return;
       }
       case PM_BACK_REFERENCE_READ_NODE: {
@@ -1556,7 +1556,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_BEGIN_NODE: {
         pm_begin_node_t *begin_node = (pm_begin_node_t *) node;
         if (begin_node->statements) {
-            PM_COMPILE((pm_node_t *)begin_node->statements);
+            PM_COMPILE(ret, (pm_node_t *)begin_node->statements);
         }
         else {
             PM_PUTNIL_UNLESS_POPPED;
@@ -1566,7 +1566,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_BLOCK_ARGUMENT_NODE: {
         pm_block_argument_node_t *block_argument_node = (pm_block_argument_node_t *) node;
         if (block_argument_node->expression) {
-            PM_COMPILE(block_argument_node->expression);
+            PM_COMPILE(ret, block_argument_node->expression);
         }
         return;
       }
@@ -1733,7 +1733,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             pm_while_node_t *condition_node = (pm_while_node_t *)conditions.nodes[i];
             if (condition_node->statements) {
-                PM_COMPILE((pm_node_t *)condition_node->statements);
+                PM_COMPILE(ret, (pm_node_t *)condition_node->statements);
             }
             else {
                 PM_PUTNIL_UNLESS_POPPED;
@@ -2005,7 +2005,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *)node;
 
         if (cast->parent) {
-            PM_COMPILE(cast->parent);
+            PM_COMPILE(ret, cast->parent);
         }
 
         return;
@@ -2164,7 +2164,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_embedded_statements_node_t *embedded_statements_node = (pm_embedded_statements_node_t *)node;
 
         if (embedded_statements_node->statements) {
-            PM_COMPILE((pm_node_t *) (embedded_statements_node->statements));
+            PM_COMPILE(ret, (pm_node_t *) (embedded_statements_node->statements));
         }
         else {
             PM_PUTNIL;
@@ -2176,7 +2176,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_EMBEDDED_VARIABLE_NODE: {
         pm_embedded_variable_node_t *embedded_node = (pm_embedded_variable_node_t *)node;
-        PM_COMPILE(embedded_node->variable);
+        PM_COMPILE(ret, embedded_node->variable);
         return;
       }
       case PM_FALSE_NODE:
@@ -2187,7 +2187,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_ELSE_NODE: {
           pm_else_node_t *cast = (pm_else_node_t *)node;
           if (cast->statements) {
-              PM_COMPILE((pm_node_t *)cast->statements);
+              PM_COMPILE(ret, (pm_node_t *)cast->statements);
           }
           else {
               PM_PUTNIL;
@@ -2423,7 +2423,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                         ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                         PM_SWAP;
-                        PM_COMPILE(elements->nodes[index]);
+                        PM_COMPILE(ret, elements->nodes[index]);
 
                         allocated_hashes++;
                         elements_of_cur_type = 0;
@@ -2431,11 +2431,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
                     else {
                         elements_of_cur_type++;
-                        PM_COMPILE(elements->nodes[index]);
+                        PM_COMPILE(ret, elements->nodes[index]);
                     }
                 }
                 else {
-                    PM_COMPILE(elements->nodes[index]);
+                    PM_COMPILE(ret, elements->nodes[index]);
                 }
             }
 
@@ -2482,7 +2482,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // of the missing value. To compile these nodes, we simply compile the
         // value that is implied, which is helpfully supplied by the parser.
         pm_implicit_node_t *cast = (pm_implicit_node_t *)node;
-        PM_COMPILE(cast->value);
+        PM_COMPILE(ret, cast->value);
         return;
       }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {
@@ -2654,7 +2654,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_node_list_t elements = keyword_hash_node->elements;
 
         for (size_t index = 0; index < elements.size; index++) {
-            PM_COMPILE(elements.nodes[index]);
+            PM_COMPILE(ret, elements.nodes[index]);
         }
 
         if (!popped) {
@@ -2970,7 +2970,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(pushed));
                     ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(name));
                 } else {
-                    PM_COMPILE(lefts->nodes[index]);
+                    PM_COMPILE(ret, lefts->nodes[index]);
                 }
             }
         }
@@ -2988,14 +2988,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_splat_node_t *rest_splat = ((pm_splat_node_t *)multi_write_node->rest);
             if (rest_splat->expression) {
                 ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(1));
-                PM_COMPILE(rest_splat->expression);
+                PM_COMPILE(ret, rest_splat->expression);
             }
         }
 
         if (rights->size) {
             ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(rights->size), INT2FIX(2));
             for (size_t index = 0; index < rights->size; index++) {
-                PM_COMPILE(rights->nodes[index]);
+                PM_COMPILE(ret, rights->nodes[index]);
             }
         }
 
@@ -3039,7 +3039,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
 
         PM_POP_UNLESS_POPPED;
-        PM_COMPILE(or_node->right);
+        PM_COMPILE(ret, or_node->right);
         ADD_LABEL(ret, end_label);
 
         return;
@@ -3065,7 +3065,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (parentheses_node->body == NULL) {
             PM_PUTNIL_UNLESS_POPPED;
         } else {
-            PM_COMPILE(parentheses_node->body);
+            PM_COMPILE(ret, parentheses_node->body);
         }
 
         return;
@@ -3144,13 +3144,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (range_node->left == NULL) {
                 PM_PUTNIL;
             } else {
-                PM_COMPILE(range_node->left);
+                PM_COMPILE(ret, range_node->left);
             }
 
             if (range_node->right == NULL) {
                 PM_PUTNIL;
             } else {
-                PM_COMPILE(range_node->right);
+                PM_COMPILE(ret, range_node->right);
             }
 
             if (!popped) {
@@ -3183,7 +3183,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_arguments_node_t *arguments = ((pm_return_node_t *)node)->arguments;
 
         if (arguments) {
-            PM_COMPILE((pm_node_t *)arguments);
+            PM_COMPILE(ret, (pm_node_t *)arguments);
         }
         else {
             PM_PUTNIL;
@@ -3302,7 +3302,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_for_node_t *for_node = (pm_for_node_t *)scope_node->ast_node;
 
                     ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
-                    PM_COMPILE(for_node->index);
+                    PM_COMPILE(ret, for_node->index);
                     ADD_INSN(ret, &dummy_line_node, nop);
                   }
                   default: {
@@ -3325,7 +3325,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         default:
             if (scope_node->body) {
-                PM_COMPILE((pm_node_t *)scope_node->body);
+                PM_COMPILE(ret, (pm_node_t *)scope_node->body);
             }
             else {
                 PM_PUTNIL;
@@ -3396,7 +3396,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_SPLAT_NODE: {
         pm_splat_node_t *splat_node = (pm_splat_node_t *)node;
         if (splat_node->expression) {
-            PM_COMPILE(splat_node->expression);
+            PM_COMPILE(ret, splat_node->expression);
         }
 
         if (!popped) {
@@ -3411,7 +3411,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             for (size_t index = 0; index < node_list.size - 1; index++) {
                 PM_COMPILE_POPPED(node_list.nodes[index]);
             }
-            PM_COMPILE(node_list.nodes[node_list.size - 1]);
+            PM_COMPILE(ret, node_list.nodes[node_list.size - 1]);
         }
         else {
             PM_PUTNIL;
@@ -3420,8 +3420,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_STRING_CONCAT_NODE: {
         pm_string_concat_node_t *str_concat_node = (pm_string_concat_node_t *)node;
-        PM_COMPILE(str_concat_node->left);
-        PM_COMPILE(str_concat_node->right);
+        PM_COMPILE(ret, str_concat_node->left);
+        PM_COMPILE(ret, str_concat_node->right);
         if (!popped) {
             ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX(2));
         }
