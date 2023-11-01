@@ -56,7 +56,7 @@
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
-#include "prism/prism.h"
+#include "prism_compile.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -160,7 +160,7 @@ enum feature_flag_bits {
     SEP \
     X(parsetree_with_comment) \
     SEP \
-    X(prism) \
+    X(prism_parsetree) \
     SEP \
     X(insns) \
     SEP \
@@ -175,7 +175,7 @@ enum dump_flag_bits {
                                 DUMP_BIT(parsetree_with_comment)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-                      DUMP_BIT(prism) | DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
+                      DUMP_BIT(prism_parsetree) | DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
 };
 
 static inline void
@@ -369,7 +369,7 @@ usage(const char *name, int help, int highlight, int columns)
 
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
-        M("--dump={insns|parsetree|prism|...}[,...]",     "",
+        M("--dump={insns|parsetree|prism_parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
         M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
           "enable or disable features. see below for available features"),
@@ -388,7 +388,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
         M("parsetree(+error-tolerant)","", "AST"),
         M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
-        M("prism", "", "Prism AST with comments"),
+        M("prism_parsetree", "", "Prism AST with comments"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -1832,10 +1832,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     if (opt->yjit)
         rb_yjit_init();
 #endif
-    // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
-    // or rjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
-    // Therefore we need to call this again here to set the initial root fiber's jit_cont.
-    rb_jit_cont_init(); // must be after rjit_enabled = true and rb_yjit_init()
 
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
@@ -2141,7 +2137,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         opt->yjit = true; // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
     }
 #endif
+
+    ruby_mn_threads_params();
     Init_ruby_description(opt);
+
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
         ruby_show_version();
         if (opt->dump & DUMP_BIT(version)) return Qtrue;
@@ -2193,7 +2192,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 
     ruby_gc_set_params();
-    ruby_mn_threads_params();
     ruby_init_loadpath();
 
     Init_enc();
@@ -2377,13 +2375,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
-    if (dump & (DUMP_BIT(prism))) {
+    if (dump & (DUMP_BIT(prism_parsetree))) {
         pm_parser_t parser;
         if (opt->e_script) {
             size_t len = RSTRING_LEN(opt->e_script);
             pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(opt->e_script), len, "-e");
-        }
-        else {
+        } else {
             pm_string_t input;
             char *filepath = RSTRING_PTR(opt->script_name);
             pm_string_mapped_init(&input, filepath);
@@ -2391,7 +2388,13 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
 
         pm_node_t *node = pm_parse(&parser);
-        pm_print_node(&parser, node);
+        pm_buffer_t output_buffer = { 0 };
+
+        pm_prettyprint(&output_buffer, &parser, node);
+        rb_io_write(rb_stdout, rb_str_new((const char *) output_buffer.value, output_buffer.length));
+        rb_io_flush(rb_stdout);
+
+        pm_buffer_free(&output_buffer);
         pm_node_destroy(&parser, node);
         pm_parser_free(&parser);
     }

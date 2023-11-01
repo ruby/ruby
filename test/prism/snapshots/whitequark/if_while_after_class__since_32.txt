@@ -46,9 +46,10 @@
         │   │   │   │       └── @ BreakNode (location: (3,18)-(3,30))
         │   │   │   │           ├── arguments:
         │   │   │   │           │   @ ArgumentsNode (location: (3,24)-(3,30))
-        │   │   │   │           │   └── arguments: (length: 1)
-        │   │   │   │           │       └── @ ConstantReadNode (location: (3,24)-(3,30))
-        │   │   │   │           │           └── name: :Object
+        │   │   │   │           │   ├── arguments: (length: 1)
+        │   │   │   │           │   │   └── @ ConstantReadNode (location: (3,24)-(3,30))
+        │   │   │   │           │   │       └── name: :Object
+        │   │   │   │           │   └── flags: ∅
         │   │   │   │           └── keyword_loc: (3,18)-(3,23) = "break"
         │   │   │   └── flags: ∅
         │   │   ├── child:
@@ -101,9 +102,10 @@
             │   │   │       └── @ BreakNode (location: (7,19)-(7,31))
             │   │   │           ├── arguments:
             │   │   │           │   @ ArgumentsNode (location: (7,25)-(7,31))
-            │   │   │           │   └── arguments: (length: 1)
-            │   │   │           │       └── @ ConstantReadNode (location: (7,25)-(7,31))
-            │   │   │           │           └── name: :Object
+            │   │   │           │   ├── arguments: (length: 1)
+            │   │   │           │   │   └── @ ConstantReadNode (location: (7,25)-(7,31))
+            │   │   │           │   │       └── name: :Object
+            │   │   │           │   └── flags: ∅
             │   │   │           └── keyword_loc: (7,19)-(7,24) = "break"
             │   │   └── flags: ∅
             │   ├── child:

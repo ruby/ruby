@@ -324,7 +324,7 @@ class Gem::Command
       @when_invoked.call options
     else
       if Gem.paths.auto_user_install && !options[:install_dir] && !options[:user_install]
-        self.ui.say "Defaulting to user installation because default GEM_HOME (#{Gem.default_dir}) is not writable."
+        self.ui.say "Defaulting to user installation because default installation directory (#{Gem.default_dir}) is not writable."
       end
 
       execute

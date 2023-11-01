@@ -18,20 +18,24 @@
             │   │   ├── parameters:
             │   │   │   @ ParametersNode (location: (1,5)-(1,16))
             │   │   │   ├── requireds: (length: 1)
-            │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (1,5)-(1,16))
-            │   │   │   │       ├── parameters: (length: 2)
-            │   │   │   │       │   ├── @ RequiredDestructuredParameterNode (location: (1,6)-(1,12))
-            │   │   │   │       │   │   ├── parameters: (length: 2)
+            │   │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,16))
+            │   │   │   │       ├── lefts: (length: 2)
+            │   │   │   │       │   ├── @ MultiTargetNode (location: (1,6)-(1,12))
+            │   │   │   │       │   │   ├── lefts: (length: 2)
             │   │   │   │       │   │   │   ├── @ RequiredParameterNode (location: (1,7)-(1,8))
             │   │   │   │       │   │   │   │   └── name: :k
             │   │   │   │       │   │   │   └── @ RequiredParameterNode (location: (1,10)-(1,11))
             │   │   │   │       │   │   │       └── name: :v
-            │   │   │   │       │   │   ├── opening_loc: (1,6)-(1,7) = "("
-            │   │   │   │       │   │   └── closing_loc: (1,11)-(1,12) = ")"
+            │   │   │   │       │   │   ├── rest: ∅
+            │   │   │   │       │   │   ├── rights: (length: 0)
+            │   │   │   │       │   │   ├── lparen_loc: (1,6)-(1,7) = "("
+            │   │   │   │       │   │   └── rparen_loc: (1,11)-(1,12) = ")"
             │   │   │   │       │   └── @ RequiredParameterNode (location: (1,14)-(1,15))
             │   │   │   │       │       └── name: :i
-            │   │   │   │       ├── opening_loc: (1,5)-(1,6) = "("
-            │   │   │   │       └── closing_loc: (1,15)-(1,16) = ")"
+            │   │   │   │       ├── rest: ∅
+            │   │   │   │       ├── rights: (length: 0)
+            │   │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("
+            │   │   │   │       └── rparen_loc: (1,15)-(1,16) = ")"
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest: ∅
             │   │   │   ├── posts: (length: 0)

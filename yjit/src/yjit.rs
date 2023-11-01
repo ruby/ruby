@@ -8,16 +8,12 @@ use crate::stats::incr_counter;
 use crate::stats::with_compile_time;
 
 use std::os::raw;
-use std::sync::atomic::{AtomicBool, Ordering};
 
-/// For tracking whether the user enabled YJIT through command line arguments or environment
-/// variables. AtomicBool to avoid `unsafe`. On x86 it compiles to simple movs.
-/// See <https://doc.rust-lang.org/std/sync/atomic/enum.Ordering.html>
-/// See [rb_yjit_enabled_p]
-static YJIT_ENABLED: AtomicBool = AtomicBool::new(false);
-
-/// When false, we don't compile new iseqs, but might still service existing branch stubs.
-static COMPILE_NEW_ISEQS: AtomicBool = AtomicBool::new(false);
+/// Is YJIT on? The interpreter uses this variable to decide whether to trigger
+/// compilation. See jit_exec() and jit_compile().
+#[allow(non_upper_case_globals)]
+#[no_mangle]
+pub static mut rb_yjit_enabled_p: bool = false;
 
 /// Parse one command-line option.
 /// This is called from ruby.c
@@ -26,29 +22,22 @@ pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
     return parse_option(str_ptr).is_some();
 }
 
-/// Is YJIT on? The interpreter uses this function to decide whether to increment
-/// ISEQ call counters. See jit_exec().
-/// This is used frequently since it's used on every method call in the interpreter.
-#[no_mangle]
-pub extern "C" fn rb_yjit_enabled_p() -> raw::c_int {
-    // Note that we might want to call this function from signal handlers so
-    // might need to ensure signal-safety(7).
-    YJIT_ENABLED.load(Ordering::Acquire).into()
-}
-
-#[no_mangle]
-pub extern "C" fn rb_yjit_compile_new_iseqs() -> bool {
-    COMPILE_NEW_ISEQS.load(Ordering::Acquire).into()
-}
-
 /// Like rb_yjit_enabled_p, but for Rust code.
 pub fn yjit_enabled_p() -> bool {
-    YJIT_ENABLED.load(Ordering::Acquire)
+    unsafe { rb_yjit_enabled_p }
 }
 
 /// This function is called from C code
 #[no_mangle]
-pub extern "C" fn rb_yjit_init_rust() {
+pub extern "C" fn rb_yjit_init() {
+    // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
+    if !get_option!(disable) {
+        yjit_init();
+    }
+}
+
+/// Initialize and enable YJIT. You should call this at boot or with GVL.
+fn yjit_init() {
     // TODO: need to make sure that command-line options have been
     // initialized by CRuby
 
@@ -58,19 +47,32 @@ pub extern "C" fn rb_yjit_init_rust() {
         Invariants::init();
         CodegenGlobals::init();
         YjitExitLocations::init();
+        ids::init();
 
         rb_bug_panic_hook();
 
         // YJIT enabled and initialized successfully
-        YJIT_ENABLED.store(true, Ordering::Release);
-
-        COMPILE_NEW_ISEQS.store(!get_option!(pause), Ordering::Release);
+        assert!(unsafe{ !rb_yjit_enabled_p });
+        unsafe { rb_yjit_enabled_p = true; }
     });
 
     if let Err(_) = result {
-        println!("YJIT: rb_yjit_init_rust() panicked. Aborting.");
+        println!("YJIT: yjit_init() panicked. Aborting.");
         std::process::abort();
     }
+
+    // Make sure --yjit-perf doesn't append symbols to an old file
+    if get_option!(perf_map) {
+        let perf_map = format!("/tmp/perf-{}.map", std::process::id());
+        let _ = std::fs::remove_file(&perf_map);
+        println!("YJIT perf map: {perf_map}");
+    }
+
+    // Initialize the GC hooks. Do this at last as some code depend on Rust initialization.
+    extern "C" {
+        fn rb_yjit_init_gc_hooks();
+    }
+    unsafe { rb_yjit_init_gc_hooks() }
 }
 
 /// At the moment, we abort in all cases we panic.
@@ -153,13 +155,25 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     Qnil
 }
 
+/// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_resume(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if yjit_enabled_p() {
-        COMPILE_NEW_ISEQS.store(true, Ordering::Release);
-    }
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || {
+        if yjit_enabled_p() {
+            return Qfalse;
+        }
 
-    Qnil
+        // Initialize and enable YJIT if currently disabled
+        yjit_init();
+
+        // Add "+YJIT" to RUBY_DESCRIPTION
+        extern "C" {
+            fn ruby_set_yjit_description();
+        }
+        unsafe { ruby_set_yjit_description(); }
+
+        Qtrue
+    })
 }
 
 /// Simulate a situation where we are out of executable memory

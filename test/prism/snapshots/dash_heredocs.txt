@@ -6,29 +6,30 @@
         ├── @ StringNode (location: (1,0)-(1,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (1,0)-(1,6) = "<<-EOF"
-        │   ├── content_loc: (2,0)-(2,0) = "  a\n"
-        │   ├── closing_loc: (3,0)-(3,0) = "EOF\n"
+        │   ├── content_loc: (2,0)-(3,0) = "  a\n"
+        │   ├── closing_loc: (3,0)-(4,0) = "EOF\n"
         │   └── unescaped: "  a\n"
         ├── @ CallNode (location: (5,0)-(5,20))
         │   ├── receiver:
         │   │   @ StringNode (location: (5,0)-(5,8))
         │   │   ├── flags: ∅
         │   │   ├── opening_loc: (5,0)-(5,8) = "<<-FIRST"
-        │   │   ├── content_loc: (6,0)-(6,0) = "  a\n"
-        │   │   ├── closing_loc: (7,0)-(7,0) = "FIRST\n"
+        │   │   ├── content_loc: (6,0)-(7,0) = "  a\n"
+        │   │   ├── closing_loc: (7,0)-(8,0) = "FIRST\n"
         │   │   └── unescaped: "  a\n"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (5,9)-(5,10) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (5,11)-(5,20))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (5,11)-(5,20))
-        │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (5,11)-(5,20) = "<<-SECOND"
-        │   │           ├── content_loc: (8,0)-(8,0) = "  b\n"
-        │   │           ├── closing_loc: (9,0)-(9,0) = "SECOND\n"
-        │   │           └── unescaped: "  b\n"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ StringNode (location: (5,11)-(5,20))
+        │   │   │       ├── flags: ∅
+        │   │   │       ├── opening_loc: (5,11)-(5,20) = "<<-SECOND"
+        │   │   │       ├── content_loc: (8,0)-(9,0) = "  b\n"
+        │   │   │       ├── closing_loc: (9,0)-(10,0) = "SECOND\n"
+        │   │   │       └── unescaped: "  b\n"
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -36,10 +37,10 @@
         ├── @ InterpolatedXStringNode (location: (11,0)-(11,8))
         │   ├── opening_loc: (11,0)-(11,8) = "<<-`EOF`"
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (12,0)-(12,0))
+        │   │   ├── @ StringNode (location: (12,0)-(13,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (12,0)-(12,0) = "  a\n"
+        │   │   │   ├── content_loc: (12,0)-(13,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "  a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (13,0)-(13,4))
@@ -58,32 +59,32 @@
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: :b
         │   │   │   └── closing_loc: (13,3)-(13,4) = "}"
-        │   │   └── @ StringNode (location: (13,4)-(13,0))
+        │   │   └── @ StringNode (location: (13,4)-(14,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (13,4)-(13,0) = "\n"
+        │   │       ├── content_loc: (13,4)-(14,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
-        │   └── closing_loc: (14,0)-(14,0) = "EOF\n"
+        │   └── closing_loc: (14,0)-(15,0) = "EOF\n"
         ├── @ StringNode (location: (16,0)-(16,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (16,0)-(16,6) = "<<-EOF"
-        │   ├── content_loc: (17,0)-(17,0) = "  a\n"
-        │   ├── closing_loc: (18,0)-(18,0) = "EOF\n"
+        │   ├── content_loc: (17,0)-(18,0) = "  a\n"
+        │   ├── closing_loc: (18,0)-(19,0) = "EOF\n"
         │   └── unescaped: "  a\n"
         ├── @ StringNode (location: (20,0)-(20,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (20,0)-(20,6) = "<<-EOF"
-        │   ├── content_loc: (21,0)-(22,0) = "  a\n  b\n"
-        │   ├── closing_loc: (23,0)-(23,0) = "  EOF\n"
+        │   ├── content_loc: (21,0)-(23,0) = "  a\n  b\n"
+        │   ├── closing_loc: (23,0)-(24,0) = "  EOF\n"
         │   └── unescaped: "  a\n  b\n"
         ├── @ InterpolatedStringNode (location: (25,0)-(25,8))
         │   ├── opening_loc: (25,0)-(25,8) = "<<-\"EOF\""
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (26,0)-(26,0))
+        │   │   ├── @ StringNode (location: (26,0)-(27,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (26,0)-(26,0) = "  a\n"
+        │   │   │   ├── content_loc: (26,0)-(27,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "  a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (27,0)-(27,4))
@@ -102,20 +103,20 @@
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: :b
         │   │   │   └── closing_loc: (27,3)-(27,4) = "}"
-        │   │   └── @ StringNode (location: (27,4)-(27,0))
+        │   │   └── @ StringNode (location: (27,4)-(28,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (27,4)-(27,0) = "\n"
+        │   │       ├── content_loc: (27,4)-(28,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
-        │   └── closing_loc: (28,0)-(28,0) = "EOF\n"
+        │   └── closing_loc: (28,0)-(29,0) = "EOF\n"
         ├── @ InterpolatedStringNode (location: (30,0)-(30,6))
         │   ├── opening_loc: (30,0)-(30,6) = "<<-EOF"
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (31,0)-(31,0))
+        │   │   ├── @ StringNode (location: (31,0)-(32,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (31,0)-(31,0) = "  a\n"
+        │   │   │   ├── content_loc: (31,0)-(32,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "  a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (32,0)-(32,4))
@@ -134,13 +135,13 @@
         │   │   │   │           ├── flags: variable_call
         │   │   │   │           └── name: :b
         │   │   │   └── closing_loc: (32,3)-(32,4) = "}"
-        │   │   └── @ StringNode (location: (32,4)-(32,0))
+        │   │   └── @ StringNode (location: (32,4)-(33,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (32,4)-(32,0) = "\n"
+        │   │       ├── content_loc: (32,4)-(33,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
-        │   └── closing_loc: (33,0)-(33,0) = "EOF\n"
+        │   └── closing_loc: (33,0)-(34,0) = "EOF\n"
         ├── @ StringNode (location: (35,0)-(35,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (35,0)-(35,2) = "%#"
@@ -150,59 +151,60 @@
         ├── @ StringNode (location: (37,0)-(37,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (37,0)-(37,6) = "<<-EOF"
-        │   ├── content_loc: (38,0)-(39,0) = "  a\n  b\n"
-        │   ├── closing_loc: (40,0)-(40,0) = "EOF\n"
+        │   ├── content_loc: (38,0)-(40,0) = "  a\n  b\n"
+        │   ├── closing_loc: (40,0)-(41,0) = "EOF\n"
         │   └── unescaped: "  a\n  b\n"
         ├── @ StringNode (location: (42,0)-(42,5))
         │   ├── flags: ∅
         │   ├── opening_loc: (42,0)-(42,5) = "<<-''"
-        │   ├── content_loc: (43,0)-(42,0) = ""
-        │   ├── closing_loc: (43,0)-(43,0) = "\n"
+        │   ├── content_loc: (43,0)-(43,0) = ""
+        │   ├── closing_loc: (43,0)-(44,0) = "\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (45,0)-(45,8))
         │   ├── flags: ∅
         │   ├── opening_loc: (45,0)-(45,8) = "<<-'EOF'"
-        │   ├── content_loc: (46,0)-(46,0) = "  a \#{1}\n"
-        │   ├── closing_loc: (47,0)-(47,0) = "EOF\n"
+        │   ├── content_loc: (46,0)-(47,0) = "  a \#{1}\n"
+        │   ├── closing_loc: (47,0)-(48,0) = "EOF\n"
         │   └── unescaped: "  a \#{1}\n"
         ├── @ CallNode (location: (49,0)-(49,11))
         │   ├── receiver:
         │   │   @ StringNode (location: (49,0)-(49,4))
         │   │   ├── flags: ∅
         │   │   ├── opening_loc: (49,0)-(49,4) = "<<-A"
-        │   │   ├── content_loc: (50,0)-(50,0) = "  a\n"
-        │   │   ├── closing_loc: (51,0)-(51,0) = "A\n"
+        │   │   ├── content_loc: (50,0)-(51,0) = "  a\n"
+        │   │   ├── closing_loc: (51,0)-(52,0) = "A\n"
         │   │   └── unescaped: "  a\n"
         │   ├── call_operator_loc: ∅
         │   ├── message_loc: (49,5)-(49,6) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (49,7)-(49,11))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ InterpolatedStringNode (location: (49,7)-(49,11))
-        │   │           ├── opening_loc: (49,7)-(49,11) = "<<-B"
-        │   │           ├── parts: (length: 3)
-        │   │           │   ├── @ StringNode (location: (52,0)-(53,2))
-        │   │           │   │   ├── flags: ∅
-        │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │   ├── content_loc: (52,0)-(53,2) = "  b\n  "
-        │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │   └── unescaped: "  b\n  "
-        │   │           │   ├── @ EmbeddedStatementsNode (location: (53,2)-(54,3))
-        │   │           │   │   ├── opening_loc: (53,2)-(53,4) = "\#{"
-        │   │           │   │   ├── statements:
-        │   │           │   │   │   @ StatementsNode (location: (53,4)-(53,5))
-        │   │           │   │   │   └── body: (length: 1)
-        │   │           │   │   │       └── @ IntegerNode (location: (53,4)-(53,5))
-        │   │           │   │   │           └── flags: decimal
-        │   │           │   │   └── closing_loc: (54,2)-(54,3) = "}"
-        │   │           │   └── @ StringNode (location: (54,3)-(54,0))
-        │   │           │       ├── flags: ∅
-        │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (54,3)-(54,0) = "\n"
-        │   │           │       ├── closing_loc: ∅
-        │   │           │       └── unescaped: "\n"
-        │   │           └── closing_loc: (55,0)-(55,0) = "B\n"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ InterpolatedStringNode (location: (49,7)-(49,11))
+        │   │   │       ├── opening_loc: (49,7)-(49,11) = "<<-B"
+        │   │   │       ├── parts: (length: 3)
+        │   │   │       │   ├── @ StringNode (location: (52,0)-(53,2))
+        │   │   │       │   │   ├── flags: ∅
+        │   │   │       │   │   ├── opening_loc: ∅
+        │   │   │       │   │   ├── content_loc: (52,0)-(53,2) = "  b\n  "
+        │   │   │       │   │   ├── closing_loc: ∅
+        │   │   │       │   │   └── unescaped: "  b\n  "
+        │   │   │       │   ├── @ EmbeddedStatementsNode (location: (53,2)-(54,3))
+        │   │   │       │   │   ├── opening_loc: (53,2)-(53,4) = "\#{"
+        │   │   │       │   │   ├── statements:
+        │   │   │       │   │   │   @ StatementsNode (location: (53,4)-(53,5))
+        │   │   │       │   │   │   └── body: (length: 1)
+        │   │   │       │   │   │       └── @ IntegerNode (location: (53,4)-(53,5))
+        │   │   │       │   │   │           └── flags: decimal
+        │   │   │       │   │   └── closing_loc: (54,2)-(54,3) = "}"
+        │   │   │       │   └── @ StringNode (location: (54,3)-(55,0))
+        │   │   │       │       ├── flags: ∅
+        │   │   │       │       ├── opening_loc: ∅
+        │   │   │       │       ├── content_loc: (54,3)-(55,0) = "\n"
+        │   │   │       │       ├── closing_loc: ∅
+        │   │   │       │       └── unescaped: "\n"
+        │   │   │       └── closing_loc: (55,0)-(56,0) = "B\n"
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -212,39 +214,40 @@
             │   @ StringNode (location: (57,0)-(57,4))
             │   ├── flags: ∅
             │   ├── opening_loc: (57,0)-(57,4) = "<<-A"
-            │   ├── content_loc: (58,0)-(58,0) = "  a\n"
-            │   ├── closing_loc: (59,0)-(59,0) = "A\n"
+            │   ├── content_loc: (58,0)-(59,0) = "  a\n"
+            │   ├── closing_loc: (59,0)-(60,0) = "A\n"
             │   └── unescaped: "  a\n"
             ├── call_operator_loc: ∅
             ├── message_loc: (57,5)-(57,6) = "+"
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (57,7)-(57,11))
-            │   └── arguments: (length: 1)
-            │       └── @ InterpolatedStringNode (location: (57,7)-(57,11))
-            │           ├── opening_loc: (57,7)-(57,11) = "<<-B"
-            │           ├── parts: (length: 3)
-            │           │   ├── @ StringNode (location: (60,0)-(61,2))
-            │           │   │   ├── flags: ∅
-            │           │   │   ├── opening_loc: ∅
-            │           │   │   ├── content_loc: (60,0)-(61,2) = "  b\n  "
-            │           │   │   ├── closing_loc: ∅
-            │           │   │   └── unescaped: "  b\n  "
-            │           │   ├── @ EmbeddedStatementsNode (location: (61,2)-(62,4))
-            │           │   │   ├── opening_loc: (61,2)-(61,4) = "\#{"
-            │           │   │   ├── statements:
-            │           │   │   │   @ StatementsNode (location: (62,2)-(62,3))
-            │           │   │   │   └── body: (length: 1)
-            │           │   │   │       └── @ IntegerNode (location: (62,2)-(62,3))
-            │           │   │   │           └── flags: decimal
-            │           │   │   └── closing_loc: (62,3)-(62,4) = "}"
-            │           │   └── @ StringNode (location: (62,4)-(62,0))
-            │           │       ├── flags: ∅
-            │           │       ├── opening_loc: ∅
-            │           │       ├── content_loc: (62,4)-(62,0) = "\n"
-            │           │       ├── closing_loc: ∅
-            │           │       └── unescaped: "\n"
-            │           └── closing_loc: (63,0)-(63,0) = "B\n"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ InterpolatedStringNode (location: (57,7)-(57,11))
+            │   │       ├── opening_loc: (57,7)-(57,11) = "<<-B"
+            │   │       ├── parts: (length: 3)
+            │   │       │   ├── @ StringNode (location: (60,0)-(61,2))
+            │   │       │   │   ├── flags: ∅
+            │   │       │   │   ├── opening_loc: ∅
+            │   │       │   │   ├── content_loc: (60,0)-(61,2) = "  b\n  "
+            │   │       │   │   ├── closing_loc: ∅
+            │   │       │   │   └── unescaped: "  b\n  "
+            │   │       │   ├── @ EmbeddedStatementsNode (location: (61,2)-(62,4))
+            │   │       │   │   ├── opening_loc: (61,2)-(61,4) = "\#{"
+            │   │       │   │   ├── statements:
+            │   │       │   │   │   @ StatementsNode (location: (62,2)-(62,3))
+            │   │       │   │   │   └── body: (length: 1)
+            │   │       │   │   │       └── @ IntegerNode (location: (62,2)-(62,3))
+            │   │       │   │   │           └── flags: decimal
+            │   │       │   │   └── closing_loc: (62,3)-(62,4) = "}"
+            │   │       │   └── @ StringNode (location: (62,4)-(63,0))
+            │   │       │       ├── flags: ∅
+            │   │       │       ├── opening_loc: ∅
+            │   │       │       ├── content_loc: (62,4)-(63,0) = "\n"
+            │   │       │       ├── closing_loc: ∅
+            │   │       │       └── unescaped: "\n"
+            │   │       └── closing_loc: (63,0)-(64,0) = "B\n"
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

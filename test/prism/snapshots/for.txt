@@ -56,13 +56,15 @@
         ├── @ ForNode (location: (7,0)-(9,3))
         │   ├── index:
         │   │   @ MultiTargetNode (location: (7,4)-(7,7))
-        │   │   ├── targets: (length: 2)
+        │   │   ├── lefts: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (7,4)-(7,5))
         │   │   │   │   ├── name: :i
         │   │   │   │   └── depth: 1
         │   │   │   └── @ LocalVariableTargetNode (location: (7,6)-(7,7))
         │   │   │       ├── name: :j
         │   │   │       └── depth: 1
+        │   │   ├── rest: ∅
+        │   │   ├── rights: (length: 0)
         │   │   ├── lparen_loc: ∅
         │   │   └── rparen_loc: ∅
         │   ├── collection:
@@ -88,7 +90,7 @@
         ├── @ ForNode (location: (11,0)-(13,3))
         │   ├── index:
         │   │   @ MultiTargetNode (location: (11,4)-(11,9))
-        │   │   ├── targets: (length: 3)
+        │   │   ├── lefts: (length: 3)
         │   │   │   ├── @ LocalVariableTargetNode (location: (11,4)-(11,5))
         │   │   │   │   ├── name: :i
         │   │   │   │   └── depth: 1
@@ -98,6 +100,8 @@
         │   │   │   └── @ LocalVariableTargetNode (location: (11,8)-(11,9))
         │   │   │       ├── name: :k
         │   │   │       └── depth: 1
+        │   │   ├── rest: ∅
+        │   │   ├── rights: (length: 0)
         │   │   ├── lparen_loc: ∅
         │   │   └── rparen_loc: ∅
         │   ├── collection:

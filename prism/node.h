@@ -29,14 +29,4 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
 
 #define PM_EMPTY_NODE_LIST ((pm_node_list_t) { .nodes = NULL, .size = 0, .capacity = 0 })
 
-// ScopeNodes are helper nodes, and will never be part of the AST. We manually
-// declare them here to avoid generating them.
-typedef struct pm_scope_node {
-    pm_node_t base;
-    pm_node_t *ast_node;
-    struct pm_parameters_node *parameters;
-    pm_node_t *body;
-    pm_constant_id_list_t locals;
-} pm_scope_node_t;
-
 #endif // PRISM_NODE_H

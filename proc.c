@@ -152,6 +152,16 @@ proc_clone(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
     CLONESETUP(procval, self);
+    rb_check_funcall(procval, idInitialize_clone, 1, &self);
+    return procval;
+}
+
+/* :nodoc: */
+static VALUE
+proc_dup(VALUE self)
+{
+    VALUE procval = rb_proc_dup(self);
+    rb_check_funcall(procval, idInitialize_dup, 1, &self);
     return procval;
 }
 
@@ -4258,7 +4268,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
-    rb_define_method(rb_cProc, "dup", rb_proc_dup, 0);
+    rb_define_method(rb_cProc, "dup", proc_dup, 0);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_alias(rb_cProc, "inspect", "to_s");

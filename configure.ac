@@ -3087,7 +3087,7 @@ AC_SUBST(EXTOBJS)
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
 			: ${LDFLAGS=""}
-			: ${LIBPATHENV=DYLD_FALLBACK_LIBRARY_PATH}
+			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			: ${PRELOADENV=DYLD_INSERT_LIBRARIES}
                         AS_IF([test x"$enable_shared" = xyes], [
                             # Resolve symbols from libruby.dylib in $(LIBS) when --enable-shared
@@ -3964,7 +3964,8 @@ AS_IF([test x"$enable_shared" = xyes], [
             rb_cv_symbols_in_emptylib=`$NM -Pgp conftest$ac_exeext |
                 sed ["/ [A-TV-Z] .*/!d;s///;s/^${SYMBOL_PREFIX}//;/^main$/d"]`
         ])
-        set ${rb_cv_symbols_in_emptylib}
+        set dummy ${rb_cv_symbols_in_emptylib}
+        shift
         rb_cv_symbols_in_emptylib="$*"
         CC="$save_CC"
     ])

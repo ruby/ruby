@@ -53,7 +53,7 @@ bool pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor
 // Returns the line and column of the given offset. If the offset is not in the
 // list, the line and column of the closest offset less than the given offset
 // are returned.
-pm_line_column_t pm_newline_list_line_column(pm_newline_list_t *list, const uint8_t *cursor);
+pm_line_column_t pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor);
 
 // Free the internal memory allocated for the newline list.
 void pm_newline_list_free(pm_newline_list_t *list);

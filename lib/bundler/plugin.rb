@@ -62,7 +62,8 @@ module Bundler
       if names.any?
         names.each do |name|
           if index.installed?(name)
-            Bundler.rm_rf(index.plugin_path(name))
+            path = index.plugin_path(name).to_s
+            Bundler.rm_rf(path) if index.installed_in_plugin_root?(name)
             index.unregister_plugin(name)
             Bundler.ui.info "Uninstalled plugin #{name}"
           else
@@ -227,7 +228,7 @@ module Bundler
       plugins = index.hook_plugins(event)
       return unless plugins.any?
 
-      (plugins - @loaded_plugin_names).each {|name| load_plugin(name) }
+      plugins.each {|name| load_plugin(name) }
 
       @hooks_by_event[event].each {|blk| blk.call(*args, &arg_blk) }
     end
@@ -237,6 +238,11 @@ module Bundler
     # @return [String, nil] installed path
     def installed?(plugin)
       Index.new.installed?(plugin)
+    end
+
+    # @return [true, false] whether the plugin is loaded
+    def loaded?(plugin)
+      @loaded_plugin_names.include?(plugin)
     end
 
     # Post installation processing and registering with index
@@ -329,6 +335,7 @@ module Bundler
     # @param [String] name of the plugin
     def load_plugin(name)
       return unless name && !name.empty?
+      return if loaded?(name)
 
       # Need to ensure before this that plugin root where the rest of gems
       # are installed to be on load path to support plugin deps. Currently not

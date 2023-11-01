@@ -21,7 +21,7 @@
             │   │           @ NilNode (location: (1,9)-(1,12))
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,14)-(1,16))
-            │   │   ├── name: nil
+            │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,14)-(1,16) = "**"
             │   └── block: ∅
@@ -35,12 +35,13 @@
             │           ├── opening_loc: (1,20)-(1,21) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,21)-(1,23))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ KeywordHashNode (location: (1,21)-(1,23))
-            │           │           └── elements: (length: 1)
-            │           │               └── @ AssocSplatNode (location: (1,21)-(1,23))
-            │           │                   ├── value: ∅
-            │           │                   └── operator_loc: (1,21)-(1,23) = "**"
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ KeywordHashNode (location: (1,21)-(1,23))
+            │           │   │       └── elements: (length: 1)
+            │           │   │           └── @ AssocSplatNode (location: (1,21)-(1,23))
+            │           │   │               ├── value: ∅
+            │           │   │               └── operator_loc: (1,21)-(1,23) = "**"
+            │           │   └── flags: keyword_splat
             │           ├── closing_loc: (1,23)-(1,24) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

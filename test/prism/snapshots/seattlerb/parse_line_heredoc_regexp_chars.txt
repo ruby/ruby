@@ -11,8 +11,8 @@
         │   │   @ StringNode (location: (1,15)-(1,22))
         │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1,15)-(1,22) = "<<-\"^D\""
-        │   │   ├── content_loc: (2,0)-(2,0) = "        very long string\n"
-        │   │   ├── closing_loc: (3,0)-(3,0) = "      ^D\n"
+        │   │   ├── content_loc: (2,0)-(3,0) = "        very long string\n"
+        │   │   ├── closing_loc: (3,0)-(4,0) = "      ^D\n"
         │   │   └── unescaped: "        very long string\n"
         │   └── operator_loc: (1,13)-(1,14) = "="
         └── @ CallNode (location: (4,6)-(4,17))
@@ -22,10 +22,11 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (4,11)-(4,17))
-            │   └── arguments: (length: 1)
-            │       └── @ LocalVariableReadNode (location: (4,11)-(4,17))
-            │           ├── name: :string
-            │           └── depth: 0
+            │   ├── arguments: (length: 1)
+            │   │   └── @ LocalVariableReadNode (location: (4,11)-(4,17))
+            │   │       ├── name: :string
+            │   │       └── depth: 0
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

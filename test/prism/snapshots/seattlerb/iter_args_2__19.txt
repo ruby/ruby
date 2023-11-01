@@ -18,14 +18,16 @@
             │   │   ├── parameters:
             │   │   │   @ ParametersNode (location: (1,5)-(1,11))
             │   │   │   ├── requireds: (length: 1)
-            │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (1,5)-(1,11))
-            │   │   │   │       ├── parameters: (length: 2)
+            │   │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,11))
+            │   │   │   │       ├── lefts: (length: 2)
             │   │   │   │       │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
             │   │   │   │       │   │   └── name: :a
             │   │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
             │   │   │   │       │       └── name: :b
-            │   │   │   │       ├── opening_loc: (1,5)-(1,6) = "("
-            │   │   │   │       └── closing_loc: (1,10)-(1,11) = ")"
+            │   │   │   │       ├── rest: ∅
+            │   │   │   │       ├── rights: (length: 0)
+            │   │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("
+            │   │   │   │       └── rparen_loc: (1,10)-(1,11) = ")"
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest: ∅
             │   │   │   ├── posts: (length: 0)

@@ -29,8 +29,7 @@ fiddle/pinned.c
 fiddle/pointer.c
 fiddle/handle.c
 fiddle/lib
-io/console/console.c
-io/console/lib
+io/console/
 io/nonblock/nonblock.c
 io/wait/wait.c
 json/generator/generator.c

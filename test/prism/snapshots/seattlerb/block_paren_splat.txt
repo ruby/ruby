@@ -18,17 +18,19 @@
             │   │   ├── parameters:
             │   │   │   @ ParametersNode (location: (1,5)-(1,12))
             │   │   │   ├── requireds: (length: 1)
-            │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (1,5)-(1,12))
-            │   │   │   │       ├── parameters: (length: 2)
-            │   │   │   │       │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
-            │   │   │   │       │   │   └── name: :b
-            │   │   │   │       │   └── @ SplatNode (location: (1,9)-(1,11))
-            │   │   │   │       │       ├── operator_loc: (1,9)-(1,10) = "*"
-            │   │   │   │       │       └── expression:
-            │   │   │   │       │           @ RequiredParameterNode (location: (1,10)-(1,11))
-            │   │   │   │       │           └── name: :c
-            │   │   │   │       ├── opening_loc: (1,5)-(1,6) = "("
-            │   │   │   │       └── closing_loc: (1,11)-(1,12) = ")"
+            │   │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,12))
+            │   │   │   │       ├── lefts: (length: 1)
+            │   │   │   │       │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │   │   │       │       └── name: :b
+            │   │   │   │       ├── rest:
+            │   │   │   │       │   @ SplatNode (location: (1,9)-(1,11))
+            │   │   │   │       │   ├── operator_loc: (1,9)-(1,10) = "*"
+            │   │   │   │       │   └── expression:
+            │   │   │   │       │       @ RequiredParameterNode (location: (1,10)-(1,11))
+            │   │   │   │       │       └── name: :c
+            │   │   │   │       ├── rights: (length: 0)
+            │   │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("
+            │   │   │   │       └── rparen_loc: (1,11)-(1,12) = ")"
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest: ∅
             │   │   │   ├── posts: (length: 0)

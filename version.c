@@ -44,14 +44,6 @@
 # define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
 #endif
 
-# define RUBY_DESCRIPTION_PRE \
-    "ruby "RUBY_VERSION             \
-    RUBY_PATCHLEVEL_STR             \
-    " ("RUBY_RELEASE_DATETIME       \
-    RUBY_REVISION_STR")"
-# define RUBY_DESCRIPTION_POST \
-    " ["RUBY_PLATFORM"]"
-
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
@@ -68,21 +60,27 @@ const int ruby_api_version[] = {
 #ifndef RUBY_FULL_REVISION
 # define RUBY_FULL_REVISION RUBY_REVISION
 #endif
+#ifdef YJIT_SUPPORT
+#define YJIT_DESCRIPTION " +YJIT " STRINGIZE(YJIT_SUPPORT)
+#else
+#define YJIT_DESCRIPTION " +YJIT"
+#endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
-const char ruby_description[] = RUBY_DESCRIPTION_PRE RUBY_DESCRIPTION_POST;
-const char ruby_description_pre[] = RUBY_DESCRIPTION_PRE;
-const char ruby_description_post[] = RUBY_DESCRIPTION_POST;
+const char ruby_description[] =
+    "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " "
+    "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ") "
+    "[" RUBY_PLATFORM "]";
+static const int ruby_description_opt_point =
+    (int)(sizeof(ruby_description) - sizeof(" [" RUBY_PLATFORM "]"));
+
 const char ruby_copyright[] = "ruby - Copyright (C) "
     RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
     RUBY_AUTHOR;
 const char ruby_engine[] = "ruby";
-
-// Enough space for any combination of option flags
-static char ruby_dynamic_description_buffer[sizeof(ruby_description) + sizeof("+MJIT +YJIT +MMTk(XXXXXXXXXXXXXXXX)") - 1];
 
 // Might change after initialization
 const char *rb_dynamic_description = ruby_description;
@@ -146,29 +144,69 @@ Init_version(void)
 #define YJIT_OPTS_ON 0
 #endif
 
-void
-Init_ruby_description(ruby_cmdline_options_t *opt)
+int ruby_mn_threads_enabled;
+
+static void
+define_ruby_description(const char *const jit_opt)
 {
-    if (snprintf(ruby_dynamic_description_buffer, sizeof(ruby_dynamic_description_buffer), "%s%s%s%s%s%s%s",
-            ruby_description_pre,
-            RJIT_OPTS_ON ? " +RJIT" : "",
-            YJIT_OPTS_ON ? " +YJIT" : "",
+    static char desc[
+        sizeof(ruby_description)
+        + rb_strlen_lit(YJIT_DESCRIPTION)
+        + rb_strlen_lit(" +MN")
 #if USE_MMTK
-            rb_mmtk_enabled_p() ? " +MMTk(" : "",
-            rb_mmtk_enabled_p() ? mmtk_plan_name() : "",
-            rb_mmtk_enabled_p() ? ")" : "",
-#else
-            "", "", "",
+        // This should be long enough for all plans we have.
+        + rb_strlen_lit(" +MMTk(XXXXXXXXXXXXXXXX)")
 #endif
-            ruby_description_post) < 0) {
-        rb_bug("could not format dynamic description string");
-    }
-    rb_dynamic_description = ruby_dynamic_description_buffer;
+        ];
+
+    const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
+
+#if USE_MMTK
+    const char *const mmtk_opt1 = rb_mmtk_enabled_p() ? " +MMTk(" : "";
+    const char *const mmtk_opt2 = rb_mmtk_enabled_p() ? mmtk_plan_name() : "";
+    const char *const mmtk_opt3 = rb_mmtk_enabled_p() ? ")" : "";
+#endif
+
+    int n = snprintf(desc, sizeof(desc),
+                     "%.*s"
+                     "%s" // jit_opt
+                     "%s" // threads_opts
+#if USE_MMTK
+                     "%s%s%s" // mmtk_opt1, mmtk_opt2, mmtk_opt3
+#endif
+                     "%s",
+                     ruby_description_opt_point, ruby_description,
+                     jit_opt,
+                     threads_opt,
+#if USE_MMTK
+                     mmtk_opt1, mmtk_opt2, mmtk_opt3,
+#endif
+                     ruby_description + ruby_description_opt_point);
+
+    VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));
+    rb_dynamic_description = desc;
 
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
-    rb_define_global_const("RUBY_DESCRIPTION", rb_obj_freeze(rb_str_new2(rb_dynamic_description)));
+    rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
+}
+
+void
+Init_ruby_description(ruby_cmdline_options_t *opt)
+{
+    const char *const jit_opt =
+        RJIT_OPTS_ON ? " +RJIT" :
+        YJIT_OPTS_ON ? YJIT_DESCRIPTION :
+        "";
+    define_ruby_description(jit_opt);
+}
+
+void
+ruby_set_yjit_description(void)
+{
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    define_ruby_description(YJIT_DESCRIPTION);
 }
 
 void

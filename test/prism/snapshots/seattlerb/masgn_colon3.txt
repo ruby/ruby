@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,15))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,15))
-            ├── targets: (length: 2)
+            ├── lefts: (length: 2)
             │   ├── @ ConstantPathTargetNode (location: (1,0)-(1,3))
             │   │   ├── parent: ∅
             │   │   ├── child:
@@ -17,6 +17,8 @@
             │       │   @ ConstantReadNode (location: (1,7)-(1,8))
             │       │   └── name: :B
             │       └── delimiter_loc: (1,5)-(1,7) = "::"
+            ├── rest: ∅
+            ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅
             ├── operator_loc: (1,9)-(1,10) = "="

@@ -18,17 +18,18 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (2,10)-(2,17))
-        │   │           │   └── arguments: (length: 2)
-        │   │           │       ├── @ ParenthesesNode (location: (2,10)-(2,14))
-        │   │           │       │   ├── body:
-        │   │           │       │   │   @ StatementsNode (location: (2,12)-(2,13))
-        │   │           │       │   │   └── body: (length: 1)
-        │   │           │       │   │       └── @ IntegerNode (location: (2,12)-(2,13))
-        │   │           │       │   │           └── flags: decimal
-        │   │           │       │   ├── opening_loc: (2,10)-(2,11) = "("
-        │   │           │       │   └── closing_loc: (2,13)-(2,14) = ")"
-        │   │           │       └── @ IntegerNode (location: (2,16)-(2,17))
-        │   │           │           └── flags: decimal
+        │   │           │   ├── arguments: (length: 2)
+        │   │           │   │   ├── @ ParenthesesNode (location: (2,10)-(2,14))
+        │   │           │   │   │   ├── body:
+        │   │           │   │   │   │   @ StatementsNode (location: (2,12)-(2,13))
+        │   │           │   │   │   │   └── body: (length: 1)
+        │   │           │   │   │   │       └── @ IntegerNode (location: (2,12)-(2,13))
+        │   │           │   │   │   │           └── flags: decimal
+        │   │           │   │   │   ├── opening_loc: (2,10)-(2,11) = "("
+        │   │           │   │   │   └── closing_loc: (2,13)-(2,14) = ")"
+        │   │           │   │   └── @ IntegerNode (location: (2,16)-(2,17))
+        │   │           │   │       └── flags: decimal
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -55,17 +56,18 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (7,10)-(7,16))
-        │   │           │   └── arguments: (length: 2)
-        │   │           │       ├── @ ParenthesesNode (location: (7,10)-(7,13))
-        │   │           │       │   ├── body:
-        │   │           │       │   │   @ StatementsNode (location: (7,11)-(7,12))
-        │   │           │       │   │   └── body: (length: 1)
-        │   │           │       │   │       └── @ IntegerNode (location: (7,11)-(7,12))
-        │   │           │       │   │           └── flags: decimal
-        │   │           │       │   ├── opening_loc: (7,10)-(7,11) = "("
-        │   │           │       │   └── closing_loc: (7,12)-(7,13) = ")"
-        │   │           │       └── @ IntegerNode (location: (7,15)-(7,16))
-        │   │           │           └── flags: decimal
+        │   │           │   ├── arguments: (length: 2)
+        │   │           │   │   ├── @ ParenthesesNode (location: (7,10)-(7,13))
+        │   │           │   │   │   ├── body:
+        │   │           │   │   │   │   @ StatementsNode (location: (7,11)-(7,12))
+        │   │           │   │   │   │   └── body: (length: 1)
+        │   │           │   │   │   │       └── @ IntegerNode (location: (7,11)-(7,12))
+        │   │           │   │   │   │           └── flags: decimal
+        │   │           │   │   │   ├── opening_loc: (7,10)-(7,11) = "("
+        │   │           │   │   │   └── closing_loc: (7,12)-(7,13) = ")"
+        │   │           │   │   └── @ IntegerNode (location: (7,15)-(7,16))
+        │   │           │   │       └── flags: decimal
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -84,17 +86,18 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (11,2)-(11,9))
-            │   └── arguments: (length: 2)
-            │       ├── @ ParenthesesNode (location: (11,2)-(11,6))
-            │       │   ├── body:
-            │       │   │   @ StatementsNode (location: (11,4)-(11,5))
-            │       │   │   └── body: (length: 1)
-            │       │   │       └── @ IntegerNode (location: (11,4)-(11,5))
-            │       │   │           └── flags: decimal
-            │       │   ├── opening_loc: (11,2)-(11,3) = "("
-            │       │   └── closing_loc: (11,5)-(11,6) = ")"
-            │       └── @ IntegerNode (location: (11,8)-(11,9))
-            │           └── flags: decimal
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ ParenthesesNode (location: (11,2)-(11,6))
+            │   │   │   ├── body:
+            │   │   │   │   @ StatementsNode (location: (11,4)-(11,5))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ IntegerNode (location: (11,4)-(11,5))
+            │   │   │   │           └── flags: decimal
+            │   │   │   ├── opening_loc: (11,2)-(11,3) = "("
+            │   │   │   └── closing_loc: (11,5)-(11,6) = ")"
+            │   │   └── @ IntegerNode (location: (11,8)-(11,9))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

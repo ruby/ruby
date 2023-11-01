@@ -25,7 +25,7 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,16))
             │       │   ├── constant: ∅
-            │       │   ├── assocs: (length: 2)
+            │       │   ├── elements: (length: 2)
             │       │   │   ├── @ AssocNode (location: (2,4)-(2,8))
             │       │   │   │   ├── key:
             │       │   │   │   │   @ SymbolNode (location: (2,4)-(2,6))
@@ -40,7 +40,7 @@
             │       │   │   └── @ NoKeywordsParameterNode (location: (2,10)-(2,15))
             │       │   │       ├── operator_loc: (2,10)-(2,12) = "**"
             │       │   │       └── keyword_loc: (2,12)-(2,15) = "nil"
-            │       │   ├── kwrest: ∅
+            │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,3)-(2,4) = "{"
             │       │   └── closing_loc: (2,15)-(2,16) = "}"
             │       ├── statements:

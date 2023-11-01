@@ -28,6 +28,6 @@
         └── @ StringNode (location: (7,0)-(7,7))
             ├── flags: ∅
             ├── opening_loc: (7,0)-(7,7) = "<<~HERE"
-            ├── content_loc: (8,0)-(8,0) = "   \\c\#{1}\n"
-            ├── closing_loc: (9,0)-(9,0) = "HERE\n"
+            ├── content_loc: (8,0)-(9,0) = "   \\c\#{1}\n"
+            ├── closing_loc: (9,0)-(10,0) = "HERE\n"
             └── unescaped: "\u0003{1}\n"

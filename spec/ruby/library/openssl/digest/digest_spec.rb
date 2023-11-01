@@ -1,12 +1,11 @@
-require_relative '../../spec_helper'
-require_relative '../../library/digest/sha1/shared/constants'
-require_relative '../../library/digest/sha256/shared/constants'
-require_relative '../../library/digest/sha384/shared/constants'
-require_relative '../../library/digest/sha512/shared/constants'
+require_relative '../../../spec_helper'
+require_relative '../../../library/digest/sha1/shared/constants'
+require_relative '../../../library/digest/sha256/shared/constants'
+require_relative '../../../library/digest/sha384/shared/constants'
+require_relative '../../../library/digest/sha512/shared/constants'
 require 'openssl'
 
-describe "OpenSSL::Digest" do
-
+describe "OpenSSL::Digest class methods" do
   describe ".digest" do
     it "returns a SHA1 digest" do
       OpenSSL::Digest.digest('sha1', SHA1Constants::Contents).should == SHA1Constants::Digest

@@ -25,8 +25,8 @@ module Prism
     #     void         -> :void
     #
     def self.resolve_type(type)
-      type = type.strip.delete_prefix("const ")
-      type.end_with?("*") ? :pointer : type.to_sym
+      type = type.strip
+      type.end_with?("*") ? :pointer : type.delete_prefix("const ").to_sym
     end
 
     # Read through the given header file and find the declaration of each of the
@@ -70,6 +70,7 @@ module Prism
       "prism.h",
       "pm_version",
       "pm_parse_serialize",
+      "pm_parse_serialize_comments",
       "pm_lex_serialize",
       "pm_parse_lex_serialize"
     )
@@ -224,6 +225,30 @@ module Prism
     end
   end
 
+  # Mirror the Prism.parse_comments API by using the serialization API.
+  def self.parse_comments(code, filepath = nil)
+    LibRubyParser::PrismBuffer.with do |buffer|
+      metadata = [filepath.bytesize, filepath.b, 0].pack("LA*L") if filepath
+      LibRubyParser.pm_parse_serialize_comments(code, code.bytesize, buffer.pointer, metadata)
+
+      source = Source.new(code)
+      loader = Serialize::Loader.new(source, buffer.read)
+
+      loader.load_header
+      loader.load_force_encoding
+      loader.load_comments
+    end
+  end
+
+  # Mirror the Prism.parse_file_comments API by using the serialization
+  # API. This uses native strings instead of Ruby strings because it allows us
+  # to use mmap when it is available.
+  def self.parse_file_comments(filepath)
+    LibRubyParser::PrismString.with(filepath) do |string|
+      parse_comments(string.read, filepath)
+    end
+  end
+
   # Mirror the Prism.parse_lex API by using the serialization API.
   def self.parse_lex(code, filepath = nil)
     LibRubyParser::PrismBuffer.with do |buffer|
@@ -234,11 +259,11 @@ module Prism
       loader = Serialize::Loader.new(source, buffer.read)
 
       tokens = loader.load_tokens
-      node, comments, errors, warnings = loader.load_nodes
+      node, comments, magic_comments, errors, warnings = loader.load_nodes
 
       tokens.each { |token,| token.value.force_encoding(loader.encoding) }
 
-      ParseResult.new([node, tokens], comments, errors, warnings, source)
+      ParseResult.new([node, tokens], comments, magic_comments, errors, warnings, source)
     end
   end
 

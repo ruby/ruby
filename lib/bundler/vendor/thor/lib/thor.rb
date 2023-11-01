@@ -65,8 +65,15 @@ class Bundler::Thor
 
     # Defines the long description of the next command.
     #
+    # Long description is by default indented, line-wrapped and repeated whitespace merged.
+    # In order to print long description verbatim, with indentation and spacing exactly
+    # as found in the code, use the +wrap+ option
+    #
+    #   long_desc 'your very long description', wrap: false
+    #
     # ==== Parameters
     # long description<String>
+    # options<Hash>
     #
     def long_desc(long_description, options = {})
       if options[:for]
@@ -74,6 +81,7 @@ class Bundler::Thor
         command.long_description = long_description if long_description
       else
         @long_desc = long_description
+        @long_desc_wrap = options[:wrap] != false
       end
     end
 
@@ -133,7 +141,7 @@ class Bundler::Thor
     #     # magic
     #   end
     #
-    #   method_option :foo => :bar, :for => :previous_command
+    #   method_option :foo, :for => :previous_command
     #
     #   def next_command
     #     # magic
@@ -153,6 +161,9 @@ class Bundler::Thor
     # :hide     - If you want to hide this option from the help.
     #
     def method_option(name, options = {})
+      unless [ Symbol, String ].any? { |klass| name.is_a?(klass) }
+        raise ArgumentError, "Expected a Symbol or String, got #{name.inspect}"
+      end
       scope = if options[:for]
         find_and_refresh_command(options[:for]).options
       else
@@ -162,6 +173,81 @@ class Bundler::Thor
       build_option(name, options, scope)
     end
     alias_method :option, :method_option
+
+    # Adds and declares option group for exclusive options in the
+    # block and arguments. You can declare options as the outside of the block.
+    #
+    # If :for is given as option, it allows you to change the options from
+    # a previous defined command.
+    #
+    # ==== Parameters
+    # Array[Bundler::Thor::Option.name]
+    # options<Hash>:: :for is applied for previous defined command.
+    #
+    # ==== Examples
+    #
+    #   exclusive do
+    #     option :one
+    #     option :two
+    #   end
+    #
+    # Or
+    #
+    #   option :one
+    #   option :two
+    #   exclusive :one, :two
+    #
+    # If you give "--one" and "--two" at the same time ExclusiveArgumentsError
+    # will be raised.
+    #
+    def method_exclusive(*args, &block)
+      register_options_relation_for(:method_options,
+                                    :method_exclusive_option_names, *args, &block)
+    end
+    alias_method :exclusive, :method_exclusive
+
+    # Adds and declares option group for required at least one of options in the
+    # block of arguments. You can declare options as the outside of the block.
+    #
+    # If :for is given as option, it allows you to change the options from
+    # a previous defined command.
+    #
+    # ==== Parameters
+    # Array[Bundler::Thor::Option.name]
+    # options<Hash>:: :for is applied for previous defined command.
+    #
+    # ==== Examples
+    #
+    #   at_least_one do
+    #     option :one
+    #     option :two
+    #   end
+    #
+    # Or
+    #
+    #   option :one
+    #   option :two
+    #   at_least_one :one, :two
+    #
+    # If you do not give "--one" and "--two" AtLeastOneRequiredArgumentError
+    # will be raised.
+    #
+    # You can use at_least_one and exclusive at the same time.
+    #
+    #    exclusive do
+    #      at_least_one do
+    #        option :one
+    #        option :two
+    #      end
+    #    end
+    #
+    # Then it is required either only one of "--one" or "--two".
+    #
+    def method_at_least_one(*args, &block)
+      register_options_relation_for(:method_options,
+                                    :method_at_least_one_option_names, *args, &block)
+    end
+    alias_method :at_least_one, :method_at_least_one
 
     # Prints help information for the given command.
     #
@@ -178,9 +264,16 @@ class Bundler::Thor
       shell.say "  #{banner(command).split("\n").join("\n  ")}"
       shell.say
       class_options_help(shell, nil => command.options.values)
+      print_exclusive_options(shell, command)
+      print_at_least_one_required_options(shell, command)
+
       if command.long_description
         shell.say "Description:"
-        shell.print_wrapped(command.long_description, :indent => 2)
+        if command.wrap_long_description
+          shell.print_wrapped(command.long_description, indent: 2)
+        else
+          shell.say command.long_description
+        end
       else
         shell.say command.description
       end
@@ -197,7 +290,7 @@ class Bundler::Thor
       Bundler::Thor::Util.thor_classes_in(self).each do |klass|
         list += klass.printable_commands(false)
       end
-      list.sort! { |a, b| a[0] <=> b[0] }
+      sort_commands!(list)
 
       if defined?(@package_name) && @package_name
         shell.say "#{@package_name} commands:"
@@ -205,9 +298,11 @@ class Bundler::Thor
         shell.say "Commands:"
       end
 
-      shell.print_table(list, :indent => 2, :truncate => true)
+      shell.print_table(list, indent: 2, truncate: true)
       shell.say
       class_options_help(shell)
+      print_exclusive_options(shell)
+      print_at_least_one_required_options(shell)
     end
 
     # Returns commands ready to be printed.
@@ -238,7 +333,7 @@ class Bundler::Thor
 
       define_method(subcommand) do |*args|
         args, opts = Bundler::Thor::Arguments.split(args)
-        invoke_args = [args, opts, {:invoked_via_subcommand => true, :class_options => options}]
+        invoke_args = [args, opts, {invoked_via_subcommand: true, class_options: options}]
         invoke_args.unshift "help" if opts.delete("--help") || opts.delete("-h")
         invoke subcommand_class, *invoke_args
       end
@@ -346,6 +441,24 @@ class Bundler::Thor
 
   protected
 
+    # Returns this class exclusive options array set.
+    #
+    # ==== Returns
+    # Array[Array[Bundler::Thor::Option.name]]
+    #
+    def method_exclusive_option_names #:nodoc:
+      @method_exclusive_option_names ||= []
+    end
+
+    # Returns this class at least one of required options array set.
+    #
+    # ==== Returns
+    # Array[Array[Bundler::Thor::Option.name]]
+    #
+    def method_at_least_one_option_names #:nodoc:
+      @method_at_least_one_option_names ||= []
+    end
+
     def stop_on_unknown_option #:nodoc:
       @stop_on_unknown_option ||= []
     end
@@ -353,6 +466,28 @@ class Bundler::Thor
     # help command has the required check disabled by default.
     def disable_required_check #:nodoc:
       @disable_required_check ||= [:help]
+    end
+
+    def print_exclusive_options(shell, command = nil) # :nodoc:
+      opts = []
+      opts  = command.method_exclusive_option_names unless command.nil?
+      opts += class_exclusive_option_names
+      unless opts.empty?
+        shell.say "Exclusive Options:"
+        shell.print_table(opts.map{ |ex| ex.map{ |e| "--#{e}"}}, indent: 2 )
+        shell.say
+      end
+    end
+
+    def print_at_least_one_required_options(shell, command = nil) # :nodoc:
+      opts = []
+      opts = command.method_at_least_one_option_names unless command.nil?
+      opts += class_at_least_one_option_names
+      unless opts.empty?
+        shell.say "Required At Least One:"
+        shell.print_table(opts.map{ |ex| ex.map{ |e| "--#{e}"}}, indent: 2 )
+        shell.say
+      end
     end
 
     # The method responsible for dispatching given the args.
@@ -415,12 +550,16 @@ class Bundler::Thor
       @usage ||= nil
       @desc ||= nil
       @long_desc ||= nil
+      @long_desc_wrap ||= nil
       @hide ||= nil
 
       if @usage && @desc
         base_class = @hide ? Bundler::Thor::HiddenCommand : Bundler::Thor::Command
-        commands[meth] = base_class.new(meth, @desc, @long_desc, @usage, method_options)
-        @usage, @desc, @long_desc, @method_options, @hide = nil
+        relations = {exclusive_option_names: method_exclusive_option_names,
+          at_least_one_option_names: method_at_least_one_option_names}
+        commands[meth] = base_class.new(meth, @desc, @long_desc, @long_desc_wrap, @usage, method_options, relations)
+        @usage, @desc, @long_desc, @long_desc_wrap, @method_options, @hide = nil
+        @method_exclusive_option_names, @method_at_least_one_option_names = nil
         true
       elsif all_commands[meth] || meth == "method_missing"
         true
@@ -495,6 +634,14 @@ class Bundler::Thor
 "
     end
     alias_method :subtask_help, :subcommand_help
+
+    # Sort the commands, lexicographically by default.
+    #
+    # Can be overridden in the subclass to change the display order of the
+    # commands.
+    def sort_commands!(list)
+      list.sort! { |a, b| a[0] <=> b[0] }
+    end
   end
 
   include Bundler::Thor::Base

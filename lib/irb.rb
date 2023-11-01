@@ -367,24 +367,6 @@ module IRB
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end
 
-  @CONF = {}
-  # Displays current configuration.
-  #
-  # Modifying the configuration is achieved by sending a message to IRB.conf.
-  #
-  # See IRB@Configuration for more information.
-  def IRB.conf
-    @CONF
-  end
-
-  # Returns the current version of IRB, including release version and last
-  # updated date.
-  def IRB.version
-    if v = @CONF[:VERSION] then return v end
-
-    @CONF[:VERSION] = format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
-  end
-
   # The current IRB::Context of the session, see IRB.conf
   #
   #   irb
@@ -430,6 +412,11 @@ module IRB
     PROMPT_MAIN_TRUNCATE_LENGTH = 32
     PROMPT_MAIN_TRUNCATE_OMISSION = '...'.freeze
     CONTROL_CHARACTERS_PATTERN = "\x00-\x1F".freeze
+
+    # Returns the current context of this irb session
+    attr_reader :context
+    # The lexer used by this irb session
+    attr_accessor :scanner
 
     # Creates a new irb session
     def initialize(workspace = nil, input_method = nil)
@@ -507,41 +494,6 @@ module IRB
         conf[:AT_EXIT].each{|hook| hook.call}
         context.io.save_history if save_history
       end
-    end
-
-    # Returns the current context of this irb session
-    attr_reader :context
-    # The lexer used by this irb session
-    attr_accessor :scanner
-
-    private def generate_prompt(opens, continue, line_offset)
-      ltype = @scanner.ltype_from_open_tokens(opens)
-      indent = @scanner.calc_indent_level(opens)
-      continue = opens.any? || continue
-      line_no = @line_no + line_offset
-
-      if ltype
-        f = @context.prompt_s
-      elsif continue
-        f = @context.prompt_c
-      else
-        f = @context.prompt_i
-      end
-      f = "" unless f
-      if @context.prompting?
-        p = format_prompt(f, ltype, indent, line_no)
-      else
-        p = ""
-      end
-      if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
-        unless ltype
-          prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
-          ind = format_prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
-            indent * 2 - p.size
-          p += " " * ind if ind > 0
-        end
-      end
-      p
     end
 
     # Evaluates input for this session.
@@ -835,16 +787,6 @@ module IRB
       end
     end
 
-    # Evaluates the given block using the given +context+ as the Context.
-    def suspend_context(context)
-      @context, back_context = context, @context
-      begin
-        yield back_context
-      ensure
-        @context = back_context
-      end
-    end
-
     # Handler for the signal SIGINT, see Kernel#trap for more information.
     def signal_handle
       unless @context.ignore_sigint?
@@ -877,52 +819,6 @@ module IRB
         yield
       ensure
         @signal_status = signal_status_back
-      end
-    end
-
-    private def truncate_prompt_main(str) # :nodoc:
-      str = str.tr(CONTROL_CHARACTERS_PATTERN, ' ')
-      if str.size <= PROMPT_MAIN_TRUNCATE_LENGTH
-        str
-      else
-        str[0, PROMPT_MAIN_TRUNCATE_LENGTH - PROMPT_MAIN_TRUNCATE_OMISSION.size] + PROMPT_MAIN_TRUNCATE_OMISSION
-      end
-    end
-
-    private def format_prompt(format, ltype, indent, line_no) # :nodoc:
-      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
-        case $2
-        when "N"
-          @context.irb_name
-        when "m"
-          truncate_prompt_main(@context.main.to_s)
-        when "M"
-          truncate_prompt_main(@context.main.inspect)
-        when "l"
-          ltype
-        when "i"
-          if indent < 0
-            if $1
-              "-".rjust($1.to_i)
-            else
-              "-"
-            end
-          else
-            if $1
-              format("%" + $1 + "d", indent)
-            else
-              indent.to_s
-            end
-          end
-        when "n"
-          if $1
-            format("%" + $1 + "d", line_no)
-          else
-            line_no.to_s
-          end
-        when "%"
-          "%"
-        end
       end
     end
 
@@ -978,28 +874,84 @@ module IRB
       end
       format("#<%s: %s>", self.class, ary.join(", "))
     end
-  end
 
-  def @CONF.inspect
-    IRB.version unless self[:VERSION]
+    private
 
-    array = []
-    for k, v in sort{|a1, a2| a1[0].id2name <=> a2[0].id2name}
-      case k
-      when :MAIN_CONTEXT, :__TMP__EHV__
-        array.push format("CONF[:%s]=...myself...", k.id2name)
-      when :PROMPT
-        s = v.collect{
-          |kk, vv|
-          ss = vv.collect{|kkk, vvv| ":#{kkk.id2name}=>#{vvv.inspect}"}
-          format(":%s=>{%s}", kk.id2name, ss.join(", "))
-        }
-        array.push format("CONF[:%s]={%s}", k.id2name, s.join(", "))
+    def generate_prompt(opens, continue, line_offset)
+      ltype = @scanner.ltype_from_open_tokens(opens)
+      indent = @scanner.calc_indent_level(opens)
+      continue = opens.any? || continue
+      line_no = @line_no + line_offset
+
+      if ltype
+        f = @context.prompt_s
+      elsif continue
+        f = @context.prompt_c
       else
-        array.push format("CONF[:%s]=%s", k.id2name, v.inspect)
+        f = @context.prompt_i
+      end
+      f = "" unless f
+      if @context.prompting?
+        p = format_prompt(f, ltype, indent, line_no)
+      else
+        p = ""
+      end
+      if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
+        unless ltype
+          prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
+          ind = format_prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
+            indent * 2 - p.size
+          p += " " * ind if ind > 0
+        end
+      end
+      p
+    end
+
+    def truncate_prompt_main(str) # :nodoc:
+      str = str.tr(CONTROL_CHARACTERS_PATTERN, ' ')
+      if str.size <= PROMPT_MAIN_TRUNCATE_LENGTH
+        str
+      else
+        str[0, PROMPT_MAIN_TRUNCATE_LENGTH - PROMPT_MAIN_TRUNCATE_OMISSION.size] + PROMPT_MAIN_TRUNCATE_OMISSION
       end
     end
-    array.join("\n")
+
+    def format_prompt(format, ltype, indent, line_no) # :nodoc:
+      format.gsub(/%([0-9]+)?([a-zA-Z])/) do
+        case $2
+        when "N"
+          @context.irb_name
+        when "m"
+          truncate_prompt_main(@context.main.to_s)
+        when "M"
+          truncate_prompt_main(@context.main.inspect)
+        when "l"
+          ltype
+        when "i"
+          if indent < 0
+            if $1
+              "-".rjust($1.to_i)
+            else
+              "-"
+            end
+          else
+            if $1
+              format("%" + $1 + "d", indent)
+            else
+              indent.to_s
+            end
+          end
+        when "n"
+          if $1
+            format("%" + $1 + "d", line_no)
+          else
+            line_no.to_s
+          end
+        when "%"
+          "%"
+        end
+      end
+    end
   end
 end
 

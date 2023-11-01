@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -28,12 +28,12 @@ jobs:
 
       - name: Check if C-sources are US-ASCII
         run: |
-          grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+          grep -r -n $'[^\t -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
 
       - name: Check for trailing spaces
         run: |
-          git grep -I -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs' && exit 1 || :
-          git grep -n '^[	 ][	 ]*$' -- '*.md' && exit 1 || :
+          git grep -I -n $'[\t ]$' -- '*.rb' '*.[chy]' '*.rs' '*.yml' && exit 1 || :
+          git grep -n $'^[\t ][\t ]*$' -- '*.md' && exit 1 || :
 
       - name: Check for bash specific substitution in configure.ac
         run: |
@@ -89,8 +89,8 @@ jobs:
       - name: Check diffs
         id: diff
         run: |
-          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
-        continue-on-error: true
+          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md ||
+          echo update=true >> $GITHUB_OUTPUT
         if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Commit
@@ -102,7 +102,12 @@ jobs:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-        if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
+        if: >-
+          ${{
+          github.repository == 'ruby/ruby' &&
+          !startsWith(github.event_name, 'pull') &&
+          steps.diff.outputs.update
+          }}
 
       - uses: ./.github/actions/slack
         with:

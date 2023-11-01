@@ -1075,7 +1075,7 @@ module Net   #:nodoc:
       elsif p_addr == :ENV then
         http.proxy_from_env = true
       else
-        if p_addr && p_no_proxy && !URI::Generic.use_proxy?(p_addr, p_addr, p_port, p_no_proxy)
+        if p_addr && p_no_proxy && !URI::Generic.use_proxy?(address, address, port, p_no_proxy)
           p_addr = nil
           p_port = nil
         end

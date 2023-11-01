@@ -15,7 +15,7 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,34))
             │       │   ├── constant: ∅
-            │       │   ├── assocs: (length: 3)
+            │       │   ├── elements: (length: 3)
             │       │   │   ├── @ AssocNode (location: (2,5)-(2,20))
             │       │   │   │   ├── key:
             │       │   │   │   │   @ SymbolNode (location: (2,5)-(2,7))
@@ -58,7 +58,7 @@
             │       │   │       │   └── unescaped: "f"
             │       │   │       ├── value: ∅
             │       │   │       └── operator_loc: ∅
-            │       │   ├── kwrest: ∅
+            │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,3)-(2,4) = "{"
             │       │   └── closing_loc: (2,33)-(2,34) = "}"
             │       ├── statements:

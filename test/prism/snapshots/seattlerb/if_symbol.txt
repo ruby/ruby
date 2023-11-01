@@ -13,12 +13,13 @@
             │   ├── opening_loc: ∅
             │   ├── arguments:
             │   │   @ ArgumentsNode (location: (1,5)-(1,7))
-            │   │   └── arguments: (length: 1)
-            │   │       └── @ SymbolNode (location: (1,5)-(1,7))
-            │   │           ├── opening_loc: (1,5)-(1,6) = ":"
-            │   │           ├── value_loc: (1,6)-(1,7) = "x"
-            │   │           ├── closing_loc: ∅
-            │   │           └── unescaped: "x"
+            │   │   ├── arguments: (length: 1)
+            │   │   │   └── @ SymbolNode (location: (1,5)-(1,7))
+            │   │   │       ├── opening_loc: (1,5)-(1,6) = ":"
+            │   │   │       ├── value_loc: (1,6)-(1,7) = "x"
+            │   │   │       ├── closing_loc: ∅
+            │   │   │       └── unescaped: "x"
+            │   │   └── flags: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅

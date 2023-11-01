@@ -175,19 +175,20 @@
         │   │       │   ├── opening_loc: (27,9)-(27,10) = "("
         │   │       │   ├── arguments:
         │   │       │   │   @ ArgumentsNode (location: (27,10)-(27,15))
-        │   │       │   │   └── arguments: (length: 1)
-        │   │       │   │       └── @ CallNode (location: (27,10)-(27,15))
-        │   │       │   │           ├── receiver:
-        │   │       │   │           │   @ ConstantReadNode (location: (27,10)-(27,11))
-        │   │       │   │           │   └── name: :B
-        │   │       │   │           ├── call_operator_loc: (27,11)-(27,12) = "."
-        │   │       │   │           ├── message_loc: (27,12)-(27,15) = "new"
-        │   │       │   │           ├── opening_loc: ∅
-        │   │       │   │           ├── arguments: ∅
-        │   │       │   │           ├── closing_loc: ∅
-        │   │       │   │           ├── block: ∅
-        │   │       │   │           ├── flags: ∅
-        │   │       │   │           └── name: :new
+        │   │       │   │   ├── arguments: (length: 1)
+        │   │       │   │   │   └── @ CallNode (location: (27,10)-(27,15))
+        │   │       │   │   │       ├── receiver:
+        │   │       │   │   │       │   @ ConstantReadNode (location: (27,10)-(27,11))
+        │   │       │   │   │       │   └── name: :B
+        │   │       │   │   │       ├── call_operator_loc: (27,11)-(27,12) = "."
+        │   │       │   │   │       ├── message_loc: (27,12)-(27,15) = "new"
+        │   │       │   │   │       ├── opening_loc: ∅
+        │   │       │   │   │       ├── arguments: ∅
+        │   │       │   │   │       ├── closing_loc: ∅
+        │   │       │   │   │       ├── block: ∅
+        │   │       │   │   │       ├── flags: ∅
+        │   │       │   │   │       └── name: :new
+        │   │       │   │   └── flags: ∅
         │   │       │   ├── closing_loc: (27,15)-(27,16) = ")"
         │   │       │   ├── block: ∅
         │   │       │   ├── flags: ∅

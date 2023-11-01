@@ -142,10 +142,11 @@
             │           │   │           ├── opening_loc: ∅
             │           │   │           ├── arguments:
             │           │   │           │   @ ArgumentsNode (location: (5,22)-(5,23))
-            │           │   │           │   └── arguments: (length: 1)
-            │           │   │           │       └── @ LocalVariableReadNode (location: (5,22)-(5,23))
-            │           │   │           │           ├── name: :n
-            │           │   │           │           └── depth: 0
+            │           │   │           │   ├── arguments: (length: 1)
+            │           │   │           │   │   └── @ LocalVariableReadNode (location: (5,22)-(5,23))
+            │           │   │           │   │       ├── name: :n
+            │           │   │           │   │       └── depth: 0
+            │           │   │           │   └── flags: ∅
             │           │   │           ├── closing_loc: ∅
             │           │   │           ├── block: ∅
             │           │   │           ├── flags: ∅

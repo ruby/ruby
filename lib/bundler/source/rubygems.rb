@@ -19,6 +19,7 @@ module Bundler
         @allow_remote = false
         @allow_cached = false
         @allow_local = options["allow_local"] || false
+        @checksum_store = Checksum::Store.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
@@ -177,7 +178,6 @@ module Bundler
           :wrappers => true,
           :env_shebang => true,
           :build_args => options[:build_args],
-          :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
           :bundler_extension_cache_path => extension_cache_path(spec)
         )
 
@@ -195,6 +195,8 @@ module Bundler
 
           spec.__swap__(s)
         end
+
+        spec.source.checksum_store.register(spec, installer.gem_checksum)
 
         message = "Installing #{version_message(spec, options[:previous_spec])}"
         message += " with native extensions" if spec.extensions.any?

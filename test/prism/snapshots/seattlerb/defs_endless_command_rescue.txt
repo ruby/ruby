@@ -28,15 +28,16 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,33)-(1,45))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ RescueModifierNode (location: (1,33)-(1,45))
-            │           │           ├── expression:
-            │           │           │   @ IntegerNode (location: (1,33)-(1,35))
-            │           │           │   └── flags: decimal
-            │           │           ├── keyword_loc: (1,36)-(1,42) = "rescue"
-            │           │           └── rescue_expression:
-            │           │               @ IntegerNode (location: (1,43)-(1,45))
-            │           │               └── flags: decimal
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ RescueModifierNode (location: (1,33)-(1,45))
+            │           │   │       ├── expression:
+            │           │   │       │   @ IntegerNode (location: (1,33)-(1,35))
+            │           │   │       │   └── flags: decimal
+            │           │   │       ├── keyword_loc: (1,36)-(1,42) = "rescue"
+            │           │   │       └── rescue_expression:
+            │           │   │           @ IntegerNode (location: (1,43)-(1,45))
+            │           │   │           └── flags: decimal
+            │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

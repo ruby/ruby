@@ -6,16 +6,16 @@
         └── @ InterpolatedStringNode (location: (1,0)-(1,8))
             ├── opening_loc: (1,0)-(1,8) = "<<~'FOO'"
             ├── parts: (length: 2)
-            │   ├── @ StringNode (location: (2,0)-(2,0))
+            │   ├── @ StringNode (location: (2,0)-(3,0))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
-            │   │   ├── content_loc: (2,0)-(2,0) = "  baz\\\n"
+            │   │   ├── content_loc: (2,0)-(3,0) = "  baz\\\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "baz\\\n"
-            │   └── @ StringNode (location: (3,0)-(3,0))
+            │   └── @ StringNode (location: (3,0)-(4,0))
             │       ├── flags: ∅
             │       ├── opening_loc: ∅
-            │       ├── content_loc: (3,0)-(3,0) = "  qux\n"
+            │       ├── content_loc: (3,0)-(4,0) = "  qux\n"
             │       ├── closing_loc: ∅
             │       └── unescaped: "qux\n"
-            └── closing_loc: (4,0)-(4,0) = "FOO\n"
+            └── closing_loc: (4,0)-(5,0) = "FOO\n"

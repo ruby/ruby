@@ -18,10 +18,11 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (2,2)-(2,3))
-            │   └── arguments: (length: 1)
-            │       └── @ LocalVariableReadNode (location: (2,2)-(2,3))
-            │           ├── name: :a
-            │           └── depth: 0
+            │   ├── arguments: (length: 1)
+            │   │   └── @ LocalVariableReadNode (location: (2,2)-(2,3))
+            │   │       ├── name: :a
+            │   │       └── depth: 0
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

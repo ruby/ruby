@@ -14,10 +14,11 @@
             │   ├── opening_loc: ∅
             │   ├── arguments:
             │   │   @ ArgumentsNode (location: (1,9)-(1,12))
-            │   │   └── arguments: (length: 1)
-            │   │       └── @ LocalVariableReadNode (location: (1,9)-(1,12))
-            │   │           ├── name: :foo
-            │   │           └── depth: 0
+            │   │   ├── arguments: (length: 1)
+            │   │   │   └── @ LocalVariableReadNode (location: (1,9)-(1,12))
+            │   │   │       ├── name: :foo
+            │   │   │       └── depth: 0
+            │   │   └── flags: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: ∅

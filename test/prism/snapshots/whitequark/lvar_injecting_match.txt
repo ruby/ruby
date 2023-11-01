@@ -18,13 +18,14 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments:
         │   │   │   @ ArgumentsNode (location: (1,19)-(1,24))
-        │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ StringNode (location: (1,19)-(1,24))
-        │   │   │           ├── flags: ∅
-        │   │   │           ├── opening_loc: (1,19)-(1,20) = "'"
-        │   │   │           ├── content_loc: (1,20)-(1,23) = "bar"
-        │   │   │           ├── closing_loc: (1,23)-(1,24) = "'"
-        │   │   │           └── unescaped: "bar"
+        │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   └── @ StringNode (location: (1,19)-(1,24))
+        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── opening_loc: (1,19)-(1,20) = "'"
+        │   │   │   │       ├── content_loc: (1,20)-(1,23) = "bar"
+        │   │   │   │       ├── closing_loc: (1,23)-(1,24) = "'"
+        │   │   │   │       └── unescaped: "bar"
+        │   │   │   └── flags: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
         │   │   ├── flags: ∅

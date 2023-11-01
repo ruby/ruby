@@ -1008,4 +1008,14 @@ class TestEnumerator < Test::Unit::TestCase
       Enumerator.product(1..3, foo: 1, bar: 2)
     }
   end
+
+  def test_freeze
+    e = 3.times.freeze
+    assert_raise(FrozenError) { e.next }
+    assert_raise(FrozenError) { e.next_values }
+    assert_raise(FrozenError) { e.peek }
+    assert_raise(FrozenError) { e.peek_values }
+    assert_raise(FrozenError) { e.feed 1 }
+    assert_raise(FrozenError) { e.rewind }
+  end
 end

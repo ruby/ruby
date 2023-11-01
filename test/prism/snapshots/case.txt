@@ -41,12 +41,13 @@
         │   │   │               ├── opening_loc: ∅
         │   │   │               ├── arguments:
         │   │   │               │   @ ArgumentsNode (location: (5,27)-(5,30))
-        │   │   │               │   └── arguments: (length: 1)
-        │   │   │               │       └── @ SymbolNode (location: (5,27)-(5,30))
-        │   │   │               │           ├── opening_loc: (5,27)-(5,28) = ":"
-        │   │   │               │           ├── value_loc: (5,28)-(5,30) = "hi"
-        │   │   │               │           ├── closing_loc: ∅
-        │   │   │               │           └── unescaped: "hi"
+        │   │   │               │   ├── arguments: (length: 1)
+        │   │   │               │   │   └── @ SymbolNode (location: (5,27)-(5,30))
+        │   │   │               │   │       ├── opening_loc: (5,27)-(5,28) = ":"
+        │   │   │               │   │       ├── value_loc: (5,28)-(5,30) = "hi"
+        │   │   │               │   │       ├── closing_loc: ∅
+        │   │   │               │   │       └── unescaped: "hi"
+        │   │   │               │   └── flags: ∅
         │   │   │               ├── closing_loc: ∅
         │   │   │               ├── block: ∅
         │   │   │               ├── flags: ∅
@@ -65,12 +66,13 @@
         │   │                   ├── opening_loc: ∅
         │   │                   ├── arguments:
         │   │                   │   @ ArgumentsNode (location: (5,49)-(5,53))
-        │   │                   │   └── arguments: (length: 1)
-        │   │                   │       └── @ SymbolNode (location: (5,49)-(5,53))
-        │   │                   │           ├── opening_loc: (5,49)-(5,50) = ":"
-        │   │                   │           ├── value_loc: (5,50)-(5,53) = "bye"
-        │   │                   │           ├── closing_loc: ∅
-        │   │                   │           └── unescaped: "bye"
+        │   │                   │   ├── arguments: (length: 1)
+        │   │                   │   │   └── @ SymbolNode (location: (5,49)-(5,53))
+        │   │                   │   │       ├── opening_loc: (5,49)-(5,50) = ":"
+        │   │                   │   │       ├── value_loc: (5,50)-(5,53) = "bye"
+        │   │                   │   │       ├── closing_loc: ∅
+        │   │                   │   │       └── unescaped: "bye"
+        │   │                   │   └── flags: ∅
         │   │                   ├── closing_loc: ∅
         │   │                   ├── block: ∅
         │   │                   ├── flags: ∅
@@ -179,17 +181,18 @@
         │   │       │       ├── opening_loc: ∅
         │   │       │       ├── arguments:
         │   │       │       │   @ ArgumentsNode (location: (18,12)-(18,15))
-        │   │       │       │   └── arguments: (length: 1)
-        │   │       │       │       └── @ CallNode (location: (18,12)-(18,15))
-        │   │       │       │           ├── receiver: ∅
-        │   │       │       │           ├── call_operator_loc: ∅
-        │   │       │       │           ├── message_loc: (18,12)-(18,15) = "bar"
-        │   │       │       │           ├── opening_loc: ∅
-        │   │       │       │           ├── arguments: ∅
-        │   │       │       │           ├── closing_loc: ∅
-        │   │       │       │           ├── block: ∅
-        │   │       │       │           ├── flags: variable_call
-        │   │       │       │           └── name: :bar
+        │   │       │       │   ├── arguments: (length: 1)
+        │   │       │       │   │   └── @ CallNode (location: (18,12)-(18,15))
+        │   │       │       │   │       ├── receiver: ∅
+        │   │       │       │   │       ├── call_operator_loc: ∅
+        │   │       │       │   │       ├── message_loc: (18,12)-(18,15) = "bar"
+        │   │       │       │   │       ├── opening_loc: ∅
+        │   │       │       │   │       ├── arguments: ∅
+        │   │       │       │   │       ├── closing_loc: ∅
+        │   │       │       │   │       ├── block: ∅
+        │   │       │       │   │       ├── flags: variable_call
+        │   │       │       │   │       └── name: :bar
+        │   │       │       │   └── flags: ∅
         │   │       │       ├── closing_loc: ∅
         │   │       │       ├── block: ∅
         │   │       │       ├── flags: ∅

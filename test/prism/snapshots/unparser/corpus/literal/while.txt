@@ -96,17 +96,18 @@
         │   │           │   ├── opening_loc: ∅
         │   │           │   ├── arguments:
         │   │           │   │   @ ArgumentsNode (location: (10,25)-(10,28))
-        │   │           │   │   └── arguments: (length: 1)
-        │   │           │   │       └── @ CallNode (location: (10,25)-(10,28))
-        │   │           │   │           ├── receiver: ∅
-        │   │           │   │           ├── call_operator_loc: ∅
-        │   │           │   │           ├── message_loc: (10,25)-(10,28) = "baz"
-        │   │           │   │           ├── opening_loc: ∅
-        │   │           │   │           ├── arguments: ∅
-        │   │           │   │           ├── closing_loc: ∅
-        │   │           │   │           ├── block: ∅
-        │   │           │   │           ├── flags: variable_call
-        │   │           │   │           └── name: :baz
+        │   │           │   │   ├── arguments: (length: 1)
+        │   │           │   │   │   └── @ CallNode (location: (10,25)-(10,28))
+        │   │           │   │   │       ├── receiver: ∅
+        │   │           │   │   │       ├── call_operator_loc: ∅
+        │   │           │   │   │       ├── message_loc: (10,25)-(10,28) = "baz"
+        │   │           │   │   │       ├── opening_loc: ∅
+        │   │           │   │   │       ├── arguments: ∅
+        │   │           │   │   │       ├── closing_loc: ∅
+        │   │           │   │   │       ├── block: ∅
+        │   │           │   │   │       ├── flags: variable_call
+        │   │           │   │   │       └── name: :baz
+        │   │           │   │   └── flags: ∅
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: ∅

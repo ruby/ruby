@@ -10,13 +10,15 @@
             │   │   @ StatementsNode (location: (1,2)-(1,12))
             │   │   └── body: (length: 1)
             │   │       └── @ MultiWriteNode (location: (1,2)-(1,12))
-            │   │           ├── targets: (length: 2)
+            │   │           ├── lefts: (length: 2)
             │   │           │   ├── @ LocalVariableTargetNode (location: (1,2)-(1,3))
             │   │           │   │   ├── name: :a
             │   │           │   │   └── depth: 0
             │   │           │   └── @ LocalVariableTargetNode (location: (1,5)-(1,6))
             │   │           │       ├── name: :b
             │   │           │       └── depth: 0
+            │   │           ├── rest: ∅
+            │   │           ├── rights: (length: 0)
             │   │           ├── lparen_loc: ∅
             │   │           ├── rparen_loc: ∅
             │   │           ├── operator_loc: (1,7)-(1,8) = "="

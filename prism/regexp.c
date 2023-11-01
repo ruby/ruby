@@ -188,6 +188,8 @@ pm_regexp_parse_range_quantifier(pm_regexp_parser_t *parser) {
 //            ;
 static bool
 pm_regexp_parse_quantifier(pm_regexp_parser_t *parser) {
+    if (pm_regexp_char_is_eof(parser)) return true;
+
     switch (*parser->cursor) {
         case '*':
         case '+':

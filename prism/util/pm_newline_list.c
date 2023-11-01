@@ -53,10 +53,14 @@ pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor) {
     return pm_newline_list_append(list, cursor);
 }
 
-// Returns the line and column of the given offset, assuming we don't have any
-// information about the previous index that we found.
-static pm_line_column_t
-pm_newline_list_line_column_search(pm_newline_list_t *list, size_t offset) {
+// Returns the line and column of the given offset. If the offset is not in the
+// list, the line and column of the closest offset less than the given offset
+// are returned.
+pm_line_column_t
+pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor) {
+    assert(cursor >= list->start);
+    size_t offset = (size_t) (cursor - list->start);
+
     size_t left = 0;
     size_t right = list->size - 1;
 
@@ -75,56 +79,6 @@ pm_newline_list_line_column_search(pm_newline_list_t *list, size_t offset) {
     }
 
     return ((pm_line_column_t) { left - 1, offset - list->offsets[left - 1] });
-}
-
-// Returns the line and column of the given offset, assuming we know the last
-// index that we found.
-static pm_line_column_t
-pm_newline_list_line_column_scan(pm_newline_list_t *list, size_t offset) {
-    if (offset > list->last_offset) {
-        size_t index = list->last_index;
-        while (index < list->size && list->offsets[index] < offset) {
-            index++;
-        }
-
-        if (index == list->size) {
-            return ((pm_line_column_t) { index - 1, offset - list->offsets[index - 1] });
-        }
-
-        return ((pm_line_column_t) { index, 0 });
-    } else {
-        size_t index = list->last_index;
-        while (index > 0 && list->offsets[index] > offset) {
-            index--;
-        }
-
-        if (index == 0) {
-            return ((pm_line_column_t) { 0, offset });
-        }
-
-        return ((pm_line_column_t) { index, offset - list->offsets[index - 1] });
-    }
-}
-
-// Returns the line and column of the given offset. If the offset is not in the
-// list, the line and column of the closest offset less than the given offset
-// are returned.
-pm_line_column_t
-pm_newline_list_line_column(pm_newline_list_t *list, const uint8_t *cursor) {
-    assert(cursor >= list->start);
-    size_t offset = (size_t) (cursor - list->start);
-    pm_line_column_t result;
-
-    if (list->last_offset == 0) {
-        result = pm_newline_list_line_column_search(list, offset);
-    } else {
-        result = pm_newline_list_line_column_scan(list, offset);
-    }
-
-    list->last_index = result.line;
-    list->last_offset = offset;
-
-    return result;
 }
 
 // Free the internal memory allocated for the newline list.

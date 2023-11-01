@@ -873,6 +873,12 @@ typedef struct _OnigStackType {
       UChar *abs_pstr;        /* absent start position */
       const UChar *end_pstr;  /* end position */
     } absent_pos;
+#ifdef USE_MATCH_CACHE
+    struct {
+      long    index;      /* index of the match cache buffer */
+      uint8_t mask;       /* bit-mask for the match cache buffer */
+    } match_cache_point;
+#endif
   } u;
 } OnigStackType;
 
@@ -883,6 +889,8 @@ typedef struct {
   int outer_repeat_mem;
   long num_cache_points_at_outer_repeat;
   long num_cache_points_in_outer_repeat;
+  int lookaround_nesting;
+  UChar *match_addr;
 } OnigCacheOpcode;
 #endif
 

@@ -22,10 +22,11 @@
         │               ├── opening_loc: ∅
         │               ├── arguments:
         │               │   @ ArgumentsNode (location: (1,11)-(1,13))
-        │               │   └── arguments: (length: 1)
-        │               │       └── @ LocalVariableReadNode (location: (1,11)-(1,13))
-        │               │           ├── name: :_9
-        │               │           └── depth: 0
+        │               │   ├── arguments: (length: 1)
+        │               │   │   └── @ LocalVariableReadNode (location: (1,11)-(1,13))
+        │               │   │       ├── name: :_9
+        │               │   │       └── depth: 0
+        │               │   └── flags: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: ∅
@@ -49,10 +50,11 @@
         │               ├── opening_loc: ∅
         │               ├── arguments:
         │               │   @ ArgumentsNode (location: (3,10)-(3,12))
-        │               │   └── arguments: (length: 1)
-        │               │       └── @ LocalVariableReadNode (location: (3,10)-(3,12))
-        │               │           ├── name: :_9
-        │               │           └── depth: 0
+        │               │   ├── arguments: (length: 1)
+        │               │   │   └── @ LocalVariableReadNode (location: (3,10)-(3,12))
+        │               │   │       ├── name: :_9
+        │               │   │       └── depth: 0
+        │               │   └── flags: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
         │               ├── flags: ∅
@@ -81,10 +83,11 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments:
         │   │   │           │   @ ArgumentsNode (location: (5,10)-(5,12))
-        │   │   │           │   └── arguments: (length: 1)
-        │   │   │           │       └── @ LocalVariableReadNode (location: (5,10)-(5,12))
-        │   │   │           │           ├── name: :_9
-        │   │   │           │           └── depth: 0
+        │   │   │           │   ├── arguments: (length: 1)
+        │   │   │           │   │   └── @ LocalVariableReadNode (location: (5,10)-(5,12))
+        │   │   │           │   │       ├── name: :_9
+        │   │   │           │   │       └── depth: 0
+        │   │   │           │   └── flags: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
         │   │   │           ├── flags: ∅
@@ -117,10 +120,11 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments:
             │   │           │   @ ArgumentsNode (location: (7,9)-(7,11))
-            │   │           │   └── arguments: (length: 1)
-            │   │           │       └── @ LocalVariableReadNode (location: (7,9)-(7,11))
-            │   │           │           ├── name: :_9
-            │   │           │           └── depth: 0
+            │   │           │   ├── arguments: (length: 1)
+            │   │           │   │   └── @ LocalVariableReadNode (location: (7,9)-(7,11))
+            │   │           │   │       ├── name: :_9
+            │   │           │   │       └── depth: 0
+            │   │           │   └── flags: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
             │   │           ├── flags: ∅

@@ -188,6 +188,12 @@ describe "File.new" do
     }.should raise_error(Errno::EEXIST, /File exists/)
   end
 
+  it "does not use the given block and warns to use File::open" do
+    -> {
+      @fh = File.new(@file) { raise }
+    }.should complain(/warning: File::new\(\) does not take block; use File::open\(\) instead/)
+  end
+
   it "raises a TypeError if the first parameter can't be coerced to a string" do
     -> { File.new(true) }.should raise_error(TypeError)
     -> { File.new(false) }.should raise_error(TypeError)

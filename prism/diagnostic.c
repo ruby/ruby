@@ -192,6 +192,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED]     = "Numbered parameters are not allowed alongside explicit parameters",
     [PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE]     = "Numbered parameter is already used in outer scope",
     [PM_ERR_OPERATOR_MULTI_ASSIGN]              = "Unexpected operator for a multiple assignment",
+    [PM_ERR_OPERATOR_WRITE_ARGUMENTS]           = "Unexpected operator after a call with arguments",
     [PM_ERR_OPERATOR_WRITE_BLOCK]               = "Unexpected operator after a call with a block",
     [PM_ERR_PARAMETER_ASSOC_SPLAT_MULTI]        = "Unexpected multiple `**` splat parameters",
     [PM_ERR_PARAMETER_BLOCK_MULTI]              = "Multiple block parameters; only one block is allowed",
@@ -265,7 +266,7 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
 // Append an error to the given list of diagnostic.
 bool
 pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) malloc(sizeof(pm_diagnostic_t));
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) { .start = start, .end = end, .message = pm_diagnostic_message(diag_id) };

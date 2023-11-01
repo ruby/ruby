@@ -44,7 +44,7 @@
 #endif
 #endif
 
-#if defined(HAVE_TYPE_Z_SIZE_T)
+#if defined(HAVE_ZLIB_SIZE_T_FUNCS)
 typedef uLong (*checksum_func)(uLong, const Bytef*, z_size_t);
 # define crc32 crc32_z
 # define adler32 adler32_z
@@ -388,7 +388,7 @@ rb_zlib_version(VALUE klass)
 # define mask32(x) (x)
 #endif
 
-#if SIZEOF_LONG > SIZEOF_INT && !defined(HAVE_TYPE_Z_SIZE_T)
+#if SIZEOF_LONG > SIZEOF_INT && !defined(HAVE_ZLIB_SIZE_T_FUNCS)
 static uLong
 checksum_long(uLong (*func)(uLong, const Bytef*, uInt), uLong sum, const Bytef *ptr, long len)
 {

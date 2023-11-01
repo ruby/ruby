@@ -10,49 +10,51 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,4)-(1,19))
-            │   └── arguments: (length: 1)
-            │       └── @ InterpolatedStringNode (location: (1,4)-(1,19))
-            │           ├── opening_loc: (1,4)-(1,5) = "\""
-            │           ├── parts: (length: 1)
-            │           │   └── @ EmbeddedStatementsNode (location: (1,5)-(1,18))
-            │           │       ├── opening_loc: (1,5)-(1,7) = "\#{"
-            │           │       ├── statements:
-            │           │       │   @ StatementsNode (location: (1,7)-(1,17))
-            │           │       │   └── body: (length: 1)
-            │           │       │       └── @ CallNode (location: (1,7)-(1,17))
-            │           │       │           ├── receiver:
-            │           │       │           │   @ ParenthesesNode (location: (1,7)-(1,12))
-            │           │       │           │   ├── body:
-            │           │       │           │   │   @ StatementsNode (location: (1,8)-(1,11))
-            │           │       │           │   │   └── body: (length: 1)
-            │           │       │           │   │       └── @ CallNode (location: (1,8)-(1,11))
-            │           │       │           │   │           ├── receiver:
-            │           │       │           │   │           │   @ IntegerNode (location: (1,8)-(1,9))
-            │           │       │           │   │           │   └── flags: decimal
-            │           │       │           │   │           ├── call_operator_loc: ∅
-            │           │       │           │   │           ├── message_loc: (1,9)-(1,10) = "+"
-            │           │       │           │   │           ├── opening_loc: ∅
-            │           │       │           │   │           ├── arguments:
-            │           │       │           │   │           │   @ ArgumentsNode (location: (1,10)-(1,11))
-            │           │       │           │   │           │   └── arguments: (length: 1)
-            │           │       │           │   │           │       └── @ IntegerNode (location: (1,10)-(1,11))
-            │           │       │           │   │           │           └── flags: decimal
-            │           │       │           │   │           ├── closing_loc: ∅
-            │           │       │           │   │           ├── block: ∅
-            │           │       │           │   │           ├── flags: ∅
-            │           │       │           │   │           └── name: :+
-            │           │       │           │   ├── opening_loc: (1,7)-(1,8) = "("
-            │           │       │           │   └── closing_loc: (1,11)-(1,12) = ")"
-            │           │       │           ├── call_operator_loc: (1,12)-(1,13) = "."
-            │           │       │           ├── message_loc: (1,13)-(1,17) = "to_i"
-            │           │       │           ├── opening_loc: ∅
-            │           │       │           ├── arguments: ∅
-            │           │       │           ├── closing_loc: ∅
-            │           │       │           ├── block: ∅
-            │           │       │           ├── flags: ∅
-            │           │       │           └── name: :to_i
-            │           │       └── closing_loc: (1,17)-(1,18) = "}"
-            │           └── closing_loc: (1,18)-(1,19) = "\""
+            │   ├── arguments: (length: 1)
+            │   │   └── @ InterpolatedStringNode (location: (1,4)-(1,19))
+            │   │       ├── opening_loc: (1,4)-(1,5) = "\""
+            │   │       ├── parts: (length: 1)
+            │   │       │   └── @ EmbeddedStatementsNode (location: (1,5)-(1,18))
+            │   │       │       ├── opening_loc: (1,5)-(1,7) = "\#{"
+            │   │       │       ├── statements:
+            │   │       │       │   @ StatementsNode (location: (1,7)-(1,17))
+            │   │       │       │   └── body: (length: 1)
+            │   │       │       │       └── @ CallNode (location: (1,7)-(1,17))
+            │   │       │       │           ├── receiver:
+            │   │       │       │           │   @ ParenthesesNode (location: (1,7)-(1,12))
+            │   │       │       │           │   ├── body:
+            │   │       │       │           │   │   @ StatementsNode (location: (1,8)-(1,11))
+            │   │       │       │           │   │   └── body: (length: 1)
+            │   │       │       │           │   │       └── @ CallNode (location: (1,8)-(1,11))
+            │   │       │       │           │   │           ├── receiver:
+            │   │       │       │           │   │           │   @ IntegerNode (location: (1,8)-(1,9))
+            │   │       │       │           │   │           │   └── flags: decimal
+            │   │       │       │           │   │           ├── call_operator_loc: ∅
+            │   │       │       │           │   │           ├── message_loc: (1,9)-(1,10) = "+"
+            │   │       │       │           │   │           ├── opening_loc: ∅
+            │   │       │       │           │   │           ├── arguments:
+            │   │       │       │           │   │           │   @ ArgumentsNode (location: (1,10)-(1,11))
+            │   │       │       │           │   │           │   ├── arguments: (length: 1)
+            │   │       │       │           │   │           │   │   └── @ IntegerNode (location: (1,10)-(1,11))
+            │   │       │       │           │   │           │   │       └── flags: decimal
+            │   │       │       │           │   │           │   └── flags: ∅
+            │   │       │       │           │   │           ├── closing_loc: ∅
+            │   │       │       │           │   │           ├── block: ∅
+            │   │       │       │           │   │           ├── flags: ∅
+            │   │       │       │           │   │           └── name: :+
+            │   │       │       │           │   ├── opening_loc: (1,7)-(1,8) = "("
+            │   │       │       │           │   └── closing_loc: (1,11)-(1,12) = ")"
+            │   │       │       │           ├── call_operator_loc: (1,12)-(1,13) = "."
+            │   │       │       │           ├── message_loc: (1,13)-(1,17) = "to_i"
+            │   │       │       │           ├── opening_loc: ∅
+            │   │       │       │           ├── arguments: ∅
+            │   │       │       │           ├── closing_loc: ∅
+            │   │       │       │           ├── block: ∅
+            │   │       │       │           ├── flags: ∅
+            │   │       │       │           └── name: :to_i
+            │   │       │       └── closing_loc: (1,17)-(1,18) = "}"
+            │   │       └── closing_loc: (1,18)-(1,19) = "\""
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (1,20)-(1,27))

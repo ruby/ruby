@@ -27,6 +27,14 @@ module Bundler
       end
     end
 
+    def lock_name
+      @lock_name ||= name_tuple.lock_name
+    end
+
+    def name_tuple
+      Gem::NameTuple.new(@name, @version, @platform)
+    end
+
     def ==(other)
       full_name == other.full_name
     end
@@ -61,12 +69,7 @@ module Bundler
 
     def to_lock
       out = String.new
-
-      if platform == Gem::Platform::RUBY
-        out << "    #{name} (#{version})\n"
-      else
-        out << "    #{name} (#{version}-#{platform})\n"
-      end
+      out << "    #{lock_name}\n"
 
       dependencies.sort_by(&:to_s).uniq.each do |dep|
         next if dep.type == :development
@@ -122,11 +125,7 @@ module Bundler
     end
 
     def to_s
-      @to_s ||= if platform == Gem::Platform::RUBY
-        "#{name} (#{version})"
-      else
-        "#{name} (#{version}-#{platform})"
-      end
+      lock_name
     end
 
     def git_version

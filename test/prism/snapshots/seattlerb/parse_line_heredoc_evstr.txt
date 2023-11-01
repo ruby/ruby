@@ -6,10 +6,10 @@
         └── @ InterpolatedStringNode (location: (1,0)-(1,4))
             ├── opening_loc: (1,0)-(1,4) = "<<-A"
             ├── parts: (length: 3)
-            │   ├── @ StringNode (location: (2,0)-(2,0))
+            │   ├── @ StringNode (location: (2,0)-(3,0))
             │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
-            │   │   ├── content_loc: (2,0)-(2,0) = "a\n"
+            │   │   ├── content_loc: (2,0)-(3,0) = "a\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "a\n"
             │   ├── @ EmbeddedStatementsNode (location: (3,0)-(3,4))
@@ -28,10 +28,10 @@
             │   │   │           ├── flags: variable_call
             │   │   │           └── name: :b
             │   │   └── closing_loc: (3,3)-(3,4) = "}"
-            │   └── @ StringNode (location: (3,4)-(3,0))
+            │   └── @ StringNode (location: (3,4)-(4,0))
             │       ├── flags: ∅
             │       ├── opening_loc: ∅
-            │       ├── content_loc: (3,4)-(3,0) = "\n"
+            │       ├── content_loc: (3,4)-(4,0) = "\n"
             │       ├── closing_loc: ∅
             │       └── unescaped: "\n"
-            └── closing_loc: (4,0)-(4,0) = "A\n"
+            └── closing_loc: (4,0)-(5,0) = "A\n"

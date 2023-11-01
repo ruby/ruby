@@ -16,23 +16,23 @@
             │   │   │   │   │       └── @ StringNode (location: (2,2)-(2,5))
             │   │   │   │   │           ├── flags: ∅
             │   │   │   │   │           ├── opening_loc: (2,2)-(2,5) = "<<B"
-            │   │   │   │   │           ├── content_loc: (3,0)-(3,0) = "b\n"
-            │   │   │   │   │           ├── closing_loc: (4,0)-(4,0) = "B\n"
+            │   │   │   │   │           ├── content_loc: (3,0)-(4,0) = "b\n"
+            │   │   │   │   │           ├── closing_loc: (4,0)-(5,0) = "B\n"
             │   │   │   │   │           └── unescaped: "b\n"
             │   │   │   │   └── closing_loc: (2,5)-(2,6) = "}"
-            │   │   │   ├── @ StringNode (location: (2,6)-(2,0))
+            │   │   │   ├── @ StringNode (location: (2,6)-(3,0))
             │   │   │   │   ├── flags: ∅
             │   │   │   │   ├── opening_loc: ∅
-            │   │   │   │   ├── content_loc: (2,6)-(2,0) = "\n"
+            │   │   │   │   ├── content_loc: (2,6)-(3,0) = "\n"
             │   │   │   │   ├── closing_loc: ∅
             │   │   │   │   └── unescaped: "\n"
-            │   │   │   └── @ StringNode (location: (5,0)-(5,0))
+            │   │   │   └── @ StringNode (location: (5,0)-(6,0))
             │   │   │       ├── flags: ∅
             │   │   │       ├── opening_loc: ∅
-            │   │   │       ├── content_loc: (5,0)-(5,0) = "a\n"
+            │   │   │       ├── content_loc: (5,0)-(6,0) = "a\n"
             │   │   │       ├── closing_loc: ∅
             │   │   │       └── unescaped: "a\n"
-            │   │   └── closing_loc: (6,0)-(6,0) = "A\n"
+            │   │   └── closing_loc: (6,0)-(7,0) = "A\n"
             │   └── @ IntegerNode (location: (7,0)-(7,1))
             │       └── flags: decimal
             ├── opening_loc: (1,0)-(1,1) = "["

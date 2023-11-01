@@ -178,17 +178,14 @@ module Prism
 
     def test_CallAndWriteNode
       assert_location(CallAndWriteNode, "foo.foo &&= bar")
-      assert_location(CallAndWriteNode, "foo[foo] &&= bar")
     end
 
     def test_CallOperatorWriteNode
       assert_location(CallOperatorWriteNode, "foo.foo += bar")
-      assert_location(CallOperatorWriteNode, "foo[foo] += bar")
     end
 
     def test_CallOrWriteNode
       assert_location(CallOrWriteNode, "foo.foo ||= bar")
-      assert_location(CallOrWriteNode, "foo[foo] ||= bar")
     end
 
     def test_CapturePatternNode
@@ -227,7 +224,7 @@ module Prism
 
     def test_ClassVariableTargetNode
       assert_location(ClassVariableTargetNode, "@@foo, @@bar = baz", 0...5) do |node|
-        node.targets.first
+        node.lefts.first
       end
     end
 
@@ -255,7 +252,7 @@ module Prism
 
     def test_ConstantPathTargetNode
       assert_location(ConstantPathTargetNode, "::Foo, ::Bar = baz", 0...5) do |node|
-        node.targets.first
+        node.lefts.first
       end
     end
 
@@ -284,7 +281,7 @@ module Prism
 
     def test_ConstantTargetNode
       assert_location(ConstantTargetNode, "Foo, Bar = baz", 0...3) do |node|
-        node.targets.first
+        node.lefts.first
       end
     end
 
@@ -382,7 +379,7 @@ module Prism
 
     def test_GlobalVariableTargetNode
       assert_location(GlobalVariableTargetNode, "$foo, $bar = baz", 0...4) do |node|
-        node.targets.first
+        node.lefts.first
       end
     end
 
@@ -430,6 +427,18 @@ module Prism
       end
     end
 
+    def test_IndexAndWriteNode
+      assert_location(IndexAndWriteNode, "foo[foo] &&= bar")
+    end
+
+    def test_IndexOperatorWriteNode
+      assert_location(IndexOperatorWriteNode, "foo[foo] += bar")
+    end
+
+    def test_IndexOrWriteNode
+      assert_location(IndexOrWriteNode, "foo[foo] ||= bar")
+    end
+
     def test_InstanceVariableAndWriteNode
       assert_location(InstanceVariableAndWriteNode, "@foo &&= bar")
     end
@@ -448,7 +457,7 @@ module Prism
 
     def test_InstanceVariableTargetNode
       assert_location(InstanceVariableTargetNode, "@foo, @bar = baz", 0...4) do |node|
-        node.targets.first
+        node.lefts.first
       end
     end
 
@@ -539,7 +548,7 @@ module Prism
 
     def test_LocalVariableTargetNode
       assert_location(LocalVariableTargetNode, "foo, bar = baz", 0...3) do |node|
-        node.targets.first
+        node.lefts.first
       end
     end
 
@@ -569,7 +578,10 @@ module Prism
 
     def test_MultiTargetNode
       assert_location(MultiTargetNode, "for foo, bar in baz do end", 4...12, &:index)
-      assert_location(MultiTargetNode, "foo, (bar, baz) = qux", 5...15) { |node| node.targets.last }
+      assert_location(MultiTargetNode, "foo, (bar, baz) = qux", 5...15) { |node| node.lefts.last }
+      assert_location(MultiTargetNode, "def foo((bar)); end", 8...13) do |node|
+        node.parameters.requireds.first
+      end
     end
 
     def test_MultiWriteNode
@@ -667,12 +679,6 @@ module Prism
       end
     end
 
-    def test_RequiredDestructuredParameterNode
-      assert_location(RequiredDestructuredParameterNode, "def foo((bar)); end", 8...13) do |node|
-        node.parameters.requireds.first
-      end
-    end
-
     def test_RescueNode
       code = <<~RUBY
       begin
@@ -727,7 +733,7 @@ module Prism
     end
 
     def test_SplatNode
-      assert_location(SplatNode, "*foo = bar", 0...4) { |node| node.targets.first }
+      assert_location(SplatNode, "*foo = bar", 0...4, &:rest)
     end
 
     def test_StatementsNode

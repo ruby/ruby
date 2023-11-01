@@ -32,17 +32,18 @@
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (2,7)-(2,8))
-        │   │           │           │   └── arguments: (length: 1)
-        │   │           │           │       └── @ CallNode (location: (2,7)-(2,8))
-        │   │           │           │           ├── receiver: ∅
-        │   │           │           │           ├── call_operator_loc: ∅
-        │   │           │           │           ├── message_loc: (2,7)-(2,8) = "b"
-        │   │           │           │           ├── opening_loc: ∅
-        │   │           │           │           ├── arguments: ∅
-        │   │           │           │           ├── closing_loc: ∅
-        │   │           │           │           ├── block: ∅
-        │   │           │           │           ├── flags: variable_call
-        │   │           │           │           └── name: :b
+        │   │           │           │   ├── arguments: (length: 1)
+        │   │           │           │   │   └── @ CallNode (location: (2,7)-(2,8))
+        │   │           │           │   │       ├── receiver: ∅
+        │   │           │           │   │       ├── call_operator_loc: ∅
+        │   │           │           │   │       ├── message_loc: (2,7)-(2,8) = "b"
+        │   │           │           │   │       ├── opening_loc: ∅
+        │   │           │           │   │       ├── arguments: ∅
+        │   │           │           │   │       ├── closing_loc: ∅
+        │   │           │           │   │       ├── block: ∅
+        │   │           │           │   │       ├── flags: variable_call
+        │   │           │           │   │       └── name: :b
+        │   │           │           │   └── flags: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅

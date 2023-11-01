@@ -4,17 +4,15 @@
     @ StatementsNode (location: (1,0)-(1,9))
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,9))
-            ├── targets: (length: 2)
-            │   ├── @ MultiTargetNode (location: (1,0)-(1,2))
-            │   │   ├── targets: (length: 1)
-            │   │   │   └── @ SplatNode (location: (1,0)-(1,2))
-            │   │   │       ├── operator_loc: (1,0)-(1,1) = "*"
-            │   │   │       └── expression:
-            │   │   │           @ LocalVariableTargetNode (location: (1,1)-(1,2))
-            │   │   │           ├── name: :a
-            │   │   │           └── depth: 0
-            │   │   ├── lparen_loc: ∅
-            │   │   └── rparen_loc: ∅
+            ├── lefts: (length: 0)
+            ├── rest:
+            │   @ SplatNode (location: (1,0)-(1,2))
+            │   ├── operator_loc: (1,0)-(1,1) = "*"
+            │   └── expression:
+            │       @ LocalVariableTargetNode (location: (1,1)-(1,2))
+            │       ├── name: :a
+            │       └── depth: 0
+            ├── rights: (length: 1)
             │   └── @ LocalVariableTargetNode (location: (1,4)-(1,5))
             │       ├── name: :b
             │       └── depth: 0

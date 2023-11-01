@@ -100,12 +100,12 @@ module Bundler
       end
     end
 
-    def incomplete_ruby_specs?(deps)
+    def incomplete_for_platform?(deps, platform)
       return false if @specs.empty?
 
       @incomplete_specs = []
 
-      self.for(deps, true, [Gem::Platform::RUBY])
+      self.for(deps, true, [platform])
 
       @incomplete_specs.any?
     end

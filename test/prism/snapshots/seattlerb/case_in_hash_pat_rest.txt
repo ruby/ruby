@@ -15,7 +15,7 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,15))
             │       │   ├── constant: ∅
-            │       │   ├── assocs: (length: 2)
+            │       │   ├── elements: (length: 2)
             │       │   │   ├── @ AssocNode (location: (2,3)-(2,7))
             │       │   │   │   ├── key:
             │       │   │   │   │   @ SymbolNode (location: (2,3)-(2,5))
@@ -34,7 +34,7 @@
             │       │   │       │   ├── name: :rest
             │       │   │       │   └── depth: 0
             │       │   │       └── operator_loc: (2,9)-(2,11) = "**"
-            │       │   ├── kwrest: ∅
+            │       │   ├── rest: ∅
             │       │   ├── opening_loc: ∅
             │       │   └── closing_loc: ∅
             │       ├── statements:

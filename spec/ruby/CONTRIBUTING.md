@@ -179,6 +179,7 @@ In case there is a bug in MRI and the fix will be backported to previous version
 If it is not backported or not likely, use `ruby_version_is` instead.
 First, file a bug at https://bugs.ruby-lang.org/.
 The problem is `ruby_bug` would make non-MRI implementations fail this spec while MRI itself does not pass it, so it should only be used if the bug is/will be fixed and backported.
+Otherwise, non-MRI implementations would have to choose between being incompatible with the latest release of MRI to pass the spec or fail the spec, both which make no sense.
 
 ```ruby
 ruby_bug '#13669', ''...'3.2' do

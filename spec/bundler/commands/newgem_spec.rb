@@ -960,6 +960,12 @@ RSpec.describe "bundle gem" do
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
+
+      it "contained .gitlab-ci.yml into ignore list" do
+        bundle "gem #{gem_name} --ci=github"
+
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .github appveyor")
+      end
     end
 
     context "--ci set to gitlab" do
@@ -968,6 +974,12 @@ RSpec.describe "bundle gem" do
 
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
       end
+
+      it "contained .gitlab-ci.yml into ignore list" do
+        bundle "gem #{gem_name} --ci=gitlab"
+
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .gitlab-ci.yml appveyor")
+      end
     end
 
     context "--ci set to circle" do
@@ -975,6 +987,12 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --ci=circle"
 
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
+      end
+
+      it "contained .circleci into ignore list" do
+        bundle "gem #{gem_name} --ci=circle"
+
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .circleci appveyor")
       end
     end
 

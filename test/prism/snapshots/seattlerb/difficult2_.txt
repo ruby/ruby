@@ -18,13 +18,14 @@
         │   │           ├── opening_loc: (1,5)-(1,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (1,6)-(1,8))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (1,6)-(1,8))
-        │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (1,6)-(1,7) = "'"
-        │   │           │           ├── content_loc: (1,7)-(1,7) = ""
-        │   │           │           ├── closing_loc: (1,7)-(1,8) = "'"
-        │   │           │           └── unescaped: ""
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ StringNode (location: (1,6)-(1,8))
+        │   │           │   │       ├── flags: ∅
+        │   │           │   │       ├── opening_loc: (1,6)-(1,7) = "'"
+        │   │           │   │       ├── content_loc: (1,7)-(1,7) = ""
+        │   │           │   │       ├── closing_loc: (1,7)-(1,8) = "'"
+        │   │           │   │       └── unescaped: ""
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: (1,8)-(1,9) = ")"
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -46,20 +47,21 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (2,2)-(2,6))
-            │   └── arguments: (length: 1)
-            │       └── @ KeywordHashNode (location: (2,2)-(2,6))
-            │           └── elements: (length: 1)
-            │               └── @ AssocNode (location: (2,2)-(2,6))
-            │                   ├── key:
-            │                   │   @ SymbolNode (location: (2,2)-(2,4))
-            │                   │   ├── opening_loc: ∅
-            │                   │   ├── value_loc: (2,2)-(2,3) = "d"
-            │                   │   ├── closing_loc: (2,3)-(2,4) = ":"
-            │                   │   └── unescaped: "d"
-            │                   ├── value:
-            │                   │   @ IntegerNode (location: (2,5)-(2,6))
-            │                   │   └── flags: decimal
-            │                   └── operator_loc: ∅
+            │   ├── arguments: (length: 1)
+            │   │   └── @ KeywordHashNode (location: (2,2)-(2,6))
+            │   │       └── elements: (length: 1)
+            │   │           └── @ AssocNode (location: (2,2)-(2,6))
+            │   │               ├── key:
+            │   │               │   @ SymbolNode (location: (2,2)-(2,4))
+            │   │               │   ├── opening_loc: ∅
+            │   │               │   ├── value_loc: (2,2)-(2,3) = "d"
+            │   │               │   ├── closing_loc: (2,3)-(2,4) = ":"
+            │   │               │   └── unescaped: "d"
+            │   │               ├── value:
+            │   │               │   @ IntegerNode (location: (2,5)-(2,6))
+            │   │               │   └── flags: decimal
+            │   │               └── operator_loc: ∅
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

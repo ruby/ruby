@@ -13,8 +13,8 @@
         │   │   │   @ StringNode (location: (1,15)-(1,25))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (1,15)-(1,25) = "<<-HEREDOC"
-        │   │   │   ├── content_loc: (2,0)-(2,0) = "        very long string\n"
-        │   │   │   ├── closing_loc: (3,0)-(3,0) = "      HEREDOC\n"
+        │   │   │   ├── content_loc: (2,0)-(3,0) = "        very long string\n"
+        │   │   │   ├── closing_loc: (3,0)-(4,0) = "      HEREDOC\n"
         │   │   │   └── unescaped: "        very long string\n"
         │   │   ├── call_operator_loc: (1,25)-(1,26) = "."
         │   │   ├── message_loc: (1,26)-(1,31) = "strip"
@@ -32,10 +32,11 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (4,11)-(4,17))
-            │   └── arguments: (length: 1)
-            │       └── @ LocalVariableReadNode (location: (4,11)-(4,17))
-            │           ├── name: :string
-            │           └── depth: 0
+            │   ├── arguments: (length: 1)
+            │   │   └── @ LocalVariableReadNode (location: (4,11)-(4,17))
+            │   │       ├── name: :string
+            │   │       └── depth: 0
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

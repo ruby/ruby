@@ -80,3 +80,39 @@ foo[bar] = baz
 %x{one two three}
 
 %w[\C:]
+
+foo[] += 1
+
+foo[] ||= 1
+
+foo[] &&= 1
+
+foo.foo[] += 1
+
+foo.foo[] ||= 1
+
+foo.foo[] &&= 1
+
+foo[bar] += 1
+
+foo[bar] ||= 1
+
+foo[bar] &&= 1
+
+foo.foo[bar] += 1
+
+foo.foo[bar] ||= 1
+
+foo.foo[bar] &&= 1
+
+foo[bar, &baz] += 1
+
+foo[bar, &baz] ||= 1
+
+foo[bar, &baz] &&= 1
+
+foo.foo[bar, &baz] += 1
+
+foo.foo[bar, &baz] ||= 1
+
+foo.foo[bar, &baz] &&= 1

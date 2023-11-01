@@ -212,6 +212,7 @@ typedef enum {
     PM_CONTEXT_EMBEXPR,        // an interpolated expression
     PM_CONTEXT_ENSURE,         // an ensure statement
     PM_CONTEXT_FOR,            // a for loop
+    PM_CONTEXT_FOR_INDEX,      // a for loop's index
     PM_CONTEXT_IF,             // an if statement
     PM_CONTEXT_LAMBDA_BRACES,  // a lambda expression with braces
     PM_CONTEXT_LAMBDA_DO_END,  // a lambda expression with do..end
@@ -249,6 +250,16 @@ typedef struct pm_comment {
     const uint8_t *end;
     pm_comment_type_t type;
 } pm_comment_t;
+
+// This is a node in the linked list of magic comments that we've found while
+// parsing.
+typedef struct {
+    pm_list_node_t node;
+    const uint8_t *key_start;
+    const uint8_t *value_start;
+    uint32_t key_length;
+    uint32_t value_length;
+} pm_magic_comment_t;
 
 // When the encoding that is being used to parse the source is changed by prism,
 // we provide the ability here to call out to a user-defined function.
@@ -353,6 +364,7 @@ struct pm_parser {
     const uint8_t *heredoc_end;
 
     pm_list_t comment_list;             // the list of comments that have been found while parsing
+    pm_list_t magic_comment_list;       // the list of magic comments that have been found while parsing.
     pm_list_t warning_list;             // the list of warnings that have been found while parsing
     pm_list_t error_list;               // the list of errors that have been found while parsing
     pm_scope_t *current_scope;          // the current local scope

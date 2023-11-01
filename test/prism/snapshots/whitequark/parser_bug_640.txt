@@ -6,6 +6,6 @@
         └── @ StringNode (location: (1,0)-(1,6))
             ├── flags: ∅
             ├── opening_loc: (1,0)-(1,6) = "<<~FOO"
-            ├── content_loc: (2,0)-(3,0) = "  baz\\\n  qux\n"
-            ├── closing_loc: (4,0)-(4,0) = "FOO\n"
+            ├── content_loc: (2,0)-(4,0) = "  baz\\\n  qux\n"
+            ├── closing_loc: (4,0)-(5,0) = "FOO\n"
             └── unescaped: "baz  qux\n"

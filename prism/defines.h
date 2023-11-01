@@ -23,6 +23,15 @@
 #   endif
 #endif
 
+// PRISM_ATTRIBUTE_FORMAT
+#if defined(__GNUC__)
+#   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(printf, string_index, argument_index)))
+#elif defined(__clang__)
+#   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((__format__(__printf__, string_index, argument_index)))
+#else
+#   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index)
+#endif
+
 // PRISM_ATTRIBUTE_UNUSED
 #if defined(__GNUC__)
 #   define PRISM_ATTRIBUTE_UNUSED __attribute__((unused))

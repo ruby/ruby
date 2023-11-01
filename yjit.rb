@@ -11,7 +11,7 @@
 module RubyVM::YJIT
   # Check if YJIT is enabled
   def self.enabled?
-    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
+    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
   end
 
   # Check if --yjit-stats is used.
@@ -29,9 +29,9 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Resume YJIT compilation after paused on startup with --yjit-pause
-  def self.resume
-    Primitive.rb_yjit_resume
+  # Enable YJIT compilation.
+  def self.enable
+    Primitive.rb_yjit_enable
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -245,13 +245,8 @@ module RubyVM::YJIT
       $stderr.puts("YJIT exit locations dumped to `#{filename}`.")
     end
 
-    # Format and print out counters
-    def _print_stats(out: $stderr) # :nodoc:
-      stats = runtime_stats(context: true)
-      return unless Primitive.rb_yjit_stats_enabled_p
-
-      out.puts("***YJIT: Printing YJIT statistics on exit***")
-
+    # Print a summary of reasons for adverse performance events (e.g. exits)
+    def _print_stats_reasons(stats, out) # :nodoc:
       print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
       print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
       print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
@@ -286,6 +281,16 @@ module RubyVM::YJIT
       end
       print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
+    end
+
+    # Format and print out counters
+    def _print_stats(out: $stderr) # :nodoc:
+      stats = runtime_stats(context: true)
+      return unless Primitive.rb_yjit_stats_enabled_p
+
+      out.puts("***YJIT: Printing YJIT statistics on exit***")
+
+      _print_stats_reasons(stats, out)
 
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
@@ -295,7 +300,7 @@ module RubyVM::YJIT
       out.puts "num_send:              " + format_number(13, stats[:num_send])
       out.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
       out.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
-      out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:num_send_megamorphic], stats[:num_send])
+      out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:send_megamorphic], stats[:num_send])
       out.puts "num_send_dynamic:      " + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
         out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
@@ -316,6 +321,7 @@ module RubyVM::YJIT
       out.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
       out.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       out.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
+      out.puts "live_iseq_count:       " + format_number(13, stats[:live_iseq_count])
       out.puts "compiled_iseq_entry:   " + format_number(13, stats[:compiled_iseq_entry])
       out.puts "cold_iseq_entry:       " + format_number_pct(13, stats[:cold_iseq_entry], stats[:compiled_iseq_entry] + stats[:cold_iseq_entry])
       out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])

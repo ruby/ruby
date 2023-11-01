@@ -22,9 +22,10 @@
             │           │           ├── keyword_loc: (3,10)-(3,16) = "return"
             │           │           └── arguments:
             │           │               @ ArgumentsNode (location: (3,17)-(3,19))
-            │           │               └── arguments: (length: 1)
-            │           │                   └── @ IntegerNode (location: (3,17)-(3,19))
-            │           │                       └── flags: decimal
+            │           │               ├── arguments: (length: 1)
+            │           │               │   └── @ IntegerNode (location: (3,17)-(3,19))
+            │           │               │       └── flags: decimal
+            │           │               └── flags: ∅
             │           ├── consequent: ∅
             │           └── end_keyword_loc: (4,8)-(4,11) = "end"
             ├── locals: []

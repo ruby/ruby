@@ -1393,14 +1393,6 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
         }
     }
 
-    // If greedy versioning is enabled
-    if get_option!(greedy_versioning) {
-        // If we're below the version limit, don't settle for an imperfect match
-        if versions.len() + 1 < get_option!(max_versions) && best_diff > 0 {
-            return None;
-        }
-    }
-
     return best_version;
 }
 
@@ -2274,7 +2266,7 @@ pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: Cod
     let old_dropped_bytes = cb.has_dropped_bytes();
     cb.set_write_ptr(unsafe { entryref.as_ref() }.start_addr);
     cb.set_dropped_bytes(false);
-    asm.compile(cb, None);
+    asm.compile(cb, None).expect("can rewrite existing code");
 
     // Rewind write_pos to the original one
     assert_eq!(cb.get_write_ptr(), unsafe { entryref.as_ref() }.end_addr);
@@ -2298,19 +2290,35 @@ c_callable! {
     /// Generated code calls this function with the SysV calling convention.
     /// See [gen_call_entry_stub_hit].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
-        with_vm_lock(src_loc!(), || {
-            match with_compile_time(|| { entry_stub_hit_body(entry_ptr, ec) }) {
-                Some(addr) => addr,
-                // Failed to service the stub by generating a new block so now we
-                // need to exit to the interpreter at the stubbed location.
-                None => return CodegenGlobals::get_stub_exit_code().raw_ptr(),
-            }
+        with_compile_time(|| {
+            with_vm_lock(src_loc!(), || {
+                let cb = CodegenGlobals::get_inline_cb();
+                let ocb = CodegenGlobals::get_outlined_cb();
+
+                let addr = entry_stub_hit_body(entry_ptr, ec, cb, ocb)
+                    .unwrap_or_else(|| {
+                        // Trigger code GC (e.g. no space).
+                        // This entry point will be recompiled later.
+                        cb.code_gc(ocb);
+                        CodegenGlobals::get_stub_exit_code().raw_ptr()
+                    });
+
+                cb.mark_all_executable();
+                ocb.unwrap().mark_all_executable();
+
+                addr
+            })
         })
     }
 }
 
 /// Called by the generated code when an entry stub is executed
-fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8> {
+fn entry_stub_hit_body(
+    entry_ptr: *const c_void,
+    ec: EcPtr,
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb
+) -> Option<*const u8> {
     // Get ISEQ and insn_idx from the current ec->cfp
     let cfp = unsafe { get_ec_cfp(ec) };
     let iseq = unsafe { get_cfp_iseq(cfp) };
@@ -2319,14 +2327,11 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
         u8::try_from(get_cfp_sp(cfp).offset_from(get_cfp_bp(cfp))).ok()?
     };
 
-    let cb = CodegenGlobals::get_inline_cb();
-    let ocb = CodegenGlobals::get_outlined_cb();
-
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
     let mut asm = Assembler::new();
     let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
-    asm.compile(cb, Some(ocb));
+    asm.compile(cb, Some(ocb))?;
 
     // Find or compile a block version
     let blockid = BlockId { iseq, idx: insn_idx };
@@ -2337,7 +2342,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
         Some(blockref) => {
             let mut asm = Assembler::new();
             asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
-            asm.compile(cb, Some(ocb));
+            asm.compile(cb, Some(ocb))?;
             Some(blockref)
         }
         // If this block hasn't yet been compiled, generate blocks after the entry guard.
@@ -2353,13 +2358,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
         // Write an entry to the heap and push it to the ISEQ
         let pending_entry = Rc::try_unwrap(pending_entry).ok().expect("PendingEntry should be unique");
         get_or_create_iseq_payload(iseq).entries.push(pending_entry.into_entry());
-    } else { // No space
-        // Trigger code GC. This entry point will be recompiled later.
-        cb.code_gc(ocb);
     }
-
-    cb.mark_all_executable();
-    ocb.unwrap().mark_all_executable();
 
     // Let the stub jump to the block
     blockref.map(|block| unsafe { block.as_ref() }.start_addr.raw_ptr())
@@ -2368,7 +2367,6 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
 /// Generate a stub that calls entry_stub_hit
 pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let stub_addr = ocb.get_write_ptr();
 
     let mut asm = Assembler::new();
     asm_comment!(asm, "entry stub hit");
@@ -2379,20 +2377,13 @@ pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<Code
     // Not really a side exit, just don't need a padded jump here.
     asm.jmp(CodegenGlobals::get_entry_stub_hit_trampoline().as_side_exit());
 
-    asm.compile(ocb, None);
-
-    if ocb.has_dropped_bytes() {
-        return None; // No space
-    } else {
-        return Some(stub_addr);
-    }
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 /// A trampoline used by gen_entry_stub. entry_stub_hit may issue Code GC, so
 /// it's useful for Code GC to call entry_stub_hit from a globally shared code.
-pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
+pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
     // See gen_entry_guard for how it's used.
@@ -2402,9 +2393,7 @@ pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Jump to the address returned by the entry_stub_hit() call
     asm.jmp_opnd(jump_addr);
 
-    asm.compile(ocb, None);
-
-    code_ptr
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 /// Generate code for a branch, possibly rewriting and changing the size of it
@@ -2431,7 +2420,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     let old_dropped_bytes = cb.has_dropped_bytes();
     cb.set_write_ptr(branch.start_addr);
     cb.set_dropped_bytes(false);
-    asm.compile(cb, None);
+    asm.compile(cb, None).expect("can rewrite existing code");
     let new_end_addr = cb.get_write_ptr();
 
     branch.end_addr.set(new_end_addr);
@@ -2669,9 +2658,6 @@ fn gen_branch_stub(
 ) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
 
-    // Generate an outlined stub that will call branch_stub_hit()
-    let stub_addr = ocb.get_write_ptr();
-
     let mut asm = Assembler::new();
     asm.ctx = ctx.clone();
     asm.set_reg_temps(ctx.reg_temps);
@@ -2705,19 +2691,11 @@ fn gen_branch_stub(
     // Not really a side exit, just don't need a padded jump here.
     asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline().as_side_exit());
 
-    asm.compile(ocb, None);
-
-    if ocb.has_dropped_bytes() {
-        // No space
-        None
-    } else {
-        Some(stub_addr)
-    }
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
-pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
+pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
     // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
@@ -2750,9 +2728,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // return register so we get something else for the return value.
     let _ = asm.live_reg_opnd(stub_hit_ret);
 
-    asm.compile(ocb, None);
-
-    code_ptr
+    asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
 }
 
 /// Return registers to be pushed and popped on branch_stub_hit.
@@ -3093,7 +3069,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             let mut asm = Assembler::new();
             asm.jmp(block_entry_exit.as_side_exit());
             cb.set_dropped_bytes(false);
-            asm.compile(&mut cb, Some(ocb));
+            asm.compile(&mut cb, Some(ocb)).expect("can rewrite existing code");
 
             assert!(
                 cb.get_write_ptr() <= block_end,

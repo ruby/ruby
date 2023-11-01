@@ -2,10 +2,33 @@
 
 module Bundler
   class LockfileParser
-    attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version
+    class Position
+      attr_reader :line, :column
+      def initialize(line, column)
+        @line = line
+        @column = column
+      end
+
+      def advance!(string)
+        lines = string.count("\n")
+        if lines > 0
+          @line += lines
+          @column = string.length - string.rindex("\n")
+        else
+          @column += string.length
+        end
+      end
+
+      def to_s
+        "#{line}:#{column}"
+      end
+    end
+
+    attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version, :checksums
 
     BUNDLED      = "BUNDLED WITH"
     DEPENDENCIES = "DEPENDENCIES"
+    CHECKSUMS    = "CHECKSUMS"
     PLATFORMS    = "PLATFORMS"
     RUBY         = "RUBY VERSION"
     GIT          = "GIT"
@@ -21,6 +44,7 @@ module Bundler
       Gem::Version.create("1.10") => [BUNDLED].freeze,
       Gem::Version.create("1.12") => [RUBY].freeze,
       Gem::Version.create("1.13") => [PLUGIN].freeze,
+      Gem::Version.create("2.5.0") => [CHECKSUMS].freeze,
     }.freeze
 
     KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten!.freeze
@@ -65,18 +89,29 @@ module Bundler
       @dependencies = {}
       @parse_method = nil
       @specs        = {}
+      @lockfile_path = begin
+        SharedHelpers.relative_lockfile_path
+      rescue GemfileNotFound
+        "Gemfile.lock"
+      end
+      @pos = Position.new(1, 1)
 
       if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
-        raise LockfileError, "Your lockfile contains merge conflicts.\n" \
-          "Run `git checkout HEAD -- #{SharedHelpers.relative_lockfile_path}` first to get a clean lock."
+        raise LockfileError, "Your #{@lockfile_path} contains merge conflicts.\n" \
+          "Run `git checkout HEAD -- #{@lockfile_path}` first to get a clean lock."
       end
 
-      lockfile.split(/(?:\r?\n)+/) do |line|
+      lockfile.split(/((?:\r?\n)+)/) do |line|
+        # split alternates between the line and the following whitespace
+        next @pos.advance!(line) if line.match?(/^\s*$/)
+
         if SOURCE.include?(line)
           @parse_method = :parse_source
           parse_source(line)
         elsif line == DEPENDENCIES
           @parse_method = :parse_dependency
+        elsif line == CHECKSUMS
+          @parse_method = :parse_checksum
         elsif line == PLATFORMS
           @parse_method = :parse_platform
         elsif line == RUBY
@@ -88,12 +123,14 @@ module Bundler
         elsif @parse_method
           send(@parse_method, line)
         end
+        @pos.advance!(line)
       end
       @specs = @specs.values.sort_by!(&:full_name)
     rescue ArgumentError => e
       Bundler.ui.debug(e)
-      raise LockfileError, "Your lockfile is unreadable. Run `rm #{SharedHelpers.relative_lockfile_path}` " \
-        "and then `bundle install` to generate a new lockfile."
+      raise LockfileError, "Your lockfile is unreadable. Run `rm #{@lockfile_path}` " \
+        "and then `bundle install` to generate a new lockfile. The error occurred while " \
+        "evaluating #{@lockfile_path}:#{@pos}"
     end
 
     def may_include_redundant_platform_specific_gems?
@@ -144,6 +181,7 @@ module Bundler
       (?:#{space}\(([^-]*)                               # Space, followed by version
       (?:-(.*))?\))?                                     # Optional platform
       (!)?                                               # Optional pinned marker
+      (?:#{space}([^ ]+))?                               # Optional checksum
       $                                                  # Line end
     /xo.freeze
 
@@ -174,6 +212,31 @@ module Bundler
       end
 
       @dependencies[dep.name] = dep
+    end
+
+    def parse_checksum(line)
+      return unless line =~ NAME_VERSION
+
+      spaces = $1
+      return unless spaces.size == 2
+      checksums = $6
+      return unless checksums
+      name = $2
+      version = $3
+      platform = $4
+
+      version = Gem::Version.new(version)
+      platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
+      full_name = Gem::NameTuple.new(name, version, platform).full_name
+      # Don't raise exception if there's a checksum for a gem that's not in the lockfile,
+      # we prefer to heal invalid lockfiles
+      return unless spec = @specs[full_name]
+
+      checksums.split(",") do |lock_checksum|
+        column = line.index(lock_checksum) + 1
+        checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
+        spec.source.checksum_store.register(spec, checksum)
+      end
     end
 
     def parse_spec(line)

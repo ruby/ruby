@@ -128,7 +128,7 @@
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (9,4)-(9,5))
-        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name: ∅
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (9,4)-(9,5) = "*"
         │   │   │   │   ├── posts: (length: 0)
@@ -274,7 +274,7 @@
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (17,4)-(17,5))
-        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name: ∅
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (17,4)-(17,5) = "*"
         │   │   │   │   ├── posts: (length: 0)
@@ -390,7 +390,7 @@
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (27,7)-(27,8))
-        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name: ∅
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (27,7)-(27,8) = "*"
         │   │   │   │   ├── posts: (length: 0)
@@ -544,7 +544,7 @@
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (35,7)-(35,8))
-        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name: ∅
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (35,7)-(35,8) = "*"
         │   │   │   │   ├── posts: (length: 0)
@@ -581,7 +581,7 @@
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (37,8)-(37,9))
-        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name: ∅
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (37,8)-(37,9) = ","
         │   │   │   │   ├── posts: (length: 0)
@@ -836,7 +836,7 @@
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ RestParameterNode (location: (49,5)-(49,6))
-        │   │   │   │   │   ├── name: nil
+        │   │   │   │   │   ├── name: ∅
         │   │   │   │   │   ├── name_loc: ∅
         │   │   │   │   │   └── operator_loc: (49,5)-(49,6) = ","
         │   │   │   │   ├── posts: (length: 0)

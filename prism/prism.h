@@ -2,16 +2,17 @@
 #define PRISM_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_buffer.h"
+#include "prism/util/pm_char.h"
+#include "prism/util/pm_memchr.h"
+#include "prism/util/pm_strpbrk.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
 #include "prism/node.h"
 #include "prism/pack.h"
 #include "prism/parser.h"
+#include "prism/prettyprint.h"
 #include "prism/regexp.h"
-#include "prism/util/pm_buffer.h"
-#include "prism/util/pm_char.h"
-#include "prism/util/pm_memchr.h"
-#include "prism/util/pm_strpbrk.h"
 #include "prism/version.h"
 
 #include <assert.h>
@@ -29,12 +30,11 @@
 
 void pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
 
-void pm_print_node(pm_parser_t *parser, pm_node_t *node);
+void pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer);
+
+void pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer);
 
 void pm_parser_metadata(pm_parser_t *parser, const char *metadata);
-
-// Generate a scope node from the given node.
-void pm_scope_node_init(pm_node_t *node, pm_scope_node_t *dest);
 
 // The prism version and the serialization format.
 PRISM_EXPORTED_FUNCTION const char * pm_version(void);
@@ -59,14 +59,14 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 // Parse the Ruby source associated with the given parser and return the tree.
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
 
-// Pretty-prints the AST represented by the given node to the given buffer.
-PRISM_EXPORTED_FUNCTION void pm_prettyprint(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
-
 // Serialize the AST represented by the given node to the given buffer.
 PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
 
 // Parse the given source to the AST and serialize the AST to the given buffer.
 PRISM_EXPORTED_FUNCTION void pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
+
+// Parse and serialize the comments in the given source to the given buffer.
+PRISM_EXPORTED_FUNCTION void pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
 
 // Lex the given source and serialize to the given buffer.
 PRISM_EXPORTED_FUNCTION void pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer);

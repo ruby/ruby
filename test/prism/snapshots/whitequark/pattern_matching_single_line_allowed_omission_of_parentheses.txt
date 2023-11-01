@@ -79,7 +79,7 @@
         │   ├── pattern:
         │   │   @ HashPatternNode (location: (5,10)-(5,12))
         │   │   ├── constant: ∅
-        │   │   ├── assocs: (length: 1)
+        │   │   ├── elements: (length: 1)
         │   │   │   └── @ AssocNode (location: (5,10)-(5,12))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (5,10)-(5,12))
@@ -89,7 +89,7 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value: ∅
         │   │   │       └── operator_loc: ∅
-        │   │   ├── kwrest: ∅
+        │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (5,7)-(5,9) = "=>"
@@ -116,7 +116,7 @@
         │   ├── pattern:
         │   │   @ HashPatternNode (location: (7,10)-(7,12))
         │   │   ├── constant: ∅
-        │   │   ├── assocs: (length: 1)
+        │   │   ├── elements: (length: 1)
         │   │   │   └── @ AssocNode (location: (7,10)-(7,12))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (7,10)-(7,12))
@@ -126,7 +126,7 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value: ∅
         │   │   │       └── operator_loc: ∅
-        │   │   ├── kwrest: ∅
+        │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (7,7)-(7,9) = "in"
@@ -156,7 +156,7 @@
         │   ├── pattern:
         │   │   @ HashPatternNode (location: (9,17)-(9,27))
         │   │   ├── constant: ∅
-        │   │   ├── assocs: (length: 1)
+        │   │   ├── elements: (length: 1)
         │   │   │   └── @ AssocNode (location: (9,17)-(9,27))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (9,17)-(9,21))
@@ -169,7 +169,7 @@
         │   │   │       │   ├── name: :value
         │   │   │       │   └── depth: 0
         │   │   │       └── operator_loc: ∅
-        │   │   ├── kwrest: ∅
+        │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (9,14)-(9,16) = "=>"
@@ -199,7 +199,7 @@
         │   ├── pattern:
         │   │   @ HashPatternNode (location: (11,17)-(11,27))
         │   │   ├── constant: ∅
-        │   │   ├── assocs: (length: 1)
+        │   │   ├── elements: (length: 1)
         │   │   │   └── @ AssocNode (location: (11,17)-(11,27))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (11,17)-(11,21))
@@ -212,7 +212,7 @@
         │   │   │       │   ├── name: :value
         │   │   │       │   └── depth: 0
         │   │   │       └── operator_loc: ∅
-        │   │   ├── kwrest: ∅
+        │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (11,14)-(11,16) = "in"

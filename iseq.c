@@ -43,7 +43,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "prism/prism.h"
+#include "prism_compile.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -168,6 +168,8 @@ rb_iseq_free(const rb_iseq_t *iseq)
         rb_rjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
+        RUBY_ASSERT(rb_yjit_live_iseq_count > 0);
+        rb_yjit_live_iseq_count--;
 #endif
         ruby_xfree((void *)body->iseq_encoded);
         ruby_xfree((void *)body->insns_info.body);
@@ -966,10 +968,10 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     return iseq_translate(iseq);
 }
 
-VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, const pm_node_t *node, pm_parser_t *parser);
+VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser);
 
 rb_iseq_t *
-pm_iseq_new_with_opt(pm_node_t *node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option)
 {
@@ -979,28 +981,26 @@ pm_iseq_new_with_opt(pm_node_t *node, pm_parser_t *parser, VALUE name, VALUE pat
 
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
-    if (node) {
-        pm_line_column_t start_line_col = pm_newline_list_line_column(&parser->newline_list, node->location.start);
-        pm_line_column_t end_line_col = pm_newline_list_line_column(&parser->newline_list, node->location.end);
+    pm_line_column_t start_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node->base.location.start);
+    pm_line_column_t end_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node->base.location.end);
 
-        code_loc = (rb_code_location_t) {
-            .beg_pos = {
-                .lineno = (int) start_line_col.line,
-                .column = (int) start_line_col.column
-            },
-            .end_pos = {
-                .lineno = (int) end_line_col.line,
-                .column = (int) end_line_col.column
-            },
-        };
-    }
+    code_loc = (rb_code_location_t) {
+        .beg_pos = {
+            .lineno = (int) start_line_col.line,
+            .column = (int) start_line_col.column
+        },
+        .end_pos = {
+            .lineno = (int) end_line_col.line,
+            .column = (int) end_line_col.column
+        },
+    };
 
     // TODO: node_id
     int node_id = -1;
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_loc, node_id,
             parent, isolated_depth, type, script_lines, option);
 
-    rb_iseq_compile_prism_node(iseq, node, parser);
+    rb_iseq_compile_prism_node(iseq, scope_node, parser);
 
     finish_iseq_build(iseq);
 
@@ -1471,7 +1471,9 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     prepare_iseq_build(iseq, name, file, path, first_lineno, &node_location, node_id,
                        parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
 
-    rb_iseq_compile_prism_node(iseq, node, &parser);
+    pm_scope_node_t scope_node;
+    pm_scope_node_init(node, &scope_node, NULL, &parser);
+    rb_iseq_compile_prism_node(iseq, &scope_node, &parser);
 
     finish_iseq_build(iseq);
     pm_node_destroy(&parser, node);

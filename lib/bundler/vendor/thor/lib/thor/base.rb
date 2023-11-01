@@ -24,9 +24,9 @@ class Bundler::Thor
 
   class << self
     def deprecation_warning(message) #:nodoc:
-      unless ENV['THOR_SILENCE_DEPRECATION']
+      unless ENV["THOR_SILENCE_DEPRECATION"]
         warn "Deprecation warning: #{message}\n" +
-          'You can silence deprecations warning by setting the environment variable THOR_SILENCE_DEPRECATION.'
+          "You can silence deprecations warning by setting the environment variable THOR_SILENCE_DEPRECATION."
       end
     end
   end
@@ -60,6 +60,7 @@ class Bundler::Thor
 
       command_options = config.delete(:command_options) # hook for start
       parse_options = parse_options.merge(command_options) if command_options
+
       if local_options.is_a?(Array)
         array_options = local_options
         hash_options = {}
@@ -73,9 +74,24 @@ class Bundler::Thor
       # Let Bundler::Thor::Options parse the options first, so it can remove
       # declared options from the array. This will leave us with
       # a list of arguments that weren't declared.
-      stop_on_unknown = self.class.stop_on_unknown_option? config[:current_command]
-      disable_required_check = self.class.disable_required_check? config[:current_command]
-      opts = Bundler::Thor::Options.new(parse_options, hash_options, stop_on_unknown, disable_required_check)
+      current_command = config[:current_command]
+      stop_on_unknown = self.class.stop_on_unknown_option? current_command
+
+      # Give a relation of options.
+      # After parsing, Bundler::Thor::Options check whether right relations are kept
+      relations = if current_command.nil?
+        {exclusive_option_names: [], at_least_one_option_names: []}
+      else
+        current_command.options_relation
+      end
+
+      self.class.class_exclusive_option_names.map { |n| relations[:exclusive_option_names] << n }
+      self.class.class_at_least_one_option_names.map { |n| relations[:at_least_one_option_names] << n }
+
+      disable_required_check = self.class.disable_required_check? current_command
+
+      opts = Bundler::Thor::Options.new(parse_options, hash_options, stop_on_unknown, disable_required_check, relations)
+
       self.options = opts.parse(array_options)
       self.options = config[:class_options].merge(options) if config[:class_options]
 
@@ -310,7 +326,90 @@ class Bundler::Thor
       # :hide::     -- If you want to hide this option from the help.
       #
       def class_option(name, options = {})
+        unless [ Symbol, String ].any? { |klass| name.is_a?(klass) }
+          raise ArgumentError, "Expected a Symbol or String, got #{name.inspect}"
+        end
         build_option(name, options, class_options)
+      end
+
+      # Adds and declares option group for exclusive options in the
+      # block and arguments. You can declare options as the outside of the block.
+      #
+      # ==== Parameters
+      # Array[Bundler::Thor::Option.name]
+      #
+      # ==== Examples
+      #
+      #   class_exclusive do
+      #     class_option :one
+      #     class_option :two
+      #    end
+      #
+      # Or
+      #
+      #   class_option :one
+      #   class_option :two
+      #   class_exclusive :one, :two
+      #
+      # If you give "--one" and "--two" at the same time ExclusiveArgumentsError
+      # will be raised.
+      #
+      def class_exclusive(*args, &block)
+        register_options_relation_for(:class_options,
+                                      :class_exclusive_option_names, *args, &block)
+      end
+
+      # Adds and declares option group for required at least one of options in the
+      # block and arguments. You can declare options as the outside of the block.
+      #
+      # ==== Examples
+      #
+      #   class_at_least_one do
+      #     class_option :one
+      #     class_option :two
+      #    end
+      #
+      # Or
+      #
+      #   class_option :one
+      #   class_option :two
+      #   class_at_least_one :one, :two
+      #
+      # If you do not give "--one" and "--two" AtLeastOneRequiredArgumentError
+      # will be raised.
+      #
+      # You can use class_at_least_one and class_exclusive at the same time.
+      #
+      #    class_exclusive do
+      #      class_at_least_one do
+      #        class_option :one
+      #        class_option :two
+      #      end
+      #    end
+      #
+      # Then it is required either only one of "--one" or "--two".
+      #
+      def class_at_least_one(*args, &block)
+        register_options_relation_for(:class_options,
+                                      :class_at_least_one_option_names, *args, &block)
+      end
+
+      # Returns this class exclusive options array set, looking up in the ancestors chain.
+      #
+      # ==== Returns
+      # Array[Array[Bundler::Thor::Option.name]]
+      #
+      def class_exclusive_option_names
+        @class_exclusive_option_names ||= from_superclass(:class_exclusive_option_names, [])
+      end
+
+      # Returns this class at least one of required options array set, looking up in the ancestors chain.
+      #
+      # ==== Returns
+      # Array[Array[Bundler::Thor::Option.name]]
+      #
+      def class_at_least_one_option_names
+        @class_at_least_one_option_names ||= from_superclass(:class_at_least_one_option_names, [])
       end
 
       # Removes a previous defined argument. If :undefine is given, undefine
@@ -565,12 +664,12 @@ class Bundler::Thor
           item.push(option.description ? "# #{option.description}" : "")
 
           list << item
-          list << ["", "# Default: #{option.default}"] if option.show_default?
-          list << ["", "# Possible values: #{option.enum.join(', ')}"] if option.enum
+          list << ["", "# Default: #{option.print_default}"] if option.show_default?
+          list << ["", "# Possible values: #{option.enum_to_s}"] if option.enum
         end
 
         shell.say(group_name ? "#{group_name} options:" : "Options:")
-        shell.print_table(list, :indent => 2)
+        shell.print_table(list, indent: 2)
         shell.say ""
       end
 
@@ -587,7 +686,7 @@ class Bundler::Thor
       # options<Hash>:: Described in both class_option and method_option.
       # scope<Hash>:: Options hash that is being built up
       def build_option(name, options, scope) #:nodoc:
-        scope[name] = Bundler::Thor::Option.new(name, {:check_default_type => check_default_type}.merge!(options))
+        scope[name] = Bundler::Thor::Option.new(name, {check_default_type: check_default_type}.merge!(options))
       end
 
       # Receives a hash of options, parse them and add to the scope. This is a
@@ -692,6 +791,34 @@ class Bundler::Thor
       # SIGNATURE: The hook invoked by start.
       def dispatch(command, given_args, given_opts, config) #:nodoc:
         raise NotImplementedError
+      end
+
+      # Register a relation of options for target(method_option/class_option)
+      # by args and block.
+      def register_options_relation_for(target, relation, *args, &block) # :nodoc:
+        opt = args.pop if args.last.is_a? Hash
+        opt ||= {}
+        names = args.map{ |arg| arg.to_s }
+        names += built_option_names(target, opt, &block) if block_given?
+        command_scope_member(relation, opt) << names
+      end
+
+      # Get target(method_options or class_options) options
+      # of before and after by block evaluation.
+      def built_option_names(target, opt = {}, &block) # :nodoc:
+        before = command_scope_member(target, opt).map{ |k,v| v.name }
+        instance_eval(&block)
+        after  = command_scope_member(target, opt).map{ |k,v| v.name }
+        after - before
+      end
+
+      # Get command scope member by name.
+      def command_scope_member(name, options = {}) # :nodoc:
+        if options[:for]
+          find_and_refresh_command(options[:for]).send(name)
+        else
+          send(name)
+        end
       end
     end
   end

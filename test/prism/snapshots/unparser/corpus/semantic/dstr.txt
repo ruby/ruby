@@ -6,38 +6,38 @@
         ├── @ StringNode (location: (1,0)-(1,5))
         │   ├── flags: ∅
         │   ├── opening_loc: (1,0)-(1,5) = "<<DOC"
-        │   ├── content_loc: (2,0)-(1,0) = ""
-        │   ├── closing_loc: (2,0)-(2,0) = "DOC\n"
+        │   ├── content_loc: (2,0)-(2,0) = ""
+        │   ├── closing_loc: (2,0)-(3,0) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (4,0)-(4,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (4,0)-(4,7) = "<<'DOC'"
-        │   ├── content_loc: (5,0)-(4,0) = ""
-        │   ├── closing_loc: (5,0)-(5,0) = "DOC\n"
+        │   ├── content_loc: (5,0)-(5,0) = ""
+        │   ├── closing_loc: (5,0)-(6,0) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (7,0)-(7,6))
         │   ├── flags: ∅
         │   ├── opening_loc: (7,0)-(7,6) = "<<~DOC"
-        │   ├── content_loc: (8,0)-(7,0) = ""
-        │   ├── closing_loc: (8,0)-(8,0) = "DOC\n"
+        │   ├── content_loc: (8,0)-(8,0) = ""
+        │   ├── closing_loc: (8,0)-(9,0) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (10,0)-(10,8))
         │   ├── flags: ∅
         │   ├── opening_loc: (10,0)-(10,8) = "<<~'DOC'"
-        │   ├── content_loc: (11,0)-(10,0) = ""
-        │   ├── closing_loc: (11,0)-(11,0) = "DOC\n"
+        │   ├── content_loc: (11,0)-(11,0) = ""
+        │   ├── closing_loc: (11,0)-(12,0) = "DOC\n"
         │   └── unescaped: ""
         ├── @ StringNode (location: (13,0)-(13,5))
         │   ├── flags: ∅
         │   ├── opening_loc: (13,0)-(13,5) = "<<DOC"
-        │   ├── content_loc: (14,0)-(14,0) = "  a\n"
-        │   ├── closing_loc: (15,0)-(15,0) = "DOC\n"
+        │   ├── content_loc: (14,0)-(15,0) = "  a\n"
+        │   ├── closing_loc: (15,0)-(16,0) = "DOC\n"
         │   └── unescaped: "  a\n"
         ├── @ StringNode (location: (17,0)-(17,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (17,0)-(17,7) = "<<'DOC'"
-        │   ├── content_loc: (18,0)-(18,0) = "  a\n"
-        │   ├── closing_loc: (19,0)-(19,0) = "DOC\n"
+        │   ├── content_loc: (18,0)-(19,0) = "  a\n"
+        │   ├── closing_loc: (19,0)-(20,0) = "DOC\n"
         │   └── unescaped: "  a\n"
         ├── @ InterpolatedStringNode (location: (21,0)-(21,5))
         │   ├── opening_loc: (21,0)-(21,5) = "<<DOC"
@@ -52,92 +52,92 @@
         │   │   │   ├── opening_loc: (23,2)-(23,4) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (23,4)-(23,5) = "}"
-        │   │   └── @ StringNode (location: (23,5)-(23,0))
+        │   │   └── @ StringNode (location: (23,5)-(24,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (23,5)-(23,0) = "\n"
+        │   │       ├── content_loc: (23,5)-(24,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
-        │   └── closing_loc: (24,0)-(24,0) = "DOC\n"
+        │   └── closing_loc: (24,0)-(25,0) = "DOC\n"
         ├── @ InterpolatedStringNode (location: (26,0)-(26,6))
         │   ├── opening_loc: (26,0)-(26,6) = "<<~DOC"
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (27,0)-(27,0))
+        │   │   ├── @ StringNode (location: (27,0)-(28,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (27,0)-(27,0) = "  a\n"
+        │   │   │   ├── content_loc: (27,0)-(28,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (28,2)-(28,5))
         │   │   │   ├── opening_loc: (28,2)-(28,4) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (28,4)-(28,5) = "}"
-        │   │   └── @ StringNode (location: (28,5)-(28,0))
+        │   │   └── @ StringNode (location: (28,5)-(29,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (28,5)-(28,0) = "\n"
+        │   │       ├── content_loc: (28,5)-(29,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
-        │   └── closing_loc: (29,0)-(29,0) = "DOC\n"
+        │   └── closing_loc: (29,0)-(30,0) = "DOC\n"
         ├── @ InterpolatedStringNode (location: (31,0)-(31,6))
         │   ├── opening_loc: (31,0)-(31,6) = "<<~DOC"
         │   ├── parts: (length: 4)
-        │   │   ├── @ StringNode (location: (32,0)-(32,0))
+        │   │   ├── @ StringNode (location: (32,0)-(33,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (32,0)-(32,0) = "  a\n"
+        │   │   │   ├── content_loc: (32,0)-(33,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (33,2)-(33,5))
         │   │   │   ├── opening_loc: (33,2)-(33,4) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (33,4)-(33,5) = "}"
-        │   │   ├── @ StringNode (location: (33,5)-(33,0))
+        │   │   ├── @ StringNode (location: (33,5)-(34,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (33,5)-(33,0) = "\n"
+        │   │   │   ├── content_loc: (33,5)-(34,0) = "\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "\n"
-        │   │   └── @ StringNode (location: (34,0)-(34,0))
+        │   │   └── @ StringNode (location: (34,0)-(35,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (34,0)-(34,0) = "  b\n"
+        │   │       ├── content_loc: (34,0)-(35,0) = "  b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n"
-        │   └── closing_loc: (35,0)-(35,0) = "DOC\n"
+        │   └── closing_loc: (35,0)-(36,0) = "DOC\n"
         ├── @ InterpolatedStringNode (location: (37,0)-(37,6))
         │   ├── opening_loc: (37,0)-(37,6) = "<<~DOC"
         │   ├── parts: (length: 2)
-        │   │   ├── @ StringNode (location: (38,0)-(38,0))
+        │   │   ├── @ StringNode (location: (38,0)-(39,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (38,0)-(38,0) = "  a\n"
+        │   │   │   ├── content_loc: (38,0)-(39,0) = "  a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
-        │   │   └── @ StringNode (location: (39,0)-(39,0))
+        │   │   └── @ StringNode (location: (39,0)-(40,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (39,0)-(39,0) = "    b\n"
+        │   │       ├── content_loc: (39,0)-(40,0) = "    b\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "  b\n"
-        │   └── closing_loc: (40,0)-(40,0) = "DOC\n"
+        │   └── closing_loc: (40,0)-(41,0) = "DOC\n"
         ├── @ StringNode (location: (42,0)-(42,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (42,0)-(42,7) = "<<'DOC'"
-        │   ├── content_loc: (43,0)-(45,0) = "a\n\nb\n"
-        │   ├── closing_loc: (46,0)-(46,0) = "DOC\n"
+        │   ├── content_loc: (43,0)-(46,0) = "a\n\nb\n"
+        │   ├── closing_loc: (46,0)-(47,0) = "DOC\n"
         │   └── unescaped: "a\n\nb\n"
         ├── @ StringNode (location: (48,0)-(48,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (48,0)-(48,7) = "<<'DOC'"
-        │   ├── content_loc: (49,0)-(51,0) = " a\n\n b\n"
-        │   ├── closing_loc: (52,0)-(52,0) = "DOC\n"
+        │   ├── content_loc: (49,0)-(52,0) = " a\n\n b\n"
+        │   ├── closing_loc: (52,0)-(53,0) = "DOC\n"
         │   └── unescaped: " a\n\n b\n"
         ├── @ StringNode (location: (54,0)-(54,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (54,0)-(54,7) = "<<'DOC'"
-        │   ├── content_loc: (55,0)-(55,0) = " a\\nb\n"
-        │   ├── closing_loc: (56,0)-(56,0) = "DOC\n"
+        │   ├── content_loc: (55,0)-(56,0) = " a\\nb\n"
+        │   ├── closing_loc: (56,0)-(57,0) = "DOC\n"
         │   └── unescaped: " a\\nb\n"
         ├── @ InterpolatedStringNode (location: (58,0)-(58,5))
         │   ├── opening_loc: (58,0)-(58,5) = "<<DOC"
@@ -156,13 +156,13 @@
         │   │   │   ├── opening_loc: (60,1)-(60,3) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (60,3)-(60,4) = "}"
-        │   │   └── @ StringNode (location: (60,4)-(60,0))
+        │   │   └── @ StringNode (location: (60,4)-(61,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (60,4)-(60,0) = "a\n"
+        │   │       ├── content_loc: (60,4)-(61,0) = "a\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\n"
-        │   └── closing_loc: (61,0)-(61,0) = "DOC\n"
+        │   └── closing_loc: (61,0)-(62,0) = "DOC\n"
         ├── @ InterpolatedStringNode (location: (63,0)-(63,5))
         │   ├── opening_loc: (63,0)-(63,5) = "<<DOC"
         │   ├── parts: (length: 3)
@@ -176,13 +176,13 @@
         │   │   │   ├── opening_loc: (64,2)-(64,4) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (64,4)-(64,5) = "}"
-        │   │   └── @ StringNode (location: (64,5)-(65,0))
+        │   │   └── @ StringNode (location: (64,5)-(66,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (64,5)-(65,0) = "\n  \\\#{}\n"
+        │   │       ├── content_loc: (64,5)-(66,0) = "\n  \\\#{}\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n  \#{}\n"
-        │   └── closing_loc: (66,0)-(66,0) = "DOC\n"
+        │   └── closing_loc: (66,0)-(67,0) = "DOC\n"
         ├── @ InterpolatedStringNode (location: (68,0)-(68,5))
         │   ├── opening_loc: (68,0)-(68,5) = "<<DOC"
         │   ├── parts: (length: 3)
@@ -196,13 +196,13 @@
         │   │   │   ├── opening_loc: (69,2)-(69,4) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (69,4)-(69,5) = "}"
-        │   │   └── @ StringNode (location: (69,5)-(70,0))
+        │   │   └── @ StringNode (location: (69,5)-(71,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (69,5)-(70,0) = "b\n c\n"
+        │   │       ├── content_loc: (69,5)-(71,0) = "b\n c\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "b\n c\n"
-        │   └── closing_loc: (71,0)-(71,0) = "DOC\n"
+        │   └── closing_loc: (71,0)-(72,0) = "DOC\n"
         ├── @ InterpolatedStringNode (location: (73,0)-(73,6))
         │   ├── opening_loc: (73,0)-(73,6) = "<<~DOC"
         │   ├── parts: (length: 2)
@@ -210,13 +210,13 @@
         │   │   │   ├── opening_loc: (74,2)-(74,4) = "\#{"
         │   │   │   ├── statements: ∅
         │   │   │   └── closing_loc: (74,4)-(74,5) = "}"
-        │   │   └── @ StringNode (location: (74,5)-(74,0))
+        │   │   └── @ StringNode (location: (74,5)-(75,0))
         │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
-        │   │       ├── content_loc: (74,5)-(74,0) = "\n"
+        │   │       ├── content_loc: (74,5)-(75,0) = "\n"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\n"
-        │   └── closing_loc: (75,0)-(75,0) = "DOC\n"
+        │   └── closing_loc: (75,0)-(76,0) = "DOC\n"
         ├── @ IfNode (location: (77,0)-(81,3))
         │   ├── if_keyword_loc: (77,0)-(77,2) = "if"
         │   ├── predicate:
@@ -231,13 +231,13 @@
         │   │           │   │   ├── opening_loc: (79,4)-(79,6) = "\#{"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (79,6)-(79,7) = "}"
-        │   │           │   └── @ StringNode (location: (79,7)-(79,0))
+        │   │           │   └── @ StringNode (location: (79,7)-(80,0))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (79,7)-(79,0) = "\n"
+        │   │           │       ├── content_loc: (79,7)-(80,0) = "\n"
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
-        │   │           └── closing_loc: (80,0)-(80,0) = "  DOC\n"
+        │   │           └── closing_loc: (80,0)-(81,0) = "  DOC\n"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (81,0)-(81,3) = "end"
         ├── @ IfNode (location: (83,0)-(87,3))
@@ -260,13 +260,13 @@
         │   │           │   │   ├── opening_loc: (85,5)-(85,7) = "\#{"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (85,7)-(85,8) = "}"
-        │   │           │   └── @ StringNode (location: (85,8)-(85,0))
+        │   │           │   └── @ StringNode (location: (85,8)-(86,0))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (85,8)-(85,0) = "\n"
+        │   │           │       ├── content_loc: (85,8)-(86,0) = "\n"
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
-        │   │           └── closing_loc: (86,0)-(86,0) = "  DOC\n"
+        │   │           └── closing_loc: (86,0)-(87,0) = "  DOC\n"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (87,0)-(87,3) = "end"
         ├── @ IfNode (location: (89,0)-(93,3))
@@ -283,13 +283,13 @@
         │   │           │   │   ├── opening_loc: (91,4)-(91,6) = "\#{"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── closing_loc: (91,6)-(91,7) = "}"
-        │   │           │   └── @ StringNode (location: (91,7)-(91,0))
+        │   │           │   └── @ StringNode (location: (91,7)-(92,0))
         │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: ∅
-        │   │           │       ├── content_loc: (91,7)-(91,0) = "a\n"
+        │   │           │       ├── content_loc: (91,7)-(92,0) = "a\n"
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "a\n"
-        │   │           └── closing_loc: (92,0)-(92,0) = "  DOC\n"
+        │   │           └── closing_loc: (92,0)-(93,0) = "  DOC\n"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (93,0)-(93,3) = "end"
         ├── @ IfNode (location: (95,0)-(101,3))
@@ -302,8 +302,8 @@
         │   │       └── @ StringNode (location: (96,2)-(96,10))
         │   │           ├── flags: ∅
         │   │           ├── opening_loc: (96,2)-(96,10) = "<<-'DOC'"
-        │   │           ├── content_loc: (97,0)-(99,0) = "   a\n\n   b\n"
-        │   │           ├── closing_loc: (100,0)-(100,0) = "  DOC\n"
+        │   │           ├── content_loc: (97,0)-(100,0) = "   a\n\n   b\n"
+        │   │           ├── closing_loc: (100,0)-(101,0) = "  DOC\n"
         │   │           └── unescaped: "   a\n\n   b\n"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (101,0)-(101,3) = "end"
@@ -364,10 +364,10 @@
         ├── @ InterpolatedStringNode (location: (109,0)-(111,2))
         │   ├── opening_loc: (109,0)-(109,1) = "\""
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (109,1)-(109,0))
+        │   │   ├── @ StringNode (location: (109,1)-(110,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (109,1)-(109,0) = "a\n"
+        │   │   │   ├── content_loc: (109,1)-(110,0) = "a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (110,0)-(110,3))
@@ -404,10 +404,10 @@
         ├── @ InterpolatedStringNode (location: (116,0)-(117,7))
         │   ├── opening_loc: (116,0)-(116,1) = "\""
         │   ├── parts: (length: 3)
-        │   │   ├── @ StringNode (location: (116,1)-(116,0))
+        │   │   ├── @ StringNode (location: (116,1)-(117,0))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── content_loc: (116,1)-(116,0) = "a\n"
+        │   │   │   ├── content_loc: (116,1)-(117,0) = "a\n"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a\n"
         │   │   ├── @ EmbeddedStatementsNode (location: (117,0)-(117,3))

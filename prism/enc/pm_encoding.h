@@ -57,6 +57,7 @@ bool pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptr
 // the parser so they need to be internally visible.
 size_t pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
 size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
+bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
 
 // This lookup table is referenced in both the UTF-8 encoding file and the
 // parser directly in order to speed up the default encoding processing.

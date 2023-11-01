@@ -10,29 +10,30 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,4)-(1,17))
-            │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (1,4)-(1,17))
-            │           ├── body:
-            │           │   @ StatementsNode (location: (1,5)-(1,16))
-            │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (1,5)-(1,16))
-            │           │           ├── receiver: ∅
-            │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (1,5)-(1,9) = "proc"
-            │           │           ├── opening_loc: ∅
-            │           │           ├── arguments: ∅
-            │           │           ├── closing_loc: ∅
-            │           │           ├── block:
-            │           │           │   @ BlockNode (location: (1,10)-(1,16))
-            │           │           │   ├── locals: []
-            │           │           │   ├── parameters: ∅
-            │           │           │   ├── body: ∅
-            │           │           │   ├── opening_loc: (1,10)-(1,12) = "do"
-            │           │           │   └── closing_loc: (1,13)-(1,16) = "end"
-            │           │           ├── flags: ∅
-            │           │           └── name: :proc
-            │           ├── opening_loc: (1,4)-(1,5) = "("
-            │           └── closing_loc: (1,16)-(1,17) = ")"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ ParenthesesNode (location: (1,4)-(1,17))
+            │   │       ├── body:
+            │   │       │   @ StatementsNode (location: (1,5)-(1,16))
+            │   │       │   └── body: (length: 1)
+            │   │       │       └── @ CallNode (location: (1,5)-(1,16))
+            │   │       │           ├── receiver: ∅
+            │   │       │           ├── call_operator_loc: ∅
+            │   │       │           ├── message_loc: (1,5)-(1,9) = "proc"
+            │   │       │           ├── opening_loc: ∅
+            │   │       │           ├── arguments: ∅
+            │   │       │           ├── closing_loc: ∅
+            │   │       │           ├── block:
+            │   │       │           │   @ BlockNode (location: (1,10)-(1,16))
+            │   │       │           │   ├── locals: []
+            │   │       │           │   ├── parameters: ∅
+            │   │       │           │   ├── body: ∅
+            │   │       │           │   ├── opening_loc: (1,10)-(1,12) = "do"
+            │   │       │           │   └── closing_loc: (1,13)-(1,16) = "end"
+            │   │       │           ├── flags: ∅
+            │   │       │           └── name: :proc
+            │   │       ├── opening_loc: (1,4)-(1,5) = "("
+            │   │       └── closing_loc: (1,16)-(1,17) = ")"
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

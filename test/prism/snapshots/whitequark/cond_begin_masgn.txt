@@ -21,13 +21,15 @@
             │   │       │   ├── flags: variable_call
             │   │       │   └── name: :bar
             │   │       └── @ MultiWriteNode (location: (1,9)-(1,19))
-            │   │           ├── targets: (length: 2)
+            │   │           ├── lefts: (length: 2)
             │   │           │   ├── @ LocalVariableTargetNode (location: (1,9)-(1,10))
             │   │           │   │   ├── name: :a
             │   │           │   │   └── depth: 0
             │   │           │   └── @ LocalVariableTargetNode (location: (1,12)-(1,13))
             │   │           │       ├── name: :b
             │   │           │       └── depth: 0
+            │   │           ├── rest: ∅
+            │   │           ├── rights: (length: 0)
             │   │           ├── lparen_loc: ∅
             │   │           ├── rparen_loc: ∅
             │   │           ├── operator_loc: (1,14)-(1,15) = "="

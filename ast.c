@@ -480,8 +480,8 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_OP_ASGN1:
         return rb_ary_new_from_args(4, NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_recv),
                                     ID2SYM(RNODE_OP_ASGN1(node)->nd_mid),
-                                    NEW_CHILD(ast, RNODE_ARGSCAT(RNODE_OP_ASGN1(node)->nd_args)->nd_head),
-                                    NEW_CHILD(ast, RNODE_ARGSCAT(RNODE_OP_ASGN1(node)->nd_args)->nd_body));
+                                    NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_index),
+                                    NEW_CHILD(ast, RNODE_OP_ASGN1(node)->nd_rvalue));
       case NODE_OP_ASGN2:
         return rb_ary_new_from_args(5, NEW_CHILD(ast, RNODE_OP_ASGN2(node)->nd_recv),
                                     RBOOL(RNODE_OP_ASGN2(node)->nd_aid),
@@ -639,7 +639,7 @@ node_children(rb_ast_t *ast, const NODE *node)
                                     NEW_CHILD(ast, RNODE_POSTARG(node)->nd_2nd));
       case NODE_ARGS:
         {
-            struct rb_args_info *ainfo = RNODE_ARGS(node)->nd_ainfo;
+            struct rb_args_info *ainfo = &RNODE_ARGS(node)->nd_ainfo;
             return rb_ary_new_from_args(10,
                                         INT2NUM(ainfo->pre_args_num),
                                         NEW_CHILD(ast, ainfo->pre_init),

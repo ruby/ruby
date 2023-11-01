@@ -45,29 +45,28 @@ module Prism
     # For the given source, compiles with CRuby and returns a list of all of the
     # sets of local variables that were encountered.
     def self.cruby_locals(source)
-      verbose = $VERBOSE
-      $VERBOSE = nil
+      verbose, $VERBOSE = $VERBOSE, nil
 
       begin
         locals = []
         stack = [ISeq.new(RubyVM::InstructionSequence.compile(source).to_a)]
 
         while (iseq = stack.pop)
-          if iseq.type != :once
-            names = iseq.local_table
-
-            # CRuby will push on a special local variable when there are keyword
-            # arguments. We get rid of that here.
-            names = names.grep_v(Integer)
-
-            # For some reason, CRuby occasionally pushes this special local
-            # variable when there are splat arguments. We get rid of that here.
-            names = names.grep_v(:"#arg_rest")
-
-            # Now push them onto the list of locals.
-            locals << names
+          names = [*iseq.local_table]
+          names.map!.with_index do |name, index|
+            # When an anonymous local variable is present in the iseq's local
+            # table, it is represented as the stack offset from the top.
+            # However, when these are dumped to binary and read back in, they
+            # are replaced with the symbol :#arg_rest. To consistently handle
+            # this, we replace them here with their index.
+            if name == :"#arg_rest"
+              names.length - index + 1
+            else
+              name
+            end
           end
 
+          locals << names
           iseq.each_child { |child| stack << child }
         end
 
@@ -76,6 +75,8 @@ module Prism
         $VERBOSE = verbose
       end
     end
+
+    AnonymousLocal = Object.new
 
     # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
@@ -97,28 +98,37 @@ module Prism
           # order here so that we can compare properly.
           if params
             sorted = [
-              *params.requireds.grep(RequiredParameterNode).map(&:name),
+              *params.requireds.map do |required|
+                if required.is_a?(RequiredParameterNode)
+                  required.name
+                else
+                  AnonymousLocal
+                end
+              end,
               *params.optionals.map(&:name),
               *((params.rest.name || :*) if params.rest && params.rest.operator != ","),
-              *params.posts.grep(RequiredParameterNode).map(&:name),
+              *params.posts.map do |post|
+                if post.is_a?(RequiredParameterNode)
+                  post.name
+                else
+                  AnonymousLocal
+                end
+              end,
               *params.keywords.reject(&:value).map(&:name),
               *params.keywords.select(&:value).map(&:name)
             ]
 
-            # TODO: When we get a ... parameter, we should be pushing * and &
-            # onto the local list. We don't do that yet, so we need to add them
-            # in here.
-            if params.keyword_rest.is_a?(ForwardingParameterNode)
-              sorted.push(:*, :&, :"...")
-            end
+            sorted << AnonymousLocal if params.keywords.any?
 
             # Recurse down the parameter tree to find any destructured
             # parameters and add them after the other parameters.
-            param_stack = params.requireds.concat(params.posts).grep(RequiredDestructuredParameterNode).reverse
+            param_stack = params.requireds.concat(params.posts).grep(MultiTargetNode).reverse
             while (param = param_stack.pop)
               case param
-              when RequiredDestructuredParameterNode
-                param_stack.concat(param.parameters.reverse)
+              when MultiTargetNode
+                param_stack.concat(param.rights.reverse)
+                param_stack << param.rest
+                param_stack.concat(param.lefts.reverse)
               when RequiredParameterNode
                 sorted << param.name
               when SplatNode
@@ -129,11 +139,19 @@ module Prism
             names = sorted.concat(names - sorted)
           end
 
+          names.map!.with_index do |name, index|
+            if name == AnonymousLocal
+              names.length - index + 1
+            else
+              name
+            end
+          end
+
           locals << names
         when ClassNode, ModuleNode, ProgramNode, SingletonClassNode
           locals << node.locals
         when ForNode
-          locals << []
+          locals << [2]
         when PostExecutionNode
           locals.push([], [])
         when InterpolatedRegularExpressionNode

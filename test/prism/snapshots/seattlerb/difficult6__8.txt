@@ -20,15 +20,16 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,5)-(1,8))
-            │   └── arguments: (length: 1)
-            │       └── @ ParenthesesNode (location: (1,5)-(1,8))
-            │           ├── body:
-            │           │   @ StatementsNode (location: (1,6)-(1,7))
-            │           │   └── body: (length: 1)
-            │           │       └── @ IntegerNode (location: (1,6)-(1,7))
-            │           │           └── flags: decimal
-            │           ├── opening_loc: (1,5)-(1,6) = "("
-            │           └── closing_loc: (1,7)-(1,8) = ")"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ ParenthesesNode (location: (1,5)-(1,8))
+            │   │       ├── body:
+            │   │       │   @ StatementsNode (location: (1,6)-(1,7))
+            │   │       │   └── body: (length: 1)
+            │   │       │       └── @ IntegerNode (location: (1,6)-(1,7))
+            │   │       │           └── flags: decimal
+            │   │       ├── opening_loc: (1,5)-(1,6) = "("
+            │   │       └── closing_loc: (1,7)-(1,8) = ")"
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (1,9)-(1,12))

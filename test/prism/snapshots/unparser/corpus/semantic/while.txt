@@ -184,13 +184,14 @@
         │   │   ├── opening_loc: (15,9)-(15,10) = "("
         │   │   ├── arguments:
         │   │   │   @ ArgumentsNode (location: (15,10)-(15,16))
-        │   │   │   └── arguments: (length: 1)
-        │   │   │       └── @ StringNode (location: (15,10)-(15,16))
-        │   │   │           ├── flags: ∅
-        │   │   │           ├── opening_loc: (15,10)-(15,16) = "<<-FOO"
-        │   │   │           ├── content_loc: (16,0)-(15,0) = ""
-        │   │   │           ├── closing_loc: (16,0)-(16,0) = "FOO\n"
-        │   │   │           └── unescaped: ""
+        │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   └── @ StringNode (location: (15,10)-(15,16))
+        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── opening_loc: (15,10)-(15,16) = "<<-FOO"
+        │   │   │   │       ├── content_loc: (16,0)-(16,0) = ""
+        │   │   │   │       ├── closing_loc: (16,0)-(17,0) = "FOO\n"
+        │   │   │   │       └── unescaped: ""
+        │   │   │   └── flags: ∅
         │   │   ├── closing_loc: (15,16)-(15,17) = ")"
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (15,18)-(18,3))

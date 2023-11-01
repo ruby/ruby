@@ -51,6 +51,25 @@ RBIMPL_ATTR_NONNULL((3))
 int rb_profile_frames(int start, int limit, VALUE *buff, int *lines);
 
 /**
+ * Queries mysterious "frame"s of the given range.
+ *
+ * A per-thread version of rb_profile_frames().
+ * Arguments and return values are the same with rb_profile_frames() with the
+ * exception of the first argument _thread_, which accepts the Thread to be
+ * profiled/queried.
+ *
+ * @param[in]   thread The Ruby Thread to be profiled.
+ * @param[in]   start  Start position (0 means the topmost).
+ * @param[in]   limit  Number objects of `buff`.
+ * @param[out]  buff   Return buffer.
+ * @param[out]  lines  Return buffer.
+ * @return      Number of objects filled into `buff`.
+ * @post        `buff` is filled with backtrace pointers.
+ * @post        `lines` is filled with `__LINE__` of each backtraces.
+ */
+int rb_profile_thread_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines);
+
+/**
  * Queries the path of the passed backtrace.
  *
  * @param[in]  frame      What rb_profile_frames() returned.

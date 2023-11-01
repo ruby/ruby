@@ -174,8 +174,8 @@ nt_therad_stack_size(void)
 
     rb_vm_t *vm = GET_VM();
     int sz = (int)(vm->default_params.thread_vm_stack_size + vm->default_params.thread_machine_stack_size + MSTACK_PAGE_SIZE);
-    int page_num = (sz + MSTACK_PAGE_SIZE - 1) / MSTACK_PAGE_SIZE;
-    msz = page_num * MSTACK_PAGE_SIZE;
+    int page_num = roomof(sz, MSTACK_PAGE_SIZE);
+    msz = (size_t)page_num * MSTACK_PAGE_SIZE;
     return msz;
 }
 

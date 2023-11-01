@@ -15,14 +15,14 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,9))
             │       │   ├── constant: ∅
-            │       │   ├── assocs: (length: 1)
-            │       │   │   └── @ AssocSplatNode (location: (2,3)-(2,9))
-            │       │   │       ├── value:
-            │       │   │       │   @ LocalVariableTargetNode (location: (2,5)-(2,9))
-            │       │   │       │   ├── name: :rest
-            │       │   │       │   └── depth: 0
-            │       │   │       └── operator_loc: (2,3)-(2,5) = "**"
-            │       │   ├── kwrest: ∅
+            │       │   ├── elements: (length: 0)
+            │       │   ├── rest:
+            │       │   │   @ AssocSplatNode (location: (2,3)-(2,9))
+            │       │   │   ├── value:
+            │       │   │   │   @ LocalVariableTargetNode (location: (2,5)-(2,9))
+            │       │   │   │   ├── name: :rest
+            │       │   │   │   └── depth: 0
+            │       │   │   └── operator_loc: (2,3)-(2,5) = "**"
             │       │   ├── opening_loc: ∅
             │       │   └── closing_loc: ∅
             │       ├── statements:

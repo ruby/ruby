@@ -57,6 +57,19 @@ RSpec.describe Bundler::YAMLSerializer do
 
       expect(serializer.dump(hash)).to eq(expected)
     end
+
+    it "handles empty array" do
+      hash = {
+        "empty_array" => [],
+      }
+
+      expected = <<~YAML
+        ---
+        empty_array: []
+      YAML
+
+      expect(serializer.dump(hash)).to eq(expected)
+    end
   end
 
   describe "#load" do
@@ -144,6 +157,19 @@ RSpec.describe Bundler::YAMLSerializer do
             "oh so silly",
           ],
         },
+      }
+
+      expect(serializer.load(yaml)).to eq(hash)
+    end
+
+    it "handles empty array" do
+      yaml = <<~YAML
+        ---
+        empty_array: []
+      YAML
+
+      hash = {
+        "empty_array" => [],
       }
 
       expect(serializer.load(yaml)).to eq(hash)

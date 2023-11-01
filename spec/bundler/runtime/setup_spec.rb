@@ -1227,6 +1227,9 @@ end
 
         DEPENDENCIES
           rack
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
       L
 
       if ruby_version

@@ -18,13 +18,14 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (1,15)-(1,22))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (1,15)-(1,22))
-        │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (1,15)-(1,16) = "\""
-        │   │           │           ├── content_loc: (1,16)-(1,21) = "Hello"
-        │   │           │           ├── closing_loc: (1,21)-(1,22) = "\""
-        │   │           │           └── unescaped: "Hello"
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ StringNode (location: (1,15)-(1,22))
+        │   │           │   │       ├── flags: ∅
+        │   │           │   │       ├── opening_loc: (1,15)-(1,16) = "\""
+        │   │           │   │       ├── content_loc: (1,16)-(1,21) = "Hello"
+        │   │           │   │       ├── closing_loc: (1,21)-(1,22) = "\""
+        │   │           │   │       └── unescaped: "Hello"
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -51,13 +52,14 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (3,17)-(3,24))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (3,17)-(3,24))
-        │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (3,17)-(3,18) = "\""
-        │   │           │           ├── content_loc: (3,18)-(3,23) = "Hello"
-        │   │           │           ├── closing_loc: (3,23)-(3,24) = "\""
-        │   │           │           └── unescaped: "Hello"
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ StringNode (location: (3,17)-(3,24))
+        │   │           │   │       ├── flags: ∅
+        │   │           │   │       ├── opening_loc: (3,17)-(3,18) = "\""
+        │   │           │   │       ├── content_loc: (3,18)-(3,23) = "Hello"
+        │   │           │   │       ├── closing_loc: (3,23)-(3,24) = "\""
+        │   │           │   │       └── unescaped: "Hello"
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -94,10 +96,11 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (5,18)-(5,19))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ LocalVariableReadNode (location: (5,18)-(5,19))
-        │   │           │           ├── name: :x
-        │   │           │           └── depth: 0
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ LocalVariableReadNode (location: (5,18)-(5,19))
+        │   │           │   │       ├── name: :x
+        │   │           │   │       └── depth: 0
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -134,13 +137,14 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (7,19)-(7,26))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (7,19)-(7,26))
-        │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (7,19)-(7,20) = "\""
-        │   │           │           ├── content_loc: (7,20)-(7,25) = "Hello"
-        │   │           │           ├── closing_loc: (7,25)-(7,26) = "\""
-        │   │           │           └── unescaped: "Hello"
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ StringNode (location: (7,19)-(7,26))
+        │   │           │   │       ├── flags: ∅
+        │   │           │   │       ├── opening_loc: (7,19)-(7,20) = "\""
+        │   │           │   │       ├── content_loc: (7,20)-(7,25) = "Hello"
+        │   │           │   │       ├── closing_loc: (7,25)-(7,26) = "\""
+        │   │           │   │       └── unescaped: "Hello"
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -177,13 +181,14 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (9,21)-(9,28))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (9,21)-(9,28))
-        │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (9,21)-(9,22) = "\""
-        │   │           │           ├── content_loc: (9,22)-(9,27) = "Hello"
-        │   │           │           ├── closing_loc: (9,27)-(9,28) = "\""
-        │   │           │           └── unescaped: "Hello"
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ StringNode (location: (9,21)-(9,28))
+        │   │           │   │       ├── flags: ∅
+        │   │           │   │       ├── opening_loc: (9,21)-(9,22) = "\""
+        │   │           │   │       ├── content_loc: (9,22)-(9,27) = "Hello"
+        │   │           │   │       ├── closing_loc: (9,27)-(9,28) = "\""
+        │   │           │   │       └── unescaped: "Hello"
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -230,10 +235,11 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (11,22)-(11,23))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ LocalVariableReadNode (location: (11,22)-(11,23))
-        │   │           │           ├── name: :x
-        │   │           │           └── depth: 0
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ LocalVariableReadNode (location: (11,22)-(11,23))
+        │   │           │   │       ├── name: :x
+        │   │           │   │       └── depth: 0
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -270,36 +276,37 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (13,23)-(13,60))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ RescueModifierNode (location: (13,23)-(13,60))
-        │   │           │           ├── expression:
-        │   │           │           │   @ StringNode (location: (13,23)-(13,37))
-        │   │           │           │   ├── flags: ∅
-        │   │           │           │   ├── opening_loc: (13,23)-(13,24) = "\""
-        │   │           │           │   ├── content_loc: (13,24)-(13,36) = "to be caught"
-        │   │           │           │   ├── closing_loc: (13,36)-(13,37) = "\""
-        │   │           │           │   └── unescaped: "to be caught"
-        │   │           │           ├── keyword_loc: (13,38)-(13,44) = "rescue"
-        │   │           │           └── rescue_expression:
-        │   │           │               @ InterpolatedStringNode (location: (13,45)-(13,60))
-        │   │           │               ├── opening_loc: (13,45)-(13,46) = "\""
-        │   │           │               ├── parts: (length: 2)
-        │   │           │               │   ├── @ StringNode (location: (13,46)-(13,55))
-        │   │           │               │   │   ├── flags: ∅
-        │   │           │               │   │   ├── opening_loc: ∅
-        │   │           │               │   │   ├── content_loc: (13,46)-(13,55) = "instance "
-        │   │           │               │   │   ├── closing_loc: ∅
-        │   │           │               │   │   └── unescaped: "instance "
-        │   │           │               │   └── @ EmbeddedStatementsNode (location: (13,55)-(13,59))
-        │   │           │               │       ├── opening_loc: (13,55)-(13,57) = "\#{"
-        │   │           │               │       ├── statements:
-        │   │           │               │       │   @ StatementsNode (location: (13,57)-(13,58))
-        │   │           │               │       │   └── body: (length: 1)
-        │   │           │               │       │       └── @ LocalVariableReadNode (location: (13,57)-(13,58))
-        │   │           │               │       │           ├── name: :x
-        │   │           │               │       │           └── depth: 0
-        │   │           │               │       └── closing_loc: (13,58)-(13,59) = "}"
-        │   │           │               └── closing_loc: (13,59)-(13,60) = "\""
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ RescueModifierNode (location: (13,23)-(13,60))
+        │   │           │   │       ├── expression:
+        │   │           │   │       │   @ StringNode (location: (13,23)-(13,37))
+        │   │           │   │       │   ├── flags: ∅
+        │   │           │   │       │   ├── opening_loc: (13,23)-(13,24) = "\""
+        │   │           │   │       │   ├── content_loc: (13,24)-(13,36) = "to be caught"
+        │   │           │   │       │   ├── closing_loc: (13,36)-(13,37) = "\""
+        │   │           │   │       │   └── unescaped: "to be caught"
+        │   │           │   │       ├── keyword_loc: (13,38)-(13,44) = "rescue"
+        │   │           │   │       └── rescue_expression:
+        │   │           │   │           @ InterpolatedStringNode (location: (13,45)-(13,60))
+        │   │           │   │           ├── opening_loc: (13,45)-(13,46) = "\""
+        │   │           │   │           ├── parts: (length: 2)
+        │   │           │   │           │   ├── @ StringNode (location: (13,46)-(13,55))
+        │   │           │   │           │   │   ├── flags: ∅
+        │   │           │   │           │   │   ├── opening_loc: ∅
+        │   │           │   │           │   │   ├── content_loc: (13,46)-(13,55) = "instance "
+        │   │           │   │           │   │   ├── closing_loc: ∅
+        │   │           │   │           │   │   └── unescaped: "instance "
+        │   │           │   │           │   └── @ EmbeddedStatementsNode (location: (13,55)-(13,59))
+        │   │           │   │           │       ├── opening_loc: (13,55)-(13,57) = "\#{"
+        │   │           │   │           │       ├── statements:
+        │   │           │   │           │       │   @ StatementsNode (location: (13,57)-(13,58))
+        │   │           │   │           │       │   └── body: (length: 1)
+        │   │           │   │           │       │       └── @ LocalVariableReadNode (location: (13,57)-(13,58))
+        │   │           │   │           │       │           ├── name: :x
+        │   │           │   │           │       │           └── depth: 0
+        │   │           │   │           │       └── closing_loc: (13,58)-(13,59) = "}"
+        │   │           │   │           └── closing_loc: (13,59)-(13,60) = "\""
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -337,36 +344,37 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (15,28)-(15,62))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ RescueModifierNode (location: (15,28)-(15,62))
-            │           │           ├── expression:
-            │           │           │   @ StringNode (location: (15,28)-(15,42))
-            │           │           │   ├── flags: ∅
-            │           │           │   ├── opening_loc: (15,28)-(15,29) = "\""
-            │           │           │   ├── content_loc: (15,29)-(15,41) = "to be caught"
-            │           │           │   ├── closing_loc: (15,41)-(15,42) = "\""
-            │           │           │   └── unescaped: "to be caught"
-            │           │           ├── keyword_loc: (15,43)-(15,49) = "rescue"
-            │           │           └── rescue_expression:
-            │           │               @ InterpolatedStringNode (location: (15,50)-(15,62))
-            │           │               ├── opening_loc: (15,50)-(15,51) = "\""
-            │           │               ├── parts: (length: 2)
-            │           │               │   ├── @ StringNode (location: (15,51)-(15,57))
-            │           │               │   │   ├── flags: ∅
-            │           │               │   │   ├── opening_loc: ∅
-            │           │               │   │   ├── content_loc: (15,51)-(15,57) = "class "
-            │           │               │   │   ├── closing_loc: ∅
-            │           │               │   │   └── unescaped: "class "
-            │           │               │   └── @ EmbeddedStatementsNode (location: (15,57)-(15,61))
-            │           │               │       ├── opening_loc: (15,57)-(15,59) = "\#{"
-            │           │               │       ├── statements:
-            │           │               │       │   @ StatementsNode (location: (15,59)-(15,60))
-            │           │               │       │   └── body: (length: 1)
-            │           │               │       │       └── @ LocalVariableReadNode (location: (15,59)-(15,60))
-            │           │               │       │           ├── name: :x
-            │           │               │       │           └── depth: 0
-            │           │               │       └── closing_loc: (15,60)-(15,61) = "}"
-            │           │               └── closing_loc: (15,61)-(15,62) = "\""
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ RescueModifierNode (location: (15,28)-(15,62))
+            │           │   │       ├── expression:
+            │           │   │       │   @ StringNode (location: (15,28)-(15,42))
+            │           │   │       │   ├── flags: ∅
+            │           │   │       │   ├── opening_loc: (15,28)-(15,29) = "\""
+            │           │   │       │   ├── content_loc: (15,29)-(15,41) = "to be caught"
+            │           │   │       │   ├── closing_loc: (15,41)-(15,42) = "\""
+            │           │   │       │   └── unescaped: "to be caught"
+            │           │   │       ├── keyword_loc: (15,43)-(15,49) = "rescue"
+            │           │   │       └── rescue_expression:
+            │           │   │           @ InterpolatedStringNode (location: (15,50)-(15,62))
+            │           │   │           ├── opening_loc: (15,50)-(15,51) = "\""
+            │           │   │           ├── parts: (length: 2)
+            │           │   │           │   ├── @ StringNode (location: (15,51)-(15,57))
+            │           │   │           │   │   ├── flags: ∅
+            │           │   │           │   │   ├── opening_loc: ∅
+            │           │   │           │   │   ├── content_loc: (15,51)-(15,57) = "class "
+            │           │   │           │   │   ├── closing_loc: ∅
+            │           │   │           │   │   └── unescaped: "class "
+            │           │   │           │   └── @ EmbeddedStatementsNode (location: (15,57)-(15,61))
+            │           │   │           │       ├── opening_loc: (15,57)-(15,59) = "\#{"
+            │           │   │           │       ├── statements:
+            │           │   │           │       │   @ StatementsNode (location: (15,59)-(15,60))
+            │           │   │           │       │   └── body: (length: 1)
+            │           │   │           │       │       └── @ LocalVariableReadNode (location: (15,59)-(15,60))
+            │           │   │           │       │           ├── name: :x
+            │           │   │           │       │           └── depth: 0
+            │           │   │           │       └── closing_loc: (15,60)-(15,61) = "}"
+            │           │   │           └── closing_loc: (15,61)-(15,62) = "\""
+            │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

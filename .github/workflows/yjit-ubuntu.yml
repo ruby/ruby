@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   cargo:
-    name: Rust cargo test
+    name: cargo test
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
@@ -41,7 +41,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
@@ -59,7 +59,7 @@ jobs:
         working-directory: yjit
 
   lint:
-    name: Rust lint
+    name: cargo clippy
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
@@ -73,7 +73,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
@@ -101,9 +101,6 @@ jobs:
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx'
 
-          - test_task: 'test-all TESTS=--repeat-count=2'
-            configure: '--enable-yjit=dev'
-
           - test_task: 'test-bundled-gems'
             configure: '--enable-yjit=dev'
 
@@ -130,7 +127,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

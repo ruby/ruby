@@ -876,7 +876,6 @@ x = __ENCODING__
   def test_void_expr_stmts_value
     x = 1
     useless_use = /useless use/
-    unused = /unused/
     assert_nil assert_warning(useless_use) {eval("x; nil")}
     assert_nil assert_warning(useless_use) {eval("1+1; nil")}
     assert_nil assert_warning('') {eval("1.+(1); nil")}
@@ -884,10 +883,10 @@ x = __ENCODING__
     assert_nil assert_warning(useless_use) {eval("::TestParse; nil")}
     assert_nil assert_warning(useless_use) {eval("x..x; nil")}
     assert_nil assert_warning(useless_use) {eval("x...x; nil")}
-    assert_nil assert_warning(unused) {eval("self; nil")}
-    assert_nil assert_warning(unused) {eval("nil; nil")}
-    assert_nil assert_warning(unused) {eval("true; nil")}
-    assert_nil assert_warning(unused) {eval("false; nil")}
+    assert_nil assert_warning(useless_use) {eval("self; nil")}
+    assert_nil assert_warning(useless_use) {eval("nil; nil")}
+    assert_nil assert_warning(useless_use) {eval("true; nil")}
+    assert_nil assert_warning(useless_use) {eval("false; nil")}
     assert_nil assert_warning(useless_use) {eval("defined?(1); nil")}
     assert_equal 1, x
 

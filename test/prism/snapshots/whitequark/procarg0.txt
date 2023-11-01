@@ -18,14 +18,16 @@
         │   │   │   ├── parameters:
         │   │   │   │   @ ParametersNode (location: (1,5)-(1,15))
         │   │   │   │   ├── requireds: (length: 1)
-        │   │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (1,5)-(1,15))
-        │   │   │   │   │       ├── parameters: (length: 2)
+        │   │   │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,15))
+        │   │   │   │   │       ├── lefts: (length: 2)
         │   │   │   │   │       │   ├── @ RequiredParameterNode (location: (1,6)-(1,9))
         │   │   │   │   │       │   │   └── name: :foo
         │   │   │   │   │       │   └── @ RequiredParameterNode (location: (1,11)-(1,14))
         │   │   │   │   │       │       └── name: :bar
-        │   │   │   │   │       ├── opening_loc: (1,5)-(1,6) = "("
-        │   │   │   │   │       └── closing_loc: (1,14)-(1,15) = ")"
+        │   │   │   │   │       ├── rest: ∅
+        │   │   │   │   │       ├── rights: (length: 0)
+        │   │   │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("
+        │   │   │   │   │       └── rparen_loc: (1,14)-(1,15) = ")"
         │   │   │   │   ├── optionals: (length: 0)
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 0)

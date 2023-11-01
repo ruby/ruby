@@ -7,7 +7,7 @@ module Lrama
     extend Forwardable
     include Report::Duration
 
-    attr_reader :grammar_file_path, :context, :grammar, :error_recovery
+    attr_reader :grammar_file_path, :context, :grammar, :error_recovery, :include_header
 
     def_delegators "@context", :yyfinal, :yylast, :yyntokens, :yynnts, :yynrules, :yynstates,
                                :yymaxutok, :yypact_ninf, :yytable_ninf
@@ -28,6 +28,7 @@ module Lrama
       @context = context
       @grammar = grammar
       @error_recovery = error_recovery
+      @include_header = header_file_path ? header_file_path.sub("./", "") : nil
     end
 
     if ERB.instance_method(:initialize).parameters.last.first == :key
@@ -40,11 +41,8 @@ module Lrama
       end
     end
 
-    def eval_template(file, path)
-      erb = self.class.erb(File.read(file))
-      erb.filename = file
-      tmp = erb.result_with_hash(context: @context, output: self)
-      replace_special_variables(tmp, path)
+    def render_partial(file)
+      render_template(partial_file(file))
     end
 
     def render
@@ -143,7 +141,7 @@ module Lrama
         str << <<-STR
     case #{sym.enum_name}: /* #{sym.comment}  */
 #line #{sym.printer.lineno} "#{@grammar_file_path}"
-         #{sym.printer.translated_code(sym.tag)}
+         {#{sym.printer.translated_code(sym.tag)}}
 #line [@oline@] [@ofile@]
         break;
 
@@ -160,7 +158,7 @@ module Lrama
       <<-STR
         #{comment}
 #line #{@grammar.initial_action.line} "#{@grammar_file_path}"
-        #{@grammar.initial_action.translated_code}
+        {#{@grammar.initial_action.translated_code}}
       STR
     end
 
@@ -173,7 +171,7 @@ module Lrama
         str << <<-STR
     case #{sym.enum_name}: /* #{sym.comment}  */
 #line #{sym.error_token.lineno} "#{@grammar_file_path}"
-         #{sym.error_token.translated_code(sym.tag)}
+         {#{sym.error_token.translated_code(sym.tag)}}
 #line [@oline@] [@ofile@]
         break;
 
@@ -190,14 +188,13 @@ module Lrama
       @context.states.rules.each do |rule|
         next unless rule.code
 
-        rule = rule
         code = rule.code
         spaces = " " * (code.column - 1)
 
         str << <<-STR
   case #{rule.id + 1}: /* #{rule.as_comment}  */
 #line #{code.line} "#{@grammar_file_path}"
-#{spaces}#{rule.translated_code}
+#{spaces}{#{rule.translated_code}}
 #line [@oline@] [@ofile@]
     break;
 
@@ -212,14 +209,14 @@ module Lrama
       str
     end
 
-    def omit_braces_and_blanks(param)
-      param[1..-2].strip
+    def omit_blanks(param)
+      param.strip
     end
 
     # b4_parse_param
     def parse_param
       if @grammar.parse_param
-        omit_braces_and_blanks(@grammar.parse_param)
+        omit_blanks(@grammar.parse_param)
       else
         ""
       end
@@ -227,7 +224,7 @@ module Lrama
 
     def lex_param
       if @grammar.lex_param
-        omit_braces_and_blanks(@grammar.lex_param)
+        omit_blanks(@grammar.lex_param)
       else
         ""
       end
@@ -354,12 +351,27 @@ module Lrama
 
     private
 
+    def eval_template(file, path)
+      tmp = render_template(file)
+      replace_special_variables(tmp, path)
+    end
+
+    def render_template(file)
+      erb = self.class.erb(File.read(file))
+      erb.filename = file
+      erb.result_with_hash(context: @context, output: self)
+    end
+
     def template_file
       File.join(template_dir, @template_name)
     end
 
     def header_template_file
       File.join(template_dir, "bison/yacc.h")
+    end
+
+    def partial_file(file)
+      File.join(template_dir, file)
     end
 
     def template_dir

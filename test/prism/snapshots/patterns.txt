@@ -1345,13 +1345,14 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (61,17)-(61,22))
-        │   │   │   │   └── arguments: (length: 1)
-        │   │   │   │       └── @ StringNode (location: (61,17)-(61,22))
-        │   │   │   │           ├── flags: ∅
-        │   │   │   │           ├── opening_loc: (61,17)-(61,18) = "\""
-        │   │   │   │           ├── content_loc: (61,18)-(61,21) = "baz"
-        │   │   │   │           ├── closing_loc: (61,21)-(61,22) = "\""
-        │   │   │   │           └── unescaped: "baz"
+        │   │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   │   └── @ StringNode (location: (61,17)-(61,22))
+        │   │   │   │   │       ├── flags: ∅
+        │   │   │   │   │       ├── opening_loc: (61,17)-(61,18) = "\""
+        │   │   │   │   │       ├── content_loc: (61,18)-(61,21) = "baz"
+        │   │   │   │   │       ├── closing_loc: (61,21)-(61,22) = "\""
+        │   │   │   │   │       └── unescaped: "baz"
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: ∅
@@ -4465,7 +4466,7 @@
             │   ├── constant:
             │   │   @ ConstantReadNode (location: (188,7)-(188,8))
             │   │   └── name: :A
-            │   ├── assocs: (length: 1)
+            │   ├── elements: (length: 1)
             │   │   └── @ AssocNode (location: (189,2)-(191,3))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (189,2)-(189,6))
@@ -4478,7 +4479,7 @@
             │   │       │   ├── constant:
             │   │       │   │   @ ConstantReadNode (location: (189,7)-(189,8))
             │   │       │   │   └── name: :B
-            │   │       │   ├── assocs: (length: 1)
+            │   │       │   ├── elements: (length: 1)
             │   │       │   │   └── @ AssocNode (location: (190,4)-(190,12))
             │   │       │   │       ├── key:
             │   │       │   │       │   @ SymbolNode (location: (190,4)-(190,10))
@@ -4491,11 +4492,11 @@
             │   │       │   │       │   ├── name: :a
             │   │       │   │       │   └── depth: 0
             │   │       │   │       └── operator_loc: ∅
-            │   │       │   ├── kwrest: ∅
+            │   │       │   ├── rest: ∅
             │   │       │   ├── opening_loc: (189,8)-(189,9) = "["
             │   │       │   └── closing_loc: (191,2)-(191,3) = "]"
             │   │       └── operator_loc: ∅
-            │   ├── kwrest: ∅
+            │   ├── rest: ∅
             │   ├── opening_loc: (188,8)-(188,9) = "["
             │   └── closing_loc: (192,0)-(192,1) = "]"
             └── operator_loc: (188,4)-(188,6) = "in"

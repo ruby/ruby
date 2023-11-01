@@ -402,7 +402,8 @@ typedef struct RNode_OP_ASGN1 {
 
     struct RNode *nd_recv;
     ID nd_mid;
-    struct RNode_ARGSCAT *nd_args;
+    struct RNode *nd_index;
+    struct RNode *nd_rvalue;
 } rb_node_op_asgn1_t;
 
 typedef struct RNode_OP_ASGN2 {
@@ -666,10 +667,31 @@ typedef struct RNode_ONCE {
     struct RNode *nd_body;
 } rb_node_once_t;
 
+struct rb_args_info {
+    NODE *pre_init;
+    NODE *post_init;
+
+    int pre_args_num;  /* count of mandatory pre-arguments */
+    int post_args_num; /* count of mandatory post-arguments */
+
+    ID first_post_arg;
+
+    ID rest_arg;
+    ID block_arg;
+
+    struct RNode_KW_ARG *kw_args;
+    NODE *kw_rest_arg;
+
+    struct RNode_OPT_ARG *opt_args;
+    unsigned int no_kwarg: 1;
+    unsigned int ruby2_keywords: 1;
+    unsigned int forwarding: 1;
+};
+
 typedef struct RNode_ARGS {
     NODE node;
 
-    struct rb_args_info *nd_ainfo;
+    struct rb_args_info nd_ainfo;
 } rb_node_args_t;
 
 typedef struct RNode_ARGS_AUX {
@@ -948,7 +970,6 @@ typedef struct RNode_ERROR {
 #define RNODE_CVASGN(node) ((struct RNode_CVASGN *)(node))
 #define RNODE_OP_ASGN1(node) ((struct RNode_OP_ASGN1 *)(node))
 #define RNODE_OP_ASGN2(node) ((struct RNode_OP_ASGN2 *)(node))
-#define RNODE_OP_ASGN22(node) ((struct RNode_OP_ASGN22 *)(node))
 #define RNODE_OP_ASGN_AND(node) ((struct RNode_OP_ASGN_AND *)(node))
 #define RNODE_OP_ASGN_OR(node) ((struct RNode_OP_ASGN_OR *)(node))
 #define RNODE_OP_CDECL(node) ((struct RNode_OP_CDECL *)(node))
@@ -1061,27 +1082,6 @@ typedef struct RNode_RIPPER_VALUES {
 #define nd_init_type(n,t) \
     (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
-struct rb_args_info {
-    NODE *pre_init;
-    NODE *post_init;
-
-    int pre_args_num;  /* count of mandatory pre-arguments */
-    int post_args_num; /* count of mandatory post-arguments */
-
-    ID first_post_arg;
-
-    ID rest_arg;
-    ID block_arg;
-
-    struct RNode_KW_ARG *kw_args;
-    NODE *kw_rest_arg;
-
-    struct RNode_OPT_ARG *opt_args;
-    unsigned int no_kwarg: 1;
-    unsigned int ruby2_keywords: 1;
-    unsigned int forwarding: 1;
-};
-
 typedef struct node_buffer_struct node_buffer_t;
 /* T_IMEMO/ast */
 typedef struct rb_ast_body_struct {
@@ -1191,6 +1191,7 @@ typedef struct rb_parser_config_struct {
     ID (*sym2id)(VALUE sym);
 
     /* String */
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
     VALUE (*str_subseq)(VALUE str, long beg, long len);
@@ -1209,8 +1210,10 @@ typedef struct rb_parser_config_struct {
     VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
     VALUE (*enc_str_buf_cat)(VALUE str, const char *ptr, long len, rb_encoding *enc);
     VALUE (*str_buf_append)(VALUE str, VALUE str2);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
     VALUE (*str_vcatf)(VALUE str, const char *fmt, va_list ap);
     char *(*string_value_cstr)(volatile VALUE *ptr);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
     char *(*rstring_end)(VALUE str);
@@ -1314,7 +1317,9 @@ typedef struct rb_parser_config_struct {
 
     /* Error (Exception) */
     const char *(*builtin_class_name)(VALUE x);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
     VALUE (*syntax_error_append)(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
+    RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     void (*raise)(VALUE exc, const char *fmt, ...);
     VALUE (*syntax_error_new)(void);
 

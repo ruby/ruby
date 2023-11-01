@@ -35,13 +35,14 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (3,12)-(3,14))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ StringNode (location: (3,12)-(3,14))
-        │   │           │           ├── flags: ∅
-        │   │           │           ├── opening_loc: (3,12)-(3,13) = "\""
-        │   │           │           ├── content_loc: (3,13)-(3,13) = ""
-        │   │           │           ├── closing_loc: (3,13)-(3,14) = "\""
-        │   │           │           └── unescaped: ""
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ StringNode (location: (3,12)-(3,14))
+        │   │           │   │       ├── flags: ∅
+        │   │           │   │       ├── opening_loc: (3,12)-(3,13) = "\""
+        │   │           │   │       ├── content_loc: (3,13)-(3,13) = ""
+        │   │           │   │       ├── closing_loc: (3,13)-(3,14) = "\""
+        │   │           │   │       └── unescaped: ""
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
@@ -72,9 +73,10 @@
             │           │   ├── opening_loc: ∅
             │           │   ├── arguments:
             │           │   │   @ ArgumentsNode (location: (5,17)-(5,18))
-            │           │   │   └── arguments: (length: 1)
-            │           │   │       └── @ IntegerNode (location: (5,17)-(5,18))
-            │           │   │           └── flags: decimal
+            │           │   │   ├── arguments: (length: 1)
+            │           │   │   │   └── @ IntegerNode (location: (5,17)-(5,18))
+            │           │   │   │       └── flags: decimal
+            │           │   │   └── flags: ∅
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
             │           │   ├── flags: ∅
@@ -84,9 +86,10 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (5,21)-(5,22))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ IntegerNode (location: (5,21)-(5,22))
-            │           │           └── flags: decimal
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ IntegerNode (location: (5,21)-(5,22))
+            │           │   │       └── flags: decimal
+            │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

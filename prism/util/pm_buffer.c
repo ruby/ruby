@@ -40,9 +40,13 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     size_t next_length = buffer->length + length;
 
     if (next_length > buffer->capacity) {
-        do {
+        if (buffer->capacity == 0) {
+            buffer->capacity = 1;
+        }
+
+        while (next_length > buffer->capacity) {
             buffer->capacity *= 2;
-        } while (next_length > buffer->capacity);
+        }
 
         buffer->value = realloc(buffer->value, buffer->capacity);
     }
@@ -53,20 +57,43 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
 // Append a generic pointer to memory to the buffer.
 static inline void
 pm_buffer_append(pm_buffer_t *buffer, const void *source, size_t length) {
+    size_t cursor = buffer->length;
     pm_buffer_append_length(buffer, length);
-    memcpy(buffer->value + (buffer->length - length), source, length);
+    memcpy(buffer->value + cursor, source, length);
 }
 
 // Append the given amount of space as zeroes to the buffer.
 void
 pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
+    size_t cursor = buffer->length;
     pm_buffer_append_length(buffer, length);
-    memset(buffer->value + (buffer->length - length), 0, length);
+    memset(buffer->value + cursor, 0, length);
+}
+
+// Append a formatted string to the buffer.
+void
+pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
+    va_list arguments;
+    va_start(arguments, format);
+    int result = vsnprintf(NULL, 0, format, arguments);
+    va_end(arguments);
+
+    if (result < 0) return;
+    size_t length = (size_t) (result + 1);
+
+    size_t cursor = buffer->length;
+    pm_buffer_append_length(buffer, length);
+
+    va_start(arguments, format);
+    vsnprintf(buffer->value + cursor, length, format, arguments);
+    va_end(arguments);
+
+    buffer->length--;
 }
 
 // Append a string to the buffer.
 void
-pm_buffer_append_str(pm_buffer_t *buffer, const char *value, size_t length) {
+pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length) {
     pm_buffer_append(buffer, value, length);
 }
 
@@ -78,27 +105,35 @@ pm_buffer_append_bytes(pm_buffer_t *buffer, const uint8_t *value, size_t length)
 
 // Append a single byte to the buffer.
 void
-pm_buffer_append_u8(pm_buffer_t *buffer, uint8_t value) {
+pm_buffer_append_byte(pm_buffer_t *buffer, uint8_t value) {
     const void *source = &value;
     pm_buffer_append(buffer, source, sizeof(uint8_t));
 }
 
-// Append a 32-bit unsigned integer to the buffer.
+// Append a 32-bit unsigned integer to the buffer as a variable-length integer.
 void
-pm_buffer_append_u32(pm_buffer_t *buffer, uint32_t value) {
+pm_buffer_append_varint(pm_buffer_t *buffer, uint32_t value) {
     if (value < 128) {
-        pm_buffer_append_u8(buffer, (uint8_t) value);
+        pm_buffer_append_byte(buffer, (uint8_t) value);
     } else {
         uint32_t n = value;
         while (n >= 128) {
-            pm_buffer_append_u8(buffer, (uint8_t) (n | 128));
+            pm_buffer_append_byte(buffer, (uint8_t) (n | 128));
             n >>= 7;
         }
-        pm_buffer_append_u8(buffer, (uint8_t) n);
+        pm_buffer_append_byte(buffer, (uint8_t) n);
     }
 }
 
-// Free the memory associated with the buffer.
+// Concatenate one buffer onto another.
+void
+pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source) {
+    if (source->length > 0) {
+        pm_buffer_append(destination, source->value, source->length);
+    }
+}
+
+// Free the internal memory associated with the buffer.
 void
 pm_buffer_free(pm_buffer_t *buffer) {
     free(buffer->value);

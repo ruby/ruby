@@ -165,76 +165,77 @@
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments:
             │           │           │   @ ArgumentsNode (location: (15,16)-(21,7))
-            │           │           │   └── arguments: (length: 1)
-            │           │           │       └── @ BeginNode (location: (15,16)-(21,7))
-            │           │           │           ├── begin_keyword_loc: (15,16)-(15,21) = "begin"
-            │           │           │           ├── statements: ∅
-            │           │           │           ├── rescue_clause: ∅
-            │           │           │           ├── else_clause: ∅
-            │           │           │           ├── ensure_clause:
-            │           │           │           │   @ EnsureNode (location: (15,22)-(21,7))
-            │           │           │           │   ├── ensure_keyword_loc: (15,22)-(15,28) = "ensure"
-            │           │           │           │   ├── statements:
-            │           │           │           │   │   @ StatementsNode (location: (15,29)-(21,3))
-            │           │           │           │   │   └── body: (length: 1)
-            │           │           │           │   │       └── @ CallNode (location: (15,29)-(21,3))
-            │           │           │           │   │           ├── receiver:
-            │           │           │           │   │           │   @ ConstantReadNode (location: (15,29)-(15,35))
-            │           │           │           │   │           │   └── name: :Module
-            │           │           │           │   │           ├── call_operator_loc: (15,35)-(15,36) = "."
-            │           │           │           │   │           ├── message_loc: (15,36)-(15,39) = "new"
-            │           │           │           │   │           ├── opening_loc: ∅
-            │           │           │           │   │           ├── arguments: ∅
-            │           │           │           │   │           ├── closing_loc: ∅
-            │           │           │           │   │           ├── block:
-            │           │           │           │   │           │   @ BlockNode (location: (15,40)-(21,3))
-            │           │           │           │   │           │   ├── locals: []
-            │           │           │           │   │           │   ├── parameters: ∅
-            │           │           │           │   │           │   ├── body:
-            │           │           │           │   │           │   │   @ StatementsNode (location: (16,2)-(20,5))
-            │           │           │           │   │           │   │   └── body: (length: 1)
-            │           │           │           │   │           │   │       └── @ BeginNode (location: (16,2)-(20,5))
-            │           │           │           │   │           │   │           ├── begin_keyword_loc: (16,2)-(16,7) = "begin"
-            │           │           │           │   │           │   │           ├── statements:
-            │           │           │           │   │           │   │           │   @ StatementsNode (location: (17,4)-(17,9))
-            │           │           │           │   │           │   │           │   └── body: (length: 1)
-            │           │           │           │   │           │   │           │       └── @ BreakNode (location: (17,4)-(17,9))
-            │           │           │           │   │           │   │           │           ├── arguments: ∅
-            │           │           │           │   │           │   │           │           └── keyword_loc: (17,4)-(17,9) = "break"
-            │           │           │           │   │           │   │           ├── rescue_clause: ∅
-            │           │           │           │   │           │   │           ├── else_clause: ∅
-            │           │           │           │   │           │   │           ├── ensure_clause:
-            │           │           │           │   │           │   │           │   @ EnsureNode (location: (18,4)-(20,5))
-            │           │           │           │   │           │   │           │   ├── ensure_keyword_loc: (18,4)-(18,10) = "ensure"
-            │           │           │           │   │           │   │           │   ├── statements:
-            │           │           │           │   │           │   │           │   │   @ StatementsNode (location: (18,11)-(19,7))
-            │           │           │           │   │           │   │           │   │   └── body: (length: 1)
-            │           │           │           │   │           │   │           │   │       └── @ CallNode (location: (18,11)-(19,7))
-            │           │           │           │   │           │   │           │   │           ├── receiver:
-            │           │           │           │   │           │   │           │   │           │   @ ConstantReadNode (location: (18,11)-(18,17))
-            │           │           │           │   │           │   │           │   │           │   └── name: :Module
-            │           │           │           │   │           │   │           │   │           ├── call_operator_loc: (18,17)-(18,18) = "."
-            │           │           │           │   │           │   │           │   │           ├── message_loc: (18,18)-(18,21) = "new"
-            │           │           │           │   │           │   │           │   │           ├── opening_loc: ∅
-            │           │           │           │   │           │   │           │   │           ├── arguments: ∅
-            │           │           │           │   │           │   │           │   │           ├── closing_loc: ∅
-            │           │           │           │   │           │   │           │   │           ├── block:
-            │           │           │           │   │           │   │           │   │           │   @ BlockNode (location: (18,22)-(19,7))
-            │           │           │           │   │           │   │           │   │           │   ├── locals: []
-            │           │           │           │   │           │   │           │   │           │   ├── parameters: ∅
-            │           │           │           │   │           │   │           │   │           │   ├── body: ∅
-            │           │           │           │   │           │   │           │   │           │   ├── opening_loc: (18,22)-(18,24) = "do"
-            │           │           │           │   │           │   │           │   │           │   └── closing_loc: (19,4)-(19,7) = "end"
-            │           │           │           │   │           │   │           │   │           ├── flags: ∅
-            │           │           │           │   │           │   │           │   │           └── name: :new
-            │           │           │           │   │           │   │           │   └── end_keyword_loc: (20,2)-(20,5) = "end"
-            │           │           │           │   │           │   │           └── end_keyword_loc: (20,2)-(20,5) = "end"
-            │           │           │           │   │           │   ├── opening_loc: (15,40)-(15,42) = "do"
-            │           │           │           │   │           │   └── closing_loc: (21,0)-(21,3) = "end"
-            │           │           │           │   │           ├── flags: ∅
-            │           │           │           │   │           └── name: :new
-            │           │           │           │   └── end_keyword_loc: (21,4)-(21,7) = "end"
-            │           │           │           └── end_keyword_loc: (21,4)-(21,7) = "end"
+            │           │           │   ├── arguments: (length: 1)
+            │           │           │   │   └── @ BeginNode (location: (15,16)-(21,7))
+            │           │           │   │       ├── begin_keyword_loc: (15,16)-(15,21) = "begin"
+            │           │           │   │       ├── statements: ∅
+            │           │           │   │       ├── rescue_clause: ∅
+            │           │           │   │       ├── else_clause: ∅
+            │           │           │   │       ├── ensure_clause:
+            │           │           │   │       │   @ EnsureNode (location: (15,22)-(21,7))
+            │           │           │   │       │   ├── ensure_keyword_loc: (15,22)-(15,28) = "ensure"
+            │           │           │   │       │   ├── statements:
+            │           │           │   │       │   │   @ StatementsNode (location: (15,29)-(21,3))
+            │           │           │   │       │   │   └── body: (length: 1)
+            │           │           │   │       │   │       └── @ CallNode (location: (15,29)-(21,3))
+            │           │           │   │       │   │           ├── receiver:
+            │           │           │   │       │   │           │   @ ConstantReadNode (location: (15,29)-(15,35))
+            │           │           │   │       │   │           │   └── name: :Module
+            │           │           │   │       │   │           ├── call_operator_loc: (15,35)-(15,36) = "."
+            │           │           │   │       │   │           ├── message_loc: (15,36)-(15,39) = "new"
+            │           │           │   │       │   │           ├── opening_loc: ∅
+            │           │           │   │       │   │           ├── arguments: ∅
+            │           │           │   │       │   │           ├── closing_loc: ∅
+            │           │           │   │       │   │           ├── block:
+            │           │           │   │       │   │           │   @ BlockNode (location: (15,40)-(21,3))
+            │           │           │   │       │   │           │   ├── locals: []
+            │           │           │   │       │   │           │   ├── parameters: ∅
+            │           │           │   │       │   │           │   ├── body:
+            │           │           │   │       │   │           │   │   @ StatementsNode (location: (16,2)-(20,5))
+            │           │           │   │       │   │           │   │   └── body: (length: 1)
+            │           │           │   │       │   │           │   │       └── @ BeginNode (location: (16,2)-(20,5))
+            │           │           │   │       │   │           │   │           ├── begin_keyword_loc: (16,2)-(16,7) = "begin"
+            │           │           │   │       │   │           │   │           ├── statements:
+            │           │           │   │       │   │           │   │           │   @ StatementsNode (location: (17,4)-(17,9))
+            │           │           │   │       │   │           │   │           │   └── body: (length: 1)
+            │           │           │   │       │   │           │   │           │       └── @ BreakNode (location: (17,4)-(17,9))
+            │           │           │   │       │   │           │   │           │           ├── arguments: ∅
+            │           │           │   │       │   │           │   │           │           └── keyword_loc: (17,4)-(17,9) = "break"
+            │           │           │   │       │   │           │   │           ├── rescue_clause: ∅
+            │           │           │   │       │   │           │   │           ├── else_clause: ∅
+            │           │           │   │       │   │           │   │           ├── ensure_clause:
+            │           │           │   │       │   │           │   │           │   @ EnsureNode (location: (18,4)-(20,5))
+            │           │           │   │       │   │           │   │           │   ├── ensure_keyword_loc: (18,4)-(18,10) = "ensure"
+            │           │           │   │       │   │           │   │           │   ├── statements:
+            │           │           │   │       │   │           │   │           │   │   @ StatementsNode (location: (18,11)-(19,7))
+            │           │           │   │       │   │           │   │           │   │   └── body: (length: 1)
+            │           │           │   │       │   │           │   │           │   │       └── @ CallNode (location: (18,11)-(19,7))
+            │           │           │   │       │   │           │   │           │   │           ├── receiver:
+            │           │           │   │       │   │           │   │           │   │           │   @ ConstantReadNode (location: (18,11)-(18,17))
+            │           │           │   │       │   │           │   │           │   │           │   └── name: :Module
+            │           │           │   │       │   │           │   │           │   │           ├── call_operator_loc: (18,17)-(18,18) = "."
+            │           │           │   │       │   │           │   │           │   │           ├── message_loc: (18,18)-(18,21) = "new"
+            │           │           │   │       │   │           │   │           │   │           ├── opening_loc: ∅
+            │           │           │   │       │   │           │   │           │   │           ├── arguments: ∅
+            │           │           │   │       │   │           │   │           │   │           ├── closing_loc: ∅
+            │           │           │   │       │   │           │   │           │   │           ├── block:
+            │           │           │   │       │   │           │   │           │   │           │   @ BlockNode (location: (18,22)-(19,7))
+            │           │           │   │       │   │           │   │           │   │           │   ├── locals: []
+            │           │           │   │       │   │           │   │           │   │           │   ├── parameters: ∅
+            │           │           │   │       │   │           │   │           │   │           │   ├── body: ∅
+            │           │           │   │       │   │           │   │           │   │           │   ├── opening_loc: (18,22)-(18,24) = "do"
+            │           │           │   │       │   │           │   │           │   │           │   └── closing_loc: (19,4)-(19,7) = "end"
+            │           │           │   │       │   │           │   │           │   │           ├── flags: ∅
+            │           │           │   │       │   │           │   │           │   │           └── name: :new
+            │           │           │   │       │   │           │   │           │   └── end_keyword_loc: (20,2)-(20,5) = "end"
+            │           │           │   │       │   │           │   │           └── end_keyword_loc: (20,2)-(20,5) = "end"
+            │           │           │   │       │   │           │   ├── opening_loc: (15,40)-(15,42) = "do"
+            │           │           │   │       │   │           │   └── closing_loc: (21,0)-(21,3) = "end"
+            │           │           │   │       │   │           ├── flags: ∅
+            │           │           │   │       │   │           └── name: :new
+            │           │           │   │       │   └── end_keyword_loc: (21,4)-(21,7) = "end"
+            │           │           │   │       └── end_keyword_loc: (21,4)-(21,7) = "end"
+            │           │           │   └── flags: ∅
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
             │           │           ├── flags: ∅

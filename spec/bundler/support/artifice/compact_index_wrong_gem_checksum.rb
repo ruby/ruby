@@ -7,7 +7,8 @@ class CompactIndexWrongGemChecksum < CompactIndexAPI
     etag_response do
       name = params[:name]
       gem = gems.find {|g| g.name == name }
-      checksum = ENV.fetch("BUNDLER_SPEC_#{name.upcase}_CHECKSUM") { "ab" * 22 }
+      # This generates the hexdigest "2222222222222222222222222222222222222222222222222222222222222222"
+      checksum = ENV.fetch("BUNDLER_SPEC_#{name.upcase}_CHECKSUM") { "IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI=" }
       versions = gem ? gem.versions : []
       versions.each {|v| v.checksum = checksum }
       CompactIndex.info(versions)

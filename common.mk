@@ -446,8 +446,8 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(tooldir)/generic_erb.rb $(R
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
 	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
 
-program: $(SHOWFLAGS) $(PROGRAM)
-wprogram: $(SHOWFLAGS) $(WPROGRAM)
+program: $(SHOWFLAGS) $(DOT_WAIT) $(PROGRAM)
+wprogram: $(SHOWFLAGS) $(DOT_WAIT) $(WPROGRAM)
 mini: PHONY miniruby$(EXEEXT)
 
 $(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
@@ -865,7 +865,8 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 	$(ECHO) generating $@
 	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
-		i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
+	    i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" \
+	    LIBPATHENV="$(LIBPATHENV)" PRELOADENV="$(PRELOADENV)" LIBRUBY_SO="$(LIBRUBY_SO)"
 
 noarch-fake.rb: # prerequisite of yes-fake
 	$(Q) exit > $@
@@ -930,7 +931,10 @@ test-sample: test-basic # backward compatibility for mswin-build
 test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
-yes-test-all-precheck: programs encs exts PHONY $(DOT_WAIT)
+# Separate to skip updating encs and exts by `make -o test-precheck`
+# for GNU make.
+test-precheck: encs exts PHONY $(DOT_WAIT)
+yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
@@ -1034,7 +1038,7 @@ PHONY:
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
 	$(Q)$(BASERUBY) $(tooldir)/id2token.rb $(SRC_FILE) | \
-	$(YACC) -d $(YFLAGS) -o$@ -h$*.h - parse.y
+	$(YACC) $(YFLAGS) -o$@ -H$*.h - parse.y
 
 $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
@@ -3214,6 +3218,7 @@ compile.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 compile.$(OBJEXT): $(top_srcdir)/prism/node.h
 compile.$(OBJEXT): $(top_srcdir)/prism/pack.h
 compile.$(OBJEXT): $(top_srcdir)/prism/parser.h
+compile.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 compile.$(OBJEXT): $(top_srcdir)/prism/prism.h
 compile.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -3413,6 +3418,7 @@ compile.$(OBJEXT): {$(VPATH)}prism/ast.h
 compile.$(OBJEXT): {$(VPATH)}prism/prism.h
 compile.$(OBJEXT): {$(VPATH)}prism/version.h
 compile.$(OBJEXT): {$(VPATH)}prism_compile.c
+compile.$(OBJEXT): {$(VPATH)}prism_compile.h
 compile.$(OBJEXT): {$(VPATH)}re.h
 compile.$(OBJEXT): {$(VPATH)}regex.h
 compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -3428,6 +3434,7 @@ compile.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 compile.$(OBJEXT): {$(VPATH)}vm_core.h
 compile.$(OBJEXT): {$(VPATH)}vm_debug.h
 compile.$(OBJEXT): {$(VPATH)}vm_opts.h
+compile.$(OBJEXT): {$(VPATH)}yjit.h
 complex.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 complex.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 complex.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -8263,6 +8270,7 @@ iseq.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/node.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/pack.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/parser.h
+iseq.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/prism.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -8458,6 +8466,7 @@ iseq.$(OBJEXT): {$(VPATH)}oniguruma.h
 iseq.$(OBJEXT): {$(VPATH)}prism/ast.h
 iseq.$(OBJEXT): {$(VPATH)}prism/prism.h
 iseq.$(OBJEXT): {$(VPATH)}prism/version.h
+iseq.$(OBJEXT): {$(VPATH)}prism_compile.h
 iseq.$(OBJEXT): {$(VPATH)}ractor.h
 iseq.$(OBJEXT): {$(VPATH)}rjit.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -11328,6 +11337,7 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -11519,6 +11529,7 @@ prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -11822,6 +11833,7 @@ prism/extension.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/extension.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -12029,6 +12041,7 @@ prism/pack.$(OBJEXT): {$(VPATH)}config.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
@@ -12044,6 +12057,7 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/prism.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/prism.c
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/regexp.h
@@ -12081,6 +12095,7 @@ prism/serialize.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism/serialize.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -12172,6 +12187,7 @@ prism_init.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/node.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/parser.h
+prism_init.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/prism.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -15302,6 +15318,7 @@ ruby.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/node.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/pack.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/parser.h
+ruby.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/prism.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -15493,6 +15510,7 @@ ruby.$(OBJEXT): {$(VPATH)}onigmo.h
 ruby.$(OBJEXT): {$(VPATH)}oniguruma.h
 ruby.$(OBJEXT): {$(VPATH)}prism/ast.h
 ruby.$(OBJEXT): {$(VPATH)}prism/version.h
+ruby.$(OBJEXT): {$(VPATH)}prism_compile.h
 ruby.$(OBJEXT): {$(VPATH)}rjit.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c
 ruby.$(OBJEXT): {$(VPATH)}ruby_assert.h

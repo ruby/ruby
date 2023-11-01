@@ -10,6 +10,7 @@ VALUE rb_cPrismToken;
 VALUE rb_cPrismLocation;
 
 VALUE rb_cPrismComment;
+VALUE rb_cPrismMagicComment;
 VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
 VALUE rb_cPrismParseResult;
@@ -151,6 +152,35 @@ parser_comments(pm_parser_t *parser, VALUE source) {
     }
 
     return comments;
+}
+
+// Extract the magic comments out of the parser into an array.
+static VALUE
+parser_magic_comments(pm_parser_t *parser, VALUE source) {
+    VALUE magic_comments = rb_ary_new();
+
+    for (pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) parser->magic_comment_list.head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
+        VALUE key_loc_argv[] = {
+            source,
+            LONG2FIX(magic_comment->key_start - parser->start),
+            LONG2FIX(magic_comment->key_length)
+        };
+
+        VALUE value_loc_argv[] = {
+            source,
+            LONG2FIX(magic_comment->value_start - parser->start),
+            LONG2FIX(magic_comment->value_length)
+        };
+
+        VALUE magic_comment_argv[] = {
+            rb_class_new_instance(3, key_loc_argv, rb_cPrismLocation),
+            rb_class_new_instance(3, value_loc_argv, rb_cPrismLocation)
+        };
+
+        rb_ary_push(magic_comments, rb_class_new_instance(2, magic_comment_argv, rb_cPrismMagicComment));
+    }
+
+    return magic_comments;
 }
 
 // Extract the errors out of the parser into an array.
@@ -297,6 +327,7 @@ parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
     VALUE result_argv[] = {
         value,
         parser_comments(&parser, source),
+        parser_magic_comments(&parser, source),
         parser_errors(&parser, parse_lex_data.encoding, source),
         parser_warnings(&parser, parse_lex_data.encoding, source),
         source
@@ -304,7 +335,7 @@ parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
-    return rb_class_new_instance(5, result_argv, rb_cPrismParseResult);
+    return rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
 }
 
 // Return an array of tokens corresponding to the given string.
@@ -351,17 +382,36 @@ parse_input(pm_string_t *input, const char *filepath) {
     VALUE result_argv[] = {
         pm_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
+        parser_magic_comments(&parser, source),
         parser_errors(&parser, encoding, source),
         parser_warnings(&parser, encoding, source),
         source
     };
 
-    VALUE result = rb_class_new_instance(5, result_argv, rb_cPrismParseResult);
+    VALUE result = rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
 
     return result;
+}
+
+// Parse the given input and return an array of Comment objects.
+static VALUE
+parse_input_comments(pm_string_t *input, const char *filepath) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+
+    pm_node_t *node = pm_parse(&parser);
+    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+
+    VALUE source = pm_source_new(&parser, encoding);
+    VALUE comments = parser_comments(&parser, source);
+
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+
+    return comments;
 }
 
 // Parse the given string and return a ParseResult instance.
@@ -399,6 +449,33 @@ parse_file(VALUE self, VALUE filepath) {
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = parse_input(&input, checked);
+    pm_string_free(&input);
+
+    return value;
+}
+
+// Parse the given string and return an array of Comment objects.
+static VALUE
+parse_comments(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    VALUE filepath;
+    rb_scan_args(argc, argv, "11", &string, &filepath);
+
+    pm_string_t input;
+    input_load_string(&input, string);
+
+    return parse_input_comments(&input, check_string(filepath));
+}
+
+// Parse the given file and return an array of Comment objects.
+static VALUE
+parse_file_comments(VALUE self, VALUE filepath) {
+    pm_string_t input;
+
+    const char *checked = check_string(filepath);
+    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+
+    VALUE value = parse_input_comments(&input, checked);
     pm_string_free(&input);
 
     return value;
@@ -522,6 +599,31 @@ parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
     return result;
 }
 
+// Inspect the AST that represents the given source using the prism pretty print
+// as opposed to the Ruby implementation.
+static VALUE
+inspect_node(VALUE self, VALUE source) {
+    pm_string_t input;
+    input_load_string(&input, source);
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), NULL);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_buffer_t buffer = { 0 };
+
+    pm_prettyprint(&buffer, &parser, node);
+
+    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    VALUE string = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
+
+    pm_buffer_free(&buffer);
+    pm_node_destroy(&parser, node);
+    pm_parser_free(&parser);
+
+    return string;
+}
+
 /******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
@@ -547,6 +649,7 @@ Init_prism(void) {
     rb_cPrismToken = rb_define_class_under(rb_cPrism, "Token", rb_cObject);
     rb_cPrismLocation = rb_define_class_under(rb_cPrism, "Location", rb_cObject);
     rb_cPrismComment = rb_define_class_under(rb_cPrism, "Comment", rb_cObject);
+    rb_cPrismMagicComment = rb_define_class_under(rb_cPrism, "MagicComment", rb_cObject);
     rb_cPrismParseError = rb_define_class_under(rb_cPrism, "ParseError", rb_cObject);
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
     rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cObject);
@@ -563,6 +666,8 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, 1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
     rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, 1);
+    rb_define_singleton_method(rb_cPrism, "parse_comments", parse_comments, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, 1);
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, 1);
 
@@ -573,6 +678,7 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
     rb_define_singleton_method(rb_cPrismDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);
+    rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);
 
     // Next, initialize the other APIs.
     Init_prism_api_node();

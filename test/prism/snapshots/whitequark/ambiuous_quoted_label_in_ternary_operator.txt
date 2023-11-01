@@ -36,13 +36,14 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,8)-(1,10))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ StringNode (location: (1,8)-(1,10))
-            │           │           ├── flags: ∅
-            │           │           ├── opening_loc: (1,8)-(1,9) = "'"
-            │           │           ├── content_loc: (1,9)-(1,9) = ""
-            │           │           ├── closing_loc: (1,9)-(1,10) = "'"
-            │           │           └── unescaped: ""
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ StringNode (location: (1,8)-(1,10))
+            │           │   │       ├── flags: ∅
+            │           │   │       ├── opening_loc: (1,8)-(1,9) = "'"
+            │           │   │       ├── content_loc: (1,9)-(1,9) = ""
+            │           │   │       ├── closing_loc: (1,9)-(1,10) = "'"
+            │           │   │       └── unescaped: ""
+            │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

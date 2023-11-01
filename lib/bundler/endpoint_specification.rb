@@ -94,7 +94,7 @@ module Bundler
 
     def _local_specification
       return unless @loaded_from && File.exist?(local_specification_path)
-      eval(File.read(local_specification_path)).tap do |spec|
+      eval(File.read(local_specification_path), nil, local_specification_path).tap do |spec|
         spec.loaded_from = @loaded_from
       end
     end
@@ -125,7 +125,12 @@ module Bundler
         next unless v
         case k.to_s
         when "checksum"
-          @checksum = v.last
+          next if Bundler.settings[:disable_checksum_validation]
+          begin
+            @checksum = Checksum.from_api(v.last, @spec_fetcher.uri)
+          rescue ArgumentError => e
+            raise ArgumentError, "Invalid checksum for #{full_name}: #{e.message}"
+          end
         when "rubygems"
           @required_rubygems_version = Gem::Requirement.new(v)
         when "ruby"

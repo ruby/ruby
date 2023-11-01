@@ -724,7 +724,7 @@ describe "Module#define_method" do
   end
 end
 
-describe "Method#define_method when passed a Method object" do
+describe "Module#define_method when passed a Method object" do
   before :each do
     @klass = Class.new do
       def m(a, b, *c)
@@ -749,7 +749,7 @@ describe "Method#define_method when passed a Method object" do
   end
 end
 
-describe "Method#define_method when passed an UnboundMethod object" do
+describe "Module#define_method when passed an UnboundMethod object" do
   before :each do
     @klass = Class.new do
       def m(a, b, *c)
@@ -774,7 +774,7 @@ describe "Method#define_method when passed an UnboundMethod object" do
   end
 end
 
-describe "Method#define_method when passed a Proc object" do
+describe "Module#define_method when passed a Proc object" do
   describe "and a method is defined inside" do
     it "defines the nested method in the default definee where the Proc was created" do
       prc = nil
@@ -799,7 +799,7 @@ describe "Method#define_method when passed a Proc object" do
   end
 end
 
-describe "Method#define_method when passed a block" do
+describe "Module#define_method when passed a block" do
   describe "behaves exactly like a lambda" do
     it "for return" do
       Class.new do

@@ -105,7 +105,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     generated_file = Pathname(File.join @tmpdir, 'js/navigation.js')
 
     # This is dirty hack on JRuby
-    assert orig_file.mtime.inspect == generated_file.mtime.inspect,
+    assert_equal orig_file.mtime.inspect, generated_file.mtime.inspect,
       '.js files should be the same timestamp of original'
 
     json = File.read 'js/search_index.js'

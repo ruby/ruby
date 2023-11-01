@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 require 'json'
 news = File.read("NEWS.md")
 prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
@@ -28,12 +28,14 @@ ARGV.each do |type|
     next unless v
     [g, v] unless last[g] == v
   end
-  if type == 'bundled'
-    changed, added = changed.partition {|g, _| last[g]}
-  end
+  changed, added = changed.partition {|g, _| last[g]}
   update[changed, type] or next
   if added and !added.empty?
-    update[added, 'default', 'now bundled'] or next
+    if type == 'bundled'
+      update[added, type, 'promoted from default gems'] or next
+    else
+      update[added, type, 'added'] or next
+    end
   end
   File.write("NEWS.md", news)
 end

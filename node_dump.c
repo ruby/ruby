@@ -466,22 +466,21 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_OP_ASGN1:
         ANN("array assignment with operator");
-        ANN("format: [nd_recv] [ [nd_args->nd_head] ] [nd_mid]= [nd_args->nd_body]");
+        ANN("format: [nd_recv] [ [nd_index] ] [nd_mid]= [nd_rvalue]");
         ANN("example: ary[1] += foo");
         F_NODE(nd_recv, RNODE_OP_ASGN1, "receiver");
         F_ID(nd_mid, RNODE_OP_ASGN1, "operator");
-        F_NODE(nd_args->nd_head, RNODE_OP_ASGN1, "index");
+        F_NODE(nd_index, RNODE_OP_ASGN1, "index");
         LAST_NODE;
-        F_NODE(nd_args->nd_body, RNODE_OP_ASGN1, "rvalue");
+        F_NODE(nd_rvalue, RNODE_OP_ASGN1, "rvalue");
         return;
 
       case NODE_OP_ASGN2:
         ANN("attr assignment with operator");
-        ANN("format: [nd_recv].[attr] [nd_next->nd_mid]= [nd_value]");
-        ANN("          where [attr]: [nd_next->nd_vid]");
+        ANN("format: [nd_recv].[nd_vid] [nd_mid]= [nd_value]");
         ANN("example: struct.field += foo");
         F_NODE(nd_recv, RNODE_OP_ASGN2, "receiver");
-        F_CUSTOM1(nd_next->nd_vid, "attr") {
+        F_CUSTOM1(nd_vid, "attr") {
             if (RNODE_OP_ASGN2(node)->nd_aid) A("? ");
             A_ID(RNODE_OP_ASGN2(node)->nd_vid);
         }
@@ -1008,26 +1007,26 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ARGS:
         ANN("method parameters");
-        ANN("format: def method_name(.., [nd_ainfo->nd_optargs], *[nd_ainfo->rest_arg], [nd_ainfo->first_post_arg], .., [nd_ainfo->kw_args], **[nd_ainfo->kw_rest_arg], &[nd_ainfo->block_arg])");
+        ANN("format: def method_name(.., [nd_ainfo.nd_optargs], *[nd_ainfo.rest_arg], [nd_ainfo.first_post_arg], .., [nd_ainfo.kw_args], **[nd_ainfo.kw_rest_arg], &[nd_ainfo.block_arg])");
         ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
-        F_INT(nd_ainfo->pre_args_num, RNODE_ARGS, "count of mandatory (pre-)arguments");
-        F_NODE(nd_ainfo->pre_init, RNODE_ARGS, "initialization of (pre-)arguments");
-        F_INT(nd_ainfo->post_args_num, RNODE_ARGS, "count of mandatory post-arguments");
-        F_NODE(nd_ainfo->post_init, RNODE_ARGS, "initialization of post-arguments");
-        F_ID(nd_ainfo->first_post_arg, RNODE_ARGS, "first post argument");
-        F_CUSTOM1(nd_ainfo->rest_arg, "rest argument") {
-            if (RNODE_ARGS(node)->nd_ainfo->rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA) {
+        F_INT(nd_ainfo.pre_args_num, RNODE_ARGS, "count of mandatory (pre-)arguments");
+        F_NODE(nd_ainfo.pre_init, RNODE_ARGS, "initialization of (pre-)arguments");
+        F_INT(nd_ainfo.post_args_num, RNODE_ARGS, "count of mandatory post-arguments");
+        F_NODE(nd_ainfo.post_init, RNODE_ARGS, "initialization of post-arguments");
+        F_ID(nd_ainfo.first_post_arg, RNODE_ARGS, "first post argument");
+        F_CUSTOM1(nd_ainfo.rest_arg, "rest argument") {
+            if (RNODE_ARGS(node)->nd_ainfo.rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA) {
                 A("1 (excessed comma)");
             }
             else {
-                A_ID(RNODE_ARGS(node)->nd_ainfo->rest_arg);
+                A_ID(RNODE_ARGS(node)->nd_ainfo.rest_arg);
             }
         }
-        F_ID(nd_ainfo->block_arg, RNODE_ARGS, "block argument");
-        F_NODE(nd_ainfo->opt_args, RNODE_ARGS, "optional arguments");
-        F_NODE(nd_ainfo->kw_args, RNODE_ARGS, "keyword arguments");
+        F_ID(nd_ainfo.block_arg, RNODE_ARGS, "block argument");
+        F_NODE(nd_ainfo.opt_args, RNODE_ARGS, "optional arguments");
+        F_NODE(nd_ainfo.kw_args, RNODE_ARGS, "keyword arguments");
         LAST_NODE;
-        F_NODE(nd_ainfo->kw_rest_arg, RNODE_ARGS, "keyword rest argument");
+        F_NODE(nd_ainfo.kw_rest_arg, RNODE_ARGS, "keyword rest argument");
         return;
 
       case NODE_SCOPE:

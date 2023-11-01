@@ -17,7 +17,7 @@
             │       │   ├── constant:
             │       │   │   @ ConstantReadNode (location: (2,3)-(2,9))
             │       │   │   └── name: :Object
-            │       │   ├── assocs: (length: 1)
+            │       │   ├── elements: (length: 1)
             │       │   │   └── @ AssocNode (location: (2,10)-(2,14))
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,10)-(2,12))
@@ -29,7 +29,7 @@
             │       │   │       │   @ IntegerNode (location: (2,13)-(2,14))
             │       │   │       │   └── flags: decimal
             │       │   │       └── operator_loc: ∅
-            │       │   ├── kwrest: ∅
+            │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,9)-(2,10) = "["
             │       │   └── closing_loc: (2,14)-(2,15) = "]"
             │       ├── statements:

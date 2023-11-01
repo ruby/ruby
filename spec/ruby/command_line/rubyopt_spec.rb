@@ -11,14 +11,14 @@ describe "Processing RUBYOPT" do
 
   it "adds the -I path to $LOAD_PATH" do
     ENV["RUBYOPT"] = "-Ioptrubyspecincl"
-    result = ruby_exe("puts $LOAD_PATH.grep(/byspecin/)", escape: true)
+    result = ruby_exe("puts $LOAD_PATH.grep(/byspecin/)")
     result.chomp[-15..-1].should == "optrubyspecincl"
   end
 
   it "sets $DEBUG to true for '-d'" do
     ENV["RUBYOPT"] = '-d'
     command = %[puts "value of $DEBUG is \#{$DEBUG}"]
-    result = ruby_exe(command, escape: true, args: "2>&1")
+    result = ruby_exe(command, args: "2>&1")
     result.should =~ /value of \$DEBUG is true/
   end
 
@@ -36,27 +36,27 @@ describe "Processing RUBYOPT" do
 
   it "sets $VERBOSE to true for '-w'" do
     ENV["RUBYOPT"] = '-w'
-    ruby_exe("p $VERBOSE", escape: true).chomp.should == "true"
+    ruby_exe("p $VERBOSE").chomp.should == "true"
   end
 
   it "sets $VERBOSE to true for '-W'" do
     ENV["RUBYOPT"] = '-W'
-    ruby_exe("p $VERBOSE", escape: true).chomp.should == "true"
+    ruby_exe("p $VERBOSE").chomp.should == "true"
   end
 
   it "sets $VERBOSE to nil for '-W0'" do
     ENV["RUBYOPT"] = '-W0'
-    ruby_exe("p $VERBOSE", escape: true).chomp.should == "nil"
+    ruby_exe("p $VERBOSE").chomp.should == "nil"
   end
 
   it "sets $VERBOSE to false for '-W1'" do
     ENV["RUBYOPT"] = '-W1'
-    ruby_exe("p $VERBOSE", escape: true).chomp.should == "false"
+    ruby_exe("p $VERBOSE").chomp.should == "false"
   end
 
   it "sets $VERBOSE to true for '-W2'" do
     ENV["RUBYOPT"] = '-W2'
-    ruby_exe("p $VERBOSE", escape: true).chomp.should == "true"
+    ruby_exe("p $VERBOSE").chomp.should == "true"
   end
 
   it "suppresses deprecation warnings for '-W:no-deprecated'" do

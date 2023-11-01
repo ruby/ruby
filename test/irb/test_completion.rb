@@ -271,6 +271,7 @@ module TestIRB
       save_encodings
       @verbose, $VERBOSE = $VERBOSE, nil
       IRB.init_config(nil)
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:MAIN_CONTEXT] = IRB::Context.new(IRB::WorkSpace.new(binding))
     end
 

@@ -20,13 +20,14 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,8)-(2,1))
-            │   └── arguments: (length: 1)
-            │       └── @ StringNode (location: (1,8)-(2,1))
-            │           ├── flags: ∅
-            │           ├── opening_loc: (1,8)-(1,9) = "'"
-            │           ├── content_loc: (1,9)-(1,0) = ":\n"
-            │           ├── closing_loc: (2,0)-(2,1) = "'"
-            │           └── unescaped: ":\n"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ StringNode (location: (1,8)-(2,1))
+            │   │       ├── flags: ∅
+            │   │       ├── opening_loc: (1,8)-(1,9) = "'"
+            │   │       ├── content_loc: (1,9)-(2,0) = ":\n"
+            │   │       ├── closing_loc: (2,0)-(2,1) = "'"
+            │   │       └── unescaped: ":\n"
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

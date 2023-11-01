@@ -48,7 +48,6 @@ for:
     - cd C:\Tools\vcpkg
     - git pull -q
     - .\bootstrap-vcpkg.bat
-    - ps: Start-FileDownload 'https://github.com/microsoft/vcpkg-tool/releases/download/2023-08-09/vcpkg.exe' -FileName 'C:\Tools\vcpkg\vcpkg.exe'
     - cd %APPVEYOR_BUILD_FOLDER%
     - vcpkg --triplet %Platform%-windows install --x-use-aria2 libffi libyaml readline zlib
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat

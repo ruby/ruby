@@ -14,6 +14,10 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
+/// A running total of how many ISeqs are in the system.
+#[no_mangle]
+pub static mut rb_yjit_live_iseq_count: u64 = 0;
+
 /// A middleware to count Rust-allocated bytes as yjit_alloc_size.
 #[global_allocator]
 static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
@@ -255,8 +259,11 @@ make_counters! {
     send_call_block,
     send_call_kwarg,
     send_call_multi_ractor,
+    send_cme_not_found,
+    send_megamorphic,
     send_missing_method,
     send_refined_method,
+    send_private_not_fcall,
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
     send_cfunc_toomany_args,
@@ -469,7 +476,6 @@ make_counters! {
 
     num_send,
     num_send_known_class,
-    num_send_megamorphic,
     num_send_polymorphic,
     num_send_x86_rel32,
     num_send_x86_reg,
@@ -509,7 +515,7 @@ pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALU
 /// Check if stats generation should print at exit
 #[no_mangle]
 pub extern "C" fn rb_yjit_print_stats_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if get_option!(print_stats) {
+    if yjit_enabled_p() && get_option!(print_stats) {
         return Qtrue;
     } else {
         return Qfalse;
@@ -633,6 +639,8 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
 
         // VM instructions count
         hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+
+        hash_aset_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
     }
 
     // If we're not generating stats, put only default counters

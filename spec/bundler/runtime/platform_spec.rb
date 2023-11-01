@@ -61,16 +61,16 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     build_repo4 do
       build_gem "nokogiri", "1.11.1" do |s|
         s.add_dependency "mini_portile2", "~> 2.5.0"
-        s.add_dependency "racc", "~> 1.5.2"
+        s.add_dependency "racca", "~> 1.5.2"
       end
 
       build_gem "nokogiri", "1.11.1" do |s|
         s.platform = Bundler.local_platform
-        s.add_dependency "racc", "~> 1.4"
+        s.add_dependency "racca", "~> 1.4"
       end
 
       build_gem "mini_portile2", "2.5.0"
-      build_gem "racc", "1.5.2"
+      build_gem "racca", "1.5.2"
     end
 
     good_lockfile = <<~L
@@ -80,16 +80,22 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           mini_portile2 (2.5.0)
           nokogiri (1.11.1)
             mini_portile2 (~> 2.5.0)
-            racc (~> 1.5.2)
+            racca (~> 1.5.2)
           nokogiri (1.11.1-#{Bundler.local_platform})
-            racc (~> 1.4)
-          racc (1.5.2)
+            racca (~> 1.4)
+          racca (1.5.2)
 
       PLATFORMS
         #{lockfile_platforms("ruby")}
 
       DEPENDENCIES
         nokogiri (~> 1.11)
+
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "mini_portile2", "2.5.0"}
+        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1"}
+        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1", Bundler.local_platform}
+        #{checksum_for_repo_gem gem_repo4, "racca", "1.5.2"}
 
       BUNDLED WITH
          #{Bundler::VERSION}

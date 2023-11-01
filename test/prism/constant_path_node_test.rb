@@ -23,8 +23,7 @@ module Prism
       RUBY
 
       node = Prism.parse(source).value.statements.body.first
-      target = node.targets.first
-      assert_equal("Foo::Bar::Baz::Qux", target.full_name)
+      assert_equal("Foo::Bar::Baz::Qux", node.lefts.first.full_name)
     end
   end
 end

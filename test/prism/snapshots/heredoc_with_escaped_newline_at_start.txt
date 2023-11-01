@@ -8,27 +8,28 @@
         │   │   @ StringNode (location: (1,0)-(1,9))
         │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1,0)-(1,9) = "<<-TARGET"
-        │   │   ├── content_loc: (2,0)-(1,0) = ""
-        │   │   ├── closing_loc: (2,0)-(2,0) = "TARGET\n"
+        │   │   ├── content_loc: (2,0)-(2,0) = ""
+        │   │   ├── closing_loc: (2,0)-(3,0) = "TARGET\n"
         │   │   └── unescaped: ""
         │   ├── call_operator_loc: (1,9)-(1,10) = "."
         │   ├── message_loc: (1,10)-(1,14) = "gsub"
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,15)-(1,25))
-        │   │   └── arguments: (length: 2)
-        │   │       ├── @ RegularExpressionNode (location: (1,15)-(1,21))
-        │   │       │   ├── opening_loc: (1,15)-(1,16) = "/"
-        │   │       │   ├── content_loc: (1,16)-(1,20) = "^\\s{"
-        │   │       │   ├── closing_loc: (1,20)-(1,21) = "/"
-        │   │       │   ├── unescaped: "^\\s{"
-        │   │       │   └── flags: ∅
-        │   │       └── @ StringNode (location: (1,23)-(1,25))
-        │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (1,23)-(1,24) = "'"
-        │   │           ├── content_loc: (1,24)-(1,24) = ""
-        │   │           ├── closing_loc: (1,24)-(1,25) = "'"
-        │   │           └── unescaped: ""
+        │   │   ├── arguments: (length: 2)
+        │   │   │   ├── @ RegularExpressionNode (location: (1,15)-(1,21))
+        │   │   │   │   ├── opening_loc: (1,15)-(1,16) = "/"
+        │   │   │   │   ├── content_loc: (1,16)-(1,20) = "^\\s{"
+        │   │   │   │   ├── closing_loc: (1,20)-(1,21) = "/"
+        │   │   │   │   ├── unescaped: "^\\s{"
+        │   │   │   │   └── flags: ∅
+        │   │   │   └── @ StringNode (location: (1,23)-(1,25))
+        │   │   │       ├── flags: ∅
+        │   │   │       ├── opening_loc: (1,23)-(1,24) = "'"
+        │   │   │       ├── content_loc: (1,24)-(1,24) = ""
+        │   │   │       ├── closing_loc: (1,24)-(1,25) = "'"
+        │   │   │       └── unescaped: ""
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -38,27 +39,28 @@
             │   @ StringNode (location: (5,0)-(5,9))
             │   ├── flags: ∅
             │   ├── opening_loc: (5,0)-(5,9) = "<<-TARGET"
-            │   ├── content_loc: (6,0)-(5,0) = ""
-            │   ├── closing_loc: (6,0)-(6,0) = "TARGET\r\n"
+            │   ├── content_loc: (6,0)-(6,0) = ""
+            │   ├── closing_loc: (6,0)-(7,0) = "TARGET\r\n"
             │   └── unescaped: ""
             ├── call_operator_loc: (5,9)-(5,10) = "."
             ├── message_loc: (5,10)-(5,14) = "gsub"
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (5,15)-(5,25))
-            │   └── arguments: (length: 2)
-            │       ├── @ RegularExpressionNode (location: (5,15)-(5,21))
-            │       │   ├── opening_loc: (5,15)-(5,16) = "/"
-            │       │   ├── content_loc: (5,16)-(5,20) = "^\\s{"
-            │       │   ├── closing_loc: (5,20)-(5,21) = "/"
-            │       │   ├── unescaped: "^\\s{"
-            │       │   └── flags: ∅
-            │       └── @ StringNode (location: (5,23)-(5,25))
-            │           ├── flags: ∅
-            │           ├── opening_loc: (5,23)-(5,24) = "'"
-            │           ├── content_loc: (5,24)-(5,24) = ""
-            │           ├── closing_loc: (5,24)-(5,25) = "'"
-            │           └── unescaped: ""
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ RegularExpressionNode (location: (5,15)-(5,21))
+            │   │   │   ├── opening_loc: (5,15)-(5,16) = "/"
+            │   │   │   ├── content_loc: (5,16)-(5,20) = "^\\s{"
+            │   │   │   ├── closing_loc: (5,20)-(5,21) = "/"
+            │   │   │   ├── unescaped: "^\\s{"
+            │   │   │   └── flags: ∅
+            │   │   └── @ StringNode (location: (5,23)-(5,25))
+            │   │       ├── flags: ∅
+            │   │       ├── opening_loc: (5,23)-(5,24) = "'"
+            │   │       ├── content_loc: (5,24)-(5,24) = ""
+            │   │       ├── closing_loc: (5,24)-(5,25) = "'"
+            │   │       └── unescaped: ""
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

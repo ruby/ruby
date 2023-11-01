@@ -3,6 +3,19 @@
 # Here we are reopening the prism module to provide methods on nodes that aren't
 # templated and are meant as convenience methods.
 module Prism
+  module RegularExpressionOptions
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    def options
+      o = flags & (RegularExpressionFlags::IGNORE_CASE | RegularExpressionFlags::EXTENDED | RegularExpressionFlags::MULTI_LINE)
+      o |= Regexp::FIXEDENCODING if flags.anybits?(RegularExpressionFlags::EUC_JP | RegularExpressionFlags::WINDOWS_31J | RegularExpressionFlags::UTF_8)
+      o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
+      o
+    end
+  end
+
+  private_constant :RegularExpressionOptions
+
   class FloatNode < Node
     # Returns the value of the node as a Ruby Float.
     def value
@@ -24,15 +37,16 @@ module Prism
     end
   end
 
+  class InterpolatedMatchLastLineNode < Node
+    include RegularExpressionOptions
+  end
+
   class InterpolatedRegularExpressionNode < Node
-    # Returns a numeric value that represents the flags that were used to create
-    # the regular expression.
-    def options
-      o = flags & (RegularExpressionFlags::IGNORE_CASE | RegularExpressionFlags::EXTENDED | RegularExpressionFlags::MULTI_LINE)
-      o |= Regexp::FIXEDENCODING if flags.anybits?(RegularExpressionFlags::EUC_JP | RegularExpressionFlags::WINDOWS_31J | RegularExpressionFlags::UTF_8)
-      o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
-      o
-    end
+    include RegularExpressionOptions
+  end
+
+  class MatchLastLineNode < Node
+    include RegularExpressionOptions
   end
 
   class RationalNode < Node
@@ -43,14 +57,7 @@ module Prism
   end
 
   class RegularExpressionNode < Node
-    # Returns a numeric value that represents the flags that were used to create
-    # the regular expression.
-    def options
-      o = flags & (RegularExpressionFlags::IGNORE_CASE | RegularExpressionFlags::EXTENDED | RegularExpressionFlags::MULTI_LINE)
-      o |= Regexp::FIXEDENCODING if flags.anybits?(RegularExpressionFlags::EUC_JP | RegularExpressionFlags::WINDOWS_31J | RegularExpressionFlags::UTF_8)
-      o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
-      o
-    end
+    include RegularExpressionOptions
   end
 
   class ConstantReadNode < Node

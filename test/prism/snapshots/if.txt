@@ -136,9 +136,10 @@
         │   │       └── @ BreakNode (location: (16,18)-(16,26))
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (16,24)-(16,26))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ IntegerNode (location: (16,24)-(16,26))
-        │   │           │           └── flags: decimal
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ IntegerNode (location: (16,24)-(16,26))
+        │   │           │   │       └── flags: decimal
+        │   │           │   └── flags: ∅
         │   │           └── keyword_loc: (16,18)-(16,23) = "break"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (16,27)-(16,30) = "end"
@@ -230,30 +231,31 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (25,4)-(25,6))
-        │   │           │   └── arguments: (length: 1)
-        │   │           │       └── @ KeywordHashNode (location: (25,4)-(25,6))
-        │   │           │           └── elements: (length: 1)
-        │   │           │               └── @ AssocNode (location: (25,4)-(25,6))
-        │   │           │                   ├── key:
-        │   │           │                   │   @ SymbolNode (location: (25,4)-(25,6))
-        │   │           │                   │   ├── opening_loc: ∅
-        │   │           │                   │   ├── value_loc: (25,4)-(25,5) = "b"
-        │   │           │                   │   ├── closing_loc: (25,5)-(25,6) = ":"
-        │   │           │                   │   └── unescaped: "b"
-        │   │           │                   ├── value:
-        │   │           │                   │   @ ImplicitNode (location: (25,4)-(25,6))
-        │   │           │                   │   └── value:
-        │   │           │                   │       @ CallNode (location: (25,4)-(25,6))
-        │   │           │                   │       ├── receiver: ∅
-        │   │           │                   │       ├── call_operator_loc: ∅
-        │   │           │                   │       ├── message_loc: (25,4)-(25,5) = "b"
-        │   │           │                   │       ├── opening_loc: ∅
-        │   │           │                   │       ├── arguments: ∅
-        │   │           │                   │       ├── closing_loc: ∅
-        │   │           │                   │       ├── block: ∅
-        │   │           │                   │       ├── flags: ∅
-        │   │           │                   │       └── name: :b
-        │   │           │                   └── operator_loc: ∅
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ KeywordHashNode (location: (25,4)-(25,6))
+        │   │           │   │       └── elements: (length: 1)
+        │   │           │   │           └── @ AssocNode (location: (25,4)-(25,6))
+        │   │           │   │               ├── key:
+        │   │           │   │               │   @ SymbolNode (location: (25,4)-(25,6))
+        │   │           │   │               │   ├── opening_loc: ∅
+        │   │           │   │               │   ├── value_loc: (25,4)-(25,5) = "b"
+        │   │           │   │               │   ├── closing_loc: (25,5)-(25,6) = ":"
+        │   │           │   │               │   └── unescaped: "b"
+        │   │           │   │               ├── value:
+        │   │           │   │               │   @ ImplicitNode (location: (25,4)-(25,6))
+        │   │           │   │               │   └── value:
+        │   │           │   │               │       @ CallNode (location: (25,4)-(25,6))
+        │   │           │   │               │       ├── receiver: ∅
+        │   │           │   │               │       ├── call_operator_loc: ∅
+        │   │           │   │               │       ├── message_loc: (25,4)-(25,5) = "b"
+        │   │           │   │               │       ├── opening_loc: ∅
+        │   │           │   │               │       ├── arguments: ∅
+        │   │           │   │               │       ├── closing_loc: ∅
+        │   │           │   │               │       ├── block: ∅
+        │   │           │   │               │       ├── flags: ∅
+        │   │           │   │               │       └── name: :b
+        │   │           │   │               └── operator_loc: ∅
+        │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅

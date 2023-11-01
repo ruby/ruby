@@ -6,8 +6,8 @@
         ├── @ StringNode (location: (1,0)-(1,8))
         │   ├── flags: ∅
         │   ├── opening_loc: (1,0)-(1,8) = "<<-EOFOO"
-        │   ├── content_loc: (2,0)-(2,0) = "\\n\\n\\n\\n\\n\\n\\n\\n\\n\n"
-        │   ├── closing_loc: (3,0)-(3,0) = "EOFOO\n"
+        │   ├── content_loc: (2,0)-(3,0) = "\\n\\n\\n\\n\\n\\n\\n\\n\\n\n"
+        │   ├── closing_loc: (3,0)-(4,0) = "EOFOO\n"
         │   └── unescaped: "\n\n\n\n\n\n\n\n\n\n"
         └── @ ClassNode (location: (5,0)-(6,3))
             ├── locals: []

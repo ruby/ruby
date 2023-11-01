@@ -13,7 +13,7 @@
             │   ├── optionals: (length: 0)
             │   ├── rest:
             │   │   @ RestParameterNode (location: (1,8)-(1,9))
-            │   │   ├── name: nil
+            │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (1,8)-(1,9) = "*"
             │   ├── posts: (length: 0)
@@ -30,10 +30,11 @@
             │           ├── opening_loc: (1,15)-(1,16) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,16)-(1,17))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ SplatNode (location: (1,16)-(1,17))
-            │           │           ├── operator_loc: (1,16)-(1,17) = "*"
-            │           │           └── expression: ∅
+            │           │   ├── arguments: (length: 1)
+            │           │   │   └── @ SplatNode (location: (1,16)-(1,17))
+            │           │   │       ├── operator_loc: (1,16)-(1,17) = "*"
+            │           │   │       └── expression: ∅
+            │           │   └── flags: ∅
             │           ├── closing_loc: (1,17)-(1,18) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

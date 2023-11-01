@@ -361,17 +361,18 @@
         │   │       │           ├── opening_loc: ∅
         │   │       │           ├── arguments:
         │   │       │           │   @ ArgumentsNode (location: (33,12)-(33,15))
-        │   │       │           │   └── arguments: (length: 1)
-        │   │       │           │       └── @ CallNode (location: (33,12)-(33,15))
-        │   │       │           │           ├── receiver: ∅
-        │   │       │           │           ├── call_operator_loc: ∅
-        │   │       │           │           ├── message_loc: (33,12)-(33,15) = "baz"
-        │   │       │           │           ├── opening_loc: ∅
-        │   │       │           │           ├── arguments: ∅
-        │   │       │           │           ├── closing_loc: ∅
-        │   │       │           │           ├── block: ∅
-        │   │       │           │           ├── flags: variable_call
-        │   │       │           │           └── name: :baz
+        │   │       │           │   ├── arguments: (length: 1)
+        │   │       │           │   │   └── @ CallNode (location: (33,12)-(33,15))
+        │   │       │           │   │       ├── receiver: ∅
+        │   │       │           │   │       ├── call_operator_loc: ∅
+        │   │       │           │   │       ├── message_loc: (33,12)-(33,15) = "baz"
+        │   │       │           │   │       ├── opening_loc: ∅
+        │   │       │           │   │       ├── arguments: ∅
+        │   │       │           │   │       ├── closing_loc: ∅
+        │   │       │           │   │       ├── block: ∅
+        │   │       │           │   │       ├── flags: variable_call
+        │   │       │           │   │       └── name: :baz
+        │   │       │           │   └── flags: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
         │   │       │           ├── flags: ∅
@@ -416,9 +417,10 @@
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments:
             │       │           │   @ ArgumentsNode (location: (36,14)-(36,15))
-            │       │           │   └── arguments: (length: 1)
-            │       │           │       └── @ IntegerNode (location: (36,14)-(36,15))
-            │       │           │           └── flags: decimal
+            │       │           │   ├── arguments: (length: 1)
+            │       │           │   │   └── @ IntegerNode (location: (36,14)-(36,15))
+            │       │           │   │       └── flags: decimal
+            │       │           │   └── flags: ∅
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: ∅

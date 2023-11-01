@@ -6,33 +6,35 @@
         └── @ NextNode (location: (1,0)-(1,19))
             ├── arguments:
             │   @ ArgumentsNode (location: (1,5)-(1,19))
-            │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (1,5)-(1,19))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (1,5)-(1,8) = "fun"
-            │           ├── opening_loc: ∅
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (1,9)-(1,12))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ CallNode (location: (1,9)-(1,12))
-            │           │           ├── receiver: ∅
-            │           │           ├── call_operator_loc: ∅
-            │           │           ├── message_loc: (1,9)-(1,12) = "foo"
-            │           │           ├── opening_loc: ∅
-            │           │           ├── arguments: ∅
-            │           │           ├── closing_loc: ∅
-            │           │           ├── block: ∅
-            │           │           ├── flags: variable_call
-            │           │           └── name: :foo
-            │           ├── closing_loc: ∅
-            │           ├── block:
-            │           │   @ BlockNode (location: (1,13)-(1,19))
-            │           │   ├── locals: []
-            │           │   ├── parameters: ∅
-            │           │   ├── body: ∅
-            │           │   ├── opening_loc: (1,13)-(1,15) = "do"
-            │           │   └── closing_loc: (1,16)-(1,19) = "end"
-            │           ├── flags: ∅
-            │           └── name: :fun
+            │   ├── arguments: (length: 1)
+            │   │   └── @ CallNode (location: (1,5)-(1,19))
+            │   │       ├── receiver: ∅
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (1,5)-(1,8) = "fun"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments:
+            │   │       │   @ ArgumentsNode (location: (1,9)-(1,12))
+            │   │       │   ├── arguments: (length: 1)
+            │   │       │   │   └── @ CallNode (location: (1,9)-(1,12))
+            │   │       │   │       ├── receiver: ∅
+            │   │       │   │       ├── call_operator_loc: ∅
+            │   │       │   │       ├── message_loc: (1,9)-(1,12) = "foo"
+            │   │       │   │       ├── opening_loc: ∅
+            │   │       │   │       ├── arguments: ∅
+            │   │       │   │       ├── closing_loc: ∅
+            │   │       │   │       ├── block: ∅
+            │   │       │   │       ├── flags: variable_call
+            │   │       │   │       └── name: :foo
+            │   │       │   └── flags: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block:
+            │   │       │   @ BlockNode (location: (1,13)-(1,19))
+            │   │       │   ├── locals: []
+            │   │       │   ├── parameters: ∅
+            │   │       │   ├── body: ∅
+            │   │       │   ├── opening_loc: (1,13)-(1,15) = "do"
+            │   │       │   └── closing_loc: (1,16)-(1,19) = "end"
+            │   │       ├── flags: ∅
+            │   │       └── name: :fun
+            │   └── flags: ∅
             └── keyword_loc: (1,0)-(1,4) = "next"

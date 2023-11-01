@@ -326,9 +326,10 @@
         │   │           │   ├── opening_loc: (56,7)-(56,8) = "("
         │   │           │   ├── arguments:
         │   │           │   │   @ ArgumentsNode (location: (56,8)-(56,17))
-        │   │           │   │   └── arguments: (length: 1)
-        │   │           │   │       └── @ ConstantReadNode (location: (56,8)-(56,17))
-        │   │           │   │           └── name: :Exception
+        │   │           │   │   ├── arguments: (length: 1)
+        │   │           │   │   │   └── @ ConstantReadNode (location: (56,8)-(56,17))
+        │   │           │   │   │       └── name: :Exception
+        │   │           │   │   └── flags: ∅
         │   │           │   ├── closing_loc: (56,17)-(56,18) = ")"
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: ∅

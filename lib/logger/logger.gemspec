@@ -18,9 +18,5 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.glob("lib/**/*.rb") + ["logger.gemspec"]
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 2.3.0"
-
-  spec.add_development_dependency "bundler", ">= 0"
-  spec.add_development_dependency "rake", ">= 12.3.3"
-  spec.add_development_dependency "test-unit"
+  spec.required_ruby_version = ">= 2.5.0"
 end

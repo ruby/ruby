@@ -37,38 +37,39 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (7,8)-(10,3))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ DefNode (location: (7,8)-(10,3))
-        │   │           ├── name: :foo
-        │   │           ├── name_loc: (7,12)-(7,15) = "foo"
-        │   │           ├── receiver: ∅
-        │   │           ├── parameters: ∅
-        │   │           ├── body:
-        │   │           │   @ StatementsNode (location: (8,2)-(9,5))
-        │   │           │   └── body: (length: 1)
-        │   │           │       └── @ CallNode (location: (8,2)-(9,5))
-        │   │           │           ├── receiver: ∅
-        │   │           │           ├── call_operator_loc: ∅
-        │   │           │           ├── message_loc: (8,2)-(8,5) = "bar"
-        │   │           │           ├── opening_loc: ∅
-        │   │           │           ├── arguments: ∅
-        │   │           │           ├── closing_loc: ∅
-        │   │           │           ├── block:
-        │   │           │           │   @ BlockNode (location: (8,6)-(9,5))
-        │   │           │           │   ├── locals: []
-        │   │           │           │   ├── parameters: ∅
-        │   │           │           │   ├── body: ∅
-        │   │           │           │   ├── opening_loc: (8,6)-(8,8) = "do"
-        │   │           │           │   └── closing_loc: (9,2)-(9,5) = "end"
-        │   │           │           ├── flags: ∅
-        │   │           │           └── name: :bar
-        │   │           ├── locals: []
-        │   │           ├── def_keyword_loc: (7,8)-(7,11) = "def"
-        │   │           ├── operator_loc: ∅
-        │   │           ├── lparen_loc: ∅
-        │   │           ├── rparen_loc: ∅
-        │   │           ├── equal_loc: ∅
-        │   │           └── end_keyword_loc: (10,0)-(10,3) = "end"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ DefNode (location: (7,8)-(10,3))
+        │   │   │       ├── name: :foo
+        │   │   │       ├── name_loc: (7,12)-(7,15) = "foo"
+        │   │   │       ├── receiver: ∅
+        │   │   │       ├── parameters: ∅
+        │   │   │       ├── body:
+        │   │   │       │   @ StatementsNode (location: (8,2)-(9,5))
+        │   │   │       │   └── body: (length: 1)
+        │   │   │       │       └── @ CallNode (location: (8,2)-(9,5))
+        │   │   │       │           ├── receiver: ∅
+        │   │   │       │           ├── call_operator_loc: ∅
+        │   │   │       │           ├── message_loc: (8,2)-(8,5) = "bar"
+        │   │   │       │           ├── opening_loc: ∅
+        │   │   │       │           ├── arguments: ∅
+        │   │   │       │           ├── closing_loc: ∅
+        │   │   │       │           ├── block:
+        │   │   │       │           │   @ BlockNode (location: (8,6)-(9,5))
+        │   │   │       │           │   ├── locals: []
+        │   │   │       │           │   ├── parameters: ∅
+        │   │   │       │           │   ├── body: ∅
+        │   │   │       │           │   ├── opening_loc: (8,6)-(8,8) = "do"
+        │   │   │       │           │   └── closing_loc: (9,2)-(9,5) = "end"
+        │   │   │       │           ├── flags: ∅
+        │   │   │       │           └── name: :bar
+        │   │   │       ├── locals: []
+        │   │   │       ├── def_keyword_loc: (7,8)-(7,11) = "def"
+        │   │   │       ├── operator_loc: ∅
+        │   │   │       ├── lparen_loc: ∅
+        │   │   │       ├── rparen_loc: ∅
+        │   │   │       ├── equal_loc: ∅
+        │   │   │       └── end_keyword_loc: (10,0)-(10,3) = "end"
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅

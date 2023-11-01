@@ -10,42 +10,43 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,2)-(3,3))
-            │   └── arguments: (length: 1)
-            │       └── @ BeginNode (location: (1,2)-(3,3))
-            │           ├── begin_keyword_loc: (1,2)-(1,7) = "begin"
-            │           ├── statements:
-            │           │   @ StatementsNode (location: (2,0)-(2,10))
-            │           │   └── body: (length: 1)
-            │           │       └── @ CallNode (location: (2,0)-(2,10))
-            │           │           ├── receiver:
-            │           │           │   @ CallNode (location: (2,0)-(2,1))
-            │           │           │   ├── receiver: ∅
-            │           │           │   ├── call_operator_loc: ∅
-            │           │           │   ├── message_loc: (2,0)-(2,1) = "b"
-            │           │           │   ├── opening_loc: ∅
-            │           │           │   ├── arguments: ∅
-            │           │           │   ├── closing_loc: ∅
-            │           │           │   ├── block: ∅
-            │           │           │   ├── flags: variable_call
-            │           │           │   └── name: :b
-            │           │           ├── call_operator_loc: (2,1)-(2,2) = "."
-            │           │           ├── message_loc: (2,2)-(2,3) = "c"
-            │           │           ├── opening_loc: ∅
-            │           │           ├── arguments: ∅
-            │           │           ├── closing_loc: ∅
-            │           │           ├── block:
-            │           │           │   @ BlockNode (location: (2,4)-(2,10))
-            │           │           │   ├── locals: []
-            │           │           │   ├── parameters: ∅
-            │           │           │   ├── body: ∅
-            │           │           │   ├── opening_loc: (2,4)-(2,6) = "do"
-            │           │           │   └── closing_loc: (2,7)-(2,10) = "end"
-            │           │           ├── flags: ∅
-            │           │           └── name: :c
-            │           ├── rescue_clause: ∅
-            │           ├── else_clause: ∅
-            │           ├── ensure_clause: ∅
-            │           └── end_keyword_loc: (3,0)-(3,3) = "end"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ BeginNode (location: (1,2)-(3,3))
+            │   │       ├── begin_keyword_loc: (1,2)-(1,7) = "begin"
+            │   │       ├── statements:
+            │   │       │   @ StatementsNode (location: (2,0)-(2,10))
+            │   │       │   └── body: (length: 1)
+            │   │       │       └── @ CallNode (location: (2,0)-(2,10))
+            │   │       │           ├── receiver:
+            │   │       │           │   @ CallNode (location: (2,0)-(2,1))
+            │   │       │           │   ├── receiver: ∅
+            │   │       │           │   ├── call_operator_loc: ∅
+            │   │       │           │   ├── message_loc: (2,0)-(2,1) = "b"
+            │   │       │           │   ├── opening_loc: ∅
+            │   │       │           │   ├── arguments: ∅
+            │   │       │           │   ├── closing_loc: ∅
+            │   │       │           │   ├── block: ∅
+            │   │       │           │   ├── flags: variable_call
+            │   │       │           │   └── name: :b
+            │   │       │           ├── call_operator_loc: (2,1)-(2,2) = "."
+            │   │       │           ├── message_loc: (2,2)-(2,3) = "c"
+            │   │       │           ├── opening_loc: ∅
+            │   │       │           ├── arguments: ∅
+            │   │       │           ├── closing_loc: ∅
+            │   │       │           ├── block:
+            │   │       │           │   @ BlockNode (location: (2,4)-(2,10))
+            │   │       │           │   ├── locals: []
+            │   │       │           │   ├── parameters: ∅
+            │   │       │           │   ├── body: ∅
+            │   │       │           │   ├── opening_loc: (2,4)-(2,6) = "do"
+            │   │       │           │   └── closing_loc: (2,7)-(2,10) = "end"
+            │   │       │           ├── flags: ∅
+            │   │       │           └── name: :c
+            │   │       ├── rescue_clause: ∅
+            │   │       ├── else_clause: ∅
+            │   │       ├── ensure_clause: ∅
+            │   │       └── end_keyword_loc: (3,0)-(3,3) = "end"
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

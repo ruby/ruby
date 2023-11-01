@@ -18,20 +18,21 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,9)-(1,13))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ KeywordHashNode (location: (1,9)-(1,13))
-        │   │           └── elements: (length: 1)
-        │   │               └── @ AssocNode (location: (1,9)-(1,13))
-        │   │                   ├── key:
-        │   │                   │   @ SymbolNode (location: (1,9)-(1,11))
-        │   │                   │   ├── opening_loc: ∅
-        │   │                   │   ├── value_loc: (1,9)-(1,10) = "b"
-        │   │                   │   ├── closing_loc: (1,10)-(1,11) = ":"
-        │   │                   │   └── unescaped: "b"
-        │   │                   ├── value:
-        │   │                   │   @ IntegerNode (location: (1,12)-(1,13))
-        │   │                   │   └── flags: decimal
-        │   │                   └── operator_loc: ∅
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ KeywordHashNode (location: (1,9)-(1,13))
+        │   │   │       └── elements: (length: 1)
+        │   │   │           └── @ AssocNode (location: (1,9)-(1,13))
+        │   │   │               ├── key:
+        │   │   │               │   @ SymbolNode (location: (1,9)-(1,11))
+        │   │   │               │   ├── opening_loc: ∅
+        │   │   │               │   ├── value_loc: (1,9)-(1,10) = "b"
+        │   │   │               │   ├── closing_loc: (1,10)-(1,11) = ":"
+        │   │   │               │   └── unescaped: "b"
+        │   │   │               ├── value:
+        │   │   │               │   @ IntegerNode (location: (1,12)-(1,13))
+        │   │   │               │   └── flags: decimal
+        │   │   │               └── operator_loc: ∅
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -61,21 +62,22 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (3,21)-(3,29))
-            │           │   └── arguments: (length: 2)
-            │           │       ├── @ ConstantPathNode (location: (3,21)-(3,25))
-            │           │       │   ├── parent:
-            │           │       │   │   @ ConstantReadNode (location: (3,21)-(3,22))
-            │           │       │   │   └── name: :A
-            │           │       │   ├── child:
-            │           │       │   │   @ ConstantReadNode (location: (3,24)-(3,25))
-            │           │       │   │   └── name: :B
-            │           │       │   └── delimiter_loc: (3,22)-(3,24) = "::"
-            │           │       └── @ StringNode (location: (3,27)-(3,29))
-            │           │           ├── flags: ∅
-            │           │           ├── opening_loc: (3,27)-(3,28) = "'"
-            │           │           ├── content_loc: (3,28)-(3,28) = ""
-            │           │           ├── closing_loc: (3,28)-(3,29) = "'"
-            │           │           └── unescaped: ""
+            │           │   ├── arguments: (length: 2)
+            │           │   │   ├── @ ConstantPathNode (location: (3,21)-(3,25))
+            │           │   │   │   ├── parent:
+            │           │   │   │   │   @ ConstantReadNode (location: (3,21)-(3,22))
+            │           │   │   │   │   └── name: :A
+            │           │   │   │   ├── child:
+            │           │   │   │   │   @ ConstantReadNode (location: (3,24)-(3,25))
+            │           │   │   │   │   └── name: :B
+            │           │   │   │   └── delimiter_loc: (3,22)-(3,24) = "::"
+            │           │   │   └── @ StringNode (location: (3,27)-(3,29))
+            │           │   │       ├── flags: ∅
+            │           │   │       ├── opening_loc: (3,27)-(3,28) = "'"
+            │           │   │       ├── content_loc: (3,28)-(3,28) = ""
+            │           │   │       ├── closing_loc: (3,28)-(3,29) = "'"
+            │           │   │       └── unescaped: ""
+            │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: ∅

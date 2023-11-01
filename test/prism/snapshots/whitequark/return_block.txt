@@ -7,32 +7,34 @@
             ├── keyword_loc: (1,0)-(1,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (1,7)-(1,21))
-                └── arguments: (length: 1)
-                    └── @ CallNode (location: (1,7)-(1,21))
-                        ├── receiver: ∅
-                        ├── call_operator_loc: ∅
-                        ├── message_loc: (1,7)-(1,10) = "fun"
-                        ├── opening_loc: ∅
-                        ├── arguments:
-                        │   @ ArgumentsNode (location: (1,11)-(1,14))
-                        │   └── arguments: (length: 1)
-                        │       └── @ CallNode (location: (1,11)-(1,14))
-                        │           ├── receiver: ∅
-                        │           ├── call_operator_loc: ∅
-                        │           ├── message_loc: (1,11)-(1,14) = "foo"
-                        │           ├── opening_loc: ∅
-                        │           ├── arguments: ∅
-                        │           ├── closing_loc: ∅
-                        │           ├── block: ∅
-                        │           ├── flags: variable_call
-                        │           └── name: :foo
-                        ├── closing_loc: ∅
-                        ├── block:
-                        │   @ BlockNode (location: (1,15)-(1,21))
-                        │   ├── locals: []
-                        │   ├── parameters: ∅
-                        │   ├── body: ∅
-                        │   ├── opening_loc: (1,15)-(1,17) = "do"
-                        │   └── closing_loc: (1,18)-(1,21) = "end"
-                        ├── flags: ∅
-                        └── name: :fun
+                ├── arguments: (length: 1)
+                │   └── @ CallNode (location: (1,7)-(1,21))
+                │       ├── receiver: ∅
+                │       ├── call_operator_loc: ∅
+                │       ├── message_loc: (1,7)-(1,10) = "fun"
+                │       ├── opening_loc: ∅
+                │       ├── arguments:
+                │       │   @ ArgumentsNode (location: (1,11)-(1,14))
+                │       │   ├── arguments: (length: 1)
+                │       │   │   └── @ CallNode (location: (1,11)-(1,14))
+                │       │   │       ├── receiver: ∅
+                │       │   │       ├── call_operator_loc: ∅
+                │       │   │       ├── message_loc: (1,11)-(1,14) = "foo"
+                │       │   │       ├── opening_loc: ∅
+                │       │   │       ├── arguments: ∅
+                │       │   │       ├── closing_loc: ∅
+                │       │   │       ├── block: ∅
+                │       │   │       ├── flags: variable_call
+                │       │   │       └── name: :foo
+                │       │   └── flags: ∅
+                │       ├── closing_loc: ∅
+                │       ├── block:
+                │       │   @ BlockNode (location: (1,15)-(1,21))
+                │       │   ├── locals: []
+                │       │   ├── parameters: ∅
+                │       │   ├── body: ∅
+                │       │   ├── opening_loc: (1,15)-(1,17) = "do"
+                │       │   └── closing_loc: (1,18)-(1,21) = "end"
+                │       ├── flags: ∅
+                │       └── name: :fun
+                └── flags: ∅

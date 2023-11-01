@@ -10,59 +10,62 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,2)-(4,8))
-            │   └── arguments: (length: 1)
-            │       └── @ CallNode (location: (1,2)-(4,8))
-            │           ├── receiver:
-            │           │   @ CallNode (location: (1,2)-(4,4))
-            │           │   ├── receiver:
-            │           │   │   @ StringNode (location: (1,2)-(1,8))
-            │           │   │   ├── flags: ∅
-            │           │   │   ├── opening_loc: (1,2)-(1,8) = "<<-END"
-            │           │   │   ├── content_loc: (2,0)-(2,0) = "  a\n"
-            │           │   │   ├── closing_loc: (3,0)-(3,0) = "  END\n"
-            │           │   │   └── unescaped: "  a\n"
-            │           │   ├── call_operator_loc: ∅
-            │           │   ├── message_loc: (1,8)-(1,9) = "+"
-            │           │   ├── opening_loc: ∅
-            │           │   ├── arguments:
-            │           │   │   @ ArgumentsNode (location: (1,9)-(4,4))
-            │           │   │   └── arguments: (length: 1)
-            │           │   │       └── @ InterpolatedStringNode (location: (1,9)-(4,4))
-            │           │   │           ├── opening_loc: (1,9)-(1,10) = "'"
-            │           │   │           ├── parts: (length: 2)
-            │           │   │           │   ├── @ StringNode (location: (1,10)-(1,0))
-            │           │   │           │   │   ├── flags: ∅
-            │           │   │           │   │   ├── opening_loc: ∅
-            │           │   │           │   │   ├── content_loc: (1,10)-(1,0) = "b\n"
-            │           │   │           │   │   ├── closing_loc: ∅
-            │           │   │           │   │   └── unescaped: "b\n"
-            │           │   │           │   └── @ StringNode (location: (4,0)-(4,3))
-            │           │   │           │       ├── flags: ∅
-            │           │   │           │       ├── opening_loc: ∅
-            │           │   │           │       ├── content_loc: (4,0)-(4,3) = "  c"
-            │           │   │           │       ├── closing_loc: ∅
-            │           │   │           │       └── unescaped: "  c"
-            │           │   │           └── closing_loc: (4,3)-(4,4) = "'"
-            │           │   ├── closing_loc: ∅
-            │           │   ├── block: ∅
-            │           │   ├── flags: ∅
-            │           │   └── name: :+
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (4,4)-(4,5) = "+"
-            │           ├── opening_loc: ∅
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (4,5)-(4,8))
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ StringNode (location: (4,5)-(4,8))
-            │           │           ├── flags: ∅
-            │           │           ├── opening_loc: (4,5)-(4,6) = "'"
-            │           │           ├── content_loc: (4,6)-(4,7) = "d"
-            │           │           ├── closing_loc: (4,7)-(4,8) = "'"
-            │           │           └── unescaped: "d"
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :+
+            │   ├── arguments: (length: 1)
+            │   │   └── @ CallNode (location: (1,2)-(4,8))
+            │   │       ├── receiver:
+            │   │       │   @ CallNode (location: (1,2)-(4,4))
+            │   │       │   ├── receiver:
+            │   │       │   │   @ StringNode (location: (1,2)-(1,8))
+            │   │       │   │   ├── flags: ∅
+            │   │       │   │   ├── opening_loc: (1,2)-(1,8) = "<<-END"
+            │   │       │   │   ├── content_loc: (2,0)-(3,0) = "  a\n"
+            │   │       │   │   ├── closing_loc: (3,0)-(4,0) = "  END\n"
+            │   │       │   │   └── unescaped: "  a\n"
+            │   │       │   ├── call_operator_loc: ∅
+            │   │       │   ├── message_loc: (1,8)-(1,9) = "+"
+            │   │       │   ├── opening_loc: ∅
+            │   │       │   ├── arguments:
+            │   │       │   │   @ ArgumentsNode (location: (1,9)-(4,4))
+            │   │       │   │   ├── arguments: (length: 1)
+            │   │       │   │   │   └── @ InterpolatedStringNode (location: (1,9)-(4,4))
+            │   │       │   │   │       ├── opening_loc: (1,9)-(1,10) = "'"
+            │   │       │   │   │       ├── parts: (length: 2)
+            │   │       │   │   │       │   ├── @ StringNode (location: (1,10)-(2,0))
+            │   │       │   │   │       │   │   ├── flags: ∅
+            │   │       │   │   │       │   │   ├── opening_loc: ∅
+            │   │       │   │   │       │   │   ├── content_loc: (1,10)-(2,0) = "b\n"
+            │   │       │   │   │       │   │   ├── closing_loc: ∅
+            │   │       │   │   │       │   │   └── unescaped: "b\n"
+            │   │       │   │   │       │   └── @ StringNode (location: (4,0)-(4,3))
+            │   │       │   │   │       │       ├── flags: ∅
+            │   │       │   │   │       │       ├── opening_loc: ∅
+            │   │       │   │   │       │       ├── content_loc: (4,0)-(4,3) = "  c"
+            │   │       │   │   │       │       ├── closing_loc: ∅
+            │   │       │   │   │       │       └── unescaped: "  c"
+            │   │       │   │   │       └── closing_loc: (4,3)-(4,4) = "'"
+            │   │       │   │   └── flags: ∅
+            │   │       │   ├── closing_loc: ∅
+            │   │       │   ├── block: ∅
+            │   │       │   ├── flags: ∅
+            │   │       │   └── name: :+
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (4,4)-(4,5) = "+"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments:
+            │   │       │   @ ArgumentsNode (location: (4,5)-(4,8))
+            │   │       │   ├── arguments: (length: 1)
+            │   │       │   │   └── @ StringNode (location: (4,5)-(4,8))
+            │   │       │   │       ├── flags: ∅
+            │   │       │   │       ├── opening_loc: (4,5)-(4,6) = "'"
+            │   │       │   │       ├── content_loc: (4,6)-(4,7) = "d"
+            │   │       │   │       ├── closing_loc: (4,7)-(4,8) = "'"
+            │   │       │   │       └── unescaped: "d"
+            │   │       │   └── flags: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block: ∅
+            │   │       ├── flags: ∅
+            │   │       └── name: :+
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

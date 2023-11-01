@@ -992,6 +992,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal Float::INFINITY, (...1).size
     assert_equal Float::INFINITY, (...1.0).size
     assert_nil ("a"...).size
+    assert_nil (..."z").size
   end
 
   def test_bsearch_typechecks_return_values

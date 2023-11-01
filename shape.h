@@ -4,25 +4,26 @@
 #include "internal/gc.h"
 
 #if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
+
 #define SIZEOF_SHAPE_T 4
 #define SHAPE_IN_BASIC_FLAGS 1
+typedef uint32_t attr_index_t;
+typedef uint32_t shape_id_t;
+typedef uint32_t redblack_id_t;
+# define SHAPE_ID_NUM_BITS 32
+
 #else
+
 #define SIZEOF_SHAPE_T 2
 #define SHAPE_IN_BASIC_FLAGS 0
+typedef uint16_t attr_index_t;
+typedef uint16_t shape_id_t;
+typedef uint16_t redblack_id_t;
+# define SHAPE_ID_NUM_BITS 16
+
 #endif
-typedef uint8_t attr_index_t;
 
 #define MAX_IVARS (attr_index_t)(-1)
-
-#if SIZEOF_SHAPE_T == 4
-typedef uint32_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 32
-# define SHAPE_BUFFER_SIZE 0x80000
-#else
-typedef uint16_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 16
-# define SHAPE_BUFFER_SIZE 0x8000
-#endif
 
 # define SHAPE_MASK (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
 # define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
@@ -30,26 +31,34 @@ typedef uint16_t shape_id_t;
 # define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 # define SHAPE_MAX_VARIATIONS 8
-# define SHAPE_MAX_NUM_IVS 80
 
-# define MAX_SHAPE_ID SHAPE_BUFFER_SIZE
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
 
 # define SPECIAL_CONST_SHAPE_ID (SIZE_POOL_COUNT * 2)
 # define OBJ_TOO_COMPLEX_SHAPE_ID (SPECIAL_CONST_SHAPE_ID + 1)
 
+typedef struct redblack_node redblack_node_t;
+
 struct rb_shape {
     struct rb_id_table * edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t next_iv_index;
-    attr_index_t capacity; // Total capacity of the object with this shape
+    uint32_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t size_pool_index;
     shape_id_t parent_id;
+    redblack_node_t * ancestor_index;
 };
 
 typedef struct rb_shape rb_shape_t;
+
+struct redblack_node {
+    ID key;
+    rb_shape_t * value;
+    redblack_id_t l;
+    redblack_id_t r;
+};
 
 enum shape_type {
     SHAPE_ROOT,
@@ -66,6 +75,9 @@ typedef struct {
     rb_shape_t *shape_list;
     rb_shape_t *root_shape;
     shape_id_t next_shape_id;
+
+    redblack_node_t *shape_cache;
+    unsigned int cache_size;
 } rb_shape_tree_t;
 RUBY_EXTERN rb_shape_tree_t *rb_shape_tree_ptr;
 
@@ -149,7 +161,7 @@ bool rb_shape_obj_too_complex(VALUE obj);
 void rb_shape_set_shape(VALUE obj, rb_shape_t* shape);
 rb_shape_t* rb_shape_get_shape(VALUE obj);
 int rb_shape_frozen_shape_p(rb_shape_t* shape);
-void rb_shape_transition_shape_frozen(VALUE obj);
+rb_shape_t* rb_shape_transition_shape_frozen(VALUE obj);
 void rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
 rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
@@ -162,7 +174,7 @@ ROBJECT_IV_CAPACITY(VALUE obj)
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     // Asking for capacity doesn't make sense when the object is using
     // a hash table for storing instance variables
-    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) != OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->capacity;
 }
 
@@ -170,15 +182,15 @@ static inline st_table *
 ROBJECT_IV_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
     return (st_table *)ROBJECT(obj)->as.heap.ivptr;
 }
 
 static inline void
-ROBJECT_SET_IV_HASH(VALUE obj, const struct rb_id_table *tbl)
+ROBJECT_SET_IV_HASH(VALUE obj, const st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
     ROBJECT(obj)->as.heap.ivptr = (VALUE *)tbl;
 }
 
@@ -187,12 +199,12 @@ size_t rb_id_table_size(const struct rb_id_table *tbl);
 static inline uint32_t
 ROBJECT_IV_COUNT(VALUE obj)
 {
-    if (ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID) {
+    if (rb_shape_obj_too_complex(obj)) {
         return (uint32_t)rb_st_table_size(ROBJECT_IV_HASH(obj));
     }
     else {
         RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-        RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) != OBJ_TOO_COMPLEX_SHAPE_ID);
+        RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
         return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->next_iv_index;
     }
 }

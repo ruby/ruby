@@ -17,7 +17,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (1,8)-(1,9))
-        │   │       ├── name: nil
+        │   │       ├── name: ∅
         │   │       ├── name_loc: ∅
         │   │       └── operator_loc: (1,8)-(1,9) = "&"
         │   ├── body:
@@ -59,7 +59,7 @@
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (5,11)-(5,12))
-            │       ├── name: nil
+            │       ├── name: ∅
             │       ├── name_loc: ∅
             │       └── operator_loc: (5,11)-(5,12) = "&"
             ├── body:

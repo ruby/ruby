@@ -67,12 +67,20 @@ jobs:
         run: |
           ::- find needed tools
           set NEEDS=
-          for %%I in (patch.exe) do if "%%~$PATH:I" == "" (
-            echo NEEDS=%NEEDS% %%I
+          for %%I in (%NEEDED_TOOLS%) do if "%%~$PATH:I" == "" (
+            call set NEEDS=%%NEEDS%% %%~nI
           ) else (
             echo %%I: %%~$PATH:I
           )
-          echo needs=%NEEDS% >> %GITHUB_OUTPUT%
+          echo.needs=%NEEDS%>>%GITHUB_OUTPUT%
+          if "%NEEDS%" == "" (
+            echo [debug] All needed tools found
+          ) else (
+            echo [warning^]Needs%NEEDS%
+          )
+        env:
+          NEEDED_TOOLS: >-
+            patch.exe
 
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
@@ -81,9 +89,6 @@ jobs:
           install: >-
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
-        # FIXME: The above `!= ''` check is not working correctly, so this runs
-        # even when `needs` is empty. Remove this `continue-on-error` after fixing it.
-        continue-on-error: true
 
       - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
@@ -111,7 +116,7 @@ jobs:
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
 
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

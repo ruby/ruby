@@ -40,22 +40,21 @@ describe "Dir.home" do
           home.should == "C:/rubyspäc/home"
           home.encoding.should == Encoding::UTF_8
         end
-      end
 
-      it "retrieves the directory from HOME, USERPROFILE, HOMEDRIVE/HOMEPATH and the WinAPI in that order" do
-        old_dirs = [ENV.delete('HOME'), ENV.delete('USERPROFILE'), ENV.delete('HOMEDRIVE'), ENV.delete('HOMEPATH')]
+        it "retrieves the directory from HOME, USERPROFILE, HOMEDRIVE/HOMEPATH and the WinAPI in that order" do
+          old_dirs = [ENV.delete('HOME'), ENV.delete('USERPROFILE'), ENV.delete('HOMEDRIVE'), ENV.delete('HOMEPATH')]
 
-        Dir.home.should == old_dirs[1].gsub("\\", "/")
-        ENV['HOMEDRIVE'] = "C:"
-        ENV['HOMEPATH'] = "\\rubyspec\\home1"
-        Dir.home.should == "C:/rubyspec/home1"
-        ENV['USERPROFILE'] = "C:\\rubyspec\\home2"
-        # https://bugs.ruby-lang.org/issues/19244
-        # Dir.home.should == "C:/rubyspec/home2"
-        ENV['HOME'] = "C:\\rubyspec\\home3"
-        Dir.home.should == "C:/rubyspec/home3"
-      ensure
-        ENV['HOME'], ENV['USERPROFILE'], ENV['HOMEDRIVE'], ENV['HOMEPATH'] = *old_dirs
+          Dir.home.should == old_dirs[1].gsub("\\", "/")
+          ENV['HOMEDRIVE'] = "C:"
+          ENV['HOMEPATH'] = "\\rubyspec\\home1"
+          Dir.home.should == "C:/rubyspec/home1"
+          ENV['USERPROFILE'] = "C:\\rubyspec\\home2"
+          Dir.home.should == "C:/rubyspec/home2"
+          ENV['HOME'] = "C:\\rubyspec\\home3"
+          Dir.home.should == "C:/rubyspec/home3"
+        ensure
+          ENV['HOME'], ENV['USERPROFILE'], ENV['HOMEDRIVE'], ENV['HOMEPATH'] = *old_dirs
+        end
       end
     end
   end

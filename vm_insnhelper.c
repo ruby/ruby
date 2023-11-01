@@ -1227,7 +1227,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = ivtbl->shape_id;
 #endif
-            ivar_list = ivtbl->ivptr;
+            ivar_list = ivtbl->as.shape.ivptr;
         }
         else {
             return default_value;
@@ -1382,18 +1382,20 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
         {
             rb_ivar_set(obj, id, val);
             shape_id_t next_shape_id = rb_shape_get_shape_id(obj);
-            rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
-            attr_index_t index;
+            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+                rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
+                attr_index_t index;
 
-            if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
-                if (index >= MAX_IVARS) {
-                    rb_raise(rb_eArgError, "too many instance variables");
+                if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
+                    if (index >= MAX_IVARS) {
+                        rb_raise(rb_eArgError, "too many instance variables");
+                    }
+
+                    populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
                 }
-
-                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-            }
-            else {
-                rb_bug("didn't find the id");
+                else {
+                    rb_bug("didn't find the id");
+                }
             }
 
             return val;
@@ -1454,7 +1456,7 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    VALUE *ptr = ivtbl->ivptr;
+    VALUE *ptr = ivtbl->as.shape.ivptr;
 
     RB_OBJ_WRITE(obj, &ptr[index], val);
 
@@ -5493,7 +5495,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
-    if (id == rb_intern("initialize") && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
+    if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
 
         RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
     }

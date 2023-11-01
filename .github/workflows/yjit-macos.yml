@@ -26,6 +26,34 @@ permissions:
   contents: read
 
 jobs:
+  cargo:
+    name: cargo test
+
+    runs-on: macos-arm-oss
+
+    if: >-
+      ${{github.repository == 'ruby/ruby' &&
+      !(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - run: RUST_BACKTRACE=1 cargo test
+        working-directory: yjit
+
+      # Also compile and test with all features enabled
+      - run: RUST_BACKTRACE=1 cargo test --all-features
+        working-directory: yjit
+
+      # Check that we can build in release mode too
+      - run: cargo build --release
+        working-directory: yjit
+
   make:
     strategy:
       matrix:
@@ -54,7 +82,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -108,7 +136,7 @@ jobs:
         if: ${{ failure() }}
 
   result:
-    if: ${{ always() }}
+    if: ${{ always() && github.repository == 'ruby/ruby' }}
     name: ${{ github.workflow }} result
     runs-on: macos-arm-oss
     needs: [make]

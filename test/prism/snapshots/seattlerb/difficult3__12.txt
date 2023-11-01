@@ -20,15 +20,17 @@
             │   │   │   ├── requireds: (length: 2)
             │   │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
             │   │   │   │   │   └── name: :a
-            │   │   │   │   └── @ RequiredDestructuredParameterNode (location: (1,8)-(1,14))
-            │   │   │   │       ├── parameters: (length: 2)
-            │   │   │   │       │   ├── @ SplatNode (location: (1,9)-(1,10))
-            │   │   │   │       │   │   ├── operator_loc: (1,9)-(1,10) = "*"
-            │   │   │   │       │   │   └── expression: ∅
+            │   │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,14))
+            │   │   │   │       ├── lefts: (length: 0)
+            │   │   │   │       ├── rest:
+            │   │   │   │       │   @ SplatNode (location: (1,9)-(1,10))
+            │   │   │   │       │   ├── operator_loc: (1,9)-(1,10) = "*"
+            │   │   │   │       │   └── expression: ∅
+            │   │   │   │       ├── rights: (length: 1)
             │   │   │   │       │   └── @ RequiredParameterNode (location: (1,12)-(1,13))
             │   │   │   │       │       └── name: :b
-            │   │   │   │       ├── opening_loc: (1,8)-(1,9) = "("
-            │   │   │   │       └── closing_loc: (1,13)-(1,14) = ")"
+            │   │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("
+            │   │   │   │       └── rparen_loc: (1,13)-(1,14) = ")"
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest: ∅
             │   │   │   ├── posts: (length: 0)

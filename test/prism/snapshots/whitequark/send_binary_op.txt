@@ -20,9 +20,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,7)-(1,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (1,7)-(1,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (1,7)-(1,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -44,9 +45,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (3,7)-(3,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (3,7)-(3,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (3,7)-(3,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -68,9 +70,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (5,6)-(5,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (5,6)-(5,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (5,6)-(5,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -92,9 +95,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (7,6)-(7,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (7,6)-(7,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (7,6)-(7,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -116,9 +120,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (9,6)-(9,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (9,6)-(9,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (9,6)-(9,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -140,9 +145,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (11,7)-(11,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (11,7)-(11,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (11,7)-(11,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -164,9 +170,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (13,6)-(13,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (13,6)-(13,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (13,6)-(13,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -188,9 +195,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (15,6)-(15,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (15,6)-(15,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (15,6)-(15,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -212,9 +220,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (17,6)-(17,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (17,6)-(17,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (17,6)-(17,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -236,9 +245,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (19,6)-(19,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (19,6)-(19,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (19,6)-(19,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -260,9 +270,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (21,7)-(21,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (21,7)-(21,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (21,7)-(21,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -284,9 +295,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (23,7)-(23,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (23,7)-(23,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (23,7)-(23,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -308,9 +320,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (25,8)-(25,9))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (25,8)-(25,9))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (25,8)-(25,9))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -332,9 +345,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (27,7)-(27,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (27,7)-(27,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (27,7)-(27,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -356,9 +370,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (29,8)-(29,9))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (29,8)-(29,9))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (29,8)-(29,9))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -380,9 +395,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (31,7)-(31,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (31,7)-(31,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (31,7)-(31,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -404,9 +420,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (33,6)-(33,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (33,6)-(33,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (33,6)-(33,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -428,9 +445,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (35,7)-(35,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (35,7)-(35,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (35,7)-(35,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -452,9 +470,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (37,7)-(37,8))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (37,7)-(37,8))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (37,7)-(37,8))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -476,9 +495,10 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (39,6)-(39,7))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ IntegerNode (location: (39,6)-(39,7))
-        │   │           └── flags: decimal
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ IntegerNode (location: (39,6)-(39,7))
+        │   │   │       └── flags: decimal
+        │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -500,9 +520,10 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (41,6)-(41,7))
-            │   └── arguments: (length: 1)
-            │       └── @ IntegerNode (location: (41,6)-(41,7))
-            │           └── flags: decimal
+            │   ├── arguments: (length: 1)
+            │   │   └── @ IntegerNode (location: (41,6)-(41,7))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: ∅

@@ -2,8 +2,8 @@ module Lrama
   class Grammar
     class Union < Struct.new(:code, :lineno, keyword_init: true)
       def braces_less_code
-        # Remove braces
-        code.s_value[1..-2]
+        # Braces is already removed by lexer
+        code.s_value
       end
     end
   end

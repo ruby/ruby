@@ -112,13 +112,14 @@
         │   ├── opening_loc: (16,3)-(16,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (16,4)-(16,10))
-        │   │   └── arguments: (length: 1)
-        │   │       └── @ StringNode (location: (16,4)-(16,10))
-        │   │           ├── flags: ∅
-        │   │           ├── opening_loc: (16,4)-(16,10) = "<<-DOC"
-        │   │           ├── content_loc: (17,0)-(17,0) = "  b\n"
-        │   │           ├── closing_loc: (18,0)-(18,0) = "DOC\n"
-        │   │           └── unescaped: "  b\n"
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ StringNode (location: (16,4)-(16,10))
+        │   │   │       ├── flags: ∅
+        │   │   │       ├── opening_loc: (16,4)-(16,10) = "<<-DOC"
+        │   │   │       ├── content_loc: (17,0)-(18,0) = "  b\n"
+        │   │   │       ├── closing_loc: (18,0)-(19,0) = "DOC\n"
+        │   │   │       └── unescaped: "  b\n"
+        │   │   └── flags: ∅
         │   ├── closing_loc: (16,10)-(16,11) = ")"
         │   ├── block:
         │   │   @ BlockNode (location: (16,12)-(20,3))
@@ -156,13 +157,14 @@
             ├── opening_loc: (22,3)-(22,4) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (22,4)-(22,10))
-            │   └── arguments: (length: 1)
-            │       └── @ StringNode (location: (22,4)-(22,10))
-            │           ├── flags: ∅
-            │           ├── opening_loc: (22,4)-(22,10) = "<<-DOC"
-            │           ├── content_loc: (23,0)-(23,0) = "  b\n"
-            │           ├── closing_loc: (24,0)-(24,0) = "DOC\n"
-            │           └── unescaped: "  b\n"
+            │   ├── arguments: (length: 1)
+            │   │   └── @ StringNode (location: (22,4)-(22,10))
+            │   │       ├── flags: ∅
+            │   │       ├── opening_loc: (22,4)-(22,10) = "<<-DOC"
+            │   │       ├── content_loc: (23,0)-(24,0) = "  b\n"
+            │   │       ├── closing_loc: (24,0)-(25,0) = "DOC\n"
+            │   │       └── unescaped: "  b\n"
+            │   └── flags: ∅
             ├── closing_loc: (22,10)-(22,11) = ")"
             ├── block:
             │   @ BlockNode (location: (22,12)-(26,3))

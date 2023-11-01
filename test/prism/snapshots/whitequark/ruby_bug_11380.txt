@@ -10,34 +10,35 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,2)-(1,21))
-            │   └── arguments: (length: 2)
-            │       ├── @ LambdaNode (location: (1,2)-(1,15))
-            │       │   ├── locals: []
-            │       │   ├── operator_loc: (1,2)-(1,4) = "->"
-            │       │   ├── opening_loc: (1,5)-(1,6) = "{"
-            │       │   ├── closing_loc: (1,14)-(1,15) = "}"
-            │       │   ├── parameters: ∅
-            │       │   └── body:
-            │       │       @ StatementsNode (location: (1,7)-(1,13))
-            │       │       └── body: (length: 1)
-            │       │           └── @ SymbolNode (location: (1,7)-(1,13))
-            │       │               ├── opening_loc: (1,7)-(1,8) = ":"
-            │       │               ├── value_loc: (1,8)-(1,13) = "hello"
-            │       │               ├── closing_loc: ∅
-            │       │               └── unescaped: "hello"
-            │       └── @ KeywordHashNode (location: (1,17)-(1,21))
-            │           └── elements: (length: 1)
-            │               └── @ AssocNode (location: (1,17)-(1,21))
-            │                   ├── key:
-            │                   │   @ SymbolNode (location: (1,17)-(1,19))
-            │                   │   ├── opening_loc: ∅
-            │                   │   ├── value_loc: (1,17)-(1,18) = "a"
-            │                   │   ├── closing_loc: (1,18)-(1,19) = ":"
-            │                   │   └── unescaped: "a"
-            │                   ├── value:
-            │                   │   @ IntegerNode (location: (1,20)-(1,21))
-            │                   │   └── flags: decimal
-            │                   └── operator_loc: ∅
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ LambdaNode (location: (1,2)-(1,15))
+            │   │   │   ├── locals: []
+            │   │   │   ├── operator_loc: (1,2)-(1,4) = "->"
+            │   │   │   ├── opening_loc: (1,5)-(1,6) = "{"
+            │   │   │   ├── closing_loc: (1,14)-(1,15) = "}"
+            │   │   │   ├── parameters: ∅
+            │   │   │   └── body:
+            │   │   │       @ StatementsNode (location: (1,7)-(1,13))
+            │   │   │       └── body: (length: 1)
+            │   │   │           └── @ SymbolNode (location: (1,7)-(1,13))
+            │   │   │               ├── opening_loc: (1,7)-(1,8) = ":"
+            │   │   │               ├── value_loc: (1,8)-(1,13) = "hello"
+            │   │   │               ├── closing_loc: ∅
+            │   │   │               └── unescaped: "hello"
+            │   │   └── @ KeywordHashNode (location: (1,17)-(1,21))
+            │   │       └── elements: (length: 1)
+            │   │           └── @ AssocNode (location: (1,17)-(1,21))
+            │   │               ├── key:
+            │   │               │   @ SymbolNode (location: (1,17)-(1,19))
+            │   │               │   ├── opening_loc: ∅
+            │   │               │   ├── value_loc: (1,17)-(1,18) = "a"
+            │   │               │   ├── closing_loc: (1,18)-(1,19) = ":"
+            │   │               │   └── unescaped: "a"
+            │   │               ├── value:
+            │   │               │   @ IntegerNode (location: (1,20)-(1,21))
+            │   │               │   └── flags: decimal
+            │   │               └── operator_loc: ∅
+            │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (1,22)-(1,28))
