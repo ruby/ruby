@@ -2202,6 +2202,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
             if (!rb_shape_obj_too_complex(obj)) {
                 rb_evict_ivars_to_hash(obj, shape);
             }
+
             if (!st_delete(RCLASS_IV_HASH(obj), (st_data_t *)&id, (st_data_t *)&val)) {
                 val = Qundef;
             }
@@ -2212,8 +2213,9 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
             if (!rb_shape_obj_too_complex(obj)) {
                 rb_evict_ivars_to_hash(obj, shape);
             }
-            if (rb_st_lookup(ROBJECT_IV_HASH(obj), (st_data_t)id, (st_data_t *)&val)) {
-                rb_st_delete(ROBJECT_IV_HASH(obj), (st_data_t *)&id, 0);
+
+            if (!st_delete(ROBJECT_IV_HASH(obj), (st_data_t *)&id, (st_data_t *)&val)) {
+                val = Qundef;
             }
         }
         break;
