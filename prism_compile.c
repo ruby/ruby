@@ -2236,7 +2236,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ADD_LABEL(ret, retry_label);
 
-        PM_COMPILE(for_node->collection);
+        PM_COMPILE_NOT_POPPED(for_node->collection);
+
         child_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
         ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_iseq);
@@ -2250,9 +2251,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*)retry_end_l);
 
-        if (popped) {
-            ADD_INSN(ret, &dummy_line_node, pop);
-        }
+        PM_POP_IF_POPPED;
 
         ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
         ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
@@ -3275,7 +3274,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_for_node_t *for_node = (pm_for_node_t *)scope_node->ast_node;
 
                     ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
-                    pm_compile_node(iseq, for_node->index, ret, src, popped, scope_node);
+                    PM_COMPILE(for_node->index);
                     ADD_INSN(ret, &dummy_line_node, nop);
                   }
                   default: {
