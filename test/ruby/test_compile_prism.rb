@@ -699,21 +699,21 @@ module Prism
     end
 
     def test_CallAndWriteNode
-=begin
       assert_prism_eval(<<-CODE
-        def Subclass.test_call_and_write_node; end;
-        Subclass.test_call_and_write_node &&= 1
+        class PrismTestSubclass; end
+        def PrismTestSubclass.test_call_and_write_node; end;
+        PrismTestSubclass.test_call_and_write_node &&= 1
       CODE
       )
 
       assert_prism_eval(<<-CODE
-        def Subclass.test_call_and_write_node
+        def PrismTestSubclass.test_call_and_write_node
           "str"
         end
-        def Subclass.test_call_and_write_node=(val)
+        def PrismTestSubclass.test_call_and_write_node=(val)
           val
         end
-        Subclass.test_call_and_write_node &&= 1
+        PrismTestSubclass.test_call_and_write_node &&= 1
       CODE
       )
 
@@ -733,25 +733,24 @@ module Prism
         self.test_call_and_write_node &&= 1
       CODE
       )
-=end
     end
 
     def test_CallOrWriteNode
-=begin
       assert_prism_eval(<<-CODE
-        def Subclass.test_call_or_write_node; end;
-        def Subclass.test_call_or_write_node=(val)
+        class PrismTestSubclass; end
+        def PrismTestSubclass.test_call_or_write_node; end;
+        def PrismTestSubclass.test_call_or_write_node=(val)
           val
         end
-        Subclass.test_call_or_write_node ||= 1
+        PrismTestSubclass.test_call_or_write_node ||= 1
       CODE
       )
 
       assert_prism_eval(<<-CODE
-        def Subclass.test_call_or_write_node
+        def PrismTestSubclass.test_call_or_write_node
           "str"
         end
-        Subclass.test_call_or_write_node ||= 1
+        PrismTestSubclass.test_call_or_write_node ||= 1
       CODE
       )
 
@@ -771,19 +770,18 @@ module Prism
         self.test_call_or_write_node ||= 1
       CODE
       )
-=end
     end
 
     def test_CallOperatorWriteNode
 =begin
       assert_prism_eval(<<-CODE
-        def Subclass.test_call_operator_write_node
+        def PrismTestSubclass.test_call_operator_write_node
           2
         end
-        def Subclass.test_call_operator_write_node=(val)
+        def PrismTestSubclass.test_call_operator_write_node=(val)
           val
         end
-        Subclass.test_call_operator_write_node += 1
+        PrismTestSubclass.test_call_operator_write_node += 1
       CODE
       )
 =end
