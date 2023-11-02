@@ -171,7 +171,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | ...     | the scopes                 |
  *
  * Each scope is layed out as follows:
- * 
+ *
  * | # bytes | field                      |
  * | ------- | -------------------------- |
  * | `4`     | the number of locals       |

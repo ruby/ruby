@@ -148,8 +148,8 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_comments(pm_buffer_t *buffer, co
  *
  * @param source The source to lex.
  * @param size The size of the source.
- * @param filepath The optional filepath to pass to the lexer.
  * @param buffer The buffer to serialize to.
+ * @param data The optional data to pass to the lexer.
  */
 PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
