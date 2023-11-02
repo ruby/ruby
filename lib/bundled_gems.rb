@@ -70,6 +70,7 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name, specs: nil)
+    name = File.path(name) # name can be a feature name or a file path with String or Pathname
     return if specs.to_a.map(&:name).include?(name.sub(LIBEXT, ""))
     name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
