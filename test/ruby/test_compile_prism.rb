@@ -219,7 +219,7 @@ module Prism
     end
 
     def test_ConstantPathOperatorWriteNode
-      # assert_prism_eval("Prism::CPOWN = 0; Prism::CPOWN += 1")
+      assert_prism_eval("Prism::CPOWN = 0; Prism::CPOWN += 1")
     end
 
     def test_GlobalVariableAndWriteNode

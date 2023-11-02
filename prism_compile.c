@@ -1979,7 +1979,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_constant_path_operator_write_node_t *constant_path_operator_write_node = (pm_constant_path_operator_write_node_t*) node;
 
         pm_constant_path_node_t *target = constant_path_operator_write_node->target;
-        PM_COMPILE(target->parent);
+        PM_COMPILE_NOT_POPPED(target->parent);
 
         PM_DUP;
         ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
@@ -1988,7 +1988,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         VALUE child_name = ID2SYM(pm_constant_id_lookup(scope_node, child->name));
         ADD_INSN1(ret, &dummy_line_node, getconstant, child_name);
 
-        PM_COMPILE(constant_path_operator_write_node->value);
+        PM_COMPILE_NOT_POPPED(constant_path_operator_write_node->value);
         ID method_id = pm_constant_id_lookup(scope_node, constant_path_operator_write_node->operator);
         ADD_CALL(ret, &dummy_line_node, method_id, INT2FIX(1));
         PM_SWAP;
