@@ -211,8 +211,8 @@ module Prism
     end
 
     def test_ConstantPathAndWriteNode
-      # assert_prism_eval("Prism::CPAWN = 1; Prism::CPAWN &&= 2")
-      # assert_prism_eval("Prism::CPAWN &&= 1")
+      assert_prism_eval("Prism::CPAWN = 1; Prism::CPAWN &&= 2")
+      assert_prism_eval("Prism::CPAWN &&= 1")
     end
 
     def test_ConstantPathOrWriteNode
