@@ -187,13 +187,5 @@ module Prism
     def self.newlines(source)
       Prism.parse(source).source.offsets
     end
-
-    # :call-seq:
-    #   Debug::parse_serialize_file(filepath) -> dumped
-    #
-    # For the given file, parse the AST and dump it to a string.
-    def self.parse_serialize_file(filepath)
-      parse_serialize_file_metadata(filepath, [filepath.bytesize, filepath.b, 0].pack("LA*L"))
-    end
   end
 end

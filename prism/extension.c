@@ -268,7 +268,7 @@ dump_file(int argc, VALUE *argv, VALUE self) {
     extract_options(&options, filepath, keywords);
 
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, options.filepath)) {
+    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
         pm_options_free(&options);
         return Qnil;
     }
@@ -561,7 +561,7 @@ lex_file(int argc, VALUE *argv, VALUE self) {
     extract_options(&options, filepath, keywords);
 
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, options.filepath)) {
+    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
         pm_options_free(&options);
         return Qnil;
     }
@@ -672,7 +672,7 @@ parse_file(int argc, VALUE *argv, VALUE self) {
     extract_options(&options, filepath, keywords);
 
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, options.filepath)) {
+    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
         pm_options_free(&options);
         return Qnil;
     }
@@ -746,7 +746,7 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
     extract_options(&options, filepath, keywords);
 
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, options.filepath)) {
+    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
         pm_options_free(&options);
         return Qnil;
     }
@@ -815,7 +815,7 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     extract_options(&options, filepath, keywords);
 
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, options.filepath)) {
+    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
         pm_options_free(&options);
         return Qnil;
     }
@@ -911,30 +911,6 @@ profile_file(VALUE self, VALUE filepath) {
     pm_string_free(&input);
 
     return Qnil;
-}
-
-/**
- * call-seq:
- *   Debug::parse_serialize_file_metadata(filepath, metadata) -> dumped
- *
- * Parse the file and serialize the result. This is mostly used to test this
- * path since it is used by client libraries.
- */
-static VALUE
-parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
-    pm_string_t input;
-    pm_buffer_t buffer;
-    pm_buffer_init(&buffer);
-
-    const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
-
-    pm_parse_serialize(pm_string_source(&input), pm_string_length(&input), &buffer, check_string(metadata));
-    VALUE result = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-
-    pm_string_free(&input);
-    pm_buffer_free(&buffer);
-    return result;
 }
 
 /**
@@ -1039,7 +1015,6 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismDebug, "named_captures", named_captures, 1);
     rb_define_singleton_method(rb_cPrismDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cPrismDebug, "profile_file", profile_file, 1);
-    rb_define_singleton_method(rb_cPrismDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);
     rb_define_singleton_method(rb_cPrismDebug, "inspect_node", inspect_node, 1);
 
     // Next, initialize the other APIs.
