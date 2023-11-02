@@ -583,10 +583,14 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
             if (new_parent) {
-                bool dont_care;
-                rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
                 if (UNLIKELY(new_parent->type == SHAPE_OBJ_TOO_COMPLEX)) {
                     return new_parent;
+                }
+
+                bool dont_care;
+                rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
+                if (UNLIKELY(new_child->type == SHAPE_OBJ_TOO_COMPLEX)) {
+                    return new_child;
                 }
 
                 new_child->capacity = shape->capacity;
