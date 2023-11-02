@@ -4152,44 +4152,50 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
         rb_shape_t * shape = rb_shape_get_shape(obj);
         if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
             found = rb_complex_ivar_set(obj, key, value);
+            goto finish;
         }
-        else {
-            attr_index_t idx;
-            found = rb_shape_get_iv_index(shape, key, &idx);
 
-            if (found) {
-                // Changing an existing instance variable
-                RUBY_ASSERT(RCLASS_IVPTR(obj));
+        attr_index_t idx;
+        found = rb_shape_get_iv_index(shape, key, &idx);
 
-                RCLASS_IVPTR(obj)[idx] = value;
-                RB_OBJ_WRITTEN(obj, Qundef, value);
-            }
-            else {
-                // Creating and setting a new instance variable
+        if (!found) {
+            idx = shape->next_iv_index;
 
-                // Move to a shape which fits the new ivar
-                idx = shape->next_iv_index;
-                rb_shape_t * next_shape = rb_shape_get_next(shape, obj, key);
+            if (UNLIKELY(idx >= shape->capacity)) {
+                RUBY_ASSERT(shape->next_iv_index == shape->capacity);
+
+                rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
                 if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
                     rb_evict_ivars_to_hash(obj, shape);
                     rb_complex_ivar_set(obj, key, value);
+                    goto finish;
                 }
-                else {
-                    // We always allocate a power of two sized IV array. This way we
-                    // only need to realloc when we expand into a new power of two size
-                    if ((idx & (idx - 1)) == 0) {
-                        size_t newsize = idx ? idx * 2 : 1;
-                        REALLOC_N(RCLASS_IVPTR(obj), VALUE, newsize);
-                    }
 
-                    RUBY_ASSERT(RCLASS_IVPTR(obj));
+                REALLOC_N(RCLASS_IVPTR(obj), VALUE, next_shape->capacity);
 
-                    RB_OBJ_WRITE(obj, &RCLASS_IVPTR(obj)[idx], value);
-                    rb_shape_set_shape(obj, next_shape);
-                }
+                shape = next_shape;
+                RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
+            }
+
+            rb_shape_t *next_shape = rb_shape_get_next(shape, obj, key);
+            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+                rb_evict_ivars_to_hash(obj, shape);
+                rb_complex_ivar_set(obj, key, value);
+                goto finish;
+            }
+            else {
+                rb_shape_set_shape(obj, next_shape);
+
+                RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
+                RUBY_ASSERT(idx == (next_shape->next_iv_index - 1));
             }
         }
+
+        RUBY_ASSERT(RCLASS_IVPTR(obj));
+
+        RB_OBJ_WRITE(obj, &RCLASS_IVPTR(obj)[idx], value);
     }
+finish:
     RB_VM_LOCK_LEAVE();
 
     return found;
