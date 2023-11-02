@@ -1559,7 +1559,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE((pm_node_t *)begin_node->statements);
         }
         else {
-            PM_PUTNIL;
+            PM_PUTNIL_UNLESS_POPPED;
         }
         return;
       }

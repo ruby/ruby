@@ -554,6 +554,7 @@ module Prism
 
     def test_BeginNode
       assert_prism_eval("begin; 1; end")
+      assert_prism_eval("begin; end; 1")
     end
 
     def test_BreakNode
