@@ -1874,6 +1874,94 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+static size_t
+str_embed_size(long capa)
+{
+    return offsetof(struct RString, as.embed.ary) + (sizeof(char) * capa);
+}
+
+static bool
+str_embeddable_p(long capa)
+{
+    return rb_gc_size_allocatable_p(str_embed_size(capa));
+}
+
+static VALUE
+string_create(rb_execution_context_t *ec, VALUE klass, VALUE orig, VALUE orig_notset, VALUE encoding, VALUE capacity)
+{
+    rb_encoding *enc = NULL;
+    long termlen = 1;
+
+    if (orig_notset == Qtrue) {
+        orig = Qnil;
+    }
+    else {
+        orig = StringValue(orig);
+    }
+
+    if (NIL_P(encoding)) {
+        if (!NIL_P(orig)) {
+            encoding = rb_obj_encoding(orig);
+        }
+    }
+
+    if (!NIL_P(encoding)) {
+        enc = rb_to_encoding(encoding);
+        termlen = rb_enc_mbminlen(enc);
+    }
+
+    VALUE str;
+
+    // If capacity is nil, we're basically just duping `orig`.
+    if (NIL_P(capacity)) {
+        if (NIL_P(orig)) {
+            str = str_new(klass, "", 0);
+            if (enc) {
+                rb_enc_associate(str, enc);
+            }
+            return str;
+        }
+        VALUE copy = str_duplicate(klass, orig);
+        str_modifiable(copy);
+        rb_enc_associate(copy, enc);
+        ENC_CODERANGE_CLEAR(copy);
+        return copy;
+    }
+
+    long capa = 0;
+    capa = NUM2LONG(capacity);
+    if (capa < 0) {
+        capa = 0;
+    }
+
+    if (!NIL_P(orig)) {
+        long orig_capa = rb_str_capacity(orig) + TERM_LEN(orig);
+        if (orig_capa > capa) {
+            capa = orig_capa;
+        }
+    }
+
+    if (str_embeddable_p(capa)) {
+        str = str_alloc_embed(klass, capa);
+    }
+    else {
+        str = str_alloc_heap(klass);
+        RSTRING(str)->as.heap.aux.capa = capa - termlen;
+        RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa);
+        STR_SET_LEN(str, 0);
+    }
+
+    if (enc) {
+        rb_enc_associate(str, enc);
+    }
+
+    if (!NIL_P(orig)) {
+        rb_str_buf_append(str, orig);
+    }
+
+    return str;
+}
+
 #ifdef NONASCII_MASK
 #define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
 
@@ -12132,3 +12220,5 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
+
+#include "string.rbinc"

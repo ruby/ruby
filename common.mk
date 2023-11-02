@@ -1175,6 +1175,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/string.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
@@ -16890,6 +16891,7 @@ string.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 string.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+string.$(OBJEXT): {$(VPATH)}builtin.h
 string.$(OBJEXT): {$(VPATH)}config.h
 string.$(OBJEXT): {$(VPATH)}constant.h
 string.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -17064,6 +17066,7 @@ string.$(OBJEXT): {$(VPATH)}rubyparser.h
 string.$(OBJEXT): {$(VPATH)}shape.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
+string.$(OBJEXT): {$(VPATH)}string.rbinc
 string.$(OBJEXT): {$(VPATH)}subst.h
 string.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 string.$(OBJEXT): {$(VPATH)}thread_native.h

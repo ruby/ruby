@@ -549,4 +549,14 @@
 #    as determined by a given record separator.
 #  - #upto: Calls the given block with each string value returned by successive calls to #succ.
 
-class String; end
+class String
+  def self.new(orig = (unspecified = true), encoding: nil, capacity: nil)
+    __builtin_string_create(orig, unspecified, encoding, capacity)
+  end
+
+  def self.inherited(child) # :nodoc:
+    if child.superclass == String
+      child.define_singleton_method(:new, Class.instance_method(:new))
+    end
+  end
+end
