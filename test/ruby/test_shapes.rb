@@ -275,6 +275,25 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_run_out_of_shape_for_module_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      module Foo
+        @a = 1
+        @b = 2
+        assert_equal 1, @a
+        assert_equal 2, @b
+      end
+    end;
+  end
+
   def test_run_out_of_shape_for_class_cvar
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
