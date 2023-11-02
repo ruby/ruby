@@ -1262,7 +1262,9 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *con
     lfinish[0] = NEW_LABEL(lineno);
     lfinish[1] = 0;
 
-    pm_compile_defined_expr0(iseq, node, ret, src, popped, scope_node, dummy_line_node, lineno, in_condition, lfinish);
+    if (!popped) {
+        pm_compile_defined_expr0(iseq, node, ret, src, popped, scope_node, dummy_line_node, lineno, in_condition, lfinish);
+    }
 
     if (lfinish[1]) {
         ELEM_INSERT_NEXT(last, &new_insn_body(iseq, &dummy_line_node, BIN(putnil), 0)->link);
