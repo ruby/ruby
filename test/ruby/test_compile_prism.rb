@@ -89,7 +89,6 @@ module Prism
     end
 
     def test_DefinedNode
-=begin
       assert_prism_eval("defined? nil")
       assert_prism_eval("defined? self")
       assert_prism_eval("defined? true")
@@ -140,7 +139,6 @@ module Prism
       assert_prism_eval("x = 1; defined? x ||= 1")
 
       assert_prism_eval("if defined? A; end")
-=end
     end
 
     def test_GlobalVariableReadNode
