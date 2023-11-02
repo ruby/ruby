@@ -69,10 +69,10 @@ module Prism
     load_exported_functions_from(
       "prism.h",
       "pm_version",
-      "pm_parse_serialize",
-      "pm_parse_serialize_comments",
-      "pm_lex_serialize",
-      "pm_parse_lex_serialize"
+      "pm_serialize_parse",
+      "pm_serialize_parse_comments",
+      "pm_serialize_lex",
+      "pm_serialize_parse_lex"
     )
 
     load_exported_functions_from(
@@ -180,7 +180,7 @@ module Prism
     # Mirror the Prism.dump API by using the serialization API.
     def dump(code, **options)
       LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_parse_serialize(code, code.bytesize, buffer.pointer, dump_options(options))
+        LibRubyParser.pm_serialize_parse(buffer.pointer, code, code.bytesize, dump_options(options))
         buffer.read
       end
     end
@@ -195,7 +195,7 @@ module Prism
     # Mirror the Prism.lex API by using the serialization API.
     def lex(code, **options)
       LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_lex_serialize(code, code.bytesize, dump_options(options), buffer.pointer)
+        LibRubyParser.pm_serialize_lex(buffer.pointer, code, code.bytesize, dump_options(options))
         Serialize.load_tokens(Source.new(code), buffer.read)
       end
     end
@@ -224,7 +224,7 @@ module Prism
     # Mirror the Prism.parse_comments API by using the serialization API.
     def parse_comments(code, **options)
       LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_parse_serialize_comments(code, code.bytesize, buffer.pointer, dump_options(options))
+        LibRubyParser.pm_serialize_parse_comments(buffer.pointer, code, code.bytesize, dump_options(options))
 
         source = Source.new(code)
         loader = Serialize::Loader.new(source, buffer.read)
@@ -247,15 +247,15 @@ module Prism
     # Mirror the Prism.parse_lex API by using the serialization API.
     def parse_lex(code, **options)
       LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_parse_lex_serialize(code, code.bytesize, buffer.pointer, dump_options(options))
+        LibRubyParser.pm_serialize_parse_lex(buffer.pointer, code, code.bytesize, dump_options(options))
 
         source = Source.new(code)
         loader = Serialize::Loader.new(source, buffer.read)
 
         tokens = loader.load_tokens
         node, comments, magic_comments, errors, warnings = loader.load_nodes
-
         tokens.each { |token,| token.value.force_encoding(loader.encoding) }
+
         ParseResult.new([node, tokens], comments, magic_comments, errors, warnings, source)
       end
     end

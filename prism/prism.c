@@ -16557,7 +16557,7 @@ pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
  * buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data) {
+pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     if (data != NULL) pm_options_read(&options, data);
 
@@ -16579,7 +16579,7 @@ pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, cons
  * Parse and serialize the comments in the given source to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data) {
+pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     if (data != NULL) pm_options_read(&options, data);
 
