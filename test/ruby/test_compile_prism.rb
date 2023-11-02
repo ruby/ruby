@@ -441,11 +441,9 @@ module Prism
     end
 
     def test_AssocSplatNode
-=begin
       assert_prism_eval("foo = { a: 1 }; { **foo }")
       assert_prism_eval("foo = { a: 1 }; bar = foo; { **foo, b: 2, **bar, c: 3 }")
       assert_prism_eval("foo = { a: 1 }; { b: 2, **foo, c: 3}")
-=end
     end
 
     def test_HashNode
