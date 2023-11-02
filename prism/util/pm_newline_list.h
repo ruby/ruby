@@ -62,18 +62,6 @@ typedef struct {
 bool pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capacity);
 
 /**
- * Set up the newline list such that it believes it is starting on a specific
- * line in the source. Basically this entails pushing on pointers to the start
- * of the string until we hit the desired line.
- *
- * @param list The list to set up.
- * @param count The number of lines to push onto the list.
- * @return True if no reallocation was needed or the reallocation of the offsets
- *     succeeds (if one was necessary), otherwise false.
- */
-bool pm_newline_list_force(pm_newline_list_t *list, size_t count);
-
-/**
  * Append a new offset to the newline list. Returns true if the reallocation of
  * the offsets succeeds (if one was necessary), otherwise returns false.
  *
