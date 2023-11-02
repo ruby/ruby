@@ -20,33 +20,6 @@ pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capac
 }
 
 /**
- * Set up the newline list such that it believes it is starting on a specific
- * line in the source. Basically this entails pushing on pointers to the start
- * of the string until we hit the desired line.
- */
-bool
-pm_newline_list_force(pm_newline_list_t *list, size_t count) {
-    size_t next_capacity = list->capacity == 0 ? 1 : list->capacity;
-    while (count > next_capacity) {
-        next_capacity *= 2;
-    }
-
-    size_t *offsets = list->offsets;
-    list->offsets = (size_t *) calloc(next_capacity, sizeof(size_t));
-    if (list->offsets == NULL) return false;
-
-    if (offsets != NULL) {
-        memcpy(list->offsets, offsets, list->size * sizeof(size_t));
-        free(offsets);
-    }
-
-    memset(list->offsets + list->size, 0, count * sizeof(size_t));
-    list->size += count;
-
-    return true;
-}
-
-/**
  * Append a new offset to the newline list. Returns true if the reallocation of
  * the offsets succeeds (if one was necessary), otherwise returns false.
  */

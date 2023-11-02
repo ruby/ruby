@@ -24,6 +24,9 @@ module Prism
       assert_equal "", Prism.parse("__FILE__").value.statements.body[0].filepath
       assert_equal "foo.rb", Prism.parse("__FILE__", filepath: "foo.rb").value.statements.body[0].filepath
 
+      assert_equal 1, Prism.parse("foo").value.statements.body[0].location.start_line
+      assert_equal 10, Prism.parse("foo", line: 10).value.statements.body[0].location.start_line
+
       refute Prism.parse("\"foo\"").value.statements.body[0].frozen?
       assert Prism.parse("\"foo\"", frozen_string_literal: true).value.statements.body[0].frozen?
       refute Prism.parse("\"foo\"", frozen_string_literal: false).value.statements.body[0].frozen?

@@ -16360,6 +16360,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .newline_list = { 0 },
         .integer_base = 0,
         .current_string = PM_STRING_EMPTY,
+        .start_line = 1,
         .command_start = true,
         .recovering = false,
         .encoding_changed = false,
@@ -16400,7 +16401,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
         // line option
         if (options->line > 0) {
-            pm_newline_list_force(&parser->newline_list, options->line);
+            parser->start_line = options->line;
         }
 
         // encoding option

@@ -471,8 +471,8 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { rb_str_new((const char *) pm_string_source(input), pm_string_length(input)), offsets };
-    VALUE source = rb_class_new_instance(2, source_argv, rb_cPrismSource);
+    VALUE source_argv[] = { rb_str_new((const char *) pm_string_source(input), pm_string_length(input)), ULONG2NUM(parser.start_line), offsets };
+    VALUE source = rb_class_new_instance(3, source_argv, rb_cPrismSource);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
