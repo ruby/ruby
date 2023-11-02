@@ -1733,7 +1733,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             pm_while_node_t *condition_node = (pm_while_node_t *)conditions.nodes[i];
             if (condition_node->statements) {
-                PM_COMPILE_NOT_POPPED((pm_node_t *)condition_node->statements);
+                PM_COMPILE((pm_node_t *)condition_node->statements);
             }
             else {
                 PM_PUTNIL_UNLESS_POPPED;
