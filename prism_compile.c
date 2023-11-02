@@ -2400,7 +2400,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             int elements_of_cur_type = 0;
             int allocated_hashes = 0;
 
-            if (!PM_NODE_TYPE_P(cur_node, PM_ASSOC_NODE)) {
+            if (!PM_NODE_TYPE_P(cur_node, PM_ASSOC_NODE) && !popped) {
                 ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                 ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
                 allocated_hashes++;
@@ -2434,6 +2434,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         elements_of_cur_type++;
                         PM_COMPILE(elements->nodes[index]);
                     }
+                }
+                else {
+                    PM_COMPILE(elements->nodes[index]);
                 }
             }
 
