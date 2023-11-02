@@ -251,7 +251,7 @@ bitset_copy(BitSetRef dest, BitSetRef bs)
 
 #if defined(USE_NAMED_GROUP) && !defined(USE_ST_LIBRARY)
 extern int
-onig_strncmp(const UChar* s1, const UChar* s2, int n)
+onig_strncmp(const UChar* s1, const UChar* s2, size_t n)
 {
   int x;
 
@@ -551,6 +551,17 @@ onig_names_free(regex_t* reg)
   return 0;
 }
 
+extern int
+onig_names_copy(regex_t* reg, regex_t* oreg)
+{
+  NameTable* table = oreg->name_table;
+  if (table) {
+    NameTable* t = st_copy(table);
+    reg->name_table = t;
+  }
+  return 0;
+}
+
 static NameEntry*
 name_find(regex_t* reg, const UChar* name, const UChar* name_end)
 {
@@ -736,10 +747,52 @@ onig_names_free(regex_t* reg)
   return 0;
 }
 
+extern int
+onig_names_copy(regex_t* reg, regex_t* oreg)
+{
+  NameTable* ot = oreg->name_table;
+  if (ot) {
+    OnigEncoding enc = oreg->enc;
+    int i, num = ot->num;
+    NameTable* t = xmalloc(sizeof(*t));
+    CHECK_NULL_RETURN_MEMERR(t);
+    *t = *ot;
+    t->e = xmalloc(t->alloc * sizeof(t->e[0]));
+    if (IS_NULL(t->e)) {
+      xfree(t);
+      return ONIGERR_MEMORY;
+    }
+    t->num = 0;
+    reg->name_table = t;
+    for (i = 0; i < num; t->num = ++i) {
+      NameEntry* oe = &(ot->e[i]);
+      NameEntry* e = &(t->e[i]);
+      *e = *oe;
+      e->name = NULL;
+      e->back_refs = NULL;
+      e->name = strdup_with_null(enc, oe->name, oe->name + e->name_len);
+      if (IS_NULL(e->name)) {
+        onig_names_free(reg);
+        return ONIGERR_MEMORY;
+      }
+      e->back_refs = xmalloc(e->back_alloc * sizeof(e->back_refs[0]));
+      if (IS_NULL(e->back_refs)) {
+        xfree(e->name);
+        onig_names_free(reg);
+        return ONIGERR_MEMORY;
+      }
+      memcpy(e->back_refs, oe->back_refs, e->back_num * sizeof(e->back_refs[0]));
+      e->back_ref1 = e->back_refs[0];
+    }
+  }
+  return 0;
+}
+
 static NameEntry*
 name_find(regex_t* reg, const UChar* name, const UChar* name_end)
 {
-  int i, len;
+  int i;
+  size_t len;
   NameEntry* e;
   NameTable* t = (NameTable* )reg->name_table;
 
@@ -769,6 +822,30 @@ onig_foreach_name(regex_t* reg,
 		  (e->back_num > 1 ? e->back_refs : &(e->back_ref1)),
 		  reg, arg);
       if (r != 0) return r;
+    }
+  }
+  return 0;
+}
+
+extern int
+onig_renumber_name_table(regex_t* reg, GroupNumRemap* map)
+{
+  int i, j;
+  NameEntry* e;
+  NameTable* t = (NameTable* )reg->name_table;
+
+  if (IS_NOT_NULL(t)) {
+    for (i = 0; i < t->num; i++) {
+      e = &(t->e[i]);
+
+      if (e->back_num > 1) {
+        for (j = 0; j < e->back_num; j++) {
+          e->back_refs[j] = map[e->back_refs[j]].new_val;
+        }
+      }
+      else if (e->back_num == 1) {
+        e->back_ref1 = map[e->back_ref1].new_val;
+      }
     }
   }
   return 0;
@@ -973,6 +1050,12 @@ onig_foreach_name(regex_t* reg,
 
 extern int
 onig_number_of_names(const regex_t* reg)
+{
+  return 0;
+}
+
+extern int
+onig_names_copy(regex_t* reg, regex_t* oreg)
 {
   return 0;
 }
