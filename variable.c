@@ -1515,11 +1515,6 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     struct ivar_update ivup;
 
     attr_index_t index;
-    // The returned shape will have `id` in its iv_table
-    if (rb_shape_obj_too_complex(obj)) {
-        rb_complex_ivar_set(obj, id, val);
-        return;
-    }
 
     rb_shape_t *shape = rb_shape_get_shape(obj);
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
