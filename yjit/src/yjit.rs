@@ -29,9 +29,12 @@ pub fn yjit_enabled_p() -> bool {
 
 /// This function is called from C code
 #[no_mangle]
-pub extern "C" fn rb_yjit_init() {
+pub extern "C" fn rb_yjit_init(yjit_enabled: bool) {
+    // Register the method codegen functions. This must be done at boot.
+    yjit_reg_method_codegen_fns();
+
     // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
-    if !get_option!(disable) {
+    if yjit_enabled && !get_option!(disable) {
         yjit_init();
     }
 }

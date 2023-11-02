@@ -85,6 +85,16 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_enable_with_monkey_patch
+    assert_separately(%w[--yjit-disable], <<~RUBY)
+      # This lets rb_method_entry_at(rb_mKernel, ...) return NULL
+      Kernel.prepend(Module.new)
+
+      # This must not crash with "undefined optimized method!"
+      RubyVM::YJIT.enable
+    RUBY
+  end
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")

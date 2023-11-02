@@ -5141,8 +5141,13 @@ fn jit_thread_s_current(
 // Check if we know how to codegen for a particular cfunc method
 fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenFn> {
     let method_serial = unsafe { get_def_method_serial(def) };
+    let table = unsafe { METHOD_CODEGEN_TABLE.as_ref().unwrap() };
 
-    CodegenGlobals::look_up_codegen_method(method_serial)
+    let option_ref = table.get(&method_serial);
+    match option_ref {
+        None => None,
+        Some(&mgf) => Some(mgf), // Deref
+    }
 }
 
 // Is anyone listening for :c_call and :c_return event currently?
@@ -8676,6 +8681,83 @@ type MethodGenFn = fn(
     known_recv_class: *const VALUE,
 ) -> bool;
 
+/// Methods for generating code for hardcoded (usually C) methods
+static mut METHOD_CODEGEN_TABLE: Option<HashMap<usize, MethodGenFn>> = None;
+
+/// Register codegen functions for some Ruby core methods
+pub fn yjit_reg_method_codegen_fns() {
+    unsafe {
+        assert!(METHOD_CODEGEN_TABLE.is_none());
+        METHOD_CODEGEN_TABLE = Some(HashMap::default());
+
+        // Specialization for C methods. See yjit_reg_method() for details.
+        yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
+
+        yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
+        yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
+        yjit_reg_method(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
+        yjit_reg_method(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
+        yjit_reg_method(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
+
+        yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
+        yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
+        yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
+        yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
+        yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
+        yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
+        yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
+        yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
+        yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
+        yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
+
+        yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
+        yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
+        yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
+
+        yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
+        yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
+        yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+        yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
+        yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
+        yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+        yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+        yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
+        yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
+
+        yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
+        yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
+
+        yjit_reg_method(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
+    }
+}
+
+// Register a specialized codegen function for a particular method. Note that
+// the if the function returns true, the code it generates runs without a
+// control frame and without interrupt checks. To avoid creating observable
+// behavior changes, the codegen function should only target simple code paths
+// that do not allocate and do not make method calls.
+fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
+    let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
+    let mid = unsafe { rb_intern(id_string.as_ptr()) };
+    let me = unsafe { rb_method_entry_at(klass, mid) };
+
+    if me.is_null() {
+        panic!("undefined optimized method!: {mid_str}");
+    }
+
+    // For now, only cfuncs are supported
+    //RUBY_ASSERT(me && me->def);
+    //RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
+
+    let method_serial = unsafe {
+        let def = (*me).def;
+        get_def_method_serial(def)
+    };
+
+    unsafe { METHOD_CODEGEN_TABLE.as_mut().unwrap().insert(method_serial, gen_fn); }
+}
+
 /// Global state needed for code generation
 pub struct CodegenGlobals {
     /// Inline code block (fast path)
@@ -8705,9 +8787,6 @@ pub struct CodegenGlobals {
 
     /// For implementing global code invalidation
     global_inval_patches: Vec<CodepagePatch>,
-
-    // Methods for generating code for hardcoded (usually C) methods
-    method_codegen_table: HashMap<usize, MethodGenFn>,
 
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
@@ -8792,7 +8871,7 @@ impl CodegenGlobals {
         cb.mark_all_executable();
         ocb.unwrap().mark_all_executable();
 
-        let mut codegen_globals = CodegenGlobals {
+        let codegen_globals = CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code,
@@ -8802,94 +8881,12 @@ impl CodegenGlobals {
             branch_stub_hit_trampoline,
             entry_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
-            method_codegen_table: HashMap::new(),
             ocb_pages,
         };
-
-        // Register the method codegen functions
-        codegen_globals.reg_method_codegen_fns();
 
         // Initialize the codegen globals instance
         unsafe {
             CODEGEN_GLOBALS = Some(codegen_globals);
-        }
-    }
-
-    // Register a specialized codegen function for a particular method. Note that
-    // the if the function returns true, the code it generates runs without a
-    // control frame and without interrupt checks. To avoid creating observable
-    // behavior changes, the codegen function should only target simple code paths
-    // that do not allocate and do not make method calls.
-    fn yjit_reg_method(&mut self, klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
-        let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
-        let mid = unsafe { rb_intern(id_string.as_ptr()) };
-        let me = unsafe { rb_method_entry_at(klass, mid) };
-
-        if me.is_null() {
-            panic!("undefined optimized method!");
-        }
-
-        // For now, only cfuncs are supported
-        //RUBY_ASSERT(me && me->def);
-        //RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
-
-        let method_serial = unsafe {
-            let def = (*me).def;
-            get_def_method_serial(def)
-        };
-
-        self.method_codegen_table.insert(method_serial, gen_fn);
-    }
-
-    /// Register codegen functions for some Ruby core methods
-    fn reg_method_codegen_fns(&mut self) {
-        unsafe {
-            // Specialization for C methods. See yjit_reg_method() for details.
-            self.yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
-
-            self.yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
-            self.yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
-            self.yjit_reg_method(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
-            self.yjit_reg_method(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
-            self.yjit_reg_method(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
-
-            self.yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
-            self.yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
-            self.yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
-            self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
-
-            self.yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
-            self.yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
-            self.yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
-
-            // rb_str_to_s() methods in string.c
-            self.yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
-            self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
-            self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
-            self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-            self.yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
-            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
-            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
-
-            // rb_ary_empty_p() method in array.c
-            self.yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
-            self.yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
-
-            self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
-            self.yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
-
-            // Thread.current
-            self.yjit_reg_method(
-                rb_singleton_class(rb_cThread),
-                "current",
-                jit_thread_s_current,
-            );
         }
     }
 
@@ -8950,16 +8947,6 @@ impl CodegenGlobals {
 
     pub fn get_entry_stub_hit_trampoline() -> CodePtr {
         CodegenGlobals::get_instance().entry_stub_hit_trampoline
-    }
-
-    pub fn look_up_codegen_method(method_serial: usize) -> Option<MethodGenFn> {
-        let table = &CodegenGlobals::get_instance().method_codegen_table;
-
-        let option_ref = table.get(&method_serial);
-        match option_ref {
-            None => None,
-            Some(&mgf) => Some(mgf), // Deref
-        }
     }
 
     pub fn get_ocb_pages() -> &'static Vec<usize> {
