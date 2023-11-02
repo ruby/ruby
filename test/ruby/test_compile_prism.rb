@@ -271,8 +271,8 @@ module Prism
     end
 
     def test_MatchWriteNode
-      # assert_prism_eval("/(?<foo>bar)(?<baz>bar>)/ =~ 'barbar'")
-      # assert_prism_eval("/(?<foo>bar)/ =~ 'barbar'")
+      assert_prism_eval("/(?<foo>bar)(?<baz>bar>)/ =~ 'barbar'")
+      assert_prism_eval("/(?<foo>bar)/ =~ 'barbar'")
     end
 
     ############################################################################
