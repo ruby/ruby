@@ -770,7 +770,7 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
         flag = VM_CALL_FCALL;
     }
 
-    PM_COMPILE(receiver);
+    PM_COMPILE_NOT_POPPED(receiver);
 
     ID write_name_id = pm_constant_id_lookup(scope_node, write_name);
     ID read_name_id = pm_constant_id_lookup(scope_node, read_name);
@@ -790,7 +790,7 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
 
     PM_POP_UNLESS_POPPED;
 
-    PM_COMPILE(value);
+    PM_COMPILE_NOT_POPPED(value);
     if (!popped) {
         PM_SWAP;
         ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
