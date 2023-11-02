@@ -1655,7 +1655,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             flag = VM_CALL_FCALL;
         }
 
-        PM_COMPILE(call_operator_write_node->receiver);
+        PM_COMPILE_NOT_POPPED(call_operator_write_node->receiver);
 
         ID write_name_id = pm_constant_id_lookup(scope_node, call_operator_write_node->write_name);
         ID read_name_id = pm_constant_id_lookup(scope_node, call_operator_write_node->read_name);
@@ -1664,7 +1664,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ADD_SEND_WITH_FLAG(ret, &dummy_line_node, read_name_id, INT2FIX(0), INT2FIX(flag));
 
-        PM_COMPILE(call_operator_write_node->value);
+        PM_COMPILE_NOT_POPPED(call_operator_write_node->value);
         ADD_SEND(ret, &dummy_line_node, operator_id, INT2FIX(1));
 
         if (!popped) {
