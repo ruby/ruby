@@ -594,11 +594,11 @@ module Prism
 
     private_constant :Heredoc
 
-    attr_reader :source, :filepath
+    attr_reader :source, :options
 
-    def initialize(source, filepath = "")
+    def initialize(source, **options)
       @source = source
-      @filepath = filepath || ""
+      @options = options
     end
 
     def result
@@ -607,7 +607,7 @@ module Prism
       state = :default
       heredoc_stack = [[]]
 
-      result = Prism.lex(source, filepath: @filepath)
+      result = Prism.lex(source, **options)
       result_value = result.value
       previous_state = nil
 

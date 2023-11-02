@@ -16391,11 +16391,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
     // If options were provided to this parse, establish them here.
     if (options != NULL) {
         // filepath option
-        if (options->filepath == NULL) {
-            pm_string_constant_init(&parser->filepath_string, "", 0);
-        } else {
-            pm_string_constant_init(&parser->filepath_string, options->filepath, strlen(options->filepath));
-        }
+        parser->filepath_string = options->filepath;
 
         // line option
         if (options->line > 0) {
@@ -16561,10 +16557,12 @@ pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
  * buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
+pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data) {
+    pm_options_t options = { 0 };
+    if (data != NULL) pm_options_read(&options, data);
+
     pm_parser_t parser;
-    pm_parser_init(&parser, source, size, NULL);
-    if (metadata) pm_parser_metadata(&parser, metadata);
+    pm_parser_init(&parser, source, size, &options);
 
     pm_node_t *node = pm_parse(&parser);
 
@@ -16574,16 +16572,19 @@ pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, cons
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_options_free(&options);
 }
 
 /**
  * Parse and serialize the comments in the given source to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
+pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data) {
+    pm_options_t options = { 0 };
+    if (data != NULL) pm_options_read(&options, data);
+
     pm_parser_t parser;
-    pm_parser_init(&parser, source, size, NULL);
-    if (metadata) pm_parser_metadata(&parser, metadata);
+    pm_parser_init(&parser, source, size, &options);
 
     pm_node_t *node = pm_parse(&parser);
     pm_serialize_header(buffer);
@@ -16592,6 +16593,7 @@ pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buf
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_options_free(&options);
 }
 
 #undef PM_CASE_KEYWORD

@@ -35,13 +35,15 @@ module Prism
   private_constant :LexRipper
 
   # :call-seq:
-  #   Prism::lex_compat(source, filepath = "") -> Array
+  #   Prism::lex_compat(source, **options) -> Array
   #
   # Returns an array of tokens that closely resembles that of the Ripper lexer.
   # The only difference is that since we don't keep track of lexer state in the
   # same way, it's going to always return the NONE state.
-  def self.lex_compat(source, filepath = "")
-    LexCompat.new(source, filepath).result
+  #
+  # For supported options, see Prism::parse.
+  def self.lex_compat(source, **options)
+    LexCompat.new(source, **options).result
   end
 
   # :call-seq:

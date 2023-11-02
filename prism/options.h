@@ -29,19 +29,19 @@ typedef struct pm_options_scope {
  */
 typedef struct {
     /** The name of the file that is currently being parsed. */
-    const char *filepath;
-
-    /**
-     * The name of the encoding that the source file is in. Note that this must
-     * correspond to a name that can be found with Encoding.find in Ruby.
-     */
-    const char *encoding;
+    pm_string_t filepath;
 
     /**
      * The line within the file that the parse starts on. This value is
      * 0-indexed.
      */
     uint32_t line;
+
+    /**
+     * The name of the encoding that the source file is in. Note that this must
+     * correspond to a name that can be found with Encoding.find in Ruby.
+     */
+    pm_string_t encoding;
 
     /**
      * The number of scopes surrounding the code that is being parsed.
@@ -72,17 +72,7 @@ typedef struct {
  * @param options The options struct to set the filepath on.
  * @param filepath The filepath to set.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_filepath_set(pm_options_t *options, const char *filepath);
-
-/**
- * Set the encoding option on the given options struct.
- *
- * @param options The options struct to set the encoding on.
- * @param encoding The encoding to set.
- */
-PRISM_EXPORTED_FUNCTION void
-pm_options_encoding_set(pm_options_t *options, const char *encoding);
+PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath);
 
 /**
  * Set the line option on the given options struct.
@@ -90,8 +80,15 @@ pm_options_encoding_set(pm_options_t *options, const char *encoding);
  * @param options The options struct to set the line on.
  * @param line The line to set.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_line_set(pm_options_t *options, uint32_t line);
+PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, uint32_t line);
+
+/**
+ * Set the encoding option on the given options struct.
+ *
+ * @param options The options struct to set the encoding on.
+ * @param encoding The encoding to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding);
 
 /**
  * Set the frozen string literal option on the given options struct.
@@ -99,8 +96,7 @@ pm_options_line_set(pm_options_t *options, uint32_t line);
  * @param options The options struct to set the frozen string literal value on.
  * @param frozen_string_literal The frozen string literal value to set.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
+PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
 
 /**
  * Set the suppress warnings option on the given options struct.
@@ -108,8 +104,7 @@ pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_l
  * @param options The options struct to set the suppress warnings value on.
  * @param suppress_warnings The suppress warnings value to set.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings);
+PRISM_EXPORTED_FUNCTION void pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.
@@ -117,8 +112,7 @@ pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings);
  * @param options The options struct to initialize the scopes array on.
  * @param scopes_count The number of scopes to allocate.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
+PRISM_EXPORTED_FUNCTION void pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
 
 /**
  * Return a pointer to the scope at the given index within the given options.
@@ -127,8 +121,7 @@ pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
  * @param index The index of the scope to get.
  * @return A pointer to the scope at the given index.
  */
-PRISM_EXPORTED_FUNCTION const pm_options_scope_t *
-pm_options_scope_get(const pm_options_t *options, size_t index);
+PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope_get(const pm_options_t *options, size_t index);
 
 /**
  * Create a new options scope struct. This will hold a set of locals that are in
@@ -137,8 +130,7 @@ pm_options_scope_get(const pm_options_t *options, size_t index);
  * @param scope The scope struct to initialize.
  * @param locals_count The number of locals to allocate.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
+PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
 
 /**
  * Return a pointer to the local at the given index within the given scope.
@@ -147,15 +139,66 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
  * @param index The index of the local to get.
  * @return A pointer to the local at the given index.
  */
-PRISM_EXPORTED_FUNCTION const pm_string_t *
-pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index);
+PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index);
 
 /**
  * Free the internal memory associated with the options.
  *
  * @param options The options struct whose internal memory should be freed.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_options_free(pm_options_t *options);
+PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
+
+/**
+ * Deserialize an options struct from the given binary string. This is used to
+ * pass options to the parser from an FFI call so that consumers of the library
+ * from an FFI perspective don't have to worry about the structure of our
+ * options structs. Since the source of these calls will be from Ruby
+ * implementation internals we assume it is from a trusted source.
+ *
+ * `data` is assumed to be a valid pointer pointing to well-formed data. The
+ * layout of this data should be the same every time, and is described below:
+ *
+ * | # bytes | field                      |
+ * | ------- | -------------------------- |
+ * | 4       | the length of the filepath |
+ * | ...     | the filepath bytes         |
+ * | 4       | the line number            |
+ * | 4       | the length the encoding    |
+ * | ...     | the encoding bytes         |
+ * | 1       | frozen string literal      |
+ * | 1       | suppress warnings          |
+ * | 4       | the number of scopes       |
+ * | ...     | the scopes                 |
+ *
+ * Each scope is layed out as follows:
+ * 
+ * | # bytes | field                      |
+ * | ------- | -------------------------- |
+ * | 4       | the number of locals       |
+ * | ...     | the locals                 |
+ *
+ * Each local is layed out as follows:
+ *
+ * | # bytes | field                      |
+ * | ------- | -------------------------- |
+ * | 4       | the length of the local    |
+ * | ...     | the local bytes            |
+ *
+ * Some additional things to note about this layout:
+ *
+ * * The filepath can have a length of 0, in which case we'll consider it an
+ *   empty string.
+ * * The line number should be 0-indexed.
+ * * The encoding can have a length of 0, in which case we'll use the default
+ *   encoding (UTF-8). If it's not 0, it should correspond to a name of an
+ *   encoding that can be passed to `Encoding.find` in Ruby.
+ * * The frozen string literal and suppress warnings fields are booleans, so
+ *   their values should be either 0 or 1.
+ * * The number of scopes can be 0.
+ *
+ * @param options The options struct to deserialize into.
+ * @param data The binary string to deserialize from.
+ */
+void pm_options_read(pm_options_t *options, const char *data);
 
 #endif

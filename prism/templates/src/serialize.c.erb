@@ -287,9 +287,9 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
  * Lex the given source and serialize to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer) {
+pm_lex_serialize(const uint8_t *source, size_t size, const char *data, pm_buffer_t *buffer) {
     pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, filepath);
+    if (data != NULL) pm_options_read(&options, data);
 
     pm_parser_t parser;
     pm_parser_init(&parser, source, size, &options);
@@ -321,10 +321,12 @@ pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_bu
  * source to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parse_lex_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata) {
+pm_parse_lex_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data) {
+    pm_options_t options = { 0 };
+    if (data != NULL) pm_options_read(&options, data);
+
     pm_parser_t parser;
-    pm_parser_init(&parser, source, size, NULL);
-    if (metadata) pm_parser_metadata(&parser, metadata);
+    pm_parser_init(&parser, source, size, &options);
 
     pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) buffer,
@@ -339,4 +341,5 @@ pm_parse_lex_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, 
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_options_free(&options);
 }

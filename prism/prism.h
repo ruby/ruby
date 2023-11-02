@@ -124,29 +124,14 @@ void pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buf
 PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
 
 /**
- * Process any additional metadata being passed into a call to the parser via
- * the pm_parse_serialize function. Since the source of these calls will be from
- * Ruby implementation internals we assume it is from a trusted source.
- *
- * Currently, this is only passing in variable scoping surrounding an eval, but
- * eventually it will be extended to hold any additional metadata.  This data
- * is serialized to reduce the calling complexity for a foreign function call
- * vs a foreign runtime making a bindable in-memory version of a C structure.
- *
- * @param parser The parser to process the metadata for.
- * @param metadata The metadata to process.
- */
-void pm_parser_metadata(pm_parser_t *parser, const char *metadata);
-
-/**
  * Parse the given source to the AST and serialize the AST to the given buffer.
  *
  * @param source The source to parse.
  * @param size The size of the source.
  * @param buffer The buffer to serialize to.
- * @param metadata The optional metadata to pass to the parser.
+ * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
+PRISM_EXPORTED_FUNCTION void pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data);
 
 /**
  * Parse and serialize the comments in the given source to the given buffer.
@@ -154,9 +139,9 @@ PRISM_EXPORTED_FUNCTION void pm_parse_serialize(const uint8_t *source, size_t si
  * @param source The source to parse.
  * @param size The size of the source.
  * @param buffer The buffer to serialize to.
- * @param metadata The optional metadata to pass to the parser.
+ * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
+PRISM_EXPORTED_FUNCTION void pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data);
 
 /**
  * Lex the given source and serialize to the given buffer.
