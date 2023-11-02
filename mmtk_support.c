@@ -713,20 +713,38 @@ rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t dat
 static void
 rb_mmtk_call_obj_free_inner(VALUE obj, bool on_exit) {
     if (on_exit) {
-        if (rb_obj_is_thread(obj)) {
-            RUBY_DEBUG_LOG("Skipped thread: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-        if (rb_obj_is_mutex(obj)) {
-            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-        if (rb_obj_is_fiber(obj)) {
-            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-        if (rb_obj_is_main_ractor(obj)) {
-            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+        switch (BUILTIN_TYPE(obj)) {
+          case T_DATA:
+            if (!DATA_PTR(obj) || !((struct RData*)obj)->dfree) {
+                RUBY_DEBUG_LOG("Skipped data without dfree: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+                return;
+            }
+            if (rb_obj_is_thread(obj)) {
+                RUBY_DEBUG_LOG("Skipped thread: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+                return;
+            }
+            if (rb_obj_is_mutex(obj)) {
+                RUBY_DEBUG_LOG("Skipped mutex: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+                return;
+            }
+            if (rb_obj_is_fiber(obj)) {
+                RUBY_DEBUG_LOG("Skipped fiber: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+                return;
+            }
+            if (rb_obj_is_main_ractor(obj)) {
+                RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+                return;
+            }
+            break;
+          case T_FILE:
+            if (!((struct RFile*)obj)->fptr) {
+                RUBY_DEBUG_LOG("Skipped file without fptr: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+                return;
+            }
+            break;
+          default:
+            RUBY_DEBUG_LOG("Skipped obj-free candidate that is neither T_DATA nor T_FILE: %p: %s",
+                (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
             return;
         }
     }
