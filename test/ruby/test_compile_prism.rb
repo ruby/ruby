@@ -773,8 +773,8 @@ module Prism
     end
 
     def test_CallOperatorWriteNode
-=begin
       assert_prism_eval(<<-CODE
+        class PrismTestSubclass; end
         def PrismTestSubclass.test_call_operator_write_node
           2
         end
@@ -784,7 +784,6 @@ module Prism
         PrismTestSubclass.test_call_operator_write_node += 1
       CODE
       )
-=end
     end
 
     def test_ForwardingSuperNode
