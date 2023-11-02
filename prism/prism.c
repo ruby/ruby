@@ -16319,13 +16319,8 @@ pm_parser_metadata(pm_parser_t *parser, const char *metadata) {
  * Initialize a parser with the given start and end pointers.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const char *filepath) {
+pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options) {
     assert(source != NULL);
-
-    // Set filepath to the file that was passed
-    if (!filepath) filepath = "";
-    pm_string_t filepath_string;
-    pm_string_constant_init(&filepath_string, filepath, strlen(filepath));
 
     *parser = (pm_parser_t) {
         .lex_state = PM_LEX_STATE_BEG,
@@ -16356,7 +16351,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .encoding_decode_callback = NULL,
         .encoding_comment_start = source,
         .lex_callback = NULL,
-        .filepath_string = filepath_string,
+        .filepath_string = { 0 },
         .constant_pool = { 0 },
         .newline_list = { 0 },
         .integer_base = 0,
@@ -16369,8 +16364,6 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
         .semantic_token_seen = false,
         .frozen_string_literal = false
     };
-
-    pm_accepts_block_stack_push(parser, true);
 
     // Initialize the constant pool. We're going to completely guess as to the
     // number of constants that we'll need based on the size of the input. The
@@ -16394,6 +16387,53 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const ch
     // input.
     size_t newline_size = size / 22;
     pm_newline_list_init(&parser->newline_list, source, newline_size < 4 ? 4 : newline_size);
+
+    // If options were provided to this parse, establish them here.
+    if (options != NULL) {
+        // filepath option
+        if (options->filepath == NULL) {
+            pm_string_constant_init(&parser->filepath_string, "", 0);
+        } else {
+            pm_string_constant_init(&parser->filepath_string, options->filepath, strlen(options->filepath));
+        }
+
+        // line option
+        if (options->line > 0) {
+            pm_newline_list_force(&parser->newline_list, options->line);
+        }
+
+        // encoding option
+        // if (options->encoding != NULL) {}
+
+        // frozen_string_literal option
+        if (options->frozen_string_literal) {
+            parser->frozen_string_literal = true;
+        }
+
+        // suppress_warnings option
+        // if (options->suppress_warnings) {}
+
+        // scopes option
+        for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
+            const pm_options_scope_t *scope = pm_options_scope_get(options, scope_index);
+            pm_parser_scope_push(parser, scope_index == 0);
+
+            for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
+                const pm_string_t *local = pm_options_scope_local_get(scope, local_index);
+
+                const uint8_t *source = pm_string_source(local);
+                size_t length = pm_string_length(local);
+
+                uint8_t *allocated = malloc(length);
+                if (allocated == NULL) continue;
+
+                memcpy((void *) allocated, source, length);
+                pm_parser_local_add_owned(parser, allocated, length);
+            }
+        }
+    }
+
+    pm_accepts_block_stack_push(parser, true);
 
     // Skip past the UTF-8 BOM if it exists.
     if (size >= 3 && source[0] == 0xef && source[1] == 0xbb && source[2] == 0xbf) {
