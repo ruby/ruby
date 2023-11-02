@@ -124,24 +124,24 @@ void pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buf
 PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
 
 /**
- * Parse the given source to the AST and serialize the AST to the given buffer.
+ * Parse the given source to the AST and dump the AST to the given buffer.
  *
+ * @param buffer The buffer to serialize to.
  * @param source The source to parse.
  * @param size The size of the source.
- * @param buffer The buffer to serialize to.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_parse_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
 /**
  * Parse and serialize the comments in the given source to the given buffer.
  *
+ * @param buffer The buffer to serialize to.
  * @param source The source to parse.
  * @param size The size of the source.
- * @param buffer The buffer to serialize to.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_parse_serialize_comments(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
 /**
  * Lex the given source and serialize to the given buffer.
@@ -151,18 +151,18 @@ PRISM_EXPORTED_FUNCTION void pm_parse_serialize_comments(const uint8_t *source, 
  * @param filepath The optional filepath to pass to the lexer.
  * @param buffer The buffer to serialize to.
  */
-PRISM_EXPORTED_FUNCTION void pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
 /**
  * Parse and serialize both the AST and the tokens represented by the given
  * source to the given buffer.
  *
+ * @param buffer The buffer to serialize to.
  * @param source The source to parse.
  * @param size The size of the source.
- * @param buffer The buffer to serialize to.
- * @param metadata The optional metadata to pass to the parser.
+ * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_parse_lex_serialize(const uint8_t *source, size_t size, pm_buffer_t *buffer, const char *metadata);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
 /**
  * Returns a string representation of the given token type.
