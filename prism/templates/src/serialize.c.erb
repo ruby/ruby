@@ -209,6 +209,7 @@ pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
 void
 pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_serialize_encoding(&parser->encoding, buffer);
+    pm_buffer_append_varint(buffer, parser->start_line);
 <%- unless Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
     pm_serialize_comment_list(parser, &parser->comment_list, buffer);
 <%- end -%>
@@ -306,6 +307,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     pm_buffer_append_byte(buffer, 0);
 
     pm_serialize_encoding(&parser.encoding, buffer);
+    pm_buffer_append_varint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
     pm_serialize_magic_comment_list(&parser, &parser.magic_comment_list, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
