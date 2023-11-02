@@ -1973,7 +1973,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 
             for (uint32_t i=0; i<obj_ivtbl->as.shape.numiv; i++) {
                 new_ivtbl->as.shape.ivptr[i] = obj_ivtbl->as.shape.ivptr[i];
-                RB_OBJ_WRITTEN(clone, Qundef, &new_ivtbl[i]);
+                RB_OBJ_WRITTEN(clone, Qundef, obj_ivtbl->as.shape.ivptr[i]);
             }
         }
 
