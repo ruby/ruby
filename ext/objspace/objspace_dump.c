@@ -776,11 +776,6 @@ shape_i(rb_shape_t *shape, void *data)
         dump_append(dc, ", \"capacity\":");
         dump_append_sizet(dc, shape->capacity);
         break;
-      case SHAPE_INITIAL_CAPACITY:
-        dump_append(dc, "\"INITIAL_CAPACITY\"");
-        dump_append(dc, ", \"capacity\":");
-        dump_append_sizet(dc, shape->capacity);
-        break;
       case SHAPE_T_OBJECT:
         dump_append(dc, "\"T_OBJECT\"");
         break;

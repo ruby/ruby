@@ -439,7 +439,6 @@ generator = BindingGenerator.new(
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
       SHAPE_ID_NUM_BITS
-      SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
       SHAPE_MASK
       SHAPE_ROOT

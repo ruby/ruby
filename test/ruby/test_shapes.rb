@@ -691,14 +691,6 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
   end
 
-  def test_hash_has_correct_pool_shape
-    omit "SHAPE_IN_BASIC_FLAGS == 0" unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
-
-    # All hashes are now allocated their own ar_table, so start in a
-    # larger pool, and have already transitioned once.
-    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of({}).parent)
-  end
-
   def test_true_has_special_const_shape_id
     assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
   end
