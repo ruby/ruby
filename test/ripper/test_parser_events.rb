@@ -513,7 +513,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       end
     end
 
-    parser = DummyParser.new("a::b").extend(hook)
+    parser = TestRipper::DummyParser.new("a::b").extend(hook)
     assert_equal '[call(vcall((ident: "a")),(method: (op: "::")),(ident: "b"))]', parser.parse.to_s
   end
 
