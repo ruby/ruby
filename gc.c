@@ -9917,6 +9917,12 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
 static int
 garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function garbage_collect should be unreachable when using MMTk.");
+    }
+#endif
+
     int ret;
 
     RB_VM_LOCK_ENTER();
@@ -9941,6 +9947,12 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function gc_start should be unreachable when using MMTk.");
+    }
+#endif
+
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
     unsigned int immediate_mark = reason & GPR_FLAG_IMMEDIATE_MARK;
 
@@ -12938,6 +12950,13 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // Currently, we ignore Ruby's "stressful" flag when using MMTk.
+        // MMTk does have its own way to stress GC, i.e. `Options::stress_factor`.
+        return;
+    }
+#endif
     if (ruby_gc_stressful && ruby_native_thread_p()) {
         unsigned int reason = (GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP |
                                GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
