@@ -15,6 +15,7 @@
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
 #include "prism/node.h"
+#include "prism/options.h"
 #include "prism/pack.h"
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
@@ -47,9 +48,9 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
  * @param parser The parser to initialize.
  * @param source The source to parse.
  * @param size The size of the source.
- * @param filepath The optional filepath to pass to the parser.
+ * @param options The optional options to use when parsing.
  */
-PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const char *filepath);
+PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
 
 /**
  * Register a callback that will be called whenever prism changes the encoding

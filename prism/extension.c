@@ -61,14 +61,14 @@ input_load_string(pm_string_t *input, VALUE string) {
  * Dump the AST corresponding to the given input to a string.
  */
 static VALUE
-dump_input(pm_string_t *input, const char *filepath) {
+dump_input(pm_string_t *input, const pm_options_t *options) {
     pm_buffer_t buffer;
     if (!pm_buffer_init(&buffer)) {
         rb_raise(rb_eNoMemError, "failed to allocate memory");
     }
 
     pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
     pm_serialize(&parser, node, &buffer);
@@ -103,7 +103,11 @@ dump(int argc, VALUE *argv, VALUE self) {
     pm_string_constant_init(&input, dup, length);
 #endif
 
-    VALUE value = dump_input(&input, check_string(filepath));
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, check_string(filepath));
+
+    VALUE value = dump_input(&input, &options);
+    pm_options_free(&options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     free(dup);
@@ -125,7 +129,12 @@ dump_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = dump_input(&input, checked);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, checked);
+
+    VALUE value = dump_input(&input, &options);
+
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return value;
@@ -316,9 +325,9 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
  * the nodes and tokens.
  */
 static VALUE
-parse_lex_input(pm_string_t *input, const char *filepath, bool return_nodes) {
+parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nodes) {
     pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
     pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
@@ -385,7 +394,13 @@ lex(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     input_load_string(&input, string);
 
-    return parse_lex_input(&input, check_string(filepath), false);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, check_string(filepath));
+
+    VALUE result = parse_lex_input(&input, &options, false);
+    pm_options_free(&options);
+
+    return result;
 }
 
 /**
@@ -401,7 +416,12 @@ lex_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = parse_lex_input(&input, checked, false);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, checked);
+
+    VALUE value = parse_lex_input(&input, &options, false);
+
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return value;
@@ -415,9 +435,9 @@ lex_file(VALUE self, VALUE filepath) {
  * Parse the given input and return a ParseResult instance.
  */
 static VALUE
-parse_input(pm_string_t *input, const char *filepath) {
+parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
@@ -462,7 +482,11 @@ parse(int argc, VALUE *argv, VALUE self) {
     pm_string_constant_init(&input, dup, length);
 #endif
 
-    VALUE value = parse_input(&input, check_string(filepath));
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, check_string(filepath));
+
+    VALUE value = parse_input(&input, &options);
+    pm_options_free(&options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     free(dup);
@@ -484,7 +508,11 @@ parse_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = parse_input(&input, checked);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, checked);
+
+    VALUE value = parse_input(&input, &options);
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return value;
@@ -494,9 +522,9 @@ parse_file(VALUE self, VALUE filepath) {
  * Parse the given input and return an array of Comment objects.
  */
 static VALUE
-parse_input_comments(pm_string_t *input, const char *filepath) {
+parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), filepath);
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
@@ -525,7 +553,13 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     input_load_string(&input, string);
 
-    return parse_input_comments(&input, check_string(filepath));
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, check_string(filepath));
+
+    VALUE result = parse_input_comments(&input, &options);
+    pm_options_free(&options);
+
+    return result;
 }
 
 /**
@@ -541,7 +575,12 @@ parse_file_comments(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = parse_input_comments(&input, checked);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, checked);
+
+    VALUE value = parse_input_comments(&input, &options);
+
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return value;
@@ -568,7 +607,12 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     input_load_string(&input, string);
 
-    VALUE value = parse_lex_input(&input, check_string(filepath), true);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, check_string(filepath));
+
+    VALUE value = parse_lex_input(&input, &options, true);
+
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return value;
@@ -593,7 +637,12 @@ parse_lex_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = parse_lex_input(&input, checked, true);
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, checked);
+
+    VALUE value = parse_lex_input(&input, &options, true);
+
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return value;
@@ -670,13 +719,16 @@ profile_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!pm_string_mapped_init(&input, checked)) return Qnil;
 
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, checked);
+
     pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), checked);
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
     pm_node_t *node = pm_parse(&parser);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
-
+    pm_options_free(&options);
     pm_string_free(&input);
 
     return Qnil;

@@ -288,8 +288,11 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
  */
 PRISM_EXPORTED_FUNCTION void
 pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_buffer_t *buffer) {
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, filepath);
+
     pm_parser_t parser;
-    pm_parser_init(&parser, source, size, filepath);
+    pm_parser_init(&parser, source, size, &options);
 
     pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) buffer,
@@ -310,6 +313,7 @@ pm_lex_serialize(const uint8_t *source, size_t size, const char *filepath, pm_bu
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_options_free(&options);
 }
 
 /**
