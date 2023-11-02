@@ -476,8 +476,11 @@ typedef st_data_t HashDataType;   /* 1.6 st.h doesn't define st_data_t type */
 
 #  ifdef ONIG_DEBUG
 static int
-i_print_name_entry(UChar* key, NameEntry* e, void* arg)
+i_print_name_entry(HashDataType key_, HashDataType e_, HashDataType arg_)
 {
+  UChar* key = (UChar *)key_;
+  NameEntry* e = (NameEntry *)e_;
+  void* arg = (void *)arg_;
   int i;
   FILE* fp = (FILE* )arg;
 
@@ -503,7 +506,7 @@ onig_print_names(FILE* fp, regex_t* reg)
 
   if (IS_NOT_NULL(t)) {
     fprintf(fp, "name table\n");
-    onig_st_foreach(t, (st_foreach_callback_func *)i_print_name_entry, (HashDataType )fp);
+    onig_st_foreach(t, i_print_name_entry, (HashDataType )fp);
     fputs("\n", fp);
   }
   return 0;
@@ -511,8 +514,10 @@ onig_print_names(FILE* fp, regex_t* reg)
 #  endif /* ONIG_DEBUG */
 
 static int
-i_free_name_entry(UChar* key, NameEntry* e, void* arg ARG_UNUSED)
+i_free_name_entry(HashDataType key_, HashDataType e_, HashDataType arg_ ARG_UNUSED)
 {
+  UChar* key = (UChar *)key_;
+  NameEntry* e = (NameEntry *)e_;
   xfree(e->name);
   xfree(e->back_refs);
   xfree(key);
@@ -526,7 +531,7 @@ names_clear(regex_t* reg)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t)) {
-    onig_st_foreach(t, (st_foreach_callback_func *)i_free_name_entry, 0);
+    onig_st_foreach(t, i_free_name_entry, 0);
   }
   return 0;
 }
@@ -568,8 +573,10 @@ typedef struct {
 } INamesArg;
 
 static int
-i_names(UChar* key ARG_UNUSED, NameEntry* e, INamesArg* arg)
+i_names(HashDataType key_ ARG_UNUSED, HashDataType e_, HashDataType arg_)
 {
+  NameEntry* e = (NameEntry *)e_;
+  INamesArg* arg = (INamesArg *)arg_;
   int r = (*(arg->func))(e->name,
 			 e->name + e->name_len,
 			 e->back_num,
@@ -595,14 +602,16 @@ onig_foreach_name(regex_t* reg,
     narg.reg  = reg;
     narg.arg  = arg;
     narg.enc  = reg->enc; /* should be pattern encoding. */
-    onig_st_foreach(t, (st_foreach_callback_func *)i_names, (HashDataType )&narg);
+    onig_st_foreach(t, i_names, (HashDataType )&narg);
   }
   return narg.ret;
 }
 
 static int
-i_renumber_name(UChar* key ARG_UNUSED, NameEntry* e, GroupNumRemap* map)
+i_renumber_name(HashDataType key_ ARG_UNUSED, HashDataType e_, HashDataType map_)
 {
+  NameEntry* e = (NameEntry *)e_;
+  GroupNumRemap* map = (GroupNumRemap *)map_;
   int i;
 
   if (e->back_num > 1) {
@@ -623,7 +632,7 @@ onig_renumber_name_table(regex_t* reg, GroupNumRemap* map)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t)) {
-    onig_st_foreach(t, (st_foreach_callback_func *)i_renumber_name, (HashDataType )map);
+    onig_st_foreach(t, i_renumber_name, (HashDataType )map);
   }
   return 0;
 }
