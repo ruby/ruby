@@ -672,6 +672,13 @@ struct pm_parser {
      * a true value.
      */
     bool frozen_string_literal;
+
+    /**
+     * Whether or not we should emit warnings. This will be set to false if the
+     * consumer of the library specified it, usually because they are parsing
+     * when $VERBOSE is nil.
+     */
+    bool suppress_warnings;
 };
 
 #endif
