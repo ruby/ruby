@@ -587,6 +587,11 @@ module Prism
       assert_prism_eval("while true; break 1; end")
     end
 
+    def test_EnsureNode
+      assert_prism_eval("begin; 1; ensure; 2; end")
+      assert_prism_eval("begin; 1; begin; 3; ensure; 4; end; ensure; 2; end")
+    end
+
     def test_NextNode
       # TODO:
       # assert_prism_eval("2.times do |i|; next if i == 1; end")

@@ -120,7 +120,7 @@ struct ensure_range {
 };
 
 struct iseq_compile_data_ensure_node_stack {
-    const NODE *ensure_node;
+    const void *ensure_node;
     struct iseq_compile_data_ensure_node_stack *prev;
     struct ensure_range *erange;
 };
@@ -5750,7 +5750,7 @@ make_name_for_block(const rb_iseq_t *orig_iseq)
 static void
 push_ensure_entry(rb_iseq_t *iseq,
                   struct iseq_compile_data_ensure_node_stack *enl,
-                  struct ensure_range *er, const NODE *const node)
+                  struct ensure_range *er, const void *const node)
 {
     enl->ensure_node = node;
     enl->prev = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;	/* prev */
