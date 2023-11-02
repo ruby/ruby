@@ -3322,7 +3322,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         const rb_iseq_t *singleton_class = NEW_ISEQ(next_scope_node, rb_fstring_lit("singleton class"), ISEQ_TYPE_CLASS, lineno);
 
-        PM_COMPILE(singleton_class_node->expression);
+        PM_COMPILE_NOT_POPPED(singleton_class_node->expression);
         PM_PUTNIL;
         ID singletonclass;
         CONST_ID(singletonclass, "singletonclass");
@@ -3330,6 +3330,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSN3(ret, &dummy_line_node, defineclass,
                 ID2SYM(singletonclass), singleton_class,
                 INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+        PM_POP_IF_POPPED;
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
 
         return;

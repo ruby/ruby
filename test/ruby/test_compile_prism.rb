@@ -654,7 +654,7 @@ module Prism
     end
 
     def test_SingletonClassNode
-      # assert_prism_eval("class << self; end")
+      assert_prism_eval("class << self; end")
     end
 
     def test_StatementsNode
