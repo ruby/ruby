@@ -2846,7 +2846,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             locals[i] = cast->locals.ids[i];
         }
 
-        PM_COMPILE((pm_node_t *)cast->call);
+        PM_COMPILE_NOT_POPPED((pm_node_t *)cast->call);
         VALUE global_variable_name = rb_id2sym(idBACKREF);
 
         ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
@@ -2865,6 +2865,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, *locals)));
             ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
             ADD_SETLOCAL(nom, &dummy_line_node, local_index, 0);
+            PM_POP_IF_POPPED;
 
             ADD_SEQ(ret, nom);
             return;
@@ -2883,7 +2884,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
         ADD_LABEL(ret, fail_label);
-        PM_POP;
+        PM_POP_UNLESS_POPPED;
 
         for (size_t index = 0; index < capture_count; index++) {
             pm_constant_id_t constant = cast->locals.ids[index];
@@ -2891,6 +2892,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             PM_PUTNIL;
             ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
+            PM_POP_IF_POPPED;
         }
         ADD_LABEL(ret, end_label);
         return;
