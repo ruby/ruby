@@ -233,7 +233,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  * * `pm_buffer_t` - a small buffer object that will hold the serialized AST
  * * `pm_buffer_free` - free the memory associated with the buffer
  * * `pm_serialize` - serialize the AST into a buffer
- * * `pm_parse_serialize` - parse and serialize the AST into a buffer
+ * * `pm_serialize_parse` - parse and serialize the AST into a buffer
  *
  * Putting all of this together would look something like:
  *
@@ -241,7 +241,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  * void serialize(const uint8_t *source, size_t length) {
  *     pm_buffer_t buffer = { 0 };
  *
- *     pm_parse_serialize(source, length, &buffer, NULL);
+ *     pm_serialize_parse(&buffer, source, length, NULL);
  *     printf("SERIALIZED!\n");
  *
  *     pm_buffer_free(&buffer);

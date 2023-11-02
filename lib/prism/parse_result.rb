@@ -9,7 +9,7 @@ module Prism
     attr_reader :source
 
     # The line number where this source starts.
-    attr_reader :start_line
+    attr_accessor :start_line
 
     # The list of newline byte offsets in the source code.
     attr_reader :offsets

@@ -16239,82 +16239,6 @@ parse_program(pm_parser_t *parser) {
     return (pm_node_t *) pm_program_node_create(parser, &locals, statements);
 }
 
-/**
- * Read a 32-bit unsigned integer from a pointer. This function is used to read
- * the metadata that is passed into the parser from the Ruby implementation. It
- * handles aligned and unaligned reads.
- */
-static uint32_t
-pm_metadata_read_u32(const char *ptr) {
-    if (((uintptr_t) ptr) % sizeof(uint32_t) == 0) {
-        return *((uint32_t *) ptr);
-    } else {
-        uint32_t value;
-        memcpy(&value, ptr, sizeof(uint32_t));
-        return value;
-    }
-}
-
-/**
- * Process any additional metadata being passed into a call to the parser via
- * the pm_parse_serialize function. Since the source of these calls will be from
- * Ruby implementation internals we assume it is from a trusted source.
- *
- * Currently, this is only passing in variable scoping surrounding an eval, but
- * eventually it will be extended to hold any additional metadata.  This data
- * is serialized to reduce the calling complexity for a foreign function call
- * vs a foreign runtime making a bindable in-memory version of a C structure.
- *
- * metadata is assumed to be a valid pointer pointing to well-formed data. The
- * format is described below:
- *
- * ```text
- * [
- *   filepath_size: uint32_t,
- *   filepath: char*,
- *   scopes_count: uint32_t,
- *   [
- *     locals_count: uint32_t,
- *     [local_size: uint32_t, local: char*]*
- *   ]*
- * ]
- * ```
- */
-void
-pm_parser_metadata(pm_parser_t *parser, const char *metadata) {
-    uint32_t filepath_size = pm_metadata_read_u32(metadata);
-    metadata += 4;
-
-    if (filepath_size) {
-        pm_string_t filepath_string;
-        pm_string_constant_init(&filepath_string, metadata, filepath_size);
-
-        parser->filepath_string = filepath_string;
-        metadata += filepath_size;
-    }
-
-    uint32_t scopes_count = pm_metadata_read_u32(metadata);
-    metadata += 4;
-
-    for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
-        uint32_t locals_count = pm_metadata_read_u32(metadata);
-        metadata += 4;
-
-        pm_parser_scope_push(parser, scope_index == 0);
-
-        for (size_t local_index = 0; local_index < locals_count; local_index++) {
-            uint32_t local_size = pm_metadata_read_u32(metadata);
-            metadata += 4;
-
-            uint8_t *constant = malloc(local_size);
-            memcpy(constant, metadata, local_size);
-
-            pm_parser_local_add_owned(parser, constant, (size_t) local_size);
-            metadata += local_size;
-        }
-    }
-}
-
 /******************************************************************************/
 /* External functions                                                         */
 /******************************************************************************/
@@ -16561,7 +16485,7 @@ PRISM_EXPORTED_FUNCTION void
 pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_serialize_header(buffer);
     pm_serialize_content(parser, node, buffer);
-    pm_buffer_append_string(buffer, "\0", 1);
+    pm_buffer_append_byte(buffer, '\0');
 }
 
 /**
@@ -16601,6 +16525,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_node_t *node = pm_parse(&parser);
     pm_serialize_header(buffer);
     pm_serialize_encoding(&parser.encoding, buffer);
+    pm_buffer_append_varint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
 
     pm_node_destroy(&parser, node);

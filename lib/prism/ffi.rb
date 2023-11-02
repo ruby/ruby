@@ -231,6 +231,7 @@ module Prism
 
         loader.load_header
         loader.load_force_encoding
+        loader.load_start_line
         loader.load_comments
       end
     end
@@ -283,7 +284,7 @@ module Prism
       end
 
       template << "L"
-      values << options.fetch(:line, 0)
+      values << options.fetch(:line, 1)
 
       template << "L"
       if (encoding = options[:encoding])
