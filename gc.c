@@ -2980,8 +2980,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     }
 
     VALUE obj = newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, wb_protected, size);
-    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT ||
-            rb_shape_get_shape(obj)->type == SHAPE_INITIAL_CAPACITY);
+    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
 
     // Set the shape to the specific T_OBJECT shape which is always
     // SIZE_POOL_COUNT away from the root shape.

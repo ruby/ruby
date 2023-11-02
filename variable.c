@@ -1870,7 +1870,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
-      case SHAPE_INITIAL_CAPACITY:
       case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
@@ -4210,7 +4209,7 @@ rb_iv_tbl_copy(VALUE dst, VALUE src)
     RUBY_ASSERT(rb_type(dst) == rb_type(src));
     RUBY_ASSERT(RB_TYPE_P(dst, T_CLASS) || RB_TYPE_P(dst, T_MODULE));
 
-    RUBY_ASSERT(RCLASS_SHAPE_ID(dst) == ROOT_SHAPE_ID || rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(dst))->type == SHAPE_INITIAL_CAPACITY);
+    RUBY_ASSERT(rb_shape_get_shape(dst)->type == SHAPE_ROOT);
     RUBY_ASSERT(!RCLASS_IVPTR(dst));
 
     rb_ivar_foreach(src, tbl_copy_i, dst);

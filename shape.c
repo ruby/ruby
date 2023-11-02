@@ -442,7 +442,6 @@ rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
         new_shape->next_iv_index = shape->next_iv_index;
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
-      case SHAPE_INITIAL_CAPACITY:
       case SHAPE_ROOT:
         rb_bug("Unreachable");
         break;
@@ -756,7 +755,6 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
                     return true;
                   case SHAPE_CAPACITY_CHANGE:
                   case SHAPE_ROOT:
-                  case SHAPE_INITIAL_CAPACITY:
                   case SHAPE_T_OBJECT:
                     return false;
                   case SHAPE_OBJ_TOO_COMPLEX:
@@ -823,7 +821,6 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
         break;
       case SHAPE_ROOT:
       case SHAPE_CAPACITY_CHANGE:
-      case SHAPE_INITIAL_CAPACITY:
       case SHAPE_T_OBJECT:
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
@@ -868,7 +865,6 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
       case SHAPE_ROOT:
       case SHAPE_FROZEN:
       case SHAPE_CAPACITY_CHANGE:
-      case SHAPE_INITIAL_CAPACITY:
       case SHAPE_T_OBJECT:
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
@@ -1149,8 +1145,8 @@ Init_default_shapes(void)
     }
 
     // Root shape
-    rb_shape_t * root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
-    root->capacity = (uint32_t)((rb_size_pool_slot_size(0) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+    rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
+    root->capacity = 0;
     root->type = SHAPE_ROOT;
     root->size_pool_index = 0;
     GET_SHAPE_TREE()->root_shape = root;
@@ -1158,9 +1154,8 @@ Init_default_shapes(void)
 
     // Shapes by size pool
     for (int i = 1; i < SIZE_POOL_COUNT; i++) {
-        size_t capa = ((rb_size_pool_slot_size(i) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
-        rb_shape_t * new_shape = rb_shape_transition_shape_capa_create(root, capa);
-        new_shape->type = SHAPE_INITIAL_CAPACITY;
+        rb_shape_t *new_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
+        new_shape->type = SHAPE_ROOT;
         new_shape->size_pool_index = i;
         new_shape->ancestor_index = LEAF;
         RUBY_ASSERT(rb_shape_id(new_shape) == (shape_id_t)i);
@@ -1172,6 +1167,7 @@ Init_default_shapes(void)
         bool dont_care;
         rb_shape_t * t_object_shape =
             get_next_shape_internal(shape, id_t_object, SHAPE_T_OBJECT, &dont_care, true);
+        t_object_shape->capacity = (uint32_t)((rb_size_pool_slot_size(i) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
         RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + SIZE_POOL_COUNT));

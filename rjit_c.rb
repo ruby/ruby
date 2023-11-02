@@ -416,7 +416,6 @@ module RubyVM::RJIT # :nodoc: all
   C::SHAPE_FLAG_SHIFT = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_FLAG_SHIFT) }
   C::SHAPE_FROZEN = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_FROZEN) }
   C::SHAPE_ID_NUM_BITS = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_ID_NUM_BITS) }
-  C::SHAPE_INITIAL_CAPACITY = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_INITIAL_CAPACITY) }
   C::SHAPE_IVAR = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_IVAR) }
   C::SHAPE_MASK = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_MASK) }
   C::SHAPE_ROOT = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_ROOT) }
