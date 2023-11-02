@@ -577,6 +577,36 @@ class TestShapes < Test::Unit::TestCase
     assert_equal [0, 1, nil, 3, 4], ivars
   end
 
+  def test_remove_instance_variable_when_out_of_shapes
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      ivars_count = 5
+      object = Object.new
+      ivars_count.times do |i|
+        object.instance_variable_set("@ivar_#{i}", i)
+      end
+
+      ivars = ivars_count.times.map do |i|
+        object.instance_variable_get("@ivar_#{i}")
+      end
+      assert_equal [0, 1, 2, 3, 4], ivars
+
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      object.remove_instance_variable(:@ivar_2)
+
+      ivars = ivars_count.times.map do |i|
+        object.instance_variable_get("@ivar_#{i}")
+      end
+      assert_equal [0, 1, nil, 3, 4], ivars
+    end;
+  end
+
   def test_freeze_after_complex
     ensure_complex
 
