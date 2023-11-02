@@ -1289,7 +1289,27 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
         if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
-            if (!st_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+            st_table *table = NULL;
+            switch (BUILTIN_TYPE(obj)) {
+              case T_CLASS:
+              case T_MODULE:
+                table = (st_table *)RCLASS_IVPTR(obj);
+                break;
+
+              case T_OBJECT:
+                table = ROBJECT_IV_HASH(obj);
+                break;
+
+              default: {
+                struct gen_ivtbl *ivtbl;
+                if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+                    table = ivtbl->as.complex.table;
+                }
+                break;
+              }
+            }
+
+            if (!table || !st_lookup(table, id, &val)) {
                 val = default_value;
             }
         }
