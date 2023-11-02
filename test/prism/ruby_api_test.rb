@@ -8,12 +8,12 @@ module Prism
       filepath = __FILE__
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
-      assert_equal Prism.lex(source, filepath).value, Prism.lex_file(filepath).value
-      assert_equal Prism.dump(source, filepath), Prism.dump_file(filepath)
+      assert_equal Prism.lex(source, filepath: filepath).value, Prism.lex_file(filepath).value
+      assert_equal Prism.dump(source, filepath: filepath), Prism.dump_file(filepath)
 
-      serialized = Prism.dump(source, filepath)
+      serialized = Prism.dump(source, filepath: filepath)
       ast1 = Prism.load(source, serialized).value
-      ast2 = Prism.parse(source, filepath).value
+      ast2 = Prism.parse(source, filepath: filepath).value
       ast3 = Prism.parse_file(filepath).value
 
       assert_equal_nodes ast1, ast2

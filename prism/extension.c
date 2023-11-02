@@ -15,6 +15,13 @@ VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
 VALUE rb_cPrismParseResult;
 
+ID id_filepath;
+ID id_encoding;
+ID id_line;
+ID id_frozen_string_literal;
+ID id_suppress_warnings;
+ID id_scopes;
+
 /******************************************************************************/
 /* IO of Ruby code                                                            */
 /******************************************************************************/
@@ -54,6 +61,133 @@ input_load_string(pm_string_t *input, VALUE string) {
 }
 
 /******************************************************************************/
+/* Building C options from Ruby options                                       */
+/******************************************************************************/
+
+/**
+ * Build the scopes associated with the provided Ruby keyword value.
+ */
+static void
+build_options_scopes(pm_options_t *options, VALUE scopes) {
+    // Check if the value is an array. If it's not, then raise a type error.
+    if (!RB_TYPE_P(scopes, T_ARRAY)) {
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Array)", rb_obj_class(scopes));
+    }
+
+    // Initialize the scopes array.
+    size_t scopes_count = RARRAY_LEN(scopes);
+    pm_options_scopes_init(options, scopes_count);
+
+    // Iterate over the scopes and add them to the options.
+    for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
+        VALUE scope = rb_ary_entry(scopes, scope_index);
+
+        // Check that the scope is an array. If it's not, then raise a type
+        // error.
+        if (!RB_TYPE_P(scope, T_ARRAY)) {
+            rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Array)", rb_obj_class(scope));
+        }
+
+        // Initialize the scope array.
+        size_t locals_count = RARRAY_LEN(scope);
+        pm_options_scope_t *options_scope = &options->scopes[scope_index];
+        pm_options_scope_init(options_scope, locals_count);
+
+        // Iterate over the locals and add them to the scope.
+        for (size_t local_index = 0; local_index < locals_count; local_index++) {
+            VALUE local = rb_ary_entry(scope, local_index);
+
+            // Check that the local is a symbol. If it's not, then raise a
+            // type error.
+            if (!RB_TYPE_P(local, T_SYMBOL)) {
+                rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Symbol)", rb_obj_class(local));
+            }
+
+            // Add the local to the scope.
+            pm_string_t *scope_local = &options_scope->locals[local_index];
+            const char *name = rb_id2name(SYM2ID(local));
+            pm_string_constant_init(scope_local, name, strlen(name));
+        }
+    }
+}
+
+/**
+ * An iterator function that is called for each key-value in the keywords hash.
+ */
+static int
+build_options_i(VALUE key, VALUE value, VALUE argument) {
+    pm_options_t *options = (pm_options_t *) argument;
+    ID key_id = SYM2ID(key);
+
+    if (key_id == id_filepath) {
+        if (!NIL_P(value)) pm_options_filepath_set(options, check_string(value));
+    } else if (key_id == id_encoding) {
+        if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
+    } else if (key_id == id_line) {
+        if (!NIL_P(value)) pm_options_line_set(options, NUM2UINT(value));
+    } else if (key_id == id_frozen_string_literal) {
+        if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
+    } else if (key_id == id_suppress_warnings) {
+        if (!NIL_P(value)) pm_options_suppress_warnings_set(options, value == Qtrue);
+    } else if (key_id == id_scopes) {
+        if (!NIL_P(value)) build_options_scopes(options, value);
+    } else {
+        rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
+    }
+
+    return ST_CONTINUE;
+}
+
+/**
+ * We need a struct here to pass through rb_protect and it has to be a single
+ * value. Because the sizeof(VALUE) == sizeof(void *), we're going to pass this
+ * through as an opaque pointer and cast it on both sides.
+ */
+struct build_options_data {
+    pm_options_t *options;
+    VALUE keywords;
+};
+
+/**
+ * Build the set of options from the given keywords. Note that this can raise a
+ * Ruby error if the options are not valid.
+ */
+static VALUE
+build_options(VALUE argument) {
+    struct build_options_data *data = (struct build_options_data *) argument;
+    rb_hash_foreach(data->keywords, build_options_i, (VALUE) data->options);
+    return Qnil;
+}
+
+/**
+ * Extract the options from the given keyword arguments.
+ */
+static void
+extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
+    if (!NIL_P(keywords)) {
+        struct build_options_data data = { .options = options, .keywords = keywords };
+        struct build_options_data *argument = &data;
+
+        int state = 0;
+        rb_protect(build_options, (VALUE) argument, &state);
+
+        if (state != 0) {
+            pm_options_free(options);
+            rb_jump_tag(state);
+        }
+    }
+
+    if (!NIL_P(filepath)) {
+        if (!RB_TYPE_P(filepath, T_STRING)) {
+            pm_options_free(options);
+            rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
+        }
+
+        pm_options_filepath_set(options, RSTRING_PTR(filepath));
+    }
+}
+
+/******************************************************************************/
 /* Serializing the AST                                                        */
 /******************************************************************************/
 
@@ -83,15 +217,19 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::dump(source, filepath = nil) -> dumped
+ *   Prism::dump(source, **options) -> String
  *
- * Dump the AST corresponding to the given string to a string.
+ * Dump the AST corresponding to the given string to a string. For supported
+ * options, see Prism::parse.
  */
 static VALUE
 dump(int argc, VALUE *argv, VALUE self) {
     VALUE string;
-    VALUE filepath;
-    rb_scan_args(argc, argv, "11", &string, &filepath);
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &string, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
 
     pm_string_t input;
     input_load_string(&input, string);
@@ -102,9 +240,6 @@ dump(int argc, VALUE *argv, VALUE self) {
     memcpy(dup, pm_string_source(&input), length);
     pm_string_constant_init(&input, dup, length);
 #endif
-
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, check_string(filepath));
 
     VALUE value = dump_input(&input, &options);
     pm_options_free(&options);
@@ -118,24 +253,29 @@ dump(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::dump_file(filepath) -> dumped
+ *   Prism::dump_file(filepath, **options) -> String
  *
- * Dump the AST corresponding to the given file to a string.
+ * Dump the AST corresponding to the given file to a string. For supported
+ * options, see Prism::parse.
  */
 static VALUE
-dump_file(VALUE self, VALUE filepath) {
-    pm_string_t input;
-
-    const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+dump_file(int argc, VALUE *argv, VALUE self) {
+    VALUE filepath;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, checked);
+    extract_options(&options, filepath, keywords);
+
+    pm_string_t input;
+    if (!pm_string_mapped_init(&input, options.filepath)) {
+        pm_options_free(&options);
+        return Qnil;
+    }
 
     VALUE value = dump_input(&input, &options);
-
-    pm_options_free(&options);
     pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
@@ -381,21 +521,22 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
 /**
  * call-seq:
- *   Prism::lex(source, filepath = nil) -> Array
+ *   Prism::lex(source, **options) -> Array
  *
- * Return an array of Token instances corresponding to the given string.
+ * Return an array of Token instances corresponding to the given string. For
+ * supported options, see Prism::parse.
  */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
     VALUE string;
-    VALUE filepath;
-    rb_scan_args(argc, argv, "11", &string, &filepath);
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &string, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
 
     pm_string_t input;
     input_load_string(&input, string);
-
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, check_string(filepath));
 
     VALUE result = parse_lex_input(&input, &options, false);
     pm_options_free(&options);
@@ -405,24 +546,29 @@ lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::lex_file(filepath) -> Array
+ *   Prism::lex_file(filepath, **options) -> Array
  *
- * Return an array of Token instances corresponding to the given file.
+ * Return an array of Token instances corresponding to the given file. For
+ * supported options, see Prism::parse.
  */
 static VALUE
-lex_file(VALUE self, VALUE filepath) {
-    pm_string_t input;
-
-    const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+lex_file(int argc, VALUE *argv, VALUE self) {
+    VALUE filepath;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, checked);
+    extract_options(&options, filepath, keywords);
+
+    pm_string_t input;
+    if (!pm_string_mapped_init(&input, options.filepath)) {
+        pm_options_free(&options);
+        return Qnil;
+    }
 
     VALUE value = parse_lex_input(&input, &options, false);
-
-    pm_options_free(&options);
     pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
@@ -462,15 +608,32 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse(source, filepath = nil) -> ParseResult
+ *   Prism::parse(source, **options) -> ParseResult
  *
- * Parse the given string and return a ParseResult instance.
+ * Parse the given string and return a ParseResult instance. The options that
+ * are supported are:
+ *
+ * * `filepath` - the filepath of the source being parsed. This should be a
+ *       string or nil
+ * * `encoding` - the encoding of the source being parsed. This should be an
+ *       encoding or nil
+ * * `line` - the line number that the parse starts on. This should be an
+ *       integer or nil. Note that this is 1-indexed.
+ * * `frozen_string_literal` - whether or not the frozen string literal pragma
+ *       has been set. This should be a boolean or nil.
+ * * `suppress_warnings` - whether or not warnings should be suppressed. This
+ *       should be a boolean or nil.
+ * * `scopes` - the locals that are in scope surrounding the code that is being
+ *       parsed. This should be an array of arrays of symbols or nil.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
     VALUE string;
-    VALUE filepath;
-    rb_scan_args(argc, argv, "11", &string, &filepath);
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &string, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
 
     pm_string_t input;
     input_load_string(&input, string);
@@ -482,38 +645,41 @@ parse(int argc, VALUE *argv, VALUE self) {
     pm_string_constant_init(&input, dup, length);
 #endif
 
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, check_string(filepath));
-
     VALUE value = parse_input(&input, &options);
-    pm_options_free(&options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     free(dup);
 #endif
 
+    pm_options_free(&options);
     return value;
 }
 
 /**
  * call-seq:
- *   Prism::parse_file(filepath) -> ParseResult
+ *   Prism::parse_file(filepath, **options) -> ParseResult
  *
- * Parse the given file and return a ParseResult instance.
+ * Parse the given file and return a ParseResult instance. For supported
+ * options, see Prism::parse.
  */
 static VALUE
-parse_file(VALUE self, VALUE filepath) {
-    pm_string_t input;
-
-    const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+parse_file(int argc, VALUE *argv, VALUE self) {
+    VALUE filepath;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, checked);
+    extract_options(&options, filepath, keywords);
+
+    pm_string_t input;
+    if (!pm_string_mapped_init(&input, options.filepath)) {
+        pm_options_free(&options);
+        return Qnil;
+    }
 
     VALUE value = parse_input(&input, &options);
-    pm_options_free(&options);
     pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
@@ -540,21 +706,22 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse_comments(source, filepath = nil) -> Array
+ *   Prism::parse_comments(source, **options) -> Array
  *
- * Parse the given string and return an array of Comment objects.
+ * Parse the given string and return an array of Comment objects. For supported
+ * options, see Prism::parse.
  */
 static VALUE
 parse_comments(int argc, VALUE *argv, VALUE self) {
     VALUE string;
-    VALUE filepath;
-    rb_scan_args(argc, argv, "11", &string, &filepath);
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &string, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
 
     pm_string_t input;
     input_load_string(&input, string);
-
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, check_string(filepath));
 
     VALUE result = parse_input_comments(&input, &options);
     pm_options_free(&options);
@@ -564,31 +731,36 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file_comments(filepath) -> Array
+ *   Prism::parse_file_comments(filepath, **options) -> Array
  *
- * Parse the given file and return an array of Comment objects.
+ * Parse the given file and return an array of Comment objects. For supported
+ * options, see Prism::parse.
  */
 static VALUE
-parse_file_comments(VALUE self, VALUE filepath) {
-    pm_string_t input;
-
-    const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+parse_file_comments(int argc, VALUE *argv, VALUE self) {
+    VALUE filepath;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, checked);
+    extract_options(&options, filepath, keywords);
+
+    pm_string_t input;
+    if (!pm_string_mapped_init(&input, options.filepath)) {
+        pm_options_free(&options);
+        return Qnil;
+    }
 
     VALUE value = parse_input_comments(&input, &options);
-
-    pm_options_free(&options);
     pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
 
 /**
  * call-seq:
- *   Prism::parse_lex(source, filepath = nil) -> ParseResult
+ *   Prism::parse_lex(source, **options) -> ParseResult
  *
  * Parse the given string and return a ParseResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
@@ -597,30 +769,31 @@ parse_file_comments(VALUE self, VALUE filepath) {
  * This API is only meant to be used in the case where you need both the AST and
  * the tokens. If you only need one or the other, use either Prism::parse or
  * Prism::lex.
+ *
+ * For supported options, see Prism::parse.
  */
 static VALUE
 parse_lex(int argc, VALUE *argv, VALUE self) {
     VALUE string;
-    VALUE filepath;
-    rb_scan_args(argc, argv, "11", &string, &filepath);
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &string, &keywords);
+
+    pm_options_t options = { 0 };
+    extract_options(&options, Qnil, keywords);
 
     pm_string_t input;
     input_load_string(&input, string);
 
-    pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, check_string(filepath));
-
     VALUE value = parse_lex_input(&input, &options, true);
-
-    pm_options_free(&options);
     pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
 
 /**
  * call-seq:
- *   Prism::parse_lex_file(filepath) -> ParseResult
+ *   Prism::parse_lex_file(filepath, **options) -> ParseResult
  *
  * Parse the given file and return a ParseResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
@@ -629,21 +802,27 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
  * This API is only meant to be used in the case where you need both the AST and
  * the tokens. If you only need one or the other, use either Prism::parse_file
  * or Prism::lex_file.
+ *
+ * For supported options, see Prism::parse.
  */
 static VALUE
-parse_lex_file(VALUE self, VALUE filepath) {
-    pm_string_t input;
-
-    const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+parse_lex_file(int argc, VALUE *argv, VALUE self) {
+    VALUE filepath;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     pm_options_t options = { 0 };
-    pm_options_filepath_set(&options, checked);
+    extract_options(&options, filepath, keywords);
+
+    pm_string_t input;
+    if (!pm_string_mapped_init(&input, options.filepath)) {
+        pm_options_free(&options);
+        return Qnil;
+    }
 
     VALUE value = parse_lex_input(&input, &options, true);
-
-    pm_options_free(&options);
     pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
@@ -821,6 +1000,15 @@ Init_prism(void) {
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
     rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cObject);
 
+    // Intern all of the options that we support so that we don't have to do it
+    // every time we parse.
+    id_filepath = rb_intern_const("filepath");
+    id_encoding = rb_intern_const("encoding");
+    id_line = rb_intern_const("line");
+    id_frozen_string_literal = rb_intern_const("frozen_string_literal");
+    id_suppress_warnings = rb_intern_const("suppress_warnings");
+    id_scopes = rb_intern_const("scopes");
+
     /**
      * The version of the prism library.
      */
@@ -835,15 +1023,15 @@ Init_prism(void) {
 
     // First, the functions that have to do with lexing and parsing.
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
-    rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, 1);
+    rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
     rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
-    rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, 1);
+    rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
-    rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, 1);
+    rb_define_singleton_method(rb_cPrism, "parse_file", parse_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse_comments", parse_comments, -1);
-    rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, 1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
-    rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, 1);
+    rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, -1);
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
