@@ -5847,7 +5847,7 @@ next_newline(const uint8_t *cursor, ptrdiff_t length) {
  * Here we're going to check if this is a "magic" comment, and perform whatever
  * actions are necessary for it here.
  */
-static void
+static bool
 parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
 
@@ -5859,7 +5859,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
 
         if (encoding != NULL) {
             parser->encoding = *encoding;
-            return;
+            return true;
         }
     }
 
@@ -5870,7 +5870,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "utf-8", 5) == 0)) {
         // We don't need to do anything here because the default encoding is
         // already UTF-8. We'll just return.
-        return;
+        return true;
     }
 
     // Next, we're going to loop through each of the encodings that we handle
@@ -5880,7 +5880,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
         parser->encoding = prebuilt; \
         parser->encoding_changed |= true; \
         if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser); \
-        return; \
+        return true; \
     }
 
     // Check most common first. (This is pretty arbitrary.)
@@ -5921,11 +5921,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
 
 #undef ENCODING
 
-    // If nothing was returned by this point, then we've got an issue because we
-    // didn't understand the encoding that the user was trying to use. In this
-    // case we'll keep using the default encoding but add an error to the
-    // parser to indicate an unsuccessful parse.
-    pm_parser_err(parser, start, end, PM_ERR_INVALID_ENCODING_MAGIC_COMMENT);
+    return false;
 }
 
 /**
@@ -5975,7 +5971,13 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
     const uint8_t *value_start = cursor;
     while ((*cursor == '-' || *cursor == '_' || parser->encoding.alnum_char(cursor, 1)) && ++cursor < end);
 
-    parser_lex_magic_comment_encoding_value(parser, value_start, cursor);
+    if (!parser_lex_magic_comment_encoding_value(parser, value_start, cursor)) {
+        // If we were unable to parse the encoding value, then we've got an
+        // issue because we didn't understand the encoding that the user was
+        // trying to use. In this case we'll keep using the default encoding but
+        // add an error to the parser to indicate an unsuccessful parse.
+        pm_parser_err(parser, value_start, cursor, PM_ERR_INVALID_ENCODING_MAGIC_COMMENT);
+    }
 }
 
 /**
@@ -16399,7 +16401,11 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         }
 
         // encoding option
-        // if (options->encoding != NULL) {}
+        size_t encoding_length = pm_string_length(&options->encoding);
+        if (encoding_length > 0) {
+            const uint8_t *encoding_source = pm_string_source(&options->encoding);
+            parser_lex_magic_comment_encoding_value(parser, encoding_source, encoding_source + encoding_length);
+        }
 
         // frozen_string_literal option
         if (options->frozen_string_literal) {
