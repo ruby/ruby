@@ -214,8 +214,8 @@ module Prism
     end
 
     def test_ConstantPathOrWriteNode
-      # assert_prism_eval("Prism::CPOrWN = nil; Prism::CPOrWN ||= 1")
-      # assert_prism_eval("Prism::CPOrWN ||= 1")
+      assert_prism_eval("Prism::CPOrWN = nil; Prism::CPOrWN ||= 1")
+      assert_prism_eval("Prism::CPOrWN ||= 1")
     end
 
     def test_ConstantPathOperatorWriteNode
