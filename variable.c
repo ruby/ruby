@@ -1137,15 +1137,17 @@ void
 rb_mark_and_update_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
+    int r = 0;
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         ivtbl = mmtk_get_givtbl((MMTk_ObjectReference)obj);
+        r = (ivtbl != NULL);
     } else {
-        rb_gen_ivtbl_get(obj, 0, &ivtbl);
+        r = rb_gen_ivtbl_get(obj, 0, &ivtbl);
     }
 #endif
-    if (ivtbl) {
+    if (r) {
         if (rb_shape_obj_too_complex(obj)) {
             rb_mark_tbl(ivtbl->as.complex.table);
         }
