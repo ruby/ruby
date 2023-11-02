@@ -1403,7 +1403,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
               default: {
                   orig_argc++;
                   post_splat_counter++;
-                  PM_COMPILE(argument);
+                  PM_COMPILE_NOT_POPPED(argument);
 
                   if (has_splat) {
                       // If the next node starts the keyword section of parameters

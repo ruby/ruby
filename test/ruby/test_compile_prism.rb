@@ -694,6 +694,12 @@ module Prism
 
     def test_CallNode
       assert_prism_eval("to_s")
+
+      # with arguments
+      assert_prism_eval("eval '1'")
+
+      # with arguments and popped
+      assert_prism_eval("eval '1'; 1")
     end
 
     def test_CallAndWriteNode
