@@ -187,6 +187,38 @@ extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
     }
 }
 
+/**
+ * Read options for methods that look like (source, **options).
+ */
+static void
+string_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
+    VALUE string;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &string, &keywords);
+
+    extract_options(options, Qnil, keywords);
+    input_load_string(input, string);
+}
+
+/**
+ * Read options for methods that look like (filepath, **options).
+ */
+static bool
+file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
+    VALUE filepath;
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
+
+    extract_options(options, filepath, keywords);
+
+    if (!pm_string_mapped_init(input, (const char *) pm_string_source(&options->filepath))) {
+        pm_options_free(options);
+        return false;
+    }
+
+    return true;
+}
+
 /******************************************************************************/
 /* Serializing the AST                                                        */
 /******************************************************************************/
@@ -224,15 +256,9 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
  */
 static VALUE
 dump(int argc, VALUE *argv, VALUE self) {
-    VALUE string;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &string, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
-
     pm_string_t input;
-    input_load_string(&input, string);
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     size_t length = pm_string_length(&input);
@@ -242,11 +268,13 @@ dump(int argc, VALUE *argv, VALUE self) {
 #endif
 
     VALUE value = dump_input(&input, &options);
-    pm_options_free(&options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     free(dup);
 #endif
+
+    pm_string_free(&input);
+    pm_options_free(&options);
 
     return value;
 }
@@ -260,18 +288,9 @@ dump(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 dump_file(int argc, VALUE *argv, VALUE self) {
-    VALUE filepath;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, filepath, keywords);
-
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
-        pm_options_free(&options);
-        return Qnil;
-    }
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
 
     VALUE value = dump_input(&input, &options);
     pm_string_free(&input);
@@ -528,17 +547,12 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
  */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
-    VALUE string;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &string, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
-
     pm_string_t input;
-    input_load_string(&input, string);
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
 
     VALUE result = parse_lex_input(&input, &options, false);
+    pm_string_free(&input);
     pm_options_free(&options);
 
     return result;
@@ -553,18 +567,9 @@ lex(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
-    VALUE filepath;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, filepath, keywords);
-
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
-        pm_options_free(&options);
-        return Qnil;
-    }
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
 
     VALUE value = parse_lex_input(&input, &options, false);
     pm_string_free(&input);
@@ -628,15 +633,9 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
-    VALUE string;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &string, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
-
     pm_string_t input;
-    input_load_string(&input, string);
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
 
 #ifdef PRISM_DEBUG_MODE_BUILD
     size_t length = pm_string_length(&input);
@@ -651,6 +650,7 @@ parse(int argc, VALUE *argv, VALUE self) {
     free(dup);
 #endif
 
+    pm_string_free(&input);
     pm_options_free(&options);
     return value;
 }
@@ -664,18 +664,9 @@ parse(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_file(int argc, VALUE *argv, VALUE self) {
-    VALUE filepath;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, filepath, keywords);
-
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
-        pm_options_free(&options);
-        return Qnil;
-    }
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
 
     VALUE value = parse_input(&input, &options);
     pm_string_free(&input);
@@ -713,17 +704,12 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
  */
 static VALUE
 parse_comments(int argc, VALUE *argv, VALUE self) {
-    VALUE string;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &string, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
-
     pm_string_t input;
-    input_load_string(&input, string);
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
 
     VALUE result = parse_input_comments(&input, &options);
+    pm_string_free(&input);
     pm_options_free(&options);
 
     return result;
@@ -738,18 +724,9 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_file_comments(int argc, VALUE *argv, VALUE self) {
-    VALUE filepath;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, filepath, keywords);
-
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
-        pm_options_free(&options);
-        return Qnil;
-    }
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
 
     VALUE value = parse_input_comments(&input, &options);
     pm_string_free(&input);
@@ -774,15 +751,9 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_lex(int argc, VALUE *argv, VALUE self) {
-    VALUE string;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &string, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
-
     pm_string_t input;
-    input_load_string(&input, string);
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_free(&input);
@@ -807,18 +778,9 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_lex_file(int argc, VALUE *argv, VALUE self) {
-    VALUE filepath;
-    VALUE keywords;
-    rb_scan_args(argc, argv, "1:", &filepath, &keywords);
-
-    pm_options_t options = { 0 };
-    extract_options(&options, filepath, keywords);
-
     pm_string_t input;
-    if (!pm_string_mapped_init(&input, (const char *) pm_string_source(&options.filepath))) {
-        pm_options_free(&options);
-        return Qnil;
-    }
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_free(&input);
