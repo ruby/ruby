@@ -607,7 +607,7 @@ module Prism
       state = :default
       heredoc_stack = [[]]
 
-      result = Prism.lex(source, @filepath)
+      result = Prism.lex(source, filepath: @filepath)
       result_value = result.value
       previous_state = nil
 
