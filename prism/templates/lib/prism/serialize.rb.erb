@@ -46,6 +46,7 @@ module Prism
     class Loader # :nodoc:
       attr_reader :encoding, :input, :serialized, :io
       attr_reader :constant_pool_offset, :constant_pool, :source
+      attr_reader :start_line
 
       def initialize(source, serialized)
         @encoding = Encoding::UTF_8
@@ -59,7 +60,7 @@ module Prism
         @constant_pool = nil
 
         @source = source
-        define_load_node_lambdas unless RUBY_ENGINE == 'ruby'
+        define_load_node_lambdas unless RUBY_ENGINE == "ruby"
       end
 
       def load_header
@@ -78,6 +79,10 @@ module Prism
       def load_force_encoding
         @encoding = load_encoding
         @input = input.force_encoding(@encoding).freeze
+      end
+
+      def load_start_line
+        source.start_line = load_varint
       end
 
       def load_comments
@@ -108,6 +113,7 @@ module Prism
       def load_tokens_result
         tokens = load_tokens
         encoding = load_encoding
+        load_start_line
         comments, magic_comments, errors, warnings = load_metadata
 
         if encoding != @encoding
@@ -121,6 +127,7 @@ module Prism
       def load_nodes
         load_header
         load_force_encoding
+        load_start_line
 
         comments, magic_comments, errors, warnings = load_metadata
 

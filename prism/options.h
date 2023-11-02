@@ -160,28 +160,28 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  *
  * | # bytes | field                      |
  * | ------- | -------------------------- |
- * | 4       | the length of the filepath |
+ * | `4`     | the length of the filepath |
  * | ...     | the filepath bytes         |
- * | 4       | the line number            |
- * | 4       | the length the encoding    |
+ * | `4`     | the line number            |
+ * | `4`     | the length the encoding    |
  * | ...     | the encoding bytes         |
- * | 1       | frozen string literal      |
- * | 1       | suppress warnings          |
- * | 4       | the number of scopes       |
+ * | `1`     | frozen string literal      |
+ * | `1`     | suppress warnings          |
+ * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
  *
  * Each scope is layed out as follows:
  * 
  * | # bytes | field                      |
  * | ------- | -------------------------- |
- * | 4       | the number of locals       |
+ * | `4`     | the number of locals       |
  * | ...     | the locals                 |
  *
  * Each local is layed out as follows:
  *
  * | # bytes | field                      |
  * | ------- | -------------------------- |
- * | 4       | the length of the local    |
+ * | `4`     | the length of the local    |
  * | ...     | the local bytes            |
  *
  * Some additional things to note about this layout:
