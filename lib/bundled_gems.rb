@@ -108,7 +108,9 @@ module Gem::BUNDLED_GEMS
             break
           end
         end
-        msg += " Also contact author of #{caller_gem} to add #{gem} into its gemspec."
+        if caller_gem
+          msg += " Also contact author of #{caller_gem} to add #{gem} into its gemspec."
+        end
       end
     else
       msg += " Install #{gem} from RubyGems."
