@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.16.0"
+  spec.version = "0.17.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
