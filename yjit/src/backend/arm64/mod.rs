@@ -1,18 +1,10 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-
 use std::mem::take;
 
-use crate::asm::x86_64::jmp_ptr;
 use crate::asm::{CodeBlock, OutlinedCb};
 use crate::asm::arm64::*;
-use crate::codegen::{JITState, CodegenGlobals};
-use crate::core::Context;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::virtualmem::CodePtr;
-use crate::options::*;
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -105,7 +97,6 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     #[cfg(not(test))]
     {
         let end = cb.get_write_ptr();
-        use crate::cruby::rb_yjit_icache_invalidate;
         unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
     }
 }
@@ -618,9 +609,9 @@ impl Assembler
 
                     asm.not(opnd0);
                 },
-                Insn::LShift { opnd, shift, .. } |
-                Insn::RShift { opnd, shift, .. } |
-                Insn::URShift { opnd, shift, .. } => {
+                Insn::LShift { opnd, .. } |
+                Insn::RShift { opnd, .. } |
+                Insn::URShift { opnd, .. } => {
                     // The operand must be in a register, so
                     // if we get anything else we need to load it first.
                     let opnd0 = match opnd {
@@ -885,8 +876,8 @@ impl Assembler
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is jo (jump on overflow)
                     match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
-                        (Some(Insn::JoMul(target)), _) |
-                        (Some(Insn::PosMarker(_)), Some(Insn::JoMul(target))) => {
+                        (Some(Insn::JoMul(_)), _) |
+                        (Some(Insn::PosMarker(_)), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::SCRATCH0, left.into(), right.into());
 

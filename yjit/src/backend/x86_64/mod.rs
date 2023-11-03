@@ -1,16 +1,10 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-
 use std::mem::take;
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
-use crate::codegen::{JITState, CodePtr};
-use crate::core::Context;
+use crate::codegen::CodePtr;
 use crate::cruby::*;
 use crate::backend::ir::*;
-use crate::codegen::CodegenGlobals;
 use crate::options::*;
 
 // Use the x86 register type for this platform
