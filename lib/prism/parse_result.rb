@@ -189,45 +189,58 @@ module Prism
     end
   end
 
-  # This represents a comment that was encountered during parsing.
+  # This represents a comment that was encountered during parsing. It is the
+  # base class for all comment types.
   class Comment
-    # These are the three types that comments can be from a source file.
-    #
-    # :inline comments are the most common. They correspond to comments in the
-    # source file like this one that start with #.
-    #
-    # :embdoc comments are comments that are surrounded by =begin and =end.
-    #
-    # :__END__ comments are comments that are after the __END__ keyword in a
-    # source file.
-    TYPES = [:inline, :embdoc, :__END__]
-
-    # The type of comment that this comment is.
-    attr_reader :type
-
     # The location of this comment in the source.
     attr_reader :location
 
-    # Create a new comment object with the given type and location.
-    def initialize(type, location)
-      @type = type
+    # Create a new comment object with the given location.
+    def initialize(location)
       @location = location
     end
 
     # Implement the hash pattern matching interface for Comment.
     def deconstruct_keys(keys)
-      { type: type, location: location }
+      { location: location }
     end
 
-    # Returns true if the comment happens on the same line as other code and
+    # This can only be true for inline comments.
+    def trailing?
+      false
+    end
+  end
+
+  # InlineComment objects are the most common. They correspond to comments in
+  # the source file like this one that start with #.
+  class InlineComment < Comment
+    # Returns true if this comment happens on the same line as other code and
     # false if the comment is by itself.
     def trailing?
-      type == :inline && !location.start_line_slice.strip.empty?
+      !location.start_line_slice.strip.empty?
     end
 
     # Returns a string representation of this comment.
     def inspect
-      "#<Prism::Comment @type=#{@type.inspect} @location=#{@location.inspect}>"
+      "#<Prism::InlineComment @location=#{location.inspect}>"
+    end
+  end
+
+  # EmbDocComment objects correspond to comments that are surrounded by =begin
+  # and =end.
+  class EmbDocComment < Comment
+    # Returns a string representation of this comment.
+    def inspect
+      "#<Prism::EmbDocComment @location=#{location.inspect}>"
+    end
+  end
+
+  # DATAComment objects correspond to comments that are after the __END__
+  # keyword in a source file.
+  class DATAComment < Comment
+    # Returns a string representation of this comment.
+    def inspect
+      "#<Prism::DATAComment @location=#{location.inspect}>"
     end
   end
 

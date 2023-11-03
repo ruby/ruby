@@ -10,6 +10,9 @@ VALUE rb_cPrismToken;
 VALUE rb_cPrismLocation;
 
 VALUE rb_cPrismComment;
+VALUE rb_cPrismInlineComment;
+VALUE rb_cPrismEmbDocComment;
+VALUE rb_cPrismDATAComment;
 VALUE rb_cPrismMagicComment;
 VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
@@ -320,21 +323,18 @@ parser_comments(pm_parser_t *parser, VALUE source) {
         VALUE type;
         switch (comment->type) {
             case PM_COMMENT_INLINE:
-                type = ID2SYM(rb_intern("inline"));
+                type = rb_cPrismInlineComment;
                 break;
             case PM_COMMENT_EMBDOC:
-                type = ID2SYM(rb_intern("embdoc"));
+                type = rb_cPrismEmbDocComment;
                 break;
             case PM_COMMENT___END__:
-                type = ID2SYM(rb_intern("__END__"));
-                break;
-            default:
-                type = ID2SYM(rb_intern("inline"));
+                type = rb_cPrismDATAComment;
                 break;
         }
 
-        VALUE comment_argv[] = { type, rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
-        rb_ary_push(comments, rb_class_new_instance(2, comment_argv, rb_cPrismComment));
+        VALUE comment_argv[] = { rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
+        rb_ary_push(comments, rb_class_new_instance(1, comment_argv, type));
     }
 
     return comments;
@@ -933,6 +933,9 @@ Init_prism(void) {
     rb_cPrismToken = rb_define_class_under(rb_cPrism, "Token", rb_cObject);
     rb_cPrismLocation = rb_define_class_under(rb_cPrism, "Location", rb_cObject);
     rb_cPrismComment = rb_define_class_under(rb_cPrism, "Comment", rb_cObject);
+    rb_cPrismInlineComment = rb_define_class_under(rb_cPrism, "InlineComment", rb_cPrismComment);
+    rb_cPrismEmbDocComment = rb_define_class_under(rb_cPrism, "EmbDocComment", rb_cPrismComment);
+    rb_cPrismDATAComment = rb_define_class_under(rb_cPrism, "DATAComment", rb_cPrismComment);
     rb_cPrismMagicComment = rb_define_class_under(rb_cPrism, "MagicComment", rb_cObject);
     rb_cPrismParseError = rb_define_class_under(rb_cPrism, "ParseError", rb_cObject);
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);

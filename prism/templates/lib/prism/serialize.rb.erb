@@ -86,7 +86,13 @@ module Prism
       end
 
       def load_comments
-        load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        load_varint.times.map do
+          case load_varint
+          when 0 then InlineComment.new(load_location)
+          when 1 then EmbDocComment.new(load_location)
+          when 2 then DATAComment.new(load_location)
+          end
+        end
       end
 
       def load_metadata
