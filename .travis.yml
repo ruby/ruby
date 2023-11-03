@@ -25,7 +25,7 @@ git:
 env:
   global:
     - NPROC="$(nproc)"
-    - JOBS=-j$((1+${NPROC}))
+    - JOBS="-j${NPROC}"
     # SETARCH are overridden when necessary. See below.
     - SETARCH=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
