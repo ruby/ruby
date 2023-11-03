@@ -1458,21 +1458,13 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
     // Cache hit case
     if (shape_id == dest_shape_id) {
         RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-
-        // Just get the IV table
-        rb_gen_ivtbl_get(obj, 0, &ivtbl);
     }
     else if (dest_shape_id != INVALID_SHAPE_ID) {
-        rb_shape_t * dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
-        shape_id_t source_shape_id = dest_shape->parent_id;
+        rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
 
-        if (shape_id == source_shape_id && dest_shape->edge_name == id && dest_shape->type == SHAPE_IVAR) {
-            ivtbl = rb_ensure_generic_iv_list_size(obj, dest_shape, index + 1);
-#if SHAPE_IN_BASIC_FLAGS
-            RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-#else
-            RUBY_ASSERT(ivtbl->shape_id == dest_shape_id);
-#endif
+        if (shape_id == dest_shape->parent_id && dest_shape->edge_name == id && dest_shape->type == SHAPE_IVAR) {
+            RUBY_ASSERT(rb_shape_get_shape_by_id(shape_id)->capacity == dest_shape->capacity);
+            RUBY_ASSERT(index < rb_shape_get_shape_by_id(shape_id)->capacity);
         }
         else {
             return Qundef;
@@ -1482,9 +1474,17 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    VALUE *ptr = ivtbl->as.shape.ivptr;
+    rb_gen_ivtbl_get(obj, 0, &ivtbl);
 
-    RB_OBJ_WRITE(obj, &ptr[index], val);
+    if (shape_id != dest_shape_id) {
+#if SHAPE_IN_BASIC_FLAGS
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+#else
+        ivtbl->shape_id = dest_shape_id;
+#endif
+    }
+
+    RB_OBJ_WRITE(obj, &ivtbl->as.shape.ivptr[index], val);
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 
