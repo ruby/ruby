@@ -15,12 +15,12 @@ VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
 VALUE rb_cPrismParseResult;
 
-ID id_filepath;
-ID id_encoding;
-ID id_line;
-ID id_frozen_string_literal;
-ID id_suppress_warnings;
-ID id_scopes;
+ID rb_option_id_filepath;
+ID rb_option_id_encoding;
+ID rb_option_id_line;
+ID rb_option_id_frozen_string_literal;
+ID rb_option_id_suppress_warnings;
+ID rb_option_id_scopes;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -119,17 +119,17 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
     pm_options_t *options = (pm_options_t *) argument;
     ID key_id = SYM2ID(key);
 
-    if (key_id == id_filepath) {
+    if (key_id == rb_option_id_filepath) {
         if (!NIL_P(value)) pm_options_filepath_set(options, check_string(value));
-    } else if (key_id == id_encoding) {
+    } else if (key_id == rb_option_id_encoding) {
         if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
-    } else if (key_id == id_line) {
+    } else if (key_id == rb_option_id_line) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2UINT(value));
-    } else if (key_id == id_frozen_string_literal) {
+    } else if (key_id == rb_option_id_frozen_string_literal) {
         if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
-    } else if (key_id == id_suppress_warnings) {
+    } else if (key_id == rb_option_id_suppress_warnings) {
         if (!NIL_P(value)) pm_options_suppress_warnings_set(options, value == Qtrue);
-    } else if (key_id == id_scopes) {
+    } else if (key_id == rb_option_id_scopes) {
         if (!NIL_P(value)) build_options_scopes(options, value);
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
@@ -940,12 +940,12 @@ Init_prism(void) {
 
     // Intern all of the options that we support so that we don't have to do it
     // every time we parse.
-    id_filepath = rb_intern_const("filepath");
-    id_encoding = rb_intern_const("encoding");
-    id_line = rb_intern_const("line");
-    id_frozen_string_literal = rb_intern_const("frozen_string_literal");
-    id_suppress_warnings = rb_intern_const("suppress_warnings");
-    id_scopes = rb_intern_const("scopes");
+    rb_option_id_filepath = rb_intern_const("filepath");
+    rb_option_id_encoding = rb_intern_const("encoding");
+    rb_option_id_line = rb_intern_const("line");
+    rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
+    rb_option_id_suppress_warnings = rb_intern_const("suppress_warnings");
+    rb_option_id_scopes = rb_intern_const("scopes");
 
     /**
      * The version of the prism library.

@@ -2335,16 +2335,19 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (dump & (DUMP_BIT(prism_parsetree))) {
-        pm_parser_t parser;
+        pm_string_t input;
+        pm_options_t options = { 0 };
+
         if (opt->e_script) {
-            size_t len = RSTRING_LEN(opt->e_script);
-            pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(opt->e_script), len, "-e");
+            pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
+            pm_options_filepath_set(&options, "-e");
         } else {
-            pm_string_t input;
-            char *filepath = RSTRING_PTR(opt->script_name);
-            pm_string_mapped_init(&input, filepath);
-            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), filepath);
+            pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
+            pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
         }
+
+        pm_parser_t parser;
+        pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
         pm_node_t *node = pm_parse(&parser);
         pm_buffer_t output_buffer = { 0 };
@@ -2356,6 +2359,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         pm_buffer_free(&output_buffer);
         pm_node_destroy(&parser, node);
         pm_parser_free(&parser);
+
+        pm_string_free(&input);
+        pm_options_free(&options);
     }
 
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {

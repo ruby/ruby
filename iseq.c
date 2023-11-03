@@ -1414,34 +1414,34 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     Check_Type(file, T_STRING);
 
     rb_iseq_t *iseq = iseq_alloc();
+    int start_line = NUM2INT(line);
+
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, RSTRING_PTR(file));
+    pm_options_line_set(&options, start_line);
 
     pm_parser_t parser;
-    size_t len = RSTRING_LEN(src);
-    VALUE name = rb_fstring_lit("<compiled>");
-
-    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), len, "");
+    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
 
     pm_node_t *node = pm_parse(&parser);
-
-    int first_lineno = NUM2INT(line);
     pm_line_column_t start_loc = pm_newline_list_line_column(&parser.newline_list, node->location.start);
     pm_line_column_t end_loc = pm_newline_list_line_column(&parser.newline_list, node->location.end);
 
     rb_code_location_t node_location;
-    node_location.beg_pos.lineno = (int)start_loc.line;
-    node_location.beg_pos.column = (int)start_loc.column;
-    node_location.end_pos.lineno = (int)end_loc.line;
-    node_location.end_pos.column = (int)end_loc.column;
+    node_location.beg_pos.lineno = (int) start_loc.line;
+    node_location.beg_pos.column = (int) start_loc.column;
+    node_location.end_pos.lineno = (int) end_loc.line;
+    node_location.end_pos.column = (int) end_loc.column;
 
     int node_id = 0;
-
     rb_iseq_t *parent = NULL;
     enum rb_iseq_type iseq_type = ISEQ_TYPE_TOP;
     rb_compile_option_t option;
 
     make_compile_option(&option, opt);
 
-    prepare_iseq_build(iseq, name, file, path, first_lineno, &node_location, node_id,
+    VALUE name = rb_fstring_lit("<compiled>");
+    prepare_iseq_build(iseq, name, file, path, start_line, &node_location, node_id,
                        parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
 
     pm_scope_node_t scope_node;
@@ -1451,6 +1451,7 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     finish_iseq_build(iseq);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_options_free(&options);
 
     return iseqw_new(iseq);
 }
