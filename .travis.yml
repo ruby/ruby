@@ -122,6 +122,10 @@ before_script:
   - $SETARCH ../configure -C --disable-install-doc --prefix=$(pwd)/install
   - $SETARCH make -s $JOBS
   - make -s $JOBS install
+  # Useful info to report issues to the Ruby.
+  - $SETARCH $(pwd)/install/bin/ruby -v
+  # Useful info To report issues to the RubyGems.
+  - $SETARCH $(pwd)/install/bin/gem env
 
 script:
   - $SETARCH make -s test
