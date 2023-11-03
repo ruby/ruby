@@ -331,6 +331,9 @@ parser_comments(pm_parser_t *parser, VALUE source) {
             case PM_COMMENT___END__:
                 type = rb_cPrismDATAComment;
                 break;
+            default:
+                type = rb_cPrismInlineComment;
+                break;
         }
 
         VALUE comment_argv[] = { rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
