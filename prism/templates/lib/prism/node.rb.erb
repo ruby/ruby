@@ -31,6 +31,11 @@ module Prism
       end
       q.current_group.break
     end
+
+    # Convert this node into a graphviz dot graph string.
+    def to_dot
+      DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
+    end
   end
   <%- nodes.each do |node| -%>
 

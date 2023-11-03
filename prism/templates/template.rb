@@ -426,6 +426,7 @@ module Prism
     "java/org/prism/AbstractNodeVisitor.java",
     "lib/prism/compiler.rb",
     "lib/prism/dispatcher.rb",
+    "lib/prism/dot_visitor.rb",
     "lib/prism/dsl.rb",
     "lib/prism/mutation_compiler.rb",
     "lib/prism/node.rb",

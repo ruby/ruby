@@ -67,6 +67,7 @@ Gem::Specification.new do |spec|
     "lib/prism/debug.rb",
     "lib/prism/desugar_compiler.rb",
     "lib/prism/dispatcher.rb",
+    "lib/prism/dot_visitor.rb",
     "lib/prism/dsl.rb",
     "lib/prism/ffi.rb",
     "lib/prism/lex_compat.rb",

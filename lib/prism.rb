@@ -16,6 +16,7 @@ module Prism
   autoload :Debug, "prism/debug"
   autoload :DesugarCompiler, "prism/desugar_compiler"
   autoload :Dispatcher, "prism/dispatcher"
+  autoload :DotVisitor, "prism/dot_visitor"
   autoload :DSL, "prism/dsl"
   autoload :LexCompat, "prism/lex_compat"
   autoload :LexRipper, "prism/lex_compat"
