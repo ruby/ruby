@@ -134,6 +134,14 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         return std::ptr::null();
     }
 
+    // If this is a large application (has very many ISEQs), switch to
+    // using the call threshold for large applications after this entry point
+    use crate::stats::rb_yjit_live_iseq_count;
+    if unsafe { rb_yjit_live_iseq_count } > get_option!(large_iseq_count) {
+        let large_threshold = get_option!(large_threshold);
+        unsafe { rb_yjit_call_threshold = large_threshold; };
+    }
+
     let maybe_code_ptr = with_compile_time(|| { gen_entry_point(iseq, ec, jit_exception) });
 
     match maybe_code_ptr {

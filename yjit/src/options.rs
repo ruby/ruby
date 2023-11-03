@@ -6,13 +6,13 @@ use std::os::raw::{c_char, c_int, c_uint};
 // Number of method calls after which to start generating code
 // Threshold==1 means compile on first execution
 #[no_mangle]
-static mut rb_yjit_call_threshold: u64 = 30;
+pub static mut rb_yjit_call_threshold: u64 = 30;
 
 // This option is exposed to the C side a a global variable for performance, see vm.c
 // Number of execution requests after which a method is no longer
 // considered hot. Raising this results in more generated code.
 #[no_mangle]
-static mut rb_yjit_cold_threshold: u64 = 200_000;
+pub static mut rb_yjit_cold_threshold: u64 = 200_000;
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -21,6 +21,15 @@ pub struct Options {
     // Size of the executable memory block to allocate in bytes
     // Note that the command line argument is expressed in MiB and not bytes
     pub exec_mem_size: usize,
+
+    // Call threshold for small deployments and command-line apps
+    pub small_threshold: u64,
+
+    // Call threshold for larger deployments and production-sized applications
+    pub large_threshold: u64,
+
+    // Number of live ISEQs after which we consider an app to be large
+    pub large_iseq_count: u64,
 
     // Disable the propagation of type information
     pub no_type_prop: bool,
@@ -70,6 +79,9 @@ pub struct Options {
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
     exec_mem_size: 128 * 1024 * 1024,
+    small_threshold: 30,
+    large_threshold: 120,
+    large_iseq_count: 40_000,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -87,13 +99,18 @@ pub static mut OPTIONS: Options = Options {
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 8] = [
+static YJIT_OPTIONS: [(&str, &str); 11] = [
     ("--yjit-stats",                    "Enable collecting YJIT statistics"),
     ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
     ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
     ("--yjit-exec-mem-size=num",        "Size of executable memory block in MiB (default: 128)"),
-    ("--yjit-call-threshold=num",       "Number of calls to trigger JIT (default: 30)"),
+
+    ("--yjit-call-threshold=num",       "Number of calls to trigger JIT"),
+    ("--yjit-small-threshold=num",      "Call threshold for small apps (default: 30)"),
+    ("--yjit-large-threshold=num",      "Call threshold for large deployments (default: 120)"),
+    ("--yjit-large-iseq-count=num",     "Live ISEQs to consider an app large (default: 40000)"),
     ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
+
     ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
     ("--yjit-perf",                     "Enable frame pointers and perf profiling"),
 ];
@@ -161,7 +178,36 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("call-threshold", _) => match opt_val.parse() {
-            Ok(n) => unsafe { rb_yjit_call_threshold = n },
+            Ok(n) => unsafe {
+                rb_yjit_call_threshold = n;
+                OPTIONS.small_threshold = n;
+                OPTIONS.large_threshold = n;
+            },
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("small-threshold", _) => match opt_val.parse() {
+            Ok(n) => unsafe {
+                // The small call threshold is the starting call threshold
+                rb_yjit_call_threshold = n;
+                OPTIONS.small_threshold = n
+            },
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("large-threshold", _) => match opt_val.parse() {
+            Ok(n) => unsafe { OPTIONS.large_threshold = n },
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("large-iseq-count", _) => match opt_val.parse() {
+            Ok(n) => unsafe { OPTIONS.large_iseq_count = n },
             Err(_) => {
                 return None;
             }
