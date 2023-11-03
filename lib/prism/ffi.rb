@@ -299,7 +299,7 @@ module Prism
       values << (options.fetch(:frozen_string_literal, false) ? 1 : 0)
 
       template << "C"
-      values << (options.fetch(:suppress_warnings, false) ? 1 : 0)
+      values << (options[:verbose] ? 0 : 1)
 
       template << "L"
       if (scopes = options[:scopes])
