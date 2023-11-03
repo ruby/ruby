@@ -300,6 +300,110 @@ rb_nativethread_lock_unlock(rb_nativethread_lock_t *lock)
     rb_native_mutex_unlock(lock);
 }
 
+/* async-signal-safe, semaphore-based locks */
+
+#ifdef HAVE_MACH_MACH_INIT_H
+# include <mach/mach_init.h>
+#endif
+#ifdef HAVE_MACH_SEMAPHORE_H
+# include <mach/semaphore.h>
+#endif
+#ifdef HAVE_MACH_TASK_H
+# include <mach/task.h>
+#endif
+
+void
+rb_native_async_safe_mutex_initialize(rb_nativethread_async_safe_lock_t *lock)
+{
+#if defined(HAVE_WORKING_POSIX_SEMAPHORE)
+    int r = sem_init(&lock->sem, 0, 1);
+    if (r == -1) {
+        rb_bug("failed to sem_init posix semaphore: errno %d", errno);
+    }
+#elif defined(HAVE_SEMAPHORE_CREATE)
+    kern_return_t r = semaphore_create(mach_task_self(), &lock->sem, SYNC_POLICY_FIFO, 1);
+    if (r != KERN_SUCCESS) {
+        rb_bug("failed to semaphore_create mach semaphore: ret %d", r);
+    }
+#else
+    rb_native_mutex_initialize(&lock->mutex);
+#endif
+#if defined(HAVE_PTHREAD_SIGMASK) || defined(HAVE_SIGPROCMASK)
+    sigemptyset(&lock->old_mask);
+#endif
+}
+
+void
+rb_native_async_safe_mutex_lock(rb_nativethread_async_safe_lock_t *lock)
+{
+#if defined(HAVE_PTHREAD_SIGMASK) || defined(HAVE_SIGPROCMASK)
+    sigset_t all;
+    sigfillset(&all);
+# if defined(HAVE_PTHREAD_SIGMASK)
+    pthread_sigmask(SIG_SETMASK ,&all, &lock->old_mask);
+# elif defined(HAVE_SIGPROCMASK)
+    sigprocmask(SIG_SETMASK ,&all, &lock->old_mask);
+# endif
+#endif
+#if defined(HAVE_WORKING_POSIX_SEMAPHORE)
+    int r = sem_wait(&lock->sem);
+    if (r == -1) {
+        rb_bug("failed to sem_wait posix semaphore: errno %d", errno);
+    }
+#elif defined(HAVE_SEMAPHORE_CREATE)
+    kern_return_t r = semaphore_wait(lock->sem);
+    if (r != KERN_SUCCESS) {
+        rb_bug("failed to semaphore_wait mach semaphore: ret %d", r);
+    }
+#else
+    rb_native_mutex_lock(&lock->mutex);
+#endif
+}
+
+void
+rb_native_async_safe_mutex_unlock(rb_nativethread_async_safe_lock_t *lock)
+{
+#if defined(HAVE_WORKING_POSIX_SEMAPHORE)
+    int r = sem_post(&lock->sem);
+    if (r == -1) {
+        rb_bug("failed to sem_post posix semaphore: errno %d", errno);
+    }
+#elif defined(HAVE_SEMAPHORE_CREATE)
+    kern_return_t r = semaphore_signal(lock->sem);
+    if (r != KERN_SUCCESS) {
+        rb_bug("failed to semaphore_signal mach semaphore: ret %d", r);
+    }
+#else
+    rb_native_mutex_unlock(&lock->mutex);
+#endif
+#if defined(HAVE_PTHREAD_SIGMASK) || defined(HAVE_SIGPROCMASK)
+# if defined(HAVE_PTHREAD_SIGMASK)
+    pthread_sigmask(SIG_SETMASK, &lock->old_mask, NULL);
+# elif defined(HAVE_SIGPROCMASK)
+    sigprocmask(SIG_SETMASK, &lock->old_mask, NULL);
+# endif
+    sigemptyset(&lock->old_mask);
+#endif
+}
+
+void
+rb_native_async_safe_mutex_destroy(rb_nativethread_async_safe_lock_t *lock)
+{
+#if defined(HAVE_WORKING_POSIX_SEMAPHORE)
+    int r = sem_destroy(&lock->sem);
+    if (r == -1) {
+        rb_bug("failed to sem_destroy posix semaphore: errno %d", errno);
+    }
+#elif defined(HAVE_SEMAPHORE_CREATE)
+    kern_return_t r = semaphore_destroy(mach_task_self(), lock->sem);
+    if (r != KERN_SUCCESS) {
+        rb_bug("failed to semaphore_destroy mach semaphore: ret %d", r);
+    }
+#else
+    rb_native_mutex_destroy(&lock->mutex);
+#endif
+}
+
 static int
 unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int fail_if_interrupted)
 {
@@ -4622,8 +4726,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     rb_ractor_atfork(vm, th);
 
-    /* may be held by RJIT threads in parent */
-    rb_native_mutex_initialize(&vm->workqueue_lock);
+    rb_vm_postponed_job_atfork();
 
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
@@ -5293,7 +5396,6 @@ Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    rb_native_mutex_initialize(&th->vm->workqueue_lock);
     rb_native_mutex_initialize(&th->interrupt_lock);
 }
 

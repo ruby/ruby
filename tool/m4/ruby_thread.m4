@@ -77,4 +77,34 @@ AS_IF([test ! -f "$srcdir/$THREAD_IMPL_SRC"],
       [AC_MSG_ERROR('$srcdir/$THREAD_IMPL_SRC' must exist)])
 AC_DEFINE_UNQUOTED(THREAD_IMPL_H, ["$THREAD_IMPL_H"])
 AC_DEFINE_UNQUOTED(THREAD_IMPL_SRC, ["$THREAD_IMPL_SRC"])
+
+dnl Check for a working async-signal-safe semaphore primitive
+AC_CHECK_HEADERS(semaphore.h)
+AC_CHECK_FUNCS([sem_init])
+dnl MacOS provides a sem_init function, but it returns ENOSYS. Make sure we have
+dnl an actual working version.
+AS_IF([test "$ac_cv_header_semaphore_h" = "yes" -a "$ac_cv_func_sem_init" = "yes"],
+    AC_CACHE_CHECK(if sem_init works, rb_cv_working_posix_semaphore, [
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[
+@%:@include <semaphore.h>
+int main(int argc, char **argv) {
+    sem_t sem;
+    int r;
+    r = sem_init(&sem, 0, 1);
+    return r == 0 ? 0 : 1;
+}
+    ]])],
+    [rb_cv_working_posix_semaphore=yes],
+    [rb_cv_working_posix_semaphore=no],
+    dnl if cross-compiling, assume we have a working semaphore if we have the function,
+    dnl _except_ on macos where sem_init doesn't work.
+    [AS_CASE($target_os, [darwin*],
+        [rb_cv_working_posix_semaphore=no],
+        [rb_cv_working_posix_semaphore=yes])])
+    ])
+)
+AS_IF([test "$rb_cv_working_posix_semaphore" = "yes"], [AC_DEFINE(HAVE_WORKING_POSIX_SEMAPHORE)])
+AC_CHECK_HEADERS([mach/semaphore.h])
+AC_CHECK_FUNCS([semaphore_create])
+
 ])dnl

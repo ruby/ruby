@@ -1616,80 +1616,48 @@ Init_vm_trace(void)
     rb_undef_alloc_func(rb_cTracePoint);
 }
 
+
 typedef struct rb_postponed_job_struct {
     rb_postponed_job_func_t func;
     void *data;
 } rb_postponed_job_t;
 
+
 #define MAX_POSTPONED_JOB                  1000
 #define MAX_POSTPONED_JOB_SPECIAL_ADDITION   24
 
-struct rb_workqueue_job {
-    struct ccan_list_node jnode; /* <=> vm->workqueue */
-    rb_postponed_job_t job;
-};
-
-// Used for VM memsize reporting. Returns the size of a list of rb_workqueue_job
-// structs. Defined here because the struct definition lives here as well.
-size_t
-rb_vm_memsize_workqueue(struct ccan_list_head *workqueue)
-{
-    struct rb_workqueue_job *work = 0;
-    size_t size = 0;
-
-    ccan_list_for_each(workqueue, work, jnode) {
-        size += sizeof(struct rb_workqueue_job);
-    }
-
-    return size;
-}
+typedef struct rb_postponed_job_buffer {
+    rb_nativethread_async_safe_lock_t lock;
+    size_t job_capacity;
+    rb_atomic_t job_count;
+    rb_postponed_job_t jobs[];
+} rb_postponed_job_buffer_t;
 
 // Used for VM memsize reporting. Returns the total size of the postponed job
 // buffer that was allocated at initialization.
 size_t
 rb_vm_memsize_postponed_job_buffer(void)
 {
-    return sizeof(rb_postponed_job_t) * MAX_POSTPONED_JOB;
+    rb_vm_t *vm = GET_VM();
+    return sizeof(rb_postponed_job_buffer_t) + sizeof(rb_postponed_job_t) * vm->postponed_job_buffer->job_capacity;
+}
+
+void
+rb_vm_postponed_job_atfork(void)
+{
+    rb_vm_t *vm = GET_VM();
+    /* This is safe, becuase at fork, retry_fork_async_signal_safe ensures that signals are masked. */
+    rb_native_async_safe_mutex_initialize(&vm->postponed_job_buffer->lock);
 }
 
 void
 Init_vm_postponed_job(void)
 {
     rb_vm_t *vm = GET_VM();
-    vm->postponed_job_buffer = ALLOC_N(rb_postponed_job_t, MAX_POSTPONED_JOB);
-    vm->postponed_job_index = 0;
-    /* workqueue is initialized when VM locks are initialized */
-}
-
-enum postponed_job_register_result {
-    PJRR_SUCCESS     = 0,
-    PJRR_FULL        = 1,
-    PJRR_INTERRUPTED = 2
-};
-
-/* Async-signal-safe */
-static enum postponed_job_register_result
-postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
-                       unsigned int flags, rb_postponed_job_func_t func, void *data, rb_atomic_t max, rb_atomic_t expected_index)
-{
-    rb_postponed_job_t *pjob;
-
-    if (expected_index >= max) return PJRR_FULL; /* failed */
-
-    if (ATOMIC_CAS(vm->postponed_job_index, expected_index, expected_index+1) == expected_index) {
-        pjob = &vm->postponed_job_buffer[expected_index];
-    }
-    else {
-        return PJRR_INTERRUPTED;
-    }
-
-    /* unused: pjob->flags = flags; */
-    pjob->func = func;
-    pjob->data = data;
-
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
-
-    return PJRR_SUCCESS;
+    vm->postponed_job_buffer = ruby_xmalloc(sizeof(rb_postponed_job_buffer_t) + sizeof(rb_postponed_job_t) * MAX_POSTPONED_JOB);
+    vm->postponed_job_buffer->job_capacity = MAX_POSTPONED_JOB;
+    vm->postponed_job_buffer->job_count = 0;
+    rb_native_async_safe_mutex_initialize(&vm->postponed_job_buffer->lock);
 }
 
 static rb_execution_context_t *
@@ -1700,6 +1668,45 @@ get_valid_ec(rb_vm_t *vm)
     return ec;
 }
 
+int
+rb_postponed_job_register_impl(unsigned int flags, rb_postponed_job_func_t func, void *data, int once)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_execution_context_t *ec = get_valid_ec(vm);
+    int ret;
+
+    rb_postponed_job_buffer_t *buffer = vm->postponed_job_buffer;
+    rb_native_async_safe_mutex_lock(&buffer->lock);
+    if (once) {
+        for (size_t i = 0; i < buffer->job_count; i++) {
+            if (buffer->jobs[i].func == func) {
+                ret = 2;
+                goto unlock;
+            }
+        }
+    }
+    if (buffer->job_count >= buffer->job_capacity) {
+        ret = 0;
+        goto unlock;
+    }
+    buffer->jobs[buffer->job_count].func = func;
+    buffer->jobs[buffer->job_count].data = data;
+    /* Atomic, so that after fork, we either have or do not have this job in the buffer, but we are definitely
+       not in a state where job_count was incremented but func/data were not (because we define atomics in atomic.h
+       with seq_cst consistency) */
+    ATOMIC_INC(buffer->job_count);
+    ret = 1;
+unlock:
+    rb_native_async_safe_mutex_unlock(&vm->postponed_job_buffer->lock);
+
+    if (ret > 0) {
+        /* n.b. - outside lock, could be spurious; that's OK. */
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
+    }
+
+    return ret;
+}
+
 /*
  * return 0 if job buffer is full
  * Async-signal-safe
@@ -1707,16 +1714,7 @@ get_valid_ec(rb_vm_t *vm)
 int
 rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_execution_context_t *ec = get_valid_ec(vm);
-
-  begin:
-    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
-      case PJRR_SUCCESS    : return 1;
-      case PJRR_FULL       : return 0;
-      case PJRR_INTERRUPTED: goto begin;
-      default: rb_bug("unreachable");
-    }
+    return rb_postponed_job_register_impl(flags, func, data, 0);
 }
 
 /*
@@ -1726,26 +1724,7 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
 int
 rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_execution_context_t *ec = get_valid_ec(vm);
-    rb_postponed_job_t *pjob;
-    rb_atomic_t i, index;
-
-  begin:
-    index = vm->postponed_job_index;
-    for (i=0; i<index; i++) {
-        pjob = &vm->postponed_job_buffer[i];
-        if (pjob->func == func) {
-            RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
-            return 2;
-        }
-    }
-    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
-      case PJRR_SUCCESS    : return 1;
-      case PJRR_FULL       : return 0;
-      case PJRR_INTERRUPTED: goto begin;
-      default: rb_bug("unreachable");
-    }
+    return rb_postponed_job_register_impl(flags, func, data, 1);
 }
 
 /*
@@ -1755,72 +1734,53 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 int
 rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data)
 {
-    struct rb_workqueue_job *wq_job = malloc(sizeof(*wq_job));
-    rb_vm_t *vm = GET_VM();
-
-    if (!wq_job) return FALSE;
-    wq_job->job.func = func;
-    wq_job->job.data = data;
-
-    rb_nativethread_lock_lock(&vm->workqueue_lock);
-    ccan_list_add_tail(&vm->workqueue, &wq_job->jnode);
-    rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-    // TODO: current implementation affects only main ractor
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(rb_vm_main_ractor_ec(vm));
-
-    return TRUE;
+    return rb_postponed_job_register_impl(flags, func, data, 0);
 }
 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
+    size_t postponed_job_count, index;
+    rb_postponed_job_t *jobs;
+
+    rb_native_async_safe_mutex_lock(&vm->postponed_job_buffer->lock);
+    size_t job_bytes = sizeof(rb_postponed_job_t) * vm->postponed_job_buffer->job_count;
+    /* Important to use actual malloc, not ruby_xmalloc; we don't want this to throw any
+       ruby exceptions whilst we're holding the postponed buffer lock & have signals masked. */
+    jobs = malloc(job_bytes);
+    if (jobs) {
+        memcpy(jobs, vm->postponed_job_buffer->jobs, job_bytes);
+        postponed_job_count = vm->postponed_job_buffer->job_count;
+        vm->postponed_job_buffer->job_count = 0;
+    }
+    rb_native_async_safe_mutex_unlock(&vm->postponed_job_buffer->lock);
+
+    if (!jobs) {
+        return;
+    }
+
     rb_execution_context_t *ec = GET_EC();
     const rb_atomic_t block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
     volatile rb_atomic_t saved_mask = ec->interrupt_mask & block_mask;
     VALUE volatile saved_errno = ec->errinfo;
-    struct ccan_list_head tmp;
-
-    ccan_list_head_init(&tmp);
-
-    rb_nativethread_lock_lock(&vm->workqueue_lock);
-    ccan_list_append_list(&tmp, &vm->workqueue);
-    rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
     ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
     ec->interrupt_mask |= block_mask;
-    {
+    index = 0;
+    do {
         EC_PUSH_TAG(ec);
         if (EC_EXEC_TAG() == TAG_NONE) {
-            rb_atomic_t index;
-            struct rb_workqueue_job *wq_job;
-
-            while ((index = vm->postponed_job_index) > 0) {
-                if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
-                    rb_postponed_job_t *pjob = &vm->postponed_job_buffer[index-1];
-                    (*pjob->func)(pjob->data);
-                }
-            }
-            while ((wq_job = ccan_list_pop(&tmp, struct rb_workqueue_job, jnode))) {
-                rb_postponed_job_t pjob = wq_job->job;
-
-                free(wq_job);
-                (pjob.func)(pjob.data);
+            while (index < postponed_job_count) {
+                rb_postponed_job_t *pjob = &jobs[index];
+                index++; /* so it's already incremented if func throws */
+                (*pjob->func)(pjob->data);
             }
         }
         EC_POP_TAG();
-    }
+        /* If a job failed, skip it & retry */
+    } while (index < postponed_job_count);
     /* restore POSTPONED_JOB mask */
     ec->interrupt_mask &= ~(saved_mask ^ block_mask);
     ec->errinfo = saved_errno;
-
-    /* don't leak memory if a job threw an exception */
-    if (!ccan_list_empty(&tmp)) {
-        rb_nativethread_lock_lock(&vm->workqueue_lock);
-        ccan_list_prepend_list(&vm->workqueue, &tmp);
-        rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
-    }
 }

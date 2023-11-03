@@ -32,4 +32,10 @@ class TestPostponed_job < Test::Unit::TestCase
       assert_equal [1], ary
     end
   end
+
+  if Bug.respond_to?(:postponed_job_register_race)
+    def test_register_race
+      assert_equal :ok, Bug.postponed_job_register_race
+    end
+  end
 end

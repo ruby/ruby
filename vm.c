@@ -2997,7 +2997,6 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (objspace) {
             rb_objspace_free(objspace);
         }
-        rb_native_mutex_destroy(&vm->workqueue_lock);
         /* after freeing objspace, you *can't* use ruby_xfree() */
         ruby_mimfree(vm);
         ruby_current_vm_ptr = NULL;
@@ -3008,7 +3007,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 
 size_t rb_vm_memsize_waiting_fds(struct ccan_list_head *waiting_fds); // thread.c
 size_t rb_vm_memsize_postponed_job_buffer(void); // vm_trace.c
-size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
@@ -3067,7 +3065,6 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->loading_table) +
         rb_st_memsize(vm->ensure_rollback_table) +
         rb_vm_memsize_postponed_job_buffer() +
-        rb_vm_memsize_workqueue(&vm->workqueue) +
         rb_st_memsize(vm->defined_module_hash) +
         vm_memsize_at_exit_list(vm->at_exit) +
         rb_st_memsize(vm->frozen_strings) +

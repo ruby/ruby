@@ -64,6 +64,26 @@ struct rb_nativethread_cond_t;
 
 #endif
 
+#ifdef HAVE_SEMAPHORE_H
+#include <semaphore.h>
+#endif
+#ifdef HAVE_MACH_SEMAPHORE_H
+#include <mach/semaphore.h>
+#endif
+
+typedef struct {
+#if defined(HAVE_WORKING_POSIX_SEMAPHORE)
+    sem_t sem;
+#elif defined(HAVE_SEMAPHORE_CREATE)
+    semaphore_t sem;
+#else
+    rb_nativethread_lock_t mutex;
+#endif
+#if defined(HAVE_PTHREAD_SIGMASK) || defined(HAVE_SIGPROCMASK)
+    sigset_t old_mask;
+#endif
+} rb_nativethread_async_safe_lock_t;
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /**
@@ -144,6 +164,54 @@ void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
 
 /** @alias{rb_nativethread_lock_destroy} */
 void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
+
+/**
+ * Fills the passed async-signal-safe lock with an initial value.
+ *
+ * @param[out]  lock  An async-signal-safe lock to initialise.
+ * @post        `lock` is updated to its initial state.
+ *
+ * @internal
+ *
+ * An "async-signal-safe lock" in Ruby acts like a mutex, but is safe to use
+ * within signal handlers. It uses two techniques to do so:
+ *   * It masks all signals in a thread when acquiring the lock, and unmasks them
+ *     when releasing it. This means that a signal handler cannot interrupt a
+ *     thread holding an async-signal-safe lock, and thus if a signal handler
+ *     attempts to lock the lock, it can't possibly be interrupting a code segment
+ *     which also has acquired the lock and so cannot deadlock itself that way.\
+ *   * It uses an async-signal-safe locking primitive - Posix semaphores where
+ *     available, or Mach semaphores on Macos. These are slower than pthread
+ *     mutexes, because they always must call into the kernel even when uncontended,
+ *     but are documented to be async-signal-safe.
+ */
+void rb_native_async_safe_mutex_initialize(rb_nativethread_async_safe_lock_t *lock);
+
+/**
+ * Blocks until the current thread obtains the async-signal-safe lock .
+ *
+ * @param[out]  lock  An async-signal-safe lock to lock.
+ * @post        `lock` is owned by the current native thread.
+ */
+void rb_native_async_safe_mutex_lock(rb_nativethread_async_safe_lock_t *lock);
+
+/**
+ * Releases an async-signal-safe lock.
+ *
+ * @param[out]  lock  An async-signal-safe lock to unlock.
+ * @pre         `lock` is owned by the current native thread.
+ * @post        `lock` is not owned by the current native thread.
+ */
+void rb_native_async_safe_mutex_unlock(rb_nativethread_async_safe_lock_t *lock);
+
+/**
+ * Releases the resources held by the underlying semaphore and destroys the
+ * async-signal-safe lock
+ *
+ * @param[out]  lock  An async-signal-safe lock to kill.
+ * @post        `lock` is no longer eligible for other functions.
+ */
+void rb_native_async_safe_mutex_destroy(rb_nativethread_async_safe_lock_t *lock);
 
 /**
  * Signals a condition variable.
