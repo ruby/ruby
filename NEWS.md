@@ -136,7 +136,7 @@ The following default gems are updated.
 
 The following bundled gem is promoted from default gems.
 
-* racc 1.7.1
+* racc 1.7.3.pre.1
 
 The following bundled gems are updated.
 
