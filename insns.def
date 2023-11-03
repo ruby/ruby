@@ -887,6 +887,41 @@ opt_send_without_block
     }
 }
 
+/* Invoke constructor */
+DEFINE_INSN
+opt_new
+(CALL_DATA cd, CALL_DATA cd_initialize)
+(...)
+(VALUE val)
+// attr bool handles_sp = true;
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+{
+    VALUE recv = TOPN(vm_ci_argc(cd->ci));
+
+    val = vm_opt_new_alloc(GET_ISEQ(), recv, cd);
+    if (val != Qundef) {
+        TOPN(vm_ci_argc(cd->ci)) = val;
+        fprintf(stderr, "opt!\n");
+        if (vm_sendish(ec, GET_CFP(), cd_initialize, VM_BLOCK_HANDLER_NONE, mexp_search_method) == Qundef) {
+            val = Qundef;
+        }
+    }
+
+    if (val == Qundef) {
+        fprintf(stderr, "de-opt!\n");
+
+        VALUE bh = VM_BLOCK_HANDLER_NONE;
+        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+        JIT_EXEC(ec, val);
+
+        if (val == Qundef) {
+            RESTORE_REGS();
+            NEXT_INSN();
+        }
+    }
+}
+
 /* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
 objtostring

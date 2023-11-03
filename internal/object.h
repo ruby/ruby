@@ -25,6 +25,7 @@ int rb_bool_expected(VALUE, const char *, int raise);
 static inline void RBASIC_CLEAR_CLASS(VALUE obj);
 static inline void RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass);
 static inline void RBASIC_SET_CLASS(VALUE obj, VALUE klass);
+VALUE rb_class_alloc(VALUE klass);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* object.c (export) */

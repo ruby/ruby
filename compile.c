@@ -1439,7 +1439,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, int node_id, enum ruby_vminsn_type i
 }
 
 static const struct rb_callinfo *
-new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_callinfo_kwarg *kw_arg, int has_blockiseq)
+new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, const struct rb_callinfo_kwarg *kw_arg, int has_blockiseq)
 {
     VM_ASSERT(argc >= 0);
 
@@ -4106,8 +4106,15 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         }
 
         if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) == 0 && blockiseq == NULL) {
-            iobj->insn_id = BIN(opt_send_without_block);
-            iobj->operand_size = insn_len(iobj->insn_id) - 1;
+            switch (vm_ci_mid(ci)) {
+              case idNew:
+                iobj->insn_id = BIN(opt_new);
+                iobj->operands[1] = (VALUE)new_callinfo(iseq, idInitialize, vm_ci_argc(ci), vm_ci_flag(ci) | VM_CALL_FCALL, vm_ci_kwarg(ci), FALSE);
+                break;
+              default:
+                iobj->insn_id = BIN(opt_send_without_block);
+                iobj->operand_size = insn_len(iobj->insn_id) - 1;
+            }
         }
     }
 #undef SP_INSN

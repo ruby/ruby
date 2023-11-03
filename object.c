@@ -2105,7 +2105,7 @@ rb_class_alloc_m(VALUE klass)
     return class_call_alloc_func(allocator, klass);
 }
 
-static VALUE
+VALUE
 rb_class_alloc(VALUE klass)
 {
     rb_alloc_func_t allocator = class_get_alloc_func(klass);

@@ -6189,6 +6189,15 @@ vm_opt_mod(VALUE recv, VALUE obj)
 }
 
 static VALUE
+vm_opt_new_alloc(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
+{
+    if (RB_TYPE_P(recv, T_CLASS) && vm_method_cfunc_is(iseq, cd, recv, rb_class_new_instance_pass_kw)) {
+        return rb_class_alloc(recv);
+    }
+    return Qundef;
+}
+
+static VALUE
 vm_opt_neq(const rb_iseq_t *iseq, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VALUE obj)
 {
     if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_not_equal)) {
