@@ -4341,6 +4341,8 @@ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
 AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
 
 AS_IF([test "${universal_binary-no}" = yes ], [
+    AC_DEFINE(UNIVERSAL_BINARY, 1)
+    AC_SUBST(UNIVERSAL_BINARY)
     arch="universal-${target_os}"
     AS_IF([test "${rb_cv_architecture_available}" = yes], [
 	AC_DEFINE_UNQUOTED(RUBY_PLATFORM_CPU, __ARCHITECTURE__)
