@@ -1550,8 +1550,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     }
     RB_VM_LOCK_LEAVE();
 
-    ivar_lookup.ivtbl->as.shape.ivptr[index] = val;
-    RB_OBJ_WRITTEN(obj, Qundef, val);
+    RB_OBJ_WRITE(obj, &ivup.ivtbl->as.shape.ivptr[ivup.iv_index], val);
 
     if (!found) {
         rb_shape_set_shape(obj, shape);
@@ -1963,8 +1962,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
             new_ivtbl = gen_ivtbl_resize(0, obj_ivtbl->as.shape.numiv);
 
             for (uint32_t i=0; i<obj_ivtbl->as.shape.numiv; i++) {
-                new_ivtbl->as.shape.ivptr[i] = obj_ivtbl->as.shape.ivptr[i];
-                RB_OBJ_WRITTEN(clone, Qundef, obj_ivtbl->as.shape.ivptr[i]);
+                RB_OBJ_WRITE(clone, &new_ivtbl->as.shape.ivptr[i], obj_ivtbl->as.shape.ivptr[i]);
             }
         }
 
