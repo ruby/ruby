@@ -102,6 +102,9 @@ env:
 
 matrix:
   include:
+    # FIXME: lib/rubygems/util.rb:104 glob_files_in_dir -
+    # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
+    # https://github.com/rubygems/rubygems/issues/7132
     - <<: *arm32-linux
     # Comment out as the 2nd arm64 pipeline is unstable.
     # - <<: *arm64-linux
