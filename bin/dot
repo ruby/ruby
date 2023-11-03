@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$:.unshift(File.expand_path("../lib", __dir__))
+require "prism"
+
+result =
+  if ARGV[0] == "-e"
+    Prism.parse(ARGV[1])
+  else
+    Prism.parse_file(ARGV[0] || "test.rb")
+  end
+
+File.write(
+  "out.svg",
+  IO.popen("dot -Tsvg", "w+") do |file|
+    file.write(result.value.to_dot)
+    file.close_write
+    file.read
+  end
+)
