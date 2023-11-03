@@ -108,7 +108,7 @@ static YJIT_OPTIONS: [(&str, &str); 11] = [
     ("--yjit-call-threshold=num",       "Number of calls to trigger JIT"),
     ("--yjit-small-threshold=num",      "Call threshold for small apps (default: 30)"),
     ("--yjit-large-threshold=num",      "Call threshold for large deployments (default: 120)"),
-    ("--yjit-large-iseq-count=num",     "Live ISEQs to consider an app large (default: 40000)"),
+    ("--yjit-large-iseq-count=num",     "Live ISEQs to consider an app large (default: 40K)"),
     ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
 
     ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
