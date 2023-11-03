@@ -1809,7 +1809,27 @@ rb_ivar_defined(VALUE obj, ID id)
     if (SPECIAL_CONST_P(obj)) return Qfalse;
     if (rb_shape_obj_too_complex(obj)) {
         VALUE idx;
-        if (!rb_st_lookup(ROBJECT_IV_HASH(obj), id, &idx)) {
+        st_table *table = NULL;
+        switch (BUILTIN_TYPE(obj)) {
+          case T_CLASS:
+          case T_MODULE:
+            table = (st_table *)RCLASS_IVPTR(obj);
+            break;
+
+          case T_OBJECT:
+            table = ROBJECT_IV_HASH(obj);
+            break;
+
+          default: {
+            struct gen_ivtbl *ivtbl;
+            if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+                table = ivtbl->as.complex.table;
+            }
+            break;
+          }
+        }
+
+        if (!table || !rb_st_lookup(table, id, &idx)) {
             return Qfalse;
         }
 

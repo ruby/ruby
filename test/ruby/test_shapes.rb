@@ -345,6 +345,45 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_run_out_of_shape_instance_variable_defined
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        attr_reader :a, :b, :c, :d
+        def initialize
+          @a = @b = @c = @d = 1
+        end
+      end
+
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      a = A.new
+      assert_equal true, a.instance_variable_defined?(:@a)
+    end;
+  end
+
+  def test_run_out_of_shape_instance_variable_defined_on_module
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      module A
+        @a = @b = @c = @d = 1
+      end
+
+      assert_equal true, A.instance_variable_defined?(:@a)
+    end;
+  end
   def test_run_out_of_shape_remove_instance_variable
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
