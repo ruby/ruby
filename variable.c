@@ -1550,7 +1550,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     }
     RB_VM_LOCK_LEAVE();
 
-    RB_OBJ_WRITE(obj, &ivup.ivtbl->as.shape.ivptr[ivup.iv_index], val);
+    RB_OBJ_WRITE(obj, &ivar_lookup.ivtbl->as.shape.ivptr[index], val);
 
     if (!found) {
         rb_shape_set_shape(obj, shape);
