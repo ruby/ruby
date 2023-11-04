@@ -116,18 +116,18 @@ pm_regexp_char_find(pm_regexp_parser_t *parser, uint8_t value) {
  * The properly track everything, we're going to build a little state machine.
  * It looks something like the following:
  *
- *                  ┌───────┐                 ┌─────────┐ ────────────┐
- * ──── lbrace ───> │ start │ ──── digit ───> │ minimum │             │
- *                  └───────┘                 └─────────┘ <─── digit ─┘
- *                      │                       │    │
- *   ┌───────┐          │                       │  rbrace
- *   │ comma │ <───── comma  ┌──── comma ───────┘    │
- *   └───────┘               V                       V
- *      │             ┌─────────┐               ┌─────────┐
- *      └── digit ──> │ maximum │ ── rbrace ──> │| final |│
- *                    └─────────┘               └─────────┘
- *                    │         ^
- *                    └─ digit ─┘
+ *                  +-------+                 +---------+ ------------+
+ * ---- lbrace ---> | start | ---- digit ---> | minimum |             |
+ *                  +-------+                 +---------+ <--- digit -+
+ *                      |                       |    |
+ *   +-------+          |                       |  rbrace
+ *   | comma | <----- comma  +---- comma -------+    |
+ *   +-------+               V                       V
+ *      |             +---------+               +---------+
+ *      +-- digit --> | maximum | -- rbrace --> || final ||
+ *                    +---------+               +---------+
+ *                    |         ^
+ *                    +- digit -+
  *
  * Note that by the time we've hit this function, the lbrace has already been
  * consumed so we're in the start state.
