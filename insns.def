@@ -897,22 +897,32 @@ opt_new
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE recv = TOPN(vm_ci_argc(cd->ci));
+    int argc = vm_ci_argc(cd->ci);
+    VM_ASSERT((int)vm_ci_argc(cd_initialize->ci) == argc);
 
-    val = vm_opt_new_alloc(GET_ISEQ(), recv, cd);
-    if (val != Qundef) {
-        TOPN(vm_ci_argc(cd->ci)) = val;
-        fprintf(stderr, "opt!\n");
-        if (vm_sendish(ec, GET_CFP(), cd_initialize, VM_BLOCK_HANDLER_NONE, mexp_search_method) == Qundef) {
-            val = Qundef;
+    VALUE recv = TOPN(argc);
+    val = Qundef;
+
+    VALUE new_obj = vm_opt_new_alloc(GET_ISEQ(), recv, cd);
+    if (new_obj != Qundef) {
+        TOPN(argc) = new_obj;
+
+        val = vm_sendish(ec, GET_CFP(), cd_initialize, VM_BLOCK_HANDLER_NONE, mexp_search_method);
+        // FIXME: somehow the `initialize` return is what end up being the `.new` return, instead of `new_obj`.
+        // I don't get why.
+
+        JIT_EXEC(ec, val);
+
+        if (val == Qundef) {
+            RESTORE_REGS();
+            NEXT_INSN();
+        }
+        else {
+            val = new_obj;
         }
     }
-
-    if (val == Qundef) {
-        fprintf(stderr, "de-opt!\n");
-
-        VALUE bh = VM_BLOCK_HANDLER_NONE;
-        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    else if (val == Qundef) {
+        val = vm_sendish(ec, GET_CFP(), cd, VM_BLOCK_HANDLER_NONE, mexp_search_method);
         JIT_EXEC(ec, val);
 
         if (val == Qundef) {

@@ -4109,7 +4109,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
             switch (vm_ci_mid(ci)) {
               case idNew:
                 iobj->insn_id = BIN(opt_new);
-                iobj->operands[1] = (VALUE)new_callinfo(iseq, idInitialize, vm_ci_argc(ci), vm_ci_flag(ci) | VM_CALL_FCALL, vm_ci_kwarg(ci), FALSE);
+                iobj->operands[1] = (VALUE)new_callinfo(iseq, idInitialize, vm_ci_argc(ci) - vm_ci_kwarg(ci)->keyword_len, vm_ci_flag(ci) | VM_CALL_FCALL, vm_ci_kwarg(ci), FALSE);
                 break;
               default:
                 iobj->insn_id = BIN(opt_send_without_block);
