@@ -420,6 +420,7 @@ module Prism
     "include/prism/ast.h",
     "javascript/src/deserialize.js",
     "javascript/src/nodes.js",
+    "javascript/src/visitor.js",
     "java/org/prism/Loader.java",
     "java/org/prism/Nodes.java",
     "java/org/prism/AbstractNodeVisitor.java",
