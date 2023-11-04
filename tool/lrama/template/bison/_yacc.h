@@ -12,7 +12,7 @@
 #if YYDEBUG && !defined(yydebug)
 extern int yydebug;
 #endif
-  <%-# b4_percent_code_get([[requires]]). %code is not supported -%>
+<%= output.percent_code("requires") %>
 
   <%-# b4_token_enums_defines -%>
 /* Token kinds.  */
@@ -64,7 +64,7 @@ struct YYLTYPE
 int yyparse (<%= output.parse_param %>);
 
 
-  <%-# b4_percent_code_get([[provides]]). %code is not supported -%>
+<%= output.percent_code("provides") %>
   <%-# b4_cpp_guard_close([b4_spec_mapped_header_file]) -%>
     <%- if output.spec_mapped_header_file -%>
 #endif /* !<%= output.b4_cpp_guard__b4_spec_mapped_header_file %>  */
