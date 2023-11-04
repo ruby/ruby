@@ -28,7 +28,7 @@ jobs:
 
       - name: Check if C-sources are US-ASCII
         run: |
-          grep -r -n $'[^\t -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+          grep -r -n --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
 
       - name: Check for trailing spaces
         run: |
