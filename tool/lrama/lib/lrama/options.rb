@@ -4,7 +4,8 @@ module Lrama
     attr_accessor :skeleton, :header, :header_file,
                   :report_file, :outfile,
                   :error_recovery, :grammar_file,
-                  :report_file, :trace_opts, :report_opts, :y
+                  :report_file, :trace_opts, :report_opts, :y,
+                  :debug
 
     def initialize
       @skeleton = "bison/yacc.c"
