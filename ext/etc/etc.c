@@ -54,7 +54,7 @@ static VALUE sGroup;
 #  include <stdlib.h>
 # endif
 #endif
-char *getlogin(void);
+RUBY_EXTERN char *getlogin(void);
 
 #define RUBY_ETC_VERSION "1.4.3.dev.1"
 
