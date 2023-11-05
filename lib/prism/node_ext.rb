@@ -61,7 +61,8 @@ module Prism
   end
 
   class ConstantReadNode < Node
-    # Returns the list of parts for the full name of this constant. For example: [:Foo]
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
     def full_name_parts
       [name]
     end
@@ -73,7 +74,8 @@ module Prism
   end
 
   class ConstantPathNode < Node
-    # Returns the list of parts for the full name of this constant path. For example: [:Foo, :Bar]
+    # Returns the list of parts for the full name of this constant path.
+    # For example: [:Foo, :Bar]
     def full_name_parts
       parts = [child.name]
       current = parent
@@ -93,7 +95,8 @@ module Prism
   end
 
   class ConstantPathTargetNode < Node
-    # Returns the list of parts for the full name of this constant path. For example: [:Foo, :Bar]
+    # Returns the list of parts for the full name of this constant path.
+    # For example: [:Foo, :Bar]
     def full_name_parts
       (parent&.full_name_parts || [:""]).push(child.name)
     end
@@ -101,6 +104,49 @@ module Prism
     # Returns the full name of this constant path. For example: "Foo::Bar"
     def full_name
       full_name_parts.join("::")
+    end
+  end
+
+  class ParametersNode < Node
+    # Mirrors the Method#parameters method.
+    def signature
+      names = []
+
+      requireds.each do |param|
+        names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
+      end
+
+      optionals.each { |param| names << [:opt, param.name] }
+      names << [:rest, rest.name || :*] if rest
+
+      posts.each do |param|
+        names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
+      end
+
+      # Regardless of the order in which the keywords were defined, the required
+      # keywords always come first followed by the optional keywords.
+      keyopt = []
+      keywords.each do |param|
+        if param.is_a?(OptionalKeywordParameterNode)
+          keyopt << param
+        else
+          names << [:keyreq, param.name]
+        end
+      end
+
+      keyopt.each { |param| names << [:key, param.name] }
+
+      case keyword_rest
+      when ForwardingParameterNode
+        names.concat([[:rest, :*], [:keyrest, :**], [:block, :&]])
+      when KeywordRestParameterNode
+        names << [:keyrest, keyword_rest.name || :**]
+      when NoKeywordsParameterNode
+        names << [:nokey]
+      end
+
+      names << [:block, block.name || :&] if block
+      names
     end
   end
 end
