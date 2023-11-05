@@ -8843,11 +8843,9 @@ proc_warmup(VALUE _)
  *
  * Output:
  *
- *
  *   "0"
  *
  * The effect is usually similar to that of calling ENV#update with argument +env+,
-
  * where each named environment variable is created or updated
  * (if the value is non-+nil+),
  * or deleted (if the value is +nil+).
