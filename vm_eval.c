@@ -1961,13 +1961,14 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
     else {
         const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
         struct rb_captured_block new_captured = *captured;
+        const VALUE *const argv = &new_captured.self; /* dummy to suppress nonnull warning from gcc */
         VALUE new_block_handler = VM_BH_FROM_ISEQ_BLOCK(&new_captured);
         const VALUE *ep = captured->ep;
         rb_cref_t *cref = vm_cref_push(ec, refinement, ep, TRUE, FALSE);
         CREF_REFINEMENTS_SET(cref, refinements);
         VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
         new_captured.self = refinement;
-        return vm_yield_with_cref(ec, 0, NULL, RB_NO_KEYWORDS, cref, FALSE);
+        return vm_yield_with_cref(ec, 0, argv, RB_NO_KEYWORDS, cref, FALSE);
     }
 }
 
