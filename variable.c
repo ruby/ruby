@@ -1676,59 +1676,49 @@ rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+static VALUE *
+obj_ivar_set_shape_ivptr(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    return ROBJECT_IVPTR(obj);
+}
+
+static void
+obj_ivar_set_shape_resize_ivptr(VALUE obj, attr_index_t old_capa, attr_index_t new_capa, void *_data)
+{
+    rb_ensure_iv_list_size(obj, old_capa, new_capa);
+}
+
+static void
+obj_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *_data)
+{
+    rb_shape_set_shape(obj, shape);
+}
+
+static void
+obj_ivar_set_transition_too_complex(VALUE obj, void *_data)
+{
+    rb_evict_ivars_to_hash(obj, rb_shape_get_shape_by_id(SHAPE_OBJ_TOO_COMPLEX));
+}
+
+static st_table *
+obj_ivar_set_too_complex_table(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+    return ROBJECT_IV_HASH(obj);
+}
+
 attr_index_t
 rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    attr_index_t index;
-
-    rb_shape_t *shape = rb_shape_get_shape(obj);
-    uint32_t num_iv = shape->capacity;
-
-    if (rb_shape_obj_too_complex(obj)) {
-        rb_complex_ivar_set(obj, id, val);
-        return 0;
-    }
-
-    rb_shape_t *next_shape;
-
-    if (!rb_shape_get_iv_index(shape, id, &index)) {
-        index = shape->next_iv_index;
-        if (index >= MAX_IVARS) {
-            rb_raise(rb_eArgError, "too many instance variables");
-        }
-
-        RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-
-        if (UNLIKELY(shape->next_iv_index >= num_iv)) {
-            RUBY_ASSERT(shape->next_iv_index == num_iv);
-
-            next_shape = rb_grow_iv_list(obj);
-            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_complex_ivar_set(obj, id, val);
-                return 0;
-            }
-            shape = next_shape;
-            RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
-        }
-
-        next_shape = rb_shape_get_next(shape, obj, id);
-
-        if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(obj, shape);
-            rb_complex_ivar_set(obj, id, val);
-            return 0;
-        }
-        else {
-            rb_shape_set_shape(obj, next_shape);
-            RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
-            RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
-        }
-    }
-
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
-
-    return index;
+    return general_ivar_set(obj, id, val, NULL,
+                            obj_ivar_set_shape_ivptr,
+                            obj_ivar_set_shape_resize_ivptr,
+                            obj_ivar_set_set_shape,
+                            obj_ivar_set_transition_too_complex,
+                            obj_ivar_set_too_complex_table).index;
 }
 
 /* Set the instance variable +val+ on object +obj+ at ivar name +id+.
