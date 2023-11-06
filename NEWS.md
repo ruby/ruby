@@ -113,6 +113,7 @@ The following default gem is added.
 The following default gems are updated.
 
 * RubyGems 3.5.0.dev
+* benchmark 0.3.0
 * bigdecimal 3.1.5
 * bundler 2.5.0.dev
 * csv 3.2.8
