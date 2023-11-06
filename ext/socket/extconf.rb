@@ -704,7 +704,7 @@ SRC
 
   have_func("pthread_create")
   have_func("pthread_detach")
-  have_func("pthread_setaffinity_np")
+  have_func("pthread_attr_setaffinity_np")
   have_func("sched_getcpu")
 
   $VPATH << '$(topdir)' << '$(top_srcdir)'

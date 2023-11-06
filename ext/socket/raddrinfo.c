@@ -475,18 +475,23 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (pthread_create(&th, 0, do_getaddrinfo, arg) != 0) {
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) != 0) {
         free_getaddrinfo_arg(arg);
         return EAI_AGAIN;
     }
-
-#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
+#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
     CPU_SET(sched_getcpu(), &tmp_cpu_set);
-    pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
 #endif
+
+    pthread_t th;
+    if (pthread_create(&th, &attr, do_getaddrinfo, arg) != 0) {
+        free_getaddrinfo_arg(arg);
+        return EAI_AGAIN;
+    }
     pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
@@ -694,18 +699,23 @@ start:
         return EAI_MEMORY;
     }
 
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) != 0) {
+        free_getnameinfo_arg(arg);
+        return EAI_AGAIN;
+    }
+#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
+    cpu_set_t tmp_cpu_set;
+    CPU_ZERO(&tmp_cpu_set);
+    CPU_SET(sched_getcpu(), &tmp_cpu_set);
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+#endif
+
     pthread_t th;
     if (pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }
-
-#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
-    cpu_set_t tmp_cpu_set;
-    CPU_ZERO(&tmp_cpu_set);
-    CPU_SET(sched_getcpu(), &tmp_cpu_set);
-    pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
-#endif
     pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
