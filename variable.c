@@ -4196,66 +4196,59 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
     return rb_ivar_set(obj, id, val);
 }
 
-/* tbl = xx(obj); tbl[key] = value; */
+static VALUE *
+class_ivar_set_shape_ivptr(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    return RCLASS_IVPTR(obj);
+}
+
+static void
+class_ivar_set_shape_resize_ivptr(VALUE obj, attr_index_t _old_capa, attr_index_t new_capa, void *_data)
+{
+    REALLOC_N(RCLASS_IVPTR(obj), VALUE, new_capa);
+}
+
+static void
+class_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *_data)
+{
+    rb_shape_set_shape(obj, shape);
+}
+
+static void
+class_ivar_set_transition_too_complex(VALUE obj, void *_data)
+{
+    rb_evict_ivars_to_hash(obj, rb_shape_get_shape_by_id(SHAPE_OBJ_TOO_COMPLEX));
+}
+
+static st_table *
+class_ivar_set_too_complex_table(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+    return RCLASS_IV_HASH(obj);
+}
+
 int
-rb_class_ivar_set(VALUE obj, ID key, VALUE value)
+rb_class_ivar_set(VALUE obj, ID id, VALUE val)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    int found = 0;
+    bool existing = false;
     rb_check_frozen(obj);
 
     RB_VM_LOCK_ENTER();
     {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-        if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            found = rb_complex_ivar_set(obj, key, value);
-            goto finish;
-        }
-
-        attr_index_t idx;
-        found = rb_shape_get_iv_index(shape, key, &idx);
-
-        if (!found) {
-            idx = shape->next_iv_index;
-
-            if (UNLIKELY(idx >= shape->capacity)) {
-                RUBY_ASSERT(shape->next_iv_index == shape->capacity);
-
-                rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
-                if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                    rb_evict_ivars_to_hash(obj, shape);
-                    rb_complex_ivar_set(obj, key, value);
-                    goto finish;
-                }
-
-                REALLOC_N(RCLASS_IVPTR(obj), VALUE, next_shape->capacity);
-
-                shape = next_shape;
-                RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
-            }
-
-            rb_shape_t *next_shape = rb_shape_get_next(shape, obj, key);
-            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(obj, shape);
-                rb_complex_ivar_set(obj, key, value);
-                goto finish;
-            }
-            else {
-                rb_shape_set_shape(obj, next_shape);
-
-                RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
-                RUBY_ASSERT(idx == (next_shape->next_iv_index - 1));
-            }
-        }
-
-        RUBY_ASSERT(RCLASS_IVPTR(obj));
-
-        RB_OBJ_WRITE(obj, &RCLASS_IVPTR(obj)[idx], value);
-    }
-finish:
+        existing = general_ivar_set(obj, id, val, NULL,
+                                    class_ivar_set_shape_ivptr,
+                                    class_ivar_set_shape_resize_ivptr,
+                                    class_ivar_set_set_shape,
+                                    class_ivar_set_transition_too_complex,
+                                    class_ivar_set_too_complex_table).existing;
+}
     RB_VM_LOCK_LEAVE();
 
-    return found;
+    return existing;
 }
 
 static int
