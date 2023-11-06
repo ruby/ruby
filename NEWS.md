@@ -171,6 +171,7 @@ changelog for details of the default gems or bundled gems.
 ## Implementation improvements
 
 * `defined?(@ivar)` is optimized with Object Shapes.
+* Name resolution such as `Socket.getaddrinfo` can now be interrupted. [[Feature #19965]]
 
 ### YJIT
 
@@ -235,3 +236,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
+[Feature #19965]: https://bugs.ruby-lang.org/issues/19965
