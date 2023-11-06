@@ -8848,7 +8848,7 @@ proc_warmup(VALUE _)
  * The key for such an option may be an integer file descriptor (fd),
  * specifying a source,
  * or an array of fds, specifying multiple sources.
-
+ *
  * An integer source fd may be specified as:
  *
  * - _n_: Specifies file descriptor _n_.
