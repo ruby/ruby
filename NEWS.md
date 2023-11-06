@@ -127,6 +127,7 @@ The following default gems are updated.
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
 * psych 5.1.1.1
+* rdoc 6.6.0
 * reline 0.3.9
 * stringio 3.0.9
 * strscan 3.0.7
