@@ -1370,42 +1370,6 @@ rb_attr_delete(VALUE obj, ID id)
     return rb_ivar_delete(obj, id, Qnil);
 }
 
-static int
-rb_complex_ivar_set(VALUE obj, ID id, VALUE val)
-{
-    struct gen_ivtbl *ivtbl;
-    st_table *table;
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        table = ROBJECT_IV_HASH(obj);
-        break;
-      case T_CLASS:
-      case T_MODULE:
-        table = RCLASS_IV_HASH(obj);
-        break;
-      default:
-        if (!rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-            ivtbl = xmalloc(sizeof(struct gen_ivtbl));
-#if !SHAPE_IN_BASIC_FLAGS
-            ivtbl->shape_id = SHAPE_OBJ_TOO_COMPLEX;
-#endif
-            table = st_init_numtable_with_size(1);
-            ivtbl->as.complex.table = table;
-
-            st_insert(generic_ivtbl(obj, id, false), (st_data_t)obj, (st_data_t)ivtbl);
-        }
-        else {
-            table = ivtbl->as.complex.table;
-        }
-    }
-
-    int found = st_insert(table, (st_data_t)id, (st_data_t)val);
-    RB_OBJ_WRITTEN(obj, Qundef, val);
-    return found;
-}
-
 void
 rb_evict_ivars_to_hash(VALUE obj, rb_shape_t * shape)
 {
