@@ -3913,6 +3913,29 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     }
                 }
             }
+        } else if (IS_NEXT_INSN_ID(niobj, duphash)) {
+            niobj = niobj->next;
+
+            /*
+            * Eliminate array allocation for f(*a, kw: 1)
+            *
+            *  splatarray true
+            *  duphash
+            *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT and not ARGS_BLOCKARG
+            * =>
+            *  splatarray false
+            *  duphash
+            *  send
+            */
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                niobj = niobj->next;
+                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) &&
+                        (flag & VM_CALL_KW_SPLAT_MUT) && !(flag & VM_CALL_ARGS_BLOCKARG)) {
+                    OPERAND_AT(iobj, 0) = Qfalse;
+                }
+            }
         }
     }
 
