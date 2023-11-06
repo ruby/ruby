@@ -1199,38 +1199,29 @@ rb_ext_ractor_safe(bool flag)
     GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
-/*
- * returns
- *  0: if already loaded (false)
- *  1: successfully loaded (true)
- * <0: not found (LoadError)
- * >1: exception
- */
+struct require_result {
+    int result;
+    VALUE path, realpath;
+    char *ftptr;
+};
+
 static int
-require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool warn)
+requiring_realpath_p(rb_vm_t *vm, struct require_result *req, VALUE path)
+{
+    VALUE realpath_map = get_loaded_features_realpath_map(vm);
+    VALUE realpaths = get_loaded_features_realpaths(vm);
+    req->realpath = realpath_internal_cached(realpath_map, path);
+    return RTEST(rb_hash_aref(realpaths, req->realpath));
+}
+
+static enum ruby_tag_type
+do_require_internal(rb_execution_context_t *ec, rb_thread_t *th, VALUE fname, bool warn,
+                    struct require_result *req)
 {
     volatile int result = -1;
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
-    volatile const struct {
-        VALUE wrapper, self, errinfo;
-        rb_execution_context_t *ec;
-    } saved = {
-        th->top_wrapper, th->top_self, ec->errinfo,
-        ec,
-    };
     enum ruby_tag_type state;
-    char *volatile ftptr = 0;
-    VALUE path;
-    volatile VALUE saved_path;
-    volatile VALUE realpath = 0;
-    VALUE realpaths = get_loaded_features_realpaths(th->vm);
-    VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
-
-    path = rb_str_encode_ospath(fname);
-    RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
-    saved_path = path;
 
     EC_PUSH_TAG(ec);
     ec->errinfo = Qnil; /* ensure */
@@ -1238,14 +1229,19 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         VALUE handle;
         int found;
+        VALUE path = req->path;
 
         RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-        found = search_required(th->vm, path, &saved_path, rb_feature_p);
+        found = search_required(th->vm, path, &req->path, rb_feature_p);
         RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
-        path = saved_path;
+        path = req->path;
 
         if (found) {
-            if (!path || !(ftptr = load_lock(th->vm, RSTRING_PTR(path), warn))) {
+            char *ftptr = 0;
+            if (!path) {
+                result = 0;
+            }
+            else if (!(req->ftptr = ftptr = load_lock(th->vm, RSTRING_PTR(path), warn))) {
                 result = 0;
             }
             else if (!*ftptr) {
@@ -1254,8 +1250,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else if (found == 's' && run_static_ext_init(th->vm, RSTRING_PTR(path))) {
                 result = TAG_RETURN;
             }
-            else if (RTEST(rb_hash_aref(realpaths,
-                                        realpath = realpath_internal_cached(realpath_map, path)))) {
+            else if (requiring_realpath_p(th->vm, req, path)) {
                 result = 0;
             }
             else {
@@ -1277,15 +1272,39 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         }
     }
     EC_POP_TAG();
+    if (reset_ext_config) ext_config_pop(th, &prev_ext_config);
+    req->result = result;
+    return state;
+}
 
-    ec = saved.ec;
-    rb_thread_t *th2 = rb_ec_thread_ptr(ec);
-    th2->top_self = saved.self;
-    th2->top_wrapper = saved.wrapper;
-    if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
+/*
+ * returns
+ *  0: if already loaded (false)
+ *  1: successfully loaded (true)
+ * <0: not found (LoadError)
+ * >1: exception
+ */
+static int
+require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool warn)
+{
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    VALUE path = rb_str_encode_ospath(fname);
+    VALUE wrapper = th->top_wrapper;
+    VALUE self = th->top_self;
+    VALUE errinfo = ec->errinfo;
+    struct require_result req = {
+        .result = -1,
+        .path = path,
+    };
+    enum ruby_tag_type state;
 
-    path = saved_path;
-    if (ftptr) load_unlock(th2->vm, RSTRING_PTR(path), !state);
+    RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
+
+    state = do_require_internal(ec, th, fname, warn, &req);
+
+    th->top_self = self;
+    th->top_wrapper = wrapper;
+    if (req.ftptr) load_unlock(th->vm, RSTRING_PTR(path), !state);
 
     if (state) {
         if (state == TAG_FATAL || state == TAG_THROW) {
@@ -1310,15 +1329,16 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         rb_exc_raise(ec->errinfo);
     }
 
+    int result = req.result;
     if (result == TAG_RETURN) {
-        rb_provide_feature(th2->vm, path);
-        VALUE real = realpath;
+        rb_provide_feature(th->vm, req.path);
+        VALUE real = req.realpath;
         if (real) {
             real = rb_fstring(real);
-            rb_hash_aset(realpaths, real, Qtrue);
+            rb_hash_aset(get_loaded_features_realpaths(th->vm), real, Qtrue);
         }
     }
-    ec->errinfo = saved.errinfo;
+    ec->errinfo = errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
