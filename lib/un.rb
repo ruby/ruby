@@ -30,7 +30,6 @@ require "fileutils"
 require "optparse"
 
 module FileUtils
-#  @fileutils_label = ""
   @fileutils_output = $stdout
 end
 
