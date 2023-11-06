@@ -8792,7 +8792,7 @@ proc_warmup(VALUE _)
  *
  * - \Method Kernel#system executes a given command-line (string) in a subshell;
  *   returns +true+, +false+, or +nil+.
- * - \Method {Kernel#`}[file:///home/burdette/Documents/GitHub/ruby/html/Kernel.html#method-i-60]
+ * - \Method {Kernel#`}[https://docs.ruby-lang.org/en/master/Kernel.html#method-i-60]
  *   executes a given command-line (string) in a subshell,
  *   returns its $stdout string.
  * - \Module Open3 supports creating child processes
