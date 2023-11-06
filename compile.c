@@ -3872,6 +3872,21 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     if ((flag & VM_CALL_ARGS_BLOCKARG) && !(flag & VM_CALL_KW_SPLAT)) {
                         OPERAND_AT(iobj, 0) = Qfalse;
                     }
+
+                    /*
+                    * Eliminate array allocation for f(*a, **lvar) and f(*a, **@iv)
+                    *
+                    *  splatarray true
+                    *  getlocal / getinstancevariable
+                    *  send ARGS_SPLAT|KW_SPLAT and not ARGS_BLOCKARG
+                    * =>
+                    *  splatarray false
+                    *  getlocal / getinstancevariable
+                    *  send
+                    */
+                    else if (!(flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                    }
                 }
             }
         }
