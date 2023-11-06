@@ -920,4 +920,18 @@ class TestCoverage < Test::Unit::TestCase
       p :NG
     end;
   end
+
+  def test_tag_break_with_branch_coverage
+    result = {
+      :branches => {
+        [:"&.", 0, 1, 0, 1, 6] => {
+          [:then, 1, 1, 0, 1, 6] => 1,
+          [:else, 2, 1, 0, 1, 6] => 0,
+        },
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      1&.tap do break end
+    end;
+  end
 end
