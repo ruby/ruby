@@ -39,7 +39,6 @@
 #  $PROCESS_ID::              $$
 #  $CHILD_STATUS::            $?
 #  $LAST_MATCH_INFO::         $~
-#  $IGNORECASE::              $=
 #  $ARGV::                    $*
 #  $MATCH::                   $&
 #  $PREMATCH::                $`
@@ -150,9 +149,6 @@ alias $CHILD_STATUS            $?
 # derived variables.  This variable is local to the current
 # scope.
 alias $LAST_MATCH_INFO         $~
-
-# This variable is no longer effective. Deprecated.
-alias $IGNORECASE              $=
 
 # An array of strings containing the command-line
 # options from the invocation of the program. Options
