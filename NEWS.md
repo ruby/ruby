@@ -122,6 +122,7 @@ The following default gems are updated.
 * fileutils 1.7.1
 * io-console 0.6.1.dev
 * irb 1.8.3
+* net-http 0.4.0
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
