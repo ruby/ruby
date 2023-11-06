@@ -688,7 +688,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *serv, size_t servlen, int flags)
 {
     int retry;
-    struct getnameinfo_arg *arg = allocate_getnameinfo_arg(sa, salen, hostlen, servlen, flags);
+    struct getnameinfo_arg *arg;
     int err;
 
 start:
