@@ -1,0 +1,59 @@
+name: ruby-core
+
+on:
+  pull_request:
+
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.workflow }}
+
+permissions: # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+  ruby_core:
+    name: Reline under a ruby-core setup
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+    timeout-minutes: 30
+    steps:
+      - name: Set up latest ruby head
+        uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
+        with:
+          ruby-version: head
+          bundler: none
+      - name: Save latest buildable revision to environment
+        run: echo "REF=$(ruby -v | cut -d')' -f1 | cut -d' ' -f5)" >> $GITHUB_ENV
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v3.1.0
+        with:
+          repository: ruby/ruby
+          path: ruby/ruby
+          fetch-depth: 10
+      - name: Checkout the latest buildable revision
+        run: git switch -c ${{ env.REF }}
+        working-directory: ruby/ruby
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+      - name: Build Ruby
+        run: |
+          autoconf
+          ./configure -C --disable-install-doc
+          make -j2
+        working-directory: ruby/ruby
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v3.1.0
+        with:
+          path: ruby/reline
+      - name: Sync tools
+        run: |
+          ruby tool/sync_default_gems.rb reline
+        working-directory: ruby/ruby
+      - name: Test Reline
+        run: make -j2 -s test-all TESTS="reline --no-retry"
+        working-directory: ruby/ruby

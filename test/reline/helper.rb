@@ -4,7 +4,6 @@ ENV['TERM'] = 'xterm' # for some CI environments
 
 require 'reline'
 require 'test/unit'
-require 'test/unit/rr'
 
 begin
   require 'rbconfig'
