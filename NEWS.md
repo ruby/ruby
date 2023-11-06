@@ -139,6 +139,7 @@ The following default gems are updated.
 * timeout 0.4.0
 * un 0.3.0
 * uri 0.12.2
+* yaml 0.3.0
 
 The following bundled gem is promoted from default gems.
 
