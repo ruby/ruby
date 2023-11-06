@@ -107,7 +107,7 @@ If you are having unexplainable build errors, after saving all your work, try ru
 
 ## Building on Windows
 
-The documentation for building on Windows can be found [here](https://github.com/ruby/ruby/blob/master/doc/windows.md).
+The documentation for building on Windows can be found [here](../windows.md).
 
 ## More details
 
