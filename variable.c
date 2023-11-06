@@ -1538,6 +1538,8 @@ too_complex:
 }
 
 struct gen_ivar_lookup_ensure_size {
+    VALUE obj;
+    ID id;
     struct gen_ivtbl *ivtbl;
     rb_shape_t *shape;
     bool resize;
@@ -1567,71 +1569,101 @@ generic_ivar_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int exi
     RUBY_ASSERT(FL_TEST((VALUE)*k, FL_EXIVAR));
 
     ivar_lookup->ivtbl = ivtbl;
+    if (ivar_lookup->shape) {
+#if SHAPE_IN_BASIC_FLAGS
+        rb_shape_set_shape(ivar_lookup->obj, ivar_lookup->shape);
+#else
+        ivtbl->shape_id = rb_shape_id(ivar_lookup->shape);
+#endif
+    }
 
     return ST_CONTINUE;
+}
+
+static VALUE *
+generic_ivar_set_shape_ivptr(VALUE obj, void *data)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_update(generic_ivtbl(obj, ivar_lookup->id, false), (st_data_t)obj, generic_ivar_lookup_ensure_size, (st_data_t)ivar_lookup);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    FL_SET_RAW(obj, FL_EXIVAR);
+
+    return ivar_lookup->ivtbl->as.shape.ivptr;
+}
+
+static void
+generic_ivar_set_shape_resize_ivptr(VALUE obj, attr_index_t _old_capa, attr_index_t new_capa, void *data)
+{
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    ivar_lookup->resize = true;
+}
+
+static void
+generic_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *data)
+{
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    ivar_lookup->shape = shape;
+}
+
+static void
+generic_ivar_set_transition_too_complex(VALUE obj, void *_data)
+{
+    rb_evict_ivars_to_hash(obj, rb_shape_get_shape_by_id(SHAPE_OBJ_TOO_COMPLEX));
+    FL_SET_RAW(obj, FL_EXIVAR);
+}
+
+static st_table *
+generic_ivar_set_too_complex_table(VALUE obj, void *data)
+{
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    struct gen_ivtbl *ivtbl;
+    if (!rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+        ivtbl = xmalloc(sizeof(struct gen_ivtbl));
+#if !SHAPE_IN_BASIC_FLAGS
+        ivtbl->shape_id = SHAPE_OBJ_TOO_COMPLEX;
+#endif
+        ivtbl->as.complex.table = st_init_numtable_with_size(1);
+
+        RB_VM_LOCK_ENTER();
+        {
+            st_insert(generic_ivtbl(obj, ivar_lookup->id, false), (st_data_t)obj, (st_data_t)ivtbl);
+        }
+        RB_VM_LOCK_LEAVE();
+
+        FL_SET_RAW(obj, FL_EXIVAR);
+    }
+
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+    return ivtbl->as.complex.table;
 }
 
 static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    rb_shape_t *shape = rb_shape_get_shape(obj);
-    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
-        rb_complex_ivar_set(obj, id, val);
-        return;
-    }
-
     struct gen_ivar_lookup_ensure_size ivar_lookup = {
-        .resize = false
+        .obj = obj,
+        .id = id,
+        .resize = false,
+        .shape = NULL,
     };
 
-    attr_index_t index;
-    bool found = rb_shape_get_iv_index(shape, id, &index);
-    if (!found) {
-        index = shape->next_iv_index;
-
-        if (UNLIKELY(index >= shape->capacity)) {
-            RUBY_ASSERT(index == shape->capacity);
-
-            rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
-            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(obj, shape);
-                rb_complex_ivar_set(obj, id, val);
-                FL_SET_RAW(obj, FL_EXIVAR);
-                return;
-            }
-
-            RUBY_ASSERT(index < next_shape->capacity);
-
-            ivar_lookup.resize = true;
-
-            shape = next_shape;
-        }
-
-        rb_shape_t *next_shape = rb_shape_get_next(shape, obj, id);
-        if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(obj, shape);
-            rb_complex_ivar_set(obj, id, val);
-            FL_SET_RAW(obj, FL_EXIVAR);
-            return;
-        }
-
-        shape = next_shape;
-        RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
-    }
-
-    ivar_lookup.shape = shape;
-
-    RB_VM_LOCK_ENTER();
-    {
-        st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_lookup_ensure_size, (st_data_t)&ivar_lookup);
-    }
-    RB_VM_LOCK_LEAVE();
-
-    RB_OBJ_WRITE(obj, &ivar_lookup.ivtbl->as.shape.ivptr[index], val);
-
-    if (!found) {
-        rb_shape_set_shape(obj, shape);
-    }
+    general_ivar_set(obj, id, val, &ivar_lookup,
+                     generic_ivar_set_shape_ivptr,
+                     generic_ivar_set_shape_resize_ivptr,
+                     generic_ivar_set_set_shape,
+                     generic_ivar_set_transition_too_complex,
+                     generic_ivar_set_too_complex_table);
 }
 
 void
