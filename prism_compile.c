@@ -1079,15 +1079,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         }
         case PM_ENSURE_NODE: {
             pm_ensure_node_t *cast = (pm_ensure_node_t *)node;
-
-            // HAXXX
-            pm_constant_id_t err_info = 3863;
-            pm_constant_id_list_t locals;
-            pm_constant_id_list_init(&locals);
-            pm_constant_id_list_append(&locals, err_info);
-
             scope->body = (pm_node_t *)cast->statements;
-            scope->locals = locals;
             break;
         }
         case PM_FOR_NODE: {
@@ -1590,6 +1582,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             iseq_set_exception_local_table(iseq);
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
+
+            pm_constant_id_list_t locals;
+            pm_constant_id_list_init(&locals);
+            pm_constant_id_list_append(&locals, idERROR_INFO);
+            next_scope_node.locals = locals;
 
             child_iseq = NEW_CHILD_ISEQ(next_scope_node,
                     rb_str_new2("ensure in"),
