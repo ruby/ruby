@@ -1516,7 +1516,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
             RUBY_ASSERT(index == shape->capacity);
 
             rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
-            if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
                 rb_evict_ivars_to_hash(obj, shape);
                 rb_complex_ivar_set(obj, id, val);
                 FL_SET_RAW(obj, FL_EXIVAR);

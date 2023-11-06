@@ -318,7 +318,7 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
-  def test_run_out_of_shape_generic_ivar_set
+  def test_run_out_of_shape_generic_instance_variable_set
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class TooComplex < Hash
@@ -342,6 +342,36 @@ class TestShapes < Test::Unit::TestCase
       assert_raise(NameError) do
         tc.remove_instance_variable(:@a)
       end
+    end;
+  end
+
+  def test_run_out_of_shape_generic_ivar_set
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi < String
+        def initialize
+          8.times do |i|
+            instance_variable_set("@ivar_#{i}", i)
+          end
+        end
+
+        def transition
+          @hi_transition ||= 1
+        end
+      end
+
+      a = Hi.new
+
+      # Try to run out of shapes
+      o = Object.new
+      i = 0
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      assert_equal 1,a.transition
+      assert_equal 1,a.transition
     end;
   end
 
