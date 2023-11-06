@@ -3406,7 +3406,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         free(index_lookup_table);
 
-        if (!scope_node->previous) {
+        if (!PM_NODE_TYPE_P(scope_node->ast_node, PM_ENSURE_NODE)) {
             ADD_INSN(ret, &dummy_line_node, leave);
         }
         return;
