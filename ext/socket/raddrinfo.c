@@ -483,8 +483,11 @@ start:
 #if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
-    CPU_SET(sched_getcpu(), &tmp_cpu_set);
-    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+    int cpu = sched_getcpu();
+    if (cpu < CPU_SETSIZE) {
+        CPU_SET(cpu, &tmp_cpu_set);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+    }
 #endif
 
     pthread_t th;
@@ -707,8 +710,11 @@ start:
 #if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
-    CPU_SET(sched_getcpu(), &tmp_cpu_set);
-    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+    int cpu = sched_getcpu();
+    if (cpu < CPU_SETSIZE) {
+        CPU_SET(cpu, &tmp_cpu_set);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+    }
 #endif
 
     pthread_t th;
