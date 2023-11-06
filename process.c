@@ -8784,44 +8784,19 @@ proc_warmup(VALUE _)
  * The choice of process or subshell depends on the form of the command;
  * see {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
  *
- * - Each of these methods executes a single command in a process or subshell,
- *   accepts a string for input to $stdin,
- *   and returns string output from $stdout, $stderr, or both:
- *
- *   - Open3.capture2: Executes the command;
- *     returns the string from $stdout.
- *   - Open3.capture2e: Executes the command;
- *     returns the string from merged $stdout and $stderr.
- *   - Open3.capture3: Executes the command;
- *     returns strings from $stdout and $stderr.
- *
- * - Each of these methods executes a single command in a process or subshell,
- *   and returns pipes for $stdin, $stdout, and/or $stderr:
- *
- *   - Open3.popen2: Executes the command;
- *     returns pipes for $stdin and $stdout.
- *   - Open3.popen2e: Executes the command;
- *     returns pipes for $stdin and merged $stdout and $stderr.
- *   - Open3.popen3: Executes the command;
- *     returns pipes for $stdin, $stdout, and $stderr.
- *
- * - Each of these methods executes one or more commands in processes and/or subshells,
- *   returns pipes for the first $stdin, the last $stdout, or both:
- *
- *   - Open3.pipeline_r: Returns a pipe for the last $stdout.
- *   - Open3.pipeline_rw: Returns pipes for the first $stdin and the last $stdout.
- *   - Open3.pipeline_w: Returns a pipe for the first $stdin.
- *   - Open3.pipeline_start: Does not wait for processes to complete.
- *   - Open3.pipeline: Waits for processes to complete.
- *
  * - Process.spawn, Kernel#spawn: Executes the command;
  *   returns the new pid without waiting for completion.
  * - Process.exec: Replaces the current process by executing the command.
  *
  * In addition:
  *
- * - Kernel#system executes a given command-line (string) in a subshell;
+ * - \Method Kernel#system executes a given command-line (string) in a subshell;
  *   returns +true+, +false+, or +nil+.
+ * - \Method {Kernel#`}[file:///home/burdette/Documents/GitHub/ruby/html/Kernel.html#method-i-60]
+ *   executes a given command-line (string) in a subshell,
+ *   returns its $stdout string.
+ * - \Module Open3 supports creating child processes
+ *   with access to their $stdin, $stdout, and $stderr streams.
  *
  * Each of the methods above accepts:
  *
