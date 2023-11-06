@@ -481,13 +481,13 @@ start:
         return EAI_AGAIN;
     }
 
-    pthread_detach(th);
 #if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
     CPU_SET(sched_getcpu(), &tmp_cpu_set);
     pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
 #endif
+    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
@@ -700,13 +700,13 @@ start:
         return EAI_AGAIN;
     }
 
-    pthread_detach(th);
 #if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
     CPU_SET(sched_getcpu(), &tmp_cpu_set);
     pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
 #endif
+    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
