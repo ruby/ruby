@@ -3850,6 +3850,30 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             if ((flag & VM_CALL_ARGS_SPLAT) && !(flag & (VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG))) {
                 OPERAND_AT(iobj, 0) = Qfalse;
             }
+        } else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+            niobj = niobj->next;
+
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                niobj = niobj->next;
+                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                if ((flag & VM_CALL_ARGS_SPLAT)) {
+                    /*
+                    * Eliminate array allocation for f(1, *a, &lvar) and f(1, *a, &@iv)
+                    *
+                    *  splatarray true
+                    *  getlocal / getinstancevariable
+                    *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
+                    * =>
+                    *  splatarray false
+                    *  getlocal / getinstancevariable
+                    *  send
+                    */
+                    if ((flag & VM_CALL_ARGS_BLOCKARG) && !(flag & VM_CALL_KW_SPLAT)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                    }
+                }
+            }
         }
     }
 
