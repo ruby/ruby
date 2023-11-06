@@ -8798,15 +8798,6 @@ proc_warmup(VALUE _)
  * - \Module Open3 supports creating child processes
  *   with access to their $stdin, $stdout, and $stderr streams.
  *
- * Each of the methods above accepts:
- *
- * - An optional hash of environment variable names and values;
- *   see {Exection Environment}[rdoc-ref:Process@Execution+Environment].
- * - A required string argument that is a +command_line+ or +exe_path+;
- *   see {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
- * - An optional hash of execution options;
- *   see {Execution Options}[rdoc-ref:Process@Execution+Options].
- *
  * === Execution Environment
  *
  * Optional leading argument +env+ is a hash of name/value pairs,
