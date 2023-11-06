@@ -1228,6 +1228,34 @@ when regexp.timeout is non-+nil+, that value controls timing out:
   |         nil          |         Float        | Times out in Float seconds. |
   |        Float         |          Any         | Times out in Float seconds. |
 
+== Optimization
+
+Regexp matching time may increase explosively depending on a pattern and an
+target string. A vulnerability caused by this is known as {regular expression
+denial-of-service (ReDoS)}[https://en.wikipedia.org/wiki/ReDoS].
+
+Ruby's regexp matching applies an optimization to prevent ReDoS. When the
+optimization is applied, matching time increases in linear to the input's
+length; that is ReDoS does not cause.  For applying this optimization, a
+pattern satisfy the following conditions:
+
+- no backreferences
+- no subexpression calls
+- no nested lookaround anchors and atomic groups
+- no nested quantifiers with counting (i.e. no nested <tt>{n}</tt>,
+  <tt>{min,}</tt>, <tt>{,max}</tt>, or <tt>{min,max}</tt> style quantifiers)
+
+For a regexp source or object, Regexp.linear_time? can check whether the above
+conditions are satisfied.
+
+  Regexp.linear_time?(/a*/)     # => true
+  Regexp.linear_time?('a*')     # => true
+  Regexp.linear_time?(/(a*)\1/) # => false
+
+However, you should not consider an untrusted source is safe for use even if
+this method returns +true+. Since we use memoization for this optimization,
+the untrusted source may invoke large memory consumption.
+
 == References
 
 Read (online PDF books):
