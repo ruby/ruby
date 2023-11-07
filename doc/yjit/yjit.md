@@ -24,6 +24,7 @@ If you wish to learn more about the approach taken, here are some conference tal
 - RubyKaigi 2022 talk: [Building a Lightweight IR and Backend for YJIT](https://www.youtube.com/watch?v=BbLGqTxTRp0)
 - RubyKaigi 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=PBVLf3yfMs8)
 - Blog post: [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/)
+- MPLR 2023 paper: [Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach](https://dl.acm.org/doi/10.1145/3617651.3622982)
 - VMIL 2021 paper: [YJIT: A Basic Block Versioning JIT Compiler for CRuby](https://dl.acm.org/doi/10.1145/3486606.3486781)
 - MoreVMs 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=vucLAqv7qpc)
 - ECOOP 2016 talk: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://www.youtube.com/watch?v=sRNBY7Ss97A)
@@ -31,24 +32,24 @@ If you wish to learn more about the approach taken, here are some conference tal
 - ECOOP 2015 talk: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://www.youtube.com/watch?v=S-aHBuoiYE0)
 - ECOOP 2015 paper: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf)
 
-To cite YJIT in your publications, please cite the VMIL 2021 paper:
+To cite YJIT in your publications, please cite the MPLR 2023 paper:
 
 ```
-@inproceedings{yjit_vmil2021,
-author = {Chevalier-Boisvert, Maxime and Gibbs, Noah and Boussier, Jean and Wu, Si Xing (Alan) and Patterson, Aaron and Newton, Kevin and Hawthorn, John},
-title = {YJIT: A Basic Block Versioning JIT Compiler for CRuby},
-year = {2021},
-isbn = {9781450391092},
+@inproceedings{yjit_mplr_2023,
+author = {Chevalier-Boisvert, Maxime and Kokubun, Takashi and Gibbs, Noah and Wu, Si Xing (Alan) and Patterson, Aaron and Issroff, Jemma},
+title = {Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach},
+year = {2023},
+isbn = {9798400703805},
 publisher = {Association for Computing Machinery},
 address = {New York, NY, USA},
-url = {https://doi.org/10.1145/3486606.3486781},
-doi = {10.1145/3486606.3486781},
-booktitle = {Proceedings of the 13th ACM SIGPLAN International Workshop on Virtual Machines and Intermediate Languages},
-pages = {25–32},
-numpages = {8},
-keywords = {ruby, dynamically typed, compiler, optimization, just-in-time, bytecode},
-location = {Chicago, IL, USA},
-series = {VMIL 2021}
+url = {https://doi.org/10.1145/3617651.3622982},
+doi = {10.1145/3617651.3622982},
+booktitle = {Proceedings of the 20th ACM SIGPLAN International Conference on Managed Programming Languages and Runtimes},
+pages = {20–33},
+numpages = {14},
+keywords = {dynamically typed, optimization, just-in-time, virtual machine, ruby, compiler, bytecode},
+location = {Cascais, Portugal},
+series = {MPLR 2023}
 }
 ```
 
