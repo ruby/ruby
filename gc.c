@@ -11950,19 +11950,23 @@ objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const 
 {
     if (during_gc) rb_bug("objspace_reachable_objects_from_root() is not supported while during_gc == true");
 
-    rb_ractor_t *cr = GET_RACTOR();
-    struct root_objects_data data = {
-        .func = func,
-        .data = passing_data,
-    };
-    struct gc_mark_func_data_struct mfd = {
-        .mark_func = root_objects_from,
-        .data = &data,
-    }, *prev_mfd = cr->mfd;
+    RB_VM_LOCK_ENTER();
+    {
+        rb_ractor_t *cr = GET_RACTOR();
+        struct root_objects_data data = {
+            .func = func,
+            .data = passing_data,
+        };
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = root_objects_from,
+            .data = &data,
+        }, *prev_mfd = cr->mfd;
 
-    cr->mfd = &mfd;
-    gc_mark_roots(objspace, &data.category);
-    cr->mfd = prev_mfd;
+        cr->mfd = &mfd;
+        gc_mark_roots(objspace, &data.category);
+        cr->mfd = prev_mfd;
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 /*
