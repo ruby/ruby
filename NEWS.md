@@ -121,6 +121,7 @@ The following default gems are updated.
 * etc 1.4.3.dev.1
 * fiddle 1.1.2
 * fileutils 1.7.1
+* find 0.2.0
 * getoptlong 0.2.1
 * io-console 0.6.1.dev
 * irb 1.8.3
@@ -143,6 +144,7 @@ The following default gems are updated.
 * stringio 3.0.9
 * strscan 3.0.7
 * syntax_suggest 1.1.0
+* tempfile 0.2.0
 * time 0.2.2
 * timeout 0.4.0
 * tmpdir 0.2.0
