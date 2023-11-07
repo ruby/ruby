@@ -158,6 +158,7 @@ The following default gems are updated.
 * un 0.3.0
 * uri 0.13.0
 * weakref 0.1.3
+* win32ole 1.8.10
 * yaml 0.3.0
 
 The following bundled gem is promoted from default gems.
