@@ -127,6 +127,7 @@ The following default gems are updated.
 * irb 1.8.3
 * mutex_m 0.2.0
 * net-http 0.4.0
+* net-protocol 0.2.2
 * nkf 0.1.3
 * observer 0.1.2
 * open3 0.2.0
