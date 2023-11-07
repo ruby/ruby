@@ -1396,12 +1396,11 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   *flags |= VM_CALL_ARGS_SPLAT;
                   pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
                   if (splat_node->expression) {
-                      PM_COMPILE(splat_node->expression);
+                      orig_argc++;
+                      PM_COMPILE_NOT_POPPED(splat_node->expression);
                   }
 
-                  if (!popped) {
-                      ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
-                  }
+                  ADD_INSN1(ret, &dummy_line_node, splatarray, popped ? Qfalse : Qtrue);
 
                   has_splat = true;
                   post_splat_counter = 0;
@@ -3258,35 +3257,45 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_constant_id_list_t *locals = &scope_node->locals;
 
         pm_parameters_node_t *parameters_node = (pm_parameters_node_t *) scope_node->parameters;
+        pm_node_list_t *keywords_list = NULL;
         pm_node_list_t *optionals_list = NULL;
+        pm_node_list_t *posts_list = NULL;
+        pm_node_list_t *requireds_list = NULL;
 
-        if (parameters_node != NULL) {
+        struct rb_iseq_param_keyword *keyword;
+
+        struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+
+        if (parameters_node) {
             optionals_list = &parameters_node->optionals;
-            ISEQ_BODY(iseq)->param.lead_num = (int) parameters_node->requireds.size;
-            ISEQ_BODY(iseq)->param.opt_num = (int) optionals_list->size;
+            requireds_list = &parameters_node->requireds;
+            keywords_list = &parameters_node->keywords;
+            posts_list = &parameters_node->posts;
         } else if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
-            ISEQ_BODY(iseq)->param.lead_num = 1;
-            ISEQ_BODY(iseq)->param.opt_num = 0;
+            body->param.lead_num = 1;
+            body->param.opt_num = 0;
         } else {
-            ISEQ_BODY(iseq)->param.lead_num = 0;
-            ISEQ_BODY(iseq)->param.opt_num = 0;
+            body->param.lead_num = 0;
+            body->param.opt_num = 0;
         }
 
-        size_t size = locals->size;
+        size_t locals_size = locals->size;
 
         // Index lookup table buffer size is only the number of the locals
         st_table *index_lookup_table = st_init_numtable();
 
         VALUE idtmp = 0;
-        rb_ast_id_table_t *tbl = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + size * sizeof(ID));
-        tbl->size = (int) size;
+        rb_ast_id_table_t *tbl = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + locals_size * sizeof(ID));
+        tbl->size = (int) locals_size;
+        body->param.size = (int) locals_size;
 
-        for (size_t i = 0; i < size; i++) {
+        for (size_t i = 0; i < locals_size; i++) {
             pm_constant_id_t constant_id = locals->ids[i];
             ID local;
             if (constant_id & TEMP_CONSTANT_IDENTIFIER) {
                 local = rb_make_temporary_id(i);
-            } else {
+            }
+            else {
                 local = pm_constant_id_lookup(scope_node, constant_id);
             }
             tbl->ids[i] = local;
@@ -3295,10 +3304,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         scope_node->index_lookup_table = index_lookup_table;
 
-        // TODO: Set all the other nums (good comment by lead_num illustrating what they are)
-        ISEQ_BODY(iseq)->param.size = (unsigned int) size;
-
-        if (optionals_list != NULL) {
+        if (optionals_list && optionals_list->size) {
+            body->param.opt_num = (int) optionals_list->size;
             LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list->size + 1);
             LABEL *label;
 
@@ -3319,13 +3326,97 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             opt_table[optionals_list->size] = label;
             ADD_LABEL(ret, label);
 
-            ISEQ_BODY(iseq)->param.flags.has_opt = TRUE;
-            ISEQ_BODY(iseq)->param.opt_table = (const VALUE *)opt_table;
+            body->param.flags.has_opt = TRUE;
+            body->param.opt_table = (const VALUE *)opt_table;
+        }
+
+        if (requireds_list && requireds_list->size) {
+            body->param.lead_num = (int) requireds_list->size;
+            body->param.flags.has_lead = true;
+
+            for (size_t i = 0; i < requireds_list->size; i++) {
+                pm_node_t *required_param = requireds_list->nodes[i];
+                // TODO: Fix MultiTargetNodes
+                if (PM_NODE_TYPE_P(required_param, PM_MULTI_TARGET_NODE)) {
+                    PM_COMPILE(required_param);
+                }
+            }
+        }
+
+        if (posts_list && posts_list->size) {
+            body->param.post_num = (int) posts_list->size;
+            body->param.post_start = body->param.lead_num + body->param.opt_num; // TODO
+            body->param.flags.has_post = true;
+        }
+
+        // Keywords create an internal variable on the parse tree
+        if (keywords_list && keywords_list->size) {
+            body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+            keyword->num = (int) keywords_list->size;
+
+            body->param.flags.has_kw = TRUE;
+            const VALUE default_values = rb_ary_hidden_new(1);
+            const VALUE complex_mark = rb_str_tmp_new(0);
+
+            for (size_t i = 0; i < keywords_list->size; i++) {
+                pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
+
+                switch PM_NODE_TYPE(keyword_parameter_node) {
+                  case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
+                      pm_node_t *value = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node)->value;
+
+                      if (pm_static_literal_p(value)) {
+                          rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
+                      }
+                      else {
+                          PM_COMPILE_POPPED(value);
+                          rb_ary_push(default_values, complex_mark);
+                      }
+
+                      break;
+                  }
+                  case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
+                      keyword->required_num++;
+                      break;
+                  }
+                  default: {
+                      rb_bug("Unexpected keyword parameter node type");
+                  }
+                }
+            }
+        }
+
+        if (parameters_node) {
+            if (parameters_node->rest) {
+                body->param.rest_start = body->param.lead_num + body->param.opt_num;
+                body->param.flags.has_rest = true;
+            }
+
+            if (parameters_node->keyword_rest) {
+                switch (PM_NODE_TYPE(parameters_node->keyword_rest)) {
+                  case PM_NO_KEYWORDS_PARAMETER_NODE: {
+                      body->param.flags.accepts_no_kwarg = true;
+                      break;
+                  }
+                  case PM_KEYWORD_REST_PARAMETER_NODE: {
+                      body->param.flags.has_kwrest = true;
+                      break;
+                  }
+                  default: {
+                      rb_bug("Keyword rest is an unexpected type\n");
+                  }
+                }
+            }
+
+            if (parameters_node->block) {
+                body->param.block_start = (int) locals_size - 1;
+                body->param.flags.has_block = true;
+            }
         }
 
         iseq_set_local_table(iseq, tbl);
 
-        switch (ISEQ_BODY(iseq)->type) {
+        switch (body->type) {
           case ISEQ_TYPE_BLOCK: {
             LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
             LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
@@ -3334,7 +3425,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             end->rescued = LABEL_RESCUE_END;
 
             ADD_TRACE(ret, RUBY_EVENT_B_CALL);
-            NODE dummy_line_node = generate_dummy_line_node(ISEQ_BODY(iseq)->location.first_lineno, -1);
+            NODE dummy_line_node = generate_dummy_line_node(body->location.first_lineno, -1);
             ADD_INSN (ret, &dummy_line_node, nop);
             ADD_LABEL(ret, start);
 
@@ -3349,7 +3440,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_scope_node_t next_scope_node;
                     pm_scope_node_init((pm_node_t *)post_execution_node->statements, &next_scope_node, scope_node, parser);
 
-                    const rb_iseq_t *block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(ISEQ_BODY(iseq)->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
+                    const rb_iseq_t *block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(body->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
 
                     ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, id_core_set_postexe, INT2FIX(0), block);
                     break;
@@ -3372,7 +3463,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_LABEL(ret, end);
             ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
-            ISEQ_COMPILE_DATA(iseq)->last_line = ISEQ_BODY(iseq)->location.code_location.end_pos.lineno;
+            ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
 
             /* wide range catch handler must put at last */
             ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
@@ -3631,12 +3722,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_YIELD_NODE: {
+        pm_yield_node_t *yield_node = (pm_yield_node_t *)node;
+
         unsigned int flag = 0;
         struct rb_callinfo_kwarg *keywords = NULL;
 
-        VALUE argc = INT2FIX(0);
+        int argc = 0;
 
-        ADD_INSN1(ret, &dummy_line_node, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), flag, keywords, FALSE));
+        if (yield_node->arguments) {
+            PM_COMPILE((pm_node_t *)yield_node->arguments);
+
+            argc = (int) yield_node->arguments->arguments.size;
+        }
+
+        ADD_INSN1(ret, &dummy_line_node, invokeblock, new_callinfo(iseq, 0, argc, flag, keywords, FALSE));
 
         PM_POP_IF_POPPED;
 
