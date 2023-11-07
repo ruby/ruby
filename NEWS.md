@@ -127,6 +127,7 @@ The following default gems are updated.
 * nkf 0.1.3
 * openssl 3.2.0
 * optparse 0.4.0.pre.1
+* pp 0.5.0
 * psych 5.1.1.1
 * rdoc 6.6.0
 * reline 0.3.9
