@@ -183,7 +183,7 @@
 #
 module Base64
 
-  VERSION = "0.1.1"
+  VERSION = "0.2.0"
 
   module_function
 
