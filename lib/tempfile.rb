@@ -88,7 +88,7 @@ require 'tmpdir'
 # mutex.
 class Tempfile < DelegateClass(File)
 
-  VERSION = "0.1.3"
+  VERSION = "0.2.0"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.
