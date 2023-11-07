@@ -11898,7 +11898,11 @@ static void
 reachable_objects_from_callback(VALUE obj)
 {
     rb_ractor_t *cr = GET_RACTOR();
-    cr->mfd->mark_func(obj, cr->mfd->data);
+    struct gc_mark_func_data_struct *cur_mfd = cr->mfd;
+    cur_mfd->mark_func(obj, cr->mfd->data);
+    /* mark_func might give up the GVL, in which time some other thread might set
+       mfd. In that case, set it back to the right value for this thread. */
+    cr->mfd = cur_mfd;
 }
 
 void
