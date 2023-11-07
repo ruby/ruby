@@ -428,7 +428,7 @@ rb_fstring(VALUE str)
         }
     }
 
-    if (!OBJ_FROZEN(str))
+    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE))
         rb_str_resize(str, RSTRING_LEN(str));
 
     fstr = register_fstring(str, FALSE);
