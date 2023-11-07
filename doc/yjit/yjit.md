@@ -32,7 +32,7 @@ If you wish to learn more about the approach taken, here are some conference tal
 - ECOOP 2015 talk: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://www.youtube.com/watch?v=S-aHBuoiYE0)
 - ECOOP 2015 paper: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf)
 
-To cite YJIT in your publications, please cite the VMIL 2021 paper:
+To cite YJIT in your publications, please cite the MPLR 2023 paper:
 
 ```
 @inproceedings{yjit_mplr_2023,
