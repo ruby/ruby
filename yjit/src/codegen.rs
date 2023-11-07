@@ -2752,7 +2752,6 @@ fn gen_checktype(
     if let RUBY_T_STRING | RUBY_T_ARRAY | RUBY_T_HASH = type_val {
         let val_type = asm.ctx.get_opnd_type(StackOpnd(0));
         let val = asm.stack_pop(1);
-        let val = asm.load(val);
 
         // Check if we know from type information
         match val_type.known_value_type() {
@@ -2770,6 +2769,7 @@ fn gen_checktype(
 
         let ret = asm.new_label("ret");
 
+        let val = asm.load(val);
         if !val_type.is_heap() {
             // if (SPECIAL_CONST_P(val)) {
             // Return Qfalse via REG1 if not on heap
@@ -5417,6 +5417,7 @@ fn gen_send_cfunc(
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_klass) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
+                gen_counter_incr(asm, Counter::num_send_known_cfunc);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jump_to_next_insn(jit, asm, ocb);
@@ -5852,6 +5853,31 @@ fn gen_send_bmethod(
     gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
 }
 
+/// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
+fn iseq_get_return_value(iseq: IseqPtr) -> Option<VALUE> {
+    // Expect only two instructions and one possible operand
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    if !(2..=3).contains(&iseq_size) {
+        return None;
+    }
+
+    // Get the first two instructions
+    let first_insn = iseq_opcode_at_idx(iseq, 0);
+    let second_insn = iseq_opcode_at_idx(iseq, insn_len(first_insn as usize));
+
+    // Extract the return value if known
+    if second_insn != YARVINSN_leave {
+        return None;
+    }
+    match first_insn {
+        YARVINSN_putnil => Some(Qnil),
+        YARVINSN_putobject => unsafe { Some(*rb_iseq_pc_at_idx(iseq, 1)) },
+        YARVINSN_putobject_INT2FIX_0_ => Some(VALUE::fixnum_from_usize(0)),
+        YARVINSN_putobject_INT2FIX_1_ => Some(VALUE::fixnum_from_usize(1)),
+        _ => None,
+    }
+}
+
 fn gen_send_iseq(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -6112,8 +6138,6 @@ fn gen_send_iseq(
     if let (None, Some(builtin_info), true, false) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call) {
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
-            asm_comment!(asm, "inlined leaf builtin");
-
             // We pop the block arg without using it because:
             //  - the builtin is leaf, so it promises to not `yield`.
             //  - no leaf builtins have block param at the time of writing, and
@@ -6125,6 +6149,9 @@ fn gen_send_iseq(
                 }
                 asm.stack_pop(1);
             }
+
+            asm_comment!(asm, "inlined leaf builtin");
+            gen_counter_incr(asm, Counter::num_send_leaf_builtin);
 
             // Skip this if it doesn't trigger GC
             if builtin_attrs & BUILTIN_ATTR_NO_GC == 0 {
@@ -6152,8 +6179,27 @@ fn gen_send_iseq(
             // Note: assuming that the leaf builtin doesn't change local variables here.
             // Seems like a safe assumption.
 
-            return Some(KeepCompiling);
+            // Let guard chains share the same successor
+            jump_to_next_insn(jit, asm, ocb);
+            return Some(EndBlock);
         }
+    }
+
+    // Inline simple ISEQs whose return value is known at compile time
+    if let (Some(value), None, false) = (iseq_get_return_value(iseq), block_arg_type, opt_send_call) {
+        asm_comment!(asm, "inlined simple ISEQ");
+        gen_counter_incr(asm, Counter::num_send_inline);
+
+        // Pop receiver and arguments
+        asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
+
+        // Push the return value
+        let stack_ret = asm.stack_push(Type::from(value));
+        asm.mov(stack_ret, value.into());
+
+        // Let guard chains share the same successor
+        jump_to_next_insn(jit, asm, ocb);
+        return Some(EndBlock);
     }
 
     // Stack overflow check

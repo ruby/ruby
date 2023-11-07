@@ -4196,3 +4196,24 @@ assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 212
 
 # Integer multiplication and overflow (minimized regression test from test-basic)
 assert_equal '8515157028618240000', %q{2128789257154560000 * 4}
+
+# Inlined method calls
+assert_equal 'nil', %q{
+  def putnil = nil
+  def entry = putnil
+  entry.inspect
+}
+assert_equal '1', %q{
+  def putobject_1 = 1
+  def entry = putobject_1
+  entry
+}
+assert_equal 'false', %q{
+  def putobject(_unused_arg1) = false
+  def entry = putobject(nil)
+  entry
+}
+assert_equal 'true', %q{
+  def entry = yield
+  entry { true }
+}
