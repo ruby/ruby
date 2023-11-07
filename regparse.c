@@ -557,21 +557,34 @@ copy_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 {
     NameTable *copy_table = (NameTable *)arg;
     NameEntry *entry_copy = (NameEntry* )xmalloc(sizeof(NameEntry));
+    if (IS_NULL(entry_copy)) return -1;
 
     entry_copy->name_len   = name_end - name;
     entry_copy->back_num   = back_num;
     entry_copy->back_alloc = back_num;
     entry_copy->back_ref1 = back_refs[0];
     entry_copy->back_refs = xmalloc(back_num * (sizeof(int*)));
-    for (int i = 0; i < back_num; i++) {
-        entry_copy->back_refs[i] = back_refs[i];
+    if (IS_NULL(entry_copy->back_refs)) {
+      xfree(entry_copy);
+      return -1;
     }
+    memcpy(entry_copy->back_refs, back_refs, back_num * sizeof(back_refs[0]));
 
     UChar *new_name = strdup_with_null(regex->enc, name, name_end);
+    if (IS_NULL(new_name)) {
+      xfree(entry_copy->back_refs);
+      xfree(entry_copy);
+      return -1;
+    }
     entry_copy->name = new_name;
 
-    onig_st_insert_strend(copy_table, new_name, (new_name + entry_copy->name_len), (hash_data_type)entry_copy);
-    return ST_CONTINUE;
+    if (onig_st_insert_strend(copy_table, new_name, (new_name + entry_copy->name_len), (hash_data_type)entry_copy)) {
+      xfree(entry_copy->name);
+      xfree(entry_copy->back_refs);
+      xfree(entry_copy);
+      return -1;
+    }
+    return 0;
 }
 
 extern int
@@ -580,7 +593,11 @@ onig_names_copy(regex_t* reg, regex_t* oreg)
   NameTable* table = oreg->name_table;
   if (table) {
     NameTable * t = onig_st_init_strend_table_with_size(onig_number_of_names(oreg));
-    onig_foreach_name(oreg, copy_named_captures_iter, (void*)t);
+    CHECK_NULL_RETURN_MEMERR(t);
+    if (onig_foreach_name(oreg, copy_named_captures_iter, (void*)t)) {
+      onig_st_free_table(t);
+      return ONIGERR_MEMORY;
+    }
     reg->name_table = t;
   }
   return 0;
