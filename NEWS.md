@@ -131,6 +131,7 @@ The following default gems are updated.
 * optparse 0.4.0
 * pp 0.5.0
 * prettyprint 0.2.0
+* pstore 0.1.3
 * psych 5.1.1.1
 * rdoc 6.6.0
 * reline 0.3.9
