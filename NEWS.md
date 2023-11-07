@@ -126,7 +126,7 @@ The following default gems are updated.
 * net-http 0.4.0
 * nkf 0.1.3
 * openssl 3.2.0
-* optparse 0.4.0.pre.1
+* optparse 0.4.0
 * pp 0.5.0
 * prettyprint 0.2.0
 * psych 5.1.1.1
