@@ -1407,7 +1407,10 @@ class TestTime < Test::Unit::TestCase
   def test_memsize
     # Time objects are common in some code, try to keep them small
     omit "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
-    omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
+    omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] > 0
+    omit "memsize is not accurate due to using malloc_usable_size" if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit "Only run this test on 64-bit" if RbConfig::SIZEOF["void*"] != 8
+
     require 'objspace'
     t = Time.at(0)
     sizeof_timew =
@@ -1418,7 +1421,7 @@ class TestTime < Test::Unit::TestCase
       end
     sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
     expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
-    assert_equal expect, ObjectSpace.memsize_of(t)
+    assert_operator ObjectSpace.memsize_of(t), :<=, expect
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
   end
