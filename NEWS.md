@@ -121,6 +121,7 @@ The following default gems are updated.
 * date 3.3.4
 * delegate 0.3.1
 * drb 2.2.0
+* english 0.8.0
 * erb 4.0.3
 * etc 1.4.3.dev.1
 * fcntl 1.1.0
