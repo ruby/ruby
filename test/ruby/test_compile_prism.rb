@@ -900,6 +900,14 @@ module Prism
       assert_prism_eval("[1].map { |a; b| b = 2; a + b}")
     end
 
+    def test_FowardingParameterNode
+      assert_prism_eval("def prism_test_forwarding_parameter_node(...); end")
+    end
+
+    def test_KeywordRestParameterNode
+      assert_prism_eval("def prism_test_keyword_rest_parameter_node(a, **b); end")
+    end
+
     def test_NoKeywordsParameterNode
       assert_prism_eval("def prism_test_no_keywords(**nil); end")
       assert_prism_eval("def prism_test_no_keywords(a, b = 2, **nil); end")
