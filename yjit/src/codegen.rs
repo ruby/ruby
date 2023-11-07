@@ -2748,7 +2748,6 @@ fn gen_checktype(
     if let RUBY_T_STRING | RUBY_T_ARRAY | RUBY_T_HASH = type_val {
         let val_type = asm.ctx.get_opnd_type(StackOpnd(0));
         let val = asm.stack_pop(1);
-        let val = asm.load(val);
 
         // Check if we know from type information
         match val_type.known_value_type() {
@@ -2766,6 +2765,7 @@ fn gen_checktype(
 
         let ret = asm.new_label("ret");
 
+        let val = asm.load(val);
         if !val_type.is_heap() {
             // if (SPECIAL_CONST_P(val)) {
             // Return Qfalse via REG1 if not on heap
