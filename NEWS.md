@@ -150,7 +150,7 @@ The following default gems are updated.
 * syntax_suggest 1.1.0
 * tempfile 0.2.0
 * time 0.2.2
-* timeout 0.4.0
+* timeout 0.4.1
 * tmpdir 0.2.0
 * tsort 0.2.0
 * un 0.3.0
