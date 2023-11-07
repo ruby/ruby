@@ -118,6 +118,7 @@ The following default gems are updated.
 * bundler 2.5.0.dev
 * csv 3.2.8
 * date 3.3.4
+* delegate 0.3.1
 * erb 4.0.3
 * etc 1.4.3.dev.1
 * fiddle 1.1.2
