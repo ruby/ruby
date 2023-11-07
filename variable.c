@@ -1442,45 +1442,34 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
         .existing = true
     };
 
-    rb_shape_t *shape = rb_shape_get_shape(obj);
+    rb_shape_t *current_shape = rb_shape_get_shape(obj);
 
-    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+    if (UNLIKELY(current_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
         goto too_complex;
     }
 
     attr_index_t index;
-    if (!rb_shape_get_iv_index(shape, id, &index)) {
+    if (!rb_shape_get_iv_index(current_shape, id, &index)) {
         result.existing = false;
 
-        index = shape->next_iv_index;
+        index = current_shape->next_iv_index;
         if (index >= MAX_IVARS) {
             rb_raise(rb_eArgError, "too many instance variables");
         }
 
-        if (UNLIKELY(shape->next_iv_index >= shape->capacity)) {
-            RUBY_ASSERT(shape->next_iv_index == shape->capacity);
-
-            rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
-            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                transition_too_complex_func(obj, data);
-                goto too_complex;
-            }
-
-            RUBY_ASSERT(next_shape->type == SHAPE_CAPACITY_CHANGE);
-            RUBY_ASSERT(next_shape->capacity > shape->capacity);
-            shape_resize_ivptr_func(obj, shape->capacity, next_shape->capacity, data);
-            shape = next_shape;
-        }
-
-        shape = rb_shape_get_next(shape, obj, id);
-        if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+        rb_shape_t *next_shape = rb_shape_get_next(current_shape, obj, id);
+        if (UNLIKELY(next_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
             transition_too_complex_func(obj, data);
             goto too_complex;
         }
+        else if (UNLIKELY(next_shape->capacity != current_shape->capacity)) {
+            RUBY_ASSERT(next_shape->capacity > current_shape->capacity);
+            shape_resize_ivptr_func(obj, current_shape->capacity, next_shape->capacity, data);
+        }
 
-        RUBY_ASSERT(shape->type == SHAPE_IVAR);
-        RUBY_ASSERT(index == (shape->next_iv_index - 1));
-        set_shape_func(obj, shape, data);
+        RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
+        RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
+        set_shape_func(obj, next_shape, data);
     }
 
     VALUE *table = shape_ivptr_func(obj, data);
@@ -1645,24 +1634,6 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
     else {
         REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, new_capacity);
     }
-}
-
-// @note May raise when there are too many instance variables.
-rb_shape_t *
-rb_grow_iv_list(VALUE obj)
-{
-    rb_shape_t * initial_shape = rb_shape_get_shape(obj);
-    RUBY_ASSERT(initial_shape->capacity > 0);
-    rb_shape_t * res = rb_shape_transition_shape_capa(initial_shape);
-    if (res->type == SHAPE_OBJ_TOO_COMPLEX) { // Out of shapes
-        rb_evict_ivars_to_hash(obj, initial_shape);
-    }
-    else {
-        rb_ensure_iv_list_size(obj, initial_shape->capacity, res->capacity);
-        rb_shape_set_shape(obj, res);
-    }
-
-    return res;
 }
 
 int

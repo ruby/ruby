@@ -44,6 +44,8 @@ static ID id_frozen;
 static ID id_t_object;
 static ID size_pool_edge_names[SIZE_POOL_COUNT];
 
+rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
+
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
@@ -667,13 +669,23 @@ rb_shape_t *
 rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
-    RUBY_ASSERT(shape->type != SHAPE_OBJ_TOO_COMPLEX);
+    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        return shape;
+    }
 
     bool allow_new_shape = true;
 
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
         VALUE klass = rb_obj_class(obj);
         allow_new_shape = RCLASS_EXT(klass)->variation_count < SHAPE_MAX_VARIATIONS;
+    }
+
+    if (UNLIKELY(shape->next_iv_index >= shape->capacity)) {
+        RUBY_ASSERT(shape->next_iv_index == shape->capacity);
+        shape = rb_shape_transition_shape_capa(shape);
+        if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+            return shape;
+        }
     }
 
     bool variation_created = false;
@@ -721,6 +733,9 @@ rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
 rb_shape_t *
 rb_shape_transition_shape_capa(rb_shape_t* shape)
 {
+    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        return shape;
+    }
     return rb_shape_transition_shape_capa_create(shape, rb_malloc_grow_capa(shape->capacity, sizeof(VALUE)));
 }
 
