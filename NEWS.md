@@ -141,6 +141,7 @@ The following default gems are updated.
 * timeout 0.4.0
 * un 0.3.0
 * uri 0.13.0
+* weakref 0.1.3
 * yaml 0.3.0
 
 The following bundled gem is promoted from default gems.
