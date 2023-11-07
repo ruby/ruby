@@ -2473,7 +2473,11 @@ fn gen_setinstancevariable(
         };
 
         let dest_shape = if let Some(capa_shape) = capa_shape {
-            unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
+            if OBJ_TOO_COMPLEX_SHAPE_ID == unsafe { rb_shape_id(capa_shape) } {
+              capa_shape
+            } else {
+              unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
+            }
         } else {
             unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
         };
