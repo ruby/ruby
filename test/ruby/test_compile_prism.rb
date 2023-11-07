@@ -639,9 +639,48 @@ module Prism
       )
     end
 
+    # Many of these tests are versions of tests at bootstraptest/test_method.rb
     def test_DefNode
-      assert_prism_eval("def prism_method; end")
+      assert_prism_eval("def prism_test_def_node; end")
       assert_prism_eval("a = Object.new; def a.prism_singleton; :ok; end; a.prism_singleton")
+      assert_prism_eval("def self.prism_test_def_node() 1 end; prism_test_def_node()")
+      assert_prism_eval("def self.prism_test_def_node(a,b) [a, b] end; prism_test_def_node(1,2)")
+      assert_prism_eval("def self.prism_test_def_node(a,x=7,y=1) x end; prism_test_def_node(7,1)")
+
+      # rest argument
+      assert_prism_eval("def self.prism_test_def_node(*a) a end; prism_test_def_node().inspect")
+      assert_prism_eval("def self.prism_test_def_node(*a) a end; prism_test_def_node(1).inspect")
+      assert_prism_eval("def self.prism_test_def_node(x,y,*a) a end; prism_test_def_node(7,7,1,2).inspect")
+      assert_prism_eval("def self.prism_test_def_node(x,y=7,*a) a end; prism_test_def_node(7).inspect")
+      assert_prism_eval("def self.prism_test_def_node(x,y,z=7,*a) a end; prism_test_def_node(7,7).inspect")
+      assert_prism_eval("def self.prism_test_def_node(x,y,z=7,zz=7,*a) a end; prism_test_def_node(7,7,7).inspect")
+
+      # block argument
+      assert_prism_eval("def self.prism_test_def_node(&block) block end; prism_test_def_node{}.class")
+      assert_prism_eval("def self.prism_test_def_node(&block) block end; prism_test_def_node().inspect")
+      assert_prism_eval("def self.prism_test_def_node(a,b=7,*c,&block) b end; prism_test_def_node(7,1).inspect")
+      assert_prism_eval("def self.prism_test_def_node(a,b=7,*c,&block) c end; prism_test_def_node(7,7,1).inspect")
+
+      # splat
+      assert_prism_eval("def self.prism_test_def_node(a) a end; prism_test_def_node(*[1])")
+      assert_prism_eval("def self.prism_test_def_node(x,a) a end; prism_test_def_node(7,*[1])")
+      assert_prism_eval("def self.prism_test_def_node(x,y,a) a end; prism_test_def_node(7,7,*[1])")
+      assert_prism_eval("def self.prism_test_def_node(x,y,a,b,c) a end; prism_test_def_node(7,7,*[1,7,7])")
+
+      # recursive call
+      assert_prism_eval("def self.prism_test_def_node(n) n == 0 ? 1 : prism_test_def_node(n-1) end; prism_test_def_node(5)")
+
+      # instance method
+      assert_prism_eval("class PrismTestDefNode; def prism_test_def_node() 1 end end;  PrismTestDefNode.new.prism_test_def_node")
+      assert_prism_eval("class PrismTestDefNode; def prism_test_def_node(*a) a end end;  PrismTestDefNode.new.prism_test_def_node(1).inspect")
+
+      # block argument
+      assert_prism_eval(<<-CODE
+                        def self.prism_test_def_node(&block) prism_test_def_node2(&block) end
+                        def self.prism_test_def_node2() yield 1 end
+                        prism_test_def_node2 {|a| a }
+                        CODE
+                       )
     end
 
     def test_LambdaNode
@@ -692,6 +731,7 @@ module Prism
 
     def test_YieldNode
       assert_prism_eval("def prism_test_yield_node; yield; end")
+      assert_prism_eval("def prism_test_yield_node; yield 1, 2; end")
     end
 
     ############################################################################
