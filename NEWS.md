@@ -117,6 +117,7 @@ The following default gems are updated.
 * bigdecimal 3.1.5
 * bundler 2.5.0.dev
 * csv 3.2.8
+* date 3.3.4
 * erb 4.0.3
 * etc 1.4.3.dev.1
 * fiddle 1.1.2
