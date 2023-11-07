@@ -137,6 +137,7 @@ The following default gems are updated.
 * open3 0.2.0
 * openssl 3.2.0
 * optparse 0.4.0
+* ostruct 0.6.0
 * pp 0.5.0
 * prettyprint 0.2.0
 * pstore 0.1.3
