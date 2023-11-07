@@ -14,7 +14,7 @@ require 'pathname.so'
 
 class Pathname
 
-  VERSION = "0.2.1"
+  VERSION = "0.3.0"
 
   # :stopdoc:
 
