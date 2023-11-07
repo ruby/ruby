@@ -178,6 +178,24 @@ class TestHash < Test::Unit::TestCase
     assert_equal('default', h['spurious'])
   end
 
+  def test_st_literal_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    begin;
+      1_000_000.times do
+        # >8 element hashes are ST allocated rather than AR allocated
+        {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
+      end
+    end;
+  end
+
+  def test_try_convert
+    assert_equal({1=>2}, Hash.try_convert({1=>2}))
+    assert_equal(nil, Hash.try_convert("1=>2"))
+    o = Object.new
+    def o.to_hash; {3=>4} end
+    assert_equal({3=>4}, Hash.try_convert(o))
+  end
+
   def test_AREF # '[]'
     t = Time.now
     h = @cls[
@@ -351,6 +369,10 @@ class TestHash < Test::Unit::TestCase
       end
     end
     assert_equal(base.dup, h)
+
+    h = base.dup
+    assert_same h, h.delete_if {h.assoc(nil); true}
+    assert_empty h
   end
 
   def test_keep_if
