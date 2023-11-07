@@ -125,6 +125,7 @@ The following default gems are updated.
 * irb 1.8.3
 * net-http 0.4.0
 * nkf 0.1.3
+* open3 0.2.0
 * openssl 3.2.0
 * optparse 0.4.0
 * pp 0.5.0
