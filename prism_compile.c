@@ -3393,18 +3393,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             if (parameters_node->keyword_rest) {
-                switch (PM_NODE_TYPE(parameters_node->keyword_rest)) {
-                  case PM_NO_KEYWORDS_PARAMETER_NODE: {
-                      body->param.flags.accepts_no_kwarg = true;
-                      break;
-                  }
-                  case PM_KEYWORD_REST_PARAMETER_NODE: {
-                      body->param.flags.has_kwrest = true;
-                      break;
-                  }
-                  default: {
-                      rb_bug("Keyword rest is an unexpected type\n");
-                  }
+                if (PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_NO_KEYWORDS_PARAMETER_NODE)) {
+                    body->param.flags.accepts_no_kwarg = true;
+                }
+                else {
+                    body->param.flags.has_kwrest = true;
                 }
             }
 
