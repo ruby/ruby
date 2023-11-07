@@ -127,6 +127,7 @@ The following default gems are updated.
 * getoptlong 0.2.1
 * io-console 0.6.1.dev
 * irb 1.8.3
+* logger 1.6.0
 * mutex_m 0.2.0
 * net-http 0.4.0
 * net-protocol 0.2.2
