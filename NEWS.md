@@ -123,6 +123,7 @@ The following default gems are updated.
 * fileutils 1.7.1
 * io-console 0.6.1.dev
 * irb 1.8.3
+* mutex_m 0.2.0
 * net-http 0.4.0
 * nkf 0.1.3
 * open3 0.2.0
