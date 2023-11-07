@@ -122,6 +122,7 @@ The following default gems are updated.
 * drb 2.2.0
 * erb 4.0.3
 * etc 1.4.3.dev.1
+* fcntl 1.1.0
 * fiddle 1.1.2
 * fileutils 1.7.1
 * find 0.2.0
