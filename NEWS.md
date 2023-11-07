@@ -95,6 +95,7 @@ Note: We're only listing outstanding class updates.
     * mutex_m
     * nkf
     * observer
+    * racc
     * resolv-replace
     * rinda
     * syslog
