@@ -125,7 +125,7 @@ The following default gems are updated.
 * etc 1.4.3.dev.1
 * fcntl 1.1.0
 * fiddle 1.1.2
-* fileutils 1.7.1
+* fileutils 1.7.2
 * find 0.2.0
 * getoptlong 0.2.1
 * io-console 0.6.1.dev
