@@ -978,7 +978,6 @@ extern "C" {
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
-    pub fn rb_shape_transition_shape_capa(shape: *mut rb_shape_t) -> *mut rb_shape_t;
     pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;

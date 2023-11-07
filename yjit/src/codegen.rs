@@ -2450,45 +2450,33 @@ fn gen_setinstancevariable(
         None
     };
 
-    // Get the next shape information if it needs transition
+    // The current shape doesn't contain this iv, we need to transition to another shape.
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
-        let shape = comptime_receiver.shape_of();
+        let current_shape = comptime_receiver.shape_of();
+        let next_shape = unsafe { rb_shape_get_next(current_shape, comptime_receiver, ivar_name) };
+        let next_shape_id = unsafe { rb_shape_id(next_shape) };
 
-        let current_capacity = unsafe { (*shape).capacity };
-
-        // If the object doesn't have the capacity to store the IV,
-        // then we'll need to allocate it.
-        let needs_extension = unsafe { (*shape).next_iv_index >= current_capacity };
-
-        // We can write to the object, but we need to transition the shape
-        let ivar_index = unsafe { (*shape).next_iv_index } as usize;
-
-        let capa_shape = if needs_extension {
-            // We need to add an extended table to the object
-            // First, create an outgoing transition that increases the
-            // capacity
-            Some(unsafe { rb_shape_transition_shape_capa(shape) })
+        // If the VM ran out of shapes, or this class generated too many leaf,
+        // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
+        if next_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
+            Some((next_shape_id, None, 0 as usize))
         } else {
-            None
-        };
+            let current_capacity = unsafe { (*current_shape).capacity };
 
-        let dest_shape = if let Some(capa_shape) = capa_shape {
-            if OBJ_TOO_COMPLEX_SHAPE_ID == unsafe { rb_shape_id(capa_shape) } {
-              capa_shape
+            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+            // reallocate it.
+            let needs_extension = unsafe { (*current_shape).capacity != (*next_shape).capacity };
+
+            // We can write to the object, but we need to transition the shape
+            let ivar_index = unsafe { (*current_shape).next_iv_index } as usize;
+
+            let needs_extension = if needs_extension {
+                Some((current_capacity, unsafe { (*next_shape).capacity }))
             } else {
-              unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
-            }
-        } else {
-            unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
-        };
-
-        let new_shape_id = unsafe { rb_shape_id(dest_shape) };
-        let needs_extension = if needs_extension {
-            Some((current_capacity, unsafe { (*dest_shape).capacity }))
-        } else {
-            None
-        };
-        Some((new_shape_id, needs_extension, ivar_index))
+                None
+            };
+            Some((next_shape_id, needs_extension, ivar_index))
+        }
     } else {
         None
     };
