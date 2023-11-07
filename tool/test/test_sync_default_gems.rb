@@ -246,7 +246,24 @@ module Test_SyncDefaultGems
       assert_not_equal(@sha["src"], top_commit("src"), out)
       assert_equal("*~\n", File.read("src/.gitignore"), out)
       assert_equal("#!/bin/sh\n""echo ok\n", File.read("src/tool/ok"), out)
-      assert_not_operator(File, :exist?, "src/.github/workflows/.yml", out)
+      assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
+      assert_not_operator(File, :exist?, "src/.github/workflows/main.yml", out)
+    end
+
+    def test_gitignore_after_conflict
+      File.write("src/Gemfile", "# main\n")
+      git(*%W"add Gemfile", chdir: "src")
+      git(*%W"commit -q -m", "Add Gemfile", chdir: "src")
+      File.write("#@target/Gemfile", "# conflict\n", mode: "a")
+      File.write("#@target/lib/common.rb", "Should.be_merged\n", mode: "a")
+      File.write("#@target/.github/workflows/main.yml", "# Should not merge\n", mode: "a")
+      git(*%W"add Gemfile .github lib/common.rb", chdir: @target)
+      git(*%W"commit -q -m", "Should be common.rb only", chdir: @target)
+      out = assert_sync()
+      assert_not_equal(@sha["src"], top_commit("src"), out)
+      assert_equal("# main\n", File.read("src/Gemfile"), out)
+      assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
+      assert_not_operator(File, :exist?, "src/.github/workflows/main.yml", out)
     end
   end
 end
