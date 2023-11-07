@@ -141,6 +141,7 @@ The following default gems are updated.
 * rdoc 6.6.0
 * reline 0.3.9
 * rinda 0.2.0
+* securerandom 0.3.0
 * shellwords 0.2.0
 * singleton 0.2.0
 * stringio 3.0.9
