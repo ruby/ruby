@@ -252,6 +252,12 @@ pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
     unsafe { pc.offset_from(pc_zero) }.try_into().ok()
 }
 
+/// Given an ISEQ pointer and an instruction index, return an opcode.
+pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
+    let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+    unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
+}
+
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
 pub struct rb_execution_context_struct {
