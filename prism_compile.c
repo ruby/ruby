@@ -1361,7 +1361,9 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                                 *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
 
-                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                                if (len > 1) {
+                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                                }
 
                                 if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
                                     ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
@@ -3354,7 +3356,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
             keyword->num = (int) keywords_list->size;
 
-            body->param.flags.has_kw = TRUE;
+            body->param.flags.has_kw = true;
             const VALUE default_values = rb_ary_hidden_new(1);
             const VALUE complex_mark = rb_str_tmp_new(0);
 
@@ -3397,6 +3399,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     body->param.flags.accepts_no_kwarg = true;
                 }
                 else {
+                    if (!body->param.flags.has_kw) {
+                        body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+                    }
+                    keyword->rest_start = (int) locals_size;
                     body->param.flags.has_kwrest = true;
                 }
             }
