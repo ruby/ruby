@@ -1585,11 +1585,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
 
-            pm_constant_id_list_t locals;
-            pm_constant_id_list_init(&locals);
-            pm_constant_id_list_append(&locals, idERROR_INFO);
-            next_scope_node.locals = locals;
-
             child_iseq = NEW_CHILD_ISEQ(next_scope_node,
                     rb_str_new2("ensure in"),
                     ISEQ_TYPE_ENSURE, lineno);
@@ -3493,10 +3488,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE((pm_node_t *)scope_node->body);
             PM_POP;
 
-            // this loses precision, but in this case that doesn't matter...
-            pm_constant_id_t id_err_info = (pm_constant_id_t)ISEQ_BODY(iseq)->local_table[0];
-            int local_index = pm_lookup_local_index_with_depth(iseq, scope_node, id_err_info, 0);
-            ADD_GETLOCAL(ret, &dummy_line_node, local_index, 0);
+            ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
             ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
 
             return;
