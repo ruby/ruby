@@ -13,7 +13,6 @@ extract.o: $(hdrdir)/ruby/backward/2/stdalign.h
 extract.o: $(hdrdir)/ruby/backward/2/stdarg.h
 extract.o: $(hdrdir)/ruby/defines.h
 extract.o: $(hdrdir)/ruby/intern.h
-extract.o: $(hdrdir)/ruby/internal/abi.h
 extract.o: $(hdrdir)/ruby/internal/anyargs.h
 extract.o: $(hdrdir)/ruby/internal/arithmetic.h
 extract.o: $(hdrdir)/ruby/internal/arithmetic/char.h

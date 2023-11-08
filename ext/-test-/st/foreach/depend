@@ -14,7 +14,6 @@ foreach.o: $(hdrdir)/ruby/backward/2/stdalign.h
 foreach.o: $(hdrdir)/ruby/backward/2/stdarg.h
 foreach.o: $(hdrdir)/ruby/defines.h
 foreach.o: $(hdrdir)/ruby/intern.h
-foreach.o: $(hdrdir)/ruby/internal/abi.h
 foreach.o: $(hdrdir)/ruby/internal/anyargs.h
 foreach.o: $(hdrdir)/ruby/internal/arithmetic.h
 foreach.o: $(hdrdir)/ruby/internal/arithmetic/char.h

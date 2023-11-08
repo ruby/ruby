@@ -14,7 +14,6 @@ bubblebabble.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bubblebabble.o: $(hdrdir)/ruby/defines.h
 bubblebabble.o: $(hdrdir)/ruby/intern.h
-bubblebabble.o: $(hdrdir)/ruby/internal/abi.h
 bubblebabble.o: $(hdrdir)/ruby/internal/anyargs.h
 bubblebabble.o: $(hdrdir)/ruby/internal/arithmetic.h
 bubblebabble.o: $(hdrdir)/ruby/internal/arithmetic/char.h

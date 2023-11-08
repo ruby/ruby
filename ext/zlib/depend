@@ -15,7 +15,6 @@ zlib.o: $(hdrdir)/ruby/backward/2/stdarg.h
 zlib.o: $(hdrdir)/ruby/defines.h
 zlib.o: $(hdrdir)/ruby/encoding.h
 zlib.o: $(hdrdir)/ruby/intern.h
-zlib.o: $(hdrdir)/ruby/internal/abi.h
 zlib.o: $(hdrdir)/ruby/internal/anyargs.h
 zlib.o: $(hdrdir)/ruby/internal/arithmetic.h
 zlib.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -14,7 +14,6 @@ scan_args.o: $(hdrdir)/ruby/backward/2/stdalign.h
 scan_args.o: $(hdrdir)/ruby/backward/2/stdarg.h
 scan_args.o: $(hdrdir)/ruby/defines.h
 scan_args.o: $(hdrdir)/ruby/intern.h
-scan_args.o: $(hdrdir)/ruby/internal/abi.h
 scan_args.o: $(hdrdir)/ruby/internal/anyargs.h
 scan_args.o: $(hdrdir)/ruby/internal/arithmetic.h
 scan_args.o: $(hdrdir)/ruby/internal/arithmetic/char.h

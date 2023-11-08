@@ -14,7 +14,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/stdalign.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/stdarg.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/defines.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/intern.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/abi.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/anyargs.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/arithmetic.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/arithmetic/char.h

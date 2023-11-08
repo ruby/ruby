@@ -14,7 +14,6 @@ rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rb_call_super_kw.o: $(hdrdir)/ruby/defines.h
 rb_call_super_kw.o: $(hdrdir)/ruby/intern.h
-rb_call_super_kw.o: $(hdrdir)/ruby/internal/abi.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/anyargs.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/arithmetic.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/arithmetic/char.h

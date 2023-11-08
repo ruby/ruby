@@ -13,7 +13,6 @@ monitor.o: $(hdrdir)/ruby/backward/2/stdalign.h
 monitor.o: $(hdrdir)/ruby/backward/2/stdarg.h
 monitor.o: $(hdrdir)/ruby/defines.h
 monitor.o: $(hdrdir)/ruby/intern.h
-monitor.o: $(hdrdir)/ruby/internal/abi.h
 monitor.o: $(hdrdir)/ruby/internal/anyargs.h
 monitor.o: $(hdrdir)/ruby/internal/arithmetic.h
 monitor.o: $(hdrdir)/ruby/internal/arithmetic/char.h

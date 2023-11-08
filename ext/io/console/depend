@@ -16,7 +16,6 @@ console.o: $(hdrdir)/ruby/defines.h
 console.o: $(hdrdir)/ruby/encoding.h
 console.o: $(hdrdir)/ruby/fiber/scheduler.h
 console.o: $(hdrdir)/ruby/intern.h
-console.o: $(hdrdir)/ruby/internal/abi.h
 console.o: $(hdrdir)/ruby/internal/anyargs.h
 console.o: $(hdrdir)/ruby/internal/arithmetic.h
 console.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -15,7 +15,6 @@ nonblock.o: $(hdrdir)/ruby/backward/2/stdarg.h
 nonblock.o: $(hdrdir)/ruby/defines.h
 nonblock.o: $(hdrdir)/ruby/encoding.h
 nonblock.o: $(hdrdir)/ruby/intern.h
-nonblock.o: $(hdrdir)/ruby/internal/abi.h
 nonblock.o: $(hdrdir)/ruby/internal/anyargs.h
 nonblock.o: $(hdrdir)/ruby/internal/arithmetic.h
 nonblock.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -14,7 +14,6 @@ c.o: $(hdrdir)/ruby/backward/2/stdalign.h
 c.o: $(hdrdir)/ruby/backward/2/stdarg.h
 c.o: $(hdrdir)/ruby/defines.h
 c.o: $(hdrdir)/ruby/intern.h
-c.o: $(hdrdir)/ruby/internal/abi.h
 c.o: $(hdrdir)/ruby/internal/anyargs.h
 c.o: $(hdrdir)/ruby/internal/arithmetic.h
 c.o: $(hdrdir)/ruby/internal/arithmetic/char.h

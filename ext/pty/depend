@@ -15,7 +15,6 @@ pty.o: $(hdrdir)/ruby/backward/2/stdarg.h
 pty.o: $(hdrdir)/ruby/defines.h
 pty.o: $(hdrdir)/ruby/encoding.h
 pty.o: $(hdrdir)/ruby/intern.h
-pty.o: $(hdrdir)/ruby/internal/abi.h
 pty.o: $(hdrdir)/ruby/internal/anyargs.h
 pty.o: $(hdrdir)/ruby/internal/arithmetic.h
 pty.o: $(hdrdir)/ruby/internal/arithmetic/char.h

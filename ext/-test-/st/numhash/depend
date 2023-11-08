@@ -14,7 +14,6 @@ numhash.o: $(hdrdir)/ruby/backward/2/stdalign.h
 numhash.o: $(hdrdir)/ruby/backward/2/stdarg.h
 numhash.o: $(hdrdir)/ruby/defines.h
 numhash.o: $(hdrdir)/ruby/intern.h
-numhash.o: $(hdrdir)/ruby/internal/abi.h
 numhash.o: $(hdrdir)/ruby/internal/anyargs.h
 numhash.o: $(hdrdir)/ruby/internal/arithmetic.h
 numhash.o: $(hdrdir)/ruby/internal/arithmetic/char.h
