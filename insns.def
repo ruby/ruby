@@ -527,6 +527,17 @@ splatarray
     obj = vm_splat_array(flag, ary);
 }
 
+/* call to_hash on hash to keyword splat before converting block */
+DEFINE_INSN
+splatkw
+()
+(VALUE hash, VALUE block)
+(VALUE obj, VALUE block)
+// attr bool leaf = false; /* has rb_to_hash_type() */
+{
+    obj = rb_to_hash_type(hash);
+}
+
 /* put new Hash from n elements. n must be an even number. */
 DEFINE_INSN
 newhash
