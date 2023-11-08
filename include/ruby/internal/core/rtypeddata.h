@@ -464,7 +464,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  */
 #define TypedData_Make_Struct0(result, klass, type, size, data_type, sval) \
     VALUE result = rb_data_typed_object_zalloc(klass, size, data_type);    \
-    (sval) = RTYPEDDATA_GET_DATA(result); \
+    (sval) = (type *)RTYPEDDATA_GET_DATA(result); \
     RBIMPL_CAST(/*suppress unused variable warnings*/(void)(sval))
 
 /**
