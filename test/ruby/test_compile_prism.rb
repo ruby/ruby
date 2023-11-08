@@ -917,6 +917,10 @@ module Prism
       assert_prism_eval("def prism_test_optional_param_node(bar = nil); end")
     end
 
+    def test_OptionalKeywordParameterNode
+      assert_prism_eval("def prism_test_optional_keyword_param_node(bar: nil); end")
+    end
+
     def test_ParametersNode
       assert_prism_eval("def prism_test_parameters_node(bar, baz); end")
       assert_prism_eval("def prism_test_parameters_node(a, b = 2); end")
