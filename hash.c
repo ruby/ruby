@@ -4367,6 +4367,9 @@ rb_hash_compare_by_id(VALUE hash)
     if (rb_hash_compare_by_id_p(hash)) return hash;
 
     rb_hash_modify_check(hash);
+    if (hash_iterating_p(hash)) {
+        rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
+    }
     ar_force_convert_table(hash, __FILE__, __LINE__);
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
