@@ -387,7 +387,7 @@ RSpec.describe "bundle lock" do
         build_gem "sequel", "5.72.0" do |s|
           s.add_dependency "bigdecimal", ">= 0"
         end
-        build_gem "bigdecimal", %w[1.4.4 3.1.4]
+        build_gem "bigdecimal", %w[1.4.4 99.1.4]
       end
 
       gemfile <<~G
@@ -417,7 +417,7 @@ RSpec.describe "bundle lock" do
     it "adds the latest version of the new dependency" do
       bundle "lock --minor --update sequel"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-3.1.4].sort)
+      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-99.1.4].sort)
     end
   end
 
