@@ -2,6 +2,8 @@
 
 require "pathname"
 
+require "rubygems" unless defined?(Gem)
+
 require "rubygems/specification"
 
 # We can't let `Gem::Source` be autoloaded in the `Gem::Specification#source`

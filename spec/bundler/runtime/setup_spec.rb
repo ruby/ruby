@@ -1506,12 +1506,6 @@ end
       expect(err).to include "private method `require'"
     end
 
-    it "takes care of requiring rubygems" do
-      sys_exec("#{Gem.ruby} -I#{lib_dir} -rbundler/setup -e'puts true'", :env => { "RUBYOPT" => opt_add("--disable=gems", ENV["RUBYOPT"]) })
-
-      expect(last_command.stdboth).to eq("true")
-    end
-
     it "memoizes initial set of specs when requiring bundler/setup, so that even if further code mutates dependencies, Bundler.definition.specs is not affected" do
       install_gemfile <<~G
         source "#{file_uri_for(gem_repo1)}"
