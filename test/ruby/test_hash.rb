@@ -2272,4 +2272,13 @@ class TestHashOnly < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_compare_by_identity_during_iteration
+    h = { 1 => 1 }
+    h.each do
+      assert_raise(RuntimeError, "compare_by_identity during iteration") do
+        h.compare_by_identity
+      end
+    end
+  end
 end
