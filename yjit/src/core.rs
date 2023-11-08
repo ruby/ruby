@@ -2234,7 +2234,9 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
         // Compilation failed
         None => {
             // Trigger code GC. This entry point will be recompiled later.
-            cb.code_gc(ocb);
+            if get_option!(code_gc) {
+                cb.code_gc(ocb);
+            }
             return None;
         }
 
@@ -2300,7 +2302,9 @@ c_callable! {
                     .unwrap_or_else(|| {
                         // Trigger code GC (e.g. no space).
                         // This entry point will be recompiled later.
-                        cb.code_gc(ocb);
+                        if get_option!(code_gc) {
+                            cb.code_gc(ocb);
+                        }
                         CodegenGlobals::get_stub_exit_code().raw_ptr(cb)
                     });
 
@@ -2548,6 +2552,11 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         // So we do it here instead.
         rb_set_cfp_sp(cfp, reconned_sp);
 
+        // Bail if code GC is disabled and we've already run out of spaces.
+        if !get_option!(code_gc) && (cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes()) {
+            return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+        }
+
         // Bail if we're about to run out of native stack space.
         // We've just reconstructed interpreter state.
         if rb_ec_stack_check(ec as _) != 0 {
@@ -2563,7 +2572,6 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     // If this block hasn't yet been compiled
     if block.is_none() {
         let branch_old_shape = branch.gen_fn.get_shape();
-
 
         // If the new block can be generated right after the branch (at cb->write_pos)
         if cb.get_write_ptr() == branch.end_addr.get() {
@@ -2622,7 +2630,9 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             // because incomplete code could be used when cb.dropped_bytes is flipped
             // by code GC. So this place, after all compilation, is the safest place
             // to hook code GC on branch_stub_hit.
-            cb.code_gc(ocb);
+            if get_option!(code_gc) {
+                cb.code_gc(ocb);
+            }
 
             // Failed to service the stub by generating a new block so now we
             // need to exit to the interpreter at the stubbed location. We are
