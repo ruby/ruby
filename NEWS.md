@@ -80,6 +80,12 @@ Note: We're only listing outstanding class updates.
     * String#bytesplice now accepts new arguments index/length or range of the
       source string to be copied.  [[Feature #19314]]
 
+* TracePoint
+
+    * TracePoint supports `rescue` event. When the raised exception was rescued,
+      the TracePoint will fire the hook. `rescue` event only supports Ruby-level
+      `rescue`. [[Feature #19572]]
+
 ## Stdlib updates
 
 * RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
@@ -266,6 +272,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19362]: https://bugs.ruby-lang.org/issues/19362
 [Feature #19521]: https://bugs.ruby-lang.org/issues/19521
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19572]: https://bugs.ruby-lang.org/issues/19572
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
