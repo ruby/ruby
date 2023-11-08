@@ -86,14 +86,14 @@ module IRB
         when nil
           if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             # Both of multiline mode and singleline mode aren't specified.
-            @io = RelineInputMethod.new
+            @io = RelineInputMethod.new(build_completor)
           else
             @io = nil
           end
         when false
           @io = nil
         when true
-          @io = RelineInputMethod.new
+          @io = RelineInputMethod.new(build_completor)
         end
         unless @io
           case use_singleline?
@@ -147,6 +147,43 @@ module IRB
       end
 
       @command_aliases = IRB.conf[:COMMAND_ALIASES]
+    end
+
+    private def build_completor
+      completor_type = IRB.conf[:COMPLETOR]
+      case completor_type
+      when :regexp
+        return RegexpCompletor.new
+      when :type
+        completor = build_type_completor
+        return completor if completor
+      else
+        warn "Invalid value for IRB.conf[:COMPLETOR]: #{completor_type}"
+      end
+      # Fallback to RegexpCompletor
+      RegexpCompletor.new
+    end
+
+    TYPE_COMPLETION_REQUIRED_PRISM_VERSION = '0.17.1'
+
+    private def build_type_completor
+      unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.0.0') && RUBY_ENGINE != 'truffleruby'
+        warn 'TypeCompletion requires RUBY_VERSION >= 3.0.0'
+        return
+      end
+      begin
+        require 'prism'
+      rescue LoadError => e
+        warn "TypeCompletion requires Prism: #{e.message}"
+        return
+      end
+      unless Gem::Version.new(Prism::VERSION) >= Gem::Version.new(TYPE_COMPLETION_REQUIRED_PRISM_VERSION)
+        warn "TypeCompletion requires Prism::VERSION >= #{TYPE_COMPLETION_REQUIRED_PRISM_VERSION}"
+        return
+      end
+      require 'irb/type_completion/completor'
+      TypeCompletion::Types.preload_in_thread
+      TypeCompletion::Completor.new
     end
 
     def save_history=(val)

@@ -90,6 +90,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         \.irbrc\spath:\s.+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
@@ -113,6 +114,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         \.irbrc\spath:\s.+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
@@ -139,6 +141,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -168,6 +171,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -196,6 +200,7 @@ module TestIRB
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         \.irbrc\spath: .+\n
         RUBY_PLATFORM: .+\n
         LANG\senv:\sja_JP\.UTF-8\n
