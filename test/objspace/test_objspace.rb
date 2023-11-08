@@ -585,7 +585,7 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_string_coderange
     assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
-    unknown = "TEST STRING".dup.force_encoding(Encoding::BINARY)
+    unknown = "TEST STRING".dup.force_encoding(Encoding::UTF_16BE)
     2.times do # ensure that dumping the string doesn't mutate it
       assert_includes ObjectSpace.dump(unknown), '"coderange":"unknown"'
     end
