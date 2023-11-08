@@ -684,6 +684,7 @@ pm_interpolated_node_compile(pm_node_list_t parts, rb_iseq_t *iseq, NODE dummy_l
         PM_PUTNIL;
     }
 }
+
 static int
 pm_lookup_local_index(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
@@ -3360,6 +3361,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             const VALUE default_values = rb_ary_hidden_new(1);
             const VALUE complex_mark = rb_str_tmp_new(0);
 
+            ID *ids = calloc(keywords_list->size, sizeof(ID));
+
             for (size_t i = 0; i < keywords_list->size; i++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
 
@@ -3378,6 +3381,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                       break;
                   }
                   case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
+                      pm_required_keyword_parameter_node_t *cast = (pm_required_keyword_parameter_node_t *)keyword_parameter_node;
+                      ids[keyword->required_num] = pm_constant_id_lookup(scope_node, cast->name);
                       keyword->required_num++;
                       break;
                   }
@@ -3386,6 +3391,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   }
                 }
             }
+
+            VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
+
+            for (int i = 0; i < RARRAY_LEN(default_values); i++) {
+                VALUE dv = RARRAY_AREF(default_values, i);
+                if (dv == complex_mark) dv = Qundef;
+                if (!SPECIAL_CONST_P(dv)) {
+                    RB_OBJ_WRITTEN(iseq, Qundef, dv);
+                }
+                dvs[i] = dv;
+            }
+
+            keyword->default_values = dvs;
+            keyword->table = ids;
         }
 
         if (parameters_node) {
