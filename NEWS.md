@@ -260,6 +260,36 @@ changelog for details of the default gems or bundled gems.
 * RJIT exists only for experimental purposes.
   * You should keep using YJIT in production.
 
+### M:N Therad scheduler
+
+* M:N Thread scheduler is introduced. [[Feature #19842]]
+  * Background: Ruby 1.8 and before, M:1 thread scheduler (M Ruby threads
+    with 1 native thread. Called as User level threads or Green threads)
+    is used. Ruby 1.9 and later, 1:1 thread scheduler (1 Ruby thread with
+    1 native thread). M:1 threads takes lower resources compare with 1:1
+    threads because it needs only 1 native threads. However it is difficult
+    to support context switching for all of blocking operation so 1:1
+    threads are employed from Ruby 1.9. M:N thread scheduler uses N native
+    threads for M Ruby threads (N is small number in general). It doesn't
+    need same number of native threads as Ruby threads (similar to the M:1
+    thread scheduler). Also our M:N threads supports blocking operations
+    well same as 1:1 threads. See the ticket for more details.
+    Our M:N thread scheduler refers on the gorotuine scheduler in the
+    Go language.
+  * In a ractor, only 1 thread can run in a same time because of
+    implementation. Therefore, applications that use only one Ractor
+    (most applications) M:N thread scheduler works as M:1 thread scheduler
+    with further extension from Ruby 1.8.
+  * M:N thread scheduler can introduce incompatibility for C-extensions,
+    so it is disabled by default on the main Ractors.
+    `RUBY_MN_THREADS=1` environment variable will enable it.
+    On non-main Ractors, M:N thread scheduler is enabled (and can not
+    disable it now).
+  * `N` (the number of native threads) can be specified with `RUBY_MAX_CPU`
+    environment variable. The default is 8.
+    Note that more than `N` native threads are used to support many kind of
+    blocking operations.
+
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
@@ -277,6 +307,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
+[Feature #19842]: https://bugs.ruby-lang.org/issues/19842
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
