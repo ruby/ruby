@@ -293,29 +293,29 @@ module Spec
     def system_gems(*gems)
       gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}
-      path = options.fetch(:path, system_gem_path)
+      install_dir = options.fetch(:path, system_gem_path)
       default = options.fetch(:default, false)
-      with_gem_path_as(path) do
+      with_gem_path_as(install_dir) do
         gem_repo = options.fetch(:gem_repo, gem_repo1)
         gems.each do |g|
           gem_name = g.to_s
           if gem_name.start_with?("bundler")
             version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-            with_built_bundler(version) {|gem_path| install_gem(gem_path, default) }
+            with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
           elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
-            install_gem(gem_name, default)
+            install_gem(gem_name, install_dir, default)
           else
-            install_gem("#{gem_repo}/gems/#{gem_name}.gem", default)
+            install_gem("#{gem_repo}/gems/#{gem_name}.gem", install_dir, default)
           end
         end
       end
     end
 
-    def install_gem(path, default = false)
+    def install_gem(path, install_dir, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      args = "--no-document --ignore-dependencies --verbose --local"
-      args += " --default --install-dir #{system_gem_path}" if default
+      args = "--no-document --ignore-dependencies --verbose --local --install-dir #{install_dir}"
+      args += " --default" if default
 
       gem_command "install #{args} '#{path}'"
     end
