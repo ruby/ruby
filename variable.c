@@ -1509,7 +1509,7 @@ generic_ivar_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int exi
     if (!existing || ivar_lookup->resize) {
         if (existing) {
             RUBY_ASSERT(ivar_lookup->shape->type == SHAPE_IVAR);
-            RUBY_ASSERT(rb_shape_get_shape_by_id(ivar_lookup->shape->parent_id)->type == SHAPE_CAPACITY_CHANGE);
+            RUBY_ASSERT(rb_shape_get_shape_by_id(ivar_lookup->shape->parent_id)->capacity < ivar_lookup->shape->capacity);
         }
         else {
             FL_SET_RAW((VALUE)*k, FL_EXIVAR);
@@ -1895,7 +1895,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
-      case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
