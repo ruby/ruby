@@ -158,6 +158,14 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
+  # Overrides the Gem.install_extension_in_lib function and restores the
+  # original when the block ends
+  #
+  def extension_in_lib(value = true) # :nodoc:
+    Gem.stub(:install_extension_in_lib, value) { yield }
+  end
+
+  ##
   # Sets the vendordir entry in RbConfig::CONFIG to +value+ and restores the
   # original value when the block ends
   #
