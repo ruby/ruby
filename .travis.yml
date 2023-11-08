@@ -106,14 +106,14 @@ matrix:
     # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
     # https://github.com/rubygems/rubygems/issues/7132
     - <<: *arm32-linux
-    # Comment out as the 2nd arm64 pipeline is unstable.
-    # - <<: *arm64-linux
+    - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
     # Allow failures for the unstable jobs.
     # - name: arm32-linux
-    # - name: arm64-linux
+    # The 2nd arm64 pipeline may be unstable.
+    - name: arm64-linux
     # - name: ppc64le-linux
     # - name: s390x-linux
   fast_finish: true
