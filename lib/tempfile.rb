@@ -191,6 +191,7 @@ class Tempfile < DelegateClass(File)
     mode = @mode & ~(File::CREAT|File::EXCL)
     __setobj__(File.open(__getobj__.path, mode, **@opts))
     ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+    __getobj__
   end
 
   def _close    # :nodoc:

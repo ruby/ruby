@@ -378,6 +378,14 @@ puts Tempfile.new('foo').path
     assert_file.not_exist?(path)
   end
 
+  def test_open
+    Tempfile.open {|f|
+      file = f.open
+      assert_kind_of File, file
+      assert_equal f.to_i, file.to_i
+    }
+  end
+
   def test_open_traversal_dir
     assert_mktmpdir_traversal do |traversal_path|
       t = Tempfile.open([traversal_path, 'foo'])
