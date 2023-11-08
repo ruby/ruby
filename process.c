@@ -8779,16 +8779,23 @@ proc_warmup(VALUE _)
  *
  * == \Process Creation
  *
- * Each of these methods creates a process:
+ * Each of the following methods executes a given command in a new process or subshell,
+ * or multiple commands in new processes and/or subshells.
+ * The choice of process or subshell depends on the form of the command;
+ * see {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
  *
- * - Process.exec: Replaces the current process by running a given external command.
- * - Process.spawn, Kernel#spawn: Executes the given command and returns its pid without waiting for completion.
- * - Kernel#system: Executes the given command in a subshell.
+ * - Process.spawn, Kernel#spawn: Executes the command;
+ *   returns the new pid without waiting for completion.
+ * - Process.exec: Replaces the current process by executing the command.
  *
- * Each of these methods accepts:
+ * In addition:
  *
- * - An optional hash of environment variable names and values.
- * - An optional hash of execution options.
+ * - \Method Kernel#system executes a given command-line (string) in a subshell;
+ *   returns +true+, +false+, or +nil+.
+ * - \Method Kernel#` executes a given command-line (string) in a subshell;
+ *   returns its $stdout string.
+ * - \Module Open3 supports creating child processes
+ *   with access to their $stdin, $stdout, and $stderr streams.
  *
  * === Execution Environment
  *
@@ -8801,7 +8808,6 @@ proc_warmup(VALUE _)
  *
  * Output:
  *
- *   nil
  *   "0"
  *
  * The effect is usually similar to that of calling ENV#update with argument +env+,
@@ -8812,6 +8818,53 @@ proc_warmup(VALUE _)
  * However, some modifications to the calling process may remain
  * if the new process fails.
  * For example, hard resource limits are not restored.
+ *
+ * === Argument +command_line+ or +exe_path+
+ *
+ * The required string argument is one of the following:
+ *
+ * - +command_line+ if it begins with a shell reserved word or special built-in,
+ *   or if it contains one or more meta characters.
+ * - +exe_path+ otherwise.
+ *
+ * <b>Argument +command_line+</b>
+ *
+ * \String argument +command_line+ is a command line to be passed to a shell;
+ * it must begin with a shell reserved word, begin with a special built-in,
+ * or contain meta characters:
+ *
+ *   system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
+ *   system('echo')                                  # => true  # Built-in.
+ *   system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
+ *   system('date > /nop/date.tmp')                  # => false
+ *   system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
+ *
+ * The command line may also contain arguments and options for the command:
+ *
+ *   system('echo "Foo"') # => true
+ *
+ * Output:
+ *
+ *   Foo
+ *
+ * See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
+ *
+ * <b>Argument +exe_path+</b>
+ *
+ * Argument +exe_path+ is one of the following:
+ *
+ * - The string path to an executable to be called.
+ * - A 2-element array containing the path to an executable to be called,
+ *   and the string to be used as the name of the executing process.
+ *
+ * Example:
+ *
+ *   system('/usr/bin/date') # => true # Path to date on Unix-style system.
+ *   system('foo')           # => nil  # Command failed.
+ *
+ * Output:
+ *
+ *   Mon Aug 28 11:43:10 AM CDT 2023
  *
  * === Execution Options
  *
