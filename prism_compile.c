@@ -1413,6 +1413,14 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                   break;
               }
+              case PM_FORWARDING_ARGUMENTS_NODE: {
+                  orig_argc++;
+                  *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
+                  ADD_GETLOCAL(ret, &dummy_line_node, 3, 0);
+                  ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
+                  ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(4), INT2FIX(0));
+                  break;
+              }
               default: {
                   orig_argc++;
                   post_splat_counter++;
@@ -2311,6 +2319,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
         ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
+        return;
+      }
+      case PM_FORWARDING_ARGUMENTS_NODE: {
+        rb_bug("Should never hit the forwarding arguments case directly\n");
         return;
       }
       case PM_FORWARDING_SUPER_NODE: {

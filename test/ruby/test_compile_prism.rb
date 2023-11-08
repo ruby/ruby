@@ -861,6 +861,22 @@ module Prism
       )
     end
 
+    def test_ForwardingArgumentsNode
+      assert_prism_eval(<<-CODE)
+        def prism_test_forwarding_arguments_node(...); end;
+        def prism_test_forwarding_arguments_node1(...)
+          prism_test_forwarding_arguments_node(...)
+        end
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def prism_test_forwarding_arguments_node(...); end;
+        def prism_test_forwarding_arguments_node1(a, ...)
+          prism_test_forwarding_arguments_node(1,2, 3, ...)
+        end
+      CODE
+    end
+
     def test_ForwardingSuperNode
       assert_prism_eval("class Forwarding; def to_s; super; end; end")
       assert_prism_eval("class Forwarding; def eval(code); super { code }; end; end")
