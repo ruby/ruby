@@ -893,6 +893,7 @@ load_unlock(rb_vm_t *vm, const char *ftptr, int done)
     }
 }
 
+static VALUE rb_require_string_internal(VALUE fname);
 
 /*
  *  call-seq:
@@ -955,7 +956,7 @@ rb_f_require_relative(VALUE obj, VALUE fname)
         rb_loaderror("cannot infer basepath");
     }
     base = rb_file_dirname(base);
-    return rb_require_string(rb_file_absolute_path(fname, base));
+    return rb_require_string_internal(rb_file_absolute_path(fname, base));
 }
 
 typedef int (*feature_func)(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn);
@@ -1164,7 +1165,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
 
-    fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
     saved_path = path;
@@ -1290,6 +1290,12 @@ ruby_require_internal(const char *fname, unsigned int len)
 VALUE
 rb_require_string(VALUE fname)
 {
+    return rb_require_string_internal(FilePathValue(fname));
+}
+
+static VALUE
+rb_require_string_internal(VALUE fname)
+{
     rb_execution_context_t *ec = GET_EC();
     int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
@@ -1306,7 +1312,9 @@ rb_require_string(VALUE fname)
 VALUE
 rb_require(const char *fname)
 {
-    return rb_require_string(rb_str_new_cstr(fname));
+    struct RString fake;
+    VALUE str = rb_setup_fake_str(&fake, fname, strlen(fname), 0);
+    return rb_require_string_internal(str);
 }
 
 #if EXTSTATIC
