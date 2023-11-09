@@ -572,7 +572,7 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
       srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" }
       srv.mount_proc("/r3/") {|req, res| res.body = "r3" }
-      exc = assert_raise(RuntimeError) { URI.open("#{url}/r1/", max_redirects: 1) {} }
+      exc = assert_raise(OpenURI::TooManyRedirects) { URI.open("#{url}/r1/", max_redirects: 1) {} }
       assert_equal("Too many redirects", exc.message)
     }
   end

@@ -108,7 +108,7 @@ module OpenURI
     :ftp_active_mode => false,
     :redirect => true,
     :encoding => nil,
-    :max_redirects => nil,
+    :max_redirects => 64,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -240,7 +240,7 @@ module OpenURI
         uri = redirect
         raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
         uri_set[uri.to_s] = true
-        raise "Too many redirects" if max_redirects && uri_set.size > max_redirects
+        raise TooManyRedirects.new("Too many redirects", buf.io) if max_redirects && uri_set.size > max_redirects
       else
         break
       end
@@ -393,6 +393,9 @@ module OpenURI
       @uri = uri
     end
     attr_reader :uri
+  end
+
+  class TooManyRedirects < HTTPError
   end
 
   class Buffer # :nodoc: all
