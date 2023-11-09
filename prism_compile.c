@@ -3376,28 +3376,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             for (size_t i = 0; i < keywords_list->size; i++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
 
-                switch PM_NODE_TYPE(keyword_parameter_node) {
+                switch (PM_NODE_TYPE(keyword_parameter_node)) {
                   case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
-                      pm_node_t *value = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node)->value;
+                    pm_node_t *value = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node)->value;
 
-                      if (pm_static_literal_p(value)) {
-                          rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
-                      }
-                      else {
-                          PM_COMPILE_POPPED(value);
-                          rb_ary_push(default_values, complex_mark);
-                      }
+                    if (pm_static_literal_p(value)) {
+                        rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
+                    }
+                    else {
+                        PM_COMPILE_POPPED(value);
+                        rb_ary_push(default_values, complex_mark);
+                    }
 
-                      break;
+                    break;
                   }
                   case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
-                      pm_required_keyword_parameter_node_t *cast = (pm_required_keyword_parameter_node_t *)keyword_parameter_node;
-                      ids[keyword->required_num] = pm_constant_id_lookup(scope_node, cast->name);
-                      keyword->required_num++;
-                      break;
+                    pm_required_keyword_parameter_node_t *cast = (pm_required_keyword_parameter_node_t *)keyword_parameter_node;
+                    ids[keyword->required_num] = pm_constant_id_lookup(scope_node, cast->name);
+                    keyword->required_num++;
+                    break;
                   }
                   default: {
-                      rb_bug("Unexpected keyword parameter node type");
+                    rb_bug("Unexpected keyword parameter node type");
                   }
                 }
             }
