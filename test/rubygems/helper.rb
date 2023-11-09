@@ -290,7 +290,7 @@ class Gem::TestCase < Test::Unit::TestCase
   def setup
     @orig_hooks = {}
     @orig_env = ENV.to_hash
-    @tmp = File.expand_path("tmp")
+    @tmp = File.expand_path("../../tmp", __dir__)
 
     FileUtils.mkdir_p @tmp
 
